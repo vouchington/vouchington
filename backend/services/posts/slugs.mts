@@ -1,5 +1,5 @@
 import { convertUUIDToBase36, createSlugFromTitle, isUUID, validateSlug } from '@modules/utils'
-import { write } from '@data-stores/psql'
+import { isUniqueViolation, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
@@ -25,8 +25,7 @@ export const createPostSlug = async (
     )
     return result
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
-      // unique_violation
+    if (isUniqueViolation(error)) {
       assert(false, 409, `Slug "${slug}" already exists`)
     }
     throw error

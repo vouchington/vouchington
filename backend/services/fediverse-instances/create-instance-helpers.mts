@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import type { BasicUser } from '@services/users/types'
 import { createSlugFromTitle } from '@modules/utils'
 import { createTopicEmbeddingContent } from '@services/topics/content'
@@ -14,10 +14,6 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { randomBytes } from 'node:crypto'
 import type { InstanceClassificationMetadata } from '@services/fediverse-search/adapters/instance-classification'
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
-}
 
 export type GeneratedInstanceDetails = { name: string; slug: string }
 

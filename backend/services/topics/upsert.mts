@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import { createTopicEmbeddingContent } from './content.mts'
 import {
   claimTopicAlias,
@@ -93,8 +93,4 @@ async function upsertTopicOnce(
   const result = { topic, claimedAliases: [...claimedAliases.values()] }
   await query.commit()
   return result
-}
-
-function isUniqueViolation(error: unknown): error is { code: string } {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
 }

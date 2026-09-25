@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import type { BasicUser } from '@services/users/types'
 import { createSlugFromTitle } from '@modules/utils'
 import { createTopicEmbeddingContent } from '@services/topics/content'
@@ -41,9 +41,6 @@ type CreateSourceWithRetryArgs = {
   attempt: number
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
-}
 /** Slug = slugify(feedTitle + url-without-protocol), capped at 250 chars. Appends random hex suffix on retry. */
 export function generateSourceDetails(
   topicName: string,

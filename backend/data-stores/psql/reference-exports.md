@@ -13,6 +13,8 @@
   client, and `commit()` completes the work
 - `withTransactionOptions(options, async query => ...)` — join a client already inside a
   transaction; owned work uses an explicit resource instead
+- `isUniqueViolation(error)` — type guard for a PostgreSQL `unique_violation` (SQLSTATE `23505`)
+  caught from `read`/`write`/a transaction; services use it instead of re-deriving the code check
 - `createAsyncGeneratorFromCursor(...)` / `executeHandlerWithCursorInBatches(...)` — stream large
   result sets with `pg-cursor`
 - `enableQueryCapture()` / `getCapturedQueries()` / `explainAnalyze()` — capture and replay SQL
