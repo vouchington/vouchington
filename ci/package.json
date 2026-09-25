@@ -21,7 +21,6 @@
     "vouchington-tooling": "^0.19.2"
   },
   "devDependencies": {
-    "@ts-shared/utils": "workspace:^",
     "@types/picomatch": "^4.0.3",
     "@vitest/coverage-v8": "^5.0.1",
     "oxfmt": "^0.70.0",
