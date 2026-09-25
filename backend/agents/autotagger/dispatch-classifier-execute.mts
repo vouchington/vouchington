@@ -20,10 +20,15 @@ const DISPATCH_TIMEOUT_MS = 55_000
  * to keep both files under the repository's per-file line cap.
  *
  * Only a bad or incomplete answer set (thrown after the response arrives, and before persistence
- * starts) is an "invalid-result". A `StructuredDecisionError` is always "provider-error".
- * Anything else (a pre-call validation bug, or a persistence-identity/DB failure) is not a bad
- * *result* at all -- it is rethrown uncaught so the lease expires and a retry can recover, rather
- * than mischaracterizing the outcome.
+ * starts) is an "invalid-result". A `StructuredDecisionError` is always "provider-error", and so is
+ * this function's own dispatch timeout firing (`signal.aborted`): `createStructuredDecisionClient`
+ * never wraps an aborted fetch/retry-sleep into a `StructuredDecisionError` -- it propagates the raw
+ * abort reason -- so without this check a timeout would fall through to "anything else" below and
+ * go unrecorded, silently wasting the 5s of headroom AUTOTAGGER_CLASSIFIER_LEASE_SECONDS
+ * (dispatch-classifier.mts) reserves specifically so a timeout's failure can still be recorded
+ * before the lease itself expires. Anything else (a pre-call validation bug, or a
+ * persistence-identity/DB failure) is not a bad *result* at all -- it is rethrown uncaught so the
+ * lease expires and a retry can recover, rather than mischaracterizing the outcome.
  */
 export async function executeAndPersistAutotaggerDecision(
   claim: { receiptId: string; batchId: string; leaseToken: string },
@@ -52,6 +57,7 @@ export async function executeAndPersistAutotaggerDecision(
       return persistClassifierDecision(persistInput)
     },
   }
+  const signal = AbortSignal.timeout(DISPATCH_TIMEOUT_MS)
 
   try {
     await executeSingleCallClassifierDecision(
@@ -64,13 +70,13 @@ export async function executeAndPersistAutotaggerDecision(
         state: input.state,
         bindings,
         client,
-        signal: AbortSignal.timeout(DISPATCH_TIMEOUT_MS),
+        signal,
       },
       executeDeps,
     )
   } catch (error) {
     const outcome: AutotaggerReceiptFailureOutcome | null =
-      error instanceof StructuredDecisionError
+      error instanceof StructuredDecisionError || signal.aborted
         ? 'provider-error'
         : phase.current === 'post-decide'
           ? 'invalid-result'
