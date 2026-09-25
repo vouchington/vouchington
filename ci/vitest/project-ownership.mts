@@ -75,7 +75,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'file-count',
       reportPrefix: 'backend-shard',
-      filesPerShard: 520,
+      filesPerShard: 350,
     },
     sideDuty: false,
     invocation: 'literal',
@@ -115,7 +115,7 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     sharding: {
       mode: 'file-count',
       reportPrefix: 'web-shard',
-      filesPerShard: 800,
+      filesPerShard: 500,
     },
     sideDuty: false,
     invocation: 'literal',

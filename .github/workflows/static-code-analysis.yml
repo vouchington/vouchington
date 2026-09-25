@@ -128,8 +128,7 @@ jobs:
             exit 1
           fi
 
-  no-mistakes-owned:
-    needs: [static-code-analysis]
+  no-mistakes:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

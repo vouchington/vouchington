@@ -2,13 +2,11 @@
 
 [Back to CI Reference](ci.md#test-workflows)
 
-PR and merge-group application tests run behind their matching backend, web, Lambda, or Cloudflare
-Worker static gate. Shared and web Vitest failures suppress their dependent suites; an application
-test failure suppresses the applicable Playwright suite. An intentionally skipped predecessor does
-not block selected downstream work. Tooling, portability, and Storybook remain outside the
-Playwright gate. Grouped main workflows fan out independently after their static checks.
-Manual `workflow_dispatch` runs keep the full diagnostic sequence after test failures; their
-required fan-in checks still fail.
+PR and merge-group application tests run behind `static-code-analysis` and their matching backend,
+web, Lambda, or Cloudflare Worker static gate; both Playwright suites wait on all four. No test
+waits on another, so a test failure never suppresses a different suite, and an intentionally
+skipped static gate does not block selected work. Grouped main workflows fan out independently
+after their static checks. The required fan-in checks still fail when any suite fails.
 
 | Workflow                                                                                       | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Vitest projects                                                                                                                                                                                      |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
