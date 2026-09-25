@@ -26,17 +26,6 @@ describe('getMatchingShortcuts', () => {
     expect(results.some(s => s.href === '/news')).toBe(true)
   })
 
-  it('does not return support shortcuts for unauthenticated user', () => {
-    const results = getMatchingShortcuts(t, 'chat', false, false)
-    expect(results.some(s => t(s.label) === 'Support')).toBe(false)
-  })
-
-  it('returns Support shortcut for authenticated user', () => {
-    const results = getMatchingShortcuts(t, 'chat', false, true, { chat: true })
-    expect(results.some(s => t(s.label) === 'Support')).toBe(true)
-    expect(results.some(s => t(s.label) === 'New Chat')).toBe(false)
-  })
-
   it('limits results to 5', () => {
     const results = getMatchingShortcuts(t, 'a', true, true)
     expect(results.length).toBeLessThanOrEqual(5)
@@ -88,10 +77,6 @@ describe('getMatchingShortcuts', () => {
     expect(DERIVED_PAGE_SHORTCUTS.find(s => s.href === '/urls')?.dataPw).toBe(
       'search-page-shortcut-urls',
     )
-  })
-
-  it('keeps complete page shortcut records statically readable', () => {
-    expect(DERIVED_PAGE_SHORTCUTS.some(s => s.href === '/support/contacts')).toBe(true)
   })
 })
 

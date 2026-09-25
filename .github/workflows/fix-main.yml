@@ -50,12 +50,6 @@ jobs:
       actions: write
       checks: read
       contents: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       should_dispatch: ${{ steps.triage.outputs.should_dispatch }}
     steps:
@@ -125,10 +119,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       related-candidates: ${{ steps.prompt-context.outputs.related-candidates }}
     steps:
@@ -156,10 +146,6 @@ jobs:
     permissions:
       actions: read
       contents: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       prompt: ${{ steps.render.outputs.prompt }}
       source-current: ${{ steps.source-state.outputs.current }}
@@ -248,12 +234,6 @@ jobs:
       actions: read
       checks: read
       contents: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       retry_pending: ${{ steps.retry-pending.outputs.retry_pending }}
     steps:
@@ -301,12 +281,6 @@ jobs:
     permissions:
       actions: read
       issues: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     env:
       FAILED_WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
       FAILED_RUN_URL: ${{ github.event.workflow_run.html_url }}

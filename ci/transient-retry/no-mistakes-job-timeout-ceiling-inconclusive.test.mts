@@ -23,7 +23,7 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 // (`CI` vs. `Main CI (web)`). Both are pinned so a future rule keyed on `workflowName ===
 // 'CI'` can't slip past this guard by only being tested against the other calling path.
 
-const staticAnalysisJobName = 'static-code-analysis / no-mistakes-owned'
+const staticAnalysisJobName = 'static-code-analysis / no-mistakes'
 const selectVitestJobName = 'select-ci'
 const playwrightSelectJobName = 'playwright-tests / select'
 const testPlaywrightSelectJobName = 'test-playwright / select'
@@ -63,7 +63,7 @@ describe('no-mistakes-job-timeout-ceiling-inconclusive (forward guard, no rule y
   it('falls through to dispatch when the static-analysis no-mistakes step is killed at the job timeout ceiling', async () => {
     const log = jobTimeoutCeilingLog(
       'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json',
-      jobTimeout('.github/workflows/static-code-analysis.yml', 'no-mistakes-owned'),
+      jobTimeout('.github/workflows/static-code-analysis.yml', 'no-mistakes'),
     )
     const result = await decide(
       makeCtx({

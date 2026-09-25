@@ -3,7 +3,10 @@ import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser } from '@voucha/test-helpers'
-import { readCopyrightNoticeTargetId } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
+import {
+  readCopyrightNoticeTargetId,
+  readCopyrightStaffQueueCursorBefore,
+} from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { addUserRole } from '@services/users/roles-permissions'
 import { createCopyrightFormIntake } from '@services/copyright-notices'
 import {
@@ -111,7 +114,10 @@ describe('copyright notice routes', () => {
     const moderator = createRequest()
     await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
 
-    const response = await moderator.get('/api/v1/copyright-notices/review-queue').expect(200)
+    const after = await readCopyrightStaffQueueCursorBefore([noticeId])
+    const response = await moderator
+      .get(`/api/v1/copyright-notices/review-queue?after=${encodeURIComponent(after)}`)
+      .expect(200)
     expect(response.body.copyright_notices).toContainEqual(
       expect.objectContaining({
         id: noticeId,

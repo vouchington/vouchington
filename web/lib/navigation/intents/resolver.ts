@@ -4,7 +4,6 @@ const RULES: readonly [string, NavIntentId | null][] = [
   ['/messages', 'messages'],
   ['/fediverse', 'fediverse'],
   ['/posts/review-queue', 'moderation'],
-  ['/chat/support', 'chat'],
   ['/admin/modlog', 'moderation'],
   ['/admin/moderation-analytics', 'moderation'],
   ['/moderation-transparency', 'settings'],
@@ -119,7 +118,6 @@ const RULES: readonly [string, NavIntentId | null][] = [
   ['/users', 'friends'],
   ['/user/', 'friends'],
   ['/memberships', 'settings'],
-  ['/support', 'support'],
   ['/growth', 'growth'],
 ]
 

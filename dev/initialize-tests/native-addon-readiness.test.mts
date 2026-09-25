@@ -1,12 +1,11 @@
-import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
-const execFileAsync = promisify(execFile)
+import { type RunProcessResult, runProcess } from '../test-helpers/run-process.mts'
+
 const testDirs: string[] = []
 
 const nativeAddonConsumers: (readonly [string, string, string?])[] = [
@@ -67,29 +66,12 @@ async function makeNativeAddonFixture(addons: ReadonlyMap<string, string>): Prom
   return root
 }
 
-async function runNativeAddonReadiness(root: string): Promise<{
-  exitCode: number
-  stderr: string
-  stdout: string
-}> {
+async function runNativeAddonReadiness(root: string): Promise<RunProcessResult> {
   const env = { ...process.env }
   delete env.NODE_PATH
 
-  try {
-    const result = await execFileAsync(process.execPath, [nativeAddonReadinessPath], {
-      cwd: root,
-      env,
-    })
-
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
+  const result = await runProcess(process.execPath, [nativeAddonReadinessPath], { cwd: root, env })
+  return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
 }
 
 describe('native addon readiness', () => {
@@ -104,7 +86,9 @@ describe('native addon readiness', () => {
 
     const result = await runNativeAddonReadiness(root)
 
-    expect(result).toEqual({ exitCode: 0, stderr: '', stdout: '✓ Native addons are ready' })
+    expect(result.code).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(result.stdout).toBe('✓ Native addons are ready')
   })
 
   it('reports an addon that cannot be resolved from its consumer workspace', async () => {
@@ -118,7 +102,7 @@ describe('native addon readiness', () => {
 
     const result = await runNativeAddonReadiness(root)
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(result.stderr).toContain('lingua-rs:')
     expect(result.stderr).toContain('Cannot find module')
     expect(result.stderr).toContain('pnpm install --frozen-lockfile --force')
@@ -139,7 +123,7 @@ describe('native addon readiness', () => {
 
     const result = await runNativeAddonReadiness(root)
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(result.stderr).toContain('@jongleberry/vurst-html: native asset unavailable')
     expect(result.stderr).toContain('pnpm install --frozen-lockfile --force')
   })
@@ -156,7 +140,7 @@ describe('native addon readiness', () => {
 
     const result = await runNativeAddonReadiness(root)
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(result.stderr).toMatch(
       /lingua-rs: lingua failed[\s\S]*@jongleberry\/vurst-html: html failed/,
     )

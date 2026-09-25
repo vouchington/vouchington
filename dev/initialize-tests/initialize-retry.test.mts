@@ -1,13 +1,9 @@
-import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
-import { promisify } from 'node:util'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { initializeBashArgs } from '../test-helpers/initialize.mts'
-
-const execFileAsync = promisify(execFile)
+import { runInitializeHelperStatus } from '../test-helpers/initialize.mts'
 
 const testDirs: string[] = []
 
@@ -19,33 +15,6 @@ async function makeWorktreeDir(...parts: string[]) {
   return dir
 }
 
-async function runRetryScript({
-  cwd,
-  script,
-}: {
-  cwd: string
-  script: string
-}): Promise<{ exitCode: number; stderr: string; stdout: string }> {
-  try {
-    const result = await execFileAsync('bash', initializeBashArgs(script), {
-      cwd,
-      env: {
-        ...process.env,
-        HOME: dirname(cwd),
-      },
-    })
-
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
-}
-
 describe('initialize retry helpers', () => {
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
@@ -54,7 +23,7 @@ describe('initialize retry helpers', () => {
   it('retries a transient command failure until it succeeds', async () => {
     const cwd = await makeWorktreeDir('feature-retry-success')
 
-    const result = await runRetryScript({
+    const result = await runInitializeHelperStatus({
       cwd,
       script: `
         attempts=0
@@ -68,7 +37,7 @@ describe('initialize retry helpers', () => {
       `,
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(result.stdout).toContain('attempt 1 failed for flaky command')
     expect(result.stdout).toContain('attempt 2 failed for flaky command')
     expect(result.stdout).toContain('attempts=3')
@@ -77,7 +46,7 @@ describe('initialize retry helpers', () => {
   it('returns the final command status after exhausting retries', async () => {
     const cwd = await makeWorktreeDir('feature-retry-failure')
 
-    const result = await runRetryScript({
+    const result = await runInitializeHelperStatus({
       cwd,
       script: `
         attempts=0
@@ -94,7 +63,7 @@ describe('initialize retry helpers', () => {
       `,
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(result.stdout).toContain('attempt 1 failed for always fails')
     expect(result.stdout).toContain('status=7 attempts=2')
   })

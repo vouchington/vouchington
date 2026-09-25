@@ -28,12 +28,6 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       should_dispatch: ${{ steps.gate.outputs.should_dispatch }}
       pr_number: ${{ steps.gate.outputs.pr_number }}
@@ -181,10 +175,6 @@ jobs:
     if: needs.gate.outputs.should_dispatch == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       prompt: ${{ steps.render.outputs.prompt }}
       pr_shepherd_version: ${{ steps.pr-shepherd-version.outputs.version }}
@@ -261,12 +251,6 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -314,12 +298,6 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     env:
       GH_TOKEN: ${{ github.token }}
       PR_HEAD_REF: ${{ needs.gate.outputs.pr_head_ref }}

@@ -4,7 +4,7 @@
 
 ## Official Accounts and Material Connections
 
-Voucha-affiliated accounts are operational identities, not independent consumer identities. Role-bearing users such as administrators, investors, and customer support, plus agent/system users, must not influence community trust scores, rankings, aggregates, or referral-link social proof through public votes, reviews, data points, or personal endorsements.
+Voucha-affiliated accounts are operational identities, not independent consumer identities. Role-bearing users such as administrators and investors, plus agent/system users, must not influence community trust scores, rankings, aggregates, or referral-link social proof through public votes, reviews, data points, or personal endorsements.
 
 Staff or other affiliated people may use separate non-role personal accounts for genuine personal consumer activity, but those accounts must disclose material connections where relevant.
 

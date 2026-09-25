@@ -31,12 +31,6 @@ jobs:
     permissions:
       contents: read
       issues: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       accepted: ${{ steps.extract-fix.outputs.accepted }}
       fix_request: ${{ steps.extract-fix.outputs.fix_request }}
@@ -163,10 +157,6 @@ jobs:
     permissions:
       contents: read
       issues: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       prompt: ${{ steps.render.outputs.prompt }}
     steps:
@@ -269,12 +259,6 @@ jobs:
     timeout-minutes: 2
     permissions:
       issues: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     env:
       GH_TOKEN: ${{ github.token }}
       ISSUE_NUMBER: ${{ github.event.issue.number }}

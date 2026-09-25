@@ -198,7 +198,7 @@ describe('IdentityVerificationContent', () => {
         />,
       )
       const link = screen.getByRole('link', { name: /contact support/i })
-      expect(link.getAttribute('href')).toBe('/chat/support')
+      expect(link.getAttribute('href')).toBe('mailto:support@voucha.ai')
     })
 
     it('renders no action button (contact support is a link)', () => {

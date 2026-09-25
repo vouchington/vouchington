@@ -32,12 +32,16 @@ export {
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
 } from './read-models.mts'
-export { listCopyrightStaffQueue } from './read-models-staff.mts'
+export { copyrightStaffQueueCursorScope, listCopyrightStaffQueue } from './read-models-staff.mts'
 export type { CopyrightStaffCase } from './read-models-staff.mts'
 export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
 export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
+export {
+  getCopyrightRepeatInfringerAccount,
+  recordCopyrightRepeatInfringerDisposition,
+} from './repeat-infringer-incidents.mts'
 export { appendCopyrightLegalHoldAssessment, resolveCopyrightLegalHold } from './holds.mts'
 export {
   approveCopyrightCorrespondence,
@@ -56,7 +60,11 @@ export {
   reconcileCopyrightEnforcementRequests,
 } from './enforcement-requests.mts'
 export { reviewCopyrightAppeal, reviewCopyrightCounterNotice } from './submission-reviews.mts'
-export { getPendingCopyrightAgentDispatches } from './reconcile-agent-dispatches.mts'
+export {
+  getPendingCopyrightAgentDispatches,
+  type CopyrightAgentDispatch,
+  type CopyrightAgentDispatchPage,
+} from './reconcile-agent-dispatches.mts'
 export {
   claimCopyrightDeliveryIntent,
   createCopyrightDeliveryIntent,

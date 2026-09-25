@@ -17,7 +17,7 @@ test-support sources; its local configuration and command inventory are in
 `workflow_call` input `docs_only` defaults to `false`. Docs-only pull requests pass `true` so the
 lint job keeps checkout, `setup-node-pnpm`, mise, `oxfmt --check` (markdown formatting), and
 `run-node-checks.mts --checks repo-file-policy,targeted-guardrails,config-inventory-policy`
-(Cloudflare Worker doc-sync plus env-var inventory docs), while `no-mistakes-owned` still runs
+(Cloudflare Worker doc-sync plus env-var inventory docs), while the `no-mistakes` job still runs
 full `no-mistakes check` (shellcheck via mise). TypeScript, type-aware oxlint, ast-grep,
 syncpack, depcruise, knip, selene, localization, the no-write catalog format check, the web route selector-map check, and the
 ownership-table check stay off. Direct
@@ -33,8 +33,8 @@ execution deadline remains 60 seconds and no-mistakes' separate default lock-wai
 30 seconds. CI has exactly three production CLI invocations: the static-analysis full check plus the
 centralized Vitest and Playwright selectors. All three disable both no-mistakes' execution deadline
 and its machine-wide lock-wait deadline. Route-selector `--check` is a fourth production consumer
-through the Node `analyzeProject` API. The CLI and route-selector checks in `no-mistakes-owned`
-share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
+through the Node `analyzeProject` API. The `no-mistakes` job starts in parallel with the
+`static-code-analysis` job; its CLI and route-selector checks share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
 Separate hosted jobs have isolated workspaces, so there is no cross-PR job queue; the
 workflow-level concurrency still cancels a superseded PR run. Both concrete jobs have 30-minute
 safety caps, while recent public runs finished each in about four minutes. Oxlint, knip, and

@@ -28,17 +28,13 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   on `main`, update `fix-main.yml`; its subscription regression test must pass.
 - Preserve the `Main` ruleset gates: exactly `tests`, `build`, and `gitleaks` are
   required before merge. Other scans remain report-only unless they feed one of those gates.
-- **Semantic CI DAG:** PR and merge-group CI orders related area-static checks, application tests,
-  sibling Playwright suites, and Docker image validation to avoid downstream compute after failures.
-  Area-static checks gate their related tests. Test-to-test and test-to-Playwright edges use
-  `always() && !cancelled()` and accept upstream `success` or intentional `skipped`, but not
-  `failure`. Tooling, native, portability, and standalone Storybook stay outside the Playwright
-  gate. On PRs and merge groups, the required `tests` check must succeed before either Docker validation build starts;
-  required `tests` and `build` checks still report failures. The shared `static-web` runtime build
-  precedes its integration and Playwright consumers. Grouped-main workflows keep their independent
-  fan-out and `cancel-in-progress: false` policy. Manual `workflow_dispatch` diagnostics continue
-  dependent tests, Playwright, and Docker validation after test failures while preserving red fan-in
-  checks.
+- **Semantic CI DAG:** in PR and merge-group CI, `static-code-analysis` gates the area-static
+  checks, and those gate every test, both Playwright suites, and both Docker validation builds. No
+  test or build waits on another test or build, so they all run in parallel once their static gates
+  succeed or intentionally skip. Only the `test-coverage`, `tests`, and `build` fan-ins wait on
+  tests, and required `tests` and `build` checks still report every failure. The shared
+  `static-web` runtime build precedes its integration and Playwright consumers. Grouped-main
+  workflows keep their independent fan-out and `cancel-in-progress: false` policy.
   `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
 - Treat runner labels, runner-demand budgets, and concurrency as shared-capacity contracts. Follow
   [the canonical checklist](../../docs/checklists/github-actions.md) and update its documented

@@ -194,6 +194,16 @@ const { postId } = await createTrendingPostData({ votesScoreUp: 500 })
 const result = await getTrendingPosts({ timeRange: 'day', limit: 100, minScore: 100 })
 ```
 
+### UUID-keyset sweep reads
+
+A recovery sweep paged by UUID returns the whole database's lowest IDs first, so a test asserting on
+its own row from page one fails once enough rows accumulate, and a negative assertion passes
+vacuously. Read the owned row through the production keyset instead: `encodeUuidCursorBefore(id)`
+from `@voucha/test-helpers/modules/pagination/uuid-cursors` builds an `after` cursor whose first
+page starts at `id`. `readTestPendingCopyrightAgentDispatches(id)` from
+`@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches` applies it to the
+copyright agent-dispatch sweep, so `toEqual([])` proves the owned record is not pending.
+
 ### Embedding collisions
 
 Default `Array(1536).fill(0.1)` embeddings are identical across all test entities. After enough runs, hundreds share the same embedding, making cosine-similarity results unpredictable.
@@ -258,6 +268,16 @@ global), or day-free counts scoped to a freshly created community via
 leaves behind on today's date is an intentional, harmless orphan: it is keyed by that test's own
 freshly created community, so it never collides with another test's assertions and needs no cleanup.
 
+### Oldest-first queue heads
+
+Oldest-first queues such as the copyright staff queue (`GET /api/v1/copyright-notices/review-queue`)
+return the whole database's backlog first, and that backlog only grows. A test that reads the queue
+head sees other tests' rows, so its own row falls off the first page once enough older rows pile up,
+and any other test's unreadable row fails the request. Seek to the test's own rows instead:
+`readCopyrightStaffQueueCursorBefore(noticeIds)` from
+`@voucha/test-helpers/data-stores/psql/copyright-notice-reads` returns an `after` cursor positioned
+just before the oldest of the given notices, so every page starts at rows the test created.
+
 ### "No more results" assumptions
 
 Don't assume `limit: 1000` returns all rows — the DB may contain more than 1000. Either use a filter or test `page_info` structure without assuming exhaustive results.
@@ -293,6 +313,16 @@ await withDominantPostFixtures(
 ```
 
 See [Parallel-Safety and Test-Root Hygiene § Persistent dominant fixtures require deterministic cleanup](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#persistent-dominant-fixtures-require-deterministic-cleanup) and [Parallel-Safety and Test-Root Hygiene § Rate-limiter cleanup must be ownership-scoped, never prefix-wide](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#rate-limiter-cleanup-must-be-ownership-scoped-never-prefix-wide).
+
+### Fixture states a concurrent sweep can act on
+
+Recovery and reconciliation sweeps that tests call directly, such as
+`recoverRejectedCopyrightFormReviewEffects()`, scan the whole database, so they lock and act on
+other tests' rows too. Seed any multi-step state such a sweep would act on in one transaction so no
+sweep sees the intermediate commit. Seeding a rejected form review by a live moderator, then erasing
+the moderator in a second statement, let a parallel sweep lock the review and wait on the moderator
+row the erasure held, which deadlocked (#518).
+`createTestCopyrightFormRejectionByErasedModerator()` commits both together.
 
 ### Shared membership catalog rows
 

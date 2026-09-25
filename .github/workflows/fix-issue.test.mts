@@ -55,6 +55,12 @@ describe('fix-issue workflow', () => {
     expect(fixIssuePrompt).toContain('`automation:auto-fix`')
   })
 
+  it('reports a non-authorization stop on the issue once, and stays silent otherwise', () => {
+    expect(fixIssuePrompt).toContain('`## Automation stopped`')
+    expect(fixIssuePrompt).toContain('commenting `/fix` again retries')
+    expect(fixIssuePrompt).toContain('those stops stay silent')
+  })
+
   it('triggers on issue_comment created events but not PR comments', () => {
     const on = parsedIssue.on as {
       issue_comment?: { types?: string[] }

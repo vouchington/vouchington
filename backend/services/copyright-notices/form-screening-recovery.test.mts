@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   insertTestImage,
@@ -15,12 +15,12 @@ import {
   liftTestCopyrightRestriction,
   readTestLatestCopyrightFormScreeningRecommendation,
 } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
+import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
-  getPendingCopyrightAgentDispatches,
   reconcileCopyrightEnforcementRequests,
 } from './index.mts'
 import {
@@ -73,21 +73,13 @@ async function createClearScreenedForm(targetCount = 1) {
 }
 
 async function expectFormEffect(submissionId: string): Promise<void> {
-  await vi.waitFor(async () => {
-    await expect(getPendingCopyrightAgentDispatches()).resolves.toContainEqual({
-      kind: 'form-effect',
-      submissionId,
-    })
-  })
+  await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([
+    { kind: 'form-effect', submissionId },
+  ])
 }
 
 async function expectNoFormEffect(submissionId: string): Promise<void> {
-  await vi.waitFor(async () => {
-    await expect(getPendingCopyrightAgentDispatches()).resolves.not.toContainEqual({
-      kind: 'form-effect',
-      submissionId,
-    })
-  })
+  await expect(readTestPendingCopyrightAgentDispatches(submissionId)).resolves.toEqual([])
 }
 
 describe('copyright form-screening recovery', () => {
@@ -105,6 +97,7 @@ describe('copyright form-screening recovery', () => {
 
   it('does not recover an earlier clear screen after a newer invalid result', async () => {
     const { notice } = await createClearScreenedForm()
+    await expectFormEffect(notice.intake.copyright_notice_submission_id)
     await appendCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 99),

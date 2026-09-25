@@ -46,7 +46,6 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | Sources                                                  | `/sources`                    | yes    | yes  | yes   | yes      |
 |                                  | Referral Programs                                        | `/referral-programs`          | yes    | yes  | yes   | yes      |
 | **Trust**                        | Domains                                                  | `/domains`                    | yes    | yes  | yes   | yes      |
-| **Help**                         | Support                                                  | `/chat/support`               | —      | yes  | yes   | yes      |
 | **Growth**                       | Growth                                                   | `/growth`                     | —      | —    | yes   | yes      |
 | **Users & Friends**              | Users                                                    | `/users`                      | —      | yes  | yes   | yes      |
 |                                  | Find Friends                                             | `/my/friend-recommendations`  | —      | yes  | yes   | yes      |
@@ -59,8 +58,6 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | RSS Feed Categories                                      | `/rss-feed-categories`        | —      | —    | yes   | —        |
 |                                  | Curated Asides                                           | `/curated-asides/topics`      | —      | —    | yes   | —        |
 | **Settings / Admin**             | Memberships                                              | `/memberships/grants`         | —      | —    | yes   | —        |
-| **Support**                      | Support                                                  | `/support`                    | —      | —    | yes   | —        |
-|                                  | Support Contacts                                         | `/support/contacts`           | —      | —    | yes   | —        |
 | **Engineering / Operations**     | Queues                                                   | `/admin/queues`               | —      | —    | yes   | —        |
 |                                  | PostgreSQL                                               | `/admin/postgresql`           | —      | —    | yes   | —        |
 |                                  | Valkey                                                   | `/admin/valkey`               | —      | —    | yes   | —        |
@@ -68,6 +65,6 @@ color, background, or inset ring/shadow treatments instead.
 |                                  | Vote Integrity                                           | `/vote-integrity/flags`       | —      | —    | yes   | —        |
 
 ‡ Dynamic Config is role-gated, not available to every authenticated user. Administrators,
-moderators, developers, customer support, and investors can view it. Each namespace's authoritative
+moderators, developers, and investors can view it. Each namespace's authoritative
 `can_update` value controls writes; `feature-flags` specifically grants writes and local overrides
 to administrators and developers.

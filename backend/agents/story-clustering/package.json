@@ -31,7 +31,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "openai": "^7.15.0",
-    "p-map": "7.0.7"
+    "p-map": "7.0.8"
   },
   "devDependencies": {
     "@services/rss-feeds": "workspace:^",

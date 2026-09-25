@@ -30,12 +30,6 @@ jobs:
       vars.HARNESS_SCHEDULED_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       prompt_path: ${{ steps.select.outputs.prompt_path }}
       prompt_name: ${{ steps.select.outputs.prompt_name }}

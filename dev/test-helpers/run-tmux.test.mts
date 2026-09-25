@@ -38,25 +38,6 @@ describe('runTmux', () => {
     expect(result.durationMs).toBeLessThan(4000)
   })
 
-  it('reports a timeout even when a TERM trap makes the child exit with its own code', async () => {
-    // dev/tmux installs `trap 'exit 143' TERM` around session creation. A real harness
-    // timeout must still be reported via `killed`, not miscategorized as a normal exit
-    // just because the trapped shutdown produced a numeric code.
-    const cwd = await makeFakeTmuxCwd(
-      "#!/bin/bash\ntrap 'kill $!; exit 143' TERM\n/bin/sleep 5 &\nwait\n",
-    )
-
-    const result = await runTmux({ binDir: tmpdir(), cwd, timeoutMs: 200 })
-
-    expect(result).toMatchObject({
-      code: 143,
-      signal: null,
-      timedOut: true,
-    })
-    expect(result.durationMs).toBeGreaterThanOrEqual(150)
-    expect(result.durationMs).toBeLessThan(4000)
-  })
-
   it('reports a spawn error instead of coercing it to exit code 1', async () => {
     const cwd = join(tmpdir(), 'run-tmux-test-cwd-that-does-not-exist')
 

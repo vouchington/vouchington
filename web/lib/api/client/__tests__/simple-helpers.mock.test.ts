@@ -20,7 +20,6 @@ import { exportRssFeeds, getRssFeedImport } from '../import-export'
 import { markMyNotificationReadKeepalive } from '../my-notifications'
 import { unsubscribeEmailToken } from '../my'
 import { searchRssFeedsClient } from '../rss-feeds'
-import { createMySupportThread } from '../support'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockPost = vi.mocked(clientApi.post)
@@ -97,16 +96,6 @@ describe('simple client api helpers', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/rss-feeds?q=test&limit=10', { signal })
     expect(result).toBe(feeds)
-  })
-
-  it('creates my support thread through the client request helper', async () => {
-    const response = { thread: { id: 'thread-1' }, message: null }
-    const body = { subject: 'Need help', message: 'Hello' }
-    mockPost.mockResolvedValueOnce(response)
-
-    await expect(createMySupportThread(body)).resolves.toBe(response)
-
-    expect(mockPost).toHaveBeenCalledWith('/api/v1/my/support-threads', body)
   })
 
   it('posts a public email unsubscribe token in the request body', async () => {

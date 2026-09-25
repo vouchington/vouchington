@@ -56,7 +56,7 @@ export const jobInventory = {
     'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests publish-web-images static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
   ),
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
-  '.github/workflows/static-code-analysis.yml': jobs('no-mistakes-owned static-code-analysis'),
+  '.github/workflows/static-code-analysis.yml': jobs('no-mistakes static-code-analysis'),
   '.github/workflows/storybook.yml': jobs('storybook'),
   '.github/workflows/sync-articles.yml': jobs('publish'),
   '.github/workflows/tests-backend-credentialed.yml': jobs('backend-credentialed-tests'),

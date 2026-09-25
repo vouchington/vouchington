@@ -1,10 +1,7 @@
-import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { promisify } from 'node:util'
 import { toolingTestBudget } from '../../test-helpers/vitest-config/tooling-projects.mts'
-
-const execFileAsync = promisify(execFile)
+import { runProcess } from './run-process.mts'
 
 // dev-tools tests get toolingTestBudget.testTimeout (30s) to run setup, invoke dev/tmux,
 // and assert. Bounding each dev/tmux invocation to a third of that budget keeps the harness
@@ -26,14 +23,6 @@ export interface RunTmuxResult {
   nodeArgLog: string
   nodeLog: string
   statusLog: string
-}
-
-interface ExecFileError {
-  code?: number | string
-  signal?: string | null
-  killed?: boolean
-  stdout?: string
-  stderr?: string
 }
 
 async function readLog(path: string) {
@@ -81,44 +70,20 @@ export async function runTmux({
     ...(tmuxEnv === undefined ? {} : { TMUX: tmuxEnv }),
   }
 
-  const start = performance.now()
-  let code: number | null = 0
-  let signal: string | null = null
-  let timedOut = false
-  let errno: string | undefined
-  let stderr = ''
-  let stdout = ''
-  try {
-    ;({ stderr, stdout } = await execFileAsync('/bin/bash', [join(cwd, 'dev', 'tmux'), ...args], {
-      cwd,
-      env,
-      timeout: timeoutMs,
-    }))
-  } catch (error) {
-    const result = error as ExecFileError
-    code = typeof result.code === 'number' ? result.code : null
-    errno = typeof result.code === 'string' ? result.code : undefined
-    signal = result.signal ?? null
-    timedOut = result.killed === true
-    stdout = result.stdout ?? ''
-    stderr = result.stderr ?? ''
-  }
-  const durationMs = Math.round(performance.now() - start)
+  const result = await runProcess('/bin/bash', [join(cwd, 'dev', 'tmux'), ...args], {
+    cwd,
+    env,
+    timeoutMs,
+  })
   const [execLog, log, nodeArgLog, nodeLog, statusLog] = await Promise.all(
     Object.values(paths).map(readLog),
   )
   return {
-    code,
-    durationMs,
-    errno,
+    ...result,
     execLog,
     log,
     nodeArgLog,
     nodeLog,
-    signal,
     statusLog,
-    stderr,
-    stdout,
-    timedOut,
   }
 }

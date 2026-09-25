@@ -39,10 +39,11 @@ by default.
 All callers delegate through [Harness Dispatch](../../.github/workflows/harness-dispatch.yml), which
 runs on `ubuntu-latest` as a single `dispatch` job gated by the same
 enablement and surface-gate check. `dispatch` checks out the immutable workflow SHA without
-persisted credentials and invokes the dispatch script. Every admission point across all 7 harness
-workflows — `dispatch` included — shares one fixed `concurrency.group` literal
-(`harness-dispatch-fleet-admission`), bounding total concurrent dispatch fleet-wide to 1 (with the
-rest FIFO-queued) after the move away from the old single-host runner's accidental implicit cap.
+persisted credentials and invokes the dispatch script, which creates the session and returns. Each
+caller's per-target workflow concurrency prevents duplicate sessions for one issue, branch, run, or
+SHA. The Harness scheduler keeps each session queued until a host has capacity, ordered by
+`HARNESS_PRIORITY` and expiring after `HARNESS_QUEUE_TTL_SECONDS`, so GitHub adds no global
+admission cap.
 The callee receives `HARNESS_API_KEY` as a repository secret that only its own `dispatch` job
 forwards by explicit name through `workflow_call`; caller checkouts do not receive it. That job
 still declares the `auto-harness` GitHub Environment, which permits only `main`, purely for

@@ -19,6 +19,7 @@ sequence are part of [Linters and Static Analysis](reference-tests-linters-and-s
 - <a id="vitest-projects"></a>[Vitest Projects](reference-tests-vitest-projects.md)
 - <a id="pools-isolation-and-vitest-5"></a>[Pools, Isolation, and Vitest 5](reference-tests-vitest-projects.md#pools-isolation-and-vitest-5)
 - <a id="parallel-safety-and-test-root-hygiene"></a>[Parallel-Safety and Test-Root Hygiene](reference-tests-parallel-safety-and-test-root-hygiene.md)
+- <a id="route-test-server-errors"></a>[Route-Test Server Errors](reference-tests-parallel-safety-and-test-root-hygiene.md#unexpected-route-test-500s-print-the-server-error)
 - <a id="local-patch-coverage-preview"></a>[Local Patch Coverage Preview](reference-tests-local-patch-coverage-preview.md)
 - <a id="test-value-and-safe-reduction"></a>[Test Value and Safe Reduction](reference-tests-value-and-reduction.md)
 - <a id="vitest-mock-typing"></a>[Vitest Mock Typing](reference-tests-vitest-mock-typing.md)

@@ -14,7 +14,7 @@ Sections are ordered to match the user journey: discover → engage → contribu
 - **Growth** — analytics for administrators and investors
 - **CMS** — content, moderation analytics, and agent management for administrators (URLs, Agents, Topics)
 - **Engineering** — infrastructure operations for administrators, plus Dynamic Config for its
-  viewer roles (administrators, moderators, developers, customer support, and investors)
+  viewer roles (administrators, moderators, developers, and investors)
 
 ## Link Stability Rule
 

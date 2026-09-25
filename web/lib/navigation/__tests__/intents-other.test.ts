@@ -7,21 +7,6 @@ describe('getActiveIntent', () => {
     it('resolves /memberships/grants to settings', () => {
       expect(getActiveIntent('/memberships/grants')).toBe('settings')
     })
-
-    it('resolves support routes to support', () => {
-      expect(getActiveIntent('/support')).toBe('support')
-      expect(getActiveIntent('/support/contacts')).toBe('support')
-    })
-  })
-
-  describe('support navigation', () => {
-    it('resolves /chat/support to chat before the support route', () => {
-      expect(getActiveIntent('/chat/support')).toBe('chat')
-    })
-
-    it('does not retain a hosted chat route resolver', () => {
-      expect(getActiveIntent('/chat')).toBe('news')
-    })
   })
 
   describe('engineering intent', () => {

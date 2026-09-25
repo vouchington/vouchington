@@ -24,7 +24,7 @@ the [client feature parity contract](../client-feature-parity.json).
 - Every web `NavIntentId` must appear in the client intent contract with the same label, auth gate,
   and role gate.
 - Native clients may group related web intents under one section only when the contract names that
-  mapping explicitly. For example, chat and messages both live under the native Messages section.
+  mapping explicitly. For example, referral links and web search share the native Discover section.
 - Signed-out users see only intents with `requiresAuth: false`; signed-in users additionally see
   member intents; staff/admin users additionally see matching role-gated staff directories.
 - Public `/user/:idOrUsername` profile routes belong to the `friends` intent but remain anonymous

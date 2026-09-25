@@ -29,12 +29,6 @@ jobs:
     permissions:
       contents: read
       issues: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       accepted: ${{ steps.extract-plan.outputs.accepted }}
       plan_request: ${{ steps.extract-plan.outputs.plan_request }}
@@ -152,10 +146,6 @@ jobs:
     if: needs.gate.outputs.accepted == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      queue: max
-      cancel-in-progress: false
     outputs:
       prompt: ${{ steps.render.outputs.prompt }}
     steps:
@@ -224,12 +214,6 @@ jobs:
     timeout-minutes: 2
     permissions:
       issues: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}

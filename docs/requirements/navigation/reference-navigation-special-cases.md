@@ -5,10 +5,9 @@
 ## Special Cases
 
 - **Communities intent**: authenticated users see only `CommunitiesSidebarGroup` (dynamic; two sections — _Explore_ with Explore Communities + Create Community links, and _My Communities_ with joined-communities list when non-empty). The static Browse group (which contains `sidebar-nav-explore`) is suppressed for authenticated users to avoid a duplicate Explore link (#5798). Anonymous users see the static Browse group with a single Explore link.
-- **Chat intent**: contains the authenticated Support link. Hosted web chat is not a navigation surface.
 - **Moderation intent**: `requiresAuth: true` at intent level — visible to all authenticated users. The "Moderation" group inside it has `roles: ['administrator']` so admins see the full queue. The "My Cases" group (`requiresAuth: true`, no roles) is visible to all authed users and links to `/my/appeals` and `/my/disputes`. `/my/appeals` and `/my/disputes` resolve to the `moderation` intent in the resolver.
 - **Dynamic Config**: Engineering is visible to administrators and the Dynamic Config viewer roles
-  (`moderator`, `developer`, `customer_support`, `investor`). Its administrator-only Operations
+  (`moderator`, `developer`, `investor`). Its administrator-only Operations
   group contains infrastructure tools. Its Dynamic Config group is visible to every viewer role and
   is the non-admin landing destination. The API's `can_update` value governs edits.
 - **Messages intent**: `requiresAuth: true`. Replaces the old `/messages` → `null` resolver entry. The sidebar shows a `MessagesSidebarGroup` (dynamic, loads recent conversations) when the messages intent is active for authenticated users. `/my/notifications` and `/notification-redirect` also resolve to the `messages` intent.

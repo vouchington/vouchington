@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { removeAdvertisedAgentInterfaceUrls } from '@ts-shared/route-classification'
+
 import { WebIntegrationClient } from '../helpers/client.mts'
 import { TEST_USER_USERNAME } from '../helpers/constants.mts'
 import { getLinkHref, parseHtml } from '../helpers/html-assertions.mts'
@@ -27,7 +29,7 @@ describe('website specification verifier', () => {
     client = new WebIntegrationClient(workerOrigin, traceOrigin, artifactsDir)
   })
 
-  it('serves public machine-readable discovery documents without private resources', async () => {
+  it('serves machine-readable discovery documents with only allowlisted private resources', async () => {
     const publicResourceCases = [
       ['/llms.txt', 'text/markdown'],
       ['/llms-full.txt', 'text/markdown'],
@@ -49,8 +51,10 @@ describe('website specification verifier', () => {
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain(contentType)
       expect(body).toContain('voucha.ai')
+      expect(body).not.toContain('/api/v1/admin/mcp')
+      const unadvertised = removeAdvertisedAgentInterfaceUrls(body, 'https://voucha.ai')
       for (const privateString of PRIVATE_DISCOVERY_STRINGS) {
-        expect(body).not.toContain(privateString)
+        expect(unadvertised).not.toContain(privateString)
       }
     }
 

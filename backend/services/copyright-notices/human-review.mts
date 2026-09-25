@@ -6,6 +6,7 @@ import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './t
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 
 export async function completeCopyrightMandatoryHumanReview(input: {
@@ -72,6 +73,7 @@ export async function completeCopyrightMandatoryHumanReview(input: {
     )
     restoreIntentId = intent.id
   }
+  await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},

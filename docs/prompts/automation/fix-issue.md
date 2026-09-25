@@ -30,3 +30,12 @@ Apply both the `automation` and `automation:auto-fix` labels, then re-fetch the 
 labels to be present before reporting completion.
 
 If multiple viable approaches remain and choosing one would materially change scope, stop and report `## Problem`, `## Options`, and `## Recommendation` instead of guessing. Never merge or arm auto-merge.
+
+When you stop without opening or updating a pull request for any reason other than a changed
+identity or authorization — the target branch head no longer matches the checked-out base, an
+owning pull request fails verification, or the scope needs a human choice — re-fetch issue #{{ISSUE_NUMBER}}, and only if it is still open post exactly one issue comment that starts with
+`## Automation stopped`, states the exact reason (including the observed and expected SHAs for a
+base mismatch), names any branch you already pushed, and says that commenting `/fix` again retries.
+For a scope choice, the comment carries the `## Problem`, `## Options`, and `## Recommendation`
+report. Do not comment when the issue closed, the `/fix` request disappeared, or the trigger
+comment's author association changed; those stops stay silent.

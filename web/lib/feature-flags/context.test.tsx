@@ -66,17 +66,17 @@ describe('FeatureFlagsProvider', () => {
 
   it('restores individually cleared overrides to global feature flags', () => {
     setFeatureFlagOverride('fediverse', true)
-    setFeatureFlagOverride('support', true)
+    setFeatureFlagOverride('chat', true)
 
     render(
-      <FeatureFlagsProvider globalFlags={{ fediverse: false, support: false }}>
+      <FeatureFlagsProvider globalFlags={{ fediverse: false, chat: false }}>
         <FlagProbe name='fediverse' />
-        <FlagProbe name='support' />
+        <FlagProbe name='chat' />
       </FeatureFlagsProvider>,
     )
 
     expect(screen.getByTestId('fediverse')).toHaveTextContent('true')
-    expect(screen.getByTestId('support')).toHaveTextContent('true')
+    expect(screen.getByTestId('chat')).toHaveTextContent('true')
 
     act(() => {
       removeFeatureFlagOverride('fediverse')
@@ -84,6 +84,6 @@ describe('FeatureFlagsProvider', () => {
     })
 
     expect(screen.getByTestId('fediverse')).toHaveTextContent('false')
-    expect(screen.getByTestId('support')).toHaveTextContent('true')
+    expect(screen.getByTestId('chat')).toHaveTextContent('true')
   })
 })

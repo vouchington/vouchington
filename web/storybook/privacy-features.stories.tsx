@@ -14,7 +14,6 @@ import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import { CommunitySettingsFields } from '@/components/communities/community-settings-fields'
 import { DeleteAccountDialog } from '@/app/(my)/my/data/delete-account-dialog'
 import { VerifiedDisplayPreferencesCard } from '@/app/(my)/my/identity-verification/verified-display-preferences-card'
-import { NewSupportThreadClient } from '@/app/(chat)/chat/support/new/new-support-thread-client'
 import { storyCurrentUser } from './entities/entity-fixtures'
 
 const privacyUser = {
@@ -155,16 +154,6 @@ export const IdentityDisplayPreferences: Story = {
           verifiedBadgeVisible
           publicVerifiedNameDisplay='first_name_last_initial'
         />
-      </div>
-    </main>
-  ),
-}
-
-export const SupportConversationConsent: Story = {
-  render: () => (
-    <main className='min-h-screen bg-background p-6 text-foreground'>
-      <div className='mx-auto max-w-2xl space-y-6'>
-        <NewSupportThreadClient conversationId='01960000-0000-7000-8000-000000000001' />
       </div>
     </main>
   ),

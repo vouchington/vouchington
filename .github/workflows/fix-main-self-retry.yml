@@ -36,12 +36,6 @@ jobs:
       actions: write
       checks: read
       contents: read
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     outputs:
       disposition: ${{ steps.disposition.outputs.disposition }}
     steps:
@@ -137,12 +131,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       issues: write
-    concurrency:
-      group: harness-dispatch-fleet-admission
-      # FIFO, not the coalescing default: shared fleet-wide admission group with harness-dispatch.yml#dispatch.
-      # See harness-dispatch.yml's dispatch job for the full rationale.
-      queue: max
-      cancel-in-progress: false
     steps:
       - name: Escalate to human — open or update issue
         env:

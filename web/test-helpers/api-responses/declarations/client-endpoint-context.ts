@@ -148,7 +148,6 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/reports'),
     'getCommunityPendingModerationReportsClient'
   >
-  readonly support: Pick<typeof import('@/lib/api/client/support'), 'createMySupportThread'>
   readonly topics: Pick<typeof import('@/lib/api/client/topics'), 'createTopic' | 'fetchTopics'>
   readonly valkey: Pick<
     typeof import('@/lib/api/client/valkey'),

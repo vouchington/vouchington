@@ -1,3 +1,4 @@
+import { buildMcpApiCatalogContext } from './agent-interface-documents.mts'
 import { getSiteOrigin } from './discovery-origin.mts'
 import type { Env } from './types.mts'
 
@@ -7,14 +8,21 @@ type LinkTarget = {
   title?: string
 }
 
+type SiteLinkContext = {
+  anchor: string
+  'service-desc': LinkTarget[]
+  sitemap: LinkTarget[]
+  item: LinkTarget[]
+  alternate: LinkTarget[]
+}
+
+type AgentInterfaceLinkContext = {
+  anchor: string
+  'service-doc': LinkTarget[]
+}
+
 type LinkSet = {
-  linkset: Array<{
-    anchor: string
-    'service-desc': LinkTarget[]
-    sitemap: LinkTarget[]
-    item: LinkTarget[]
-    alternate: LinkTarget[]
-  }>
+  linkset: [SiteLinkContext, AgentInterfaceLinkContext]
 }
 
 export function buildApiCatalogLinkset(env: Env): LinkSet {
@@ -66,6 +74,7 @@ export function buildApiCatalogLinkset(env: Env): LinkSet {
           },
         ],
       },
+      buildMcpApiCatalogContext(siteOrigin),
     ],
   }
 }

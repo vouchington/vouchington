@@ -117,14 +117,14 @@ describe('static-code-analysis workflow', () => {
     expect(workflow.slice(oxfmt, oxfmt + 80)).not.toContain('if: ${{ inputs.docs_only != true }}')
   })
 
-  it('runs no-mistakes after static checks without a cross-PR job queue', () => {
+  it('runs no-mistakes in parallel with static checks without a cross-PR job queue', () => {
     const parsed = load(workflow) as {
       jobs: Record<string, { needs?: string[]; concurrency?: unknown; 'timeout-minutes'?: number }>
     }
-    const noMistakes = parsed.jobs['no-mistakes-owned']
+    const noMistakes = parsed.jobs['no-mistakes']
 
     expect(noMistakes).toBeDefined()
-    expect(noMistakes?.needs).toEqual(['static-code-analysis'])
+    expect(noMistakes?.needs).toBeUndefined()
     expect(noMistakes?.concurrency).toBeUndefined()
     expect(noMistakes?.['timeout-minutes']).toBeLessThanOrEqual(30)
     expect(parsed.jobs['static-code-analysis']?.['timeout-minutes']).toBeLessThanOrEqual(30)

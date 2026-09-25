@@ -10,7 +10,11 @@ import { getConversationByIdForMutation } from '@services/conversations-messages
 import { createClientGeneratedChatTurn } from '@services/conversations-messages/client-generated-chat'
 import { assertNotSuspended } from '@services/users'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../../response-helpers.mts'
 import { checkApiMessageSafety } from '../../check-api-message-safety.mts'
 
 const MAX_MESSAGE_LENGTH = 32_768
@@ -26,7 +30,12 @@ app
     )
     assertNotSuspended(currentUser)
 
-    const conversationId = ctx.params.conversationId!
+    const conversationId = validateUUIDParam(ctx, 'conversationId')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/conversations/:conversationId/client-generated-chat',
+      { path: ctx.params },
+    )
     const conversation = await getConversationByIdForMutation(conversationId)
     if (!conversation) ctx.throw(404, 'Conversation not found')
     if (!(await currentUserCanUpdateConversation(currentUser, conversation))) {
@@ -37,6 +46,11 @@ app
     ctx.assert(!isRunning, 409, 'A message is already being processed')
 
     const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/conversations/:conversationId/client-generated-chat',
+      { body },
+    )
     const message = body.message
     const assistantContent = body.assistant_content
     ctx.assert(typeof message === 'string', 400, 'Message must be a string')

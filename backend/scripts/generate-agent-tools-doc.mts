@@ -10,6 +10,8 @@ const END = '<!-- END GENERATED -->'
 
 type ApiEndpoint = { method: string; path: string }
 
+type ToolPlan = 'free' | 'plus' | 'pro'
+
 type ToolEntry = {
   name: string
   description: string | null
@@ -19,6 +21,8 @@ type ToolEntry = {
   destructiveHint: boolean
   api: ApiEndpoint[] | null
   parameters: unknown
+  // Minimum mcp-surface plan; null defaults to 'free' at runtime (see types.mts#ToolMeta.plan).
+  plan: ToolPlan | null
 }
 
 function getToolFilePaths(): string[] {
@@ -51,13 +55,9 @@ function extractDescription(src: string): string | null {
     }
   }
 
-  // Inline single-quoted: description: 'any text'
   tryRe(/description:\s*'((?:[^'\\]|\\.)*)'/s, false)
-  // Inline double-quoted: description: "any text"
   tryRe(/description:\s*"((?:[^"\\]|\\.)*)"/s, false)
-  // Wrapped single-quoted: description:\n      'text'
   tryRe(/description:\s*\n\s*'((?:[^'\\]|\\.)*)'/s, true)
-  // Wrapped double-quoted: description:\n      "text"
   tryRe(/description:\s*\n\s*"((?:[^"\\]|\\.)*)"/s, true)
 
   if (candidates.length === 0) return null
@@ -71,6 +71,12 @@ function extractSurfaces(src: string): string[] {
   const m = re.exec(src)
   if (!m) return ['internal']
   return [...m[1].matchAll(/'(\w+)'/g)].map(x => x[1])
+}
+
+// Parses meta.plan, e.g. plan: 'plus'. `\b` avoids matching `membership_plan: '...'`.
+function extractPlan(src: string): ToolPlan | null {
+  const m = /\bplan:\s*'(free|plus|pro)'/.exec(src)
+  return (m?.[1] as ToolPlan | undefined) ?? null
 }
 
 function extractRequiredScopes(src: string): string[] {
@@ -100,33 +106,18 @@ function extractApi(src: string): ApiEndpoint[] | null {
 
 function parseToolFile(filePath: string): ToolEntry | null {
   const src = readFileSync(filePath, 'utf8')
-
-  const name =
-    extractNameField(src, 'name') ??
-    // createManageEntityTool: toolName: 'manage_my_*'
-    extractNameField(src, 'toolName')
+  const name = extractNameField(src, 'name') ?? extractNameField(src, 'toolName')
   if (!name) return null
-
-  const description =
-    extractDescription(src) ??
-    // createManageEntityTool uses `description:` too
-    null
-
-  const surfaces = extractSurfaces(src)
-  const api = extractApi(src)
-
-  const readOnlyHint = /readOnlyHint:\s*true/.test(src)
-  const destructiveHint = /destructiveHint:\s*true/.test(src)
-
   return {
     name,
-    description,
-    surfaces,
+    description: extractDescription(src),
+    surfaces: extractSurfaces(src),
     requiredScopes: extractRequiredScopes(src),
-    readOnlyHint,
-    destructiveHint,
-    api,
+    readOnlyHint: /readOnlyHint:\s*true/.test(src),
+    destructiveHint: /destructiveHint:\s*true/.test(src),
+    api: extractApi(src),
     parameters: null,
+    plan: extractPlan(src),
   }
 }
 
@@ -136,12 +127,15 @@ function generateToolTable(tools: ToolEntry[]): string {
     const hintStr = tool.readOnlyHint ? 'read-only' : tool.destructiveHint ? 'mutating' : '—'
     const apiStr =
       tool.api == null ? '—' : tool.api.map(e => `\`${e.method} ${e.path}\``).join(', ')
-    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
+    // Plan gating only applies at the user `mcp` surface dispatch boundary (see
+    // backend/tools/types.mts#ToolMeta.plan); a tool without that surface has no plan concept.
+    const planStr = tool.surfaces.includes('mcp') ? (tool.plan ?? 'free') : '—'
+    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${planStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
   })
 
   return [
-    '| Tool | Description | Surfaces | Required scopes | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | --------------- | ---- | --------------- |',
+    '| Tool | Description | Surfaces | Plan | Required scopes | Hint | REST Equivalent |',
+    '| ---- | ----------- | -------- | ---- | --------------- | ---- | --------------- |',
     ...rows,
   ].join('\n')
 }

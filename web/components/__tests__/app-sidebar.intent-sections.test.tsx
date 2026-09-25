@@ -57,29 +57,6 @@ describe('AppSidebar intent sections', () => {
     )
   })
 
-  describe('Chat intent', () => {
-    it('hides Chat section for unauthenticated users at /chat/support', () => {
-      setMockPathname('/chat/support')
-      renderSidebar()
-      expect(screen.queryByText('Chat')).toBeNull()
-    })
-
-    it('does not show static Messages group at /chat/support', () => {
-      setMockPathname('/chat/support')
-      renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.queryByText('Messages')).toBeNull()
-    })
-
-    it('shows Support link when the chat feature flag is enabled', () => {
-      setMockPathname('/chat/support')
-      renderSidebar({ id: 'u1', roles: ['user'] } as User)
-      expect(screen.getByRole('link', { name: /^Support$/i })).toHaveAttribute(
-        'href',
-        '/chat/support',
-      )
-    })
-  })
-
   describe('Growth intent', () => {
     it.each([null, { id: 'u1', roles: ['user'] } as User])(
       'hides Growth group for user %s at /',

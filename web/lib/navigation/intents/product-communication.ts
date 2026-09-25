@@ -1,28 +1,8 @@
-import { Bell, LayoutTemplate, MessageSquare } from 'lucide-react'
+import { Bell, LayoutTemplate } from 'lucide-react'
 
 import type { NavIntent } from './types'
 
 export const PRODUCT_COMMUNICATION_INTENTS: readonly NavIntent[] = [
-  {
-    id: 'chat',
-    label: 'extracted.intents.productCommunication.chat_460b3a7d',
-    icon: MessageSquare,
-    requiresAuth: true,
-    groups: [
-      {
-        label: 'extracted.intents.productCommunication.chat_460b3a7d',
-        dataPw: 'sidebar-group-chat',
-        requiresAuth: true,
-        items: [
-          {
-            label: 'extracted.intents.productCommunication.support_be91940b',
-            href: '/chat/support',
-            dataPw: 'sidebar-nav-chat-support',
-          },
-        ],
-      },
-    ],
-  },
   {
     id: 'messages',
     label: 'extracted.intents.productCommunication.messagesNotifications_6dfecd8b',

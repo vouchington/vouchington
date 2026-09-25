@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { HOST_STORAGE_MINIMUM_FREE_BYTES } from '../host-storage-preflight.mts'
 import { initializeBashArgs } from '../test-helpers/initialize.mts'
+import { runProcess } from '../test-helpers/run-process.mts'
 
 const execFileAsync = promisify(execFile)
 
@@ -55,23 +56,9 @@ async function makeFailingNvm(): Promise<string> {
   return root
 }
 
-async function runEnsureNodeVersion(env: NodeJS.ProcessEnv): Promise<{
-  exitCode: number
-  stderr: string
-  stdout: string
-}> {
-  try {
-    const result = await execFileAsync('bash', initializeBashArgs('ensure_node_version'), { env })
-
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
+async function runEnsureNodeVersion(env: NodeJS.ProcessEnv) {
+  const result = await runProcess('bash', initializeBashArgs('ensure_node_version'), { env })
+  return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
 }
 
 async function runInstallDependencies(fake: {
@@ -80,7 +67,7 @@ async function runInstallDependencies(fake: {
   root: string
   failUntilAttempt: number
   ci?: boolean
-}): Promise<{ exitCode: number; stderr: string; stdout: string }> {
+}) {
   const command = [
     'sleep() { :; }',
     // Mirror the conditional logic from dev/initialize: bare locally, --frozen-lockfile in CI.
@@ -102,21 +89,8 @@ async function runInstallDependencies(fake: {
     delete env.CI
   }
 
-  try {
-    const result = await execFileAsync('bash', initializeBashArgs(command), {
-      cwd: fake.root,
-      env,
-    })
-
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
+  const result = await runProcess('bash', initializeBashArgs(command), { cwd: fake.root, env })
+  return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
 }
 
 describe('initialize dependency install', () => {
@@ -180,21 +154,12 @@ describe('initialize dependency install', () => {
       'df() { printf "Filesystem 1024-blocks Used Available Capacity Mounted on\\n"; printf "fake 10000000 5000000 5000000 50%% /\\n"; }',
       'check_bootstrap_host_storage && ensure_node_version',
     ].join('; ')
-    let exitCode = 0
-    let stdout = ''
-    try {
-      const result = await execFileAsync('bash', initializeBashArgs(command), {
-        env: { ...process.env, NVM_DIR: nvmDir },
-      })
-      stdout = result.stdout
-    } catch (err: unknown) {
-      const error = err as { code?: number; stdout?: string }
-      exitCode = typeof error.code === 'number' ? error.code : 1
-      stdout = error.stdout ?? ''
-    }
+    const result = await runProcess('bash', initializeBashArgs(command), {
+      env: { ...process.env, NVM_DIR: nvmDir },
+    })
 
-    expect(exitCode).toBe(1)
-    expect(stdout).not.toContain('NVM_CALLED')
+    expect(result.code).toBe(1)
+    expect(result.stdout).not.toContain('NVM_CALLED')
   })
 
   it('accepts exact 5 GiB equality in the bootstrap runtime', async () => {
@@ -213,7 +178,7 @@ describe('initialize dependency install', () => {
     const fake = await makeFakePnpm()
     const result = await runInstallDependencies({ ...fake, failUntilAttempt: 2, ci: false })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(await readFile(fake.countFile, 'utf8')).toBe('3')
     expect(result.stdout).toContain('attempt 1 failed for pnpm install')
     expect(result.stdout).toContain('attempt 2 failed for pnpm install')
@@ -223,7 +188,7 @@ describe('initialize dependency install', () => {
     const fake = await makeFakePnpm()
     const result = await runInstallDependencies({ ...fake, failUntilAttempt: 3, ci: false })
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(await readFile(fake.countFile, 'utf8')).toBe('3')
     expect(result.stdout).toContain('attempt 1 failed for pnpm install')
     expect(result.stdout).toContain('attempt 2 failed for pnpm install')
@@ -233,7 +198,7 @@ describe('initialize dependency install', () => {
     const fake = await makeFakePnpm()
     const result = await runInstallDependencies({ ...fake, failUntilAttempt: 0, ci: false })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(result.stdout).toContain('PNPM_ARGS=install --config.confirmModulesPurge=false')
     expect(result.stdout).not.toContain('--frozen-lockfile')
   })
@@ -242,7 +207,7 @@ describe('initialize dependency install', () => {
     const fake = await makeFakePnpm()
     const result = await runInstallDependencies({ ...fake, failUntilAttempt: 0, ci: true })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(result.stdout).toContain(
       'PNPM_ARGS=install --frozen-lockfile --config.confirmModulesPurge=false',
     )
@@ -256,7 +221,7 @@ describe('initialize dependency install', () => {
       SKIP_NVM_INSTALL: '1',
     })
 
-    expect(result.exitCode).toBe(0)
+    expect(result.code).toBe(0)
     expect(result.stdout).toContain('SKIP_NVM_INSTALL=1')
     expect(result.stdout).not.toContain('NVM_CALLED')
   })

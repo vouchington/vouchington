@@ -69,6 +69,7 @@ The edge preserves the origin's exact `Referrer-Policy: no-referrer` value on OA
 callbacks and keyed RSS requests. This keeps callback codes, OAuth state, and RSS API keys out of
 subsequent `Referer` headers without trusting arbitrary origin policies or unrelated routes.
 
-`Link` discovery headers, `/llms.txt`, and `/.well-known/api-catalog` must advertise only public
-unauthenticated resources. Do not include authenticated/private routes, internal URLs, or RSS
-`apikey` query strings.
+`Link` discovery headers must advertise only public unauthenticated resources. `/llms.txt` and
+`/.well-known/api-catalog` may also name the exact authenticated agent interfaces listed in
+[Agent Access](../docs/requirements/platform/agent-access.md). Do not include any other
+authenticated/private routes, internal URLs, or RSS `apikey` query strings.

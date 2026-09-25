@@ -5,13 +5,14 @@ import { isRunnablePlaywrightSpec } from '../test-plan.mts'
 
 export { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 
-export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 8.6
+// Hosted-runner measurement: full-suite PR runs average about 6.1 seconds of test-step time per
+// spec with three Playwright workers.
+export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 6.1
 // Allocation heuristic, not a per-spec SLA: this is the per-shard test-execution budget the
-// shard-total formula below solves against. It was calibrated on private runners and retained after
-// three public full-suite baselines confirmed the current roughly 318-spec full suite stays below the
-// ten-minute target with nine shards and three Playwright workers. The whole playwright-tests job
-// (build + migrate + compile + test) targets that job-level KPI, not just the test step.
-export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 313
+// shard-total formula below solves against. It leaves room for the fixed build, migrate, and compile
+// steps so each playwright-tests job targets seven to eight minutes under its ten-minute cap; the
+// current full suite resolves to six shards.
+export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 350
 function validatedShardTotalOverride(override?: string): number | undefined {
   if (override === undefined || override === '') return undefined
   if (!/^[1-9]\d*$/.test(override)) {

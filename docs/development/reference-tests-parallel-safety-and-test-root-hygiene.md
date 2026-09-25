@@ -135,6 +135,22 @@ pure check logic lives in `test-helpers/vitest-fake-timer-guard.ts` (unit-tested
 pure/testable-core, thin-setupFile-wrapper split used by `test-helpers/vitest-fork-leak-detection.mts`
 and its own `test-helpers/vitest.setup.fork-leak-detection.mts`.
 
+### Unexpected route-test 500s print the server error
+
+Supertest's `.expect(status)` failure reports only `expected 200 "OK", got 500 "Internal Server
+Error"`, and `onError` is silent under `NODE_ENV=test`, so a CI-only 500 used to leave no throw site.
+`createRequest()` in `backend/test-helpers/api/server.mts` records every `>= 500` response (method,
+URL, and the non-production error body: `message`, `code`, `stack`) in
+`backend/test-helpers/api/server-error-responses.mts`. The `backend-data-stores`,
+`backend-activitypub-capacity`, and `backend-mocks` projects register
+`backend/test-helpers/vitest.setup.server-error-responses.mts`, which drains that buffer before each
+test and prints it to stderr only from `onTestFailed`. A failing route test therefore shows
+`Server error responses during this test:` with the server stack, while passing tests that expect a
+500 stay silent. Other projects that use `createRequest()` keep at most the 20 most recent entries.
+
+A 500 from a global list usually means the test read rows it does not own; see
+[Oldest-first queue heads](../../backend/test-helpers/README.md#oldest-first-queue-heads).
+
 ### Shared-storage overlap waits must observe in-flight state
 
 When two clients share durable storage, waiting on `lockManager.requestedNames.length` does not

@@ -5,6 +5,7 @@ import type { CopyrightRestrictionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -171,6 +172,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
       },
       transaction,
     )
+  }
+  if (restriction.human_review_action === 'confirm') {
+    await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)

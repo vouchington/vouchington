@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { removeAdvertisedAgentInterfaceUrls } from '@ts-shared/route-classification'
+
 import worker from '../index.mts'
 
 import {
@@ -27,7 +29,7 @@ describe('worker fetch handler - machine-readable discovery', () => {
     vi.restoreAllMocks()
   })
 
-  it('serves the API catalog as public linkset JSON without authenticated resources', async () => {
+  it('serves the API catalog as linkset JSON with only allowlisted authenticated resources', async () => {
     const fetchSpy = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('should not be called')),
     )
@@ -86,11 +88,10 @@ describe('worker fetch handler - machine-readable discovery', () => {
         title: 'Public news RSS',
       },
     ])
-    expect(text).not.toContain('/api/')
-    expect(text).not.toContain('/admin/')
-    expect(text).not.toContain('/auth/')
-    expect(text).not.toContain('/my/')
-    expect(text).not.toContain('apikey')
+    const unadvertised = removeAdvertisedAgentInterfaceUrls(text, 'https://voucha.ai')
+    for (const privateString of ['/api/', '/admin/', '/auth/', '/my/', 'apikey']) {
+      expect(unadvertised).not.toContain(privateString)
+    }
     expect(limiter.limit).not.toHaveBeenCalled()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
@@ -122,7 +123,7 @@ describe('worker fetch handler - machine-readable discovery', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('describes only public unauthenticated resources in llms.txt', async () => {
+  it('describes public resources and only allowlisted agent interfaces in llms.txt', async () => {
     globalThis.fetch = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('should not be called')),
     ) as unknown as typeof fetch
@@ -134,16 +135,16 @@ describe('worker fetch handler - machine-readable discovery', () => {
     )
 
     const body = await response.text()
-    expect(body).toContain('Only public unauthenticated content is advertised here')
+    expect(body).toContain('Public content listed here needs no authentication')
     expect(body).toContain('/md/posts')
     expect(body).toContain('/md/topics')
     expect(body).toContain('/md/users/{username}')
     expect(body).toContain('/rss/posts')
     expect(body).toContain('/rss/news')
-    expect(body).not.toContain('/api/')
-    expect(body).not.toContain('/admin/')
-    expect(body).not.toContain('/auth/')
-    expect(body).not.toContain('/my/')
+    const unadvertised = removeAdvertisedAgentInterfaceUrls(body, 'https://voucha.ai')
+    for (const privateString of ['/api/', '/admin/', '/auth/', '/my/']) {
+      expect(unadvertised).not.toContain(privateString)
+    }
   })
 
   it('adds site-level Link headers to public web responses', async () => {

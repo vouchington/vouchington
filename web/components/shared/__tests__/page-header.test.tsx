@@ -103,11 +103,6 @@ describe('PageHeader', () => {
     expect(p.className).toContain('text-sm')
   })
 
-  it('has data-pw page-header on the wrapper div', () => {
-    const { container } = render(<PageHeader title='Stories' />)
-    expect(container.firstElementChild?.getAttribute('data-pw')).toBe('page-header')
-  })
-
   it('defaults the title data-pw to page-header-title', () => {
     render(<PageHeader title='Stories' />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveAttribute(

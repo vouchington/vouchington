@@ -4,7 +4,7 @@
 
 ## Refunds
 
-Administrators and customer support users can issue Stripe refunds against a member's most recent paid invoice charges.
+Administrators can issue Stripe refunds against a member's most recent paid invoice charges.
 
 ### Modes
 
@@ -13,7 +13,7 @@ Administrators and customer support users can issue Stripe refunds against a mem
 
 ### Who can refund
 
-`administrator` and `customer_support` roles. Controlled by `currentUserCanRefundMembership`.
+`administrator` role. Controlled by `currentUserCanRefundMembership`.
 
 ### Event reconciliation
 

@@ -35,7 +35,7 @@ matcher is unavailable, reconstruction retains the proven ordered-rule prefix an
 failing rule and suffix, which use the conservative shared attempt count that discounts only
 prior zero-job attempts. If the first rule's evidence is unavailable, every rule uses that fallback.
 
-Bare job-timeout kills on `CI` `static-code-analysis / no-mistakes-owned`, the `select-ci`
+Bare job-timeout kills on `CI` `static-code-analysis / no-mistakes`, the `select-ci`
 selector, and the Playwright `select` selector (via either `CI` `test-playwright` or
 `Main CI (web)` `playwright-tests`) have no auto-rerun rule. Hosted runners isolate separate
 jobs, but a timeout within one job gives no evidence that distinguishes an infrastructure

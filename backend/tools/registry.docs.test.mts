@@ -19,6 +19,7 @@ const END = '<!-- END GENERATED -->'
 // ---------------------------------------------------------------------------
 
 type ApiEndpoint = { method: string; path: string }
+type ToolPlan = 'free' | 'plus' | 'pro'
 
 type ToolEntry = {
   name: string
@@ -28,6 +29,9 @@ type ToolEntry = {
   readOnlyHint: boolean
   destructiveHint: boolean
   api: ApiEndpoint[] | null
+  // Minimum plan required to dispatch on the user `mcp` surface; null means the source declared
+  // none (defaults to 'free' at runtime — see backend/tools/types.mts#ToolMeta.plan).
+  plan: ToolPlan | null
 }
 
 function getToolFilePaths(): string[] {
@@ -82,6 +86,15 @@ function extractRequiredScopes(src: string): string[] {
   return block == null ? [] : [...block.matchAll(/'([^']+:[^']+)'/g)].map(match => match[1])
 }
 
+/**
+ * Parse the tool's meta.plan field, e.g. plan: 'plus'. The leading `\b` prevents matching a
+ * `membership_plan: 'plus'` field on an unrelated object literal in the same file.
+ */
+function extractPlan(src: string): ToolPlan | null {
+  const m = /\bplan:\s*'(free|plus|pro)'/.exec(src)
+  return (m?.[1] as ToolPlan | undefined) ?? null
+}
+
 function extractApi(src: string): ApiEndpoint[] | null {
   if (/api:\s*null/.test(src)) return null
   const apiBlockRe = /api:\s*\[([^\]]*)\]/s
@@ -109,6 +122,7 @@ function parseToolFile(filePath: string): ToolEntry | null {
     readOnlyHint: /readOnlyHint:\s*true/.test(src),
     destructiveHint: /destructiveHint:\s*true/.test(src),
     api: extractApi(src),
+    plan: extractPlan(src),
   }
 }
 
@@ -118,11 +132,14 @@ function generateToolTable(tools: ToolEntry[]): string {
     const hintStr = tool.readOnlyHint ? 'read-only' : tool.destructiveHint ? 'mutating' : '—'
     const apiStr =
       tool.api == null ? '—' : tool.api.map(e => `\`${e.method} ${e.path}\``).join(', ')
-    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
+    // Plan gating only applies at the user `mcp` surface dispatch boundary (see
+    // backend/tools/types.mts#ToolMeta.plan); a tool without that surface has no plan concept.
+    const planStr = tool.surfaces.includes('mcp') ? (tool.plan ?? 'free') : '—'
+    return `| \`${tool.name}\` | ${tool.description ?? '—'} | ${surfacesStr} | ${planStr} | ${tool.requiredScopes.join(', ') || '—'} | ${hintStr} | ${apiStr} |`
   })
   return [
-    '| Tool | Description | Surfaces | Required scopes | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | --------------- | ---- | --------------- |',
+    '| Tool | Description | Surfaces | Plan | Required scopes | Hint | REST Equivalent |',
+    '| ---- | ----------- | -------- | ---- | --------------- | ---- | --------------- |',
     ...rows,
   ].join('\n')
 }

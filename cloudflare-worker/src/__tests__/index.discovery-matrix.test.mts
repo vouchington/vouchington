@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   PRIVATE_DISCOVERY_EXACT_PATHS,
   PRIVATE_DISCOVERY_PREFIXES,
+  removeAdvertisedAgentInterfaceUrls,
   ROBOTS_DISALLOW_PREFIXES,
 } from '@ts-shared/route-classification'
 
@@ -137,7 +138,7 @@ describe('worker fetch handler - discovery manifest leak verifier', () => {
     })
   })
 
-  it('/llms.txt body does not advertise private prefixes or apikey= query params', async () => {
+  it('/llms.txt body advertises no private prefix outside allowlisted agent interfaces', async () => {
     const fetchSpy = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('should not be called')),
     )
@@ -151,21 +152,21 @@ describe('worker fetch handler - discovery manifest leak verifier', () => {
 
     expect(response.status).toBe(200)
     const body = await response.text()
+    const unadvertised = removeAdvertisedAgentInterfaceUrls(body, 'https://voucha.ai')
 
     // Deliberately a subset of PRIVATE_DISCOVERY_PREFIXES — not the full list. Iterating
     // the full PRIVATE_DISCOVERY_PREFIXES would produce false positives: e.g. '/users/'
     // appears in '/md/users/' which the body legitimately advertises.
     const forbiddenPatterns = ['/api/', '/admin/', '/auth/', '/my/', '/feed/']
-    const foundPrivate = forbiddenPatterns.filter(pattern => body.includes(pattern))
+    const foundPrivate = forbiddenPatterns.filter(pattern => unadvertised.includes(pattern))
     expect(foundPrivate).toEqual([])
     // "apikey=" (as a query param, not the word "apikey" which appears in prose) must not appear
     expect(body).not.toContain('apikey=')
-    // Must advertise the "Only public unauthenticated content" sentinel
-    expect(body).toContain('Only public unauthenticated content is advertised here')
+    expect(body).toContain('Public content listed here needs no authentication')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('/.well-known/api-catalog body does not advertise private prefixes or apikey= query params', async () => {
+  it('/.well-known/api-catalog body advertises no private prefix outside allowlisted agent interfaces', async () => {
     const fetchSpy = vi.fn<VitestLooseMock>(() =>
       Promise.resolve(new Response('should not be called')),
     )
@@ -183,12 +184,13 @@ describe('worker fetch handler - discovery manifest leak verifier', () => {
 
     expect(response.status).toBe(200)
     const text = JSON.stringify(await response.json())
+    const unadvertised = removeAdvertisedAgentInterfaceUrls(text, 'https://voucha.ai')
 
     // Deliberately a subset of PRIVATE_DISCOVERY_PREFIXES — not the full list. Iterating
     // the full PRIVATE_DISCOVERY_PREFIXES would produce false positives: e.g. '/users/'
     // appears in '/md/users/' which the body legitimately advertises.
     const forbiddenPatterns = ['/api/', '/admin/', '/auth/', '/my/', '/feed/']
-    const foundPrivate = forbiddenPatterns.filter(pattern => text.includes(pattern))
+    const foundPrivate = forbiddenPatterns.filter(pattern => unadvertised.includes(pattern))
     expect(foundPrivate).toEqual([])
     expect(text).not.toContain('apikey=')
     expect(fetchSpy).not.toHaveBeenCalled()

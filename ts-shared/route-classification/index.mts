@@ -1,3 +1,10 @@
+export {
+  ADVERTISED_AGENT_INTERFACE_PATHS,
+  buildAdvertisedAgentInterfaceUrls,
+  removeAdvertisedAgentInterfaceUrls,
+  type AdvertisedAgentInterface,
+  type AdvertisedAgentInterfaceUrls,
+} from './agent-interfaces.mts'
 export { isPrivateDiscoveryPath } from './discovery.mts'
 export {
   COMMUNITY_PUBLIC_RESERVED_SEGMENTS,

@@ -140,8 +140,8 @@ Discussion, comment, and data-point posts use the [`DiscussionForumPosting`](htt
 
 ## Machine-Readable Discovery
 
-- `/llms.txt`, `/.well-known/api-catalog`, and HTTP `Link` headers must advertise only public unauthenticated resources.
-- Do not include authenticated/private routes, internal URLs, or bearer-token query strings such as RSS `apikey`.
+- `/llms.txt`, `/.well-known/api-catalog`, and HTTP `Link` headers must advertise only public unauthenticated resources. The one exception is the exact-path agent-interface allowlist in [Agent Access](../platform/agent-access.md): discovery documents may name those authenticated interfaces, and `Link` headers never do.
+- Do not include any other authenticated/private routes, internal URLs, or bearer-token query strings such as RSS `apikey`.
 - RSS endpoints may support API keys for identity rate limiting, but discovery surfaces must use only anonymous public feed URLs.
 - **Single source of truth**: route classification is centralized in `@ts-shared/route-classification`. The Cloudflare Worker imports `isPrivateDiscoveryPath` and `ROBOTS_DISALLOW_PREFIXES` from this package; the web app imports `PUBLIC_STATIC_SITE_NAV_PATHS`, `INDEXABLE_TOPIC_SUBPAGES`, and `COMMUNITY_PUBLIC_RESERVED_SEGMENTS`. When adding a new private route, update `ts-shared/route-classification/patterns.mts` — not the individual consumer files.
 
@@ -149,7 +149,7 @@ Discussion, comment, and data-point posts use the [`DiscussionForumPosting`](htt
 
 These tactics are sometimes suggested for "AI SEO" but are **explicitly listed as misconceptions** in [Google's AI optimization guide](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide):
 
-- **No special `/llms.txt` optimization for Google AI Overviews** — Google says `/llms.txt` does not improve visibility in AI Overviews. Voucha does serve `/llms.txt` per the [llmstxt.org](https://llmstxt.org) spec as a discovery mechanism for `/md/*` routes, but this is not a Google AI ranking signal.
+- **No special `/llms.txt` optimization for Google AI Overviews** — Google says `/llms.txt` does not improve visibility in AI Overviews. Voucha does serve `/llms.txt` per the [llmstxt.org](https://llmstxt.org) spec as a discovery mechanism for `/md/*` routes and the user MCP server, but this is not a Google AI ranking signal.
 - **No "chunked" content for AI consumers** — violates the spirit of people-first content.
 - **No per-query-variation pages** — classified as scaled content abuse.
 - **No FAQPage/HowTo schemas invented for AI** — only add these where the page genuinely is an FAQ or how-to.

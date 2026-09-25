@@ -7,10 +7,11 @@ Voucha tracks the Website Specification checklist for public web, agent, securit
 - `cloudflare-worker/src/inline-responses.mts` owns `/llms.txt`, `/llms-full.txt`, and applicable `.well-known` discovery documents.
 - `cloudflare-worker/src/specification-documents.mts` owns the inline document bodies for LLM and selected `.well-known` resources.
 - `cloudflare-worker/src/api-catalog.mts` owns the linkset JSON served at `/.well-known/api-catalog`.
+- `cloudflare-worker/src/agent-interface-documents.mts` owns the Agent Access (MCP) text and entries that steer agents to the user MCP server. `ADVERTISED_AGENT_INTERFACE_PATHS` in `@ts-shared/route-classification` owns which authenticated paths discovery may name; see [Agent Access](../platform/agent-access.md).
 - `cloudflare-worker/src/robots-txt.mts` must not disallow public `/md/` routes, because `/llms.txt` advertises them as machine-readable public content.
 - `cloudflare-worker/src/markdown-aliases.mts` maps predictable `.md` page aliases to backend `/md/*` routes; backend detail routes must follow the cached canonical-id lookup contract in [backend/md/README.md](../../../backend/md/README.md).
 - `cloudflare-worker/src/discovery.mts` advertises key machine-readable resources with HTTP `Link` headers on public unauthenticated responses.
-- `integration-tests/web/tests/website-spec.mts` verifies the local Worker-served discovery surfaces, markdown alternates, and private-resource omissions.
+- `integration-tests/web/tests/website-spec.mts` verifies the local Worker-served discovery surfaces, markdown alternates, and that no private resource appears outside the agent-interface allowlist.
 
 ## Security And Privacy
 

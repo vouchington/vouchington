@@ -220,6 +220,7 @@
     "@services/route-rate-limits": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/runtime-request-validation": "workspace:^",
     "@services/search": "workspace:^",
     "@services/search-params": "workspace:^",
     "@services/stories": "workspace:^",
@@ -264,7 +265,7 @@
     "http-errors": "^2.0.1",
     "jose": "^6.2.12",
     "otpauth": "^9.5.2",
-    "p-map": "7.0.7",
+    "p-map": "7.0.8",
     "undici": "^8.11.0",
     "uuid": "^14.0.2"
   },

@@ -9,10 +9,9 @@ build/startup overhead is fixed per shard, so splitting further than this buys l
 time while burning more runner capacity.
 
 Playwright workflow runs are serialized per PR/ref to avoid overlapping suites for the same branch,
-but the matrix shards inside a single run remain parallel. The root CI job waits for application
-Vitest jobs to settle before dispatching Playwright; that outer dependency debounces scarce runner
-allocation without serializing either Playwright matrix or making an upstream test failure suppress
-the browser suites.
+but the matrix shards inside a single run remain parallel. The root CI job dispatches both
+Playwright suites as soon as the static checks pass, alongside the Vitest jobs; no Vitest result
+delays or suppresses the browser suites.
 
 Vitest's ownership registry owns each file-count policy. PR-selected and promoted-full jobs emit
 `shard_total_override = ceil(fileCount / filesPerShard)` (GitHub matrix max 256). Otherwise the
@@ -22,26 +21,33 @@ counts fail the prep job rather than silently using a stale numeric fallback:
 
 | CI job                 | Sizing policy                                   |
 | ---------------------- | ----------------------------------------------- |
-| `test-backend-unit`    | One shard per 520 checked-out or selected files |
-| `test-web`             | One shard per 800 checked-out or selected files |
+| `test-backend-unit`    | One shard per 350 checked-out or selected files |
+| `test-web`             | One shard per 500 checked-out or selected files |
 | `test-web-api`         | One shard per 64 checked-out or selected files  |
 | `test-web-integration` | Fixed at one unless manually overridden         |
+
+The `TEST_BACKEND_UNIT_FILES_PER_SHARD` and `TEST_WEB_FILES_PER_SHARD` repository variables, when
+set to a positive integer, replace the registry's files-per-shard value for their job on every
+path. Leave them unset, or equal to the registry value, so the table above stays authoritative; a
+stale variable silently re-shards CI.
 
 The full-stack integration suite is matrix-capable so it can be split later without redesigning
 the report and artifact contracts. Its build and setup dominate its current runtime, so automatic
 file-count fan-out would only duplicate that work. The backend-unit matrix used to cap
 `max-parallel` at five, bounding its demand on the fixed self-hosted `[self-hosted, Linux, Docker,
 Tests]` runner pool. GitHub-hosted runners have no such fixed pool, so the cap was removed and its
-14 shards now run uncapped like every other matrix: GitHub schedules them against normal runner
+shards now run uncapped like every other matrix: GitHub schedules them against normal runner
 capacity and queues excess work. Every shard-capable workflow puts a ten-minute watchdog on the
 Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 
-Playwright has no repository-variable shard cap on any path. PR, labelled-full, fail-open, manual,
-and push runs all use `max(1, ceil(runnable spec count × 8.6 seconds / 313 seconds))`; GitHub's
-matrix range limits the result to 1–256. The 8.6 seconds per spec and 313-second execution budget
-are an allocation heuristic, not a per-spec SLA. Three public full-suite baselines retained the
-formula: its roughly 318 runnable specs resolve to nine shards and meet the sub-ten-minute job KPI
-with three Playwright workers. See the derivation in
+PR, labelled-full, fail-open, manual, and push Playwright runs all use
+`max(1, ceil(runnable spec count × 6.1 seconds / 350 seconds))`; GitHub's matrix range limits the
+result to 1–256. A caller's `shard_total_override` input, or else the optional
+`PLAYWRIGHT_SHARD_TOTAL` repository variable, replaces the formula when set. The 6.1 seconds per
+spec and 350-second execution budget are an allocation heuristic, not a per-spec SLA: 6.1 seconds is
+the hosted-runner test-step time per spec with three Playwright workers, and the budget sizes each
+shard for the seven-to-eight-minute job target. The current full suite resolves to six shards. See
+the derivation in
 [`ci/playwright/shard-selection.mts`](../../ci/playwright/shard-selection.mts). The execution budget
 leaves room for fixed per-shard build/startup overhead inside the whole job's ~10-minute ceiling
 (build + migrate + compile + test, not just the test step), plus a per-shard warm-up/variance

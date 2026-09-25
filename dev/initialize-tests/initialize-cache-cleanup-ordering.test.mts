@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { runProcess } from '../test-helpers/run-process.mts'
+
 const execFileAsync = promisify(execFile)
 const initializePath = fileURLToPath(new URL('../initialize', import.meta.url))
 const devRoot = dirname(initializePath)
@@ -70,13 +72,7 @@ async function makeIsolatedTmp() {
   return dir
 }
 
-async function runFixtureInitializeWeb({
-  path,
-  root,
-}: {
-  path: string
-  root: string
-}): Promise<{ exitCode: number; stderr: string; stdout: string }> {
+async function runFixtureInitializeWeb({ path, root }: { path: string; root: string }) {
   // Fixtures live under os.tmpdir(); pin process temp away from that prefix so
   // initialize still classifies this checkout as main (the suite subject).
   const isolatedTmp = await makeIsolatedTmp()
@@ -90,33 +86,24 @@ printf 'ran\\n' > "$PWD/pnpm-ran"
   )
   await chmod(join(path, 'pnpm'), 0o755)
 
-  try {
-    const result = await execFileAsync('/bin/bash', [join(root, 'dev', 'initialize'), 'web'], {
-      cwd: root,
-      env: {
-        ...process.env,
-        HOME: root,
-        PATH: path,
-        SKIP_NVM_INSTALL: '1',
-        WORKTREE_SCRIPT_SOURCE: join(
-          devRoot,
-          '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-        ),
-        TEMP: isolatedTmp,
-        TMP: isolatedTmp,
-        TMPDIR: isolatedTmp,
-      },
-    })
+  const result = await runProcess('/bin/bash', [join(root, 'dev', 'initialize'), 'web'], {
+    cwd: root,
+    env: {
+      ...process.env,
+      HOME: root,
+      PATH: path,
+      SKIP_NVM_INSTALL: '1',
+      WORKTREE_SCRIPT_SOURCE: join(
+        devRoot,
+        '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
+      ),
+      TEMP: isolatedTmp,
+      TMP: isolatedTmp,
+      TMPDIR: isolatedTmp,
+    },
+  })
 
-    return { exitCode: 0, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
-  } catch (err: unknown) {
-    const e = err as { code?: number; stderr?: string; stdout?: string }
-    return {
-      exitCode: typeof e.code === 'number' ? e.code : 1,
-      stderr: (e.stderr ?? '').trim(),
-      stdout: (e.stdout ?? '').trim(),
-    }
-  }
+  return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
 }
 
 async function fileExists(filePath: string): Promise<boolean> {
@@ -162,7 +149,7 @@ describe('initialize main web cache cleanup ordering', () => {
 
       const result = await runFixtureInitializeWeb({ path: bin, root })
 
-      expect(result.exitCode).toBe(1)
+      expect(result.code).toBe(1)
       expect(result.stdout).toContain(scenario.expected)
       await expectCacheSentinelsToExist(sentinels, true)
     }
@@ -190,7 +177,7 @@ exit 0
 
     const result = await runFixtureInitializeWeb({ path: bin, root })
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(result.stderr).toContain('synthetic host storage failure')
     expect(await fileExists(dockerMarker)).toBe(false)
     await expectCacheSentinelsToExist(sentinels, true)
@@ -214,7 +201,7 @@ exit 0
 
     const result = await runFixtureInitializeWeb({ path: bin, root })
 
-    expect(result.exitCode).toBe(1)
+    expect(result.code).toBe(1)
     expect(result.stderr).toContain('PGHOST cannot select the Voucha worktree database')
     expect(result.stdout).not.toContain('Clearing stale dev caches')
     await expectCacheSentinelsToExist(sentinels, true)
@@ -262,7 +249,7 @@ esac
 
     const result = await runFixtureInitializeWeb({ path: bin, root })
 
-    expect(result.exitCode).not.toBe(0)
+    expect(result.code).not.toBe(0)
     expect(result.stdout).toContain('Clearing stale dev caches')
     await expectCacheSentinelsToExist(sentinels, false)
   })

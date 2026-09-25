@@ -23,7 +23,7 @@
     "@services/customer-support": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "glide-mq": "^0.15.5",
-    "mailparser": "^3.9.24"
+    "mailparser": "^3.9.28"
   },
   "devDependencies": {
     "@types/mailparser": "^3.4.6"

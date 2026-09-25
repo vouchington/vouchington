@@ -2383,12 +2383,12 @@ rules:
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
           maxMinutes: 30
         # Remaining lint/typecheck/knip/depcruise step budgets plus setup-node-pnpm; the 25m
-        # route-selector --check moved to no-mistakes-owned.
+        # route-selector --check moved to the no-mistakes job.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
           maxMinutes: 50
         # setup-node-pnpm (5m) + mise (3m) + no-mistakes check (10m) + topology (5m) +
         # route-selector --check (25m) plus checkout/drain headroom. Cap must exceed the 25m step.
-        - job: '.github/workflows/static-code-analysis.yml#no-mistakes-owned'
+        - job: '.github/workflows/static-code-analysis.yml#no-mistakes'
           maxMinutes: 55
         # Unexercised 30m GH-Pages build plus a ~20m test-retry watchdog budget. See #8078.
         - job: '.github/workflows/storybook.yml#storybook'

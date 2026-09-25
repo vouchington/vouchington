@@ -21,7 +21,7 @@ describe('resolveShardTotal', () => {
   })
 
   it('derives a capped total from the live file-count suite', () => {
-    expect(resolveShardTotalFromSuiteCount('test-backend-unit', undefined, 521)).toBe(2)
+    expect(resolveShardTotalFromSuiteCount('test-backend-unit', undefined, 351)).toBe(2)
     expect(resolveShardTotalFromSuiteCount('test-web-api', undefined, 100_000)).toBe(
       GITHUB_MATRIX_MAX_JOBS,
     )
