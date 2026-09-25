@@ -1,8 +1,3 @@
-import {
-  findMarkdownNode as findPackageMarkdownNode,
-  type MarkdownNode as PackageMarkdownNode,
-} from 'vouchington-tooling/markdown'
-
 import { isMeaningfulEvidence, isMeaningfulOrJustifiedAbsence } from './evidence-values.mts'
 
 export type MarkdownNode = {
@@ -33,20 +28,11 @@ export function visibleText(node: MarkdownNode, includeCode = false, includeUrls
     .join(' ')
 }
 
-// findMarkdownNode walks a node pre-order (self, then children, depth-first), which matches this
-// function's previous hand-written recursive walk once the sibling array is wrapped as a synthetic
-// root; no predicate here matches `type === 'root'`, so the wrapper node itself never affects the
-// result. The plan-issue MarkdownNode shape is deliberately looser than the package's strict mdast
-// union (see its type above), so the boundary casts through `unknown`.
 export function containsNode(
   nodes: MarkdownNode[],
   predicate: (node: MarkdownNode) => boolean,
 ): boolean {
-  const root = { type: 'root', children: nodes } as unknown as PackageMarkdownNode
-  return (
-    findPackageMarkdownNode(root, candidate => predicate(candidate as unknown as MarkdownNode)) !==
-    null
-  )
+  return nodes.some(node => predicate(node) || containsNode(node.children ?? [], predicate))
 }
 
 export function hasVisibleEvidence(nodes: MarkdownNode[]): boolean {
