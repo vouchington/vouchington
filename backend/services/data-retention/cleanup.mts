@@ -22,6 +22,7 @@ import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorization
 import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
 import { cleanupTerminalNotificationPushIntents } from './cleanup-notification-push-intents.mts'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
+import { runBoundedBatches } from './run-bounded-batches.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
 import { pruneExpiredContributionAdmissionConsumptions } from '@services/contribution-gating/admission-quota'
 import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/topic-import-attempts'
@@ -140,116 +141,68 @@ export async function runDataRetentionCleanup(
 export async function cleanupExpiredContributionAdmissions(
   options: ExpiryCleanupOptions = {},
 ): Promise<CleanupResult> {
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
-  let deleted = 0
-  let hasMore = false
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each locked deletion batch determines whether more work remains
-    const batchDeleted = await pruneExpiredContributionAdmissions(
-      options.now,
-      batchSize,
-      options.lowerBoundDate,
-    )
-    deleted += batchDeleted
-    hasMore = batchDeleted === batchSize
-    if (!hasMore) break
-  }
-  return { deleted, hasMore }
+  return await runBoundedBatches(
+    options,
+    async batchSize =>
+      await pruneExpiredContributionAdmissions(options.now, batchSize, options.lowerBoundDate),
+  )
 }
 
 export async function cleanupExpiredContributionQuotaConsumptions(
   options: ExpiryCleanupOptions = {},
 ): Promise<CleanupResult> {
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
-  let deleted = 0
-  let hasMore = false
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each locked deletion batch determines whether more work remains
-    const batchDeleted = await pruneExpiredContributionAdmissionConsumptions(
-      options.now,
-      batchSize,
-      options.lowerBoundDate,
-    )
-    deleted += batchDeleted
-    hasMore = batchDeleted === batchSize
-    if (!hasMore) break
-  }
-  return { deleted, hasMore }
+  return await runBoundedBatches(
+    options,
+    async batchSize =>
+      await pruneExpiredContributionAdmissionConsumptions(
+        options.now,
+        batchSize,
+        options.lowerBoundDate,
+      ),
+  )
 }
 
 export async function cleanupExpiredTopicImportAttempts(
   options: ExpiryCleanupOptions = {},
 ): Promise<CleanupResult> {
-  const batchSize = normalizePositiveInteger(
-    options.batchSize,
-    TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE,
-    'batchSize',
+  return await runBoundedBatches(
+    {
+      batchSize: options.batchSize ?? TOPIC_IMPORT_ATTEMPT_DELETION_BATCH_SIZE,
+      maxBatches: options.maxBatches,
+    },
+    async batchSize =>
+      await pruneExpiredTopicImportAttempts(options.now, batchSize, options.lowerBoundDate),
   )
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
-  let deleted = 0
-  let hasMore = false
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each locked deletion batch determines whether more work remains
-    const batchDeleted = await pruneExpiredTopicImportAttempts(
-      options.now,
-      batchSize,
-      options.lowerBoundDate,
-    )
-    deleted += batchDeleted
-    hasMore = batchDeleted === batchSize
-    if (!hasMore) break
-  }
-  return { deleted, hasMore }
 }
 
 export async function cleanupSoftDeletedUsers(
   options: CleanupOptions = {},
 ): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  let deleted = 0
-  let hasMore = false
-
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each bounded deletion commit determines whether another user batch remains
-    const batchDeleted = await cleanupSoftDeletedUserBatch(
-      cutoffDate,
-      batchSize,
-      options.lowerBoundDate,
-    )
-    deleted += batchDeleted
-    hasMore = batchDeleted === batchSize
-    if (!hasMore) break
-  }
-
-  return { deleted, hasMore }
+  return await runBoundedBatches(
+    options,
+    async batchSize =>
+      await cleanupSoftDeletedUserBatch(cutoffDate, batchSize, options.lowerBoundDate),
+  )
 }
 
 export async function cleanupOldReferralAttributions(
   options: CleanupOptions = {},
 ): Promise<CleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 30)
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
-  const cutoffId = getMinUUIDv7ForDate(getRetentionCutoffDate(retentionDays, options.now))
-  const lowerBoundId =
-    options.lowerBoundDate === undefined ? undefined : getMinUUIDv7ForDate(options.lowerBoundDate)
-  let deleted = 0
-  let hasMore = false
-
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each bounded deletion commit determines whether another attribution batch remains
-    const batchDeleted = await deleteOldReferralAttributionBatch(cutoffId, batchSize, lowerBoundId)
-    deleted += batchDeleted
-    hasMore = batchDeleted === batchSize
-    if (!hasMore) break
-  }
-
-  return { deleted, hasMore }
+  const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
+  return await runBoundedBatches(
+    options,
+    async batchSize =>
+      await deleteOldReferralAttributionBatch(
+        getMinUUIDv7ForDate(cutoffDate),
+        batchSize,
+        options.lowerBoundDate === undefined
+          ? undefined
+          : getMinUUIDv7ForDate(options.lowerBoundDate),
+      ),
+  )
 }
 
 export async function cleanupOrphanedOAuthAccounts(

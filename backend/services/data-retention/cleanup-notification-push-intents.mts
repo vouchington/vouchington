@@ -1,7 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { DEFAULT_BATCH_SIZE, normalizePositiveInteger } from './cleanup-batches.mts'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
+import { runBoundedBatches } from './run-bounded-batches.mts'
 
 export type TerminalNotificationPushIntentCleanupOptions = {
   retentionDays?: number
@@ -20,25 +20,16 @@ export async function cleanupTerminalNotificationPushIntents(
   options: TerminalNotificationPushIntentCleanupOptions = {},
 ): Promise<TerminalNotificationPushIntentCleanupResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const maxBatches = normalizePositiveInteger(options.maxBatches, Infinity, 'maxBatches')
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
-  let deleted = 0
-  let hasMore = false
-
-  for (let batches = 0; batches < maxBatches; batches += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- each locked terminal-intent batch determines whether another bounded deletion is required
-    const batchDeleted = await deleteTerminalNotificationPushIntentBatch(
-      cutoffDate,
-      batchSize,
-      options.lowerBoundDate,
-    )
-    deleted += batchDeleted
-    hasMore = batchDeleted === batchSize
-    if (!hasMore) break
-  }
-
-  return { deleted, hasMore }
+  return await runBoundedBatches(
+    options,
+    async batchSize =>
+      await deleteTerminalNotificationPushIntentBatch(
+        cutoffDate,
+        batchSize,
+        options.lowerBoundDate,
+      ),
+  )
 }
 
 async function deleteTerminalNotificationPushIntentBatch(
