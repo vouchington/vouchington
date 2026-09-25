@@ -143,8 +143,8 @@ importers:
         specifier: 1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.52.0
-        version: 0.52.0
+        specifier: ^0.52.1
+        version: 0.52.1
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -12624,7 +12624,7 @@ importers:
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@react-email/ui':
         specifier: ^6.9.5
-        version: 6.9.5(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.9.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../ts-shared/languages
@@ -20825,8 +20825,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.52.0:
-    resolution: {integrity: sha512-yrYlztSnGMtJV2anB+UUpeSRaNmtLkMfLD01Ha7+H3QHepgikQDIokEn3jAF4LBasDHP/dE0XDTBiGxmWVRQWA==}
+  pr-shepherd@0.52.1:
+    resolution: {integrity: sha512-U8t3Pz+Aim4B86GhXRrEHtYQsAUjKtL8WRjM0QosQSMf3FSDdQTM+ltIbm4VKzJkto7lYRmIe961R4IVXLewKA==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -25736,10 +25736,10 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@react-email/ui@6.9.5(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@react-email/ui@6.9.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       esbuild: 0.28.1
-      next: 16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      next: 16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@babel/core'
       - '@opentelemetry/api'
@@ -29597,7 +29597,7 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next@16.3.3(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  next@16.3.3(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.3.3
       '@swc/helpers': 0.5.23
@@ -30126,7 +30126,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.52.0:
+  pr-shepherd@0.52.1:
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
       picomatch: 4.0.7
