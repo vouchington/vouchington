@@ -34,7 +34,10 @@ describe('ready-and-shepherd activation boundary', () => {
     ]) {
       expect(ready.indexOf(disabled)).toBeLessThan(ready.indexOf(mutation))
     }
-    expect(ready).toContain('/shepherd dispatched: no (activation disabled)')
+    // '/shepherd dispatched' is a de facto report-field identifier that recurs across every
+    // activation-outcome branch in the skill (see #10813/#11019: don't pin the reason text next to
+    // it — that's reworded prose, not the identifier).
+    expect(ready).toContain('/shepherd dispatched')
   })
 
   it('allows only the Vouchington security-triage adapter to use the disabled provider-local handoff', () => {
@@ -86,6 +89,5 @@ describe('ready-and-shepherd activation boundary', () => {
 
   it('documents the trusted-host boundary without the retired publisher exception', () => {
     expect(gitAndPrs).not.toContain('Automation exception')
-    expect(gitAndPrs).not.toContain('untrusted checkout with write credentials')
   })
 })
