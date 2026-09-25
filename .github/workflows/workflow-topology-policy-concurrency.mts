@@ -1,7 +1,6 @@
 import type { WorkflowConcurrency, WorkflowTopology } from 'no-mistakes'
 import {
   concurrencyTopologyPolicy,
-  sharedConcurrencyFamilyOwners,
   type ConcurrencyCancellationBehavior,
   type ConcurrencyPolicy,
 } from './concurrency-topology-policy.mts'
@@ -17,8 +16,7 @@ function cancellation(
 export function evaluateLockPolicy(
   topology: WorkflowTopology,
   policy: Pick<WorkflowTopologyPolicy, 'unlockedWorkflowReasons'>,
-  semanticPolicy: Readonly<Record<string, ConcurrencyPolicy<string>>> = concurrencyTopologyPolicy,
-  familyOwners: Readonly<Record<string, readonly string[]>> = sharedConcurrencyFamilyOwners,
+  semanticPolicy: Readonly<Record<string, ConcurrencyPolicy>> = concurrencyTopologyPolicy,
 ): string[] {
   const diagnostics: string[] = []
   const owners = [...topology.workflows, ...topology.jobs].filter(owner => owner.concurrency)
@@ -74,14 +72,12 @@ export function evaluateLockPolicy(
         `concurrency scope mismatch: ${owner.id}: expected ${expectedScopes.join(',')}, got ${actualScopes.join(',')}`,
       )
   }
-  diagnostics.push(...collisionDiagnostics(owners, semanticPolicy, familyOwners))
+  diagnostics.push(...collisionDiagnostics(owners))
   return [...new Set(diagnostics)].toSorted()
 }
 
 function collisionDiagnostics(
   owners: Array<{ id: string; concurrency?: WorkflowConcurrency }>,
-  semanticPolicy: Readonly<Record<string, ConcurrencyPolicy<string>>>,
-  familyOwners: Readonly<Record<string, readonly string[]>>,
 ): string[] {
   const groups = new Map<string, { group: string; ids: string[] }>()
   for (const owner of owners) {
@@ -96,74 +92,7 @@ function collisionDiagnostics(
     entry.ids.push(owner.id)
     groups.set(key, entry)
   }
-  return [...groups.values()]
-    .flatMap(({ group, ids }) => {
-      if (ids.length < 2) return []
-      const families = ids.map(id => semanticPolicy[id]?.sharedFamily)
-      if (families.some(family => !family) || new Set(families).size !== 1)
-        return [`concurrency group collision undeclared: ${group}: ${ids.toSorted().join(', ')}`]
-      const semantics = ids.map(id => {
-        const concurrency = owners.find(owner => owner.id === id)?.concurrency?.effective
-        return concurrency
-          ? `${concurrency.queue === 'max' ? 'fifo' : 'coalesce-latest'}/${cancellation(concurrency.cancelInProgress)}`
-          : 'missing'
-      })
-      return new Set(semantics).size === 1
-        ? []
-        : [`shared concurrency family incompatible: ${families[0]}: ${ids.toSorted().join(', ')}`]
-    })
-    .concat(sharedFamilyDiagnostics(owners, semanticPolicy, familyOwners))
-}
-
-function sharedFamilyDiagnostics(
-  owners: Array<{ id: string; concurrency?: WorkflowConcurrency }>,
-  semanticPolicy: Readonly<Record<string, ConcurrencyPolicy<string>>>,
-  expectedOwners: Readonly<Record<string, readonly string[]>>,
-): string[] {
-  const families = new Map<string, typeof owners>()
-  for (const owner of owners) {
-    const family = semanticPolicy[owner.id]?.sharedFamily
-    if (!family) continue
-    const members = families.get(family) ?? []
-    members.push(owner)
-    families.set(family, members)
-  }
-  const diagnostics: string[] = []
-  for (const [family, expected] of Object.entries(expectedOwners)) {
-    const actual = (families.get(family) ?? []).map(member => member.id).toSorted()
-    const sortedExpected = [...expected].toSorted()
-    if (JSON.stringify(actual) !== JSON.stringify(sortedExpected))
-      diagnostics.push(
-        `shared concurrency family owners mismatch: ${family}: expected ${sortedExpected.join(', ')}, got ${actual.join(', ')}`,
-      )
-  }
-  diagnostics.push(
-    ...[...families.entries()].flatMap(([family, members]) => {
-      if (members.length < 2) return []
-      const ids = members
-        .map(member => member.id)
-        .toSorted()
-        .join(', ')
-      const groups = members.map(member =>
-        normalizeSharedFamilyGroup(family, member.concurrency?.effective.group ?? ''),
-      )
-      const semantics = members.map(member => {
-        const actual = member.concurrency?.effective
-        return actual
-          ? `${actual.queue === 'max' ? 'fifo' : 'coalesce-latest'}/${cancellation(actual.cancelInProgress)}`
-          : 'missing'
-      })
-      const diagnostics: string[] = []
-      if (new Set(groups).size !== 1)
-        diagnostics.push(`shared concurrency family group mismatch: ${family}: ${ids}`)
-      if (new Set(semantics).size !== 1)
-        diagnostics.push(`shared concurrency family incompatible: ${family}: ${ids}`)
-      return diagnostics
-    }),
+  return [...groups.values()].flatMap(({ group, ids }) =>
+    ids.length > 1 ? [`concurrency group collision: ${group}: ${ids.toSorted().join(', ')}`] : [],
   )
-  return diagnostics
-}
-
-function normalizeSharedFamilyGroup(_family: string, group: string): string {
-  return group.toLocaleLowerCase('en-US')
 }

@@ -33,10 +33,9 @@ describe('actionlint workflow', () => {
     expect(workflow).toContain('cache: false')
   })
 
-  it('ignores only actionlint lacking GitHub concurrency queue support', () => {
-    const expected = `run: actionlint -ignore 'unexpected key "queue" for "concurrency" section'`
-    expect(workflow.match(/^\s*run: actionlint.*$/gm)).toEqual([`        ${expected}`])
-    expect(workflow.match(/-ignore/g)).toHaveLength(1)
+  it('runs actionlint without ignores', () => {
+    expect(workflow.match(/^\s*run: actionlint.*$/gm)).toEqual(['        run: actionlint'])
+    expect(workflow).not.toContain('-ignore')
   })
 
   it('runs the pinned zizmor audit without central ignores', () => {

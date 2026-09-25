@@ -116,21 +116,21 @@ function evaluateGraph(
   return evaluateGraphPolicy(topology, createWorkflowTopologyIndex(topology), policy, rules)
 }
 
-function defaultSemantics(): ConcurrencyPolicy<string> {
+function defaultSemantics(): ConcurrencyPolicy {
   return { pending: 'coalesce-latest', cancellation: 'retain-running', scope: [] }
 }
 
-function concurrency(group: string, cancelInProgress = false): WorkflowConcurrency {
+function concurrency(group: string): WorkflowConcurrency {
   return {
-    raw: { group, cancelInProgress },
-    effective: { group, cancelInProgress, queue: 'single' },
+    raw: { group, cancelInProgress: false },
+    effective: { group, cancelInProgress: false, queue: 'single' },
   }
 }
 
 function lockFixture(): {
   topology: WorkflowTopology
   policy: Pick<WorkflowTopologyPolicy, 'jobInventory' | 'unlockedWorkflowReasons'>
-  semantics: Record<string, ConcurrencyPolicy<string>>
+  semantics: Record<string, ConcurrencyPolicy>
 } {
   const paths = ['one.yml', 'two.yml']
   return {
@@ -182,22 +182,6 @@ describe('workflow topology policy diagnostics', () => {
     )
   })
 
-  it('requires exact shared concurrency family membership', () => {
-    const fixture = lockFixture()
-    fixture.semantics['one.yml']!.sharedFamily = 'shared-global-state'
-    fixture.semantics['two.yml']!.sharedFamily = 'shared-global-state'
-    delete fixture.topology.workflows[1]!.concurrency
-    const families = {
-      'shared-staging-state': [],
-      'shared-global-state': ['one.yml', 'two.yml'],
-    } as const
-    expect(
-      evaluateLockPolicy(fixture.topology, fixture.policy, fixture.semantics, families),
-    ).toContain(
-      'shared concurrency family owners mismatch: shared-global-state: expected one.yml, two.yml, got one.yml',
-    )
-  })
-
   it('requires an exact allowlist row for every callable workflow', () => {
     const missing = graphPolicy()
     missing.exactCallerJobs = {}
@@ -221,16 +205,10 @@ describe('workflow topology policy diagnostics', () => {
     )
   })
 
-  it('reports undeclared literal collisions and incompatible shared semantics', () => {
+  it('reports literal group collisions', () => {
     const fixture = lockFixture()
     expect(evaluateLockPolicy(fixture.topology, fixture.policy, fixture.semantics)).toContain(
-      'concurrency group collision undeclared: shared: one.yml, two.yml',
-    )
-    fixture.semantics['one.yml']!.sharedFamily = 'shared-global-state'
-    fixture.semantics['two.yml']!.sharedFamily = 'shared-global-state'
-    fixture.topology.workflows[1]!.concurrency = concurrency('shared', true)
-    expect(evaluateLockPolicy(fixture.topology, fixture.policy, fixture.semantics)).toContain(
-      'shared concurrency family incompatible: shared-global-state: one.yml, two.yml',
+      'concurrency group collision: shared: one.yml, two.yml',
     )
   })
 
