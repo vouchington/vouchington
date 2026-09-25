@@ -6,7 +6,6 @@ import type { FeedStyle } from '@/lib/preferences/shared'
 import type { Post } from '@/types/posts'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import type { NewsCommunityDiscussionTarget } from './community-discussion-types'
-import type { UrlEmbed } from '@/types/api-responses/posts-topics-and-feeds'
 
 interface NewsItemClusterListRowProps {
   allBookmarks: NonNullable<RssFeedItemsFeedResponseBody['bookmarks']>
