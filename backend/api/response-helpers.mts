@@ -2,6 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 import { isUUID } from '@modules/utils'
+import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 export async function requireAuth(ctx: Context, routeId: string): Promise<PrivateUser> {
@@ -35,6 +36,22 @@ export function validateUUIDParam(ctx: Context, name: string): string {
   const label = name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/Id$/, 'ID')
   ctx.assert(isUUID(value), 422, `Invalid ${label}`)
   return value
+}
+/**
+ * Validates the declared path/query/JSON carriers of a generated request contract, throwing 422
+ * with the registry's redacted message on failure. The registry does not enforce call order —
+ * the caller must invoke this after the route's existing authentication and ownership/suspension
+ * checks and before handing any carrier value to a service, so unauthenticated or unauthorized
+ * callers never see a schema diagnostic. Unknown operations fail closed with a thrown `Error`
+ * (not a 422) — see `RuntimeRequestValidatorRegistry.validateAuthenticated`.
+ */
+export function validateRequestContract(
+  ctx: Context,
+  operation: string,
+  input: Parameters<RuntimeRequestValidatorRegistry['validateAuthenticated']>[1],
+): void {
+  const error = RuntimeRequestValidatorRegistry.shared.validateAuthenticated(operation, input)
+  if (error) ctx.throw(422, error.message)
 }
 export async function parseJsonBody<T = unknown>(ctx: Context, maxSize = '1mb'): Promise<T> {
   return (await ctx.request.json(maxSize)) as T

@@ -1,6 +1,5 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { isUUID } from '@modules/utils'
 import {
   createApiKey,
   searchApiKeys,
@@ -8,7 +7,7 @@ import {
   API_KEY_TYPES,
   validateApiKeyCreationPermissions,
 } from '@services/api-keys'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import {
   createPaginationParser,
@@ -22,6 +21,14 @@ const apiKeysParser = createPaginationParser({
 })
 
 // GET /api/v1/my/api-keys — list current user's API keys
+//
+// The generated query contract types `limit` as an integer (1-100) sourced from this route's
+// pagination parser, but `ctx.query` always carries raw HTTP strings and the shared registry
+// performs no type coercion. The existing pagination parser also clamps an out-of-range `limit`
+// to 100 and returns 200, while the generated contract's `maximum: 100` would reject it — running
+// the shared validator against the raw query here would both reject valid `?limit=1` requests and
+// change today's clamping behavior into a 422. Query-carrier validation is intentionally skipped
+// for this operation; see the PR description for the upstream (registry) gap this depends on.
 app.route('/api/v1/my/api-keys').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/my/api-keys', apiKeysParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/api-keys')
@@ -51,6 +58,7 @@ app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/api-keys')
 
   const body = (await ctx.request.json('10kb')) as Record<string, unknown>
+  validateRequestContract(ctx, 'POST:/api/v1/my/api-keys', { body })
 
   ctx.assert(
     typeof body.label === 'string' && body.label.trim().length > 0,
@@ -93,8 +101,8 @@ app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
 app.route('/api/v1/my/api-keys/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/api-keys/:id')
 
-  const id = ctx.params.id!
-  ctx.assert(id && isUUID(id), 400, 'id must be a valid UUID')
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/api-keys/:id', { path: ctx.params })
 
   const revoked = await revokeApiKey(currentUser.id, id)
   ctx.assert(revoked, 404, 'API key not found')

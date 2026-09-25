@@ -260,10 +260,10 @@ describe('DELETE /api/v1/my/api-keys/:id', () => {
     await request.delete('/api/v1/my/api-keys/00000000-0000-7000-8000-000000000001').expect(401)
   })
 
-  it('returns 400 for non-UUID id', async () => {
+  it('returns 422 for non-UUID id', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
-    await request.delete('/api/v1/my/api-keys/not-a-uuid').expect(400)
+    await request.delete('/api/v1/my/api-keys/not-a-uuid').expect(422)
   })
 
   it('returns 404 when key does not exist', async () => {

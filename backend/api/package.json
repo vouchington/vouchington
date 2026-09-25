@@ -220,6 +220,7 @@
     "@services/route-rate-limits": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/runtime-request-validation": "workspace:^",
     "@services/search": "workspace:^",
     "@services/search-params": "workspace:^",
     "@services/stories": "workspace:^",
