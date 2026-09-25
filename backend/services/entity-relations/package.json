@@ -23,6 +23,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/activitypub-delivery": "workspace:^",

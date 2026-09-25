@@ -14,6 +14,7 @@ import * as services from '../run-services.mts'
 import { runSemanticRssSearchScenario } from './semantic-rss-search.mts'
 
 const {
+  ANONYMOUS_ENTITY_RELATION_VIEWER,
   buildCommentTreeQuery,
   getEntityRelations,
   getPostFacets,
@@ -129,13 +130,22 @@ export async function runSearchAndFacetScenarios() {
   // Entity Relations — post→category→topic, two sort variants
   await runAndCapture(
     'entity-relations-best',
-    () => getEntityRelations('post', seedPostId, 'category', 'topic', { sort: 'best', limit: 25 }),
+    () =>
+      getEntityRelations('post', seedPostId, 'category', 'topic', {
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
+        sort: 'best',
+        limit: 25,
+      }),
     'best',
   )
   await runAndCapture(
     'entity-relations-newest',
     () =>
-      getEntityRelations('post', seedPostId, 'category', 'topic', { sort: 'newest', limit: 25 }),
+      getEntityRelations('post', seedPostId, 'category', 'topic', {
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
+        sort: 'newest',
+        limit: 25,
+      }),
     'newest',
   )
 

@@ -13,6 +13,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation'
 import { getEntityRelations } from '@services/entity-relations/query'
 import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('user deletion entity-relation vote repair', () => {
   it('keeps same-id relations in different tables isolated', async () => {
@@ -70,11 +71,15 @@ describe('user deletion entity-relation vote repair', () => {
 
     await deleteUserAndDrainForTest(voter, voter)
 
-    await expect(getEntityRelations('user', target.id, 'category', 'topic')).resolves.toEqual([
-      expect.objectContaining({ id: userRelation!.id, votes_score_net: 0 }),
-    ])
-    await expect(getEntityRelations('post', postId, 'category', 'topic')).resolves.toEqual([
-      expect.objectContaining({ id: userRelation!.id, votes_score_net: 0 }),
-    ])
+    await expect(
+      getEntityRelations('user', target.id, 'category', 'topic', {
+        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      }),
+    ).resolves.toEqual([expect.objectContaining({ id: userRelation!.id, votes_score_net: 0 })])
+    await expect(
+      getEntityRelations('post', postId, 'category', 'topic', {
+        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      }),
+    ).resolves.toEqual([expect.objectContaining({ id: userRelation!.id, votes_score_net: 0 })])
   })
 })

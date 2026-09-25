@@ -21,6 +21,7 @@ import {
   updateTopic,
   type CreateTopicUpdates,
 } from '@services/topics'
+import { entityRelationViewerFor } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import {
@@ -75,6 +76,7 @@ app
         }
       }),
       topic_categories: getEntityRelations('topic', topic.id, 'category', 'topic', {
+        viewer: entityRelationViewerFor(currentUser),
         positiveNetVoteScore: true,
         limit: 20,
       }).then(relations =>

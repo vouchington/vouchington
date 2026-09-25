@@ -11,6 +11,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { streamEntityRelations } from '@services/account-data-requests/stream-entity-relations'
 import { streamVotes } from '@services/account-data-requests/stream'
 import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 async function collectRows(rows: AsyncGenerator<Record<string, unknown>>) {
   const collected: Record<string, unknown>[] = []
@@ -64,8 +65,10 @@ describe('user tag account-data lifecycle', () => {
 
     await deleteUserAndDrainForTest(target, target)
 
-    await expect(getEntityRelations('user', target.id, 'category', 'topic')).resolves.toHaveLength(
-      0,
-    )
+    await expect(
+      getEntityRelations('user', target.id, 'category', 'topic', {
+        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      }),
+    ).resolves.toHaveLength(0)
   })
 })

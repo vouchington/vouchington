@@ -27,6 +27,7 @@ export { getTopicIds } from '@services/topics/search/get-ids'
 export { buildCommentTreeQuery }
 export { getRecommendedTopics } from '@services/recommended-topics'
 export { getEntityRelations } from '@services/entity-relations/query'
+export { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 export { getPostFacets } from '@services/posts/search/get-facets'
 export { searchUrls } from '@services/urls/search'
 export { aggregateElectionVoteStatsFromReplica } from '@services/elections-votes/shared/vote-aggregation'

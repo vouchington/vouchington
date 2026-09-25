@@ -11,6 +11,9 @@ import {
   insertTestUrlHostname,
   insertTestCrawl,
 } from '@voucha/test-helpers'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from './viewer.mts'
+
+const asSystem = { viewer: SYSTEM_ENTITY_RELATION_VIEWER }
 
 describe('query.generated', () => {
   stubUrlGuardsForSuite()
@@ -28,7 +31,7 @@ describe('query.generated', () => {
 
     await upsertEntityRelation(user!, metadata, subject, [objectPost])
 
-    const results = await getEntityRelations('topic', subject.id, 'related', 'post')
+    const results = await getEntityRelations('topic', subject.id, 'related', 'post', asSystem)
 
     expect(results.length).toBeGreaterThanOrEqual(1)
     const result = results.find(r => r.object_id === objectPost.id)
@@ -48,7 +51,7 @@ describe('query.generated', () => {
     })
 
     await upsertEntityRelation(follower!, metadata, follower!, [followee!])
-    const results = await getEntityRelations('user', follower!.id, 'follow', 'user')
+    const results = await getEntityRelations('user', follower!.id, 'follow', 'user', asSystem)
     const result = results.find(row => row.object_id === followee!.id)
 
     expect(result).toBeDefined()
@@ -59,7 +62,7 @@ describe('query.generated', () => {
     const subject = await createTestTopic()
 
     // No relations created for this topic
-    const results = await getEntityRelations('topic', subject.id, 'related', 'post')
+    const results = await getEntityRelations('topic', subject.id, 'related', 'post', asSystem)
 
     // Should return empty (no matches for this specific subject)
     expect(results.filter(r => r.subject_id === subject.id)).toHaveLength(0)
@@ -67,7 +70,7 @@ describe('query.generated', () => {
 
   it('getEntityRelations throws for unknown entity relation', async () => {
     await expect(
-      getEntityRelations('topic', 'any-id', 'nonexistent_predicate', 'post'),
+      getEntityRelations('topic', 'any-id', 'nonexistent_predicate', 'post', asSystem),
     ).rejects.toThrow(Error)
   })
 
@@ -84,7 +87,10 @@ describe('query.generated', () => {
 
     await upsertEntityRelation(user!, metadata, subject, posts)
 
-    const results = await getEntityRelations('topic', subject.id, 'related', 'post', { limit: 2 })
+    const results = await getEntityRelations('topic', subject.id, 'related', 'post', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      limit: 2,
+    })
     expect(results.length).toBe(2)
   })
 
@@ -101,7 +107,7 @@ describe('query.generated', () => {
 
     await upsertEntityRelation(user!, metadata, post, [topic])
 
-    const results = await getEntityRelations('post', post.id, 'category', 'topic')
+    const results = await getEntityRelations('post', post.id, 'category', 'topic', asSystem)
 
     expect(results.length).toBeGreaterThanOrEqual(1)
     const result = results.find(r => r.object_id === topic.id)
@@ -136,7 +142,7 @@ describe('query.generated', () => {
     // This should work without applying deleted_at filter for urls.
     // Note: 'related' is an election-enabled predicate, so this test also validates
     // that has_soft_delete: false works correctly with election infrastructure
-    const results = await getEntityRelations('post', post.id, 'related', 'url')
+    const results = await getEntityRelations('post', post.id, 'related', 'url', asSystem)
 
     expect(results.length).toBeGreaterThanOrEqual(1)
     const result = results.find(r => r.object_id === urlId)
@@ -164,7 +170,7 @@ describe('query.generated', () => {
     })
     await upsertEntityRelation(user!, metadata, post, [{ id: urlId }])
 
-    const results = await getEntityRelations('post', post.id, 'related', 'url')
+    const results = await getEntityRelations('post', post.id, 'related', 'url', asSystem)
     const result = results.find(r => r.object_id === urlId)
     expect(result).toBeDefined()
     const data = result!.object_data as { latest_crawl: unknown }
@@ -198,7 +204,7 @@ describe('query.generated', () => {
     })
     await upsertEntityRelation(user!, metadata, post, [{ id: urlId }])
 
-    const results = await getEntityRelations('post', post.id, 'related', 'url')
+    const results = await getEntityRelations('post', post.id, 'related', 'url', asSystem)
     const result = results.find(r => r.object_id === urlId)
     expect(result).toBeDefined()
     const data = result!.object_data as {
@@ -237,7 +243,7 @@ describe('query.generated', () => {
     })
     await upsertEntityRelation(user!, metadata, post, [{ id: urlId }])
 
-    const results = await getEntityRelations('post', post.id, 'related', 'url')
+    const results = await getEntityRelations('post', post.id, 'related', 'url', asSystem)
     const result = results.find(r => r.object_id === urlId)
     expect(result).toBeDefined()
     const data = result!.object_data as {
@@ -273,7 +279,7 @@ describe('query.generated', () => {
     })
     await upsertEntityRelation(user!, metadata, post, [{ id: urlId }])
 
-    const results = await getEntityRelations('post', post.id, 'related', 'url')
+    const results = await getEntityRelations('post', post.id, 'related', 'url', asSystem)
     const result = results.find(r => r.object_id === urlId)
     expect(result).toBeDefined()
     const data = result!.object_data as {

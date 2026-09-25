@@ -8,7 +8,7 @@ import {
   QUEUED_BACKGROUND_RETRY_POLICY,
   type RetryPolicy,
 } from '@agents/_shared'
-import { getEntityRelations } from '@services/entity-relations'
+import { getEntityRelations, SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations'
 import type { Post } from '@services/posts/types'
 import {
   runPoliticsAverseModeration,
@@ -131,6 +131,7 @@ async function getRelatedUrlsForModeration(
   getRelations: typeof getEntityRelations = getEntityRelations,
 ): Promise<string[]> {
   const relations = await getRelations('post', postId, 'related', 'url', {
+    viewer: SYSTEM_ENTITY_RELATION_VIEWER,
     limit: 5,
     sort: 'best',
   })

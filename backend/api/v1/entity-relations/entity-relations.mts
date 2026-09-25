@@ -4,7 +4,6 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
   getEntityRelations,
   getEntityRelationsPage,
-  type EntityRelationResult,
   type PublicEntityRelationResult,
 } from '@services/entity-relations/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -19,7 +18,12 @@ import { createEntityRelationElectionTarget } from '@services/elections-votes/en
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { getEntityRelationElectionByIdCachedBatch } from '@services/entity-fetch/get'
 import { indexById } from '@modules/utils'
-import { getPublicUserByIdOrSlug, isAdminUser, assertNotSuspended } from '@services/users'
+import {
+  assertNotSuspended,
+  entityRelationViewerFor,
+  getPublicUserByIdOrSlug,
+  isAdminUser,
+} from '@services/users'
 import { requireAuth } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import {
@@ -36,6 +40,7 @@ import {
   currentUserCanModerateCommunity,
 } from '@services/communities'
 import { assertUserTagAllowed } from './user-tag-access.mts'
+import { assertCanViewRelatedPosts } from './relation-access.mts'
 import { getUserActivePlan } from '@services/memberships'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
@@ -87,6 +92,7 @@ app
       summary: ctx.query.summary,
     })
 
+    const currentUser = await ctx.getCurrentUser()
     let resolvedSubjectId = parsed.subjectId
     if (parsed.entityType === 'user') {
       await requireAuth(
@@ -124,7 +130,7 @@ app
       resolvedSubjectId,
       parsed.predicate,
       parsed.objectType,
-      { ...parsed.options, after },
+      { ...parsed.options, after, viewer: entityRelationViewerFor(currentUser) },
     )
     const relationsWithId = relations.filter((r): r is typeof r & { id: string } => !!r.id)
     const publicRelationsWithId = relationsWithId.map(
@@ -134,9 +140,6 @@ app
         },
     )
     const entityIds = relationsWithId.map(r => r.id)
-
-    // Include election votes for authenticated users
-    const currentUser = await ctx.getCurrentUser()
 
     const output: Record<string, unknown> = {
       results: publicRelationsWithId.map(r => ({
@@ -163,6 +166,7 @@ app
       ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
     }
 
+    // Include election votes for authenticated users
     if (currentUser && entityIds.length > 0) {
       output.election_votes = getEntityRelationElectionVotesByUser(currentUser.id, entityIds).then(
         votes => {
@@ -208,6 +212,13 @@ app
     if (parsed.metadata.subject_type === 'remote_actor') {
       ctx.assert(false, 403, 'remote_actor relations cannot be created via this endpoint')
     }
+    await assertCanViewRelatedPosts(
+      ctx,
+      currentUser,
+      parsed.metadata,
+      parsed.subjectId.id,
+      parsed.objectIds.map(object => object.id),
+    )
 
     let resolvedUserTagTargetId: string | undefined
     if (parsed.metadata.subject_type === 'user') {
@@ -299,19 +310,21 @@ app
       )
     }
 
-    const responseRelation =
-      parsed.metadata.subject_type === 'user'
-        ? (
-            await getEntityRelations('user', resolvedUserTagTargetId!, 'category', 'topic', {
-              readOnly: false,
-            })
-          ).find(relation => relation.id === relations[0]!.id)
-        : relations[0]
+    // Read the row back through the viewer-scoped query so the response carries the same
+    // projection and creator masking as GET, never the raw upserted row.
+    const [responseRelation] = await getEntityRelations(
+      parsed.metadata.subject_type,
+      relations[0]!.subject_id,
+      parsed.metadata.predicate,
+      parsed.metadata.object_type,
+      {
+        viewer: entityRelationViewerFor(currentUser),
+        readOnly: false,
+        objectIds: [relations[0]!.object_id],
+      },
+    )
+    ctx.assert(responseRelation, 500, 'Failed to create entity relation')
 
     ctx.setStatus(201)
-    ctx.json({
-      relation: withoutEntityRelationCursorMetadata(
-        (responseRelation ?? relations[0]!) as EntityRelationResult,
-      ),
-    })
+    ctx.json({ relation: withoutEntityRelationCursorMetadata(responseRelation) })
   })

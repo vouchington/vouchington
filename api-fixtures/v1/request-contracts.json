@@ -12979,7 +12979,14 @@
           "type": "string"
         },
         "created_by_id": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "deleted_at": {
           "type": "string"

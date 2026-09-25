@@ -44,6 +44,9 @@ It will just not be used by the app anymore.
 - `upsert-for-subjects.mts` — upsert a relation for many subjects + one object
 - `delete.mts` — soft delete entity relations
 - `query.mts` — query relations with JOINed object data
+- `build-select-query.mts` — builds the viewer-scoped relation read (post access filters, creator masking, cursors)
+- `object-projection.mts` — the explicit `object_data` column list for each readable object type
+- `viewer.mts` — `EntityRelationViewer` (`system`, `anonymous`, or `user` with a staff role) and the access rules derived from it
 - `mentioned.mts` — query existing "mentioned" relations for a post
 - `user-tags.mts` — identifies the exact `user → category → topic` moderation-tag relation
 - `assert-user-tag-relation.mts` — enforces the curated user-tag catalog at the service boundary
@@ -136,6 +139,24 @@ Sort options:
 - `newest` - `created_at DESC`
 - `best` - if elections are enabled, sort by `votes_score_sort DESC`
 - `order_index` - if order index is enable, sort by `order_index ASC`
+
+### Viewer and projection
+
+Every read takes a required `viewer`. Request handlers build it with `entityRelationViewerFor`
+from `@services/users`, since that package depends on this one. Trusted internal jobs pass
+`SYSTEM_ENTITY_RELATION_VIEWER`.
+
+- **Post access:** when the subject or the object is a post, the query applies the same direct post
+  eligibility filter as feeds (`buildDirectPostEligibilityFilter`). Rows the viewer cannot read are
+  filtered in SQL, so `limit + 1` page detection stays exact. `system` readers skip this filter.
+- **Relation creator:** `created_by_id` is `null` when the creator is the anonymous author of the
+  subject or object post. The viewer's own relations, administrators, and `system` readers still
+  see the creator, matching `maskAnonymousPost`.
+- **`object_data`:** each object type exposes a fixed column list from `object-projection.mts`.
+  New columns stay private until someone adds them to that list. Object types without a
+  projection throw, and a route test reads every routable tuple so this can't turn into a 500.
+- **`objectIds`:** an optional filter that reads back specific objects, such as the row a write just
+  created.
 
 Election-capable relation tables include partial active-row indexes scoped by `subject_id` for both `best` (`votes_score_sort DESC, created_at DESC`) and `newest` (`created_at DESC`) listings.
 Their vote events live in generated per-relation tables with composite foreign keys that include

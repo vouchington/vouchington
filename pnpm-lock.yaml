@@ -5913,6 +5913,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@modules/feed-query-builders':
+        specifier: workspace:^
+        version: link:../../modules/feed-query-builders
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error

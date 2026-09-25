@@ -62807,7 +62807,7 @@
     },
     "POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": {
       "bodyKind": "content",
-      "hash": "3bff26e45a66c481d199bfda8b6a062d44272f4c2aad4c89c191d6effcb81948",
+      "hash": "7abda8a8d059b2087dd42b241c40e6dd9a35f16100a44d5ced127c8a829a7133",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -62826,7 +62826,15 @@
               "created_by_id": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "deleted_at": {

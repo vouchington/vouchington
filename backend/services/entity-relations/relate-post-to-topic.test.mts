@@ -6,6 +6,7 @@ import {
   relatePostToTopic,
 } from '@voucha/test-helpers'
 import { getEntityRelations } from './query.mts'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from './viewer.mts'
 
 describe('relatePostToTopic', () => {
   it('creates an eligible scored category relation', async () => {
@@ -16,6 +17,7 @@ describe('relatePostToTopic', () => {
     const [relation] = await relatePostToTopic(user, post, topic)
 
     const relations = await getEntityRelations('post', post.id, 'category', 'topic', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
       readOnly: false,
     })
     expect(relation?.id).toBeTruthy()

@@ -4,6 +4,7 @@ import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { upsertRssFeedCategories } from '../categories.mts'
 import { createFeedCategoryRelations } from '../category-relations.mts'
 import { getEntityRelations } from '@services/entity-relations/query'
+import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('createFeedCategoryRelations', () => {
   let rssFeedId: string
@@ -41,7 +42,9 @@ describe('createFeedCategoryRelations', () => {
 
     await createFeedCategoryRelations(rssFeedId)
 
-    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic')
+    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    })
     const match = relations.find(r => r.object_id === categoryTopicId)
     expect(match).toBeDefined()
     expect(match!.subject_id).toBe(showTopicId)
@@ -53,7 +56,9 @@ describe('createFeedCategoryRelations', () => {
     await createFeedCategoryRelations(rssFeedId)
     await createFeedCategoryRelations(rssFeedId)
 
-    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic')
+    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    })
     const matches = relations.filter(r => r.object_id === categoryTopicId)
     expect(matches).toHaveLength(1)
   }, 30_000)
@@ -64,7 +69,9 @@ describe('createFeedCategoryRelations', () => {
 
     await expect(createFeedCategoryRelations(rssFeedId)).resolves.not.toThrow()
 
-    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic')
+    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    })
     expect(relations).toHaveLength(0)
   }, 30_000)
 
@@ -72,7 +79,9 @@ describe('createFeedCategoryRelations', () => {
     // No upsertRssFeedCategories call — empty category set
     await expect(createFeedCategoryRelations(rssFeedId)).resolves.not.toThrow()
 
-    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic')
+    const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
+      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    })
     expect(relations).toHaveLength(0)
   }, 30_000)
 })
