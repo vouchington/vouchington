@@ -96,3 +96,22 @@ export type PersistClassifierDecisionResult = {
   decision: PersistedClassifierDecision
   replayed: boolean
 }
+
+export type ClassifierDecisionReuseErrorCode = 'input' | 'shard-ordinals' | 'results'
+
+/**
+ * Thrown by `persistClassifierDecision` when a batch ID already has a
+ * committed decision whose identity, shard ordinals, or results do not
+ * match the input being persisted. Callers that recover a completed batch
+ * before dispatch (e.g. a C6-style receipt) can distinguish this from other
+ * persistence failures by `instanceof` instead of string-matching `message`.
+ */
+export class ClassifierDecisionReuseError extends Error {
+  readonly code: ClassifierDecisionReuseErrorCode
+
+  constructor(code: ClassifierDecisionReuseErrorCode, message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'ClassifierDecisionReuseError'
+    this.code = code
+  }
+}
