@@ -18,22 +18,23 @@ flowchart TD
 Automation blocks any command that names `gh` or `gh-stack` together with a merge: a `merge` word
 (`gh pr merge ...`, `gh stack merge ...`), a `/merge` or `/merges` API path, or the GraphQL
 `enablePullRequestAutoMerge`/`mergePullRequest` mutations. The check is coarse on purpose. It reads
-the same scripts, substitutions, and heredocs as every other rule but parses no wrappers or
+the same scripts, substitutions, and heredocs as the other gh rules but parses no wrappers or
 spellings, so it also blocks `git merge` beside `gh`, merge `--help`, and prose naming
 `gh pr merge`. It misses obfuscated or indirect forms, such as a variable or alias that supplies
 `gh` or the action (`$GH pr merge 1`), a mutation read from a file
 (`gh api graphql -F query=@file`), or a heredoc script behind an unmodeled wrapper
-(`timeout 5 bash <<'EOF'`); see the [hook threat model](agent-sandbox.md#hook-threat-model). Interactively, only a lone
-`gh pr merge` or numeric `gh stack merge` in an attended Claude session gets the silent allow.
-Every other interactive merge gets no hook opinion. The Cursor adapter has no attended signal, so it
-answers `permission: ask` for a lone merge and, as for every command the hook does not block,
-`permission: allow` for any other interactive merge. Every other hook policy (force-push, `--amend`, dev-server launches,
-hook-bypass flags, PR draft-first, closing-ref validation) is unrelated to merge authority and
-blocks the same way in automation and interactive sessions, and those blocks win over the merge
-allow. The PR and issue content rules (draft-first, closing-ref validation, `--base`, raw `Plan:`
-issues) are also scoped to the session checkout's home GitHub owners: they skip a `gh` command that
-provably targets another owner's repository, while the merge shapes stay global. See the
-[Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md) and #434.
+(`timeout 5 bash <<'EOF'`); see the [hook threat model](agent-sandbox.md#hook-threat-model).
+Interactively, only a lone `gh pr merge` or numeric `gh stack merge` in an attended Claude session
+gets the silent allow. Every other interactive merge gets no hook opinion. The Cursor adapter has no
+attended signal, so it answers `permission: ask` for a lone merge and, as for every command the hook
+does not block, `permission: allow` for any other interactive merge. Every other hook policy
+(force-push, `--amend`, dev-server launches, hook-bypass flags, PR draft-first, closing-ref
+validation) is unrelated to merge authority and blocks the same way in automation and interactive
+sessions, and those blocks win over the merge allow. The PR and issue content rules (draft-first,
+closing-ref validation, `--base`, raw `Plan:` issues) are also scoped to the session checkout's home
+GitHub owners: they skip a `gh` command that provably targets another owner's repository, while the
+merge shapes stay global. See the [Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md)
+and #434.
 
 **Confirm strength differs by runtime.** Claude's `permissionDecision: "allow"` proceeds silently no
 matter what auto-mode is active, so the hook emits it only for an attended session. An unattended
