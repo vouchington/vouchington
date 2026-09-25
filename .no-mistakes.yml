@@ -1851,6 +1851,126 @@ rules:
           column: published_at
           type: TIMESTAMPTZ
           nullable: true
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: posts
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: posts
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: communities
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: communities
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: topics
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: topics
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: lists
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: lists
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: rss_feeds
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: rss_feeds
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: moderation_reports
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: moderation_reports
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: moderation_appeals
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: moderation_appeals
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: community_applications
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: community_applications
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: user_referral_program_links
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: user_referral_program_links
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: conversation_messages
+          column: created_via
+          type: content_creation_channels
+          nullable: true
+          default: null
+        - path: backend/data-stores/psql/migrations/0726-00-00-content-provenance.sql
+          table: conversation_messages
+          column: created_via_oauth_client_id
+          type: UUID
+          nullable: true
+          default: null
         - path: backend/data-stores/psql/migrations/0611-00-00-post-creation-source-url.sql
           table: posts
           column: creation_source_url_id

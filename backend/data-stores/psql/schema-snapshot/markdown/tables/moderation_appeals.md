@@ -38,6 +38,8 @@ Not partitioned — growth: unbounded.
 | `case_id`                              | `uuid`                                 | no       |                              |          |           |           | The moderation case this appeal belongs to.                                                                                        |
 | `created_at`                           | `timestamp with time zone`             | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                    |
 | `updated_at`                           | `timestamp with time zone`             | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                    |
+| `created_via`                          | `content_creation_channels`            | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                                  |
+| `created_via_oauth_client_id`          | `uuid`                                 | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -50,6 +52,7 @@ _none_
 - `chk_moderation_appeals__resolution_pairing`: `CHECK ((((resolved_at IS NULL) AND (resolution_action IS NULL)) OR ((resolved_at IS NOT NULL) AND (resolution_action IS NOT NULL))))`
 - `moderation_appeals_appeal_reason_check`: `CHECK ((char_length(appeal_reason) <= 4000))`
 - `moderation_appeals_check`: `CHECK ((num_nonnulls(user_warning_id, community_ban_id, post_id, user_suspension_id) = 1))`
+- `moderation_appeals_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 
 **Foreign keys:**
 
@@ -60,6 +63,7 @@ _none_
 - `moderation_appeals_case_id_fkey`: `FOREIGN KEY (case_id) REFERENCES moderation_cases(id) ON DELETE CASCADE`
 - `moderation_appeals_community_ban_id_fkey`: `FOREIGN KEY (community_ban_id) REFERENCES community_bans(id) ON DELETE CASCADE`
 - `moderation_appeals_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL`
+- `moderation_appeals_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `moderation_appeals_edited_by_id_fkey`: `FOREIGN KEY (edited_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderation_appeals_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `moderation_appeals_resolved_by_id_fkey`: `FOREIGN KEY (resolved_by_id) REFERENCES users(id) ON DELETE SET NULL`
@@ -71,6 +75,7 @@ _none_
 - `idx_moderation_appeals__case_id`: `CREATE INDEX idx_moderation_appeals__case_id ON public.moderation_appeals USING btree (case_id)`
 - `idx_moderation_appeals__community_ban`: `CREATE INDEX idx_moderation_appeals__community_ban ON public.moderation_appeals USING btree (community_ban_id) WHERE (community_ban_id IS NOT NULL)`
 - `idx_moderation_appeals__community_id`: `CREATE INDEX idx_moderation_appeals__community_id ON public.moderation_appeals USING btree (community_id) WHERE (community_id IS NOT NULL)`
+- `idx_moderation_appeals__created_via_oauth_client_id`: `CREATE INDEX idx_moderation_appeals__created_via_oauth_client_id ON public.moderation_appeals USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_moderation_appeals__latest_lifecycle_change_id`: `CREATE INDEX idx_moderation_appeals__latest_lifecycle_change_id ON public.moderation_appeals USING btree (latest_lifecycle_change_id) WHERE (latest_lifecycle_change_id IS NOT NULL)`
 - `idx_moderation_appeals__one_open_ban`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_ban ON public.moderation_appeals USING btree (appellant_id, community_ban_id) WHERE ((resolved_at IS NULL) AND (community_ban_id IS NOT NULL))`
 - `idx_moderation_appeals__one_open_post`: `CREATE UNIQUE INDEX idx_moderation_appeals__one_open_post ON public.moderation_appeals USING btree (appellant_id, post_id, post_removal_kind) WHERE ((resolved_at IS NULL) AND (post_id IS NOT NULL))`
@@ -84,6 +89,7 @@ _none_
 
 **Triggers:**
 
+- `moderation_appeals_content_provenance_immutable`: `CREATE TRIGGER moderation_appeals_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `moderation_transparency_appeals_delete_rollup`: `CREATE TRIGGER moderation_transparency_appeals_delete_rollup AFTER DELETE ON public.moderation_appeals REFERENCING OLD TABLE AS deleted_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_delete_rollup()`
 - `moderation_transparency_appeals_resolution_guard`: `CREATE TRIGGER moderation_transparency_appeals_resolution_guard BEFORE UPDATE OF resolved_at, resolution_action ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_protect_moderation_appeal_resolution()`
 - `moderation_transparency_appeals_rollup`: `CREATE TRIGGER moderation_transparency_appeals_rollup AFTER INSERT ON public.moderation_appeals REFERENCING NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_moderation_transparency_appeals_insert_rollup()`

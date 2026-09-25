@@ -37,6 +37,8 @@ Not partitioned — growth: unbounded.
 | `lingua_rs_results`           | `jsonb`                                    | yes      |                                                                                                                                                                                                                                                                                                      |          |           |           |                                                                                                                                                                             |
 | `lingua_rs_detected_at`       | `timestamp with time zone`                 | yes      |                                                                                                                                                                                                                                                                                                      |          |           |           |                                                                                                                                                                             |
 | `rules_markdown`              | `text`                                     | yes      |                                                                                                                                                                                                                                                                                                      |          |           |           | Community-drafted moderation rules read by the AI report-judgement agent.                                                                                                   |
+| `created_via`                 | `content_creation_channels`                | yes      |                                                                                                                                                                                                                                                                                                      |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                                                                           |
+| `created_via_oauth_client_id` | `uuid`                                     | yes      |                                                                                                                                                                                                                                                                                                      |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes.                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -45,6 +47,7 @@ _none_
 
 **Check constraints:**
 
+- `communities_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `communities_default_language_check`: `CHECK (((default_language IS NULL) OR ((default_language = lower(default_language)) AND (length(default_language) <= 10))))`
 - `communities_lingua_rs_content_sha256_check`: `CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))`
 - `communities_lingua_rs_detected_language_check`: `CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))`
@@ -62,6 +65,7 @@ _none_
 - `communities_archived_by_id_fkey`: `FOREIGN KEY (archived_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `communities_banner_image_id_fkey`: `FOREIGN KEY (banner_image_id) REFERENCES images(id) ON DELETE SET NULL`
 - `communities_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
+- `communities_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `communities_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `communities_profile_image_id_fkey`: `FOREIGN KEY (profile_image_id) REFERENCES images(id) ON DELETE SET NULL`
 
@@ -75,6 +79,7 @@ _none_
 - `idx_communities__banner_image_id_bare`: `CREATE INDEX idx_communities__banner_image_id_bare ON public.communities USING btree (banner_image_id) WHERE (banner_image_id IS NOT NULL)`
 - `idx_communities__created_by_id`: `CREATE INDEX idx_communities__created_by_id ON public.communities USING btree (created_by_id) WHERE (deleted_at IS NULL)`
 - `idx_communities__created_by_id_bare`: `CREATE INDEX idx_communities__created_by_id_bare ON public.communities USING btree (created_by_id)`
+- `idx_communities__created_via_oauth_client_id`: `CREATE INDEX idx_communities__created_via_oauth_client_id ON public.communities USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_communities__deleted_by_id`: `CREATE INDEX idx_communities__deleted_by_id ON public.communities USING btree (deleted_by_id) WHERE (deleted_by_id IS NOT NULL)`
 - `idx_communities__list_type`: `CREATE INDEX idx_communities__list_type ON public.communities USING btree (list_type) WHERE ((list_type IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_communities__profile_image`: `CREATE INDEX idx_communities__profile_image ON public.communities USING btree (profile_image_id) WHERE ((profile_image_id IS NOT NULL) AND (deleted_at IS NULL))`
@@ -84,5 +89,6 @@ _none_
 
 **Triggers:**
 
+- `communities_content_provenance_immutable`: `CREATE TRIGGER communities_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `trigger_communities_updated_at`: `CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_community_image_placements`: `CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()`

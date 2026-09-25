@@ -6,16 +6,18 @@ User-curated named collections of RSS feed items and posts.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                               |
-| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
-| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                       |
-| `owner_user_id` | `uuid`                     | no       |                              |          |           |           | The user who owns and manages this list.                                              |
-| `name`          | `text`                     | no       |                              |          |           |           | Display name for the list (1–255 characters).                                         |
-| `description`   | `text`                     | yes      |                              |          |           |           | Optional description of the list.                                                     |
-| `visibility`    | `list_visibility`          | no       | `'private'::list_visibility` |          |           |           | Access level: private (owner only), unlisted (link access), or public (discoverable). |
-| `created_at`    | `timestamp with time zone` | no       | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                       |
-| `updated_at`    | `timestamp with time zone` | no       | `now()`                      |          |           |           |                                                                                       |
-| `removed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Soft-delete timestamp; NULL means the list is active.                                 |
+| Column                        | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
+| ----------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `owner_user_id`               | `uuid`                      | no       |                              |          |           |           | The user who owns and manages this list.                                                                          |
+| `name`                        | `text`                      | no       |                              |          |           |           | Display name for the list (1–255 characters).                                                                     |
+| `description`                 | `text`                      | yes      |                              |          |           |           | Optional description of the list.                                                                                 |
+| `visibility`                  | `list_visibility`           | no       | `'private'::list_visibility` |          |           |           | Access level: private (owner only), unlisted (link access), or public (discoverable).                             |
+| `created_at`                  | `timestamp with time zone`  | no       | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                   |
+| `updated_at`                  | `timestamp with time zone`  | no       | `now()`                      |          |           |           |                                                                                                                   |
+| `removed_at`                  | `timestamp with time zone`  | yes      |                              |          |           |           | Soft-delete timestamp; NULL means the list is active.                                                             |
+| `created_via`                 | `content_creation_channels` | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                 |
+| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -24,18 +26,22 @@ _none_
 
 **Check constraints:**
 
+- `lists_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `lists_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 255)))`
 
 **Foreign keys:**
 
+- `lists_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `lists_owner_user_id_fkey`: `FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_lists__created_via_oauth_client_id`: `CREATE INDEX idx_lists__created_via_oauth_client_id ON public.lists USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_lists__owner_user_id`: `CREATE INDEX idx_lists__owner_user_id ON public.lists USING btree (owner_user_id, id DESC) WHERE (removed_at IS NULL)`
 - `idx_lists__owner_user_id__fk`: `CREATE INDEX idx_lists__owner_user_id__fk ON public.lists USING btree (owner_user_id) WHERE (owner_user_id IS NOT NULL)`
 - `lists_pkey`: `CREATE UNIQUE INDEX lists_pkey ON public.lists USING btree (id)`
 
 **Triggers:**
 
+- `lists_content_provenance_immutable`: `CREATE TRIGGER lists_content_provenance_immutable BEFORE UPDATE OF created_via, created_via_oauth_client_id ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `trigger_lists_updated_at`: `CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
