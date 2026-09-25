@@ -60,7 +60,7 @@ describe('entity relation object projection', () => {
   let topicId: string
 
   beforeAll(async () => {
-    creator = (await createTestUser())!
+    creator = await createTestUser()
     postId = await insertPost(creator.id)
     topicId = await insertTestTopic({
       name: unique(),
@@ -108,7 +108,7 @@ describe('entity relation object projection', () => {
   })
 
   it('projects only public user columns', async () => {
-    const mentioned = (await createTestUser())!
+    const mentioned = await createTestUser()
     const tuple: Tuple = ['post', 'mentioned', 'user']
     await relate(creator, tuple, postId, mentioned.id)
     expect(await objectDataKeys(tuple, postId, mentioned.id)).toEqual(['id', 'username'])
