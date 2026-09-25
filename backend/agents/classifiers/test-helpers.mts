@@ -5,7 +5,11 @@ import type {
 } from '@modules/structured-decisions'
 import type { ActiveClassifierConfiguration } from '@services/classifiers'
 import { classifierPrompt } from './safe-content.mts'
-import type { ClassifierContextPolicy, ExecuteClassifierDecisionInput } from './types.mts'
+import type {
+  ClassifierContextPolicy,
+  ExecuteClassifierDecisionInput,
+  ExecuteSingleCallClassifierDecisionInput,
+} from './types.mts'
 
 export const classifierId = '018f9f8e-7c49-7b88-8c4a-5f8a7d586e01'
 export const promptVersionId = '018f9f8e-7c49-7b88-8c4a-5f8a7d586e02'
@@ -72,6 +76,13 @@ export function makeInput(
     }),
     ...overrides,
   }
+}
+
+export function makeSingleCallInput(
+  overrides: Partial<ExecuteSingleCallClassifierDecisionInput>,
+): ExecuteSingleCallClassifierDecisionInput {
+  const { contextPolicy, ...input } = makeInput(overrides)
+  return input
 }
 
 export function threeNoulBindings(): ExecuteClassifierDecisionInput['bindings'] {

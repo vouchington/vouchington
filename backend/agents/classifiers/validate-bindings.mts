@@ -6,10 +6,10 @@ import {
   assertConfigurationIdentity,
   assertSubjectAndScope,
 } from './validate-decision-input.mts'
-import type { ClassifierDecisionCandidate, ExecuteClassifierDecisionInput } from './types.mts'
+import type { ClassifierDecisionCandidate, ClassifierDecisionRequestInput } from './types.mts'
 
 export function assertBindingsMatchConfiguration(
-  input: ExecuteClassifierDecisionInput,
+  input: ClassifierDecisionRequestInput,
   configuration: ActiveClassifierConfiguration,
 ): void {
   assertConfigurationIdentity(input, configuration)
@@ -20,7 +20,7 @@ export function assertBindingsMatchConfiguration(
 export { assertClassifierDecisionIds }
 
 function assertBindingSet(
-  input: ExecuteClassifierDecisionInput,
+  input: ClassifierDecisionRequestInput,
   configuration: ActiveClassifierConfiguration,
 ): void {
   const questionIds = new Set<string>()

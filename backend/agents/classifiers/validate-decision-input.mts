@@ -1,11 +1,11 @@
 import type { ActiveClassifierConfiguration } from '@services/classifiers'
 import { isUUID } from '@modules/utils/ids'
 import { candidatesForBinding } from './bindings.mts'
-import type { ExecuteClassifierDecisionInput } from './types.mts'
+import type { ClassifierDecisionRequestInput } from './types.mts'
 
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-export function assertClassifierDecisionIds(input: ExecuteClassifierDecisionInput): void {
+export function assertClassifierDecisionIds(input: ClassifierDecisionRequestInput): void {
   if (!UUID_V7_PATTERN.test(input.batchId))
     throw new Error('Classifier decision batch ID must be UUIDv7')
   const ids = [input.classifierId, input.promptVersionId]
@@ -22,7 +22,7 @@ export function assertClassifierDecisionIds(input: ExecuteClassifierDecisionInpu
 }
 
 export function assertConfigurationIdentity(
-  input: ExecuteClassifierDecisionInput,
+  input: ClassifierDecisionRequestInput,
   configuration: ActiveClassifierConfiguration,
 ): void {
   if (input.classifierId !== configuration.classifierId)
@@ -35,15 +35,21 @@ export function assertConfigurationIdentity(
     throw new Error('Classifier decision requires at least one binding')
   if (configuration.primitive !== input.bindings[0]?.type)
     throw new Error('Classifier bindings do not match the active classifier primitive')
-  if (configuration.modelProvider !== input.contextPolicy.transport)
-    throw new Error('Classifier context policy transport does not match the active model provider')
-  if (configuration.modelName !== input.contextPolicy.model)
-    throw new Error('Classifier context policy model does not match the active model')
+  // Single-call classifier families (no exact context measurer) omit
+  // `contextPolicy` entirely; there is nothing to cross-check it against.
+  if (input.contextPolicy) {
+    if (configuration.modelProvider !== input.contextPolicy.transport)
+      throw new Error(
+        'Classifier context policy transport does not match the active model provider',
+      )
+    if (configuration.modelName !== input.contextPolicy.model)
+      throw new Error('Classifier context policy model does not match the active model')
+  }
   if (input.state.trim().length === 0) throw new Error('Classifier decision state is required')
 }
 
 export function assertSubjectAndScope(
-  input: ExecuteClassifierDecisionInput,
+  input: ClassifierDecisionRequestInput,
   configuration: ActiveClassifierConfiguration,
 ): void {
   if (Boolean(input.subject.postId) === Boolean(input.subject.rssFeedItemId))
