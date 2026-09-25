@@ -27,6 +27,12 @@ import {
   reviewCopyrightFormIntake,
   reviewCopyrightRestriction,
 } from '../copyright-notices'
+import {
+  listCopyrightRepeatInfringerAccounts,
+  recordCopyrightRepeatInfringerDisposition,
+  recordCopyrightRepeatInfringerReinstatement,
+  recordCopyrightRepeatInfringerReviewOutcome,
+} from '../copyright-repeat-infringer'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 import type { CopyrightNoticesPage, CopyrightStaffQueuePage } from '@/types/copyright-notices'
 
@@ -216,6 +222,35 @@ describe('copyright notices client', () => {
       '/api/v1/copyright-notices/notice-1/delivery-intents/intent-1/replays',
       {},
     ])
+    await expectGet(
+      { copyright_repeat_infringer_accounts: [] },
+      () => listCopyrightRepeatInfringerAccounts('notice-1'),
+      ['/api/v1/copyright-notices/notice-1/repeat-infringer-accounts'],
+    )
+    await expectPost(
+      undefined,
+      () => recordCopyrightRepeatInfringerDisposition('incident-1', 'withdrawn', 'Withdrawn.'),
+      [
+        '/api/v1/copyright-repeat-infringer-incidents/incident-1/dispositions',
+        { disposition: 'withdrawn', rationale: 'Withdrawn.' },
+      ],
+    )
+    await expectPost(
+      undefined,
+      () => recordCopyrightRepeatInfringerReviewOutcome('review-1', 'warning', 'Warned.'),
+      [
+        '/api/v1/copyright-repeat-infringer-reviews/review-1/outcomes',
+        { outcome: 'warning', rationale: 'Warned.' },
+      ],
+    )
+    await expectPost(
+      undefined,
+      () => recordCopyrightRepeatInfringerReinstatement('account-1', 'Reinstated.'),
+      [
+        '/api/v1/copyright-repeat-infringer-accounts/account-1/reinstatements',
+        { rationale: 'Reinstated.' },
+      ],
+    )
   })
 })
 

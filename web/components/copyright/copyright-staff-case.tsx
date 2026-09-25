@@ -12,6 +12,7 @@ import {
   CopyrightStaffCounterNotices,
   CopyrightStaffIntentRecovery,
 } from './copyright-staff-case-detail'
+import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
 import {
   ReviewButtons,
@@ -21,12 +22,14 @@ import {
 
 export function CopyrightStaffCase({
   notice,
+  canAdminister = false,
   pending,
   rationale,
   submit,
   submitRecovery,
 }: {
   notice: CopyrightStaffQueueItem
+  canAdminister?: boolean
   pending: boolean
   rationale: string
   submit: SubmitReview
@@ -68,6 +71,14 @@ export function CopyrightStaffCase({
       ))}
       <CopyrightStaffCorrespondence notice={notice} />
       <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
+      <CopyrightRepeatInfringerActions
+        canAdminister={canAdminister}
+        canSubmit={canSubmit}
+        noticeId={notice.id}
+        pending={pending}
+        rationale={rationale}
+        submit={submit}
+      />
     </article>
   )
 }

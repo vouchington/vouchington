@@ -76,6 +76,20 @@ restore before enabling intake.
    or CCB filing outside the qualifying claim and counterclaim categories is not a hold.
 5. Resolve a hold only with an immutable resolution record and staff rationale.
 
+## Repeat-infringer review
+
+1. A second operative incident opens a review. Opening the review does not suspend the account.
+2. Reviewers may record warning or no action, or mark an incident withdrawn, duplicate, or abusive.
+   Each decision needs a rationale. The rationale is stored encrypted.
+3. Only an administrator may restrict or terminate, and only while two operative incidents remain.
+   Both actions use the existing account suspension. Termination refuses unsuspend until an
+   administrator records reinstatement. Reinstatement does not unsuspend the account. Do that from
+   the user admin panel after the reinstatement row exists.
+4. Account deletion returns 409 while an operative incident remains, or while an unresolved
+   qualifying legal hold covers a placement that account owns. An open review alone does not refuse
+   deletion.
+5. Retention durations are still an approved-policy gate. Do not invent a clock in the product.
+
 ## Recovery scans
 
 Continuously surface:

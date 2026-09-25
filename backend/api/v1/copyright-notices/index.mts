@@ -33,6 +33,7 @@ import {
   encodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
 import './moderator-routes.mts'
+import './repeat-infringer-routes.mts'
 import './staff-queue-route.mts'
 
 const acceptedCopyrightNoticesParser = createPaginationParser({

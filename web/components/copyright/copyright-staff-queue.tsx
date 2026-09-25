@@ -10,7 +10,13 @@ import type { CopyrightStaffQueueItem, CopyrightStaffQueuePage } from '@/types/c
 import { CopyrightStaffCase } from './copyright-staff-case'
 import type { SubmitRecovery, SubmitReview } from './copyright-staff-review-buttons'
 
-export function CopyrightStaffQueue({ data }: { data: CopyrightStaffQueuePage }) {
+export function CopyrightStaffQueue({
+  data,
+  canAdminister = false,
+}: {
+  data: CopyrightStaffQueuePage
+  canAdminister?: boolean
+}) {
   const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
     usePaginatedList(
       data,
@@ -73,6 +79,7 @@ export function CopyrightStaffQueue({ data }: { data: CopyrightStaffQueuePage })
         {notices.map(notice => (
           <CopyrightStaffCase
             key={notice.id}
+            canAdminister={canAdminister}
             notice={notice}
             pending={pending}
             rationale={trimmedRationale}

@@ -19,6 +19,9 @@ Users can delete their accounts and download a copy of their personal data from 
 - Bookmarks, votes, follows, saves, and other user-specific data are permanently removed
 - The user is logged out immediately upon deletion
 - Admins can delete any account
+- Deletion returns 409 while the account has an operative copyright repeat-infringer incident, or
+  an unresolved qualifying legal hold on a placement that account owns. An open staff review alone
+  does not refuse deletion. See [Copyright notices](../moderation/COPYRIGHT-NOTICES.md).
 
 ### Deletion Lifecycle
 

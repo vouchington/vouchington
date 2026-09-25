@@ -2815,6 +2815,45 @@
       ],
       "type": "object"
     },
+    "CopyrightRepeatInfringerNoticeAccount": {
+      "additionalProperties": false,
+      "properties": {
+        "account_user_id": {
+          "type": "string"
+        },
+        "incident_id": {
+          "type": "string"
+        },
+        "open_review_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "operative": {
+          "type": "boolean"
+        },
+        "termination_in_effect": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "account_user_id",
+        "incident_id",
+        "open_review_id",
+        "operative",
+        "termination_in_effect"
+      ],
+      "type": "object"
+    },
+    "CopyrightRepeatInfringerReviewDecision": {
+      "enum": ["no_action", "restrict", "terminate", "warning"],
+      "type": "string"
+    },
     "CopyrightRestrictionRecord": {
       "additionalProperties": false,
       "properties": {
@@ -21929,6 +21968,17 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "path": {
         "properties": {
@@ -26116,6 +26166,48 @@
           }
         },
         "required": ["id", "restrictionId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "accountUserId": {
+            "type": "string"
+          }
+        },
+        "required": ["accountUserId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes": {
+      "body": {
+        "$ref": "#/components/schemas/Record_string_unknown"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
         "type": "object"
       }
     },

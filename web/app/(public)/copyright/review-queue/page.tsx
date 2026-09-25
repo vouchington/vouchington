@@ -21,7 +21,10 @@ export default async function CopyrightReviewQueuePage() {
           Review each provisional action and intake with the private staff tools.
         </p>
       </div>
-      <CopyrightStaffQueue data={data} />
+      <CopyrightStaffQueue
+        canAdminister={currentUser.roles.includes('administrator')}
+        data={data}
+      />
     </main>
   )
 }

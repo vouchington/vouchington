@@ -72,5 +72,10 @@ member projection.
   `createEligibleCopyrightRestoreIntent` locks the legal ledger and creates a preliminary fenced
   intent; it cannot authorize a media delivery change by itself.
 
+Repeat-infringer reviews close with warning, no action, restrict, or terminate. Restrict and
+terminate are administrator-only and suspend the account through `@services/users`. Termination
+blocks unsuspend until a later reinstatement row. Account deletion refuses while an operative
+incident or an unresolved qualifying legal hold remains.
+
 The durable workflow and operator recovery contract are documented in
 [`COPYRIGHT-NOTICES.md`](../../../docs/requirements/moderation/COPYRIGHT-NOTICES.md).
