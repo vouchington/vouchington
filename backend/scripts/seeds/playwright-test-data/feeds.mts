@@ -153,27 +153,6 @@ export async function seedPlaywrightFeedData(query: TransactionQuery): Promise<v
     `INSERT INTO notifications ( user_id, entity_type, actor_user_id, delivery_type, title, body, actor_label, target_path ) VALUES ( '019f0000-0000-7000-8000-000000000000', 'follow', '00000000-0000-0000-0000-000000000001', 'subscription', '@test-friend started following you', '', 'test-friend', '/@test-friend' ) ON CONFLICT DO NOTHING`,
   )
   await query(
-    `DELETE FROM crm_contact_social_accounts WHERE contact_id IN ( '019d0000-0000-7000-a000-000000000001', '019d0000-0000-7000-a000-000000000002', '019d0000-0000-7000-a000-000000000003' )`,
-  )
-  await query(
-    `DELETE FROM conversations WHERE id IN ( SELECT conversation_id FROM conversation_participants WHERE crm_contact_id IN ( '019d0000-0000-7000-a000-000000000001', '019d0000-0000-7000-a000-000000000002', '019d0000-0000-7000-a000-000000000003' ) )`,
-  )
-  await query(
-    `DELETE FROM crm_contacts WHERE id IN ( '019d0000-0000-7000-a000-000000000001', '019d0000-0000-7000-a000-000000000002', '019d0000-0000-7000-a000-000000000003' )`,
-  )
-  await query(
-    `INSERT INTO crm_contacts (id, name, email, phone, vertical, contact_type, source, follower_count, notes, created_by_id) VALUES ( '019d0000-0000-7000-a000-000000000001', 'Jane Travel Creator', 'tests+jane-travel-pw@voucha.ai', '+1234567890', 'travel', 'influencer', 'manual', 250000, 'Top travel influencer for Playwright tests', '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, phone = EXCLUDED.phone, vertical = EXCLUDED.vertical, follower_count = EXCLUDED.follower_count, notes = EXCLUDED.notes`,
-  )
-  await query(
-    `INSERT INTO crm_contacts (id, name, email, vertical, contact_type, source, follower_count, contacted_at, created_by_id) VALUES ( '019d0000-0000-7000-a000-000000000002', 'Alex AI Reviewer', 'tests+alex-ai-pw@voucha.ai', 'ai', 'influencer', 'csv_import', 50000, NOW() - INTERVAL '3 days', '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, vertical = EXCLUDED.vertical, follower_count = EXCLUDED.follower_count, contacted_at = EXCLUDED.contacted_at`,
-  )
-  await query(
-    `INSERT INTO crm_contacts (id, name, email, contact_type, source, created_by_id) VALUES ( '019d0000-0000-7000-a000-000000000003', 'Sam New Contact', 'tests+sam-new-pw@voucha.ai', 'influencer', 'manual', '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email`,
-  )
-  await query(
-    `INSERT INTO crm_contact_social_accounts (contact_id, platform, handle, profile_url) VALUES ('019d0000-0000-7000-a000-000000000001', 'instagram', '@janetravelcreator', 'https://instagram.com/janetravelcreator'), ('019d0000-0000-7000-a000-000000000001', 'youtube', '@JaneTravels', 'https://youtube.com/@JaneTravels'), ('019d0000-0000-7000-a000-000000000002', 'tiktok', '@alexaireviewer', NULL) ON CONFLICT (contact_id, platform) DO UPDATE SET handle = EXCLUDED.handle, profile_url = EXCLUDED.profile_url`,
-  )
-  await query(
     `INSERT INTO relation__user__follow__rss_feed (subject_id, object_id) VALUES ('019f0000-0000-7000-8000-000000000000', '019c64e6-f8c0-7000-8000-000000000001') ON CONFLICT DO NOTHING`,
   )
   await query(

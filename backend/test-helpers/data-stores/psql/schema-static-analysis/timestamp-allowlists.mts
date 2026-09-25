@@ -126,7 +126,6 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ['agent_moderations', 'Append-only moderation output keyed by post and agent.'],
   ['ai_usage_records', 'Append-only LLM cost ledger; rows are never updated after insertion.'],
   ['conversation_messages', 'Append-only conversation message log.'],
-  ['crm_contact_lifecycle_changes', 'Append-only lifecycle audit log.'],
   ['email_referral_attributions', 'Append-only referral attribution event.'],
   [
     'fediverse_instance_integration_changes',

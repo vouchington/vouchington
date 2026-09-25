@@ -1,23 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  createTestUser,
   createTestUserDirect,
-  softDeleteUserDaysAgo,
   softDeleteUserAt,
   getTestUserRaw,
   insertTestOAuthAccount,
   setOAuthAccountCreatedAt,
   oauthAccountExistsByProviderUserId,
   createRandomString,
-  createTestCrmContact,
-  getCrmContactRaw,
-  getCrmNoteCreatedById,
-  insertTestCrmNote,
   createTestRetentionWindow,
 } from '@voucha/test-helpers'
 
-import { DELETED_USER_ID } from '@services/users/constants'
 import { createUserDeletionRequest } from '@services/user-deletions/create'
 import { completeUserDeletionForTest } from '@services/user-deletions/lifecycle.test-support'
 
@@ -155,39 +148,6 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(secondResult).toEqual({ deleted: 1, hasMore: true })
     expect(await getTestUserRaw(firstUser.id)).toBeNull()
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
-  }, 60_000)
-
-  it('reassigns CRM contact created_by_id to the tombstone user before hard-deleting', async () => {
-    const user = await createTestUser({ administrator: true })
-    if (!user) throw new Error('Failed to create test user')
-
-    const contact = await createTestCrmContact(user)
-
-    await softDeleteUserDaysAgo(user.id, 91)
-
-    // Should NOT throw — before the fix this raised an FK constraint violation
-    await cleanupSoftDeletedUsers({ retentionDays: 90 })
-
-    // User row is gone
-    expect(await getTestUserRaw(user.id)).toBeNull()
-
-    // CRM contact still exists but is now owned by the tombstone user
-    const contactRow = await getCrmContactRaw(contact.id)
-    expect(contactRow?.created_by_id).toBe(DELETED_USER_ID)
-  }, 60_000)
-
-  it('reassigns CRM note created_by_id to the tombstone user before hard-deleting', async () => {
-    const user = await createTestUser({ administrator: true })
-    if (!user) throw new Error('Failed to create test user')
-
-    const contact = await createTestCrmContact(user)
-    const note = await insertTestCrmNote({ contactId: contact.id, createdById: user.id })
-
-    await softDeleteUserDaysAgo(user.id, 91)
-    await cleanupSoftDeletedUsers({ retentionDays: 90 })
-
-    expect(await getTestUserRaw(user.id)).toBeNull()
-    expect(await getCrmNoteCreatedById(note.id)).toBe(DELETED_USER_ID)
   }, 60_000)
 
   // keep generated shard bindings live for typecheck

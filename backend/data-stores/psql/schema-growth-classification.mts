@@ -78,7 +78,6 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'ap_inbox_activities',
   'community_activity_digest_dispatch_windows',
   'community_agent_prompt_changes',
-  'crm_contact_lifecycle_changes',
   'dynamic_config_change_logs',
   'follower_distribution_deliveries',
   'follower_distributions',

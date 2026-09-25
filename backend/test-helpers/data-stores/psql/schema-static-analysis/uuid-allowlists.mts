@@ -76,10 +76,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Audit snapshot intentionally survives prompt deletion; no FK on purpose.',
   ],
   [
-    'crm_contact_lifecycle_changes.changed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
     'dynamic_config_change_logs.changed_by_id',
     'Audit snapshot intentionally survives user deletion.',
   ],

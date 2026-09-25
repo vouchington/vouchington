@@ -6,7 +6,6 @@
 
 - `topic`
 - `rss_feed`
-- `crm_contact`
 
 ## `agent_model_providers`
 
@@ -145,7 +144,6 @@
 
 - `chat`
 - `customer_support`
-- `crm`
 - `direct_message`
 - `modmail`
 - `mod_internal`
@@ -197,54 +195,6 @@
 
 - `fetch`
 - `automation`
-
-## `crm_contact_lifecycle_change_types`
-
-- `manual_update`
-- `mark_contacted`
-- `mark_responded`
-- `mark_converted`
-- `clear_converted`
-- `mark_opted_out`
-- `clear_opted_out`
-- `archive`
-
-## `crm_contact_sources`
-
-- `csv_import`
-- `manual`
-- `inbound_email`
-- `referral`
-
-## `crm_contact_types`
-
-- `influencer`
-- `customer`
-- `partner`
-
-## `crm_contact_verticals`
-
-- `credit_cards`
-- `travel`
-- `cars`
-- `ai`
-- `technology`
-- `finance`
-- `lifestyle`
-- `other`
-
-## `crm_email_providers`
-
-- `ses`
-- `gmail_smtp`
-
-## `crm_social_platforms`
-
-- `instagram`
-- `tiktok`
-- `youtube`
-- `x`
-- `linkedin`
 
 ## `domain_blacklist_types`
 
