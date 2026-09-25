@@ -41,6 +41,10 @@ so the edited clone counts as new even though the duplication predates the branc
 extract the shared code into one helper and call it from both places, not to revert the edit. If
 that dedupe is genuinely out of scope, add a reviewed [exception](#exceptions).
 
+The same holds for a clone family: code copied into three or more files. Editing one copy can make
+jscpd pair the untouched copies with each other over different line ranges, so a pair between two
+files the branch never changed can also count as new. Dedupe the family, not only the edited copy.
+
 ## Choosing the Base
 
 The base ref is the first of:
