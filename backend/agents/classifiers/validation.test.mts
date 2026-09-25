@@ -45,7 +45,6 @@ describe('classifier input validation', () => {
   it.each([
     ['no subject', { subject: { postId: null, rssFeedItemId: null } }],
     ['two subjects', { subject: { postId: makeInput({}).subject.postId, rssFeedItemId } }],
-    ['topic without a post', { subject: { postId: null, rssFeedItemId } }],
     [
       'global community',
       {
@@ -77,6 +76,21 @@ describe('classifier input validation', () => {
     expect(() => assertBindingsMatchConfiguration(input, storyConfiguration)).toThrow(
       'RSS feed item',
     )
+  })
+
+  it('accepts a topic classifier decision on either a post or an RSS feed item subject', () => {
+    expect(() =>
+      assertBindingsMatchConfiguration(
+        makeInput({ subject: { postId, rssFeedItemId: null } }),
+        configuration,
+      ),
+    ).not.toThrow()
+    expect(() =>
+      assertBindingsMatchConfiguration(
+        makeInput({ subject: { postId: null, rssFeedItemId } }),
+        configuration,
+      ),
+    ).not.toThrow()
   })
 
   it.each([

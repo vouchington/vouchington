@@ -43,10 +43,7 @@ export async function persistClassifierDecision(
   if (configuration.candidateKind !== candidateKind) {
     throw new Error('Classifier candidate kind does not match its decision subject and results')
   }
-  if (
-    (candidateKind === 'topic' && normalizedInput.subject.postId === null) ||
-    (candidateKind === 'story' && normalizedInput.subject.rssFeedItemId === null)
-  ) {
+  if (candidateKind === 'story' && normalizedInput.subject.rssFeedItemId === null) {
     throw new Error('Classifier candidate kind does not match its decision subject')
   }
   const [snapshots, calls] = await Promise.all([

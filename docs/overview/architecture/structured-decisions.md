@@ -87,9 +87,9 @@ Shards execute sequentially through one supplied C1 client, which retains owners
 retry behavior. Every answer must map back to exactly one requested question and every bound
 candidate must appear exactly once across the batch. Provider calls finish before persistence begins.
 The caller supplies the prompt version it rendered; execution rejects if that version is no longer
-the classifier's active prompt before any provider call. Topic classifiers accept post subjects and
-story classifiers accept RSS-item subjects only. `@services/classifiers` rechecks both invariants,
-then writes the caller-owned UUIDv7 batch, stored-candidate threshold
+the classifier's active prompt before any provider call. Topic classifiers accept either a post or
+an RSS feed item subject; story classifiers accept RSS-item subjects only. `@services/classifiers`
+rechecks both invariants, then writes the caller-owned UUIDv7 batch, stored-candidate threshold
 snapshots, ordered call rows, and topic or story results in one PostgreSQL transaction. Runtime
 prefiltered candidates use prompt defaults. A repeated identical batch ID returns the existing
 decision; conflicting reuse fails closed. No generic classifier code casts votes, applies labels,

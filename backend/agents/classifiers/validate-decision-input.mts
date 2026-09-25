@@ -48,8 +48,6 @@ export function assertSubjectAndScope(
 ): void {
   if (Boolean(input.subject.postId) === Boolean(input.subject.rssFeedItemId))
     throw new Error('Classifier decision requires exactly one subject')
-  if (configuration.candidateKind === 'topic' && input.subject.postId === null)
-    throw new Error('Topic classifiers require a post subject')
   if (configuration.candidateKind === 'story' && input.subject.rssFeedItemId === null)
     throw new Error('Story classifiers require an RSS feed item subject')
   if (input.scope.scopeCategory === 'global' && input.scope.scopeCommunityId !== null)
