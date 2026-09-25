@@ -47,6 +47,20 @@ describe('Codex hook git policy command scope', () => {
     expect(blockReason(commitWithHeredocMessage(body))).toBeUndefined()
   })
 
+  it('treats a heredoc message inside a quoted command substitution as data', () => {
+    expect(
+      blockReason(`git commit -m "$(cat <<'EOF'\nfix: example\n\nnever --no-verify\nEOF\n)"`),
+    ).toBeUndefined()
+  })
+
+  it.each([
+    'echo "see <<EOF"\ngit push --force',
+    "echo 'see <<EOF'\ngit push --force",
+    `git commit -m "$(cat <<'EOF'\nfix: example\nEOF\n)"\ngit push --force`,
+  ])('still inspects a command after a quoted heredoc operator: %s', command => {
+    expect(blockReason(command)).toContain('Force pushes')
+  })
+
   it('keeps a quoted-delimiter heredoc body literal', () => {
     expect(blockReason("cat <<'EOF'\n$(git push --force)\nEOF")).toBeUndefined()
   })
