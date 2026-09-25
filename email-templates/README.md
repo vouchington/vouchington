@@ -76,12 +76,14 @@ Every template uses:
 
 Template-specific styles (e.g. progress bars, announcement banners) stay in their own files but import `colors` and `borderRadius` from `styles.mts` for consistency.
 
+Recommendation-style templates (`follow-topics`, `follow-news-sources`, `post-referral-link`) share one layout: each maps its props and copy family to `RecommendationEmailLayout` (`recommendation-email-layout.tsx`) through `createRecommendationEmail` (`recommendation-email.tsx`), which supplies the render implementation, the plain-text body, and the subject. Build new recommendation-style emails on it.
+
 The `login-token` email includes both a primary CTA button and the full `/login?emailAddress=...&otp=...` URL as visible fallback text so mail clients can still complete the sign-in flow when button rendering is degraded.
 
 ## Adding a template
 
 1. Create `your-template.tsx` with a default component and `PreviewProps` for the preview server
-2. Attach the private render implementation to the component with `Object.assign`
+2. Attach the private render implementation to the component with `Object.assign` (recommendation-style templates get the component and its render implementation from `createRecommendationEmail`)
 3. Export `renderYourTemplateEmail(props)` from `your-template-renderer.mts`
 4. Add the renderer to `index.mts` exports
 5. Create `your-template.test.tsx` with snapshot + content assertions
