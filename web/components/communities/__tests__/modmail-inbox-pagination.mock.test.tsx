@@ -109,7 +109,7 @@ describe('ModmailInbox pagination', () => {
   it('allows only one continuation request for rapid clicks', async () => {
     const pending = deferred<ModmailInboxResponseBody>()
     mockGetModmailInboxClient.mockReturnValueOnce(pending.promise)
-    const { container } = render(
+    render(
       <ModmailInbox
         communitySlug='community-one'
         initialData={makePage([makeThread('one')], true, 'cursor-one')}
@@ -129,7 +129,7 @@ describe('ModmailInbox pagination', () => {
     mockGetModmailInboxClient.mockResolvedValueOnce(
       makePage([makeThread('one'), makeThread('two'), makeThread('two')], false, null),
     )
-    const { container } = render(
+    render(
       <ModmailInbox
         communitySlug='community-one'
         initialData={makePage([makeThread('one')], true, 'cursor-one')}
@@ -145,7 +145,7 @@ describe('ModmailInbox pagination', () => {
   it('rejects a continuation response from a stale community context', async () => {
     const pending = deferred<ModmailInboxResponseBody>()
     mockGetModmailInboxClient.mockReturnValueOnce(pending.promise)
-    const { container, rerender } = render(
+    const { rerender } = render(
       <ModmailInbox
         communitySlug='community-one'
         initialData={makePage([makeThread('one')], true, 'cursor-one')}
@@ -171,7 +171,7 @@ describe('ModmailInbox pagination', () => {
     mockGetModmailInboxClient
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce(makePage([makeThread('two')], false, null))
-    const { container } = render(
+    render(
       <ModmailInbox
         communitySlug='community-one'
         initialData={makePage([makeThread('one')], true, 'cursor-one')}

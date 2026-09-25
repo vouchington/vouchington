@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildCommentsForSchema, buildInteractionStats } from '../post-schema-helpers'
+import { buildCommentsForSchema } from '../post-schema-helpers'
 
 import type { PostsResponseBody } from '@/types/api-responses'
 

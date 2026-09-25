@@ -8,8 +8,6 @@ import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-moc
 
 import { ListFilters } from '../list-filters'
 
-import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-
 vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),

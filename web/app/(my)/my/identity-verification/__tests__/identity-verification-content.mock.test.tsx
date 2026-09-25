@@ -55,14 +55,9 @@ vi.mock(
     }) as unknown as typeof import('@/components/ui/select'),
 )
 
-import {
-  startMyIdentityVerificationCheckout,
-  updateMyIdentityVerificationDisplayPreferences,
-} from '@/lib/api/client/identity-verification'
+import { startMyIdentityVerificationCheckout } from '@/lib/api/client/identity-verification'
 
 const mockStart = vi.mocked(startMyIdentityVerificationCheckout)
-
-const mockUpdatePrefs = vi.mocked(updateMyIdentityVerificationDisplayPreferences)
 
 const defaultProps = {
   verifiedBadgeVisible: true,

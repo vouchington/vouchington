@@ -119,12 +119,6 @@ const mockPreviewMarkdown = vi.mocked(previewMarkdown)
 
 const mockUpdateMyFinancialProfile = vi.mocked(updateMyFinancialProfile)
 
-// Valid review content: >= 150 chars, >= 30 words, >= 3 sentences.
-const VALID_REVIEW_CONTENT =
-  'This credit card offers fantastic rewards and I have been using it for over a year now. ' +
-  'The annual fee is absolutely worth every penny when you factor in all the benefits available. ' +
-  'The customer service team is very helpful and responsive, making it my top recommendation.'
-
 const mockDiscussion: Post = {
   id: 'post-1',
   post_type: 'discussion',

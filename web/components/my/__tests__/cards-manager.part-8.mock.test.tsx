@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 
 import { CardsManager } from '../cards-manager'
 
@@ -25,7 +25,7 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (err: unknown, options: { fallback: string }) => {
+  default: (_err: unknown, options: { fallback: string }) => {
     toastMock.error(options.fallback)
     return options.fallback
   },

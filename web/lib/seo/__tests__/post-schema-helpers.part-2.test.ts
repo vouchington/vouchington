@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildCommentsForSchema, buildInteractionStats } from '../post-schema-helpers'
-
-import type { PostsResponseBody } from '@/types/api-responses'
+import { buildInteractionStats } from '../post-schema-helpers'
 
 describe('post-schema-helpers', () => {
   describe('buildInteractionStats', () => {

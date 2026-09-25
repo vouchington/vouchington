@@ -1,11 +1,7 @@
 import { defaultTranslator as t } from '@ts-shared/ui-messages/default-translator'
 import { describe, it, expect } from 'vitest'
 
-import {
-  createTopicSectionMetadata,
-  createTopicSectionStructuredData,
-  createTopicReviewSectionStructuredData,
-} from '../topic-pages'
+import { createTopicReviewSectionStructuredData } from '../topic-pages'
 
 import type { Topic, TopicMetrics } from '@/types/topics'
 

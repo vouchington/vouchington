@@ -6,7 +6,7 @@ import { PostCard } from '../post-card'
 
 import type { Post, PostMetrics, PostElection } from '@/types/posts'
 
-import type { PublicUser, User } from '@/types/user'
+import type { User } from '@/types/user'
 
 let mockCurrentUser: User | null = null
 

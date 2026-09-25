@@ -173,7 +173,7 @@ describe('MessagesInboxClient', () => {
       page_info: { has_next_page: false, end_cursor: null },
     })
 
-    const { container } = render(
+    render(
       <MessagesInboxClient
         initialConversations={[makeConversation()]}
         initialHasMore

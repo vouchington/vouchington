@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { act, render, screen } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 
 import { PostList } from '../post-list'
 
@@ -125,64 +125,6 @@ const makePage = (
 })
 
 describe('PostList', () => {
-  const mockData: PostsResponseBody = {
-    results: [
-      { __entity_type: 'post', id: 'post-1', ranking: 1, search_vector_ts: null },
-      { __entity_type: 'post', id: 'post-2', ranking: 2, search_vector_ts: null },
-    ],
-    posts: {
-      'post-1': {
-        id: 'post-1',
-        post_type: 'discussion',
-        title: 'First Post',
-        markdown: 'First post content',
-        root_id: null,
-        created_by_id: 'user-1',
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-15T10:00:00Z',
-        deleted_at: null,
-        deleted_by_id: null,
-        archived_at: null,
-        archived_by_id: null,
-        broadcast: 'everyone',
-        privacy: 'public',
-        is_anonymous: false,
-
-        community_id: null,
-
-        clearance_status: 'approved',
-      },
-      'post-2': {
-        id: 'post-2',
-        post_type: 'review',
-        title: 'Second Post',
-        markdown: 'Second post content',
-        root_id: null,
-        created_by_id: 'user-1',
-        created_at: '2024-01-15T11:00:00Z',
-        updated_at: '2024-01-15T11:00:00Z',
-        deleted_at: null,
-        deleted_by_id: null,
-        archived_at: null,
-        archived_by_id: null,
-        broadcast: 'everyone',
-        privacy: 'public',
-        is_anonymous: false,
-
-        community_id: null,
-
-        clearance_status: 'approved',
-      },
-    },
-    posts_metrics: {},
-    post_elections: {},
-    page_info: {
-      has_next_page: false,
-      end_cursor: null,
-      start_cursor: null,
-    },
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()

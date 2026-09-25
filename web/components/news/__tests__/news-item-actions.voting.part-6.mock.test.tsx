@@ -205,13 +205,6 @@ const MOCK_ELECTION = {
   votes_count_down: 2,
 }
 
-const makeVote = (choice: 'vouch' | 'disavow' | 'neutral') => ({
-  __entity_type: 'election_vote' as const,
-  user_id: 'user-1',
-  choice,
-  created_at: '2026-01-01T00:00:00Z',
-})
-
 describe('NewsItemActions voting', () => {
   it('submits row votes for the RSS feed item id', async () => {
     render(

@@ -137,26 +137,11 @@ vi.mock(
 
 import { render, screen } from '@testing-library/react'
 
-import { createTopicLayout } from '../topic-layout-factory'
-
-import {
-  createTopicRootPage,
-  createTopicPostsPage,
-  createTopicReviewsPage,
-  createTopicDataPointsPage,
-} from '../topic-subpage-factories'
-
-import {
-  createTopicLatestPage,
-  createTopicNewsPage,
-  createTopicDiscussionsPage,
-} from '../topic-navigation-factories'
+import { createTopicDiscussionsPage } from '../topic-navigation-factories'
 
 import { createTopicReferralLinksPage } from '../topic-referral-factories'
 
 import { getTopic } from '@/lib/api/server'
-
-import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
 const baseTopic = {
   __entity_type: 'topic' as const,

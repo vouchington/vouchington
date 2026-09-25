@@ -4,13 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TopicRecommendationForm } from '../topic-recommendation-form'
 
-import { ApiError } from '@/lib/api/error'
-
-import {
-  expectInputEnterSubmits,
-  expectTextareaCmdEnterSubmits,
-} from '@/test-helpers/form-keyboard'
-
 import type { Post } from '@/types/posts'
 
 const mockRouterPush = vi.fn<VitestLooseMock>()
@@ -88,15 +81,11 @@ import {
   updateTopicRecommendation,
 } from '@/lib/api/client/topic-recommendations'
 
-import { updateMyIdentity } from '@/lib/api/client/my'
-
 const mockCreateTopicRecommendation = vi.mocked(createTopicRecommendation)
 
 const mockFetchTopicRecommendationDuplicates = vi.mocked(fetchTopicRecommendationDuplicates)
 
 const mockUpdateTopicRecommendation = vi.mocked(updateTopicRecommendation)
-
-const mockUpdateMyIdentity = vi.mocked(updateMyIdentity)
 
 function makeRecommendationPost(overrides?: Partial<Post>): Post {
   return {
@@ -151,18 +140,6 @@ describe('TopicRecommendationForm', () => {
       similar_topics: [],
     })
   })
-
-  function fillRequiredFields() {
-    fireEvent.change(screen.getByLabelText('Proposed Topic Title'), {
-      target: { value: 'Test Topic' },
-    })
-    fireEvent.change(screen.getByLabelText('Proposed Topic Slug'), {
-      target: { value: 'test-topic' },
-    })
-    fireEvent.change(screen.getByLabelText('Why should this topic exist?'), {
-      target: { value: 'It fills a gap in the topic catalog.' },
-    })
-  }
 
   it('submits a new recommendation payload', async () => {
     mockCreateTopicRecommendation.mockResolvedValue({

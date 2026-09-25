@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -58,7 +58,7 @@ vi.mock(
 )
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: (err: unknown, options: { fallback: string }) => {
+  default: (_err: unknown, options: { fallback: string }) => {
     toastMock.error(options.fallback)
     return options.fallback
   },
@@ -129,14 +129,6 @@ function createScheduledJob(): ScheduledJob {
     schedule: '*/5 * * * *',
     description: 'Send scheduled email',
   }
-}
-
-function defer<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>(res => {
-    resolve = res
-  })
-  return { promise, resolve }
 }
 
 describe('QueuesPage', () => {

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { navMockModule } from '@/test-helpers/next-navigation-mock'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 
 vi.mock(
   import('next/navigation'),
@@ -158,8 +158,6 @@ const makePost = (overrides?: Partial<Post>): Post => ({
 })
 
 const primary = makeItem('item-1', 'Primary Article')
-
-const storyItem1 = makeItem('item-2', 'Related Article 1')
 
 describe('NewsItemCluster rendering', () => {
   it('renders standalone NewsItemCard when no story', () => {

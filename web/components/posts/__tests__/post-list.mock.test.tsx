@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { act, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 
 import { PostList } from '../post-list'
 
@@ -9,8 +9,6 @@ import { ListStyleProvider } from '@/lib/preferences/list-style-context'
 import type { PostsResponseBody } from '@/types/api-responses'
 
 import type { ListStyle } from '@/lib/preferences/shared'
-
-import { getPaginatedPage } from '@/lib/api/client'
 
 // Stub dynamic() to render nothing — this test exercises list pagination, not lazy children
 vi.mock(import('next/dynamic'), () => ({
@@ -88,41 +86,6 @@ function renderWithListStyle(ui: React.ReactNode, listStyle: ListStyle = 'card')
   }
   return render(<ListStyleProvider>{ui}</ListStyleProvider>)
 }
-
-const makePage = (
-  postId: string,
-  title: string,
-  hasNextPage: boolean,
-  endCursor: string | null,
-): PostsResponseBody => ({
-  results: [{ __entity_type: 'post', id: postId, ranking: 1, search_vector_ts: null }],
-  posts: {
-    [postId]: {
-      id: postId,
-      post_type: 'review',
-      title,
-      markdown: `${title} content`,
-      root_id: null,
-      created_by_id: 'user-1',
-      created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-15T10:00:00Z',
-      deleted_at: null,
-      deleted_by_id: null,
-      archived_at: null,
-      archived_by_id: null,
-      broadcast: 'everyone',
-      privacy: 'public',
-      is_anonymous: false,
-
-      community_id: null,
-
-      clearance_status: 'approved',
-    },
-  },
-  posts_metrics: {},
-  post_elections: {},
-  page_info: { has_next_page: hasNextPage, end_cursor: endCursor, start_cursor: null },
-})
 
 describe('PostList', () => {
   const mockData: PostsResponseBody = {

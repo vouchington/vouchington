@@ -124,7 +124,7 @@ describe('ModmailInbox', () => {
       results: [makeThread()],
       page_info: { has_next_page: false, start_cursor: 'start-1', end_cursor: null },
     }
-    const { container } = render(
+    render(
       <ModmailInbox
         communitySlug='test-community'
         initialData={initialData}
@@ -157,7 +157,7 @@ describe('ModmailInbox', () => {
       results: [makeThread()],
       page_info: { has_next_page: true, start_cursor: 'start-1', end_cursor: 'cursor-1' },
     }
-    const { container } = render(
+    render(
       <ModmailInbox
         communitySlug='test-community'
         initialData={initialData}

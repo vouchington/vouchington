@@ -8,10 +8,7 @@ import { FollowerShareActions } from '../follower-share-actions'
 
 import { sharePostWithFollowers, sendPostToFollowers } from '@/lib/api/client/posts'
 
-import {
-  sendRssFeedItemToFollowers,
-  shareRssFeedItemWithFollowers,
-} from '@/lib/api/client/rss-feeds'
+import { sendRssFeedItemToFollowers } from '@/lib/api/client/rss-feeds'
 
 import { fetchFollowerUsers } from '@/lib/api/client/users'
 

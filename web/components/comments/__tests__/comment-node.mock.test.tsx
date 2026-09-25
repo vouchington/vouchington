@@ -6,7 +6,7 @@ import type { ReactNode, MouseEventHandler } from 'react'
 
 import { CommentNode } from '../comment-node'
 
-import type { Post, ElectionVote } from '@/types/posts'
+import type { Post } from '@/types/posts'
 
 import type { CommentNodeData } from '../comment-tree-utils'
 

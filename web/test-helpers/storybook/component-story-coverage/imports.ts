@@ -5,7 +5,6 @@ import {
   type RuntimeImport,
   isStoryFile,
   parseSourceFile,
-  repoRoot,
   sourceExtensions,
   storybookRoot,
 } from './source'

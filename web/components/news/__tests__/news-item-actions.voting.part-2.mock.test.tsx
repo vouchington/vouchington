@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 
 import type { ReactNode } from 'react'
 
@@ -180,8 +180,6 @@ vi.mock(import('@/lib/rss-item-nav-context'), () => ({
 
 import { NewsItemActions } from '../news-item-actions'
 
-import { submitRssFeedItemVote } from '@/lib/api/client/elections'
-
 const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
   id: 'item-1',
   data: { link: 'https://example.com', guid: 'g1', title: 'Article' },
@@ -200,13 +198,6 @@ const MOCK_ELECTION = {
   votes_count_up: 5,
   votes_count_down: 2,
 }
-
-const makeVote = (choice: 'vouch' | 'disavow' | 'neutral') => ({
-  __entity_type: 'election_vote' as const,
-  user_id: 'user-1',
-  choice,
-  created_at: '2026-01-01T00:00:00Z',
-})
 
 describe('NewsItemActions voting', () => {
   it('passes signedOut=false when user is logged in', async () => {

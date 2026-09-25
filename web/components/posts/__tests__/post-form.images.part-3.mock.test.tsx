@@ -115,19 +115,6 @@ const mockDiscussion: Post = {
   clearance_status: 'approved',
 }
 
-const postWithImages: Post = {
-  ...mockDiscussion,
-  images: [
-    {
-      image_id: 'img-1',
-      placement_id: 'placement-1',
-      placement_revision: 0,
-      order_index: 0,
-      caption: '',
-    },
-  ],
-}
-
 describe('PostForm image state', () => {
   beforeEach(() => {
     mockRouterPush.mockClear()

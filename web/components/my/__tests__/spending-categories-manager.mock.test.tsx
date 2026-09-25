@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 import { SpendingCategoriesManager } from '../spending-categories-manager'
 
@@ -120,11 +120,7 @@ import {
   deleteMySpendingCategory,
 } from '@/lib/api/client'
 
-import { ApiError } from '@/lib/api/error'
-
 import onError from '@/lib/on-error'
-
-import { onSuccess } from '@/lib/on-error/on-success'
 
 const mockCreate = vi.mocked(createMySpendingCategory)
 
@@ -133,8 +129,6 @@ const mockUpdate = vi.mocked(updateMySpendingCategory)
 const mockDelete = vi.mocked(deleteMySpendingCategory)
 
 const mockOnError = vi.mocked(onError)
-
-const mockOnSuccess = vi.mocked(onSuccess)
 
 const initialCategories: SpendingCategory[] = [
   {

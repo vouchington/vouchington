@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react'
 
 import { TopicCard } from '../topic-card'
 
-import type { Topic, TopicElection, TopicMetrics } from '@/types/topics'
+import type { Topic, TopicElection } from '@/types/topics'
 
 import type { User } from '@/types/user'
 
@@ -156,32 +156,6 @@ describe('TopicCard', () => {
       display_name: 'John Doe',
       display_name_url_id: 'john-doe',
     },
-  }
-
-  const mockMetrics: TopicMetrics = {
-    __entity_type: 'topic_metrics',
-    id: 'topic-1',
-    count: {
-      discussions: 10,
-      reviews: 20,
-      'data-points': 5,
-      news: 2,
-      latest: 0,
-    },
-    ratings: {
-      count: {
-        '1': 0,
-        '2': 1,
-        '3': 2,
-        '4': 5,
-        '5': 12,
-      },
-    },
-    ratings__updated_at: '2024-01-15T10:00:00Z',
-    bookmarks: {
-      follow: 150,
-    },
-    bookmarks__updated_at: '2024-01-15T10:00:00Z',
   }
 
   const mockElection: TopicElection = {

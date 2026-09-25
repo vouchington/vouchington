@@ -67,8 +67,6 @@ const SESSION_DATA = {
   secure: false,
 }
 
-const AUTH_ST_PAYLOAD = { uid: 'user-1', did: 'did-1', sid: 'sid-1' }
-
 function makeRequest({
   pathname = '/',
   cookies = {} as Record<string, string>,

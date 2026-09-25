@@ -103,14 +103,6 @@ async function emitDefaultSnapshot() {
   return es
 }
 
-function defer<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>(res => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
-
 describe('useValkeyAdminState', () => {
   beforeEach(() => {
     MockEventSource.instances = []

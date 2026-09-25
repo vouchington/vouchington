@@ -2,11 +2,7 @@ import { Suspense, use, useState } from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { EnCatalog } from '@ts-shared/ui-messages'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  createMessagesCache,
-  getMessagesPromise,
-  useTranslations,
-} from '@/lib/i18n/use-translations'
+import { createMessagesCache, useTranslations } from '@/lib/i18n/use-translations'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 
