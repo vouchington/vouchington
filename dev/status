@@ -50,8 +50,8 @@ echo "--------------------------------------------------------------------------
 for worktree in "${WORKTREE_PATHS[@]}"; do
     WORKTREE_NAME=$(worktree_dir_from_path "$worktree")
 
-    # Skip if not initialized (check both new .initialized and legacy .env markers)
-    if [ ! -f "$worktree/.initialized" ] && [ ! -f "$worktree/.env" ]; then
+    # Skip if not initialized
+    if [ ! -f "$worktree/.initialized" ]; then
         printf "%-30s %-25s %-15s %-15s %-15s %-15s %-25s %-30s\n" \
             "$WORKTREE_NAME" "?" "Not initialized" "-" "-" "-" "-" "-"
         continue
