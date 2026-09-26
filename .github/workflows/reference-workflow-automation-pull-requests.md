@@ -55,4 +55,7 @@ flowchart TD
 
     ci -. "workflow_run completed<br/>(Dependabot PRs)" .-> fix-dependabot["fix-dependabot"]
     fix-dependabot --> harness-dispatch["harness-dispatch<br/>(reusable)"]
+    merge-queue-ejection["merge-queue-ejection<br/>(Auto Harness triage)"]
+    tests & build -. "merge queue dequeued<br/>(CI_FAILURE / CI_TIMEOUT)" .-> merge-queue-ejection
+    merge-queue-ejection --> harness-dispatch
 ```

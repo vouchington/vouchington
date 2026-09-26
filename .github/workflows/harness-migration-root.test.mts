@@ -12,6 +12,7 @@ const callerEntries = [
   ['fix-dependabot.yml', 'triage-and-rerun', 'HARNESS_FIX_DEPENDABOT_ENABLED'],
   ['fix-issue.yml', 'gate', 'HARNESS_FIX_ISSUE_ENABLED'],
   ['fix-main.yml', 'triage-and-rerun', 'HARNESS_FIX_MAIN_ENABLED'],
+  ['merge-queue-ejection.yml', 'render-prompt', 'HARNESS_MERGE_QUEUE_EJECTION_ENABLED'],
   ['plan.yml', 'gate', 'HARNESS_PLAN_ENABLED'],
   ['scheduled-prompts.yml', 'select-prompt', 'HARNESS_SCHEDULED_ENABLED'],
   ['shepherd.yml', 'gate', 'HARNESS_SHEPHERD_ENABLED'],

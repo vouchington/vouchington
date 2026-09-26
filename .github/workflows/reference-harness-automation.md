@@ -10,16 +10,17 @@ trusted host with repository-scoped git and GitHub CLI credentials.
 
 ## Workflow map
 
-| Caller                                         | Trigger                             | Repository-owned controls                                                                                | Agent completion                                                     |
-| ---------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [Fix Main](fix-main.yml)                       | failed main workflow                | exact run/attempt/conclusion, transient triage, concurrency-id dedupe                                    | one draft fix PR                                                     |
-| [Fix Main Self Retry](fix-main-self-retry.yml) | Fix Main's own completed run failed | run-attempt ceiling, transient triage, no self-resubscription, unhandled-disposition escalation fallback | rerun of Fix Main's failed job(s), or a fallback `needs-human` issue |
-| [Fix Dependabot](fix-dependabot.yml)           | failed Dependabot PR                | bot/fork/ref/SHA checks, transient triage, dedupe                                                        | exact-lease update to that PR branch                                 |
-| [Fix Issue](fix-issue.yml)                     | authorized standalone `/fix`        | association, issue state, concurrency-id dedupe                                                          | one draft fix PR, or one `## Automation stopped` issue comment       |
-| [Plan](plan.yml)                               | authorized standalone `/plan`       | association and issue state                                                                              | one issue plan comment, no code changes                              |
-| [Shepherd](shepherd.yml)                       | authorized standalone `/shepherd`   | association, same-repo PR, exact head, durable checkpoint                                                | iterate the existing PR only                                         |
-| [Scheduled Prompts](scheduled-prompts.yml)     | schedule/manual                     | catalog selection, completion mode, concurrency-id dedupe                                                | one draft PR or bounded issue maintenance                            |
-| [Harness Dispatch](harness-dispatch.yml)       | reusable call                       | immutable client checkout, explicit schema, provider routing                                             | session id, URL, and created flag                                    |
+| Caller                                           | Trigger                                                | Repository-owned controls                                                                                | Agent completion                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [Fix Main](fix-main.yml)                         | failed main workflow                                   | exact run/attempt/conclusion, transient triage, concurrency-id dedupe                                    | one draft fix PR                                                                             |
+| [Fix Main Self Retry](fix-main-self-retry.yml)   | Fix Main's own completed run failed                    | run-attempt ceiling, transient triage, no self-resubscription, unhandled-disposition escalation fallback | rerun of Fix Main's failed job(s), or a fallback `needs-human` issue                         |
+| [Merge Queue Ejection](merge-queue-ejection.yml) | merge queue removed a PR for `CI_FAILURE`/`CI_TIMEOUT` | reason filter, no PR checkout, concurrency-id dedupe                                                     | one flaky-test fix PR from `main` or one issue, plus one comment on the PR; never changes it |
+| [Fix Dependabot](fix-dependabot.yml)             | failed Dependabot PR                                   | bot/fork/ref/SHA checks, transient triage, dedupe                                                        | exact-lease update to that PR branch                                                         |
+| [Fix Issue](fix-issue.yml)                       | authorized standalone `/fix`                           | association, issue state, concurrency-id dedupe                                                          | one draft fix PR, or one `## Automation stopped` issue comment                               |
+| [Plan](plan.yml)                                 | authorized standalone `/plan`                          | association and issue state                                                                              | one issue plan comment, no code changes                                                      |
+| [Shepherd](shepherd.yml)                         | authorized standalone `/shepherd`                      | association, same-repo PR, exact head, durable checkpoint                                                | iterate the existing PR only                                                                 |
+| [Scheduled Prompts](scheduled-prompts.yml)       | schedule/manual                                        | catalog selection, completion mode, concurrency-id dedupe                                                | one draft PR or bounded issue maintenance                                                    |
+| [Harness Dispatch](harness-dispatch.yml)         | reusable call                                          | immutable client checkout, explicit schema, provider routing                                             | session id, URL, and created flag                                                            |
 
 ```mermaid
 flowchart LR
@@ -101,7 +102,8 @@ migration; prompts re-fetch the published PR and require their exact additive la
 
 `HARNESS_DISPATCH_ENABLED` is the master gate. Each caller also requires its exact surface gate:
 `HARNESS_PLAN_ENABLED`, `HARNESS_FIX_ISSUE_ENABLED`, `HARNESS_SHEPHERD_ENABLED`,
-`HARNESS_SCHEDULED_ENABLED`, `HARNESS_FIX_DEPENDABOT_ENABLED`, or `HARNESS_FIX_MAIN_ENABLED`.
+`HARNESS_SCHEDULED_ENABLED`, `HARNESS_FIX_DEPENDABOT_ENABLED`, `HARNESS_FIX_MAIN_ENABLED`, or
+`HARNESS_MERGE_QUEUE_EJECTION_ENABLED`.
 Fix Main has the additional `HARNESS_AGENT_DISPATCH_ENABLED` publication gate. Every gate remains
 unset by default. Enable one staffed surface at a time only after its workflow is present on the
 default branch.
@@ -145,7 +147,8 @@ never available to caller checkout or prompt-rendering jobs; only each caller's 
 forwards it, by explicit name, into the `harness-dispatch.yml` call. Caller concurrency IDs are
 namespaced with `vouchington:` (`vouchington:shepherd:<PR>`, `vouchington:plan:<issue>`,
 `vouchington:fix:<issue>`, `vouchington:dependabot:<pr>:<sha>`, `vouchington:fix-main-review:<pr>:<sha>` /
-`vouchington:fix-main:<workflow_id>:<sha>`, `vouchington:scheduled:<prompt_name>`).
+`vouchington:fix-main:<workflow_id>:<sha>`, `vouchington:mq-eject:<pr>:<head_sha>`,
+`vouchington:scheduled:<prompt_name>`).
 
 The request/response contract itself — bounded request timeouts, typed `AutoHarnessError`/
 `AutoHarnessRequestTimeoutError` failures, id- vs name-based `target`/`fallbacks` resolution, and
@@ -153,7 +156,7 @@ resume semantics — is Auto Harness's, documented once upstream in
 [`docs/harness.md`](https://github.com/jonathanong/auto-harness/blob/main/docs/harness.md#packaged-automation);
 this doc does not restate it. Resume never re-resolves `HARNESS_TARGET`/`HARNESS_FALLBACKS`: an
 active or resumed session keeps the Command it was originally dispatched against. Only
-`shepherd.yml` ever resumes a session; the other five surfaces above never pass a resume session id,
+`shepherd.yml` ever resumes a session; the other six surfaces above never pass a resume session id,
 so they carry no checkpoint to invalidate, but they share the same concurrency-ID residual as
 `/shepherd` — see [Accepted risk](reference-harness-automation-accepted-risk.md#residual-risk) for
 the per-surface breakdown, not restated here.
@@ -217,6 +220,18 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   classification, rerun, prompt rendering, or escalation. `related-candidates` retains the full
   dependency graph because the remote prompt-context action invokes the repository's
   `vouchington-tooling` binary.
+- Merge Queue Ejection runs on `pull_request_target` `dequeued` and dispatches only when
+  `github.event.reason` is `CI_FAILURE` or `CI_TIMEOUT`, so a manual dequeue or a merge never starts a
+  session. `pull_request_target` runs the workflow from `main`, and no job checks out, installs, or
+  executes pull-request content: the PR number, URL, head SHA, and reason reach the session only as
+  prompt text. The session checks out `main` at the event's `github.sha`, so a flaky-test fix PR never
+  carries the ejected PR's commits. It never pushes to, edits, merges, enqueues, or dequeues the
+  ejected PR: if the PR is the root cause it comments its analysis and stops; otherwise it opens one
+  flaky-test fix PR from `main`, files or updates one CI or architecture issue, or reports a
+  transient. Its comment carries a PR/head/main marker, so a repeat ejection at the same PR head and
+  `main` tip does not post twice. The concurrency id `vouchington:mq-eject:<pr>:<head_sha>` dedupes
+  only while a session is queued or running, so a re-ejection of the same head after that session
+  finishes starts a fresh triage. Fix Main still owns failures on `main` itself.
 - Dependabot revalidates the exact open bot-authored PR ref/SHA immediately before dispatch. The
   agent modifies that branch only; it cannot create a second PR.
 - `/fix`, `/plan`, and `/shepherd` prompts carry the exact triggering comment ID so the agent can

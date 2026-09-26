@@ -27,6 +27,7 @@ export const jobInventory = {
   '.github/workflows/fix-main.yml': jobs(
     'classify-self-failure dispatch escalate related-candidates render-prompt triage-and-rerun',
   ),
+  '.github/workflows/merge-queue-ejection.yml': jobs('dispatch escalate render-prompt'),
   '.github/workflows/plan.yml': jobs('dispatch escalate gate render-prompt'),
   '.github/workflows/shepherd.yml': jobs(
     'checkpoint-dispatch dispatch escalate gate render-prompt',
