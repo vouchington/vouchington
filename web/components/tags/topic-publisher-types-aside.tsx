@@ -32,6 +32,7 @@ export async function TopicPublisherTypesAside({
     const relation = response.entity_relations[result.id]
     return relation ? [relation] : []
   })
+  if (relations.length === 0 && !isAuthenticated) return null
 
   return (
     <TopicPublisherTypesAsideView
