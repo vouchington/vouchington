@@ -10,8 +10,10 @@ import {
   storyMutationAt,
   storyText,
 } from './story-mutation-bodies'
+import { referralValidation, storyClaimMutation } from './story-mutation-claim'
 import { categoryRelationPost } from './category-relations-store'
 import { conversationParticipant } from './story-mutation-participant'
+import { followerActionPost } from './story-mutation-follower-post'
 
 function exactPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/markdown/preview') {
@@ -98,30 +100,22 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/images/upload-url') return imageUploadUrl(body)
   if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint))
     return imageUploadCompletion(endpoint)
+  if (endpoint.endsWith('/link-validations')) return {}
+  if (
+    endpoint.endsWith('/referral-program/validations') ||
+    endpoint === '/api/v1/referral-link-validations'
+  ) {
+    return referralValidation(body)
+  }
+  if (endpoint.endsWith('/official-referral-links')) {
+    return { official_referral_link: { id: 'official-link-story' } }
+  }
   if (endpoint.endsWith('/agent-prompts')) return communityAgentPrompt(body)
   if (endpoint.endsWith('/invites')) return communityInvite(body)
   if (endpoint.endsWith('/members')) return {}
   if (endpoint.endsWith('/modmail')) return { thread: { id: 'modmail-thread-story' } }
   if (endpoint.endsWith('/mod-notes')) return modNote(body)
-  return undefined
-}
-
-function followerActionPost(endpoint: string): unknown | undefined {
-  if (endpoint === '/api/v1/reports') {
-    return {
-      report: {
-        id: 'report-story',
-        status: 'pending',
-        entity_type: 'post',
-        entity_id: 'post-story',
-      },
-      isDuplicate: false,
-    }
-  }
-  if (/\/posts\/[^/]+\/(?:shares|sends)$/.test(endpoint)) {
-    return { status: 'accepted', distribution_id: 'distribution-story' }
-  }
-  return undefined
+  return storyClaimMutation(endpoint, body)
 }
 
 export function storyMutationPost(endpoint: string, body: unknown): unknown | undefined {

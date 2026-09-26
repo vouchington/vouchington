@@ -5,6 +5,7 @@ import {
   storyTail,
   storyText,
 } from './story-mutation-bodies'
+import { referralValidation } from './story-mutation-claim'
 import { storyMutationPost } from './story-mutation-post-routes'
 
 export { storyMutationPost }
@@ -27,6 +28,8 @@ export function storyMutationPatch(endpoint: string, body: unknown): unknown | u
   }
   if (endpoint.startsWith('/api/v1/hostnames/') || endpoint.includes('/ratings/')) return {}
   if (/^\/api\/v1\/communities\/[^/]+\/reports\/[^/]+$/.test(endpoint)) return {}
+  if (/^\/api\/v1\/referral-link-validations\/[^/]+$/.test(endpoint))
+    return referralValidation(body)
   return undefined
 }
 
@@ -37,6 +40,8 @@ export function storyMutationDelete(endpoint: string): unknown | undefined {
   if (endpoint.endsWith('/lock') || endpoint.includes('/items/posts/')) return {}
   if (endpoint.includes('/agent-prompts/') || endpoint.includes('/participants/')) return {}
   if (endpoint.endsWith('/escalation') || endpoint.endsWith('/claim')) return {}
+  if (endpoint.startsWith('/api/v1/official-referral-links/')) return {}
+  if (endpoint.includes('/link-validations/')) return {}
   if (endpoint.includes('/ratings/')) return {}
   if (endpoint.endsWith('/vote') || endpoint.includes('/bookmarks/')) return {}
   return undefined
