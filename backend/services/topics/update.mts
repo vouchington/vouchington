@@ -38,11 +38,19 @@ export const updateTopic = async (
     const hasUpdates = hasTopicFieldUpdates(changes)
     if (hasUpdates) {
       await assertValidTopicFieldUpdates(topic, changes, allowTypeChange, options)
-      const references: ImageSurfaceReference[] = []
-      if ('logo_image_id' in changes)
-        references.push({ surfaceKind: 'topic-logo-image', topicId: topic.id })
-      if ('hero_image_id' in changes)
-        references.push({ surfaceKind: 'topic-hero-image', topicId: topic.id })
+      const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
+      if (changes.logo_image_id !== undefined)
+        references.push({
+          surfaceKind: 'topic-logo-image',
+          topicId: topic.id,
+          nextImageId: changes.logo_image_id ?? null,
+        })
+      if (changes.hero_image_id !== undefined)
+        references.push({
+          surfaceKind: 'topic-hero-image',
+          topicId: topic.id,
+          nextImageId: changes.hero_image_id ?? null,
+        })
       if (references.length) await prepublishImageSurfaceDenials(references, options.query ?? write)
       const updateQuery = sql`/* updateTopicInStore */ UPDATE topics SET updated_by_id = ${updater.id}`
       appendTopicUpdateFields(updateQuery, changes)

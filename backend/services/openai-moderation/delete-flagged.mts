@@ -7,7 +7,7 @@ import sql from 'sql-template-strings'
 import { recordImageAutoRemoval } from './image-auto-removal-audit.mts'
 import {
   prepublishImageDeliveryDenials,
-  lockImageDeliveryMutation,
+  lockImageAssetMutation,
 } from '@services/media-delivery-safety'
 
 export const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = 25
@@ -91,7 +91,7 @@ export async function reconcilePendingImageQuarantines(): Promise<{ reconciled: 
 async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   await using transaction = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- retain the image fence before edge denial, then admit quarantine only after denial succeeds
-  await lockImageDeliveryMutation(transaction, { imageIds: [imageId] })
+  await lockImageAssetMutation(transaction, { imageIds: [imageId] })
   await prepublishImageDeliveryDenials(imageId, { query: transaction })
   const { rows } = await transaction(sql`/* markImageQuarantinePending */
     UPDATE images

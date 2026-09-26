@@ -20,8 +20,7 @@ import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import type { PostCategoryFinalization } from './post-category-finalizations.mts'
 import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
-import { lockAuthorPublicationLifecycle } from '@services/post-publication'
-import { assertActivePostAuthor } from './create/active-author.mts'
+import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
@@ -44,9 +43,12 @@ export const preparePostWithCommunityReviews = async (
   let updates: CreatePostInput = input
   let deliveryPrepared = false
   const createInTransaction = async (query: TransactionQuery) => {
+    await lockActivePostAuthorImageAdmission(
+      query,
+      creator.id,
+      input.images?.map(image => image.image_id) ?? [],
+    )
     const options = { query }
-    await lockAuthorPublicationLifecycle(query, creator.id)
-    await assertActivePostAuthor(query, creator.id)
     deliveryPrepared = true
     if (input.images?.length) {
       // Register before the first cross-store deny. A later image can fail after an earlier

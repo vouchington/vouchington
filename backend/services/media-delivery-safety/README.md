@@ -28,10 +28,18 @@ periodic staging use the same proof. Periodic staging selects a bounded batch of
 records and stages each in its own authority transaction, avoiding registry lock cycles with owner
 triggers. Registry and edge activation must both be enabled before a legal action mutates authority.
 
-Surface mutations first retain stable owner identities and the complete historical placement
+New binding admissions and unsafe image mutations first acquire the same immutable batch of
+canonical UUID asset-admission roots, before image rows, owners, or placement discovery. PostgreSQL
+transaction-local state permits subset reentry but rejects additional roots after that initial
+batch; it follows borrowed clients and resets with transaction/savepoint rollback. Exact delivery
+publication remains placement-only and does not expand into asset admission.
+
+Surface mutations then retain stable owner identities and the complete historical placement
 footprint in canonical order. They then re-read current tuples, pre-deny those revisions, and mutate
 the owner. Image moderation retains the same placement domain from pre-denial through unsafe
 flag/quarantine admission. An autocommit query cannot satisfy the retained-transaction contract.
+Same-value surface updates compare UUID identity under the retained owner fence and do not deny an
+unchanged route. Disabled registry publication retains repair markers without provider calls.
 
 An independently committed, FK-free repair marker precedes each owner pre-commit denial. It also
 precedes a publisher's local correction from stale allow to withheld, because that correction can

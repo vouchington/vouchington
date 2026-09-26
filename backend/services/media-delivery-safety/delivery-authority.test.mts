@@ -17,6 +17,7 @@ import {
   getImagePlacementDeliveryKey,
   getLegacyImageDeliveryKey,
   lockImageDeliveryMutation,
+  lockImageAssetAdmission,
   processMediaDeliveryRegistryRecord,
   publishImagePlacementDeliveryRecord,
   publishStagedMediaDeliveryRecord,
@@ -140,6 +141,23 @@ describe('delivery authority and durable denial repair', () => {
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBe(token)
   })
 
+  it('retains a missing-tuple repair marker while publication is disabled', async () => {
+    const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
+    const deliveryKey = getImagePlacementDeliveryKey(tuple)
+    const edge = enableEdge()
+    await recordImageDeliveryRepairMarker(tuple)
+    const token = await getTestDeliveryRepairMarker(deliveryKey)
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
+    await reconcileTestDeliveryRepairMarker(deliveryKey)
+    await expect(reconcileMediaDeliveryRepairMarkers(1)).resolves.toBe(0)
+    expect(edge.put).not.toHaveBeenCalled()
+    expect(await getTestDeliveryRepairMarker(deliveryKey)).toBe(token)
+    vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
+    await reconcileTestDeliveryRepairMarker(deliveryKey)
+    expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
+    expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
+  })
+
   it('refuses a legacy allow when the asset belongs to an active surface', async () => {
     const fixture = await createSurface()
     const edge = enableEdge()
@@ -181,6 +199,7 @@ describe('delivery authority and durable denial repair', () => {
     let intermediateKey = ''
     {
       await using transaction = await beginTransaction()
+      await lockImageAssetAdmission([imageB, imageC], transaction)
       const b = await syncImageSurfacePlacement(
         { surfaceKind: 'user-profile-image', userId: fixture.userId },
         imageB,

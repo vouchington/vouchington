@@ -5,7 +5,8 @@ import {
   type MediaDeliveryRegistryState,
 } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import { lockImageDeliveryMutation, assertImageDeliveryTransaction } from './delivery-lock.mts'
+import { lockImageDeliveryMutation } from './delivery-lock.mts'
+import { assertImageDeliveryTransaction } from './transaction-contract.mts'
 import {
   stageImagePlacementDeliveryRecord,
   stageLegacyImageDeliveryRecord,

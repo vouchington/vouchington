@@ -9,7 +9,7 @@ import { createOpenAIModeration } from './request.mts'
 import { publishTerminalImageState } from './terminal-image-state.mts'
 import {
   prepublishImageDeliveryDenials,
-  lockImageDeliveryMutation,
+  lockImageAssetMutation,
 } from '@services/media-delivery-safety'
 
 type UpsertImageModerationDependencies = {
@@ -130,7 +130,7 @@ async function applyImageOpenAIModerationResults(
   flagged: boolean,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockImageDeliveryMutation(transaction, { imageIds: [imageId] })
+  await lockImageAssetMutation(transaction, { imageIds: [imageId] })
   if (flagged) await prepublishImageDeliveryDenials(imageId, { query: transaction })
   const { rows } = await transaction(sql`/* applyImageOpenAIModerationResults */
     UPDATE images

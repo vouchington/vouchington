@@ -6,8 +6,16 @@ import {
   type ImageSurfaceReference,
 } from './surface-lock.mts'
 import { publishImagePlacementDeliveryRecord } from './delivery-registry-publish.mts'
+import { lockImageAssetAdmission, assertImagesReadyForSurface } from './asset-admission-lock.mts'
 
 export * from './delivery-registry.mts'
+export { lockImageAssetMutation } from './asset-mutation-lock.mts'
+export {
+  lockImageAssetAdmission,
+  assertImagesReadyForSurface,
+  prepareImageSurfaceAdmission,
+  markImageDeliveryAuthorityStarted,
+} from './asset-admission-lock.mts'
 export { lockImageDeliveryMutation } from './delivery-lock.mts'
 export {
   lockImageSurfaceOwner,
@@ -25,16 +33,27 @@ export async function prepublishImageSurfaceDenial(
 }
 
 export async function prepublishImageSurfaceDenials(
-  references: ImageSurfaceReference[],
+  references: (ImageSurfaceReference & { nextImageId?: string | null })[],
   query: QueryExecutor,
 ): Promise<void> {
   // A multi-slot owner takes its entire placement domain before any provider transition.
   const ordered = references.toSorted((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
-  const tuples: { placement_id: string; placement_revision: number; image_id: string }[] = []
+  const tuples: {
+    placement_id: string
+    placement_revision: number
+    image_id: string
+    same_image: boolean
+  }[] = []
+  const changedImageIds: string[] = []
+  await lockImageAssetAdmission(
+    ordered.flatMap(reference => (reference.nextImageId ? [reference.nextImageId] : [])),
+    query,
+  )
   await lockImageSurfacePlacements(ordered, query)
   for (const reference of ordered) {
     const statement = sql`/* prepublishImageSurfaceDenial:current */
-    SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id
+    SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id,
+      surface.image_id = ${reference.nextImageId ?? null}::uuid AS same_image
     FROM image_surface_placements surface
     JOIN media_placements placement ON placement.id = surface.placement_id
     WHERE `
@@ -45,9 +64,12 @@ export async function prepublishImageSurfaceDenials(
       placement_id: string
       placement_revision: number
       image_id: string
+      same_image: boolean
     }>(statement)
-    if (rows[0]) tuples.push(rows[0])
+    if (reference.nextImageId && !rows[0]?.same_image) changedImageIds.push(reference.nextImageId)
+    if (rows[0] && (!('nextImageId' in reference) || !rows[0].same_image)) tuples.push(rows[0])
   }
+  await assertImagesReadyForSurface(changedImageIds, query)
   for (const current of tuples) {
     // oxlint-disable-next-line no-await-in-loop -- every tuple denial precedes the owner mutation.
     await publishImagePlacementDeliveryRecord(

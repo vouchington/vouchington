@@ -24,7 +24,7 @@ import {
 import { retireImageSurfacePlacementsForDeletedImage } from './surface-placements.mts'
 import {
   compensateFailedImageDeliveryMutation,
-  lockImageDeliveryMutation,
+  lockImageAssetMutation,
   prepublishImageDeliveryDenials,
 } from '@services/media-delivery-safety'
 import { cleanupDeletedImageStorage } from './delete-storage-cleanup.mts'
@@ -48,7 +48,7 @@ export async function deleteImageByIdWhileStorageLocked(
   async function deleteImageInTransaction(): Promise<ImageDeleteResult> {
     await using transaction = await beginTransaction()
     async function deleteImageRows(query: typeof transaction) {
-      await lockImageDeliveryMutation(query, { imageIds: [image.id] })
+      await lockImageAssetMutation(query, { imageIds: [image.id] })
       const { rows: imageRollbackRows } = await query<
         ImageDeleteImageRollback & {
           id: string

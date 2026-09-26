@@ -11,6 +11,7 @@ import { syncPostImagePlacements } from './image-placements.mts'
 import {
   compensateFailedImageDeliveryMutation,
   lockImageDeliveryMutation,
+  lockImageAssetAdmission,
 } from '@services/media-delivery-safety'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import type { PostImageRollback } from './images-rollback-types.mts'
@@ -26,6 +27,7 @@ export async function rollbackPostImages(
     ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
   ].toSorted()
   await using query = await beginTransaction()
+  await lockImageAssetAdmission(deliveryImageIds, query)
   async function rollbackImagesInTransaction(query: TransactionQuery) {
     const imageIds = [
       ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),

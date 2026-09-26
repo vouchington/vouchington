@@ -61,12 +61,20 @@ async function prepublishChangedCommunitySurfaces(input: {
   update: UpdateCommunityInput
   query: TransactionQuery
 }): Promise<void> {
-  const references: ImageSurfaceReference[] = []
+  const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
   if ('profile_image_id' in input.update) {
-    references.push({ surfaceKind: 'community-profile-image', communityId: input.communityId })
+    references.push({
+      surfaceKind: 'community-profile-image',
+      communityId: input.communityId,
+      nextImageId: input.update.profile_image_id ?? null,
+    })
   }
   if ('banner_image_id' in input.update) {
-    references.push({ surfaceKind: 'community-banner-image', communityId: input.communityId })
+    references.push({
+      surfaceKind: 'community-banner-image',
+      communityId: input.communityId,
+      nextImageId: input.update.banner_image_id ?? null,
+    })
   }
   await prepublishImageSurfaceDenials(references, input.query)
 }

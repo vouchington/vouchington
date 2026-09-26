@@ -1,6 +1,9 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { putMediaDeliveryRegistryRecord } from '@modules/aws/media-delivery-registry'
+import {
+  isMediaDeliveryRegistryPublicationEnabled,
+  putMediaDeliveryRegistryRecord,
+} from '@modules/aws/media-delivery-registry'
 import {
   getImagePlacementDeliveryKey,
   getLegacyImageDeliveryKey,
@@ -44,6 +47,7 @@ export async function recordLegacyImageDeliveryRepairMarker(imageId: string): Pr
 
 /** Repairs a bounded set of completed pre-commit denials using only committed tuple authority. */
 export async function reconcileMediaDeliveryRepairMarkers(limit: number): Promise<number> {
+  if (!isMediaDeliveryRegistryPublicationEnabled()) return 0
   const { rows } = await write<DeliveryRepairMarker>(sql`
     /* reconcileMediaDeliveryRepairMarkers:list */
     SELECT delivery_key, marker_token, route_kind, placement_id, placement_revision, asset_id
@@ -57,6 +61,7 @@ export async function reconcileMediaDeliveryRepairMarkers(limit: number): Promis
 }
 
 export async function reconcileDeliveryRepairMarker(marker: DeliveryRepairMarker): Promise<void> {
+  if (!isMediaDeliveryRegistryPublicationEnabled()) return
   await using transaction = await beginTransaction()
   await lockImageDeliveryMutation(transaction, {
     placementIds: marker.placement_id ? [marker.placement_id] : [],

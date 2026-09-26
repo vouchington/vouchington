@@ -1,6 +1,8 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { assertImageDeliveryTransaction, lockImageDeliveryMutation } from './delivery-lock.mts'
+import { lockImageDeliveryMutation } from './delivery-lock.mts'
+import { assertImageDeliveryTransaction } from './transaction-contract.mts'
+import { markImageDeliveryAuthorityStarted } from './asset-admission-lock.mts'
 
 export type ImageSurfaceReference =
   | { surfaceKind: 'user-profile-image'; userId: string }
@@ -13,17 +15,31 @@ export async function lockImageSurfaceOwner(
   reference: ImageSurfaceReference,
   query: QueryExecutor,
 ): Promise<void> {
+  await lockImageSurfaceOwners([reference], query)
+}
+
+async function lockImageSurfaceOwners(
+  references: ImageSurfaceReference[],
+  query: QueryExecutor,
+): Promise<void> {
   assertImageDeliveryTransaction(query)
-  const ownerId =
-    'userId' in reference
-      ? reference.userId
-      : 'topicId' in reference
-        ? reference.topicId
-        : 'communityId' in reference
-          ? reference.communityId
-          : reference.userProfileLinkId
+  await markImageDeliveryAuthorityStarted(query)
+  const owners = references.map(reference => ({
+    kind: reference.surfaceKind,
+    id:
+      'userId' in reference
+        ? reference.userId
+        : 'topicId' in reference
+          ? reference.topicId
+          : 'communityId' in reference
+            ? reference.communityId
+            : reference.userProfileLinkId,
+  }))
   await query(sql`/* lockImageSurfaceOwner */
-    SELECT pg_advisory_xact_lock(hashtextextended(${`image-surface:${reference.surfaceKind}:${ownerId}`}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(key, 0))
+    FROM (SELECT DISTINCT 'image-surface:' || kind || ':' || id::uuid::text AS key
+      FROM jsonb_to_recordset(${JSON.stringify(owners)}::jsonb) AS owners(kind text, id text)
+      ORDER BY key) ordered
   `)
 }
 
@@ -44,10 +60,7 @@ export async function lockImageSurfacePlacements(
 ): Promise<void> {
   const ordered = references.toSorted((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
   const placementIds: string[] = []
-  for (const reference of ordered) {
-    // oxlint-disable-next-line no-await-in-loop -- stable owner identities precede every placement lock.
-    await lockImageSurfaceOwner(reference, query)
-  }
+  await lockImageSurfaceOwners(ordered, query)
   for (const reference of ordered) {
     const statement = sql`SELECT surface.placement_id FROM image_surface_placements surface WHERE `
     statement.append(imageSurfaceWhere(reference))

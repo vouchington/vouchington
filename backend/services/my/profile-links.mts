@@ -10,6 +10,11 @@ import {
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import {
+  lockImageAssetAdmission,
+  lockImageSurfaceOwner,
+  prepareImageSurfaceAdmission,
+} from '@services/media-delivery-safety'
+import {
   assertProfileLinkType,
   validateProfileLinkFields,
   validateProfileUrl,
@@ -18,6 +23,7 @@ import {
   type UpdateProfileLinkInput,
 } from './profile-links-input.mts'
 export { reorderProfileLinks } from './profile-links-reorder.mts'
+export { listProfileLinks } from './profile-links-list.mts'
 export type { ProfileLinkType } from './profile-links-input.mts'
 export type ProfileLink = {
   id: string
@@ -42,24 +48,6 @@ async function resolveUrlId(
   const result = await addUrl(userId, url)
   return result?.id ?? null
 }
-export async function listProfileLinks(userId: string): Promise<ProfileLink[]> {
-  const { rows } = await read(
-    sql`/* listProfileLinks */ SELECT pl.id, pl.user_id, pl.link_type, pl.sort_order, pl.url_id, u.url, pl.handle, pl.name, pl.image_id, pl.created_at, pl.updated_at,
-      CASE WHEN placement.id IS NULL THEN NULL ELSE jsonb_build_object(
-        'placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id
-      ) END AS image_placement
-        FROM user_profile_links pl
-        LEFT JOIN urls u ON u.id = pl.url_id
-        LEFT JOIN image_surface_placements surface
-          ON surface.user_profile_link_id = pl.id AND surface.surface_kind = 'user-profile-link-image'
-        LEFT JOIN media_placements placement
-          ON placement.id = surface.placement_id AND placement.retired_at IS NULL
-          AND fn_image_placement_publicly_projected(placement.id, placement.revision, surface.image_id)
-        WHERE pl.user_id = ${userId}
-        ORDER BY pl.sort_order ASC, pl.id ASC`,
-  )
-  return rows
-}
 export async function createProfileLink(
   userId: string,
   input: CreateProfileLinkInput,
@@ -71,6 +59,8 @@ export async function createProfileLink(
   // Atomic INSERT: compute next sort_order and enforce per-user limit in one query.
   // HAVING COUNT(*) < MAX_PROFILE_LINKS prevents insert when at the limit.
   await using transaction = await beginTransaction()
+  const imageIds = input.image_id ? [input.image_id] : []
+  await prepareImageSurfaceAdmission(imageIds, transaction)
   const { rows } = await transaction(sql`/* createProfileLink */
     INSERT INTO user_profile_links (user_id, link_type, sort_order, url_id, handle, name, image_id)
     SELECT
@@ -118,6 +108,11 @@ export async function updateProfileLink(
   const urlId = input.url !== undefined ? await resolveUrlId(userId, input.url) : undefined
   // CASE WHEN preserves existing column values for fields not included in input
   await using transaction = await beginTransaction()
+  await lockImageAssetAdmission(input.image_id ? [input.image_id] : [], transaction)
+  await lockImageSurfaceOwner(
+    { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
+    transaction,
+  )
   const { rows: existingRows } = await transaction<{ image_id: string | null }>(sql`
     /* updateProfileLink:lockImageSurface */
     SELECT image_id FROM user_profile_links
@@ -127,11 +122,12 @@ export async function updateProfileLink(
   const existing = existingRows[0]
   assert(existing, 404, 'Profile link not found')
   const desiredImageId = input.image_id === undefined ? existing.image_id : input.image_id
-  await syncImageSurfacePlacement(
-    { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
-    desiredImageId ?? null,
-    transaction,
-  )
+  if (input.image_id !== undefined)
+    await syncImageSurfacePlacement(
+      { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
+      desiredImageId ?? null,
+      transaction,
+    )
   const { rows } = await transaction(sql`/* updateProfileLink */
     UPDATE user_profile_links
     SET
@@ -160,6 +156,10 @@ export async function updateProfileLink(
 }
 export async function deleteProfileLink(userId: string, linkId: string): Promise<void> {
   await using transaction = await beginTransaction()
+  await lockImageSurfaceOwner(
+    { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
+    transaction,
+  )
   const { rows } = await transaction(
     sql`/* deleteProfileLink */ SELECT id FROM user_profile_links
       WHERE id = ${linkId} AND user_id = ${userId} FOR UPDATE`,

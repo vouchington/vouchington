@@ -1,5 +1,7 @@
-import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { markImageDeliveryAuthorityStarted } from './asset-admission-lock.mts'
+import { assertImageDeliveryTransaction } from './transaction-contract.mts'
 
 /**
  * Serializes every mutation which can change an image's public delivery identity.  The identities
@@ -9,13 +11,6 @@ import sql from 'sql-template-strings'
  * Keys are sorted before acquisition so a shared image used by several posts cannot deadlock two
  * concurrent lifecycle mutations.
  */
-export function assertImageDeliveryTransaction(
-  query: QueryExecutor,
-): asserts query is TransactionQuery {
-  if (!('client' in query))
-    throw new Error('Media delivery authority requires a retained transaction')
-}
-
 export async function lockImageDeliveryMutation(
   query: QueryExecutor,
   input: {
@@ -27,6 +22,7 @@ export async function lockImageDeliveryMutation(
   },
 ): Promise<void> {
   assertImageDeliveryTransaction(query)
+  await markImageDeliveryAuthorityStarted(query)
   const requestedPostIds = [...new Set(input.postIds ?? [])]
   const requestedImageIds = [...new Set(input.imageIds ?? [])]
   const requestedPlacementIds = [...new Set(input.placementIds ?? [])]

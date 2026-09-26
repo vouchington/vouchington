@@ -7,6 +7,8 @@ import {
   publishLegacyImageDeliveryRecord,
   stageImagePlacementDeliveryRecord,
   lockImageSurfacePlacements,
+  lockImageAssetAdmission,
+  assertImagesReadyForSurface,
   imageSurfaceWhere as surfaceWhere,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
@@ -49,15 +51,20 @@ export async function getImageSurfacePlacement(
 /** Changes a typed public-use surface atomically while retaining immutable legal-evidence bindings. */
 export async function syncImageSurfacePlacement(
   reference: ImageSurfaceReference,
-  imageId: string | null,
+  requestedImageId: string | null,
   query: QueryExecutor,
 ): Promise<ImagePlacementTuple | null> {
+  await lockImageAssetAdmission(requestedImageId ? [requestedImageId] : [], query)
+  const { rows: canonical } = await query<{ id: string | null }>(
+    sql`/* syncImageSurfacePlacement:canonicalAsset */ SELECT ${requestedImageId}::uuid::text AS id`,
+  )
+  const imageId = canonical[0]!.id
   await lockImageSurfacePlacements([reference], query)
-  await assertImageReadyForPublicSurface(imageId, query)
   // The pre-denial and retirement share this lock domain with recovery.  Re-read after acquiring
   // it: the tuple observed before the advisory lock is never authority to publish or retire.
   const current = await getImageSurfacePlacement(reference, query)
   if (current?.image_id === imageId) return current
+  await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
 
   if (current && current.image_id !== imageId) {
     await publishImagePlacementDeliveryRecord(
@@ -156,23 +163,4 @@ export async function retireImageSurfacePlacementsForDeletedImage(
     `,
   )
   return rows.map(row => ({ placementId: row.placement_id, revision: row.revision }))
-}
-
-async function assertImageReadyForPublicSurface(
-  imageId: string | null,
-  query: QueryExecutor,
-): Promise<void> {
-  if (!imageId) return
-  const { rows } = await query(sql`/* assertImageReadyForPublicSurface */
-    SELECT id
-    FROM images
-    WHERE id = ${imageId}
-      AND deleted_at IS NULL
-      AND upload_completed_at IS NOT NULL
-      AND quarantine_pending_at IS NULL
-      AND openai_omni_moderation_flagged = FALSE
-      AND openai_omni_moderation_results IS NOT NULL
-      AND openai_omni_moderation_created_at IS NOT NULL
-  `)
-  if (rows.length !== 1) throw new Error('Image is not ready for a public surface')
 }
