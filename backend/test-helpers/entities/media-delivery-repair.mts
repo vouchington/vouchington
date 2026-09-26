@@ -1,7 +1,10 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { reconcileDeliveryRepairMarker } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
+
+/** Real autocommit executor for rejecting authority calls without a retained transaction. */
+export const testDeliveryAutocommitQuery = write
 
 export async function getTestDeliveryRepairMarker(deliveryKey: string): Promise<string | null> {
   const { rows } = await read<{ marker_token: string }>(sql`
