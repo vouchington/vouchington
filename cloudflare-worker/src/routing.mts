@@ -132,13 +132,11 @@ const isValidSitemapDate = (year: string, month: string, day: string): boolean =
   if (numericMonth < 1 || numericMonth > 12) return false
   const maxDay =
     numericMonth === 2 && isLeapYear(numericYear) ? 29 : DAYS_IN_MONTH[numericMonth - 1]
-  return numericDay >= 1 && numericDay <= maxDay
+  return maxDay !== undefined && numericDay >= 1 && numericDay <= maxDay
 }
 
 export const getSitemapOriginPath = (pathname: string): string | null => {
-  if (ENCODED_SITEMAP_PATH_TRAVERSAL_RE.test(pathname)) {
-    return null
-  }
+  if (ENCODED_SITEMAP_PATH_TRAVERSAL_RE.test(pathname)) return null
 
   if (pathname === '/sitemap.xml') {
     return '/sitemaps/root.xml'
@@ -155,6 +153,7 @@ export const getSitemapOriginPath = (pathname: string): string | null => {
   const typeIndexMatch = pathname.match(TYPE_INDEX_SITEMAP_PATH_RE)
   if (typeIndexMatch) {
     const [, segment] = typeIndexMatch
+    if (!segment) return null
     if (SITEMAP_POST_TYPE_SET.has(segment)) {
       return `/sitemaps/types/${segment}.xml`
     }
@@ -167,6 +166,7 @@ export const getSitemapOriginPath = (pathname: string): string | null => {
   const familyPageMatch = pathname.match(FAMILY_PAGE_SITEMAP_PATH_RE)
   if (familyPageMatch) {
     const [, family, page] = familyPageMatch
+    if (!family || !page) return null
     if (SITEMAP_FAMILY_SET.has(family)) {
       return `/families/${family}/${page}.xml`
     }
@@ -176,6 +176,7 @@ export const getSitemapOriginPath = (pathname: string): string | null => {
   const dayIndexMatch = pathname.match(DAY_INDEX_SITEMAP_PATH_RE)
   if (dayIndexMatch) {
     const [, postType, year, month, day] = dayIndexMatch
+    if (!postType || !year || !month || !day) return null
     if (!SITEMAP_POST_TYPE_SET.has(postType)) return null
     if (!isValidSitemapDate(year, month, day)) return null
     return `/posts/${year}/${month}/${day}/${postType}/index.xml`
@@ -184,6 +185,7 @@ export const getSitemapOriginPath = (pathname: string): string | null => {
   const dayPageMatch = pathname.match(DAY_PAGE_SITEMAP_PATH_RE)
   if (dayPageMatch) {
     const [, postType, year, month, day, page] = dayPageMatch
+    if (!postType || !year || !month || !day || !page) return null
     if (!SITEMAP_POST_TYPE_SET.has(postType)) return null
     if (!isValidSitemapDate(year, month, day)) return null
     return `/posts/${year}/${month}/${day}/${postType}/${page}.xml`

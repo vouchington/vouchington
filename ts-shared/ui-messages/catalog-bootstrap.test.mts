@@ -64,9 +64,10 @@ describe('catalog bootstrap', () => {
 
     expect(serialized.nav).toEqual(enMessages.nav)
     expect(serialized).not.toHaveProperty('native')
-    expect(
-      (serialized.settings as Record<string, Record<string, unknown>>).language.supportedCount,
-    ).toMatchObject({ kind: 'plural', valueParameter: 'count' })
+    const language = (serialized.settings as Record<string, Record<string, unknown>>).language
+    expect(language).toMatchObject({
+      supportedCount: { kind: 'plural', valueParameter: 'count' },
+    })
   })
 
   it('keeps native-only catalog modules out of the web catalog import graph', async () => {

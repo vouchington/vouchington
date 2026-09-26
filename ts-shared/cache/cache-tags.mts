@@ -152,21 +152,21 @@ export function deriveEntityCacheTags(pathname: string): string[] {
   // decode too, so `%63ompare` classifies the same as `compare` rather than slipping past the
   // denylist as an unpurgeable entity tag.
   const segments = pathname.split('/').filter(Boolean).map(decodeCacheTagPathSegment)
-  if (segments.length < 2) return []
   if (segments[0] === 'api' && segments[1] === 'v1') {
-    if (segments.length < 4) return []
     const [, , family, idOrSlug] = segments
+    if (!family || !idOrSlug) return []
     if (API_FAMILY_STATIC_SUBROUTES[family]?.has(idOrSlug)) return []
     const tagFn = PLURAL_FAMILY_TAG[family]
     return tagFn ? [tagFn(idOrSlug)] : []
   }
   if (segments[0] === 'md') {
-    if (segments.length < 3) return []
     const [, family, idOrSlug] = segments
+    if (!family || !idOrSlug) return []
     const tagFn = PLURAL_FAMILY_TAG[family]
     return tagFn ? [tagFn(idOrSlug)] : []
   }
   const [family, rawIdOrSlug] = segments
+  if (!family || !rawIdOrSlug) return []
   const idOrSlug = stripMarkdownExtension(rawIdOrSlug)
   if (family === 'landing') return [userTag(idOrSlug)]
   if (family === 'communities') return [communityTag(idOrSlug)]

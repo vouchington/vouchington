@@ -39,9 +39,12 @@ describe('start-wrangler config', () => {
   })
 
   it('falls back to WORKER_PORT/default for dev runtime path keys', () => {
+    expect(getWranglerDevWorkerPort([], '3907')).toBe('3907')
+    expect(getWranglerDevWorkerPort([], undefined)).toBe('8787')
     expect(getWranglerDevWorkerPort(['--local'], '3907')).toBe('3907')
     expect(getWranglerDevWorkerPort(['--local'], undefined)).toBe('8787')
     expect(getWranglerDevWorkerPort(['--port='], '3907')).toBe('3907')
+    expect(getWranglerDevWorkerPort(['--port'], '3907')).toBe('3907')
   })
 
   it('detects wrangler ready output', () => {

@@ -7,6 +7,7 @@ export function getWranglerDevWorkerPort(
 
   for (let index = 0; index < userArgs.length; index++) {
     const arg = userArgs[index]
+    if (arg === undefined) continue
     if (arg.startsWith('--port=')) {
       const value = arg.slice('--port='.length).trim()
       if (value) port = value
