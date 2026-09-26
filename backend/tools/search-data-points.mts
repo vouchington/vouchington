@@ -69,6 +69,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Search Data Points',
     requiredScopes: { mcp: ['data-points:read'] },
     annotations: { readOnlyHint: true },
     api: null,

@@ -7,7 +7,12 @@ const tool = createCrawlSearchTool({
     'Search crawled web content using full-text search. Returns matching content chunks from crawled pages.',
   queryDescription: 'Search query to match against crawled content',
   searchFn: toolsSearchCrawls,
-  meta: { surfaces: ['internal'], annotations: { readOnlyHint: true }, api: null },
+  meta: {
+    surfaces: ['internal'],
+    title: 'Search Crawled Pages',
+    annotations: { readOnlyHint: true },
+    api: null,
+  },
 })
 
 export default tool

@@ -59,18 +59,6 @@ describe('tool registry', () => {
     expect(nonEligible.map(t => t.schema.name)).toEqual([])
   })
 
-  it('every mcp/admin_mcp/client tool has explicit readOnlyHint or destructiveHint', () => {
-    const missing = ALL_TOOLS.filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      if (!surfaces.has('mcp') && !surfaces.has('admin_mcp') && !surfaces.has('client')) {
-        return false
-      }
-      const annotations = tool.meta?.annotations
-      return annotations?.readOnlyHint === undefined && annotations?.destructiveHint === undefined
-    })
-    expect(missing.map(t => t.schema.name)).toEqual([])
-  })
-
   it('every mcp/admin_mcp/client tool has explicit api field', () => {
     const missing = ALL_TOOLS.filter(tool => {
       const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
@@ -173,7 +161,9 @@ describe('tool registry', () => {
       function: () => () => Promise.resolve({}),
       meta: {
         surfaces: ['mcp'],
+        title: 'Admin Scope on User Surface',
         requiredScopes: { mcp: ['mcp.admin:read'] },
+        annotations: { readOnlyHint: true },
         api: null,
       },
     }

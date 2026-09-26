@@ -26,7 +26,7 @@ describe('renderCatalogTable', () => {
       fixtureTool('mutating', 'mutating description', {
         surfaces: ['client'],
         requiredScopes: { mcp: undefined },
-        annotations: { destructiveHint: true },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
         api: [
           { method: 'POST', path: '/api/v1/cards' },
           { method: 'DELETE', path: '/api/v1/cards/:id' },

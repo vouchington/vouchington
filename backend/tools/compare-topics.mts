@@ -55,6 +55,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Compare Topics',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/compare' }],

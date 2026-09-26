@@ -71,9 +71,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Update My Financial Profile',
     plan: 'plus',
     requiredScopes: { mcp: ['financial-profile:read', 'financial-profile:write'] },
-    annotations: { destructiveHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [
       { method: 'GET', path: '/api/v1/my/financial-profile' },
       { method: 'PUT', path: '/api/v1/my/financial-profile' },

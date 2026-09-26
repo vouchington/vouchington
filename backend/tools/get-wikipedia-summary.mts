@@ -41,6 +41,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get Wikipedia Summary',
     requiredScopes: { mcp: ['wikipedia:read'] },
     annotations: { readOnlyHint: true, openWorldHint: true },
     api: null,

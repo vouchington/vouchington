@@ -42,6 +42,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get Recommended Topics',
     requiredScopes: { mcp: ['recommendations:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/recommended-topics' }],

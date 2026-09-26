@@ -41,7 +41,12 @@ const tool: Tool<ToolArgs, ToolResult, [EntityType, string]> = {
     },
     strict: null,
   },
-  meta: { surfaces: ['internal'], annotations: { destructiveHint: true }, api: null },
+  meta: {
+    surfaces: ['internal'],
+    title: 'Add Related Topic',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    api: null,
+  },
   function:
     (currentUser: BasicUser, entityType: EntityType, entityId: string) =>
     async (args: ToolArgs): Promise<ToolResult> => {

@@ -64,6 +64,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get Trending Posts',
     requiredScopes: { mcp: ['posts:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/trending-posts' }],

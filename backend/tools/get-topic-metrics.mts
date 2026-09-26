@@ -48,6 +48,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Get Topic Metrics',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: null,

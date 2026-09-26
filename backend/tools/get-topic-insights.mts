@@ -48,6 +48,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Get Topic Insights',
     requiredScopes: { mcp: ['data-points:read'] },
     annotations: { readOnlyHint: true },
     api: null,

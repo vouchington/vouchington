@@ -36,6 +36,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Get Domain Ratings',
     requiredScopes: { mcp: ['domain-ratings:read'] },
     annotations: { readOnlyHint: true },
     api: null,

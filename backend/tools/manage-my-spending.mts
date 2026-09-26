@@ -50,9 +50,10 @@ export default createManageEntityTool({
   removeFn: (user, id) => deleteHouseholdSpendingCategoryById(user, id),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Manage My Spending',
     plan: 'plus',
     requiredScopes: { mcp: ['spending:read', 'spending:write'] },
-    annotations: { destructiveHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [
       { method: 'POST', path: '/api/v1/my/spending-categories' },
       { method: 'PATCH', path: '/api/v1/my/spending-categories/:id' },

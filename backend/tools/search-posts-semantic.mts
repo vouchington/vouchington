@@ -59,6 +59,7 @@ export function createSearchPostsSemanticTool(
     },
     meta: {
       surfaces: ['internal', 'mcp'],
+      title: 'Search Posts by Meaning',
       requiredScopes: { mcp: ['posts:read'] },
       annotations: { readOnlyHint: true },
       api: [{ method: 'GET', path: '/api/v1/posts' }],

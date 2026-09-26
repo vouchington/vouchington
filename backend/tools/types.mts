@@ -24,12 +24,20 @@ export type ToolCallOutput = { type: 'function_call_output'; call_id: string; ou
 
 export type ToolSurface = 'internal' | 'mcp' | 'admin_mcp' | 'client'
 
-export type ToolAnnotations = {
-  readOnlyHint?: boolean
-  destructiveHint?: boolean
-  idempotentHint?: boolean
+// MCP tool hints. A read tool carries no write hints; the MCP adapter marks every read idempotent.
+export type ReadOnlyToolAnnotations = {
+  readOnlyHint: true
   openWorldHint?: boolean
 }
+
+export type WriteToolAnnotations = {
+  readOnlyHint: false
+  destructiveHint: boolean
+  idempotentHint: boolean
+  openWorldHint?: boolean
+}
+
+export type ToolAnnotations = ReadOnlyToolAnnotations | WriteToolAnnotations
 
 export type ToolApiEndpoint = {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -39,6 +47,8 @@ export type ToolApiEndpoint = {
 export type ToolMeta = {
   // Which surfaces this tool is exposed on. Defaults to ['internal'] when absent.
   surfaces: readonly ToolSurface[]
+  // Human-readable name that MCP clients display instead of the snake_case tool name.
+  title: string
   // Minimum membership plan required to dispatch this tool on the external user `mcp` surface
   // (`tools/list`/`tools/call`; see backend/tools/registry/select.mts#isToolAllowedForPlan).
   // Default 'free'. This paywall applies only at that dispatch boundary: it never gates
@@ -47,7 +57,7 @@ export type ToolMeta = {
   // single field cannot express separate per-surface plans, so a mutating tool cannot share the
   // `mcp` and `admin_mcp` surfaces until the metadata model can.
   plan?: 'free' | 'plus' | 'pro'
-  annotations?: ToolAnnotations
+  annotations: ToolAnnotations
   // Canonical scopes required for an externally callable surface. Internal and client-only tools need none.
   requiredScopes?: Partial<Record<'mcp' | 'admin_mcp', readonly ApiScope[]>>
   // Equivalent existing REST endpoint(s), or null if none exist.
