@@ -5,7 +5,6 @@ const verifiedAt = '2026-09-10T09:15:00.000Z'
 const ownerId = '00000000-0000-7000-8000-000000000001'
 const adminId = '00000000-0000-7000-8000-000000000002'
 const clientId = '00000000-0000-7000-8000-000000000721'
-const deferredWebConsumers: ApiFixtureCase['consumers'] = []
 
 const adminClient = {
   id: clientId,
@@ -48,7 +47,7 @@ export const oauthClientVerificationApiFixtureCases: ApiFixtureCase[] = [
         end_cursor: 'fixture-admin-oauth-client-end-cursor',
       },
     },
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/admin/oauth-clients.test.mts'],
   },
   {
@@ -66,7 +65,7 @@ export const oauthClientVerificationApiFixtureCases: ApiFixtureCase[] = [
     },
     status: 200,
     body: { oauth_client: { ...adminClient, verified_at: verifiedAt, verified_by_id: adminId } },
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/admin/oauth-clients.test.mts'],
   },
   {
@@ -80,7 +79,7 @@ export const oauthClientVerificationApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-admin',
     status: 204,
     body: null,
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/admin/oauth-clients.test.mts'],
   },
 ]

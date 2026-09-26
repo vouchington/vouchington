@@ -5,7 +5,6 @@ import { communityEndpointRegistry } from './community-registry'
 import { engineeringEndpointRegistry } from './engineering-registry'
 import { nonWebClientEndpointRegistry } from './non-web-registry'
 import { moderationEndpointRegistry } from './moderation-registry'
-import { oauthManagementEndpointRegistry } from './oauth-management-registry'
 import { resourceEndpointRegistry } from './resource-registry'
 import { mergeEndpointRegistries } from './endpoint-registry'
 
@@ -17,6 +16,5 @@ export const nonWebEndpointRegistry = mergeEndpointRegistries(
   communityEndpointRegistry,
   engineeringEndpointRegistry,
   moderationEndpointRegistry,
-  oauthManagementEndpointRegistry,
   resourceEndpointRegistry,
 )
