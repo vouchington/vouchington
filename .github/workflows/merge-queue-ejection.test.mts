@@ -105,6 +105,8 @@ describe('merge-queue ejection workflow', () => {
     expect(prompt).toContain('The pull request is the root cause.')
     expect(prompt).toContain('Post the analysis comment below and stop. Do not fix it.')
     expect(prompt).toContain('create one draft fix PR from `main`')
+    expect(prompt).toContain('Create the fix branch from `{{MAIN_SHA}}`')
+    expect(prompt).toContain('require `git log {{MAIN_SHA}}..HEAD` to list only your own commits')
     expect(prompt).toContain('Do not open a PR for it.')
     expect(prompt).toContain('Never push to the pull request')
     expect(prompt).toContain('Post at most one comment on PR #{{PR_NUMBER}}')
