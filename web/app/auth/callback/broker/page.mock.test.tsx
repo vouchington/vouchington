@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 
@@ -105,13 +105,23 @@ describe('OAuth broker callback page', () => {
     mockCompleteOAuthAuthorization.mockResolvedValue({ user: { id: 'user-1' } })
 
     render(<OAuthBrokerCallbackPage />)
-    await vi.waitFor(() => expect(opener.postMessage).toHaveBeenCalled())
-    await vi.advanceTimersByTimeAsync(9999)
+    // vi.waitFor() advances fake time before its callback, which can fire the receipt
+    // timeout before this boundary and leave the React update unflushed.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(opener.postMessage).toHaveBeenCalled()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(9999)
+    })
 
     expect(mockAcknowledgeOAuthAuthorization).not.toHaveBeenCalled()
     expect(screen.queryByText('Unable to connect. Please try again.')).not.toBeInTheDocument()
 
-    await vi.advanceTimersByTimeAsync(1)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
 
     expect(screen.getByText('Unable to connect. Please try again.')).toBeVisible()
     expect(mockAcknowledgeOAuthAuthorization).not.toHaveBeenCalled()
