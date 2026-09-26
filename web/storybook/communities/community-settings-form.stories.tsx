@@ -21,7 +21,7 @@ const community: Community = {
   markdown: 'A public community for card reviews and application data points.',
   visibility: 'public',
   member_roster_visibility: 'members',
-  list_type: 'topics',
+  list_type: 'follow',
   member_invites_allowed_at: '2026-02-01T00:00:00.000Z',
   post_approval_required_at: '2026-02-01T00:00:00.000Z',
   allow_review_posts: true,

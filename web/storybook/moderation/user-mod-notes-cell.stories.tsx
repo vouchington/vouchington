@@ -6,8 +6,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Moderation/User Mod Notes Cell',
-  component: UserModNotesCell,
-} satisfies Meta<typeof UserModNotesCell>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>

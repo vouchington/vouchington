@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>
 const idle = {
   confirmArchive: false,
   error: null,
-  handleArchive: () => {},
+  handleArchive: () => Promise.resolve(),
   isBusy: false,
   loading: false,
 }
