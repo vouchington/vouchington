@@ -129,7 +129,7 @@ describe('classifier input validation', () => {
         {
           ...makeInput({}).bindings[1]!,
           candidate: {
-            ...noulBinding(1).candidate,
+            ...(noulBinding(1).candidate as TopicClassifierCandidate),
             storedCandidateId: storedCandidateAId,
           },
         },

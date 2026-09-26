@@ -5,6 +5,7 @@ export {
   OPENROUTER_DEFAULT_AGENT_MODEL,
 } from '@modules/openrouter-utils'
 export * from './record-response-usage.mts'
+export * from './structured-decision-spend-hooks.mts'
 export * from './models.mts'
 export * from './retry-policy.mts'
 export * from './run-tool-loop.mts'

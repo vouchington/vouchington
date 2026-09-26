@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { PersistClassifierDecisionInput } from '@services/classifiers'
+import {
+  classifierResultEntityId,
+  type PersistClassifierDecisionInput,
+} from '@services/classifiers'
 import { executeClassifierDecision } from './execute.mts'
 import {
   configuration,
@@ -63,7 +66,7 @@ describe('executeClassifierDecision shards', () => {
     expect(
       persisted[0]?.calls
         .flatMap(call => call.results)
-        .map(result => (result.candidateKind === 'topic' ? result.topicId : result.storyId)),
+        .map(result => classifierResultEntityId(result)),
     ).toEqual([topicAId, topicBId, topicCId])
   })
 

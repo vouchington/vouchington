@@ -1,5 +1,12 @@
-import type { ActiveClassifierConfiguration } from '@services/classifiers'
-import { candidatesForBinding, classifierCandidateKey } from './bindings.mts'
+import {
+  classifierCandidateFamily,
+  type ActiveClassifierConfiguration,
+} from '@services/classifiers'
+import {
+  candidatesForBinding,
+  classifierCandidateEntityId,
+  classifierCandidateKey,
+} from './bindings.mts'
 import { assertChoiceBinding } from './validate-choice-binding.mts'
 import {
   assertClassifierDecisionIds,
@@ -36,7 +43,8 @@ function assertBindingSet(
     questionIds.add(binding.questionId)
     for (const candidate of candidatesForBinding(binding)) {
       assertCandidateIdentity(candidate)
-      if (candidate.candidateKind !== configuration.candidateKind)
+      assertCandidateNotSubject(candidate, input)
+      if (classifierCandidateFamily(candidate.candidateKind) !== configuration.candidateKind)
         throw new Error('Classifier decision cannot mix candidate kinds')
       const key = classifierCandidateKey(candidate)
       if (candidateKeys.has(key))
@@ -53,9 +61,21 @@ function assertBindingSet(
 }
 
 function assertCandidateIdentity(candidate: ClassifierDecisionCandidate): void {
-  const entityId = candidate.candidateKind === 'topic' ? candidate.topicId : candidate.storyId
+  const entityId = classifierCandidateEntityId(candidate)
   if (entityId.trim().length === 0)
     throw new Error('Classifier candidates require a concrete entity ID')
   if (candidate.storedCandidateId !== null && candidate.storedCandidateId.trim().length === 0)
     throw new Error('Stored classifier candidate IDs cannot be empty')
+}
+
+function assertCandidateNotSubject(
+  candidate: ClassifierDecisionCandidate,
+  input: ClassifierDecisionRequestInput,
+): void {
+  if (
+    candidate.candidateKind === 'rss_feed_item' &&
+    candidate.rssFeedItemId === input.subject.rssFeedItemId
+  ) {
+    throw new Error('Classifier candidates cannot include the decision subject itself')
+  }
 }

@@ -26,7 +26,22 @@ export type StoryClassifierCandidate = {
   storedCandidateId: string | null
 }
 
-export type ClassifierDecisionCandidate = TopicClassifierCandidate | StoryClassifierCandidate
+/**
+ * A standalone RSS feed item offered as a Choice criterion alongside existing-story
+ * criteria in a story-family classifier decision. Never a stored/pre-registered
+ * candidate (`classifier_candidates` only ever holds topics and stories), so
+ * `storedCandidateId` is always null. See docs/requirements/content/reference-stories-clustering-algorithm.md.
+ */
+export type RssFeedItemClassifierCandidate = {
+  candidateKind: 'rss_feed_item'
+  rssFeedItemId: string
+  storedCandidateId: null
+}
+
+export type ClassifierDecisionCandidate =
+  | TopicClassifierCandidate
+  | StoryClassifierCandidate
+  | RssFeedItemClassifierCandidate
 
 export type NoulClassifierBinding = {
   type: 'noul'

@@ -5,9 +5,10 @@ import type {
   StructuredDecisionRequest,
   StructuredDecisionResult,
 } from '@modules/structured-decisions'
-import type {
-  ClassifierDecisionInputResult,
-  PersistClassifierDecisionCall,
+import {
+  classifierDecisionResultKey,
+  type ClassifierDecisionInputResult,
+  type PersistClassifierDecisionCall,
 } from '@services/classifiers'
 import { candidatesForBinding, classifierCandidateKey } from './bindings.mts'
 import type {
@@ -55,8 +56,7 @@ export function assertCompleteCandidateCoverage(
   const actual = new Set<string>()
   for (const call of calls) {
     for (const result of call.results) {
-      const key =
-        result.candidateKind === 'topic' ? `topic:${result.topicId}` : `story:${result.storyId}`
+      const key = classifierDecisionResultKey(result)
       if (actual.has(key) || !expected.has(key))
         throw new Error('Classifier decision did not produce exact candidate coverage')
       actual.add(key)
@@ -99,19 +99,34 @@ function resultForCandidate(
 ): ClassifierDecisionInputResult {
   if (!Number.isFinite(probability) || probability < 0 || probability > 1)
     throw new Error('Structured-decision answer produced an invalid probability')
-  return candidate.candidateKind === 'topic'
-    ? {
+  switch (candidate.candidateKind) {
+    case 'topic':
+      return {
         candidateKind: 'topic',
         topicId: candidate.topicId,
         storedCandidateId: candidate.storedCandidateId,
         probability,
         rawResponse,
       }
-    : {
+    case 'story':
+      return {
         candidateKind: 'story',
         storyId: candidate.storyId,
         storedCandidateId: candidate.storedCandidateId,
         probability,
         rawResponse,
       }
+    case 'rss_feed_item':
+      return {
+        candidateKind: 'rss_feed_item',
+        rssFeedItemId: candidate.rssFeedItemId,
+        storedCandidateId: candidate.storedCandidateId,
+        probability,
+        rawResponse,
+      }
+    default: {
+      const exhaustive: never = candidate
+      throw new Error(`Unhandled classifier candidate kind: ${String(exhaustive)}`)
+    }
+  }
 }

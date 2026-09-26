@@ -32,8 +32,21 @@ export function candidatesForBinding(
     : binding.criteria.flatMap(criterion => (criterion.candidate ? [criterion.candidate] : []))
 }
 
+export function classifierCandidateEntityId(candidate: ClassifierDecisionCandidate): string {
+  switch (candidate.candidateKind) {
+    case 'topic':
+      return candidate.topicId
+    case 'story':
+      return candidate.storyId
+    case 'rss_feed_item':
+      return candidate.rssFeedItemId
+    default: {
+      const exhaustive: never = candidate
+      throw new Error(`Unhandled classifier candidate kind: ${String(exhaustive)}`)
+    }
+  }
+}
+
 export function classifierCandidateKey(candidate: ClassifierDecisionCandidate): string {
-  return candidate.candidateKind === 'topic'
-    ? `topic:${candidate.topicId}`
-    : `story:${candidate.storyId}`
+  return `${candidate.candidateKind}:${classifierCandidateEntityId(candidate)}`
 }

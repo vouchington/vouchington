@@ -26,6 +26,7 @@
     "@modules/openai-utils": "workspace:^",
     "@modules/openrouter-utils": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/conversations-messages": "workspace:^",
     "@services/openai-agents": "workspace:^",
@@ -36,6 +37,8 @@
     "openai": "^7.15.0"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@data-stores/valkey": "workspace:^",
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.0"
   }
 }

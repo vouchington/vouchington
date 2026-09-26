@@ -13,6 +13,31 @@ export type NormalizedClassifierDecisionInput = PersistClassifierDecisionInput &
 
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+export type ClassifierCandidateFamily = 'topic' | 'story'
+
+/**
+ * `rss_feed_item` is a candidate *shape* within the story family (a standalone
+ * item that would become a new story), never its own classifier family: the
+ * DB-level `classifier_candidate_kind` enum and a classifier row's own
+ * `candidate_kind` stay `'topic' | 'story'`. This maps a result/candidate's own
+ * kind to the family its classifier row belongs to.
+ */
+export function classifierCandidateFamily(
+  candidateKind: 'topic' | 'story' | 'rss_feed_item',
+): ClassifierCandidateFamily {
+  switch (candidateKind) {
+    case 'topic':
+      return 'topic'
+    case 'story':
+    case 'rss_feed_item':
+      return 'story'
+    default: {
+      const exhaustive: never = candidateKind
+      throw new Error(`Unhandled classifier candidate kind: ${String(exhaustive)}`)
+    }
+  }
+}
+
 export function normalizeClassifierDecisionInput(
   input: PersistClassifierDecisionInput,
 ): NormalizedClassifierDecisionInput {
@@ -24,7 +49,7 @@ export function normalizeClassifierDecisionInput(
   if (input.subject.rssFeedItemId) durableIds.push(input.subject.rssFeedItemId)
   if (input.scope.scopeCommunityId) durableIds.push(input.scope.scopeCommunityId)
   for (const result of input.calls.flatMap(call => call.results)) {
-    durableIds.push(result.candidateKind === 'topic' ? result.topicId : result.storyId)
+    durableIds.push(classifierResultEntityId(result))
     if (result.storedCandidateId) durableIds.push(result.storedCandidateId)
   }
   if (durableIds.some(id => !isUUID(id))) {
@@ -48,10 +73,10 @@ export function normalizeClassifierDecisionInput(
 
 export function classifierDecisionCandidateKind(
   input: Pick<NormalizedClassifierDecisionInput, 'calls'>,
-): 'topic' | 'story' {
+): ClassifierCandidateFamily {
   const firstResult = input.calls[0]?.results[0]
   if (!firstResult) throw new Error('Classifier decision requires a candidate result')
-  return firstResult.candidateKind
+  return classifierCandidateFamily(firstResult.candidateKind)
 }
 
 export function flattenClassifierDecisionResults(
@@ -60,8 +85,23 @@ export function flattenClassifierDecisionResults(
   return input.calls.flatMap(call => call.results)
 }
 
+export function classifierResultEntityId(result: ClassifierDecisionInputResult): string {
+  switch (result.candidateKind) {
+    case 'topic':
+      return result.topicId
+    case 'story':
+      return result.storyId
+    case 'rss_feed_item':
+      return result.rssFeedItemId
+    default: {
+      const exhaustive: never = result
+      throw new Error(`Unhandled classifier result candidate kind: ${String(exhaustive)}`)
+    }
+  }
+}
+
 export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {
-  return result.candidateKind === 'topic' ? `topic:${result.topicId}` : `story:${result.storyId}`
+  return `${result.candidateKind}:${classifierResultEntityId(result)}`
 }
 
 export function serializeClassifierRawResponse(value: unknown): string {
@@ -71,15 +111,15 @@ export function serializeClassifierRawResponse(value: unknown): string {
 function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): void {
   const resultKeys = new Set<string>()
   const storedCandidateIds = new Set<string>()
-  let candidateKind: 'topic' | 'story' | undefined
+  let family: ClassifierCandidateFamily | undefined
   for (const [index, call] of calls.entries()) {
     if (call.shardOrdinal !== index || call.results.length === 0) {
       throw new Error('Classifier decision calls must have consecutive non-empty shard ordinals')
     }
     for (const result of call.results) {
       assertDecisionResult(result)
-      candidateKind ??= result.candidateKind
-      if (candidateKind !== result.candidateKind) {
+      family ??= classifierCandidateFamily(result.candidateKind)
+      if (family !== classifierCandidateFamily(result.candidateKind)) {
         throw new Error('Classifier decision cannot mix topic and story candidates')
       }
       const key = classifierDecisionResultKey(result)

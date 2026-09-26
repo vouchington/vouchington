@@ -37,9 +37,16 @@ export type StoryClassifierDecisionResult = PersistedDecisionResultBase & {
   storedCandidateId: string | null
 }
 
+export type RssFeedItemClassifierDecisionResult = PersistedDecisionResultBase & {
+  candidateKind: 'rss_feed_item'
+  rssFeedItemId: string
+  storedCandidateId: null
+}
+
 export type ClassifierDecisionInputResult =
   | TopicClassifierDecisionResult
   | StoryClassifierDecisionResult
+  | RssFeedItemClassifierDecisionResult
 
 export type PersistClassifierDecisionCall = {
   shardOrdinal: number
@@ -55,27 +62,21 @@ export type PersistClassifierDecisionInput = {
   calls: readonly PersistClassifierDecisionCall[]
 }
 
+type PersistedResultEnvelope = {
+  id: string
+  batchId: string
+  decisionCallId: string
+  classifierId: string
+  promptVersionId: string
+  thresholdId: string | null
+  effectiveThresholds: ClassifierThresholds
+  scope: ClassifierDecisionScope
+}
+
 export type PersistedClassifierDecisionResult =
-  | (TopicClassifierDecisionResult & {
-      id: string
-      batchId: string
-      decisionCallId: string
-      classifierId: string
-      promptVersionId: string
-      thresholdId: string | null
-      effectiveThresholds: ClassifierThresholds
-      scope: ClassifierDecisionScope
-    })
-  | (StoryClassifierDecisionResult & {
-      id: string
-      batchId: string
-      decisionCallId: string
-      classifierId: string
-      promptVersionId: string
-      thresholdId: string | null
-      effectiveThresholds: ClassifierThresholds
-      scope: ClassifierDecisionScope
-    })
+  | (TopicClassifierDecisionResult & PersistedResultEnvelope)
+  | (StoryClassifierDecisionResult & PersistedResultEnvelope)
+  | (RssFeedItemClassifierDecisionResult & PersistedResultEnvelope)
 
 export type PersistedClassifierDecisionCall = {
   id: string
