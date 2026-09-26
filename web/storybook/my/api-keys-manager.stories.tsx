@@ -3,6 +3,7 @@ import { expect, within } from 'storybook/test'
 import { ApiKeysManager } from '../../components/my/api-keys-manager'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { ApiKey } from '@/types/api-keys'
+import { storybookScopeCatalog } from './fixtures/scope-catalog'
 
 const meta = {
   title: 'My/Api Keys Manager',
@@ -47,7 +48,10 @@ async function expectRealManager({ canvasElement }: { canvasElement: HTMLElement
 export const WithKeys: Story = {
   render: () => (
     <StoryFrame>
-      <ApiKeysManager initialData={{ results: keys, page_info: pageInfo }} />
+      <ApiKeysManager
+        initialData={{ results: keys, page_info: pageInfo }}
+        scopeCatalog={storybookScopeCatalog}
+      />
     </StoryFrame>
   ),
   play: async context => {
@@ -59,7 +63,10 @@ export const WithKeys: Story = {
 export const Empty: Story = {
   render: () => (
     <StoryFrame>
-      <ApiKeysManager initialData={{ results: [], page_info: pageInfo }} />
+      <ApiKeysManager
+        initialData={{ results: [], page_info: pageInfo }}
+        scopeCatalog={storybookScopeCatalog}
+      />
     </StoryFrame>
   ),
   play: expectRealManager,
