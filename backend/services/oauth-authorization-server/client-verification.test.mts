@@ -14,6 +14,7 @@ import {
   unverifyOAuthClient,
   verifyOAuthClient,
   type OAuthClientVerificationFilter,
+  type OAuthClientVerificationReview,
 } from './index.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
@@ -21,18 +22,15 @@ type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
 const MISSING_ID = '00000000-0000-7000-8000-000000000000'
 
 async function registerTestClient(owner: TestUser | null = null) {
+  const reviewed: OAuthClientVerificationReview = {
+    client_name: `Verification ${randomBytes(6).toString('hex')}`,
+    redirect_uris: [randomTestOAuthRedirectUri()],
+  }
   const registered = await registerOAuthClient(
-    {
-      client_name: `Verification ${randomBytes(6).toString('hex')}`,
-      redirect_uris: [randomTestOAuthRedirectUri()],
-      scope: TEST_OAUTH_SCOPE,
-    },
+    { ...reviewed, scope: TEST_OAUTH_SCOPE },
     owner?.id ?? null,
   )
-  return {
-    id: await getTestOAuthClientRowId(registered.client_id),
-    name: registered.client_name,
-  }
+  return { id: await getTestOAuthClientRowId(registered.client_id), reviewed }
 }
 
 async function listedIds(verification: OAuthClientVerificationFilter): Promise<string[]> {
@@ -52,11 +50,11 @@ describe('staff OAuth client verification', () => {
     expect(currentUserCanVerifyOAuthClients({ roles: ['moderator'] })).toBe(false)
   })
 
-  it('verifies the reviewed name and records who verified it', async () => {
+  it('verifies the reviewed name and destinations and records who verified it', async () => {
     const owner = await createTestUserDirect()
     const client = await registerTestClient(owner)
 
-    const result = await verifyOAuthClient(admin.id, client.id, client.name)
+    const result = await verifyOAuthClient(admin.id, client.id, client.reviewed)
     expect(result).toMatchObject({
       outcome: 'verified',
       client: { id: client.id, owner_user_id: owner.id, verified_by_id: admin.id },
@@ -66,11 +64,14 @@ describe('staff OAuth client verification', () => {
     await expect(listedIds('all')).resolves.toContain(client.id)
   })
 
-  it('refuses a name that changed since review', async () => {
+  it.each([
+    ['a name', { client_name: 'Some other name' }],
+    ['a redirect URI', { redirect_uris: [randomTestOAuthRedirectUri()] }],
+  ])('refuses %s that changed since review', async (_label, stale) => {
     const client = await registerTestClient()
-    await expect(verifyOAuthClient(admin.id, client.id, 'Some other name')).resolves.toEqual({
-      outcome: 'conflict',
-    })
+    await expect(
+      verifyOAuthClient(admin.id, client.id, { ...client.reviewed, ...stale }),
+    ).resolves.toEqual({ outcome: 'conflict' })
     await expect(listedIds('unverified')).resolves.toContain(client.id)
   })
 
@@ -83,13 +84,13 @@ describe('staff OAuth client verification', () => {
       `https://example.com/clients/${randomBytes(6).toString('hex')}.json`,
     )
 
-    await expect(verifyOAuthClient(admin.id, revoked.id, revoked.name)).resolves.toEqual({
+    await expect(verifyOAuthClient(admin.id, revoked.id, revoked.reviewed)).resolves.toEqual({
       outcome: 'conflict',
     })
-    await expect(verifyOAuthClient(admin.id, documented.id, documented.name)).resolves.toEqual({
+    await expect(verifyOAuthClient(admin.id, documented.id, documented.reviewed)).resolves.toEqual({
       outcome: 'conflict',
     })
-    await expect(verifyOAuthClient(admin.id, MISSING_ID, 'Missing')).resolves.toEqual({
+    await expect(verifyOAuthClient(admin.id, MISSING_ID, revoked.reviewed)).resolves.toEqual({
       outcome: 'not_found',
     })
     const all = await listedIds('all')
@@ -99,7 +100,7 @@ describe('staff OAuth client verification', () => {
 
   it('clears verification', async () => {
     const client = await registerTestClient()
-    await verifyOAuthClient(admin.id, client.id, client.name)
+    await verifyOAuthClient(admin.id, client.id, client.reviewed)
 
     await expect(unverifyOAuthClient(client.id)).resolves.toBe(true)
     await expect(listedIds('unverified')).resolves.toContain(client.id)

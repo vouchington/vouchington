@@ -9,7 +9,9 @@ import {
 import {
   createOwnedOAuthApp,
   registerOAuthClient,
+  updateOwnedOAuthApp,
   verifyOAuthClient,
+  type OAuthAppView,
 } from '@services/oauth-authorization-server'
 import { randomTestOAuthRedirectUri } from '@services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
@@ -19,6 +21,8 @@ const MISSING_ID = '00000000-0000-7000-8000-000000000000'
 type ListedClient = {
   id: string
   client_id: string
+  client_name: string
+  redirect_uris: string[]
   owner: { id: string; username: string } | null
 }
 
@@ -29,6 +33,10 @@ async function createApp(ownerId: string) {
     scopes: ['mcp.user:read'],
   })
   return app
+}
+
+function reviewOf(app: OAuthAppView) {
+  return { client_name: app.client_name, redirect_uris: app.redirect_uris }
 }
 
 describe('GET /api/v1/admin/oauth-clients', () => {
@@ -52,7 +60,7 @@ describe('GET /api/v1/admin/oauth-clients', () => {
   it('filters by verification and projects the owner', async () => {
     const unverified = await createApp(owner.id)
     const verified = await createApp(owner.id)
-    await verifyOAuthClient(admin.id, verified.id, verified.client_name)
+    await verifyOAuthClient(admin.id, verified.id, reviewOf(verified))
     const request = createRequest()
     await request.authenticateAs(admin)
 
@@ -132,14 +140,14 @@ describe('PUT and DELETE /api/v1/admin/oauth-clients/:id/verification', () => {
     owner = await createTestUser()
   })
 
-  it('verifies the reviewed name and clears it again', async () => {
+  it('verifies the reviewed name and destinations and clears it again', async () => {
     const app = await createApp(owner.id)
     const request = createRequest()
     await request.authenticateAs(admin)
 
     const response = await request
       .put(`/api/v1/admin/oauth-clients/${app.id}/verification`)
-      .send({ client_name: app.client_name })
+      .send(reviewOf(app))
       .expect(200)
     expect(response.body.oauth_client).toMatchObject({ id: app.id, verified_by_id: admin.id })
     expect(response.body.oauth_client.verified_at).toEqual(expect.any(String))
@@ -152,13 +160,37 @@ describe('PUT and DELETE /api/v1/admin/oauth-clients/:id/verification', () => {
     expect(cleared.body.results.map((client: ListedClient) => client.id)).toContain(app.id)
   })
 
+  it('returns 409 when the owner re-points the app after review', async () => {
+    const app = await createApp(owner.id)
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const listed = await request
+      .get('/api/v1/admin/oauth-clients')
+      .query({ verification: 'unverified', limit: 100 })
+      .expect(200)
+    const reviewed = listed.body.results.find(
+      (client: ListedClient) => client.id === app.id,
+    ) as ListedClient
+    await updateOwnedOAuthApp(owner.id, app.id, { redirect_uris: [randomTestOAuthRedirectUri()] })
+
+    await request
+      .put(`/api/v1/admin/oauth-clients/${app.id}/verification`)
+      .send({ client_name: reviewed.client_name, redirect_uris: reviewed.redirect_uris })
+      .expect(409)
+    const pending = await request
+      .get('/api/v1/admin/oauth-clients')
+      .query({ verification: 'unverified', limit: 100 })
+      .expect(200)
+    expect(pending.body.results.map((client: ListedClient) => client.id)).toContain(app.id)
+  })
+
   it('returns 409 for a stale name or an ineligible client and 404 when missing', async () => {
     const app = await createApp(owner.id)
     const request = createRequest()
     await request.authenticateAs(admin)
     await request
       .put(`/api/v1/admin/oauth-clients/${app.id}/verification`)
-      .send({ client_name: 'Not the reviewed name' })
+      .send({ ...reviewOf(app), client_name: 'Not the reviewed name' })
       .expect(409)
 
     const described = await createApp(owner.id)
@@ -168,19 +200,19 @@ describe('PUT and DELETE /api/v1/admin/oauth-clients/:id/verification', () => {
     )
     await request
       .put(`/api/v1/admin/oauth-clients/${described.id}/verification`)
-      .send({ client_name: described.client_name })
+      .send(reviewOf(described))
       .expect(409)
 
     const revoked = await createApp(owner.id)
     await revokeTestOAuthClient(revoked.id)
     await request
       .put(`/api/v1/admin/oauth-clients/${revoked.id}/verification`)
-      .send({ client_name: revoked.client_name })
+      .send(reviewOf(revoked))
       .expect(409)
 
     await request
       .put(`/api/v1/admin/oauth-clients/${MISSING_ID}/verification`)
-      .send({ client_name: 'Missing' })
+      .send(reviewOf(app))
       .expect(404)
     await request.delete(`/api/v1/admin/oauth-clients/${MISSING_ID}/verification`).expect(404)
   })
@@ -191,7 +223,7 @@ describe('PUT and DELETE /api/v1/admin/oauth-clients/:id/verification', () => {
     await request.authenticateAs(moderator)
     await request
       .put(`/api/v1/admin/oauth-clients/${app.id}/verification`)
-      .send({ client_name: app.client_name })
+      .send(reviewOf(app))
       .expect(403)
     await request.delete(`/api/v1/admin/oauth-clients/${app.id}/verification`).expect(403)
   })

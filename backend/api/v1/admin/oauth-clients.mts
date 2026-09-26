@@ -24,7 +24,7 @@ import {
 } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 
-type VerifyOAuthClientRequest = { client_name: string }
+type VerifyOAuthClientRequest = { client_name: string; redirect_uris: string[] }
 
 const oauthClientsParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -72,7 +72,7 @@ app.route('/api/v1/admin/oauth-clients').get(async (ctx: Context) => {
   )
 })
 
-// PUT /api/v1/admin/oauth-clients/:id/verification — verify the exact client name staff reviewed
+// PUT /api/v1/admin/oauth-clients/:id/verification — verify the exact name and redirect URIs staff reviewed
 app.route('/api/v1/admin/oauth-clients/:id/verification').put(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
     ctx,
@@ -88,12 +88,15 @@ app.route('/api/v1/admin/oauth-clients/:id/verification').put(async (ctx: Contex
     body,
   })
 
-  const verification = await verifyOAuthClient(currentUser.id, id, body.client_name)
+  const verification = await verifyOAuthClient(currentUser.id, id, {
+    client_name: body.client_name,
+    redirect_uris: body.redirect_uris,
+  })
   ctx.assert(verification.outcome !== 'not_found', 404, 'OAuth client not found')
   ctx.assert(
     verification.outcome === 'verified',
     409,
-    'OAuth client name changed or the client cannot be verified',
+    'OAuth client name or redirect URIs changed, or the client cannot be verified',
   )
   ctx.json(
     apiResponse('PUT:/api/v1/admin/oauth-clients/:id/verification', {

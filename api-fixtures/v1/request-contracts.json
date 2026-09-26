@@ -19230,9 +19230,15 @@
       "properties": {
         "client_name": {
           "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
-      "required": ["client_name"],
+      "required": ["client_name", "redirect_uris"],
       "type": "object"
     },
     "ViewAgentModerationElection": {

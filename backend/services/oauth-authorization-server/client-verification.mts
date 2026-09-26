@@ -48,14 +48,21 @@ export async function listOAuthClientsForVerification(options: {
   return { results: rows.slice(0, options.limit), hasNextPage: rows.length > options.limit }
 }
 
+/** What an administrator reviewed. An owner change to either field clears verification. */
+export type OAuthClientVerificationReview = Pick<
+  AdminOAuthClientView,
+  'client_name' | 'redirect_uris'
+>
+
 /**
- * Verifies the exact `clientName` the administrator reviewed. A rename since the review, a
- * revoked client or a metadata-document client is a conflict rather than a silent verification.
+ * Verifies the exact name and redirect URIs the administrator reviewed. A rename or re-pointing
+ * since the review, a revoked client or a metadata-document client is a conflict rather than a
+ * silent verification.
  */
 export async function verifyOAuthClient(
   currentUserId: string,
   id: string,
-  clientName: string,
+  reviewed: OAuthClientVerificationReview,
 ): Promise<OAuthClientVerificationResult> {
   const { rows } = await write<AdminOAuthClientView>(
     `/* verifyOAuthClient */ UPDATE oauth_clients
@@ -63,11 +70,12 @@ export async function verifyOAuthClient(
          verified_by_id = $2
      WHERE id = $1
        AND client_name = $3
+       AND redirect_uris = $4::text[]
        AND metadata_url IS NULL
        AND revoked_at IS NULL
      RETURNING id, client_id, client_name, client_type, redirect_uris, scopes, owner_user_id,
        verified_at, verified_by_id, created_at`,
-    [id, currentUserId, clientName],
+    [id, currentUserId, reviewed.client_name, reviewed.redirect_uris],
   )
   const client = rows[0]
   if (client) return { outcome: 'verified', client }

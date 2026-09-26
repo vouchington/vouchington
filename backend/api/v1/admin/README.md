@@ -21,7 +21,7 @@ Most endpoints require administrator access (`isAdminUser`). The growth metrics 
 | GET    | `/api/v1/admin/landing-pages/:pageId/analytics`              | Get landing page detail and analytics         |
 | GET    | `/api/v1/growth-metrics`                                     | Platform growth KPIs (admin or investor)      |
 | GET    | `/api/v1/admin/oauth-clients`                                | List dynamic OAuth clients by verification    |
-| PUT    | `/api/v1/admin/oauth-clients/:id/verification`               | Verify the reviewed OAuth client name         |
+| PUT    | `/api/v1/admin/oauth-clients/:id/verification`               | Verify a reviewed OAuth client name and URIs  |
 | DELETE | `/api/v1/admin/oauth-clients/:id/verification`               | Clear an OAuth client's verification          |
 | POST   | `/api/v1/article-syncs`                                      | Enqueue article sync job (returns jobId)      |
 | GET    | `/api/v1/article-syncs/:jobId`                               | Poll article sync job status                  |

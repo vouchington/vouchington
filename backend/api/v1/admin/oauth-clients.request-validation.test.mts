@@ -43,9 +43,18 @@ describe('admin OAuth client verification request contract validation', () => {
 
   it.each([
     ['a non-object body', 'null'],
-    ['a missing name', '{}'],
-    ['a non-string name', '{"client_name":7}'],
-    ['an unknown field', '{"client_name":"App","verified_by_id":"x"}'],
+    ['a missing name', '{"redirect_uris":["https://app.example.com/callback"]}'],
+    ['a non-string name', '{"client_name":7,"redirect_uris":["https://app.example.com/callback"]}'],
+    ['missing redirect URIs', '{"client_name":"App"}'],
+    [
+      'non-array redirect URIs',
+      '{"client_name":"App","redirect_uris":"https://app.example.com/callback"}',
+    ],
+    ['a non-string redirect URI', '{"client_name":"App","redirect_uris":[7]}'],
+    [
+      'an unknown field',
+      '{"client_name":"App","redirect_uris":["https://app.example.com/callback"],"verified_by_id":"x"}',
+    ],
   ])('returns 422 for %s without verifying', async (_label, body) => {
     const owner = await createTestUser()
     const { oauth_app: app } = await createOwnedOAuthApp(owner.id, {
@@ -69,7 +78,7 @@ describe('admin OAuth client verification request contract validation', () => {
     await request.authenticateAs(admin)
     await request
       .put('/api/v1/admin/oauth-clients/not-a-uuid/verification')
-      .send({ client_name: 'App' })
+      .send({ client_name: 'App', redirect_uris: ['https://app.example.com/callback'] })
       .expect(422)
     await request.delete('/api/v1/admin/oauth-clients/not-a-uuid/verification').expect(422)
   })

@@ -62,8 +62,9 @@ tracks it.
 
 Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
 ([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
-`verified_by_id` only when the stored `client_name` still equals the name the administrator
-reviewed, so a rename between review and approval returns 409 instead of verifying the new name.
+`verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
+redirect URIs the administrator reviewed, so an owner's rename or re-pointing between review and
+approval returns 409 instead of verifying what staff never saw.
 Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
 sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
 verification.

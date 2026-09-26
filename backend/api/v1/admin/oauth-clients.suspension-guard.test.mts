@@ -29,7 +29,8 @@ describe('OAuth client verification suspension guards', () => {
         redirect_uris: [randomTestOAuthRedirectUri()],
         scopes: ['mcp.user:read'],
       })
-      if (method === 'DELETE') await verifyOAuthClient(admin.id, app.id, app.client_name)
+      const reviewed = { client_name: app.client_name, redirect_uris: app.redirect_uris }
+      if (method === 'DELETE') await verifyOAuthClient(admin.id, app.id, reviewed)
       const [before] = (await listOwnedOAuthApps(owner.id, { limit: 1 })).results
       await suspendTestUser(admin.id)
       suspendedUserIds.push(admin.id)
@@ -38,9 +39,7 @@ describe('OAuth client verification suspension guards', () => {
 
       const path = `/api/v1/admin/oauth-clients/${app.id}/verification`
       const response =
-        method === 'PUT'
-          ? await request.put(path).send({ client_name: app.client_name })
-          : await request.delete(path)
+        method === 'PUT' ? await request.put(path).send(reviewed) : await request.delete(path)
 
       expect(response.status).toBe(403)
       expect(response.body.code).toBe(ACCOUNT_SUSPENDED)

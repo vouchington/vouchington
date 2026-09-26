@@ -60,7 +60,10 @@ export const oauthClientVerificationApiFixtureCases: ApiFixtureCase[] = [
       pathParams: { id: clientId },
     },
     auth: 'fixture-admin',
-    requestBody: { client_name: 'Fixture Agent' },
+    requestBody: {
+      client_name: adminClient.client_name,
+      redirect_uris: adminClient.redirect_uris,
+    },
     status: 200,
     body: { oauth_client: { ...adminClient, verified_at: verifiedAt, verified_by_id: adminId } },
     consumers: deferredWebConsumers,

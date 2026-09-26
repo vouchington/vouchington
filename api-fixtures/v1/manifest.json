@@ -67527,7 +67527,8 @@
       "migratedFrom": ["backend/api/v1/admin/oauth-clients.test.mts"],
       "path": "/api/v1/admin/oauth-clients/00000000-0000-7000-8000-000000000721/verification",
       "requestBody": {
-        "client_name": "Fixture Agent"
+        "client_name": "Fixture Agent",
+        "redirect_uris": ["https://agent.example.com/oauth/callback"]
       },
       "responseSchema": {
         "hash": "9eb6a4cb3a4a5d79a64a0f478f54f6d118d8bbac2f124ee809d67fd3fa17651f",

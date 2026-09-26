@@ -62,8 +62,8 @@ serializes with in-flight token requests and the replaced secret stops working o
 returns.
 `client-metadata-validation.mts` holds the RFC 7591 metadata validators that dynamic registration
 and owner apps share. `client-verification.mts` lists active dynamically registered clients for
-administrators and verifies the exact reviewed `client_name` with one conditional update, or clears
-verification. Management views live in `management-types.mts`.
+administrators and verifies the exact reviewed `client_name` and `redirect_uris` with one
+conditional update, or clears verification. Management views live in `management-types.mts`.
 
 ## Boundaries
 
