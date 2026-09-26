@@ -10,9 +10,10 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
   communitySlug: string
+  onOpened?: (href: string) => void
 }
 
-export default function MessageModsButton({ communitySlug }: Props) {
+export default function MessageModsButton({ communitySlug, onOpened }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -22,7 +23,9 @@ export default function MessageModsButton({ communitySlug }: Props) {
     setLoading(true)
     try {
       const { thread } = await openModmailThread(communitySlug)
-      router.push(modmailThreadHref(communitySlug, thread))
+      const href = modmailThreadHref(communitySlug, thread)
+      onOpened?.(href)
+      router.push(href)
     } catch (error) {
       onError(error, {
         fallback: t(

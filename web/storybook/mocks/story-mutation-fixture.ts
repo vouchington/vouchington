@@ -1,5 +1,6 @@
 import { ClientRequest } from '@/lib/api/client/request'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
+import { resetModNoteSequence } from './story-mutation-bodies'
 import {
   storyMutationDelete,
   storyMutationPatch,
@@ -16,10 +17,12 @@ const previousGet = ClientRequest.prototype.get
 
 export function setStoryMutationFixture(): void {
   storyMutations = true
+  resetModNoteSequence()
 }
 
 export function clearStoryMutationFixture(): void {
   storyMutations = false
+  resetModNoteSequence()
 }
 
 function respond<T>(response: unknown, fallback: () => Promise<T>): Promise<T> {

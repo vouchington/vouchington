@@ -186,6 +186,9 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   if (endpoint === '/api/v1/users' && userSearchFixture) {
     return Promise.resolve(storybookAutocompleteResponse(endpoint) as T)
   }
+  if (endpoint === '/api/v1/topics' && topicSearchFixture) {
+    return Promise.resolve(storybookAutocompleteResponse(endpoint, options?.searchParams) as T)
+  }
   const availability = availabilityFixtureBody(endpoint)
   if (availability !== undefined) return Promise.resolve(availability as T)
   return clientRequestGet.call(this, endpoint, options) as Promise<T>

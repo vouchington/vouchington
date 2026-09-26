@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import {
   clearStoryMutationFixture,
@@ -18,11 +19,33 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+function PlusCheckout({
+  planSlug,
+  productId,
+  planName,
+}: {
+  planSlug: string
+  productId: string
+  planName: string
+}) {
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
+  return (
+    <StoryFrame width='max-w-sm'>
+      {checkoutUrl ? (
+        <p>Checkout started at {checkoutUrl}</p>
+      ) : (
+        <CheckoutButton
+          planSlug={planSlug}
+          productId={productId}
+          planName={planName}
+          onCheckout={setCheckoutUrl}
+        />
+      )}
+    </StoryFrame>
+  )
+}
+
 export const Plus: Story = {
   args: { planSlug: 'plus', productId: 'plus-monthly', planName: 'Plus' },
-  render: args => (
-    <StoryFrame width='max-w-sm'>
-      <CheckoutButton {...args} />
-    </StoryFrame>
-  ),
+  render: args => <PlusCheckout {...args} />,
 }

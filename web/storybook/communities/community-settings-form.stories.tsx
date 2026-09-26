@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunitySettingsForm } from '@/components/communities/community-settings-form'
 import '@/storybook/mocks/client-api-instance'
@@ -56,13 +57,25 @@ const community: Community = {
   rules_markdown: 'Share your own data points. Put referral links in a review.',
 }
 
+function ActiveSettings({ community }: { community: Community }) {
+  const [archived, setArchived] = useState(false)
+  return (
+    <StoryFrame>
+      {archived ? (
+        <p>Community archived</p>
+      ) : (
+        <CommunitySettingsForm
+          community={community}
+          onArchived={() => setArchived(true)}
+        />
+      )}
+    </StoryFrame>
+  )
+}
+
 export const Active: Story = {
   args: { community },
-  render: args => (
-    <StoryFrame>
-      <CommunitySettingsForm {...args} />
-    </StoryFrame>
-  ),
+  render: args => <ActiveSettings community={args.community} />,
 }
 
 export const Archived: Story = {
