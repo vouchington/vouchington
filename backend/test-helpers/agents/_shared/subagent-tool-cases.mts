@@ -7,6 +7,7 @@ import {
 } from '../../../modules/openai-utils/create-response.mts'
 import { CHAT_SUBAGENT_RETRY_POLICY } from '../../../agents/_shared/retry-policy.mts'
 
+import type { BasicUser } from '../../../services/users/types.mts'
 import { suppressedError } from '../../suppressed-error.mts'
 import { setupSubagentFixtures } from './subagent-fixtures.mts'
 import {
@@ -22,7 +23,7 @@ export type { SubagentToolCaseConfig } from './subagent-tool-case-support.mts'
 export type SubagentToolCase = { title: string; run: () => void | Promise<void> }
 
 export function subagentToolCases(tool: AgentTool, config: SubagentToolCaseConfig) {
-  let testUser: unknown
+  let testUser: BasicUser
   let testUserId = ''
   let parentRunId = ''
   const args = (input: string, context?: string) => ({

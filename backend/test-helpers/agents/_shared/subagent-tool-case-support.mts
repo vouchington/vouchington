@@ -11,6 +11,7 @@ import type {
   SubagentStepEvent,
   SubagentToolCurryArgs,
 } from '../../../agents/_shared/subagent-tool.mts'
+import type { BasicUser } from '../../../services/users/types.mts'
 import {
   createMockTextResponse,
   drainSubagentExecutor,
@@ -18,7 +19,7 @@ import {
 
 export type AgentTool = {
   schema: { name: string; type: string; parameters: unknown }
-  function: (user: unknown, ...args: SubagentToolCurryArgs) => unknown
+  function: (user: BasicUser, ...args: SubagentToolCurryArgs) => unknown
 }
 
 export type SubagentToolCaseConfig = {
@@ -60,7 +61,7 @@ export async function seedSubagentMessage(userId: string, title: string) {
 
 export function runSubagentTool(
   tool: AgentTool,
-  user: unknown,
+  user: BasicUser,
   conversationId: string,
   messageId: string,
   parentRunId: string,
