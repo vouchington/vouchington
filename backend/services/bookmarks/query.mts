@@ -65,7 +65,10 @@ async function queryEntityBookmarksForRelations(
     `
   })
 
-  const { rows } = await read(subqueries.join(' UNION ALL '), [userId, objectIds])
+  const { rows } = await read(
+    `/* queryEntityBookmarksForRelations */ ${subqueries.join(' UNION ALL ')}`,
+    [userId, objectIds],
+  )
   return rows as BookmarkRow[]
 }
 
