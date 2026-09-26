@@ -164,7 +164,7 @@
     "picomatch": "^4.0.4",
     "playwright": "1.63.0",
     "playwright-core": "1.63.0",
-    "pr-shepherd": "^0.54.1",
+    "pr-shepherd": "^0.55.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "squawk-cli": "2.66.0",
@@ -172,7 +172,7 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "unified": "^11.0.5",
     "vitest": "^5.0.1",
-    "vouchington-tooling": "^0.19.2",
+    "vouchington-tooling": "^0.20.0",
     "yaml": "^2.9.1"
   },
   "engines": {
