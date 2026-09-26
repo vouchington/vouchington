@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   mockPathname,
@@ -15,6 +15,12 @@ import { seedMessages } from '@/lib/i18n/use-translations'
 
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
+import { Navbar as NavbarComponent } from '../navbar'
+
+vi.mock(import('@/components/keyboard-shortcuts-dialog'), () => ({
+  KeyboardShortcutsDialog: () => <div data-pw='keyboard-shortcuts-dialog' />,
+}))
+
 describe('Navbar sidebar trigger visibility', () => {
   beforeEach(() => {
     setNavbarUser(null)
@@ -22,7 +28,7 @@ describe('Navbar sidebar trigger visibility', () => {
   })
 
   it('animates the trigger slot closed at desktop viewports when sidebar is expanded', () => {
-    const { container } = render(navbarUnderTest())
+    const { container } = render(navbarUnderTest(NavbarComponent))
     const trigger = container.querySelector('[data-pw="sidebar-trigger"]')
     const triggerSlot = trigger?.parentElement
     // Visibility is CSS-driven via group-data selectors on the sidebar wrapper's data-state
@@ -56,7 +62,7 @@ describe('Navbar layout', () => {
   })
 
   it('inner nav wrapper is centered to content column via mx-auto max-w-[1200px]', () => {
-    const { container } = render(navbarUnderTest())
+    const { container } = render(navbarUnderTest(NavbarComponent))
     // The outer <nav> has px-* padding; the inner flex row must be mx-auto max-w-[1200px]
     // so the SidebarTrigger aligns with the 1200px content column on wide viewports.
     const nav = container.querySelector('nav[aria-label="Main"]')
@@ -67,7 +73,7 @@ describe('Navbar layout', () => {
   })
 
   it('keeps the search label visible at mobile and desktop breakpoints', () => {
-    render(navbarUnderTest())
+    render(navbarUnderTest(NavbarComponent))
 
     const searchButton = screen.getByRole('button', { name: 'Open search' })
     expect(searchButton.textContent).toContain('Search...')
@@ -79,7 +85,7 @@ describe('Navbar layout', () => {
   })
 
   it('uses a touch-safe search hit target with a compact visual shell', () => {
-    const { container } = render(navbarUnderTest())
+    const { container } = render(navbarUnderTest(NavbarComponent))
 
     const searchButton = screen.getByRole('button', { name: 'Open search' })
     expect(searchButton.className).toContain('h-11')
@@ -91,7 +97,7 @@ describe('Navbar layout', () => {
   })
 
   it('opens search from the topbar search control', () => {
-    render(navbarUnderTest())
+    render(navbarUnderTest(NavbarComponent))
 
     expect(screen.getByTestId('command-search')).toHaveAttribute('data-open', 'false')
 
@@ -104,7 +110,7 @@ describe('Navbar layout', () => {
     setNavbarUser(testUser)
     seedMessages('es', esMessages)
 
-    render(<UiLocaleProvider uiLocale='es'>{navbarUnderTest()}</UiLocaleProvider>)
+    render(<UiLocaleProvider uiLocale='es'>{navbarUnderTest(NavbarComponent)}</UiLocaleProvider>)
 
     expect(screen.getByRole('button', { name: 'Abrir búsqueda' })).toBeInTheDocument()
     expect(screen.getByText('Buscar...')).toBeInTheDocument()

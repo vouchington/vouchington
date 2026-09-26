@@ -14,12 +14,8 @@ export function setNavbarUser(user: User | null) {
   mockCurrentUser = user
 }
 
-export function navbarUnderTest() {
-  return (
-    <NavbarComponent
-      profileMenuUser={mockCurrentUser ? toProfileMenuUser(mockCurrentUser) : null}
-    />
-  )
+export function navbarUnderTest(Navbar: typeof NavbarComponent = NavbarComponent) {
+  return <Navbar profileMenuUser={mockCurrentUser ? toProfileMenuUser(mockCurrentUser) : null} />
 }
 
 vi.mock(

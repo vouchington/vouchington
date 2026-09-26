@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 
 configure({ testIdAttribute: 'data-pw' })
 
+import { Button } from '@/components/ui/button'
 import { ListStyleProvider } from '@/lib/preferences/list-style-context'
 import type { ListStyle } from '@/lib/preferences/shared'
 import type { PostsResponseBody } from '@/types/api-responses'
@@ -18,7 +19,7 @@ vi.mock(import('@/components/admin/admin-moderation-button'), () => ({
 }))
 
 vi.mock(import('@/components/shared/entity-bookmark-button'), () => ({
-  EntityBookmarkButton: () => <button type='button'>Save</button>,
+  EntityBookmarkButton: () => <Button type='button'>Save</Button>,
 }))
 
 vi.mock(import('@/components/posts/post-card'), () => ({
@@ -36,12 +37,12 @@ vi.mock(import('@/components/posts/post-card'), () => ({
       data-priority={String(priority ?? false)}
     >
       {post.title}
-      <button
+      <Button
         type='button'
         onClick={() => onHide?.(post.id)}
       >
         Hide {post.title}
-      </button>
+      </Button>
     </div>
   ),
 }))
