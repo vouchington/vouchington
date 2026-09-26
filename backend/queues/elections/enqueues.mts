@@ -66,34 +66,25 @@ const enqueueBulkElectionJobs = createBulkEnqueueFunction<
   },
 })
 
-const postElectionEnqueue = createElectionBulkEnqueue(
+export const enqueueBulkUpdatePostElectionVoteStats = createElectionBulkEnqueue(
   'post',
   'enqueueBulkUpdatePostElectionVoteStats',
 )
-export const enqueueBulkUpdatePostElectionVoteStats = postElectionEnqueue.enqueue
-export const enqueueBulkUpdatePostElectionVoteStatsAndWait = postElectionEnqueue.enqueueAndWait
 
-const topicElectionEnqueue = createElectionBulkEnqueue(
+export const enqueueBulkUpdateTopicElectionVoteStats = createElectionBulkEnqueue(
   'topic',
   'enqueueBulkUpdateTopicElectionVoteStats',
 )
-export const enqueueBulkUpdateTopicElectionVoteStats = topicElectionEnqueue.enqueue
-export const enqueueBulkUpdateTopicElectionVoteStatsAndWait = topicElectionEnqueue.enqueueAndWait
 
-const hostnameElectionEnqueue = createElectionBulkEnqueue(
+export const enqueueBulkUpdateHostnameElectionVoteStats = createElectionBulkEnqueue(
   'hostname',
   'enqueueBulkUpdateHostnameElectionVoteStats',
 )
-export const enqueueBulkUpdateHostnameElectionVoteStats = hostnameElectionEnqueue.enqueue
-export const enqueueBulkUpdateHostnameElectionVoteStatsAndWait =
-  hostnameElectionEnqueue.enqueueAndWait
 
-const agentModerationElectionEnqueue = createElectionBulkEnqueue(
+export const enqueueBulkUpdateAgentModerationElectionVoteStats = createElectionBulkEnqueue(
   'agent_moderation',
   'enqueueBulkUpdateAgentModerationElectionVoteStats',
 )
-export const enqueueBulkUpdateAgentModerationElectionVoteStats =
-  agentModerationElectionEnqueue.enqueue
 
 export function enqueueBulkUpdateEntityRelationElectionVoteStats(
   targets: EntityRelationElectionTarget[],
@@ -115,35 +106,21 @@ export function enqueueBulkUpdateEntityRelationElectionVoteStats(
   )
 }
 
-const rssFeedItemElectionEnqueue = createElectionBulkEnqueue(
+export const enqueueBulkUpdateRssFeedItemElectionVoteStats = createElectionBulkEnqueue(
   'rss_feed_item',
   'enqueueBulkUpdateRssFeedItemElectionVoteStats',
 )
-export const enqueueBulkUpdateRssFeedItemElectionVoteStats = rssFeedItemElectionEnqueue.enqueue
-export const enqueueBulkUpdateRssFeedItemElectionVoteStatsAndWait =
-  rssFeedItemElectionEnqueue.enqueueAndWait
 
-const userVouchElectionEnqueue = createElectionBulkEnqueue(
+export const enqueueBulkUpdateUserVouchElectionVoteStats = createElectionBulkEnqueue(
   'user_vouch',
   'enqueueBulkUpdateUserVouchElectionVoteStats',
 )
-export const enqueueBulkUpdateUserVouchElectionVoteStats = userVouchElectionEnqueue.enqueue
-export const enqueueBulkUpdateUserVouchElectionVoteStatsAndWait =
-  userVouchElectionEnqueue.enqueueAndWait
 
 function createElectionBulkEnqueue(orderingKey: ElectionOrderingKey, operation: string) {
-  const enqueueJobs = (electionIds: string[], priority?: number) => {
-    return enqueueBulkElectionJobs(
+  return (electionIds: string[], priority?: number): EnqueueReturnType =>
+    enqueueBulkElectionJobs(
       electionIds.map(electionId => ({ electionId, orderingKey })),
       { priority: priority ?? PRIORITY_DEFAULT } satisfies Partial<JobOptions>,
       { operation },
     )
-  }
-
-  return {
-    enqueue: (electionIds: string[], priority?: number): EnqueueReturnType =>
-      enqueueJobs(electionIds, priority),
-    enqueueAndWait: (electionIds: string[], priority?: number): Promise<void> =>
-      enqueueJobs(electionIds, priority).then(() => undefined),
-  }
 }

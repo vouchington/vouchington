@@ -10,11 +10,9 @@ Refreshes cached metrics for topics, posts, and users using debounce deduplicati
 - `processRefreshPostMetrics` — recalculates and caches metrics for a post (vote score, comment count, etc.)
 - `processRefreshUserMetrics` — recalculates and caches metrics for a user (follower count, post count, etc.)
 
-The semantic-vote data migration enqueues affected topic metric refreshes and the paired topic
-election invalidation only after its database transaction commits. The migration task awaits every
-bounded queue batch and writes its durable completion claim only after all enqueue calls succeed;
-a failed task retries without dropping partial batches because both queues use topic-scoped
-deduplication.
+Current producers enqueue affected entity IDs after vote, bookmark, and publication changes. The
+queue debounces repeated refreshes for the same entity; processors derive metrics from durable
+PostgreSQL state rather than carrying historical scores in job payloads.
 
 ## Related
 
