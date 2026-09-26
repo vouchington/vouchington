@@ -8,7 +8,7 @@ import {
 import { getPrivateUserByAny } from '@services/users/get'
 import { getDeviceContext } from '../device-context.mts'
 
-export interface MfaVerificationResponseBody {
+interface MfaVerificationResponseBody {
   user: { id: string }
   dt: CompletedMfaLogin['deviceToken']
   st: CompletedMfaLogin['sessionToken']
