@@ -26,9 +26,6 @@
     "@voucha/tools": "workspace:^"
   },
   "devDependencies": {
-    "@modules/openai-utils": "workspace:^",
-    "@services/conversations-messages": "workspace:^",
-    "@services/users": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@modules/openai-utils": "workspace:^"
   }
 }
