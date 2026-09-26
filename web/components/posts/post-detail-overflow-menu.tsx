@@ -67,7 +67,7 @@ export function PostDetailOverflowMenu({
 
   return (
     <div className={className}>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             type='button'

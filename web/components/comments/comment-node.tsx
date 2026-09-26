@@ -136,7 +136,7 @@ export function CommentNode({
                   <Link
                     prefetch={false}
                     href={permalink}
-                    className='text-xs text-blue-600 hover:underline'
+                    className='text-xs text-blue-600 hover:underline dark:text-blue-400'
                   >
                     See {children.length} more {children.length === 1 ? 'reply' : 'replies'}
                   </Link>

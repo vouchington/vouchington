@@ -9,7 +9,7 @@ interface PostLockMenuItemProps {
 }
 
 export function PostLockMenuItem({ postIdOrSlug, lockedAt }: PostLockMenuItemProps) {
-  const { isLocked, isPending, label, tooltip, handleToggle } = usePostLockToggle({
+  const { isPending, label, tooltip, handleToggle } = usePostLockToggle({
     postIdOrSlug,
     lockedAt,
   })
@@ -20,7 +20,6 @@ export function PostLockMenuItem({ postIdOrSlug, lockedAt }: PostLockMenuItemPro
       onSelect={() => {
         void handleToggle()
       }}
-      aria-pressed={isLocked}
       title={tooltip}
       data-pw='post-detail-lock-button'
     >
