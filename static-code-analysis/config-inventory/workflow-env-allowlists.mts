@@ -78,10 +78,6 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   // Read through required(env, 'VITEST_REPORT_EXPECTATIONS') in the report-preparation CLI. This
   // dynamic NodeJS.ProcessEnv lookup is intentionally not matched by the static reader patterns.
   'VITEST_REPORT_EXPECTATIONS',
-  // Read as env.VITEST_SELECTED_FILES in vitestArgs() (ci/storybook-browser-runner-env.mts). The
-  // env.NAME reader pattern is scoped to cloudflare-worker/ files only, so this generic
-  // NodeJS.ProcessEnv parameter read isn't traced.
-  'VITEST_SELECTED_FILES',
 ])
 
 // Consumed by the build-backend-images / build-web-images composite actions, which read

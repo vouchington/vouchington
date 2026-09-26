@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { VITEST_OWNERSHIP } from './project-ownership.mts'
-import {
-  allOwnedProjects,
-  projectToJob,
-  shardedJobPolicies,
-  shardedJobs,
-  sideDutyJobs,
-  storybookBrowserProject,
-  storybookJob,
-} from './project-ownership-registry.mts'
+import { projectToJob, shardedJobPolicies } from './project-ownership-registry.mts'
 
 describe('VITEST_OWNERSHIP', () => {
   it('gives every concrete workflow job a unique ownership row', () => {
@@ -52,20 +44,14 @@ describe('VITEST_OWNERSHIP', () => {
 describe('project-ownership-registry derivations', () => {
   it('projectToJob covers every project in the model exactly once', () => {
     const map = projectToJob()
-    expect(Object.keys(map).toSorted()).toEqual([...allOwnedProjects()].toSorted())
+    expect(Object.keys(map).toSorted()).toEqual(
+      VITEST_OWNERSHIP.flatMap(job => job.projects.map(({ project }) => project)).toSorted(),
+    )
     for (const job of VITEST_OWNERSHIP) {
       for (const { project } of job.projects) {
         expect(map[project]).toBe(job.orchestratorJob)
       }
     }
-  })
-
-  it('shardedJobs matches the jobs with sharding policy in the model', () => {
-    expect(new Set(shardedJobs())).toEqual(
-      new Set(
-        VITEST_OWNERSHIP.filter(job => job.sharding !== undefined).map(job => job.orchestratorJob),
-      ),
-    )
   })
 
   it('owns intentional sharding policy in the registry', () => {
@@ -91,25 +77,5 @@ describe('project-ownership-registry derivations', () => {
         shards: 1,
       },
     })
-  })
-
-  it('sideDutyJobs matches the jobs flagged sideDuty in the model', () => {
-    expect(sideDutyJobs()).toEqual(
-      new Set(VITEST_OWNERSHIP.filter(job => job.sideDuty).map(job => job.orchestratorJob)),
-    )
-  })
-
-  it('storybookJob resolves the job whose invocation is "storybook"', () => {
-    expect(storybookJob()).toBe('storybook')
-  })
-
-  it('storybookBrowserProject resolves the flagged browser-runner project', () => {
-    expect(storybookBrowserProject()).toBe('web-storybook-browser')
-  })
-
-  it('allOwnedProjects has no duplicates and matches projectToJob key count', () => {
-    const projects = allOwnedProjects()
-    expect(new Set(projects).size).toBe(projects.length)
-    expect(projects.length).toBe(Object.keys(projectToJob()).length)
   })
 })

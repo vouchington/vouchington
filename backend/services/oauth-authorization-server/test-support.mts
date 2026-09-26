@@ -5,16 +5,41 @@ import {
   beginOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
+  exchangeOAuthAuthorizationCode,
+  getOAuthResourceUrl,
   registerOAuthClient,
+  type OAuthResourceAudience,
 } from './index.mts'
 
-type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
+type TestUser = Pick<Awaited<ReturnType<typeof createTestUserDirect>>, 'id'>
 
-export const TEST_OAUTH_RESOURCE = 'http://localhost:2900/api/v1/mcp'
+type TestOAuthAuthorizationOptions = {
+  audience?: OAuthResourceAudience
+  scope?: string
+}
+
+export const TEST_OAUTH_RESOURCE = getOAuthResourceUrl('user')
 export const TEST_OAUTH_SCOPE = 'mcp.user:read mcp.user:write'
 
-export async function createTestApprovedOAuthAuthorization(user: TestUser) {
-  const pending = await createTestPendingOAuthAuthorization(user)
+// Runs the real authorization-code flow and returns the issued access and refresh tokens.
+export async function issueTestOAuthTokens(
+  user: TestUser,
+  options?: TestOAuthAuthorizationOptions,
+) {
+  const approved = await createTestApprovedOAuthAuthorization(user, options)
+  return exchangeOAuthAuthorizationCode({
+    clientId: approved.client.client_id,
+    code: approved.code,
+    codeVerifier: approved.verifier,
+    redirectUri: approved.redirectUri,
+  })
+}
+
+export async function createTestApprovedOAuthAuthorization(
+  user: TestUser,
+  options?: TestOAuthAuthorizationOptions,
+) {
+  const pending = await createTestPendingOAuthAuthorization(user, options)
   const decision = await decideOAuthAuthorizationRequest(
     user.id,
     pending.requestId,
@@ -26,12 +51,15 @@ export async function createTestApprovedOAuthAuthorization(user: TestUser) {
   return { ...pending, code }
 }
 
-export async function createTestPendingOAuthAuthorization(user: TestUser) {
+export async function createTestPendingOAuthAuthorization(
+  user: TestUser,
+  { audience = 'user', scope = TEST_OAUTH_SCOPE }: TestOAuthAuthorizationOptions = {},
+) {
   const redirectUri = randomTestOAuthRedirectUri()
   const client = await registerOAuthClient({
     client_name: `Test public ${randomBytes(6).toString('hex')}`,
     redirect_uris: [redirectUri],
-    scope: TEST_OAUTH_SCOPE,
+    scope,
   })
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()
@@ -42,9 +70,9 @@ export async function createTestPendingOAuthAuthorization(user: TestUser) {
     codeChallengeMethod: 'S256',
     deviceId,
     redirectUri,
-    resource: TEST_OAUTH_RESOURCE,
+    resource: getOAuthResourceUrl(audience),
     responseType: 'code',
-    scope: TEST_OAUTH_SCOPE,
+    scope,
     sessionId,
     state: randomBytes(16).toString('base64url'),
     userId: user.id,

@@ -10,7 +10,7 @@ describe('backend module test workflow', () => {
     expect(workflow).toContain('    runs-on: ubuntu-latest')
     expect(workflow).toContain('- uses: ./.github/actions/setup-backend')
     expect(workflow).toContain(
-      'vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-program --project backend-email-templates "${FILES[@]}"',
+      'vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend-modules --project backend-no-data-mocks --project backend-test-helpers --project backend-contract-program --project backend-email-templates',
     )
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",

@@ -1,10 +1,11 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { write, type QueryExecutor } from '@data-stores/psql'
+import { hasEveryScope } from '@modules/scopes'
 import { hashToken } from '@modules/token-secrets'
 import { OAuthProtocolError, invalidClientMetadata, invalidRequest } from './errors.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { validateRedirectUris } from './redirect-uri-validation.mts'
-import { assertScopeSubset, parseOAuthScopes } from './validation.mts'
+import { parseOAuthScopes } from './validation.mts'
 import type {
   OAuthClient,
   OAuthClientAuthMethod,
@@ -128,7 +129,14 @@ export function assertClientAuthorizationRequest(
   if (!client.redirect_uris.includes(redirectUri)) {
     throw invalidRequest('redirect_uri is not registered for this client')
   }
-  assertScopeSubset(scopes, client.scopes)
+  // Uses the same coverage rule as tool authorization, so a client registered with
+  // `mcp.user:write` may request `cards:write`.
+  if (!hasEveryScope(client.scopes, scopes)) {
+    throw new OAuthProtocolError(
+      'invalid_scope',
+      'requested scope is not registered for this client',
+    )
+  }
 }
 
 function validateClientName(value: unknown): string {

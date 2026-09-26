@@ -12,6 +12,8 @@ describe('dependencyLicensePolicy', () => {
     expect(evaluate('MIT', 'left-pad').ok).toBe(true)
     expect(evaluate('Apache-2.0', 'some-lib').ok).toBe(true)
     expect(evaluate('SIL OPEN FONT LICENSE', 'geist').ok).toBe(true)
+    expect(evaluate('FSL-1.1-Apache-2.0', 'sentry').ok).toBe(true)
+    expect(evaluate('FSL-1.1-ALv2', 'other-fsl-package').ok).toBe(true)
   })
 
   it('denies copyleft license prefixes', () => {

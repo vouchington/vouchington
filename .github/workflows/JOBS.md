@@ -30,7 +30,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `checks-static.yml`                 | `static-lambdas`                | job    | `ubuntu-latest`                       | 18            |
 | `checks-static.yml`                 | `static-web`                    | job    | `ubuntu-latest`                       | 35            |
 | `ci-detect-changes.yml`             | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
-| `ci-select-vitest.yml`              | `select-ci`                     | job    | `ubuntu-latest`                       | 5             |
 | `ci-test-coverage.yml`              | `test-coverage`                 | job    | `ubuntu-latest`                       | 14            |
 | `ci-tests-processing.yml`           | `tests-processing`              | job    | `ubuntu-latest`                       | 14            |
 | `ci-upload-codecov.yml`             | `upload-codecov`                | job    | `ubuntu-latest`                       | 8             |
@@ -40,7 +39,6 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `ci.yml`                            | `build-web`                     | job    | → `build-web.yml`                     | 360           |
 | `ci.yml`                            | `detect-changes`                | job    | → `ci-detect-changes.yml`             | 360           |
 | `ci.yml`                            | `initialize-smoke-test`         | job    | → `initialize-smoke-test.yml`         | 360           |
-| `ci.yml`                            | `select-ci`                     | job    | → `ci-select-vitest.yml`              | 360           |
 | `ci.yml`                            | `static-backend`                | job    | → `checks-static.yml`                 | 360           |
 | `ci.yml`                            | `static-cloudflare-worker`      | job    | → `checks-static.yml`                 | 360           |
 | `ci.yml`                            | `static-code-analysis`          | job    | → `static-code-analysis.yml`          | 360           |
@@ -152,7 +150,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-lambdas.yml`                 | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 37            |
 | `tests-playwright-credentialed.yml` | `playwright-credentialed-tests` | job    | `ubuntu-latest`                       | 20            |
 | `tests-playwright.yml`              | `playwright-tests`              | matrix | `ubuntu-latest`                       | 30            |
-| `tests-playwright.yml`              | `select`                        | job    | `ubuntu-latest`                       | 20            |
+| `tests-playwright.yml`              | `shards`                        | job    | `ubuntu-latest`                       | 20            |
 | `tests-portability.yml`             | `portability-linux`             | job    | `ubuntu-latest`                       | 17            |
 | `tests-portability.yml`             | `portability-macos`             | job    | `macos-latest`                        | 17            |
 | `tests-postgres-schema.yml`         | `postgres-schema-tests`         | job    | `ubuntu-latest`                       | 20            |

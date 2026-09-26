@@ -5,7 +5,6 @@ on:
     inputs:
       vitest-report-expectations: { required: true, type: string }
       postgres-result: { required: true, type: string }
-      postgres-vitest-ran: { required: true, type: string }
       postgres-vitest-attempt: { required: true, type: string }
       results: { required: true, type: string }
 
@@ -36,12 +35,10 @@ jobs:
         env:
           BASE_CONTEXT: ${{ inputs.vitest-report-expectations }}
           POSTGRES_RESULT: ${{ inputs.postgres-result }}
-          POSTGRES_VITEST_RAN: ${{ inputs.postgres-vitest-ran }}
           POSTGRES_VITEST_ATTEMPT: ${{ inputs.postgres-vitest-attempt }}
         run: |
           context=$(jq -ce \
             --arg result "$POSTGRES_RESULT" \
-            --arg ran "$POSTGRES_VITEST_RAN" \
             --arg postgres_attempt "$POSTGRES_VITEST_ATTEMPT" \
             --argjson attempt "$GITHUB_RUN_ATTEMPT" '
               . as $context |
@@ -66,7 +63,7 @@ jobs:
                 ([.suites[].suite] | unique | length) == (.suites | length)
               ) |
               .attempt = $attempt |
-              if $ran == "true" and ($result == "success" or $result == "failure" or $result == "cancelled")
+              if $result == "success" or $result == "failure" or $result == "cancelled"
               then
                 (if ($postgres_attempt | test("^[1-9][0-9]*$"))
                 then ($postgres_attempt | tonumber)

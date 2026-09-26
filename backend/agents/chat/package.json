@@ -37,7 +37,7 @@
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^",
     "http-errors": "^2.0.1",
-    "openai": "^7.15.0",
+    "openai": "^7.23.0",
     "undici": "^8.11.0"
   },
   "devDependencies": {

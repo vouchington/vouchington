@@ -3,9 +3,6 @@ name: PostgreSQL Schema Tests
 on:
   workflow_call:
     outputs:
-      vitest-ran:
-        description: 'Whether this invocation ran Vitest and produced a blob report'
-        value: ${{ jobs.postgres-schema-tests.outputs.vitest-ran }}
       vitest-report-attempt:
         description: 'Run attempt that produced this invocation'
         value: ${{ jobs.postgres-schema-tests.outputs.vitest-report-attempt }}
@@ -15,24 +12,8 @@ on:
         required: false
         type: boolean
         default: false
-      full_suite:
-        description: 'Run the complete configured project instead of selected test files'
-        type: boolean
-        default: true
-      run_tests:
-        description: 'Run Vitest while retaining SQL and schema snapshot checks when false'
-        type: boolean
-        default: true
-      selected_test_files:
-        description: 'Space-delimited selected test files when full_suite is false'
-        type: string
-        default: ''
   workflow_dispatch:
     inputs:
-      run_tests:
-        description: 'Run Vitest while retaining SQL and schema snapshot checks when false'
-        type: boolean
-        default: true
       upload_vitest_blob_artifact:
         description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
         required: false
@@ -51,7 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
-      vitest-ran: ${{ inputs.run_tests }}
       vitest-report-attempt: ${{ github.run_attempt }}
 
     services:
@@ -104,27 +84,12 @@ jobs:
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
       - name: Run PostgreSQL schema tests
-        if: ${{ inputs.run_tests }}
         env:
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: postgres-schema-test-report.junit.xml
           VITEST_BLOB_OUTPUT_FILE: .vitest-reports/postgres-schema.json
-          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
         run: |
-          # VITEST_SELECTED_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
-          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
-          # preserve paths containing spaces or shell glob metacharacters, replacing the
-          # previous unquoted $VITEST_SELECTED_FILES word-splitting/glob-expansion. A
-          # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
-          # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
-          # (the full-suite case) still yields one empty-string read, which must not
-          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) to
-          # stay portable to macOS `/bin/bash` 3.2.
-          FILES=()
-          while IFS= read -r file; do
-            if [ -n "$file" ]; then FILES+=("$file"); fi
-          done <<< "$VITEST_SELECTED_FILES"
-          VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity "${FILES[@]}"
+          VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity
         timeout-minutes: 3
       - name: Check PostgreSQL schema snapshot is up to date
         if: ${{ !cancelled() }}
@@ -142,7 +107,7 @@ jobs:
         timeout-minutes: 1
       - name: Upload postgres-schema vitest blob to GitHub (fallback)
         id: vitest-blob-fallback-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -150,7 +115,7 @@ jobs:
           suite: postgres-schema
       - name: Upload postgres-schema vitest blob to GitHub (fallback attempt 2)
         id: vitest-blob-fallback-1-retry
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
         timeout-minutes: 3
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -159,7 +124,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted postgres-schema vitest blob
         id: vitest-blob-outcome-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-blob

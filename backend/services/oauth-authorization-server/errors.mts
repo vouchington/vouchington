@@ -6,6 +6,7 @@ export type OAuthErrorCode =
   | 'invalid_redirect_uri'
   | 'invalid_request'
   | 'invalid_scope'
+  | 'invalid_target'
   | 'server_error'
   | 'unauthorized_client'
   | 'unsupported_grant_type'
@@ -25,6 +26,10 @@ export class OAuthProtocolError extends Error {
 
 export function invalidRequest(description: string): OAuthProtocolError {
   return new OAuthProtocolError('invalid_request', description)
+}
+
+export function invalidTarget(): OAuthProtocolError {
+  return new OAuthProtocolError('invalid_target', 'resource is not supported')
 }
 
 export function invalidClientMetadata(description: string): OAuthProtocolError {

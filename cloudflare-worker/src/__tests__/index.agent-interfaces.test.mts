@@ -54,13 +54,15 @@ describe('worker fetch handler - agent interface discovery', () => {
 
       expect(body).toContain('## Agent Access (MCP)')
       expect(body).toContain('- Endpoint: https://voucha.ai/api/v1/mcp\n')
-      expect(body).toContain('`Authorization: Bearer <user MCP API key>`')
+      expect(body).toContain('`Authorization: Bearer <OAuth access token or user MCP API key>`')
+      expect(body).toContain('`resource_metadata` URL (RFC 9728)')
+      expect(body).toContain('`error="insufficient_scope"`')
       expect(body).toContain('MCP key at https://voucha.ai/my/api-keys\n')
       expect(body).toContain('`Content-Type: application/json`')
       expect(body).toContain('`Accept: application/json, text/event-stream`')
       expect(body).toContain('`tools/list`')
       expect(body).toContain('instead of automating the website')
-      expect(body).toContain('Never put an API key in a URL')
+      expect(body).toContain('Never put an access token or API key in a URL')
       expect(body).toContain('do not restrict authenticated MCP requests')
     },
   )

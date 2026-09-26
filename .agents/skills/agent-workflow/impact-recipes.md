@@ -9,6 +9,8 @@ Run commands from the repository root. Replace angle-bracket placeholders with l
 identifiers; quote search values that contain punctuation. Batch the initial analysis across every
 known compatible file, including files in different workspaces. Use one invocation per command,
 config, framework, and environment; reserve single-file calls for focused post-batch diagnosis.
+Validate with the full suites of the touched areas: `<project-a>` and `<project-b>` stand for each
+owning Vitest project in [VITEST.md](../../../.github/workflows/VITEST.md), matching what CI runs.
 
 ## Endpoint Migration
 
@@ -74,7 +76,7 @@ consumers, and their tests.
    ```sh
    pnpm exec no-mistakes server related <backend-route-file> --format paths
    pnpm exec no-mistakes dependents <typescript-client-file-a> <typescript-client-file-b> --format paths
-   pnpm exec no-mistakes tests plan vitest --changed-file <typescript-source-file-a> --changed-file <typescript-source-file-b> --format paths
+   pnpm exec vitest run --project <project-a> --project <project-b>
    ```
 
 2. Join the surfaces through a stable fixture ID, route, or JSON field. For example:
@@ -150,7 +152,7 @@ the accepted plan into a finite contract matrix before the first push.
    ```sh
    pnpm exec no-mistakes dependencies <source-file-a> <source-file-b> --format paths
    pnpm exec no-mistakes dependents <source-file-a> <source-file-b> --format paths
-   pnpm exec no-mistakes tests plan vitest --changed-file <typescript-source-file-a> --changed-file <typescript-source-file-b> --format paths
+   pnpm exec vitest run --project <project-a> --project <project-b>
    pnpm exec no-mistakes tests plan swift --changed-file <swift-source-file-a> --changed-file <swift-source-file-b> --format commands
    pnpm exec no-mistakes tests plan dotnet --changed-file <dotnet-source-file-a> --changed-file <dotnet-source-file-b> --format commands
    ```
@@ -213,12 +215,12 @@ present in a file; it cannot preflight a proposed specifier that has not been ad
    If installed workspace links are stale after a rebase or branch switch, run bare `pnpm install`
    and retry.
 
-3. After adding imports, validate graph impact and test selection in one whole-repository batch
-   containing every compatible changed source:
+3. After adding imports, validate graph impact in one whole-repository batch containing every
+   compatible changed source, then run the owning projects' full suites:
 
    ```sh
    pnpm exec no-mistakes dependencies <source-file-a> <source-file-b> --format paths
-   pnpm exec no-mistakes tests plan vitest --changed-file <source-file-a> --changed-file <source-file-b> --format paths
+   pnpm exec vitest run --project <project-a> --project <project-b>
    ```
 
    After the initial batch completes, use `resolve-check` as a focused single-file diagnostic for
@@ -275,12 +277,12 @@ deduplication, or call disposition.
 
 4. Follow the same queue and job identifiers into `backend/entrypoints/**` worker registration,
    `backend/workers/**` `createWorker` calls, processor/service calls, and adjacent tests. Finish with
-   one graph batch and one test-plan batch containing every discovered TypeScript file. Verify retry, deduplication, and
+   one graph batch containing every discovered TypeScript file, then the owning projects' full suites. Verify retry, deduplication, and
    replay choices against [job replayability](../../../docs/requirements/platform/JOB-REPLAYABILITY.md):
 
    ```sh
    pnpm exec no-mistakes dependents <discovered-file-a> <discovered-file-b> --format paths
-   pnpm exec no-mistakes tests plan vitest --changed-file <discovered-file-a> --changed-file <discovered-file-b> --format paths
+   pnpm exec vitest run --project <project-a> --project <project-b>
    ```
 
 If a graph command misses a supported-looking relationship, preserve the exact command and minimal

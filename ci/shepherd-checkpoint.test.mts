@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import {
   CHECKPOINT_MARKER,
@@ -111,5 +113,14 @@ describe('Codex PR shepherd checkpoints', () => {
     })
     expect(result.status).toBe(1)
     expect(result.stderr.trim()).toBe('Usage: checkpoint.mts render|select|update <path>')
+  })
+
+  it('verifies resume runs against the Shepherd workflow by its current name and path', () => {
+    const workflowPath = '.github/workflows/shepherd.yml'
+    const { name } = parseYaml(readFileSync(workflowPath, 'utf8')) as { name: string }
+    const cli = readFileSync('ci/shepherd-checkpoint-cli.mts', 'utf8')
+
+    expect(cli).toContain(`.name == "${name}"`)
+    expect(cli).toContain(`.path == "${workflowPath}"`)
   })
 })

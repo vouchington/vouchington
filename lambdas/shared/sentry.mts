@@ -2,7 +2,7 @@
 // Uses @sentry/aws-serverless with NODE_OPTIONS="--import @sentry/aws-serverless/awslambda-auto"
 // for automatic handler wrapping. This module configures the DSN, environment, and filtering.
 //
-// Enabled only for ENVIRONMENT=staging|production, or when OTel-only mode opts in.
+// Enabled only for ENVIRONMENT=staging|production.
 
 import * as Sentry from '@sentry/aws-serverless'
 import {
@@ -16,7 +16,6 @@ import {
 } from '@ts-shared/utils/sentry-deployment-gate'
 import { withSpikeProtection } from '@ts-shared/utils/sentry-spike-protection'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
-import { createOtelSpanProcessors } from './sentry-otel.mts'
 
 const DEFAULT_TRACES_SAMPLE_RATE = 1.0
 const REDACTED = '[Filtered]'
@@ -30,13 +29,8 @@ const TOKEN_ASSIGNMENT_PATTERN =
   /\b((?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|secret|password|passwd|api[_-]?key)=)[^&\s]+/gi
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
-type SentryInitOptionsWithOtel = SentryInitOptions & {
-  openTelemetrySpanProcessors?: ReturnType<typeof createOtelSpanProcessors>
-}
 type BeforeSend = NonNullable<SentryInitOptions['beforeSend']>
 type SentrySpan = Parameters<NonNullable<SentryInitOptions['beforeSendSpan']>>[0]
-type SentryTransactionEvent = Parameters<NonNullable<SentryInitOptions['beforeSendTransaction']>>[0]
-type SentryTransactionHint = Parameters<NonNullable<SentryInitOptions['beforeSendTransaction']>>[1]
 
 let sentryConfigurationInvalidLogged = false
 
@@ -57,16 +51,14 @@ export function captureException(error: unknown): void {
 }
 
 export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void {
-  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } =
-    resolveSentryDsnEnablement({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.ENVIRONMENT,
-      otelEnabled: process.env.OTEL_ENABLED === '1',
-    })
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveSentryDsnEnablement({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.ENVIRONMENT,
+  })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
-  const sentryInitOptions: SentryInitOptionsWithOtel = {
-    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+  const sentryInitOptions: SentryInitOptions = {
+    dsn: sentryDsn?.dsn,
     // resolveSentryDsnEnablement() passes ENVIRONMENT through unchanged; when it's unset, fall back
     // to the shared deploy-environment accessor (ENVIRONMENT ?? NODE_ENV ?? 'development') rather
     // than a hand-rolled NODE_ENV-only read.
@@ -79,32 +71,21 @@ export function initSentry({ lambdaName, beforeSend }: InitSentryOptions): void 
     },
     // withSpikeProtection wraps the outer pipeline so a single recurring error can never again
     // consume a full month's Sentry error quota by itself (see sentry-spike-protection.mts).
-    beforeSend: otelOnly
-      ? () => null
-      : withSpikeProtection(
-          composeSentryBeforeSend(beforeSend, event =>
-            scrubSentryEvent(scrubSensitiveSentryEvent(event)),
-          ),
-        ),
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    beforeSend: withSpikeProtection(
+      composeSentryBeforeSend(beforeSend, event =>
+        scrubSentryEvent(scrubSensitiveSentryEvent(event)),
+      ),
+    ),
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan: scrubSentrySpan,
-    beforeSendTransaction: scrubSentryTransaction,
-    openTelemetrySpanProcessors: createOtelSpanProcessors(),
   }
 
   Sentry.init(sentryInitOptions)
 }
 
 export function scrubSentrySpan(span: SentrySpan): SentrySpan {
-  const data = scrubSpanAttributes(span.data)
-  return data === span.data ? span : { ...span, data }
-}
-
-export function scrubSentryTransaction(
-  event: SentryTransactionEvent,
-  _hint: SentryTransactionHint,
-): SentryTransactionEvent {
-  return scrubSentryEvent(event)
+  const attributes = scrubSpanAttributes(span.attributes)
+  return attributes === span.attributes ? span : { ...span, attributes }
 }
 
 function getTracesSampleRate(): number {

@@ -132,8 +132,10 @@ prepare_service_commands() {
   fi
 
   OTEL_NODE_IMPORT=""
+  OTEL_NODE_OPTIONS_INIT=""
   if [ "${OTEL_ENABLED:-}" = "1" ]; then
     OTEL_NODE_IMPORT="--import \"$REPO_ROOT/dev/otel-register.mts\""
+    OTEL_NODE_OPTIONS_INIT="export OTEL_SERVICE_NAME=voucha-web; export NODE_OPTIONS=\"\${NODE_OPTIONS:+\$NODE_OPTIONS }--import \\\"$REPO_ROOT/dev/otel-register.mts\\\"\"; "
   fi
 
   NODE_OPTIONS_INIT='case " ${NODE_OPTIONS:-} " in *" --disable-warning=DEP0205 "*) ;; *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205" ;; esac'
@@ -150,8 +152,8 @@ prepare_service_commands() {
     CMD_WORKER="$(bash_lc_command "$BODY_WORKER")"
   fi
 
-  BODY_NEXTJS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; cd \"$REPO_ROOT/web\" && pnpm run dev; read"
-  BODY_LAMBDAS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; LOG_LEVEL=$LOG_LEVEL node --watch \"$REPO_ROOT/lambdas/dev-server.mts\"; read"
+  BODY_NEXTJS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; ${OTEL_NODE_OPTIONS_INIT}cd \"$REPO_ROOT/web\" && pnpm run dev; read"
+  BODY_LAMBDAS="source \"$REPO_ROOT/.env\"; $NODE_OPTIONS_INIT; OTEL_SERVICE_NAME=voucha-lambdas LOG_LEVEL=$LOG_LEVEL node $OTEL_NODE_IMPORT --watch \"$REPO_ROOT/lambdas/dev-server.mts\"; read"
   CMD_NEXTJS="$(bash_lc_command "$BODY_NEXTJS")"
   CMD_LAMBDAS="IMAGE_LAMBDA_PORT=$(quote_shell_arg "$IMAGE_LAMBDA_PORT") $(bash_lc_command "$BODY_LAMBDAS")"
   if $HAS_CERTS; then

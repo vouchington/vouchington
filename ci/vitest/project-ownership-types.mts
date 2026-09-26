@@ -36,10 +36,6 @@ export interface VitestJobOwnership {
   readonly jobLabel: string
   // Shard report identity and matrix sizing policy. Omit for jobs that always run in one process.
   readonly sharding?: VitestShardPolicy
-  // True only if this job's ci.yml caller must stay area-gated on detect-changes without the
-  // `skip-test-<job>` guard — an always-run non-Vitest duty that must survive an empty Vitest
-  // selection. Everything else is pure Vitest and safely selection-skippable.
-  readonly sideDuty: boolean
   readonly invocation: VitestInvocationForm
   readonly projects: readonly VitestProjectOwnership[]
 }

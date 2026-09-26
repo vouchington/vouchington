@@ -1,83 +1,21 @@
 import app from '../../app.mts'
 import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
-import { validateApiKeyForMcpAudience } from '@services/api-keys/validate'
-import { getPrivateUserByAny, isAdminUser } from '@services/users'
-import { checkRouteRateLimit } from '@services/route-rate-limits'
-import {
-  ADMIN_MCP_SERVER_CONFIG,
-  buildMcpContextUser,
-  handleMcpHttpRequest,
-} from '@services/mcp-tools'
-import createHttpError from 'http-errors'
+import { ADMIN_MCP_SERVER_CONFIG } from '@services/mcp-tools'
+import { dispatchMcpRequest, rejectMcpMethod } from '../../mcp-helpers.mts'
+import { apiRequestContract } from '../../response-contract.mts'
 
 // POST /api/v1/admin/mcp — administrator-only MCP Streamable HTTP endpoint.
-// Auth: Bearer voucha_mcp_... API key with admin MCP read permission.
+// Auth: an admin-resource OAuth access token or an admin MCP API key, plus the administrator role.
 app.route('/api/v1/admin/mcp').post(async (ctx: Context) => {
-  ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const rawAuthHeader = ctx.req.headers.authorization
-  const authHeader = Array.isArray(rawAuthHeader) ? (rawAuthHeader[0] ?? '') : (rawAuthHeader ?? '')
-  const rawKey = authHeader.slice(0, 7).toLowerCase() === 'bearer ' ? authHeader.slice(7) : ''
-  ctx.assert(rawKey, 401, 'Authorization: Bearer <mcp-api-key> required')
-
-  const { valid, apiKey } = await validateApiKeyForMcpAudience(rawKey, 'admin')
-  if (!valid || !apiKey) throw createHttpError(401, 'Invalid or revoked API key')
-
-  const owner = await getPrivateUserByAny(apiKey.user_id)
-  if (!owner) throw createHttpError(401, 'API key owner not found')
-  if (owner.suspended_at) throw createHttpError(403, 'Account is suspended')
-  if (!isAdminUser(owner)) throw createHttpError(403, 'Administrator role required')
-
-  const rateLimitResult = await checkRouteRateLimit(
-    'POST:/api/v1/admin/mcp',
-    { ip: ctx.ip, apiKeyId: apiKey.id },
-    owner,
-  )
-  if (rateLimitResult.limited) {
-    ctx.set('Retry-After', String(rateLimitResult.retryAfterSeconds ?? 60))
-    throw createHttpError(429, 'Rate limit exceeded')
-  }
-
-  const parsedBody = await ctx.request.json('1mb')
-
-  const webRequest = new Request(`http://localhost${ADMIN_MCP_SERVER_CONFIG.routePath}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json, text/event-stream',
-    },
-    body: JSON.stringify(parsedBody),
-  })
-
-  const response = await handleMcpHttpRequest({
-    user: buildMcpContextUser(owner),
-    permissions: apiKey.permissions,
-    request: webRequest,
-    parsedBody,
-    config: ADMIN_MCP_SERVER_CONFIG,
-  })
-
+  // JSON-RPC messages are validated by the MCP SDK, so the contract body stays open.
+  apiRequestContract<'POST:/api/v1/admin/mcp', unknown>('POST:/api/v1/admin/mcp')
+  const response = await dispatchMcpRequest(ctx, ADMIN_MCP_SERVER_CONFIG)
   const contentType = response.headers.get('Content-Type')
   if (contentType) ctx.setType(contentType)
-  if (response.status === 204 || response.status === 205) {
-    await response.body?.cancel()
-    ctx.setStatus(response.status)
-    return
-  }
   ctx.setStatus(response.status)
-  if (!response.body) {
-    ctx.response.empty()
-  } else {
-    await ctx.pipeline(Readable.from(response.body as AsyncIterable<Uint8Array>))
-  }
+  if (!response.body) ctx.response.empty()
+  else await ctx.pipeline(Readable.from(response.body as AsyncIterable<Uint8Array>))
 })
-
-app.route('/api/v1/admin/mcp').get((ctx: Context) => {
-  ctx.set('Allow', 'POST')
-  ctx.throw(405, 'Method Not Allowed')
-})
-
-app.route('/api/v1/admin/mcp').delete((ctx: Context) => {
-  ctx.set('Allow', 'POST')
-  ctx.throw(405, 'Method Not Allowed')
-})
+app.route('/api/v1/admin/mcp').get(rejectMcpMethod)
+app.route('/api/v1/admin/mcp').delete(rejectMcpMethod)

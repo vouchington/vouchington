@@ -26,18 +26,14 @@ describe('sentry import-time initialization', () => {
     expect(sentrySdkMock.init).not.toHaveBeenCalled()
   })
 
-  it('runs import-time initialization when test runtimes opt into OTel-only mode', async () => {
+  it('runs import-time initialization outside test runtimes without a mock client', async () => {
     const registry = globalThis as typeof globalThis & {
       vouchaSentryMocks?: unknown
     }
     const originalSentryMocks = registry.vouchaSentryMocks
-    const originalOtelEnabled = process.env.OTEL_ENABLED
-    const originalNodeOptions = process.env.NODE_OPTIONS
-    const originalExecArgv = [...process.execArgv]
+    const originalNodeEnv = process.env.NODE_ENV
     delete registry.vouchaSentryMocks
-    process.env.OTEL_ENABLED = '1'
-    delete process.env.NODE_OPTIONS
-    process.execArgv.length = 0
+    process.env.NODE_ENV = 'development'
 
     try {
       vi.resetModules()
@@ -45,17 +41,7 @@ describe('sentry import-time initialization', () => {
       expect(sentrySdkMock.init).toHaveBeenCalledOnce()
     } finally {
       registry.vouchaSentryMocks = originalSentryMocks
-      process.execArgv.splice(0, process.execArgv.length, ...originalExecArgv)
-      if (originalOtelEnabled === undefined) {
-        delete process.env.OTEL_ENABLED
-      } else {
-        process.env.OTEL_ENABLED = originalOtelEnabled
-      }
-      if (originalNodeOptions === undefined) {
-        delete process.env.NODE_OPTIONS
-      } else {
-        process.env.NODE_OPTIONS = originalNodeOptions
-      }
+      process.env.NODE_ENV = originalNodeEnv
       vi.resetModules()
     }
   })

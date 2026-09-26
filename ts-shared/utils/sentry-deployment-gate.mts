@@ -9,13 +9,11 @@ const DEPLOYED_ENVIRONMENTS: ReadonlySet<string> = new Set<SentryDeployedEnviron
 
 export interface ResolveSentryEnablementInput {
   environment: string | undefined
-  otelEnabled: boolean
 }
 
 export interface SentryEnablement {
   enabled: boolean
   environment: string | undefined
-  otelOnly: boolean
 }
 
 export interface SentryDsnConfig {
@@ -85,24 +83,17 @@ export function getSentryDsnConfig(raw: string | undefined): SentryDsnConfig | u
 
 export function resolveSentryEnablement({
   environment,
-  otelEnabled,
 }: ResolveSentryEnablementInput): SentryEnablement {
   const isDeployedEnvironment =
     environment !== undefined && DEPLOYED_ENVIRONMENTS.has(environment.toLowerCase())
-  const otelOnly = otelEnabled && !isDeployedEnvironment
-  return { enabled: isDeployedEnvironment || otelOnly, environment, otelOnly }
+  return { enabled: isDeployedEnvironment, environment }
 }
 
 export function resolveSentryDsnEnablement({
   dsn,
   environment,
-  otelEnabled,
 }: ResolveSentryDsnEnablementInput): SentryDsnEnablement {
-  const enablement = resolveSentryEnablement({ environment, otelEnabled })
-  if (enablement.otelOnly) {
-    return { ...enablement, configurationInvalid: false, sentryDsn: undefined }
-  }
-
+  const enablement = resolveSentryEnablement({ environment })
   const sentryDsn = getSentryDsnConfig(dsn)
   return {
     ...enablement,

@@ -13,22 +13,21 @@ but the matrix shards inside a single run remain parallel. The root CI job dispa
 Playwright suites as soon as the static checks pass, alongside the Vitest jobs; no Vitest result
 delays or suppresses the browser suites.
 
-Vitest's ownership registry owns each file-count policy. PR-selected and promoted-full jobs emit
-`shard_total_override = ceil(fileCount / filesPerShard)` (GitHub matrix max 256). Otherwise the
-reusable workflow counts the checked-out live suite after installing dependencies and resolves the
-same formula. A positive override wins even when `full_suite` is true; missing or nonpositive live
-counts fail the prep job rather than silently using a stale numeric fallback:
+Vitest's ownership registry owns each file-count policy. The reusable workflow's prep job runs
+[`ci/vitest/shard-total.mts`](../../ci/vitest/shard-total.mts), which counts the checked-out live
+suite after installing dependencies and resolves `ceil(fileCount / filesPerShard)` (GitHub matrix
+max 256); missing or nonpositive live counts fail the prep job rather than silently using a stale
+numeric fallback:
 
-| CI job                 | Sizing policy                                   |
-| ---------------------- | ----------------------------------------------- |
-| `test-backend-unit`    | One shard per 350 checked-out or selected files |
-| `test-web`             | One shard per 500 checked-out or selected files |
-| `test-web-api`         | One shard per 64 checked-out or selected files  |
-| `test-web-integration` | Fixed at one unless manually overridden         |
+| CI job                 | Sizing policy                       |
+| ---------------------- | ----------------------------------- |
+| `test-backend-unit`    | One shard per 350 checked-out files |
+| `test-web`             | One shard per 500 checked-out files |
+| `test-web-api`         | One shard per 64 checked-out files  |
+| `test-web-integration` | Fixed at one                        |
 
 The `TEST_BACKEND_UNIT_FILES_PER_SHARD` and `TEST_WEB_FILES_PER_SHARD` repository variables, when
-set to a positive integer, replace the registry's files-per-shard value for their job on every
-path. Leave them unset, or equal to the registry value, so the table above stays authoritative; a
+set to a positive integer, replace the registry's files-per-shard value for their job. Leave them unset, or equal to the registry value, so the table above stays authoritative; a
 stale variable silently re-shards CI.
 
 The full-stack integration suite is matrix-capable so it can be split later without redesigning
@@ -40,22 +39,17 @@ shards now run uncapped like every other matrix: GitHub schedules them against n
 capacity and queues excess work. Every shard-capable workflow puts a ten-minute watchdog on the
 Vitest command itself; this is a step deadline, not a replacement for the job's broader timeout.
 
-PR, labelled-full, fail-open, manual, and push Playwright runs all use
-`max(1, ceil(runnable spec count × 6.1 seconds / 350 seconds))`; GitHub's matrix range limits the
-result to 1–256. A caller's `shard_total_override` input, or else the optional
-`PLAYWRIGHT_SHARD_TOTAL` repository variable, replaces the formula when set. The 6.1 seconds per
+Every Playwright run uses `max(1, ceil(runnable spec count × 6.1 seconds / 350 seconds))`;
+GitHub's matrix range limits the result to 1–256. The optional `PLAYWRIGHT_SHARD_TOTAL` repository
+variable replaces the formula when set. The 6.1 seconds per
 spec and 350-second execution budget are an allocation heuristic, not a per-spec SLA: 6.1 seconds is
 the hosted-runner test-step time per spec with three Playwright workers, and the budget sizes each
 shard for the seven-to-eight-minute job target. The current full suite resolves to six shards. See
 the derivation in
-[`ci/playwright/shard-selection.mts`](../../ci/playwright/shard-selection.mts). The execution budget
+[`ci/playwright/shard-total.mts`](../../ci/playwright/shard-total.mts). The execution budget
 leaves room for fixed per-shard build/startup overhead inside the whole job's ~10-minute ceiling
 (build + migrate + compile + test, not just the test step), plus a per-shard warm-up/variance
-buffer, rounded up to a whole minute, reflected in that job's step `timeout-minutes`. The push-path
-`main-web.yml` workflow used to pin its own `shard_total_override` here, sized against the
-self-hosted fleet's measured runtimes; that override predated the move to GitHub-hosted runners and
-was never recalibrated for them, so it was dropped in favor of the same formula the PR path already
-uses.
+buffer, rounded up to a whole minute, reflected in that job's step `timeout-minutes`.
 
 Each sharded workflow includes a lightweight job that generates its matrix before the test job
 runs. Web shards run symmetrically — no shard owns a singleton duty; the pages-router check,

@@ -42,7 +42,7 @@ describe('user OAuth grant management', () => {
       scopes: ['mcp.user:read', 'mcp.user:write'],
     })
 
-    await validateOAuthAccessToken(tokens.access_token)
+    await validateOAuthAccessToken(tokens.access_token, 'user')
     const after = await listUserOAuthGrants(user.id, { limit: 100 })
     const used = after.results.find(grant => grant.id === listed.id)!
     expect(used.last_used_at.getTime()).toBeGreaterThanOrEqual(listed.last_used_at.getTime())
@@ -86,7 +86,7 @@ describe('user OAuth grant management', () => {
     await expect(revokeUserOAuthGrant(stranger.id, grant.id)).resolves.toBe(false)
     await expect(revokeUserOAuthGrant(user.id, grant.id)).resolves.toBe(true)
     await expect(revokeUserOAuthGrant(user.id, grant.id)).resolves.toBe(false)
-    await expect(validateOAuthAccessToken(tokens.access_token)).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
     await expect(
       exchangeOAuthRefreshToken({
         clientId: flow.client.client_id,

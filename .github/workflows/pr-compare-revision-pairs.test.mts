@@ -92,15 +92,6 @@ describe('PR compare revision pairs', () => {
     assertNoWorkflowViolations(workflowFiles().flatMap(mixedPairViolations))
   })
 
-  it('keeps select-ci topology on pair 2 instead of workflow-injected SHAs', () => {
-    const workflow = load(
-      readFileSync('.github/workflows/ci-select-vitest.yml', 'utf8'),
-    ) as WorkflowFile
-    const step = requiredNamedStep(workflow.jobs?.['select-ci'], 'Select Vitest tests')
-    expect(step.env).not.toHaveProperty('TOPOLOGY_BASE_SHA')
-    expect(step.env).not.toHaveProperty('TOPOLOGY_HEAD_SHA')
-  })
-
   it('classifies docs-only PRs with origin/<base_ref>...HEAD', () => {
     const workflow = load(
       readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),

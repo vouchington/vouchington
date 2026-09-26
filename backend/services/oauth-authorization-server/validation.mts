@@ -1,38 +1,31 @@
-import { validateScopeSet, type ApiScope } from '@modules/scopes'
-import { getSiteOrigin } from '@modules/utils'
-import { OAuthProtocolError, invalidRequest } from './errors.mts'
+import { SCOPE_DEFINITIONS, validateScopeSet, type ApiScope } from '@modules/scopes'
+import { OAuthProtocolError, invalidRequest, invalidTarget } from './errors.mts'
+import { findOAuthProtectedResource, type OAuthProtectedResource } from './resources.mts'
 
-const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1'])
-const MAX_URI_LENGTH = 2048
 const PKCE_CHALLENGE_PATTERN = /^[A-Za-z0-9_-]{43}$/
 const PKCE_VERIFIER_PATTERN = /^[A-Za-z0-9._~-]{43,128}$/
 
-export function validateResource(value: unknown): string {
-  if (typeof value !== 'string' || value.length > MAX_URI_LENGTH) {
-    throw invalidRequest('resource is required')
+// Accepts exactly one of the canonical protected-resource URLs that discovery publishes.
+export function validateResource(value: unknown): OAuthProtectedResource {
+  if (typeof value !== 'string' || value.length === 0) throw invalidRequest('resource is required')
+  const resource = findOAuthProtectedResource(value)
+  if (!resource) throw invalidTarget()
+  return resource
+}
+
+// RFC 8707 makes `resource` optional at the token endpoint; when present it must name the resource
+// the code or refresh family is already bound to.
+export function assertTokenRequestResource(requested: string | undefined, bound: string): void {
+  if (requested !== undefined && requested !== bound) throw invalidTarget()
+}
+
+export function assertScopesMatchResource(
+  scopes: readonly ApiScope[],
+  resource: OAuthProtectedResource,
+): void {
+  if (!scopes.every(scope => SCOPE_DEFINITIONS[scope].audience === resource.audience)) {
+    throw new OAuthProtocolError('invalid_scope', 'scope does not match the requested resource')
   }
-  let resource: URL
-  try {
-    resource = new URL(value)
-  } catch {
-    throw invalidRequest('resource must be an absolute URI')
-  }
-  const loopback = isLoopbackHostname(resource.hostname)
-  if (resource.protocol !== 'https:' && !(resource.protocol === 'http:' && loopback)) {
-    throw invalidRequest('resource must use HTTPS or loopback HTTP')
-  }
-  if (resource.username || resource.password || resource.hash || resource.search) {
-    throw invalidRequest('resource cannot contain userinfo, query, or fragment components')
-  }
-  if (resource.pathname !== '/api/v1/mcp') {
-    throw invalidRequest('resource is not supported')
-  }
-  const allowedOrigins = new Set([new URL(getSiteOrigin()).origin])
-  if (process.env.NODE_ENV !== 'production') allowedOrigins.add('http://localhost:2900')
-  if (!allowedOrigins.has(resource.origin)) {
-    throw invalidRequest('resource is not supported')
-  }
-  return resource.toString()
 }
 
 export function parseOAuthScopes(value: unknown): ApiScope[] {
@@ -66,8 +59,4 @@ export function validatePkceVerifier(verifier: unknown): string {
     throw new OAuthProtocolError('invalid_grant', 'code_verifier is invalid')
   }
   return verifier
-}
-
-function isLoopbackHostname(hostname: string): boolean {
-  return LOOPBACK_HOSTNAMES.has(hostname) || hostname === '[::1]'
 }

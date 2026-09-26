@@ -29,18 +29,16 @@ jobs:
       contents: read
 
   # Area-gated static gates (typecheck/depcruise/build/smoke) lifted off the
-  # per-area Vitest jobs into their own jobs. Gated on
-  # detect-changes plus select-ci topology outputs: these steps aren't Vitest and must
-  # still run on a backend-only or web-only change even when no test file was
-  # selected. See .github/workflows/checks-static.yml.
+  # per-area Vitest jobs into their own jobs, gated on detect-changes. See
+  # .github/workflows/checks-static.yml.
   static-backend:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-backend == 'true')) ||
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true') ||
         needs.detect-changes.outputs.backend == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
@@ -52,20 +50,17 @@ jobs:
       actions: read
 
   static-web:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-web == 'true')) ||
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true') ||
         needs.detect-changes.outputs.web == 'true' ||
         needs.detect-changes.outputs.web-integration == 'true' ||
         needs.detect-changes.outputs.playwright == 'true' ||
         needs.detect-changes.outputs.playwright-credentialed == 'true' ||
-        needs.select-ci.outputs.run-test-web-integration == 'true' ||
-        needs.select-ci.outputs.run-test-playwright == 'true' ||
-        needs.select-ci.outputs.run-test-playwright-credentialed == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
     uses: ./.github/workflows/checks-static.yml
@@ -76,13 +71,13 @@ jobs:
       actions: read
 
   static-lambdas:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-lambdas == 'true')) ||
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true') ||
         needs.detect-changes.outputs.lambdas == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
@@ -94,13 +89,13 @@ jobs:
       actions: read
 
   static-cloudflare-worker:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-static-cloudflare-worker == 'true')) ||
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true') ||
         needs.detect-changes.outputs.cloudflare-worker == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
@@ -112,104 +107,81 @@ jobs:
       actions: read
 
   initialize-smoke-test:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-initialize-smoke-test == 'true') || needs.detect-changes.outputs.shell-scripts == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || needs.detect-changes.outputs.shell-scripts == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success'
     uses: ./.github/workflows/initialize-smoke-test.yml
     permissions:
       contents: read
 
-  select-ci:
-    needs: [detect-changes]
-    uses: ./.github/workflows/ci-select-vitest.yml
-    with:
-      detect-changes-outputs-docs-only: ${{ needs.detect-changes.outputs.docs-only }}
-    permissions:
-      contents: read
-
   test-ts-shared:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-ts-shared == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-ts-shared == 'true' || (needs.detect-changes.outputs.ts-shared == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
-      needs.static-code-analysis.result == 'success' &&
-      needs.select-ci.outputs.skip-test-ts-shared != 'true'
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.ts-shared == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      needs.static-code-analysis.result == 'success'
     uses: ./.github/workflows/tests-ts-shared.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-ts-shared == 'true' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-ts-shared || '' }}
     permissions:
       actions: read
       contents: read
 
   test-tooling:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-tooling == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-tooling == 'true' || (needs.detect-changes.outputs.tooling == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
-      needs.static-code-analysis.result == 'success' &&
-      needs.select-ci.outputs.skip-test-tooling != 'true'
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.tooling == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      needs.static-code-analysis.result == 'success'
     uses: ./.github/workflows/tests-tooling.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-tooling == 'true' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-tooling || '' }}
     permissions:
       actions: read
       contents: read
 
   test-backend-modules:
-    needs: [detect-changes, static-code-analysis, static-backend, select-ci]
+    needs: [detect-changes, static-code-analysis, static-backend]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-modules == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-modules == 'true' || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-backend-modules != 'true'
+      (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')
     uses: ./.github/workflows/tests-backend-modules.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-backend-modules == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-backend-modules != 'false' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-backend-modules || '' }}
     permissions:
       contents: read
       actions: read
 
   test-backend-unit:
-    needs: [detect-changes, static-code-analysis, static-backend, select-ci]
+    needs: [detect-changes, static-code-analysis, static-backend]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-unit == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-unit == 'true' || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-backend-unit != 'true'
+      (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')
     uses: ./.github/workflows/tests-backend-unit.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-backend-unit == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-backend-unit != 'false' }}
-      shard_total_override: ${{ needs.select-ci.outputs.shard-total-test-backend-unit || '' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-backend-unit || '' }}
     permissions:
       contents: read
       actions: read
 
   backend-smoke:
-    needs: [detect-changes, static-backend, select-ci]
+    needs: [detect-changes, static-backend]
     if: >-
       !cancelled() &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-backend-smoke == 'true') || github.event_name == 'workflow_dispatch') ||
-      needs.select-ci.outputs.full-suite == 'true' ||
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'workflow_dispatch') ||
+      github.event_name == 'merge_group' ||
       (needs.detect-changes.outputs.backend == 'true' && needs.detect-changes.outputs.docs-only != 'true') ||
       (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false'))
     uses: ./.github/workflows/checks-backend-smoke.yml
@@ -218,15 +190,14 @@ jobs:
       actions: read
 
   test-backend-credentialed:
-    needs: [detect-changes, static-code-analysis, static-backend, select-ci]
+    needs: [detect-changes, static-code-analysis, static-backend]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-backend-credentialed == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-backend-credentialed == 'true' || needs.detect-changes.outputs.docs-only != 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      (github.event_name == 'merge_group' || needs.detect-changes.outputs.docs-only != 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped') &&
-      (needs.select-ci.outputs.full-suite == 'true' || needs.select-ci.outputs.full-test-backend-credentialed == 'true' || needs.select-ci.outputs.files-test-backend-credentialed != '' || (github.ref == 'refs/heads/main' && needs.detect-changes.outputs.backend == 'true') || needs.detect-changes.outputs.backend-credentialed == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
-      needs.select-ci.outputs.skip-test-backend-credentialed != 'true'
+      (github.event_name == 'merge_group' || (github.event_name == 'pull_request' && needs.detect-changes.outputs.workflow-action-changes == 'true') || (github.ref == 'refs/heads/main' && needs.detect-changes.outputs.backend == 'true') || needs.detect-changes.outputs.backend-credentialed == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false'))
     uses: ./.github/workflows/tests-backend-credentialed.yml
     permissions:
       contents: read
@@ -236,8 +207,6 @@ jobs:
       trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-backend-credentialed == 'true' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-backend-credentialed || '' }}
     secrets:
       AWS_TEST_ROLE_ARN: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
       OPENAI_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}
@@ -245,10 +214,10 @@ jobs:
       STRIPE_SECRET_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.STRIPE_SECRET_KEY || '' }}
 
   test-postgres-schema:
-    needs: [detect-changes, static-code-analysis, static-backend, select-ci]
+    needs: [detect-changes, static-code-analysis, static-backend]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-postgres-schema == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-postgres-schema == 'true' || (needs.detect-changes.outputs.postgres-schema == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.postgres-schema == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')
     uses: ./.github/workflows/tests-postgres-schema.yml
@@ -257,35 +226,27 @@ jobs:
       actions: read
     with:
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-postgres-schema == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-postgres-schema != 'false' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-postgres-schema || '' }}
 
   test-web:
-    needs: [detect-changes, static-code-analysis, static-web, select-ci]
+    needs: [detect-changes, static-code-analysis, static-web]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web == 'true' || (needs.detect-changes.outputs.web == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.web == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-web != 'true'
+      (needs.static-web.result == 'success' || needs.static-web.result == 'skipped')
     uses: ./.github/workflows/tests-web.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-web == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-web != 'false' }}
-      shard_total_override: ${{ needs.select-ci.outputs.shard-total-test-web || '' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-web || '' }}
     permissions:
       actions: read
       contents: read
 
   storybook:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-storybook == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-storybook == 'true' || (needs.detect-changes.outputs.storybook == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.storybook == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       (needs.detect-changes.outputs.trusted-secret-context == 'true' || needs.detect-changes.outputs.dependency-bot-test-context == 'true') &&
       needs.static-code-analysis.result == 'success'
     uses: ./.github/workflows/storybook.yml
@@ -299,46 +260,34 @@ jobs:
       concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      selected_test_files: ${{ needs.select-ci.outputs.storybook-browser-files }}
-      browser_test_mode: ${{ needs.select-ci.outputs.storybook-browser-mode || 'full' }}
 
   test-web-api:
-    needs: [detect-changes, static-code-analysis, static-web, select-ci]
+    needs: [detect-changes, static-code-analysis, static-web]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web-api == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web-api == 'true' || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-web-api != 'true'
+      (needs.static-web.result == 'success' || needs.static-web.result == 'skipped')
     uses: ./.github/workflows/tests-web-api.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-web-api == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-web-api != 'false' }}
-      shard_total_override: ${{ needs.select-ci.outputs.shard-total-test-web-api || '' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-web-api || '' }}
     permissions:
       contents: read
       actions: read
 
   test-web-integration:
-    needs: [detect-changes, static-code-analysis, static-web, select-ci]
+    needs: [detect-changes, static-code-analysis, static-web]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-web-integration == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-web-integration == 'true' || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.web-integration == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-web.result == 'success' || needs.static-web.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-web-integration != 'true'
+      (needs.static-web.result == 'success' || needs.static-web.result == 'skipped')
     uses: ./.github/workflows/tests-web-integration.yml
     with:
       shared_build_available: ${{ needs.static-web.result == 'success' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-web-integration == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-web-integration != 'false' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-web-integration || '' }}
-      shard_total_override: ${{ needs.select-ci.outputs.shard-total-test-web-integration || '' }}
     permissions:
       contents: read
       actions: read
@@ -352,7 +301,6 @@ jobs:
         static-web,
         static-lambdas,
         static-cloudflare-worker,
-        select-ci,
       ]
     if: >-
       !cancelled() &&
@@ -363,7 +311,7 @@ jobs:
       (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped') &&
       (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped') &&
       (
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-playwright == 'true') || github.event_name == 'workflow_dispatch') ||
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'workflow_dispatch') ||
         needs.detect-changes.outputs.playwright == 'true' ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')
       )
@@ -385,7 +333,6 @@ jobs:
         static-web,
         static-lambdas,
         static-cloudflare-worker,
-        select-ci,
       ]
     if: >-
       !cancelled() &&
@@ -397,7 +344,7 @@ jobs:
       (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped') &&
       (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped') &&
       (
-        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-playwright-credentialed == 'true') || github.event_name == 'workflow_dispatch') ||
+        (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'workflow_dispatch') ||
         (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false') ||
         needs.detect-changes.outputs.playwright-credentialed == 'true'
       )
@@ -415,48 +362,40 @@ jobs:
       id-token: write
 
   test-cloudflare-worker:
-    needs: [detect-changes, static-code-analysis, static-cloudflare-worker, select-ci]
+    needs: [detect-changes, static-code-analysis, static-cloudflare-worker]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-cloudflare-worker == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-cloudflare-worker == 'true' || (needs.detect-changes.outputs.cloudflare-worker == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.cloudflare-worker == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-cloudflare-worker != 'true'
+      (needs.static-cloudflare-worker.result == 'success' || needs.static-cloudflare-worker.result == 'skipped')
     uses: ./.github/workflows/tests-cloudflare-worker.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-cloudflare-worker == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-cloudflare-worker != 'false' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-cloudflare-worker || '' }}
     permissions:
       actions: read
       contents: read
 
   test-lambdas:
-    needs: [detect-changes, static-code-analysis, static-lambdas, select-ci]
+    needs: [detect-changes, static-code-analysis, static-lambdas]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-lambdas == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-lambdas == 'true' || (needs.detect-changes.outputs.lambdas == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.lambdas == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.static-code-analysis.result == 'success' &&
-      (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped') &&
-      needs.select-ci.outputs.skip-test-lambdas != 'true'
+      (needs.static-lambdas.result == 'success' || needs.static-lambdas.result == 'skipped')
     uses: ./.github/workflows/tests-lambdas.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-lambdas == 'true' }}
-      run_tests: ${{ needs.select-ci.outputs.run-tests-test-lambdas != 'false' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-lambdas || '' }}
     permissions:
       actions: read
       contents: read
 
   test-explain-analyze:
-    needs: [detect-changes, static-code-analysis, static-backend, select-ci]
+    needs: [detect-changes, static-code-analysis, static-backend]
     if: >-
       !cancelled() &&
-      (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-explain-analyze == 'true') || needs.detect-changes.outputs.explain-analyze == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      (github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || needs.detect-changes.outputs.explain-analyze == 'true' || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
       needs.detect-changes.outputs.docs-only != 'true' &&
       needs.static-code-analysis.result == 'success' &&
       (needs.static-backend.result == 'success' || needs.static-backend.result == 'skipped')
@@ -467,18 +406,15 @@ jobs:
 
   # Minimal host-sensitive canaries run on both supported CI operating systems.
   test-portability:
-    needs: [detect-changes, static-code-analysis, select-ci]
+    needs: [detect-changes, static-code-analysis]
     if: >-
       !cancelled() &&
-      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-test-portability == 'true') || needs.select-ci.outputs.full-suite == 'true') || needs.select-ci.outputs.full-test-portability == 'true' || (needs.detect-changes.outputs.portability == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
-      needs.static-code-analysis.result == 'success' &&
-      needs.select-ci.outputs.skip-test-portability != 'true'
+      ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'merge_group') || (needs.detect-changes.outputs.portability == 'true' && needs.detect-changes.outputs.docs-only != 'true') || (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.workflow-action-changes != 'false')) &&
+      needs.static-code-analysis.result == 'success'
     uses: ./.github/workflows/tests-portability.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
-      full_suite: ${{ needs.select-ci.outputs.full-suite != 'false' || needs.select-ci.outputs.full-test-portability == 'true' }}
-      selected_test_files: ${{ needs.select-ci.outputs.files-test-portability || '' }}
     permissions:
       actions: read
       contents: read
@@ -496,7 +432,6 @@ jobs:
       !cancelled()
     needs:
       - detect-changes
-      - select-ci
       - test-ts-shared
       - test-tooling
       - test-backend-modules
@@ -511,17 +446,10 @@ jobs:
       - test-portability
     uses: ./.github/workflows/ci-test-coverage.yml
     with:
-      select-vitest-outputs-run-tests-test-web: ${{ needs.select-ci.outputs.run-tests-test-web }}
-      select-vitest-outputs-run-tests-test-web-api: ${{ needs.select-ci.outputs.run-tests-test-web-api }}
-      select-vitest-outputs-run-tests-test-backend-unit: ${{ needs.select-ci.outputs.run-tests-test-backend-unit }}
-      select-vitest-outputs-run-tests-test-backend-modules: ${{ needs.select-ci.outputs.run-tests-test-backend-modules }}
-      select-vitest-outputs-run-tests-test-cloudflare-worker: ${{ needs.select-ci.outputs.run-tests-test-cloudflare-worker }}
-      select-vitest-outputs-run-tests-test-lambdas: ${{ needs.select-ci.outputs.run-tests-test-lambdas }}
       test-backend-unit-shard-total: ${{ needs.test-backend-unit.outputs.shard-total }}
       test-web-shard-total: ${{ needs.test-web.outputs.shard-total }}
       test-web-api-shard-total: ${{ needs.test-web-api.outputs.shard-total }}
       test-web-integration-shard-total: ${{ needs.test-web-integration.outputs.shard-total }}
-      select-vitest-outputs-storybook-browser-mode: ${{ needs.select-ci.outputs.storybook-browser-mode }}
       test-ts-shared-result: ${{ needs.test-ts-shared.result }}
       test-tooling-result: ${{ needs.test-tooling.result }}
       test-backend-modules-result: ${{ needs.test-backend-modules.result }}
@@ -588,7 +516,6 @@ jobs:
     with:
       vitest-report-expectations: ${{ needs.test-coverage.outputs.vitest-report-expectations }}
       postgres-result: ${{ needs.test-postgres-schema.result }}
-      postgres-vitest-ran: ${{ needs.test-postgres-schema.outputs.vitest-ran }}
       postgres-vitest-attempt: ${{ needs.test-postgres-schema.outputs.vitest-report-attempt }}
       results: |-
         {"detect-changes":{"result":"${{ needs.detect-changes.result }}"},"static-code-analysis":{"result":"${{ needs.static-code-analysis.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"static-lambdas":{"result":"${{ needs.static-lambdas.result }}"},"static-cloudflare-worker":{"result":"${{ needs.static-cloudflare-worker.result }}"},"initialize-smoke-test":{"result":"${{ needs.initialize-smoke-test.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"test-portability":{"result":"${{ needs.test-portability.result }}"},"test-coverage":{"result":"${{ needs.test-coverage.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"}}
@@ -614,7 +541,7 @@ jobs:
             {"tests-processing":{"result":"${{ needs.tests-processing.result }}"}}
   # Docker image validation waits only on static analysis, alongside the tests.
   build-backend:
-    needs: [detect-changes, static-code-analysis, static-backend, select-ci]
+    needs: [detect-changes, static-code-analysis, static-backend]
     # On PRs, build when Docker configuration, copied workspace manifests, or the root dependency
     # boundary changes. Root manifest and lockfile changes fail open to both images so transitive
     # dependency updates receive image validation before merge. On non-PR events, build whenever
@@ -627,7 +554,7 @@ jobs:
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
       (
-        ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-build-backend == 'true') || github.event_name == 'pull_request' && needs.detect-changes.outputs.build-backend-infra == 'true')) ||
+        ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'pull_request' && needs.detect-changes.outputs.build-backend-infra == 'true')) ||
         (github.event_name != 'pull_request' && (needs.detect-changes.outputs.build-backend == 'true' || needs.detect-changes.outputs.workflow-action-changes != 'false'))
       )
     uses: ./.github/workflows/build-backend.yml
@@ -642,7 +569,7 @@ jobs:
 
   # Docker image validation waits only on static analysis, alongside the tests.
   build-web:
-    needs: [detect-changes, static-code-analysis, static-web, select-ci]
+    needs: [detect-changes, static-code-analysis, static-web]
     # On PRs, build when Docker configuration, copied workspace manifests, or the root dependency
     # boundary changes. Root manifest and lockfile changes fail open to both images so transitive
     # dependency updates receive image validation before merge. On non-PR events, build whenever
@@ -655,7 +582,7 @@ jobs:
       needs.detect-changes.outputs.trusted-secret-context == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.ref_name != 'main') &&
       (
-        ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && (needs.select-ci.outputs.full-ci != 'false' || needs.select-ci.outputs.run-build-web == 'true') || github.event_name == 'pull_request' && needs.detect-changes.outputs.build-web-infra == 'true')) ||
+        ((github.event_name == 'pull_request' && needs.detect-changes.outputs.docs-only != 'true' && needs.detect-changes.outputs.workflow-action-changes == 'true' || github.event_name == 'pull_request' && needs.detect-changes.outputs.build-web-infra == 'true')) ||
         (github.event_name != 'pull_request' && (needs.detect-changes.outputs.build-web == 'true' || needs.detect-changes.outputs.workflow-action-changes != 'false'))
       )
     uses: ./.github/workflows/build-web.yml

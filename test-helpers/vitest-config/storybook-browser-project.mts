@@ -152,14 +152,14 @@ export const storybookBrowserProject: TestProjectConfiguration = {
     include: ['storybook/**/*.stories.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/.git/**', 'node_modules/**', '.next/**'],
     // Must stay a literal relative path (no `resolve(process.cwd(), ...)`) so `no-mistakes` can
-    // trace this as a static `vitest-setup` dependency edge instead of falling back to a global
-    // full-suite selection for any change reachable through the web-storybook-browser project
+    // trace this as a static `vitest-setup` dependency edge instead of falling back to selecting
+    // every test for any change reachable through the web-storybook-browser project
     // graph. No-mistakes resolves this literal relative to the repo root
     // (test-helpers/vitest.setup.storybook-browser-guard.mts); Vitest resolves the same literal
     // relative to this project's own `root: 'web'` override
     // (web/test-helpers/vitest.setup.storybook-browser-guard.mts). Both are redirect shims to the
     // real implementation at web/.storybook/vitest.setup.ts — see those files' comments and
-    // docs/development/ci.md.
+    // docs/development/reference-explain-test-selection-and-vitest-ownership.md#traceable-vitest-setup-files.
     setupFiles: ['./test-helpers/vitest.setup.storybook-browser-guard.mts'],
     // Share one module context so the virtual annotations module is fetched once
     // per browser session; isolated story files restored the setup-file flake.

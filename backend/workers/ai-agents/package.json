@@ -57,7 +57,7 @@
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "glide-mq": "^0.15.5",
-    "openai": "^7.15.0",
+    "openai": "^7.23.0",
     "p-map": "7.0.8"
   },
   "devDependencies": {

@@ -62,11 +62,45 @@ Clients are retired through `revoked_at` and never deleted, because
 row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
 name the client; they stay `NULL` until Client ID Metadata Documents and staff verification ship.
 
+## Protected resources and discovery
+
+- Two protected resources share the site origin: the user MCP server (`/api/v1/mcp`) and the admin
+  MCP server (`/api/v1/admin/mcp`). Every consent request, code, grant, and token binds to exactly
+  one of them, and each MCP route accepts only tokens bound to itself.
+- The issuer is the configured site origin, never the request `Host`. Authorization responses,
+  including errors, carry the RFC 9207 `iss` parameter.
+- Discovery documents are anonymous and publicly cacheable:
+  - RFC 8414 authorization-server metadata at `/.well-known/oauth-authorization-server`
+  - RFC 9728 protected-resource metadata at `/.well-known/oauth-protected-resource/api/v1/mcp` and
+    `/.well-known/oauth-protected-resource/api/v1/admin/mcp`. There is no root document, because two
+    resources share one origin.
+  - Staging Basic Auth exempts them; see
+    [Cloudflare Worker staging auth](../../operations/cloudflare-worker-staging-auth.md).
+- `/authorize` redirects an unsupported `resource` back to the verified client as `invalid_target`.
+  Only administrators can approve the admin resource; anyone else gets `access_denied`.
+- `/token` accepts an optional RFC 8707 `resource`, which must name the bound resource. A mismatch
+  is `invalid_target` and leaves the code unconsumed. A refresh may narrow its scopes with `scope`.
+- A client's registered scopes cover a requested scope by the same rule as MCP tool authorization,
+  so a client registered for `mcp.user:write` may request `cards:write`.
+
+## MCP challenges
+
+The MCP routes accept an OAuth access token or an MCP API key as the bearer credential.
+
+- A missing credential gets `401` with
+  `WWW-Authenticate: Bearer resource_metadata="…", scope="mcp.<audience>:read mcp.<audience>:write"`.
+- An unknown, expired, or revoked token, a token for the other resource, or a suspended owner gets
+  `401` with `error="invalid_token"`.
+- A single `tools/call` whose only failure is a missing scope gets `403` with
+  `error="insufficient_scope"` and a `scope` naming the granted scopes plus the tool's, so re-consent
+  never drops access the grant already holds.
+- Role and plan denials, JSON-RPC batches, and API keys keep in-band JSON-RPC errors: re-consent
+  cannot fix a role or plan, a batch has no single tool to step up for, and an API key cannot be
+  re-authorized.
+
 ## Ownership boundaries
 
-This foundation issues and validates credentials and binds them to a requested resource. Protected-
-resource discovery, `WWW-Authenticate` challenges, per-tool scope enforcement, and the public
-developer experience are layered follow-up work.
+Client ID Metadata Documents and client and grant management UX are layered follow-up work.
 
 ## Related
 

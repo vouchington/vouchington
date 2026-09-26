@@ -7,9 +7,8 @@ Centralized client-side error and success handler. Mirrors [`backend/modules/on-
 - `filterSentryEvent(event, hint)` — drops expected 4xx errors before request metadata is scrubbed.
 - `scrubSentryError(event, hint)` — the `beforeSend` hook used by all three web runtimes; filters
   first and scrubs every final non-null event.
-- `scrubSentrySpan(span)` / `scrubSentryTransaction(event, hint)` — remove URL query
-  strings/fragments and redact request credential headers and cookies from span and transaction
-  metadata.
+- `scrubSentrySpan(span)` — removes URL query strings/fragments and redacts request credential
+  headers and cookies from a streamed span's `attributes`.
 
 ## When to call
 

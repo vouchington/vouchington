@@ -13,7 +13,7 @@ const CANONICAL_SSE_ROUTES = [
   'v1/users/data-request.mts',
 ] as const
 
-const MCP_ACCEPT_EXCEPTIONS = new Set(['v1/admin/mcp.mts', 'v1/mcp/index.mts'])
+const MCP_ACCEPT_EXCEPTIONS = new Set(['mcp-helpers.mts'])
 const START_SSE_CALL_PATTERN = /\bstartSSE\s*\(\s*ctx\s*(?:,|\))/
 
 function productionModules(): string[] {

@@ -17,7 +17,7 @@ case-insensitive semantics. Consumers that need graph traversal should import `c
 `createWorkflowTopologyIndex` from `'no-mistakes'`. Vitest tests must not call `ciTopology()` or [`loadRepoTopology()`](../../ci/repo-topology.mts).
 Live topology audits run from [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts)
 in static-code-analysis after `no-mistakes check`. Vitest tests must not spawn the `no-mistakes`
-CLI or call `testsPlan()`. New topology call sites and live analysis invocations are pinned by
+CLI. New topology call sites and live analysis invocations are pinned by
 exact-set assertions in
 [`ci/no-mistakes-ci-contention.test.mts`](../../ci/no-mistakes-ci-contention.test.mts). The runtime
 index exposes path/ID lookups; sorted, de-duplicated direct and transitive upstream/downstream job
@@ -28,9 +28,9 @@ sorted `incomingWorkflowRunEdges()` / `outgoingWorkflowRunEdges()` plus direct a
 workflow-run source/subscriber path queries. It is restricted to the loaded workflow filter and
 retained callee closure, and is never included in schema-version-1 JSON.
 
-For PR producer routing, `ci/vitest/ci-select.mts` calls the versioned
-`ciTopologyImpact()` API with **pair 2** revisions: `origin/${GITHUB_BASE_REF}` and `HEAD` after
-checking out GitHub's `refs/pull/N/merge`. That is the merge parent versus the merge commit, so
+The PR docs-only classifier in
+[`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) diffs **pair 2** revisions:
+`origin/${PR_BASE_REF}...HEAD` after checking out GitHub's `refs/pull/N/merge`. That is the merge parent versus the merge commit, so
 already-merged `main` files are on both sides and cancel out. Do not pass
 `pull_request.base.sha` as `base` while `head` is `github.sha`: the recorded base SHA can lag the
 merge parent and the changed-path set then includes commits that already landed on main
@@ -45,17 +45,10 @@ flowchart LR
   mixed["mixed: base.sha vs github.sha"] --> forbidden[forbidden]
 ```
 
-The topology impact report is
-accepted only when schema, revisions, changed-path set, root-job identities, and diagnostic scopes
-are complete and internally consistent. A bounded report emits `full-ci=false` plus fixed
-`run-<root-job>` outputs; consumers OR those PR-only terms with their existing path predicate.
-`ci.yml` edits, unknown or deleted workflow YAML, every unresolved local-action path, malformed or
-global diagnostic, API failure, and an absent selector output instead fail open: every otherwise
-eligible producer runs and every Vitest job receives its existing full-suite contract. PR producer
-filters therefore omit workflow and local-action paths: `select-ci` owns those revision-aware
-routes. `workflow-action-changes` is the sole broad fallback and is restricted to non-PR/manual
-dispatch behavior. Stable
-`tests` and `build` fan-ins remain outside this routing layer.
+PR producer routing is path-filter only. Producer filters omit workflow and local-action paths;
+instead the `workflow-action-changes` filter (`.github/workflows/**`, `.github/actions/**`) starts
+every otherwise eligible producer, and each started producer runs its full suite. Stable `tests` and
+`build` fan-ins remain outside this routing layer.
 
 Schema version 1 also models same-run `actions/upload-artifact` and `actions/download-artifact`
 handoffs as `artifact` edges. Each edge records producer and consumer job IDs, step indexes, the

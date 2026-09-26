@@ -15,7 +15,7 @@ When self-review or any bot/human review flags one instance of a semantic bug pa
 Then run only these cheap local commands. GitHub Actions is the full gate. Do not run `pnpm run no-mistakes`, Knip, typecheck-\*, dep-cruise, Playwright, native harnesses, or any deleted local suite as a before-push requirement. Reproduce a CI failure from [tests.md](../../../docs/development/tests.md) and [ci.md](../../../docs/development/ci.md).
 
 1. `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files>` — catches import order violations and missing `vi.fn` type parameters that bot reviewers flag on almost every PR where they appear.
-2. `pnpm exec vitest run <directly changed test files> --bail=3` — run the test files you edited. Do not expand the set with `no-mistakes tests plan`.
+2. `pnpm exec vitest run <directly changed test files> --bail=3` — run the test files you edited. CI runs the full suite of each touched area; reproduce one with `pnpm exec vitest run --project <project>`.
 3. `git diff --name-only origin/main...HEAD` — scope check; if the file list is unexpectedly large for the PR's intent, investigate before pushing.
 4. `pnpm exec oxfmt --check <changed supported files>` — catches formatting in docs (`.md`), workflows (`.yml`), and config (`.toml`) that the TypeScript-only check misses.
 

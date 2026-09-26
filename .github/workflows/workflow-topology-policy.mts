@@ -22,5 +22,4 @@ export function evaluateWorkflowTopologyPolicy(
   ].toSorted()
 }
 
-export { evaluateGraphPolicy } from './workflow-topology-policy-graph.mts'
 export type { WorkflowTopologyPolicy } from './workflow-topology-policy-types.mts'

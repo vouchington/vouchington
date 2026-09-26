@@ -96,35 +96,25 @@ describe('tests-tooling.yml setup timing', () => {
     expect(testTimeout).toBeGreaterThanOrEqual(8)
   })
 
-  it('dispatches selected files through setup-backend', () => {
+  it('runs the tooling workflow projects through setup-backend', () => {
     const runStep = runToolingTestsStep()
-    expect(runStep.run).toContain(
-      'node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"',
-    )
+    expect(runStep.run).toBe('node ci/tooling-test-runner.mts --workflow-projects --bail=3')
     expect(runStep.env?.VITEST_COVERAGE_ENABLED).toBe(
       "${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
-    expect(runStep.env?.VITEST_SELECTED_FILES).toContain('inputs.selected_test_files')
 
     expect(setupBackendStep().with).toBeUndefined()
   })
 
   it('isolates route bounds from regular tooling coverage and artifacts', () => {
-    const regularRun = runToolingTestsStep()
+    // The regular run's `--workflow-projects` set excludes i18n-route-bounds; the project
+    // registry test (test-helpers/tooling-project-registry.test.mts) owns that split.
     const routeBoundsJob = workflow.jobs?.['i18n-route-bounds']
     const routeBoundsRun = runI18nRouteBoundsStep()
 
-    expect(regularRun.run).toContain(
-      '"$file" != \'static-code-analysis/i18n-extract/route-bounds.test.mts\'',
-    )
-    expect(regularRun.run).not.toContain('exit 0')
     expect(routeBoundsJob?.['timeout-minutes']).toBeDefined()
     expect(routeBoundsRun.run).toContain('--project i18n-route-bounds')
     expect(routeBoundsRun['timeout-minutes']).toBeGreaterThanOrEqual(5)
-    expect(routeBoundsRun.env?.VITEST_SELECTED_FILES).toContain('inputs.selected_test_files')
-    expect(routeBoundsRun.run).toContain(
-      "grep -Fxq 'static-code-analysis/i18n-extract/route-bounds.test.mts'",
-    )
     expect(
       routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-coverage-pair'),
     ).toBe(false)

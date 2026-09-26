@@ -9,7 +9,11 @@ and account linking.
 - Authorization code with mandatory S256 PKCE and rotating refresh-token support.
 - Rotating refresh tokens with family-wide revocation when a token is reused.
 - Public RFC 7591 client registration and confidential clients using HTTP Basic authentication.
-- Exact redirect URI, resource, and canonical scope binding.
+- Exact redirect URI, resource, and canonical scope binding, with RFC 8707 `resource` checks at
+  the token endpoint and the RFC 9207 `iss` parameter on every authorization response.
+- Two protected resources, the user and admin MCP servers (`resources.mts`), with RFC 8414 and
+  RFC 9728 metadata builders. Only administrators may authorize the admin resource
+  (`resource-authorization.mts`).
 - Opaque codes and tokens stored only as purpose-bound hashes.
 
 Confidential client secrets are also stored as nonrecoverable, purpose-bound hashes. The server
@@ -51,5 +55,7 @@ live in `management-types.mts`.
 
 ## Boundaries
 
-This package exports bearer validation for later protected-resource work. B2 owns well-known
-metadata and `WWW-Authenticate`; B15 owns client and grant management UX.
+This package exports bearer validation, resource definitions, and discovery metadata. The MCP
+routes build `WWW-Authenticate` challenges in `@services/mcp-tools`. Client ID Metadata Documents
+and client and grant management UX are follow-up work. See the
+[OAuth requirements](../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md).

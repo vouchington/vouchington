@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
-// PW_FILES selection-decode behavior (runPlaywrightPnpmArgs et al.) lives in the
-// co-located tests-playwright.part-2.test.mts, split out to stay under the oxlint max-lines cap.
+// Run-step shell behavior (runPlaywrightPnpmArgs et al.) lives in the co-located
+// tests-playwright.part-2.test.mts, split out to stay under the oxlint max-lines cap.
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const playwrightConfigHelpers = readFileSync('playwright/config/config-helpers.mts', 'utf8')
 const playwrightSharedConfig = readFileSync('playwright/config/shared-config.mts', 'utf8')
@@ -20,33 +20,18 @@ function workflowJobSection(body: string, jobName: string): string {
 describe('tests-playwright.yml', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('runs the selector and Playwright shards on ubuntu-latest', () => {
-    expect(workflowJobSection(workflow, 'select')).toContain('runs-on: ubuntu-latest\n')
+  it('runs the shard planner and Playwright shards on ubuntu-latest', () => {
+    expect(workflowJobSection(workflow, 'shards')).toContain('runs-on: ubuntu-latest\n')
     expect(workflowJobSection(workflow, 'playwright-tests')).toContain('runs-on: ubuntu-latest')
   })
 
-  it('accepts an optional shard-total override and transports it to the selector', () => {
-    expect(workflow).toContain(`shard_total_override:
-        description: Override the computed Playwright shard total
-        type: string
-        required: false
-        default: ''`)
-    expect(workflow).toContain(
-      'SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override || vars.PLAYWRIGHT_SHARD_TOTAL }}',
-    )
+  it('computes the shard matrix from the repository variable override or the spec count', () => {
+    const planner = workflowJobSection(workflow, 'shards')
+
+    expect(planner).toContain('SHARD_TOTAL_OVERRIDE: ${{ vars.PLAYWRIGHT_SHARD_TOTAL }}')
+    expect(planner).toContain('run: node ci/playwright/shard-total.mts')
     expect(workflow).not.toContain('PLAYWRIGHT_FILES_PER_SHARD')
     expect(workflow).not.toContain('PLAYWRIGHT_TEST_SHARDS')
-  })
-
-  it('rejects shard totals outside the GitHub matrix range', () => {
-    const shardMatrixStep = workflow.match(
-      /- name: Build shard matrix[\s\S]*?(?=\n {6}- name:|\n {2}[a-zA-Z0-9_-]+:\n|$)/,
-    )
-
-    expect(shardMatrixStep).not.toBeNull()
-    expect(shardMatrixStep![0]).toContain('^([1-9][0-9]{0,2})$')
-    expect(shardMatrixStep![0]).toContain('[ "$total" -gt 256 ]')
-    expect(shardMatrixStep![0]).toContain('shard-total must be an integer from 1 through 256')
   })
 
   it('keeps PR calls dynamic and preserves the shard execution contract', () => {
@@ -55,13 +40,14 @@ describe('tests-playwright.yml', () => {
     const shardJob = workflowJobSection(workflow, 'playwright-tests')
 
     expect(prCall).toContain('uses: ./.github/workflows/tests-playwright.yml')
-    expect(prCall).not.toContain('shard_total_override:')
     expect(shardJob).toContain('uses: ./.github/actions/build-web-targets')
     expect(shardJob).toContain("PLAYWRIGHT_MAX_WORKERS: '3'")
     expect(shardJob).toContain('OTEL_ENABLED:')
-    expect(shardJob).toContain('PW_FILES: ${{ needs.select.outputs.files }}')
-    expect(shardJob).toContain('playwright test "${FILES[@]}" "$SHARD_ARG"')
-    expect(workflow).toContain('needs.select.outputs.shard-matrix')
+    expect(shardJob).toContain(
+      'CI_SHARD: ${{ matrix.shard }}/${{ needs.shards.outputs.shard-total }}',
+    )
+    expect(shardJob).toContain('playwright test "--shard=$CI_SHARD"')
+    expect(workflow).toContain('needs.shards.outputs.shard-matrix')
   })
 
   it('serializes Playwright workflow runs without serializing matrix shards', () => {
@@ -78,14 +64,14 @@ describe('tests-playwright.yml', () => {
   })
 
   it('produces one shared build for standalone runs and restores it in each shard', () => {
-    const selector = workflowJobSection(workflow, 'select')
+    const planner = workflowJobSection(workflow, 'shards')
     const shardJob = workflowJobSection(workflow, 'playwright-tests')
     expect(workflow).not.toContain('web-targets-artifact-name')
     expect(workflow).not.toContain('restore-web-targets')
-    expect(selector).toContain(
-      "steps.select.outputs.skip != 'true' && !inputs.shared_build_available && steps.shards.outputs.total != '1'",
+    expect(planner).toContain(
+      "!inputs.shared_build_available && steps.shards.outputs.shard-total != '1'",
     )
-    expect(selector).toContain('shared-build-cache-mode: producer')
+    expect(planner).toContain('shared-build-cache-mode: producer')
     expect(shardJob).toContain('shared-build-cache-mode: consumer')
   })
 
@@ -160,18 +146,8 @@ describe('tests-playwright.yml', () => {
     )
   })
 
-  it('uploads the selected no-mistakes Playwright plan for PR diagnostics', () => {
-    const uploadIndex = workflow.indexOf('name: Upload Playwright test plan')
-    const matrixIndex = workflow.indexOf('name: Build shard matrix')
-
-    expect(workflow).toContain('name: Upload Playwright test plan')
-    expect(workflow).toContain('name: playwright-test-plan')
-    expect(workflow).toContain('playwright-test-plan.json')
-    expect(workflow).toContain('playwright-test-plan.md')
-    expect(workflow).toContain('if-no-files-found: ignore')
-    expect(workflow).toContain('retention-days: 1')
-    expect(uploadIndex).toBeGreaterThan(matrixIndex)
-    expect(workflow.slice(uploadIndex, uploadIndex + 200)).toContain('if: ${{ !cancelled() }}')
+  it('runs every shard unconditionally', () => {
+    expect(workflowJobSection(workflow, 'playwright-tests')).not.toContain('\n    if:')
   })
 
   it('delegates browser and web runtime caching to their shared actions', () => {

@@ -31,6 +31,10 @@ function shouldLogToConsole(): boolean {
   return env === 'development' || !!process.env.CI
 }
 
+// Sentry SDK v11 instruments fetch and http natively and ignores OpenTelemetry's suppressTracing
+// context key, so a request whose URL carries a credential must be suppressed in Sentry as well.
+export const suppressSentryTracing = Sentry.suppressTracing
+
 /**
  * Flush pending Sentry events. Call before process.exit() to avoid dropping errors
  * that were just captured (e.g. in an uncaughtException handler).

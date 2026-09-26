@@ -18,13 +18,14 @@ import {
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,
+  getOAuthResourceUrl,
   registerOAuthClient,
   validateOAuthAccessToken,
 } from './index.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
 
-const RESOURCE = 'http://localhost:2900/api/v1/mcp'
+const RESOURCE = getOAuthResourceUrl('user')
 const SCOPE = 'mcp.user:read mcp.user:write'
 
 describe('OAuth refresh tokens', () => {
@@ -60,7 +61,7 @@ describe('OAuth refresh tokens', () => {
       refreshFamilyRevoked: true,
       refreshReuseDetected: true,
     })
-    await expect(validateOAuthAccessToken(rotated.access_token)).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(rotated.access_token, 'user')).resolves.toBeNull()
     await expect(getTestOAuthLifecycleEvents(flow.client.client_id)).resolves.toContain(
       'refresh_reuse_detected',
     )
@@ -103,7 +104,9 @@ describe('OAuth refresh tokens', () => {
     })
     const successful = exchanges.find(result => result.status === 'fulfilled')
     if (!successful || successful.status !== 'fulfilled') throw new Error('exchange did not win')
-    await expect(validateOAuthAccessToken(successful.value.access_token)).resolves.toBeNull()
+    await expect(
+      validateOAuthAccessToken(successful.value.access_token, 'user'),
+    ).resolves.toBeNull()
   })
 
   it('preserves a narrowed scope across later refreshes', async () => {
@@ -126,11 +129,9 @@ describe('OAuth refresh tokens', () => {
 
     expect(narrowed.scope).toBe('mcp.user:read')
     expect(refreshed.scope).toBe('mcp.user:read')
-    await expect(
-      validateOAuthAccessToken(refreshed.access_token, {
-        requiredScopes: ['mcp.user:write'],
-      }),
-    ).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(refreshed.access_token, 'user')).resolves.toMatchObject({
+      scopes: ['mcp.user:read'],
+    })
   })
 
   it('rejects an expired refresh token', async () => {
@@ -206,7 +207,7 @@ describe('OAuth refresh tokens', () => {
     await suspendTestUser(owner.id)
 
     try {
-      await expect(validateOAuthAccessToken(initial.access_token)).resolves.toBeNull()
+      await expect(validateOAuthAccessToken(initial.access_token, 'user')).resolves.toBeNull()
       await expect(
         exchangeOAuthRefreshToken({
           clientId: flow.client.client_id,

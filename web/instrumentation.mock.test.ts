@@ -4,9 +4,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const serverConfigMock = vi.fn<VitestLooseMock>()
 const edgeConfigMock = vi.fn<VitestLooseMock>()
 vi.mock(import('./instrumentation'), async importActual => importActual())
-vi.mock(import('./sentry-otel'), () => ({
-  createOtelSpanProcessors: vi.fn<() => undefined>(() => undefined),
-}))
 vi.mock(import('./sentry.server.config'), () => {
   serverConfigMock()
   return {}
@@ -23,13 +20,11 @@ async function registerInstrumentation(): Promise<void> {
 
 describe('register', () => {
   const originalRuntime = process.env.NEXT_RUNTIME
-  const originalOtelEnabled = process.env.OTEL_ENABLED
 
   beforeEach(() => {
     vi.resetModules()
     serverConfigMock.mockClear()
     edgeConfigMock.mockClear()
-    delete process.env.OTEL_ENABLED
   })
 
   afterEach(() => {
@@ -38,16 +33,10 @@ describe('register', () => {
     } else {
       process.env.NEXT_RUNTIME = originalRuntime
     }
-    if (originalOtelEnabled === undefined) {
-      delete process.env.OTEL_ENABLED
-    } else {
-      process.env.OTEL_ENABLED = originalOtelEnabled
-    }
   })
 
-  it('imports server config on nodejs runtime when OTEL_ENABLED=1', async () => {
+  it('imports server config on nodejs runtime', async () => {
     process.env.NEXT_RUNTIME = 'nodejs'
-    process.env.OTEL_ENABLED = '1'
     await registerInstrumentation()
     expect(serverConfigMock).toHaveBeenCalledOnce()
     expect(edgeConfigMock).not.toHaveBeenCalled()

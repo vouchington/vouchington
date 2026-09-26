@@ -4,12 +4,7 @@ on:
   workflow_call:
     inputs:
       event-name:
-        description: Triggering workflow event name (pull_request triggers affected-test selection)
-        type: string
-        required: false
-        default: ''
-      shard_total_override:
-        description: Override the computed Playwright shard total
+        description: Triggering workflow event name (pull_request cancels superseded runs)
         type: string
         required: false
         default: ''
@@ -39,66 +34,34 @@ concurrency:
   cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}
 
 jobs:
-  select:
+  shards:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
     outputs:
-      skip: ${{ steps.select.outputs.skip }}
-      full-suite: ${{ steps.select.outputs.full-suite }}
-      files: ${{ steps.select.outputs.files }}
-      shard-total: ${{ steps.shards.outputs.total }}
-      shard-matrix: ${{ steps.shards.outputs.matrix }}
-      reason: ${{ steps.select.outputs.reason }}
+      shard-total: ${{ steps.shards.outputs.shard-total }}
+      shard-matrix: ${{ steps.shards.outputs.shard-matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-      - name: Select Playwright tests
-        id: select
-        env:
-          EVENT_NAME: ${{ inputs.event-name }}
-          SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override || vars.PLAYWRIGHT_SHARD_TOTAL }}
-        run: node ci/playwright/ci-select.mts
-      - name: Build shard matrix
+      - name: Compute Playwright shards
         id: shards
-        if: steps.select.outputs.skip != 'true'
         timeout-minutes: 1
-        run: |
-          total="${{ steps.select.outputs.shard-total }}"
-          if ! [[ "$total" =~ ^([1-9][0-9]{0,2})$ ]] || [ "$total" -gt 256 ]; then
-            echo "::error::shard-total must be an integer from 1 through 256, got: '$total'"
-            exit 1
-          fi
-          echo "total=$total" >> "$GITHUB_OUTPUT"
-          echo "matrix=[$(seq -s, 1 "$total")]" >> "$GITHUB_OUTPUT"
+        env:
+          SHARD_TOTAL_OVERRIDE: ${{ vars.PLAYWRIGHT_SHARD_TOTAL }}
+        run: node ci/playwright/shard-total.mts
       - uses: ./.github/actions/build-web-targets
-        if: ${{ steps.select.outputs.skip != 'true' && !inputs.shared_build_available && steps.shards.outputs.total != '1' }}
+        if: ${{ !inputs.shared_build_available && steps.shards.outputs.shard-total != '1' }}
         timeout-minutes: 13
         with:
           artifact-suffix: playwright-producer
           shared-build-cache-mode: producer
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
-      - name: Upload Playwright test plan
-        if: ${{ !cancelled() }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          overwrite: true
-          name: playwright-test-plan
-          path: |
-            playwright-test-plan.json
-            playwright-test-plan.md
-          if-no-files-found: ignore
-          retention-days: 1
 
   playwright-tests:
-    needs: [select]
-    if: needs.select.outputs.skip != 'true'
+    needs: [shards]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -113,7 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.select.outputs.shard-matrix) }}
+        shard: ${{ fromJSON(needs.shards.outputs.shard-matrix) }}
 
     services:
       postgres:
@@ -231,7 +194,7 @@ jobs:
           echo "LOCALIZATION_SQLITE_PATH=$sqlite_path" >> "$GITHUB_ENV"
       - name: Run Playwright tests
         id: run-playwright
-        # Sized to PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-selection.mts): a
+        # Sized to PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts): a
         # 350s/shard execution budget plus a per-shard warm-up/variance buffer, rounded up to a
         # whole minute since GitHub Actions timeout-minutes literals in this repo stay integral.
         timeout-minutes: 9
@@ -242,28 +205,12 @@ jobs:
           OTEL_EXPORTER_OTLP_PROTOCOL: ${{ inputs.otel_enabled && 'http/protobuf' || '' }}
           OTEL_LOGS_EXPORTER: ${{ inputs.otel_enabled && 'otlp' || '' }}
           OTEL_TRACES_SAMPLER: ${{ inputs.otel_enabled && 'parentbased_always_on' || '' }}
-          CI_SHARD: ${{ matrix.shard }}/${{ needs.select.outputs.shard-total }}
+          CI_SHARD: ${{ matrix.shard }}/${{ needs.shards.outputs.shard-total }}
           CI_PROJECT: playwright
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
-          PW_FULL_SUITE: ${{ needs.select.outputs.full-suite }}
-          PW_FILES: ${{ needs.select.outputs.files }}
         run: |
           set -euo pipefail
-          SHARD_ARG="--shard=${{ matrix.shard }}/${{ needs.select.outputs.shard-total }}"
-          if [[ "$PW_FULL_SUITE" == "true" || -z "$PW_FILES" ]]; then
-            pnpm exec ./ci/with-node-test-options playwright test "$SHARD_ARG" && test_exit=0 || test_exit=$?
-          else
-            # PW_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
-            # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
-            # preserve paths containing spaces or shell glob metacharacters, replacing
-            # the previous unquoted $PW_FILES word-splitting/glob-expansion. This avoids
-            # `mapfile` (bash 4.0+) so the script stays portable to macOS /bin/bash 3.2.
-            FILES=()
-            while IFS= read -r file; do
-              if [ -n "$file" ]; then FILES+=("$file"); fi
-            done <<< "$PW_FILES"
-            pnpm exec ./ci/with-node-test-options playwright test "${FILES[@]}" "$SHARD_ARG" && test_exit=0 || test_exit=$?
-          fi
+          pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
           # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
           # trace.zip only for a test's first retry attempt, so its presence under
           # test-results/ is a direct signal that something retried in this shard —

@@ -28,14 +28,14 @@
     }
   },
   "scripts": {
-    "build": "esbuild src/index.mts --bundle --outfile=dist/index.js --format=esm --target=esnext --platform=browser --conditions=worker,browser --external:node:async_hooks --external:cloudflare:workers --sourcemap",
+    "build": "esbuild src/index.mts --bundle --outfile=dist/index.js --format=esm --target=esnext --platform=browser --conditions=worker,browser --external:node:async_hooks --external:node:diagnostics_channel --external:node:events --external:node:module --external:node:net --external:node:path --external:node:url --external:cloudflare:workers --sourcemap",
     "build:storybook-auth": "esbuild src/storybook-pages-auth.mts --bundle --format=esm --platform=browser --target=esnext --conditions=worker,browser",
     "dev": "node scripts/wrangler/dev.mts",
     "typecheck": "tsc --noEmit --incremental --project tsconfig.json",
     "test:smoke": "./scripts/tests/smoke-test-cloudflare-worker.sh"
   },
   "dependencies": {
-    "@sentry/cloudflare": "10.75.2",
+    "@sentry/cloudflare": "11.0.0",
     "@ts-shared/cache": "workspace:^",
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/languages": "workspace:^",

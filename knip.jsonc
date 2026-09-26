@@ -18,7 +18,12 @@
         // Reached only through backend-data-stores' string-valued Vitest `runner` config.
         "test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts",
       ],
-      "project": ["dev/**/*.mts", "test-helpers/**/*.mts", "test-helpers/**/*.ts"],
+      "project": [
+        ".github/workflows/**/*.mts",
+        "dev/**/*.mts",
+        "test-helpers/**/*.mts",
+        "test-helpers/**/*.ts",
+      ],
       "ignoreBinaries": [
         "psql", // PostgreSQL system CLI probed by local DB-backed test setup checks
         "valkey-cli", // Valkey system CLI probed by local DB-backed test setup checks

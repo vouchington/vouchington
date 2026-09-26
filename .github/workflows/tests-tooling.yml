@@ -13,14 +13,6 @@ on:
         required: false
         type: boolean
         default: false
-      full_suite:
-        description: 'Run the complete configured projects instead of selected test files'
-        type: boolean
-        default: true
-      selected_test_files:
-        description: 'Space-delimited selected test files when full_suite is false'
-        type: string
-        default: ''
   workflow_dispatch:
     inputs:
       upload_vitest_blob_artifact:
@@ -50,28 +42,11 @@ jobs:
         timeout-minutes: 10
       - name: Run tooling tests
         env:
-          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: tooling-test-report.junit.xml
           VITEST_BLOB_OUTPUT_FILE: .vitest-reports/tooling.json
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
-        run: |
-          # VITEST_SELECTED_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
-          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion
-          # preserve paths containing spaces or shell glob metacharacters, replacing the
-          # previous unquoted $VITEST_SELECTED_FILES word-splitting/glob-expansion. A
-          # blank-line guard (mirroring decodeSelectedFiles's blank filter) is required:
-          # `<<<` always appends a trailing newline, so an empty VITEST_SELECTED_FILES
-          # (the full-suite case) still yields one empty-string read, which must not
-          # become a stray positional arg. This avoids `mapfile` (bash 4.0+) to
-          # stay portable to macOS `/bin/bash` 3.2.
-          FILES=()
-          while IFS= read -r file; do
-            if [ -n "$file" ] && [ "$file" != 'static-code-analysis/i18n-extract/route-bounds.test.mts' ]; then
-              FILES+=("$file")
-            fi
-          done <<< "$VITEST_SELECTED_FILES"
-          node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"
+        run: node ci/tooling-test-runner.mts --workflow-projects --bail=3
         timeout-minutes: 16
       - name: Preserve full tooling LCOV for Codecov
         if: ${{ !cancelled() && inputs.publish_coverage }}
@@ -192,11 +167,5 @@ jobs:
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 10
       - name: Run i18n route bounds
-        env:
-          VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}
-        run: |
-          if [ -n "$VITEST_SELECTED_FILES" ] && ! printf '%s\n' "$VITEST_SELECTED_FILES" | grep -Fxq 'static-code-analysis/i18n-extract/route-bounds.test.mts'; then
-            exit 0
-          fi
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project i18n-route-bounds
+        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project i18n-route-bounds
         timeout-minutes: 8

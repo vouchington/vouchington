@@ -13,9 +13,8 @@ describe('runStorybookBrowserTests', () => {
   beforeEach(() => {
     // runStorybookBrowserTests merges `{ ...process.env, ...options.env }` (intentional: the real
     // storybook job reads its own env from process.env). This describe block's own outer job --
-    // test-tooling -- leaks unrelated ambient values (VITEST_SELECTED_FILES, STORYBOOK_BROWSER_COVERAGE)
-    // through that merge into vitestArgs(), polluting the hardcoded expected-args assertions. Stub both.
-    vi.stubEnv('VITEST_SELECTED_FILES', '')
+    // test-tooling -- leaks an unrelated ambient STORYBOOK_BROWSER_COVERAGE through that merge into
+    // vitestArgs(), polluting the hardcoded expected-args assertions. Stub it.
     vi.stubEnv('STORYBOOK_BROWSER_COVERAGE', '')
   })
 

@@ -23,7 +23,7 @@ const testFixtureDocsPattern = patternMatch[1]
 // Whole trees where every markdown file is read by a Vitest test at runtime (globbed
 // directories, not enumerated pages) -- see docs/prompts/README.md for the read-coverage
 // argument. `docsOnly()` must never classify a file under these trees as docs-only, or a
-// PR touching only one of them skips select-ci/test-tooling entirely (ci.yml:203).
+// PR touching only one of them skips test-tooling entirely.
 const FIXTURE_DOC_TREES = ['.agents/skills', 'docs/prompts'] as const
 
 function readRepoFile(path: string): string {
@@ -45,13 +45,6 @@ function mainChecksToolingFilter(): string[] {
 
 function toolingFilter(): string[] {
   return parseYaml(readRepoFile('.github/ci-path-filters.yml')).tooling
-}
-
-function fullSuiteTriggerPaths(): string[] {
-  const config = parseYaml(readRepoFile('.no-mistakes.yml')) as {
-    test_plan: { vitest: { fullSuiteTriggers: { triggers: Array<{ paths?: string[] }> } } }
-  }
-  return config.test_plan.vitest.fullSuiteTriggers.triggers.flatMap(trigger => trigger.paths ?? [])
 }
 
 const fixtureDocumentationPaths = [
@@ -154,7 +147,7 @@ describe('CI fixture documentation classifier', () => {
     )
   })
 
-  it('covers every markdown file under the fixture-doc trees across all five inventories', () => {
+  it('covers every markdown file under the fixture-doc trees across all four inventories', () => {
     for (const tree of FIXTURE_DOC_TREES) {
       const markdown = execFileSync('git', ['ls-files', '-z', '--', `${tree}/**`], {
         encoding: 'utf8',
@@ -167,7 +160,6 @@ describe('CI fixture documentation classifier', () => {
       expect(toolingFilter()).toContain(`${tree}/**`) // (c) -- restates main-checks.test.mts:49-50
       expect(mainChecksPushPaths()).toContain(`${tree}/**`) // (d) -- restates main-checks.test.mts:33-34
       expect(mainChecksToolingFilter()).toContain(`${tree}/**`) // (d)
-      expect(fullSuiteTriggerPaths()).toContain(`${tree}/**`) // (e) -- restates no-mistakes-test-plan-config.test.mts:216-226
     }
   })
 })
