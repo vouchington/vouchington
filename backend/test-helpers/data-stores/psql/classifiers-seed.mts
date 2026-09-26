@@ -14,22 +14,29 @@ import sql from 'sql-template-strings'
 
 export async function getLocalClassifierBySlug(slug: string): Promise<{
   id: string
+  primitive: string
+  candidate_kind: string
   activated_at: Date | null
   deactivated_at: Date | null
 } | null> {
   const { rows } = await write<{
     id: string
+    primitive: string
+    candidate_kind: string
     activated_at: Date | null
     deactivated_at: Date | null
-  }>(sql`SELECT id, activated_at, deactivated_at FROM classifiers WHERE slug = ${slug}`)
+  }>(sql`
+    SELECT id, primitive, candidate_kind, activated_at, deactivated_at
+    FROM classifiers WHERE slug = ${slug}
+  `)
   return rows[0] ?? null
 }
 
 export async function listLocalActiveClassifierPromptVersions(
   classifierId: string,
-): Promise<{ id: string; model_name: string }[]> {
-  const { rows } = await write<{ id: string; model_name: string }>(sql`
-    SELECT id, model_name FROM classifier_prompt_versions
+): Promise<{ id: string; model_name: string; model_provider: string }[]> {
+  const { rows } = await write<{ id: string; model_name: string; model_provider: string }>(sql`
+    SELECT id, model_name, model_provider FROM classifier_prompt_versions
     WHERE classifier_id = ${classifierId}
       AND activated_at IS NOT NULL AND deactivated_at IS NULL
   `)
