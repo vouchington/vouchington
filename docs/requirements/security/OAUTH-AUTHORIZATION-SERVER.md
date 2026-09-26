@@ -47,8 +47,8 @@ OpenID Connect, ID-token, or UserInfo flows.
 Public clients authenticate with their `client_id` and mandatory PKCE. Confidential clients also
 authenticate with HTTP Basic and a generated client secret. B1 implements RFC 7591 registration,
 not the RFC 7592 registration-management protocol, so it does not mint an unused registration
-management credential. Authenticated client and grant management is owned by the API-key and
-OAuth-app management milestone.
+management credential. Signed-in owners and administrators manage clients and grants through the
+first-party routes below instead.
 
 Signed-in users register and manage their own clients through `/api/v1/my/oauth-apps`
 ([OAuth apps](../users/api-keys.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
