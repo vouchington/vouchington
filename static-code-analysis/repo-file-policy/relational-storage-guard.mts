@@ -81,7 +81,7 @@ export function checkRelationalStorage(schema: SchemaSnapshot, options: Options 
     for (const [columnName, column] of Object.entries(table.columns)) {
       const key = `${tableName}.${columnName}`
       const type = column.type.toLowerCase()
-      if (/^jsonb?$/u.test(type)) {
+      if (/^jsonb?(?:\[\])*$/u.test(type)) {
         checkCategory(
           key,
           'JSON storage',

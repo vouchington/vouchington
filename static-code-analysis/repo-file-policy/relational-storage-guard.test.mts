@@ -32,6 +32,26 @@ function snapshot(
 }
 
 describe('relational storage guard', () => {
+  it.each(['json', 'jsonb', 'json[]', 'jsonb[]', 'json[][]', 'jsonb[][]'])(
+    'rejects undeclared %s documents',
+    type => {
+      expect(
+        checkRelationalStorage(snapshot('new_records', { facts: column(type) }), {
+          enforceCatalogFreshness: false,
+        }),
+      ).toEqual([expect.stringContaining('new_records.facts: JSON storage')])
+    },
+  )
+
+  it('does not classify unrelated scalar and array types as JSON', () => {
+    expect(
+      checkRelationalStorage(
+        snapshot('new_records', { label: column('text'), labels: column('text[]') }),
+        { enforceCatalogFreshness: false },
+      ),
+    ).toEqual([])
+  })
+
   it('rejects new business JSON, UUID arrays and reference-like UUIDs without FKs', () => {
     const result = checkRelationalStorage(
       snapshot('new_records', {
