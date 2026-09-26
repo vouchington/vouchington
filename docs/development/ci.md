@@ -110,6 +110,17 @@ triage session from `main`. It fixes a flaky test in a new PR, files a CI or arc
 comments its analysis on the ejected PR; it never changes that PR. See
 [Auto Harness automation](../../.github/workflows/reference-harness-automation.md#completion-specific-safeguards).
 
+[`plan-completion.yml`](../../.github/workflows/plan-completion.yml) runs one retained snapshot after
+every `main` push. It paginates current open Plans and their timeline PR candidates, re-reads each
+candidate's current body/state and each Plan before writing, then updates only its
+`github-actions[bot]` marker comment. Snapshot read batches are concurrency-bounded by the Node-only
+[batch mapper](../../ci/plan-completion-batch.mts), preserve discovery order, and stop before any
+comment write if a read fails. Plan titles use the validator's case-insensitive `Plan:` convention
+during both discovery and revalidation. The advisory never edits a PR body or closes a Plan; a clear
+marker means only that the snapshot found no current warning, so planned-but-unopened work still
+needs a human audit. GitHub suppresses downstream pushes made with `GITHUB_TOKEN`; supported human
+and interactive merges already produce the required main-push event.
+
 ## CI behavior references
 
 - <a id="dependency-bot-review-and-main-push-ci"></a>[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)

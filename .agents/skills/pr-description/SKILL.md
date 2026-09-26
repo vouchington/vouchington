@@ -20,3 +20,6 @@ the change and performs issue-supersession, milestone-completion, and project-co
 For Vouchington descriptions, retain the portable checklist's **Summary**, root cause, rollout / follow-ups,
 deploy-safety, linked-issue context, and Mermaid guidance. Local PR mechanics, Shepherd Journal
 preservation, validation, and merge authority live in [git-and-prs.md](../agent-workflow/git-and-prs.md).
+For a multi-PR `Plan:`, keep the Plan as the sibling ledger; non-completing PRs carry only their
+ordinal and a `Refs #Plan` explanation, while the completing PR uses `Closes #Plan`. The main-push
+completion advisory is not an automatic Plan closure.
