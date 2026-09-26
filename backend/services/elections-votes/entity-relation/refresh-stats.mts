@@ -39,6 +39,7 @@ export async function refreshEntityRelationVoteStatsBatchWithDependencies(
         { cause: enqueueError },
       )
     }
+    return undefined
   }
 }
 
