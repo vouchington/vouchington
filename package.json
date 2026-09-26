@@ -38,7 +38,7 @@
     "api-fixtures:check": "node backend/test-helpers/api-fixtures/generate.mts --check",
     "openapi:generate": "node backend/test-helpers/api-fixtures/openapi/generate.mts",
     "openapi:check": "node backend/test-helpers/api-fixtures/openapi/generate.mts --check",
-    "mcp:catalog": "vitest run --project backend-data-stores backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts -u",
+    "mcp:catalog": "vitest run --project backend-data-stores backend/services/mcp-tools/catalog/ -u",
     "native-localization:check": "node dev/native-localization.mts --validate",
     "localization:catalog": "node --experimental-strip-types dev/localization/catalog.mts",
     "test:integration:web": "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; node ci/run-vitest-project-group.mts web-integration \"$@\"' --",
