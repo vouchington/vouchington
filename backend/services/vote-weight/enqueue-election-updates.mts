@@ -20,7 +20,7 @@ type EntityRow = {
   relation_table: string | null
 }
 
-export async function enqueueElectionUpdatesForUser(userId: string): Promise<void> {
+export async function enqueueElectionUpdatesForUser(userId: string): Promise<string[]> {
   const { rows } = await read<EntityRow>(sql`/* enqueueElectionUpdatesForUser */
     SELECT 'post' AS entity_type, post_id AS entity_id, NULL::text AS relation_table
     FROM post_votes
@@ -77,7 +77,7 @@ export async function enqueueElectionUpdatesForUser(userId: string): Promise<voi
       ? [createEntityRelationElectionTarget(row.entity_id, row.relation_table)]
       : [],
   )
-  await Promise.all([
+  const enqueueResults = await Promise.all([
     enqueueBulkUpdatePostElectionVoteStats(byType.get('post') ?? []),
     enqueueBulkUpdateTopicElectionVoteStats(byType.get('topic') ?? []),
     enqueueBulkUpdateHostnameElectionVoteStats(byType.get('hostname') ?? []),
@@ -86,4 +86,22 @@ export async function enqueueElectionUpdatesForUser(userId: string): Promise<voi
     enqueueBulkUpdateAgentModerationElectionVoteStats(byType.get('agent_moderation') ?? []),
     enqueueBulkUpdateUserVouchElectionVoteStats(byType.get('user_vouch') ?? []),
   ])
+  return enqueueResults.flatMap(getBulkEnqueuedJobIds)
+}
+
+export function getBulkEnqueuedJobIds(result: unknown): string[] {
+  if (!Array.isArray(result)) {
+    throw new Error('Expected election bulk enqueue to return an array of persisted jobs')
+  }
+
+  return result.map(job => {
+    if (
+      typeof job !== 'object' ||
+      job === null ||
+      typeof (job as { id?: unknown }).id !== 'string'
+    ) {
+      throw new Error('Expected election bulk enqueue to return jobs with string ids')
+    }
+    return (job as { id: string }).id
+  })
 }
