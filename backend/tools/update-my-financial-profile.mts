@@ -75,10 +75,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     plan: 'plus',
     requiredScopes: { mcp: ['financial-profile:read', 'financial-profile:write'] },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
-    api: [
-      { method: 'GET', path: '/api/v1/my/financial-profile' },
-      { method: 'PUT', path: '/api/v1/my/financial-profile' },
-    ],
+    api: [{ method: 'PUT', path: '/api/v1/my/financial-profile' }],
   },
   function:
     (currentUser: BasicUser) =>

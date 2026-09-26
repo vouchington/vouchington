@@ -22,9 +22,7 @@ export type McpToolShape = {
 
 // A read never changes state, so repeating it is always safe.
 export function toMcpToolAnnotations(annotations: ToolAnnotations): McpToolAnnotations {
-  return annotations.readOnlyHint
-    ? { readOnlyHint: true, idempotentHint: true, openWorldHint: annotations.openWorldHint }
-    : { ...annotations }
+  return annotations.readOnlyHint ? { ...annotations, idempotentHint: true } : annotations
 }
 
 export function toolToMcpTool(
