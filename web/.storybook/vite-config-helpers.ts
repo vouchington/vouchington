@@ -38,6 +38,18 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       ),
     },
     {
+      find: '@/components/asides/contribute-cta-aside',
+      replacement: fileURLToPath(
+        new URL('../storybook/mocks/contribute-cta-aside.tsx', import.meta.url),
+      ),
+    },
+    {
+      find: '@/components/asides/upgrade-membership-aside',
+      replacement: fileURLToPath(
+        new URL('../storybook/mocks/upgrade-membership-aside.tsx', import.meta.url),
+      ),
+    },
+    {
       // CommunitiesSidebarGroup loads client API data on mount; keep ratchet stories deterministic.
       find: '@/components/communities/communities-sidebar-group',
       replacement: fileURLToPath(

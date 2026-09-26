@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommentNode } from '@/components/comments/comment-node'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -16,6 +17,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 function NodePreview({ node }: { node: typeof commentNode }) {
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set())
   return (
     <StoryFrame>
       <CommentNode
@@ -23,10 +25,17 @@ function NodePreview({ node }: { node: typeof commentNode }) {
         depth={0}
         rootPostId={discussionPost.id}
         rootPostType='discussion'
-        collapsedIds={new Set()}
+        collapsedIds={collapsedIds}
         replyToId={null}
         quoteMarkdown=''
-        onToggleCollapse={() => {}}
+        onToggleCollapse={commentId => {
+          setCollapsedIds(current => {
+            const next = new Set(current)
+            if (next.has(commentId)) next.delete(commentId)
+            else next.add(commentId)
+            return next
+          })
+        }}
         onToggleReply={() => {}}
         onCommentAdded={() => {}}
         onQuote={() => {}}
