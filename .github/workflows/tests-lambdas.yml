@@ -156,7 +156,7 @@ jobs:
         id: full-lcov-1
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 1
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: lambdas
@@ -164,7 +164,7 @@ jobs:
         id: full-lcov-1-retry
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 1
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: lambdas
