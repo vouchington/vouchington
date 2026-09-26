@@ -75,6 +75,7 @@ export const jobInventory = {
     'cleanup-artifacts detect-web-deploy playwright-credentialed-tests playwright-tests publish-web-images static-checks store-playwright-otel test-web test-web-api test-web-integration web-deploy-intent',
   ),
   '.github/workflows/pnpm-dedupe.yml': jobs('dedupe'),
+  '.github/workflows/postgresql-snapshot-update.yml': jobs('generate prepare publish'),
   '.github/workflows/static-code-analysis.yml': jobs('no-mistakes static-code-analysis'),
   '.github/workflows/storybook.yml': jobs('storybook'),
   '.github/workflows/sync-articles.yml': jobs('publish'),

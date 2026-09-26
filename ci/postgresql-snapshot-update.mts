@@ -48,14 +48,27 @@ async function generateManifest(): Promise<void> {
   const source = join(required('GITHUB_WORKSPACE'), snapshotPath)
   const target = required('SNAPSHOT_ARTIFACT_DIR')
   await mkdir(target, { recursive: true })
-  await cp(join(source, 'schema.json'), join(target, 'schema.json'), { dereference: false })
-  await cp(join(source, 'markdown'), join(target, 'markdown'), {
-    recursive: true,
-    dereference: false,
-  })
+  await Promise.all([
+    cp(join(source, 'schema.json'), join(target, 'schema.json'), { dereference: false }),
+    cp(join(source, 'markdown'), join(target, 'markdown'), {
+      recursive: true,
+      dereference: false,
+    }),
+  ])
   const files = await describeGeneratedSnapshotFiles(target)
   const manifest: SnapshotManifest = { formatVersion: 1, ...identity, files }
   await writeFile(join(target, 'manifest.json'), `${JSON.stringify(manifest)}\n`)
+}
+
+async function copySnapshotFile(
+  checkout: string,
+  artifactRoot: string,
+  relative: string,
+): Promise<void> {
+  const destination = join(checkout, snapshotPath, relative)
+  await assertSafeSnapshotDestination(checkout, `${snapshotPath}/${relative}`)
+  await mkdir(dirname(destination), { recursive: true })
+  return copyFile(join(artifactRoot, relative), destination)
 }
 
 async function publish(): Promise<void> {
@@ -87,9 +100,7 @@ async function publish(): Promise<void> {
     if (!files.includes(relative)) await rm(join(target, relative))
   }
   for (const relative of files) {
-    await assertSafeSnapshotDestination(checkout, `${snapshotPath}/${relative}`)
-    await mkdir(dirname(join(target, relative)), { recursive: true })
-    await copyFile(join(artifactRoot, relative), join(target, relative))
+    await copySnapshotFile(checkout, artifactRoot, relative)
   }
   await execFile(
     'git',
