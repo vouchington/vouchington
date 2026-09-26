@@ -230,4 +230,15 @@ describe('EditPostPage — data_point topic hydration', () => {
       }),
     )
   })
+
+  it('blocks official accounts from editing consumer-trust posts', async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: 'user-1', roles: ['administrator'] })
+    mockGetPost.mockResolvedValue(makeDataPointPost())
+
+    const result = await EditPostPage({ id: 'post-1', postType: 'data_point', title: 'Edit' })
+    const { container } = render(result)
+
+    expect(container.querySelector('[data-pw="official-account-edit-post-gate"]')).not.toBeNull()
+    expect(screen.queryByTestId('post-form')).toBeNull()
+  })
 })

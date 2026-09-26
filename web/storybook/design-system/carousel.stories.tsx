@@ -1,13 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel'
+  InternalCarouselNext as CarouselNext,
+  InternalCarouselPrevious as CarouselPrevious,
+} from '@/components/ui/carousel/controls'
 
 const meta = {
   title: 'Design System/Components/Carousel',

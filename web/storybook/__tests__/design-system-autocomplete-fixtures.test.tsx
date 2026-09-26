@@ -55,6 +55,15 @@ describe('design system autocomplete fixtures', () => {
       },
     })
     expect(originalFetch).not.toHaveBeenCalled()
+    expect(
+      storybookAutocompleteResponse('/api/v1/topics', { topic_types: 'referral_program' }),
+    ).toMatchObject({ topics: { 'topic-referral': { name: 'Amex Referrals' } } })
+    expect(
+      storybookAutocompleteResponse('/api/v1/topics', { topic_types: 'referral_program' })?.topics,
+    ).not.toHaveProperty('topic-1')
+    expect(
+      storybookAutocompleteResponse('/api/v1/topics', { spending_category: true }),
+    ).toMatchObject({ topics: { 'topic-groceries': { name: 'Groceries' } } })
 
     const urlResponse = await fetch(new URL('/api/v1/posts?q=post', window.location.origin))
     expect(await urlResponse.json()).toMatchObject({
