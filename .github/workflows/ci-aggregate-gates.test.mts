@@ -39,8 +39,8 @@ async function runDependencyFreeGate(results: string) {
 describe('CI aggregate gates', () => {
   it('keeps required fan-in gates stable and filters Playwright on main pushes', () => {
     expect(workflow.on?.merge_group).toEqual({ types: ['checks_requested'] })
-    expect(workflow.on?.pull_request?.types).toContain('ready_for_review')
-    expect(workflow.on?.pull_request?.types).not.toContain('labeled')
+    // No job reads draft state, so draft <-> ready transitions must not start a CI run.
+    expect(workflow.on?.pull_request?.types).toEqual(['opened', 'synchronize', 'reopened'])
     expect(workflow.on?.pull_request).not.toHaveProperty('branches')
     expect(workflow.on?.pull_request).not.toHaveProperty('branches-ignore')
     expect(workflow.permissions).not.toHaveProperty('issues')
@@ -53,22 +53,8 @@ describe('CI aggregate gates', () => {
 
     expect(detectChangesOutputs).not.toHaveProperty('coverage-required')
     expect(detectChangesOutputs).not.toHaveProperty('build-required')
-    // The ready_for_review CI-dedupe/reuse system (skip-ci-producers, skip-expensive-jobs,
-    // skip-settled-producers) and the PR-label-driven full-suite gates (pr-labels-json,
-    // has-playwright-full, has-vitest-full) were removed: full Playwright/Vitest suites now
-    // always run, and CI never skips work to reuse a prior run's recorded state.
-    expect(detectChangesOutputs).not.toHaveProperty('skip-ci-producers')
-    expect(detectChangesOutputs).not.toHaveProperty('skip-expensive-jobs')
-    expect(detectChangesOutputs).not.toHaveProperty('skip-settled-producers')
-    expect(detectChangesOutputs).not.toHaveProperty('pr-labels-json')
-    expect(detectChangesOutputs).not.toHaveProperty('has-playwright-full')
-    expect(detectChangesOutputs).not.toHaveProperty('has-vitest-full')
-    expect(workflow.jobs?.['ready-dedupe']).toBeUndefined()
-    expect(workflow.jobs?.['ci-record-state']).toBeUndefined()
-    // ready_for_review keeps disabling cancel-in-progress (a queued ready run must not cancel
-    // the in-flight draft run) even though the run-reuse mechanism that used to follow it is gone.
     expect(workflow.concurrency?.['cancel-in-progress']).toBe(
-      "${{ github.event_name == 'pull_request' && github.event.action != 'ready_for_review' }}",
+      "${{ github.event_name == 'pull_request' }}",
     )
     expect(workflow.jobs?.['detect-changes']?.permissions).not.toHaveProperty('actions')
 
@@ -106,21 +92,6 @@ describe('CI aggregate gates', () => {
     expect(gateWrapper).toContain('vouchington-tooling-script.sh')
     expect(gateWrapper).toContain('scripts/gha/check-needs-results.sh')
     expect(gateScript).toContain('"result":\\s*"(failure|cancelled)"')
-  })
-
-  it('never gates producer jobs on the removed ready_for_review dedupe outputs', () => {
-    // The dedupe/reuse system (skip-ci-producers, skip-expensive-jobs, skip-settled-producers)
-    // was removed entirely: no job may reference these outputs any more, and the aggregate
-    // fan-in jobs stay unconditional.
-    for (const [, job] of Object.entries(workflow.jobs ?? {})) {
-      const jobIf = job.if ?? ''
-      expect(jobIf).not.toContain('skip-ci-producers')
-      expect(jobIf).not.toContain('skip-expensive-jobs')
-      expect(jobIf).not.toContain('skip-settled-producers')
-    }
-
-    expect(workflow.jobs?.tests?.if).toBe('${{ !cancelled() }}')
-    expect(workflow.jobs?.build?.if).toBe('${{ !cancelled() }}')
   })
 
   it('runs select-ci and test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {

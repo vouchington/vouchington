@@ -104,7 +104,7 @@ markers and look-alikes are in [Classifying Transient Infrastructure Failures](r
 
 CI selects the full job set - Playwright, credentialed Playwright, Storybook, web-integration, PR Docker image builds, and the full Vitest suite - on every pull-request run, regardless of draft state. Static-analysis failures suppress the tests and Docker image validation they gate; every test, Playwright suite, and Docker validation build otherwise starts as soon as its static gates pass and never waits on another test. The required `tests` and `build` fan-in checks still report every failure. Main push workflows run independently with `cancel-in-progress: false`. There is no cross-run producer-result reuse or per-PR opt-in: the `playwright:full` and `vitest:full` labels do nothing (CI never reads PR labels), and a draft PR selects the same jobs as a ready PR.
 
-When a draft PR is marked ready for review without changing its head SHA, [`ci.yml`](../../.github/workflows/ci.yml) still leaves the active draft run in place and queues the ready event behind it — `cancel-in-progress` stays disabled for the `ready_for_review` event, so marking a PR ready never cancels its in-flight draft run — but the two runs are otherwise independent: the ready run simply runs the same full job set again from scratch. `synchronize` and `converted_to_draft` still cancel obsolete pull-request work.
+[`ci.yml`](../../.github/workflows/ci.yml) runs only on `opened`, `synchronize`, and `reopened` pull-request events, so marking a draft ready for review, or converting a PR back to draft, starts no CI run. A new pull-request run cancels the obsolete run for the same PR.
 
 ## Coverage references
 
