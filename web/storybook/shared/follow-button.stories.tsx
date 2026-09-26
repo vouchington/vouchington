@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { FollowButton } from '../../components/shared/follow-button'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
@@ -9,6 +13,10 @@ const member = publicUsers[0]!
 
 const meta = {
   title: 'Shared/Follow Button',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

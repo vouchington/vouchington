@@ -4,6 +4,22 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Aside Drawer/Aside Drawer',
+  beforeEach() {
+    const original = window.matchMedia
+    window.matchMedia = (query: string) => {
+      const result = original.call(window, query)
+      if (!query.includes('min-width: 1024px')) return result
+      return new Proxy(result, {
+        get(target, prop, receiver) {
+          if (prop === 'matches') return false
+          return Reflect.get(target, prop, receiver)
+        },
+      })
+    }
+    return () => {
+      window.matchMedia = original
+    }
+  },
 } satisfies Meta
 
 export default meta

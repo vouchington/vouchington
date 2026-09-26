@@ -30,8 +30,9 @@ export function storyMutationPatch(endpoint: string, body: unknown): unknown | u
   }
   if (endpoint.startsWith('/api/v1/hostnames/') || endpoint.includes('/ratings/')) return {}
   if (/^\/api\/v1\/communities\/[^/]+\/reports\/[^/]+$/.test(endpoint)) return {}
-  if (/^\/api\/v1\/referral-link-validations\/[^/]+$/.test(endpoint))
-    return referralValidation(body)
+  if (/^\/api\/v1\/referral-link-validations\/[^/]+$/.test(endpoint)) {
+    return referralValidation(body, endpoint.split('/').pop())
+  }
   return storyTopicPatch(endpoint, body)
 }
 

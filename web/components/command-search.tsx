@@ -148,7 +148,6 @@ export function CommandSearch({
     >
       <div>
         <CommandInput
-          key={showResults ? 'results' : 'empty'}
           ref={setInputNode}
           placeholder={t('extracted.components.commandSearch.search_7f553822')}
           data-pw='search-input'

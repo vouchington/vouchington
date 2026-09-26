@@ -1,3 +1,4 @@
+import { combinedSearchGet } from './story-combined-search'
 import { storyText } from './story-mutation-bodies'
 
 const emptyPage = { has_next_page: false, end_cursor: null, start_cursor: null }
@@ -72,6 +73,8 @@ function rememberFeed(endpoint: string, body: unknown) {
 }
 
 export function storyTopicGet(endpoint: string): unknown | undefined {
+  const search = combinedSearchGet(endpoint)
+  if (search !== undefined) return search
   if (!enabled) return undefined
   if (/^\/api\/v1\/topics\/[^/]+\/aliases$/.test(endpoint)) return aliasList()
   if (/^\/api\/v1\/topics\/[^/]+\/prioritized-referral-links$/.test(endpoint)) {

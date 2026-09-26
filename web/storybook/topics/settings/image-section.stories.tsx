@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ImageSection } from '@/components/topics/settings/image-section'
+import {
+  clearImageUploadFixture,
+  setImageUploadFixture,
+} from '@/storybook/mocks/image-upload-fixture'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
 
@@ -7,6 +15,14 @@ const topic = topics[0]!
 
 const meta = {
   title: 'Topics/Image',
+  beforeEach() {
+    setStoryMutationFixture()
+    setImageUploadFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearImageUploadFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

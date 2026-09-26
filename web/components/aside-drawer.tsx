@@ -51,9 +51,9 @@ export function AsideDrawer({
 
   return (
     <>
-      {/* Zero-height sticky bar — button floats without pushing content down.
-          When the aside column is open on desktop, offset left by the aside width (334px)
-          so the button sits at the right edge of the content column, not inside the aside.
+      {/* Sticky toggle row. The button keeps a 44px hit target, so this row is not
+          zero-height. When the aside column is open on desktop, offset by the aside
+          width (334px) so the button sits at the right edge of the content column.
           px-4 matches the main content gutter; ContentContainer centres to 1200px. */}
       <div className='pointer-events-none sticky top-14 z-20'>
         <ContentContainer>

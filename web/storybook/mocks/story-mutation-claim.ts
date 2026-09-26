@@ -35,11 +35,11 @@ export function storyClaimMutation(endpoint: string, body: unknown): unknown | u
   return undefined
 }
 
-export function referralValidation(body: unknown): unknown {
+export function referralValidation(body: unknown, id = 'validation-story'): unknown {
   return {
     validation: {
-      id: 'validation-story',
-      slug: storyText(body, 'slug') || 'validation-story',
+      id,
+      slug: storyText(body, 'slug') || id,
       user_help_text: storyText(body, 'user_help_text'),
       updated_at: storyMutationAt,
     },

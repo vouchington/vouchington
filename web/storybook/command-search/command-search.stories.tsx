@@ -2,10 +2,19 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { CommandSearch } from '@/components/command-search'
 import { FeatureFlagsProvider } from '@/lib/feature-flags/context'
+import '@/storybook/mocks/client-api-instance'
+import {
+  clearCombinedSearchFixture,
+  setCombinedSearchFixture,
+} from '@/storybook/mocks/story-combined-search'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Command Search/Command Search',
+  beforeEach() {
+    setCombinedSearchFixture()
+    return () => clearCombinedSearchFixture()
+  },
 } satisfies Meta
 
 export default meta
