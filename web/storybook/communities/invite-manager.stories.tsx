@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { InviteManager } from '@/components/communities/invite-manager'
 import type { CommunityInvite, CommunityInvitesResponseBody } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
@@ -9,6 +13,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Communities/Invite Manager',
   component: InviteManager,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof InviteManager>
 
 export default meta

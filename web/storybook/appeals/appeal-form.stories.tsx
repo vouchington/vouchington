@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { AppealForm } from '@/components/appeals/appeal-form'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Appeals/Appeal Form',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

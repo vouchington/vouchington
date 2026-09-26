@@ -36,14 +36,18 @@ export function HostnameModerationControls({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false)
+  const [isBlocked, setIsBlocked] = useState(blocked === true)
+  const [isCrawlable, setIsCrawlable] = useState(crawlable === true)
+  const [isLinkFollow, setIsLinkFollow] = useState(linkRelFollow === true)
   const isBusy = isSubmitting || isPending
-  const isBlocked = blocked === true
 
   async function handleToggle(field: 'crawlable' | 'link_rel_follow', value: boolean) {
     if (isBusy) return
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { [field]: value })
+      if (field === 'crawlable') setIsCrawlable(value)
+      else setIsLinkFollow(value)
       startTransition(() => refresh())
       toast.success(t('extracted.domains.hostnameModerationControls.hostnameUpdated_f8ec2f41'))
     } catch {
@@ -58,6 +62,7 @@ export function HostnameModerationControls({
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { blocked: value })
+      setIsBlocked(value)
       startTransition(() => refresh())
       toast.success(
         value
@@ -156,7 +161,7 @@ export function HostnameModerationControls({
           <dd>
             <Switch
               data-pw='hostname-crawlable-switch'
-              checked={crawlable === true}
+              checked={isCrawlable}
               disabled={isBusy}
               onCheckedChange={v => handleToggle('crawlable', v)}
               aria-label={t('extracted.domains.hostnameModerationControls.crawlable_8e55a03f')}
@@ -170,7 +175,7 @@ export function HostnameModerationControls({
           <dd>
             <Switch
               data-pw='hostname-link-rel-follow-switch'
-              checked={linkRelFollow === true}
+              checked={isLinkFollow}
               disabled={isBusy}
               onCheckedChange={v => handleToggle('link_rel_follow', v)}
               aria-label={t('extracted.domains.hostnameModerationControls.linkRelFollow_da993ba6')}
