@@ -1,16 +1,8 @@
 import { sourceImportsAndComposesAny } from './post-publication-reader-inventory-composes.mts'
 import { isNode, parseSource, propertyName, walk } from '../targeted-guardrails/ast-utils.mts'
 import {
-  addBindingComposition,
-  addComposedNames,
-  appendReceiverName,
   canonicalCallNames,
   importedCanonicalBindings,
-  isAppendCall,
-  isPushCall,
-  isSqlStatementInitializer,
-  isTerminalSqlCall,
-  terminalSqlExecutorBindings,
 } from './post-publication-reader-inventory-source-helpers.mts'
 
 type Node = import('../targeted-guardrails/ast-utils.mts').UnknownNode

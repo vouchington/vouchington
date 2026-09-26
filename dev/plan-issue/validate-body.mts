@@ -1,10 +1,6 @@
 import { parseGfmMarkdown } from 'vouchington-tooling/markdown'
 import {
-  containsNode,
-  hasNonApplicableBranch,
-  hasSpecificNonApplicable,
   hasStandaloneFiller,
-  hasTableHeaders,
   hasVisibleEvidence,
   isResolvedDisposition,
   labeledListFields,
@@ -14,26 +10,12 @@ import {
 import { h2Counts, h2Names, h2Sections } from './heading-sections.mts'
 import { isMeaningfulEvidence } from './evidence-values.mts'
 import { parseSolvesIdentities, solvesIdentitiesMatch } from './source-identities.mts'
-import {
-  hasMeaningfulField,
-  hasMeaningfulOrderedSteps,
-  hasPlausibleMermaidDiagram,
-} from './structured-evidence.mts'
+import { hasMeaningfulField, hasMeaningfulOrderedSteps } from './structured-evidence.mts'
 import { validatePlanTables } from './table-evidence.mts'
-import {
-  loadRepositoryCommandCatalog,
-  type RepositoryCommandCatalog,
-} from './repository-command-catalog.mts'
-import { hasCodeCommand } from './verification-command.mts'
-import { resolveVerificationCommands } from './verification-command-resolution.mts'
+import { type RepositoryCommandCatalog } from './repository-command-catalog.mts'
 import { githubBodyLengthError } from '../github-body-length.mts'
 import { validatePlanClosingSections } from './validate-body-closing.mts'
-import {
-  DIRECT_USER_REQUEST,
-  headingDisplay,
-  LIVE_BROWSER_STATUSES,
-  REQUIRED_H2,
-} from './validate.mts'
+import { DIRECT_USER_REQUEST, headingDisplay, REQUIRED_H2 } from './validate.mts'
 
 export function validatePlanIssue(
   title: string,

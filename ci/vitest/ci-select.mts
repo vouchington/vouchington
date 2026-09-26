@@ -6,11 +6,7 @@ import { join } from 'node:path'
 
 import { pair2BaseRef } from '../pr-revision-pairs.mts'
 import { planTests, type PlannedTestTarget, type PlannedTests } from '../test-plan.mts'
-import {
-  selectedFilesExceedEnvBudget,
-  writeSelectedFilesOutput,
-} from 'vouchington-tooling/gha-selected-files'
-import { assertBackendUnitSuiteBounds, countJobSuiteFiles } from './job-suite-count.mts'
+import { selectedFilesExceedEnvBudget } from 'vouchington-tooling/gha-selected-files'
 import { shardTotalFor } from './shard-total.mts'
 import { isShellPolicySource } from '../../.github/workflows/trivy-policy-helpers.mts'
 import { isCiControlSurface } from './ci-control-surfaces.mts'
@@ -22,8 +18,6 @@ import {
   storybookBrowserProject,
   storybookJob,
 } from './project-ownership-registry.mts'
-import { selectTopology, writeTopologyOutputs } from './ci-select-topology.mts'
-
 export function writeOutput(key: string, value: string): void {
   const f = process.env['GITHUB_OUTPUT']
   if (f) appendFileSync(f, `${key}=${value}\n`)

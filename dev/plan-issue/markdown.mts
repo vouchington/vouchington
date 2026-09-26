@@ -6,7 +6,7 @@ import {
 } from './markdown-tables.mts'
 
 export { hasTableHeaders, inlineEvidenceText, labeledListFields, tableColumnValues }
-import { isMeaningfulEvidence, isMeaningfulOrJustifiedAbsence } from './evidence-values.mts'
+import { isMeaningfulEvidence } from './evidence-values.mts'
 
 export type MarkdownNode = {
   alt?: string | null

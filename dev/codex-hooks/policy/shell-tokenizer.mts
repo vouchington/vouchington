@@ -82,7 +82,15 @@ export function tokenizeShellWordsDetailed(
       continue
     }
 
-    const separator = {
+    const separator: {
+      char: string
+      command: string
+      expandable: boolean
+      index: number
+      options: { splitRedirections?: boolean }
+      token: string
+      tokens: ShellWord[]
+    } = {
       char,
       command: commandWithoutComments,
       expandable,

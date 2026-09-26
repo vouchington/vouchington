@@ -1,5 +1,4 @@
 import { isNode } from '../targeted-guardrails/ast-utils.mts'
-import { rootBinding } from './postgres-runtime-query-binding-resolution.mts'
 import type { QueryNode } from './postgres-runtime-query-syntax.mts'
 import type { ScopeBinding } from './postgres-runtime-query-types.mts'
 import { classifyDynamicMutation } from './postgres-runtime-query-dynamic-mutation.mts'

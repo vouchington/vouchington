@@ -1,7 +1,6 @@
 import type { PlannedTests } from '../test-plan.mts'
 import { writeSelectedFilesOutput } from 'vouchington-tooling/gha-selected-files'
 import {
-  PLAN_MARKDOWN_ARTIFACT,
   PROJECT_TO_JOB,
   SHARDED_JOBS,
   STORYBOOK_BROWSER_PROJECT,

@@ -1,3 +1,21 @@
+import {
+  checkCollectionPagePathLiterals,
+  checkPostCreatePageTypes,
+  compareSets,
+  finiteEnumError,
+  hasAllFiles,
+  routePageSlugs,
+  uniqueSorted,
+} from './finite-enum-ripple-guard.mts'
+import {
+  parsePostDetailRouteFactoryArgs,
+  parsePostRouteConfigEntries,
+  parsePostSlugToType,
+  parsePostTypeUnion,
+} from './finite-enum-ripple-parsers.mts'
+
+const INTERNAL_POST_TYPES = new Set(['comment', 'topic_recommendation'])
+
 export function checkPostTypes(
   errors: string[],
   files: FiniteEnumFiles,
@@ -140,15 +158,15 @@ export function checkPostTypes(
   }
 }
 
-type ReadTrackedFile = (file: string) => string
+export type ReadTrackedFile = (file: string) => string
 
-interface RoutedPage {
+export interface RoutedPage {
   file: string
   isTopLevel: boolean
   slug: string
 }
 
-interface FiniteEnumFiles {
+export interface FiniteEnumFiles {
   existingFileSet: ReadonlySet<string>
   postCollectionPages: RoutedPage[]
   postCreatePages: RoutedPage[]
@@ -157,5 +175,3 @@ interface FiniteEnumFiles {
   topicComponentFiles: string[]
   topicDetailPages: RoutedPage[]
 }
-
-/** Classifies the already-existing tracked inventory once for every enum ripple check. */

@@ -1,3 +1,12 @@
+import type { RemovedSurface } from './removed-surfaces.mts'
+
+const EXPORT_STAR_RE = /^export\s+(?:type\s+)?\*\s+from\s+['"](?<spec>[^'"]+)['"]/
+const EXPORT_NAMED_RE = /^export\s+(?:type\s+)?\{\s*(?<names>[^}]+)\}/
+const EXPORT_NAMED_OPEN_RE = /^export\s*(?:type\s+)?\{\s*$/
+const EXPORT_DECL_RE =
+  /^export\s+(?:default\s+)?(?:async\s+)?(?:function|class|const|let|var|type|interface|enum)\s+(?<name>[A-Za-z_$][\w$]*)/
+
+// Tracks a multiline `export { ... }` block; entry is sign-agnostic since the opener may be context.
 export function parseRemovedExports(block: string, path: string): RemovedSurface[] {
   const removed = new Set<string>()
   const added = new Set<string>()
@@ -50,17 +59,3 @@ export function collectExportNames(content: string, into: Set<string>): void {
   const declared = EXPORT_DECL_RE.exec(trimmed)?.groups?.name
   if (declared !== undefined) into.add(declared)
 }
-
-const UBIQUITY_STOPLIST = new Set(
-  'base common config constants core helper helpers index main shared types util utils'.split(' '),
-)
-
-const TYPE_PRIORITY: Record<RemovedSurface['type'], number> = {
-  'deleted-file': 0,
-  'removed-export': 1,
-  'removed-route': 2,
-  'removed-script': 3,
-}
-
-// Bounds and orders the search vocabulary as quoted phrase terms (a quoted path outranked the bare
-// filename against the live API), dropping sub-4-char/stoplist terms; excluded terms land in `dropped`.
