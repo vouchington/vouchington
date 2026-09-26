@@ -10,8 +10,9 @@ const previousDelete = ClientRequest.prototype.delete
 
 export function enableInboxMutations(): NotificationsUnreadSummaryResponseBody {
   inboxMutations = true
-  inboxView = inboxUnreadFixture()
-  return inboxView
+  const next = inboxUnreadFixture()
+  inboxView = next
+  return next
 }
 
 export function disableInboxMutations(): void {
