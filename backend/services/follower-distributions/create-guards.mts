@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
+import { write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { getPostByAny } from '@services/posts/get'
 import { getRssFeedItemById } from '@services/rss-feed-items'
@@ -22,15 +23,41 @@ export async function validateTarget(
   query: TransactionQuery,
 ): Promise<{ kind: 'post' | 'rss_feed_item'; id: string }> {
   if (input.action === 'post_share' || input.action === 'post_send') {
-    const post = (await getPostByAny(input.postIdOrSlug!, { query })) as DistributionPost | null
-    if (!post) throw createError(404, 'Post not found')
-    assertDistributablePost(post, currentUser.id, input.action === 'post_share' ? 'share' : 'send')
-    return { kind: 'post', id: post.id }
+    return {
+      kind: 'post',
+      id: await preflightPostDistributionTarget(currentUser, input.action, input.postIdOrSlug!, {
+        query,
+      }),
+    }
   }
 
-  const item = await getRssFeedItemById(input.rssFeedItemId!, { query })
+  return {
+    kind: 'rss_feed_item',
+    id: await preflightRssFeedItemDistributionTarget(input.rssFeedItemId!, { query }),
+  }
+}
+
+export async function preflightRssFeedItemDistributionTarget(
+  rssFeedItemId: string,
+  options?: { query?: TransactionQuery },
+): Promise<string> {
+  const item = await getRssFeedItemById(rssFeedItemId, { query: options?.query ?? write })
   if (!item) throw createError(404, 'RSS feed item not found')
-  return { kind: 'rss_feed_item', id: item.id }
+  return item.id
+}
+
+export async function preflightPostDistributionTarget(
+  currentUser: PrivateUser,
+  action: 'post_share' | 'post_send',
+  postIdOrSlug: string,
+  options?: { query?: TransactionQuery },
+): Promise<string> {
+  const post = (await getPostByAny(postIdOrSlug, {
+    query: options?.query ?? write,
+  })) as DistributionPost | null
+  if (!post) throw createError(404, 'Post not found')
+  assertDistributablePost(post, currentUser.id, action === 'post_share' ? 'share' : 'send')
+  return post.id
 }
 
 export async function assertNoRecentDistribution(

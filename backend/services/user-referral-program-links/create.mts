@@ -5,10 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import { validateUUID } from '@modules/utils'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import { addUrl } from '@services/urls/upsert'
-import { createCodedError } from '@modules/on-error/create-coded-error'
-import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
-import { isOfficialAccount } from '@services/users/authorization'
-import { currentUserCanCreateUserReferralLink } from './authorization.mts'
+import { assertCurrentUserCanCreateUserReferralLink } from './authorization.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 
@@ -25,14 +22,7 @@ export async function createUserReferralLink(
   validateUUID(data.user_id)
   validateUUID(data.referral_program_id)
 
-  assert(currentUserCanCreateUserReferralLink(currentUser, data.user_id), 403, 'Forbidden')
-  if (isOfficialAccount(currentUser)) {
-    throw createCodedError(
-      403,
-      'Official accounts cannot publish personal referral-link endorsements.',
-      OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-    )
-  }
+  assertCurrentUserCanCreateUserReferralLink(currentUser, data.user_id)
 
   const validationResult = await isUrlReferralLink(data.url, {
     referral_program_id: data.referral_program_id,

@@ -68,5 +68,11 @@ describe('prioritized referral links routes', () => {
       expect(response.body.message).toBe('Unauthorized')
       expect(response.headers['cache-control'] ?? '').not.toContain('public')
     })
+
+    it('validates the all query flag before lookup', async () => {
+      await createRequest()
+        .get(`/api/v1/topics/${referralProgramId}/prioritized-referral-links?all=not-a-boolean`)
+        .expect(422)
+    })
   })
 })

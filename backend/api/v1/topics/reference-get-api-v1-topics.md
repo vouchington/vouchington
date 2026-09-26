@@ -2,6 +2,10 @@
 
 [Back to Topics API](README.md#get-apiv1topics)
 
+Query preparation and normalized generated validation are described by
+[@services/search-params](../../../services/search-params/README.md); semantic identifier lookup
+remains a later route/parser concern.
+
 Query parameters:
 
 - `after` — opaque cursor from `page_info.end_cursor`

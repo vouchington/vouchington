@@ -1,9 +1,12 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { parsePostsSearchParams } from '../parse-posts.mts'
+import { parsePostsSearchParams, preparePostsSearchParams } from '../parse-posts.mts'
 import { parseTopicsSearchParams } from '../parse-topics.mts'
 import { parseHostnamesSearchParams } from '../parse-hostnames.mts'
-import { parseRssFeedsSearchParams } from '../parse-rss-feeds.mts'
-import { parseRssFeedItemsSearchParams } from '../parse-rss-feed-items.mts'
+import { parseRssFeedsSearchParams, prepareRssFeedsSearchParams } from '../parse-rss-feeds.mts'
+import {
+  parseRssFeedItemsSearchParams,
+  prepareRssFeedItemsSearchParams,
+} from '../parse-rss-feed-items.mts'
 import { withInternalOmitLimit } from '../types.mts'
 
 function sortedParameterNames(queryContract: Readonly<Record<string, unknown>>): string[] {
@@ -11,6 +14,70 @@ function sortedParameterNames(queryContract: Readonly<Record<string, unknown>>):
 }
 
 describe('search parameter query contracts', () => {
+  it('prepares valid posts wire values for contract validation without resolving identifiers', () => {
+    expect(
+      preparePostsSearchParams({
+        drafts: '1',
+        limit: '10',
+        topics: 'one, two,,',
+      }).validationQuery,
+    ).toEqual({ drafts: true, limit: 10, topics: ['one', 'two'] })
+  })
+
+  it('keeps malformed posts UUIDs and scalar arrays visible to contract validation', () => {
+    expect(
+      preparePostsSearchParams({
+        story_id: 'not-a-uuid',
+        topics: ['one,two'],
+      }).validationQuery,
+    ).toEqual({ story_id: 'not-a-uuid', topics: ['one,two'] })
+  })
+
+  it('prepares RSS feed nullable booleans while preserving invalid values', () => {
+    expect(
+      prepareRssFeedsSearchParams({ discoverable: 'yes', enabled: 'NULL', feed_type: 'podcast' })
+        .validationQuery,
+    ).toEqual({ discoverable: 'yes', enabled: 'null', feed_type: 'podcast' })
+  })
+
+  it('preserves RSS item semantic-search precedence and its ignored similar-window range', () => {
+    expect(
+      prepareRssFeedItemsSearchParams({
+        q: '#unresolved-tag',
+        semantic_search_query: 'cashback',
+        similar_window_days: '999',
+      }).validationQuery,
+    ).toEqual({ q: '#unresolved-tag', semantic_search_query: 'cashback' })
+  })
+
+  it('projects valid RSS item windows and preserves malformed values for validation', () => {
+    expect(prepareRssFeedItemsSearchParams({ similar_window_days: '30' }).validationQuery).toEqual({
+      similar_window_days: 30,
+    })
+    expect(prepareRssFeedItemsSearchParams({ similar_window_days: '1.5' }).validationQuery).toEqual(
+      {
+        similar_window_days: '1.5',
+      },
+    )
+    expect(prepareRssFeedItemsSearchParams({ similar_window_days: 'abc' }).validationQuery).toEqual(
+      {
+        similar_window_days: 'abc',
+      },
+    )
+  })
+
+  it("projects singular RSS media aliases with the parser's CSV and repeated wire grammar", () => {
+    expect(
+      prepareRssFeedItemsSearchParams({
+        media_type: ' audio, video ',
+        media_types: 'article',
+      }).validationQuery,
+    ).toEqual({ media_type: ['audio', 'video'], media_types: ['article'] })
+    expect(
+      prepareRssFeedItemsSearchParams({ media_type: ['audio', 'video'] }).validationQuery,
+    ).toEqual({ media_type: ['audio', 'video'] })
+  })
+
   it('publishes the complete posts query contract', () => {
     expect(sortedParameterNames(parsePostsSearchParams.queryContract)).toEqual(
       [
@@ -130,9 +197,11 @@ describe('search parameter query contracts', () => {
         'topics',
       ].toSorted(),
     )
-    expect(parseRssFeedItemsSearchParams.queryContract.media_type).toEqual({
-      kind: 'enum',
-      values: ['article', 'audio', 'video'],
+    expect(parseRssFeedItemsSearchParams.queryContract.media_type).toMatchObject({
+      kind: 'csv-array',
+      items: { kind: 'enum', values: ['article', 'audio', 'video'] },
+      style: 'form',
+      explode: false,
     })
     expect(parseRssFeedItemsSearchParams.queryContract.media_types).toMatchObject({
       kind: 'csv-array',

@@ -6,10 +6,20 @@ import { validateUUID } from '@modules/utils'
 import {
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
+  validateRequestContract,
 } from '../../response-helpers.mts'
+import { defineQueryContract, queryBoolean } from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+
+const prioritizedReferralLinksQueryContract = defineQueryContract({ all: queryBoolean() })
 
 // GET /api/v1/topics/:id/prioritized-referral-links
 app.route('/api/v1/topics/:id/prioritized-referral-links').get(async (ctx: Context) => {
+  apiQuery(
+    'GET:/api/v1/topics/:id/prioritized-referral-links',
+    prioritizedReferralLinksQueryContract,
+  )
   const referralProgramId = ctx.params.id!
   validateUUID(referralProgramId)
 
@@ -18,7 +28,15 @@ app.route('/api/v1/topics/:id/prioritized-referral-links').get(async (ctx: Conte
     'GET:/api/v1/topics/:id/prioritized-referral-links',
   )
 
-  const all = ctx.query.all === 'true'
+  const query = prepareQueryForValidation(
+    ctx.query,
+    prioritizedReferralLinksQueryContract.queryContract,
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/topics/:id/prioritized-referral-links', {
+    path: ctx.params,
+    query,
+  })
+  const all = query.all === true
   if (all && !currentUser) {
     ctx.throw(401, 'Unauthorized')
   }

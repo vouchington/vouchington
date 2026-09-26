@@ -8,7 +8,54 @@ import {
   getCommentAncestorPage,
   getCommentAncestorTargetByAny,
 } from '@services/comments/ancestor-page'
-import { parseBoundedIntegerLimit } from '@modules/pagination'
+import {
+  defineQueryContract,
+  parseBoundedIntegerLimit,
+  queryInteger,
+  queryString,
+} from '@modules/pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+
+export const commentAncestorPaginationQuery = defineQueryContract({
+  after: queryString({
+    description: 'Opaque cursor that reveals the next rootward ancestor window.',
+  }),
+  limit: queryInteger({
+    maximum: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+    minimum: 1,
+  }),
+})
+
+export function prepareCommentAncestorPagination(query: Record<string, unknown>): {
+  hasBoundedQuery: boolean
+  validationQuery: Record<string, unknown>
+  pageQuery: { after?: unknown; limit: number } | null
+} {
+  const hasBoundedQuery = query.after !== undefined || query.limit !== undefined
+  if (!hasBoundedQuery) {
+    return { hasBoundedQuery, validationQuery: {}, pageQuery: null }
+  }
+
+  const limit = parseBoundedIntegerLimit(query.limit, {
+    default: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+    max: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
+    min: 1,
+  })
+  const { after: rawAfter, ...queryWithoutAfter } = query
+  const validationQuery = prepareQueryForValidation(
+    typeof rawAfter === 'string' ? query : queryWithoutAfter,
+    commentAncestorPaginationQuery.queryContract,
+  )
+  if (query.limit !== undefined) validationQuery.limit = limit
+  // Scoped cursor decoding is the semantic owner for malformed cursor shapes. Do not turn a
+  // repeated/non-string cursor into an adapter 422 before it can retain the route's 400 contract.
+
+  return {
+    hasBoundedQuery,
+    validationQuery,
+    pageQuery: { after: query.after, limit },
+  }
+}
 
 interface ResolvedCommentAncestorPage {
   ancestors: CommentNode[]
@@ -23,20 +70,15 @@ interface ResolvedCommentAncestorPage {
 export async function resolveCommentAncestorPage({
   after,
   idOrSlug,
-  limit: rawLimit,
+  limit,
 }: {
   after?: unknown
   idOrSlug: string
-  limit?: unknown
+  limit: number
 }): Promise<ResolvedCommentAncestorPage | null> {
   const target = await getCommentAncestorTargetByAny(idOrSlug)
   if (!target) return null
   const rootId = target.root_id ?? target.id
-  const limit = parseBoundedIntegerLimit(rawLimit, {
-    default: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
-    max: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
-    min: 1,
-  })
   const cursor =
     after === undefined
       ? undefined

@@ -838,6 +838,22 @@
       },
       "type": "object"
     },
+    "ClearanceMutationBody": {
+      "additionalProperties": false,
+      "properties": {
+        "private_note": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/components/schemas/ClearanceStatus"
+        }
+      },
+      "required": ["reason_code", "status"],
+      "type": "object"
+    },
     "ClearanceStatus": {
       "enum": ["approved", "in_review", "pending", "rejected"],
       "type": "string"
@@ -4006,6 +4022,16 @@
       "enum": ["automation", "fetch"],
       "type": "string"
     },
+    "CreateAdditionalHostnameBody": {
+      "additionalProperties": false,
+      "properties": {
+        "hostname": {
+          "type": "string"
+        }
+      },
+      "required": ["hostname"],
+      "type": "object"
+    },
     "CreateInstanceResult": {
       "additionalProperties": false,
       "properties": {
@@ -4065,6 +4091,22 @@
         }
       },
       "required": ["client_name", "redirect_uris", "scopes"],
+      "type": "object"
+    },
+    "CreatePostRatingBody": {
+      "additionalProperties": false,
+      "properties": {
+        "order_index": {
+          "type": "number"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "topic_id": {
+          "type": "string"
+        }
+      },
+      "required": ["order_index", "rating", "topic_id"],
       "type": "object"
     },
     "CreatePostUpdates": {
@@ -4191,6 +4233,154 @@
       },
       "type": "object"
     },
+    "CreateReferralLinkBody": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "referral_program_id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["referral_program_id", "url"],
+      "type": "object"
+    },
+    "CreateReferralLinkValidationBody": {
+      "additionalProperties": false,
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "user_help_text": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["slug"],
+      "type": "object"
+    },
+    "CreateReferralLinkValidationRuleBody": {
+      "additionalProperties": false,
+      "properties": {
+        "example_urls": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "is_invalid_referral_link_url": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "is_referral_link_url": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pathname": {
+          "type": "string"
+        },
+        "user_error_text": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["hostname", "pathname"],
+      "type": "object"
+    },
+    "CreateReferralProgramValidationBody": {
+      "additionalProperties": false,
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "user_help_text": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["slug"],
+      "type": "object"
+    },
+    "CreateRssFeedBody": {
+      "additionalProperties": false,
+      "properties": {
+        "follow": {
+          "type": "boolean"
+        },
+        "rss_feed_url": {
+          "type": "string"
+        }
+      },
+      "required": ["rss_feed_url"],
+      "type": "object"
+    },
     "CreateSourceResult": {
       "additionalProperties": false,
       "properties": {
@@ -4209,6 +4399,39 @@
         }
       },
       "required": ["rss_feed_id", "status", "topic_id", "topic_slug"],
+      "type": "object"
+    },
+    "CreateTopicAliasesBody": {
+      "additionalProperties": false,
+      "properties": {
+        "aliases": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["aliases"],
+      "type": "object"
+    },
+    "CreateTopicClaimBody": {
+      "additionalProperties": false,
+      "properties": {
+        "claimed_role": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string"
+        }
+      },
+      "required": ["claimed_role"],
       "type": "object"
     },
     "CreateTopicRecommendationInput": {
@@ -7284,6 +7507,16 @@
       "required": ["page_info", "results"],
       "type": "object"
     },
+    "LinkReferralProgramValidationBody": {
+      "additionalProperties": false,
+      "properties": {
+        "validation_id": {
+          "type": "string"
+        }
+      },
+      "required": ["validation_id"],
+      "type": "object"
+    },
     "List": {
       "additionalProperties": false,
       "properties": {
@@ -8210,6 +8443,16 @@
         "type": "number"
       },
       "properties": {},
+      "type": "object"
+    },
+    "MergeTopicBody": {
+      "additionalProperties": false,
+      "properties": {
+        "destination_id_or_slug": {
+          "type": "string"
+        }
+      },
+      "required": ["destination_id_or_slug"],
       "type": "object"
     },
     "MfaVerificationResponseBody": {
@@ -13062,6 +13305,22 @@
       "required": ["__entity_type", "id", "votes_count_down", "votes_count_up", "votes_score_net"],
       "type": "object"
     },
+    "PostImageInput": {
+      "additionalProperties": false,
+      "properties": {
+        "caption": {
+          "type": "string"
+        },
+        "image_id": {
+          "type": "string"
+        },
+        "order_index": {
+          "type": "number"
+        }
+      },
+      "required": ["image_id", "order_index"],
+      "type": "object"
+    },
     "PostImagePlacement": {
       "additionalProperties": false,
       "properties": {
@@ -16912,6 +17171,16 @@
       ],
       "type": "object"
     },
+    "SubmitTopicClaimManualReviewBody": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "type": "string"
+        }
+      },
+      "required": ["evidence"],
+      "type": "object"
+    },
     "TopHashtag": {
       "additionalProperties": false,
       "properties": {
@@ -17659,6 +17928,151 @@
           "minItems": 1,
           "type": "array",
           "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "UpdatePostRatingBody": {
+      "additionalProperties": false,
+      "properties": {
+        "order_index": {
+          "type": "number"
+        },
+        "rating": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "UpdateReferralLinkBody": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateReferralLinkValidationBody": {
+      "additionalProperties": false,
+      "properties": {
+        "slug": {
+          "type": "string"
+        },
+        "user_help_text": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateReferralLinkValidationRuleBody": {
+      "additionalProperties": false,
+      "properties": {
+        "example_urls": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "is_invalid_referral_link_url": {
+          "type": "boolean"
+        },
+        "is_referral_link_url": {
+          "type": "boolean"
+        },
+        "pathname": {
+          "type": "string"
+        },
+        "user_error_text": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "UpdateRssFeedBody": {
+      "additionalProperties": false,
+      "properties": {
+        "discoverable": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "ignore_robots_txt": {
+          "anyOf": [
+            {
+              "const": false
+            },
+            {
+              "const": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "rss_feed_url": {
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "topic_id": {
+          "type": "string"
+        },
+        "unreliable_status_codes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "type": "object"
@@ -23152,6 +23566,25 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/referral-link-validations": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "search": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/referral-link-validations/:idOrSlug": {
       "path": {
         "properties": {
@@ -23171,6 +23604,44 @@
           }
         },
         "required": ["validationId"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/referral-links": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "referral_program_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -23232,8 +23703,11 @@
             "type": "integer"
           },
           "media_type": {
-            "enum": ["article", "audio", "video"],
-            "type": "string"
+            "items": {
+              "enum": ["article", "audio", "video"],
+              "type": "string"
+            },
+            "type": "array"
           },
           "media_types": {
             "items": {
@@ -23467,6 +23941,47 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/rss-feeds/recommended": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/rss-feeds/trending": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_score": {
+            "type": "string"
+          },
+          "time_range": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/stories/:id": {
       "path": {
         "properties": {
@@ -23584,6 +24099,14 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "all": {
+            "type": "boolean"
+          }
+        },
         "type": "object"
       }
     },
@@ -23817,6 +24340,38 @@
           "limit": {
             "default": 24,
             "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "q": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/topics/compare": {
+      "query": {
+        "properties": {
+          "slugs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/trending-referral-programs": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 50,
             "minimum": 1,
             "type": "integer"
           }
@@ -24746,7 +25301,131 @@
     },
     "PATCH:/api/v1/posts/:idOrSlug": {
       "body": {
-        "$ref": "#/components/schemas/CreatePostUpdates"
+        "additionalProperties": false,
+        "properties": {
+          "ai_summary_markdown": {
+            "type": "string"
+          },
+          "archive": {
+            "type": "boolean"
+          },
+          "broadcast": {
+            "enum": ["everyone", "followers", "mutual_followers", "users"],
+            "type": "string"
+          },
+          "categories": {
+            "items": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "hashtag": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "hashtag"
+                    }
+                  },
+                  "required": ["hashtag", "type"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "topic_id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "topic"
+                    }
+                  },
+                  "required": ["topic_id", "type"],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "community_id": {
+            "type": "string"
+          },
+          "data_point_vertical": {
+            "type": "string"
+          },
+          "declared_language": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "images": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "caption": {
+                  "type": "string"
+                },
+                "image_id": {
+                  "type": "string"
+                },
+                "order_index": {
+                  "type": "number"
+                }
+              },
+              "required": ["image_id", "order_index"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "is_anonymous": {
+            "type": "boolean"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "post_type": {
+            "enum": [
+              "article",
+              "blog_post",
+              "comment",
+              "data_point",
+              "discussion",
+              "link",
+              "review",
+              "story",
+              "topic_recommendation"
+            ],
+            "type": "string"
+          },
+          "privacy": {
+            "enum": ["private", "public"],
+            "type": "string"
+          },
+          "root_id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "structured_data": {},
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "url_id": {
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "path": {
         "properties": {
@@ -24760,7 +25439,7 @@
     },
     "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdatePostRatingBody"
       },
       "path": {
         "properties": {
@@ -24777,7 +25456,7 @@
     },
     "PATCH:/api/v1/referral-link-validations/:idOrSlug": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateReferralLinkValidationBody"
       },
       "path": {
         "properties": {
@@ -24791,7 +25470,7 @@
     },
     "PATCH:/api/v1/referral-link-validations/:validationId/rules/:ruleId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateReferralLinkValidationRuleBody"
       },
       "path": {
         "properties": {
@@ -24808,7 +25487,7 @@
     },
     "PATCH:/api/v1/referral-links/:linkId": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/UpdateReferralLinkBody"
       },
       "path": {
         "properties": {
@@ -24851,7 +25530,9 @@
       }
     },
     "PATCH:/api/v1/rss-feeds/:id": {
-      "body": {},
+      "body": {
+        "$ref": "#/components/schemas/UpdateRssFeedBody"
+      },
       "path": {
         "properties": {
           "id": {
@@ -27000,13 +27681,7 @@
     },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "private_note": {},
-          "reason_code": {},
-          "status": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/ClearanceMutationBody"
       },
       "path": {
         "properties": {
@@ -27031,7 +27706,7 @@
     },
     "POST:/api/v1/posts/:idOrSlug/ratings": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreatePostRatingBody"
       },
       "path": {
         "properties": {
@@ -27084,12 +27759,12 @@
     },
     "POST:/api/v1/referral-link-validations": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateReferralLinkValidationBody"
       }
     },
     "POST:/api/v1/referral-link-validations/:validationId/rules": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateReferralLinkValidationRuleBody"
       },
       "path": {
         "properties": {
@@ -27103,7 +27778,7 @@
     },
     "POST:/api/v1/referral-links": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateReferralLinkBody"
       }
     },
     "POST:/api/v1/referral-links/:linkId/activations": {
@@ -27254,19 +27929,16 @@
     },
     "POST:/api/v1/rss-feeds": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "follow": {},
-          "rss_feed_url": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/CreateRssFeedBody"
       }
     },
     "POST:/api/v1/rss-feeds/:id/refreshes": {
       "body": {
         "additionalProperties": false,
         "properties": {
-          "force": {}
+          "force": {
+            "type": "boolean"
+          }
         },
         "type": "object"
       },
@@ -27277,6 +27949,14 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "force": {
+            "type": "boolean"
+          }
+        },
         "type": "object"
       }
     },
@@ -27363,11 +28043,7 @@
     },
     "POST:/api/v1/topics/:idOrSlug/additional-hostnames": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "hostname": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/CreateAdditionalHostnameBody"
       },
       "path": {
         "properties": {
@@ -27381,24 +28057,7 @@
     },
     "POST:/api/v1/topics/:idOrSlug/aliases": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "aliases": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": ["aliases"],
-        "type": "object"
+        "$ref": "#/components/schemas/CreateTopicAliasesBody"
       },
       "path": {
         "properties": {
@@ -27426,7 +28085,7 @@
     },
     "POST:/api/v1/topics/:idOrSlug/claims": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/CreateTopicClaimBody"
       },
       "path": {
         "properties": {
@@ -27454,7 +28113,7 @@
     },
     "POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/SubmitTopicClaimManualReviewBody"
       },
       "path": {
         "properties": {
@@ -27485,7 +28144,7 @@
     },
     "POST:/api/v1/topics/:referralProgramId/referral-program/link-validations": {
       "body": {
-        "$ref": "#/components/schemas/Record_string_unknown"
+        "$ref": "#/components/schemas/LinkReferralProgramValidationBody"
       },
       "path": {
         "properties": {
@@ -27499,17 +28158,7 @@
     },
     "POST:/api/v1/topics/:referralProgramId/referral-program/validations": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "slug": {
-            "type": "string"
-          },
-          "user_help_text": {
-            "type": "string"
-          }
-        },
-        "required": ["slug"],
-        "type": "object"
+        "$ref": "#/components/schemas/CreateReferralProgramValidationBody"
       },
       "path": {
         "properties": {
@@ -27523,11 +28172,7 @@
     },
     "POST:/api/v1/topics/:sourceIdOrSlug/merges": {
       "body": {
-        "additionalProperties": false,
-        "properties": {
-          "destination_id_or_slug": {}
-        },
-        "type": "object"
+        "$ref": "#/components/schemas/MergeTopicBody"
       },
       "path": {
         "properties": {
@@ -27900,8 +28545,14 @@
       "body": {
         "additionalProperties": false,
         "properties": {
-          "images": {}
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/PostImageInput"
+            },
+            "type": "array"
+          }
         },
+        "required": ["images"],
         "type": "object"
       },
       "path": {

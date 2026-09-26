@@ -26,6 +26,7 @@ import {
 const postVoteOptions: CreateVoteHandlerOptions<ElectionVoteMutationResult> = {
   rateLimitPrefix: 'post-election-vote',
   routeKey: 'PUT:/api/v1/posts/:id/vote',
+  requestContractOperation: 'PUT:/api/v1/posts/:id/vote',
   entityType: 'post',
   // Vote policy belongs to the actual target: a comment beneath a topic recommendation still
   // uses the ordinary sentiment ballot. Route access below deliberately resolves its root.
@@ -132,6 +133,7 @@ const postVoteHandler = createVoteHandler(postVoteOptions)
 const clearPostVoteHandler = createVoteClearHandler({
   ...postVoteOptions,
   routeKey: 'DELETE:/api/v1/posts/:id/vote',
+  requestContractOperation: 'DELETE:/api/v1/posts/:id/vote',
 })
 
 app.route('/api/v1/posts/:id/vote').put(async ctx => {

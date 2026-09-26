@@ -2,6 +2,9 @@
 
 [Back to Topics API](README.md#endpoints)
 
+Request carrier validation follows the shared [Route Helpers](../../README.md#route-helpers)
+ordering: admission and resource authorization precede detailed generated schema diagnostics.
+
 | Method | Route                                                            | Authentication   | Description                                                   |
 | ------ | ---------------------------------------------------------------- | ---------------- | ------------------------------------------------------------- |
 | GET    | `/api/v1/topics`                                                 | Optional         | Search/list topics                                            |

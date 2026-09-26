@@ -39,6 +39,38 @@ describe('topic.vote', () => {
 
         await request.put(`/api/v1/topics/${topic!.id}/vote`).send({ choice: 'like' }).expect(204)
       })
+
+      it('rejects an extra body field without recording a vote', async () => {
+        const topicId = await insertTestTopic({
+          name: `Invalid Vote ${crypto.randomUUID()}`,
+          slug: `invalid-vote-${crypto.randomUUID()}`,
+          createdById: user.id,
+        })
+        const request = createRequest()
+        await request.authenticateAs(user)
+        await request
+          .put(`/api/v1/topics/${topicId}/vote`)
+          .send({ choice: 'like', extra: true })
+          .expect(422)
+        expect(
+          (await request.get(`/api/v1/topics/${topicId}/votes`).expect(200)).body.results,
+        ).toEqual([])
+      })
+
+      it('accepts an ordinary vote and bodyless delete', async () => {
+        const topicId = await insertTestTopic({
+          name: `Delete Vote ${crypto.randomUUID()}`,
+          slug: `delete-vote-${crypto.randomUUID()}`,
+          createdById: user.id,
+        })
+        const request = createRequest()
+        await request.authenticateAs(user)
+        await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(204)
+        await request.delete(`/api/v1/topics/${topicId}/vote`).expect(204)
+        expect(
+          (await request.get(`/api/v1/topics/${topicId}/votes`).expect(200)).body.results,
+        ).toEqual([])
+      })
     })
 
     describe('GET /api/v1/topics/:id/votes', () => {

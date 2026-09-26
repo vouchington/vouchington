@@ -57,6 +57,26 @@ describe('RSS Feed Items Routes', () => {
       expect(items.every(item => item.rss_feed.id === feedId)).toBe(true)
     })
 
+    it('accepts CSV and repeated singular media_type aliases while rejecting invalid media types', async () => {
+      const topic = await createTestTopic()
+      const feedId = await createTestRssFeedWithTiming(topic.id)
+      await createTestRssFeedItemWithUrl(feedId)
+      const request = createRequest()
+
+      await request
+        .get('/api/v1/rss-feed-items')
+        .query({ rss_feeds: feedId, media_type: 'audio,video', media_types: 'article' })
+        .expect(200)
+      await request
+        .get('/api/v1/rss-feed-items')
+        .query({ rss_feeds: feedId, media_type: ['audio', 'video'] })
+        .expect(200)
+      await request
+        .get('/api/v1/rss-feed-items')
+        .query({ rss_feeds: feedId, media_type: 'podcast' })
+        .expect(422)
+    })
+
     it('should support filtering by topic alias', async () => {
       const user = await createTestUser()
       const topic = await createTestTopic({ user: user })

@@ -5,6 +5,7 @@ import { addRecentlyViewed } from '@services/recently-viewed'
 import { hasGlobalPrivacyControlHeaders, isUUID } from '@modules/utils'
 import onError from '@modules/on-error'
 import { decodeJwt } from 'jose'
+import { validateRequestContract } from '../../response-helpers.mts'
 
 const viewRateLimiter = new RateLimiter({
   prefix: 'rss-feed-item-views',
@@ -16,6 +17,7 @@ app.route('/api/v1/rss-feed-items/:id/views').post(async (ctx: Context) => {
 
   const { id } = ctx.params
   ctx.assert(id && isUUID(id), 400, 'Invalid id')
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:id/views', { path: ctx.params })
 
   if (hasGlobalPrivacyControlHeaders(ctx.req.headers)) {
     ctx.setStatus(200)

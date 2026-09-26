@@ -9,7 +9,7 @@ import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-code
 import { getUserActivePlan } from '@services/memberships'
 import { prepareLinkPost } from '@services/posts'
 import { assertNotSuspended } from '@services/users'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiHeaders } from '../../response-contract.mts'
 
 /**
@@ -54,6 +54,7 @@ app.route('/api/v1/rss-feed-items/:id/discussions').post(async (ctx: Context) =>
     'POST:/api/v1/rss-feed-items/:id/discussions',
   )
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:id/discussions', { path: ctx.params })
 
   const itemId = ctx.params.id!
   ctx.assert(isUUID(itemId), 400, 'Invalid RSS feed item ID')

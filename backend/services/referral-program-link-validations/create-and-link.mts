@@ -14,7 +14,7 @@ import type { PrivateUser } from '@services/users/types'
 export function createAndLinkValidationToReferralProgram(
   currentUser: PrivateUser | null | undefined,
   referralProgramId: string,
-  data: { slug: string; user_help_text?: string },
+  data: { slug: string; user_help_text?: string | null },
   options: QueryOptions = {},
 ): Promise<ReferralLinkValidation> {
   assert(currentUser, 401, 'Unauthorized')
@@ -30,7 +30,7 @@ export function createAndLinkValidationToReferralProgram(
 async function createAndLinkValidationInOwnedTransaction(
   currentUser: PrivateUser,
   referralProgramId: string,
-  data: { slug: string; user_help_text?: string },
+  data: { slug: string; user_help_text?: string | null },
   options: QueryOptions,
 ): Promise<ReferralLinkValidation> {
   await using transaction = await beginTransaction()
@@ -48,7 +48,7 @@ async function createAndLinkValidationInOwnedTransaction(
 async function createAndLinkValidationInTransaction(
   currentUser: PrivateUser,
   referralProgramId: string,
-  data: { slug: string; user_help_text?: string },
+  data: { slug: string; user_help_text?: string | null },
   options: QueryOptions,
   query: TransactionQuery,
 ): Promise<ReferralLinkValidation> {
@@ -69,7 +69,7 @@ async function createAndLinkValidationInTransaction(
 async function createReferralLinkValidationForProgram(
   currentUser: PrivateUser,
   referralProgramId: string,
-  data: { slug: string; user_help_text?: string },
+  data: { slug: string; user_help_text?: string | null },
   options: QueryOptions,
   query: TransactionQuery,
 ): Promise<ReferralLinkValidation> {

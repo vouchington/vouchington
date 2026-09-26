@@ -13,8 +13,8 @@ export async function createReferralLinkValidationRule(
   data: {
     hostname: string
     pathname: string
-    is_referral_link_url?: boolean
-    is_invalid_referral_link_url?: boolean
+    is_referral_link_url?: boolean | null
+    is_invalid_referral_link_url?: boolean | null
     user_error_text?: string | null
     example_urls?: string[] | null
   },

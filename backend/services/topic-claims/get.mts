@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { TopicClaim } from './config.mts'
 
@@ -16,6 +16,29 @@ export async function getTopicClaimById(id: string): Promise<TopicClaim | null> 
     sql`/* getTopicClaimById */
     SELECT `.append(CLAIM_SELECT).append(sql`
     FROM topic_claims WHERE id = ${id}
+  `),
+  )
+  return (rows[0] as TopicClaim | undefined) ?? null
+}
+
+/**
+ * Returns only an unresolved claim owned by the requesting claimant. Keeping the
+ * ownership and lifecycle predicates in the read prevents the route preflight
+ * from exposing whether another claimant's record exists.
+ */
+export async function getUnresolvedTopicClaimForClaimant(
+  id: string,
+  claimantUserId: string,
+): Promise<TopicClaim | null> {
+  const { rows } = await write(
+    sql`/* getUnresolvedTopicClaimForClaimant */
+    SELECT `.append(CLAIM_SELECT).append(sql`
+    FROM topic_claims
+    WHERE id = ${id}
+      AND claimant_user_id = ${claimantUserId}
+      AND verified_at IS NULL
+      AND rejected_at IS NULL
+    LIMIT 1
   `),
   )
   return (rows[0] as TopicClaim | undefined) ?? null

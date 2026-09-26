@@ -1,5 +1,6 @@
 import './rss-feeds.mts'
 import './rss-feed.mts'
+import './rss-feed-refresh.mts'
 import './trending-rss-feeds.mts'
 import './recommended-rss-feeds.mts'
 import './views.mts'

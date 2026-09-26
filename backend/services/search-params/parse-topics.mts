@@ -16,6 +16,7 @@ import {
   checkShouldReturnEmpty,
 } from './resolve.mts'
 import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
+import { prepareQueryForValidation } from './prepare-query.mts'
 import { withInternalOmitLimit } from './types.mts'
 
 const topicsParser = createPaginationParser({
@@ -38,16 +39,42 @@ const topicsQueryContract = defineQueryContract({
   rss_feed: queryBoolean(),
 })
 
-async function parseTopicsSearchParamsImpl(query: Record<string, unknown>) {
-  const paginationOptions = topicsParser.parse(query)
+export function prepareTopicsSearchParams(query: Record<string, unknown>) {
+  const validationQuery = prepareQueryForValidation(query, {
+    ...topicsParser.queryContract,
+    ...topicsQueryContract.queryContract,
+  })
+  const pagination = topicsParser.parse(query)
+  if (query.limit !== undefined) validationQuery.limit = pagination.limit
+  return {
+    validationQuery,
+    paginationOptions: pagination,
+    similarPostIdentifier: extractIdentifier(query, 'similar_post'),
+    similarTopicIdentifier: extractIdentifier(query, 'similar_topic'),
+    similarRssFeedItemIdentifier: extractRssFeedItemId(query, 'similar_rss_feed_item'),
+    slugs: extractIdentifiers(query, ['slugs'], 100),
+    spendingCategory: query.spending_category,
+    rssFeed: query.rss_feed,
+    q: query.q,
+  }
+}
 
-  const similarPostIdentifier = extractIdentifier(query, 'similar_post')
-  const similarTopicIdentifier = extractIdentifier(query, 'similar_topic')
-  const similarRssFeedItemIdentifier = extractRssFeedItemId(query, 'similar_rss_feed_item')
-  const slugs = extractIdentifiers(query, ['slugs'], 100)
+export async function resolveTopicsSearchParams(
+  prepared: ReturnType<typeof prepareTopicsSearchParams>,
+) {
+  const {
+    paginationOptions,
+    similarPostIdentifier,
+    similarTopicIdentifier,
+    similarRssFeedItemIdentifier,
+    slugs,
+    spendingCategory,
+    rssFeed,
+    q,
+  } = prepared
 
   const [hashtagSearch, [similarPostId, similarTopicId]] = await Promise.all([
-    resolveHashtagTopicSearch(query.q),
+    resolveHashtagTopicSearch(q),
     Promise.all([
       similarPostIdentifier
         ? getPostIdByAnyCached(similarPostIdentifier)
@@ -81,16 +108,20 @@ async function parseTopicsSearchParamsImpl(query: Record<string, unknown>) {
       similar_rss_feed_item_id: similarRssFeedItemIdentifier,
     }),
     ...(slugs.length > 0 && { slugs }),
-    ...(query.spending_category !== undefined && {
-      spending_category: parseBooleanish(query.spending_category),
+    ...(spendingCategory !== undefined && {
+      spending_category: parseBooleanish(spendingCategory),
     }),
-    ...(query.rss_feed !== undefined && { rss_feed: parseBooleanish(query.rss_feed) }),
+    ...(rssFeed !== undefined && { rss_feed: parseBooleanish(rssFeed) }),
   }
 
   return {
     shouldReturnEmpty,
     searchOptions: withInternalOmitLimit(searchOptions),
   }
+}
+
+async function parseTopicsSearchParamsImpl(query: Record<string, unknown>) {
+  return await resolveTopicsSearchParams(prepareTopicsSearchParams(query))
 }
 
 export const parseTopicsSearchParams = withQueryContract(

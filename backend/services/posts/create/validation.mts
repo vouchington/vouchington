@@ -7,9 +7,7 @@ import { getPostContentLimitsConfig } from '@services/post-content-limits'
 import { validatePostImageInputs } from '../image-input-validation.mts'
 import { assertValidPostAudience } from '../audience.mts'
 import { assertValidReviewContent } from '../validate-review-content.mts'
-import { createCodedError } from '@modules/on-error/create-coded-error'
-import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
-import { isOfficialAccount } from '@services/users'
+import { assertOfficialAccountCanCreatePost } from '../authorization.mts'
 import { getUrlById } from '@services/urls'
 import { isUUID } from '@modules/utils'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
@@ -38,6 +36,10 @@ const POST_TYPES = new Set<PostType>([
   'blog_post',
 ])
 
+export function isSupportedPostType(value: unknown): value is PostType {
+  return typeof value === 'string' && POST_TYPES.has(value as PostType)
+}
+
 export async function validateCreatePostInput(
   creator: PrivateUser,
   updates: CreatePostInput,
@@ -46,7 +48,7 @@ export async function validateCreatePostInput(
   assert(creator, 422, 'Creator is required')
   updates.post_type ||= 'discussion'
   const postType = updates.post_type
-  assert(POST_TYPES.has(postType), 422, 'Unsupported post_type')
+  assert(isSupportedPostType(postType), 422, 'Unsupported post_type')
   assert(postType !== 'topic_recommendation', 422, 'Use the dedicated recommendation workflow')
   assert(postType !== 'story', 422, 'Use the dedicated story post creation flow')
   assertCanCreateAdminOnlyPostType(creator, postType)
@@ -73,13 +75,7 @@ export async function validateCreatePostInput(
     assert(updates.url_id == null, 422, 'url_id is only allowed for link posts')
     assert(updates.url == null, 422, 'url is only allowed for link posts')
   }
-  if (isOfficialAccount(creator) && (postType === 'review' || postType === 'data_point')) {
-    throw createCodedError(
-      403,
-      'Official accounts cannot create community reviews or data points.',
-      OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
-    )
-  }
+  assertOfficialAccountCanCreatePost(creator, postType)
   const dataPointTopicIds = await validateStructuredData(updates, postType)
   const defaults = getAudienceDefaults(creator, updates, postType)
   assertValidPostAudience(defaults.broadcast, defaults.privacy)

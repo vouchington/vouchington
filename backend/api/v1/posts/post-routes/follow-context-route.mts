@@ -3,11 +3,12 @@ import { getPostByAnyCached } from '@services/entity-fetch'
 import { canViewPost } from '@services/posts'
 import { getFollowedUsersByElectionVote } from '@services/users/follow-context'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
 
 app.route('/api/v1/posts/:idOrSlug/follow-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/posts/:idOrSlug/follow-context')
+  validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug/follow-context', { path: ctx.params })
 
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')

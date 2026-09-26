@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { getTopicIds, createTopic, type CreateTopicUpdates } from '@services/topics'
 import { getTopicIdsCached } from '@services/entity-fetch/search-caches'
 import {
@@ -13,7 +17,11 @@ import { indexById, isUUID } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
-import { parseTopicsSearchParams } from '@services/search-params'
+import {
+  parseTopicsSearchParams,
+  prepareTopicsSearchParams,
+  resolveTopicsSearchParams,
+} from '@services/search-params'
 import { clampAnonLimit } from '@modules/search-utils'
 import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
@@ -28,8 +36,12 @@ app
   .get(async (ctx: Context) => {
     apiQuery('GET:/api/v1/topics', parseTopicsSearchParams)
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/topics')
+    const preparedSearchParams = prepareTopicsSearchParams(ctx.query)
+    validateRequestContract(ctx, 'GET:/api/v1/topics', {
+      query: preparedSearchParams.validationQuery,
+    })
 
-    const parsedSearchParams = await parseTopicsSearchParams(ctx.query).catch(error =>
+    const parsedSearchParams = await resolveTopicsSearchParams(preparedSearchParams).catch(error =>
       sendHashtagTopicSearchErrorResponse(ctx, error),
     )
     if (!parsedSearchParams) return
@@ -127,6 +139,7 @@ app
     assertNotSuspended(currentUser)
 
     const body = (await ctx.request.json('1mb')) as CreateTopicUpdates
+    validateRequestContract(ctx, 'POST:/api/v1/topics', { body })
     ctx.assert(
       body.source_topic_alias_id === undefined || isUUID(body.source_topic_alias_id),
       422,

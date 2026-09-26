@@ -20,6 +20,8 @@ describe('validations', () => {
       expect(response.body.results).toBeDefined()
       expect(response.body.page_info).toBeDefined()
       expect(Array.isArray(response.body.results)).toBe(true)
+      await request.get('/api/v1/referral-link-validations?search=validation').expect(200)
+      await request.get('/api/v1/referral-link-validations?search=a&search=b').expect(422)
     })
 
     it('POST /api/v1/referral-link-validations requires auth and admin permissions', async () => {
@@ -33,7 +35,7 @@ describe('validations', () => {
       await requestAsUser.authenticateAs(regularUser!)
 
       await requestAsUser.post('/api/v1/referral-link-validations').send('not json').expect(415)
-      await requestAsUser.post('/api/v1/referral-link-validations').send({}).expect(422)
+      await requestAsUser.post('/api/v1/referral-link-validations').send({}).expect(403)
 
       await requestAsUser
         .post('/api/v1/referral-link-validations')
@@ -48,9 +50,10 @@ describe('validations', () => {
       const slug = `validation_${Date.now()}`
       const created = await request
         .post('/api/v1/referral-link-validations')
-        .send({ slug, user_help_text: 'created from api test' })
+        .send({ slug, user_help_text: null })
         .expect(201)
       expect(created.body.validation.slug).toBe(slug)
+      expect(created.body.validation.user_help_text).toBe('')
 
       const bySlug = await request.get(`/api/v1/referral-link-validations/${slug}`).expect(200)
       expect(bySlug.body.validation.id).toBe(created.body.validation.id)
@@ -60,6 +63,12 @@ describe('validations', () => {
         .send({ user_help_text: 'updated text' })
         .expect(200)
       expect(updated.body.validation.user_help_text).toBe('updated text')
+
+      const cleared = await request
+        .patch(`/api/v1/referral-link-validations/${created.body.validation.id}`)
+        .send({ user_help_text: null })
+        .expect(200)
+      expect(cleared.body.validation.user_help_text).toBe('')
 
       await request
         .delete(`/api/v1/referral-link-validations/${created.body.validation.id}`)

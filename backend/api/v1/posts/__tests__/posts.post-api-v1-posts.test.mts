@@ -12,6 +12,7 @@ import {
 } from '@voucha/test-helpers'
 
 import type { PrivateUser } from '@services/users/types'
+import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 
 describe('posts', () => {
   describe('Posts Collection Routes', () => {
@@ -61,6 +62,21 @@ describe('posts', () => {
 
         await request.post('/api/v1/posts').send('not json').expect(415)
       })
+
+      it.each(['review', 'data_point'] as const)(
+        'rejects an official-account %s before malformed body diagnostics',
+        async postType => {
+          const request = createRequest()
+          await request.authenticateAs(admin)
+
+          const response = await request
+            .post('/api/v1/posts')
+            .send({ post_type: postType, title: 42, markdown: 'malformed title' })
+            .expect(403)
+
+          expect(response.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
+        },
+      )
 
       it('should reject recommendation workflows in the generic posts API', async () => {
         const request = createRequest()

@@ -19,6 +19,14 @@ All error responses (from backend and CF Worker) follow this JSON shape:
 - `code` is optional. Web app branches on `code` (when present) or `status` (always). Never on `message`.
 - `request_id` enables admin debugging without leaking internals.
 
+For generated API request validation, the canonical ordering and carrier guidance lives in
+[API Route Helpers](../../../backend/api/README.md#route-helpers). Authentication, private-resource
+visibility, suspension, and ownership preflights take precedence over detailed schema diagnostics:
+a caller who cannot access a resource receives that authorization or absence result rather than a
+body/query validation detail. Once admission is allowed, malformed typed path, body, and query
+carriers use the normal 422 contract; existing semantic parser errors retain their endpoint-owned
+status.
+
 ## Error Code Registry
 
 All common error codes are defined in `backend/modules/on-error/error-codes.mts`:

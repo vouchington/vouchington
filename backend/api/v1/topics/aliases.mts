@@ -13,27 +13,42 @@ import {
 } from '@services/topics/get-topic-aliases'
 import { currentUserCanManageTopicAliases } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
-import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,
   decodeScopedAliasCursor,
   encodeScopedAliasCursor,
+  defineQueryContract,
+  queryString,
 } from '@modules/pagination'
 
 const aliasSearchParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 24 },
 })
+const aliasSearchQueryContract = defineQueryContract({ q: queryString() })
 
 app.route('/api/v1/topics/aliases').get(async (ctx: Context) => {
-  apiQuery('GET:/api/v1/topics/aliases', aliasSearchParser)
+  apiQuery('GET:/api/v1/topics/aliases', aliasSearchParser, aliasSearchQueryContract)
   await requireAuthAndRateLimit(ctx, currentUserCanManageTopicAliases, 'GET:/api/v1/topics/aliases')
+
+  const options = aliasSearchParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...aliasSearchParser.queryContract,
+    ...aliasSearchQueryContract.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/topics/aliases', { query })
 
   const q = ctx.query.q ? String(ctx.query.q) : undefined
   ctx.assert(q, 400, 'q is required')
 
-  const options = aliasSearchParser.parse(ctx.query)
   const scope = topicAliasSearchCursorScope({ prefixQuery: q })
   const after = options.after
     ? decodeScopedAliasCursor(options.after, scope, 'Invalid cursor format').alias
@@ -60,6 +75,7 @@ const aliasesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 100 },
 })
+type CreateTopicAliasesBody = { aliases: string | string[] }
 
 app
   .route('/api/v1/topics/:idOrSlug/aliases')
@@ -70,11 +86,17 @@ app
       currentUserCanManageTopicAliases,
       'GET:/api/v1/topics/:idOrSlug/aliases',
     )
+    const options = aliasesParser.parse(ctx.query)
+    const query = prepareQueryForValidation(ctx.query, aliasesParser.queryContract)
+    if (ctx.query.limit !== undefined) query.limit = options.limit
+    validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/aliases', {
+      path: ctx.params,
+      query,
+    })
 
     const topic = await getTopicByAnyCached(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 
-    const options = aliasesParser.parse(ctx.query)
     const scope = `topic-aliases:${topic.id}:alias-asc`
     const after = options.after
       ? decodeScopedAliasCursor(options.after, scope, 'Invalid cursor format').alias
@@ -105,11 +127,15 @@ app
       'POST:/api/v1/topics/:idOrSlug/aliases',
     )
     assertNotSuspended(currentUser)
+    validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/aliases', { path: ctx.params })
 
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 
-    const body = (await ctx.request.json('1mb')) as { aliases: string | string[] }
+    const body = (await ctx.request.json('1mb')) as CreateTopicAliasesBody
+    validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/aliases', {
+      body,
+    })
     const { aliases } = body
 
     ctx.assert(
@@ -131,6 +157,9 @@ app
       'POST:/api/v1/topics/:idOrSlug/aliases/:aliasId',
     )
     assertNotSuspended(currentUser)
+    validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/aliases/:aliasId', {
+      path: ctx.params,
+    })
     const aliasId = validateUUIDParam(ctx, 'aliasId')
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
@@ -146,6 +175,9 @@ app
       'DELETE:/api/v1/topics/:idOrSlug/aliases/:aliasId',
     )
     assertNotSuspended(currentUser)
+    validateRequestContract(ctx, 'DELETE:/api/v1/topics/:idOrSlug/aliases/:aliasId', {
+      path: ctx.params,
+    })
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 

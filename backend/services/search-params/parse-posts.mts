@@ -24,6 +24,7 @@ import {
   checkShouldReturnEmpty,
 } from './resolve.mts'
 import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
+import { prepareQueryForValidation } from './prepare-query.mts'
 import { withInternalOmitLimit } from './types.mts'
 
 const postsParser = createPaginationParser({
@@ -55,21 +56,52 @@ const postsQueryContract = defineQueryContract({
   story_id: queryUuid(),
 })
 
-async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
-  const paginationOptions = postsParser.parse(query)
-  const hashtagSearch = await resolveHashtagTopicSearch(query.q)
+export function preparePostsSearchParams(query: Record<string, unknown>) {
+  const validationQuery = prepareQueryForValidation(query, {
+    ...postsParser.queryContract,
+    ...postsQueryContract.queryContract,
+  })
+  const pagination = postsParser.parse(query)
+  if (query.limit !== undefined) validationQuery.limit = pagination.limit
+  return {
+    validationQuery,
+    paginationOptions: pagination,
+    creatorIdentifier: extractIdentifier(query, 'creator'),
+    urlIdentifier: extractIdentifier(query, 'url'),
+    similarPostIdentifier: extractIdentifier(query, 'similar_post'),
+    similarTopicIdentifier: extractIdentifier(query, 'similar_topic'),
+    reviewTopicIdentifier: extractIdentifier(query, 'review_topic'),
+    dataPointTopicIdentifier: extractIdentifier(query, 'data_point_topic'),
+    similarRssFeedItemIdentifier: extractRssFeedItemId(query, 'similar_rss_feed_item'),
+    uniqueTopicIdentifiers: extractIdentifiers(query, ['topic', 'topics'], 10),
+    uniqueCategoryIdentifiers: extractIdentifiers(query, ['category', 'categories'], 10),
+    storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
+    drafts: query.drafts,
+    dataPointVertical: query.data_point_vertical,
+    q: query.q,
+  }
+}
 
-  const creatorIdentifier = extractIdentifier(query, 'creator')
-  const urlIdentifier = extractIdentifier(query, 'url')
-  const similarPostIdentifier = extractIdentifier(query, 'similar_post')
-  const similarTopicIdentifier = extractIdentifier(query, 'similar_topic')
-  const reviewTopicIdentifier = extractIdentifier(query, 'review_topic')
-  const dataPointTopicIdentifier = extractIdentifier(query, 'data_point_topic')
-  const similarRssFeedItemIdentifier = extractRssFeedItemId(query, 'similar_rss_feed_item')
-  // `topics` = universal (tagged OR reviewed OR data-pointed)
-  const uniqueTopicIdentifiers = extractIdentifiers(query, ['topic', 'topics'], 10)
-  // `categories` = tag-based only (relation__post__category__topic)
-  const uniqueCategoryIdentifiers = extractIdentifiers(query, ['category', 'categories'], 10)
+export async function resolvePostsSearchParams(
+  prepared: ReturnType<typeof preparePostsSearchParams>,
+) {
+  const {
+    paginationOptions,
+    creatorIdentifier,
+    urlIdentifier,
+    similarPostIdentifier,
+    similarTopicIdentifier,
+    reviewTopicIdentifier,
+    dataPointTopicIdentifier,
+    similarRssFeedItemIdentifier,
+    uniqueTopicIdentifiers,
+    uniqueCategoryIdentifiers,
+    storyIdRaw,
+    drafts,
+    dataPointVertical,
+    q,
+  } = prepared
+  const hashtagSearch = await resolveHashtagTopicSearch(q)
 
   const [
     creatorId,
@@ -98,8 +130,6 @@ async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
     getTopicIdsByAnyCachedBatch(uniqueTopicIdentifiers),
     getTopicIdsByAnyCachedBatch(uniqueCategoryIdentifiers),
   ])
-
-  const storyIdRaw = typeof query.story_id === 'string' ? query.story_id : undefined
   const storyId = storyIdRaw !== undefined && isUUID(storyIdRaw) ? storyIdRaw : undefined
 
   const shouldReturnEmpty =
@@ -127,8 +157,7 @@ async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
 
   const searchOptions = {
     ...paginationOptions,
-    // Map `q` shorthand to `text_search_query` (consistent with parse-topics and parse-rss-feeds)
-    ...(query.q && !paginationOptions.text_search_query && hashtagSearch.textSearchQuery
+    ...(q && !paginationOptions.text_search_query && hashtagSearch.textSearchQuery
       ? { text_search_query: hashtagSearch.textSearchQuery }
       : {}),
     ...(urlId && { url_id: urlId }),
@@ -148,17 +177,20 @@ async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
         filter.kind === 'exact_alias' ? [filter.aliasId] : [],
       ),
     }),
-    ...(query.drafts !== undefined && { drafts: parseBooleanish(query.drafts) }),
-    ...(typeof query.data_point_vertical === 'string' && query.data_point_vertical.trim()
-      ? { data_point_vertical: query.data_point_vertical.trim() }
+    ...(drafts !== undefined && { drafts: parseBooleanish(drafts) }),
+    ...(typeof dataPointVertical === 'string' && dataPointVertical.trim()
+      ? { data_point_vertical: dataPointVertical.trim() }
       : {}),
     ...(storyId && { story_id: storyId }),
   }
-
   return {
     shouldReturnEmpty,
     searchOptions: withInternalOmitLimit(searchOptions),
   }
+}
+
+async function parsePostsSearchParamsImpl(query: Record<string, unknown>) {
+  return await resolvePostsSearchParams(preparePostsSearchParams(query))
 }
 
 export const parsePostsSearchParams = withQueryContract(

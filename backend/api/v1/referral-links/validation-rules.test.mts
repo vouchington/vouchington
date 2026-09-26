@@ -29,6 +29,16 @@ describe('validation-rules', () => {
       expect(Array.isArray(response.body.results)).toBe(true)
     })
 
+    it('rejects malformed validation and rule UUIDs before service access', async () => {
+      const request = createRequest()
+      await request.get('/api/v1/referral-link-validations/not-a-uuid/rules').expect(422)
+
+      await request.authenticateAs(adminUser!)
+      await request
+        .delete(`/api/v1/referral-link-validations/${validationId}/rules/not-a-uuid`)
+        .expect(422)
+    })
+
     it('POST /api/v1/referral-link-validations/:validationId/rules validates auth, content-type, and required fields', async () => {
       const unauthenticated = createRequest()
       await unauthenticated
@@ -47,7 +57,7 @@ describe('validation-rules', () => {
       await requestAsUser
         .post(`/api/v1/referral-link-validations/${validationId}/rules`)
         .send({})
-        .expect(422)
+        .expect(403)
 
       await requestAsUser
         .post(`/api/v1/referral-link-validations/${validationId}/rules`)
@@ -64,10 +74,20 @@ describe('validation-rules', () => {
         .send({
           hostname: 'example.com',
           pathname: '/ref/%',
-          is_referral_link_url: true,
+          is_referral_link_url: null,
+          is_invalid_referral_link_url: null,
         })
         .expect(201)
       expect(created.body.validation_rule.hostname).toBe('example.com')
+      expect(created.body.validation_rule.is_referral_link_url).toBe(true)
+      expect(created.body.validation_rule.is_invalid_referral_link_url).toBe(false)
+
+      await request
+        .patch(
+          `/api/v1/referral-link-validations/${validationId}/rules/${created.body.validation_rule.id}`,
+        )
+        .send({ is_referral_link_url: null })
+        .expect(422)
 
       const updated = await request
         .patch(

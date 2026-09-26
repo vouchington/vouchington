@@ -68,6 +68,16 @@ describe('GET /api/v1/posts/:id/votes pagination', () => {
       await req.get(`/api/v1/posts/${post.id}/votes?after=not-a-real-cursor`).expect(400)
     })
 
+    it('masks a private post before malformed pagination details', async () => {
+      const owner = await createTestUser()
+      const viewer = await createTestUser()
+      const post = await createTestPost({ user: owner, privacy: 'private', broadcast: 'followers' })
+      const request = createRequest()
+      await request.authenticateAs(viewer)
+
+      await request.get(`/api/v1/posts/${post.id}/votes?limit=zero`).expect(404)
+    })
+
     it('rejects a cursor minted for another post with 400 (cross-resource replay)', async () => {
       const admin = await createTestUser({ administrator: true })
       const postA = await createTestPost({ user: admin })

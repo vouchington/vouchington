@@ -1,8 +1,9 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
   getUserReferralLinks,
+  getUserReferralLink,
   createUserReferralLink,
   updateUserReferralLink,
   deleteUserReferralLink,
@@ -10,12 +11,33 @@ import {
   deactivateUserReferralLink,
 } from '@services/user-referral-program-links'
 import { assertNotSuspended } from '@services/users'
-import { createPaginationParser } from '@modules/pagination'
+import { createPaginationParser, defineQueryContract, queryUuid } from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import {
+  assertCurrentUserCanCreateUserReferralLink,
+  assertCurrentUserCanUpdateUserReferralLink,
+} from '@services/user-referral-program-links/authorization'
+
+type CreateReferralLinkBody = {
+  user_id?: string | null
+  referral_program_id: string
+  url: string
+  label?: string | null
+}
+
+type UpdateReferralLinkBody = {
+  label?: string | null
+}
 
 // Pagination parser for referral links
 const referralLinksParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 50 },
+})
+const referralLinksQueryContract = defineQueryContract({
+  user_id: queryUuid(),
+  referral_program_id: queryUuid(),
 })
 
 // GET /api/v1/referral-links - list user's referral links
@@ -23,10 +45,17 @@ const referralLinksParser = createPaginationParser({
 app
   .route('/api/v1/referral-links')
   .get(async (ctx: Context) => {
+    apiQuery('GET:/api/v1/referral-links', referralLinksParser, referralLinksQueryContract)
     const currentUser = await requireAuth(ctx, 'GET:/api/v1/referral-links')
-
-    // Parse pagination options
     const paginationOptions = referralLinksParser.parse(ctx.query)
+    const validationQuery = prepareQueryForValidation(ctx.query, {
+      ...referralLinksParser.queryContract,
+      ...referralLinksQueryContract.queryContract,
+    })
+    if (ctx.query.limit !== undefined) validationQuery.limit = paginationOptions.limit
+    validateRequestContract(ctx, 'GET:/api/v1/referral-links', {
+      query: validationQuery,
+    })
 
     // Parse referral-links specific parameters
     const userId = ctx.query.user_id ? String(ctx.query.user_id) : undefined
@@ -49,16 +78,19 @@ app
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/referral-links')
     assertNotSuspended(currentUser)
 
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
-    const userId = body.user_id || currentUser.id
+    const body = (await ctx.request.json('1mb')) as CreateReferralLinkBody
+    ctx.assert(body !== null && typeof body === 'object', 422, 'Invalid request body')
+    const userId = typeof body.user_id === 'string' && body.user_id ? body.user_id : currentUser.id
+    assertCurrentUserCanCreateUserReferralLink(currentUser, userId)
+    validateRequestContract(ctx, 'POST:/api/v1/referral-links', { body })
     ctx.assert(body.referral_program_id, 422, 'referral_program_id is required')
     ctx.assert(body.url, 422, 'url is required')
 
     const link = await createUserReferralLink(currentUser, {
-      user_id: userId as string,
-      referral_program_id: body.referral_program_id as string,
-      url: body.url as string,
-      label: body.label as string | undefined,
+      user_id: userId,
+      referral_program_id: body.referral_program_id,
+      url: body.url,
+      label: body.label,
     })
 
     ctx.setStatus(201)
@@ -73,10 +105,20 @@ app
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/referral-links/:linkId')
     assertNotSuspended(currentUser)
 
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    validateRequestContract(ctx, 'PATCH:/api/v1/referral-links/:linkId', { path: ctx.params })
+    const linkId = validateUUIDParam(ctx, 'linkId')
+    const existing = await getUserReferralLink(linkId)
+    ctx.assert(existing, 404, 'Referral link not found')
+    assertCurrentUserCanUpdateUserReferralLink(currentUser, existing)
 
-    const updated = await updateUserReferralLink(currentUser, ctx.params.linkId!, {
-      label: body.label as string | undefined,
+    const body = (await ctx.request.json('1mb')) as UpdateReferralLinkBody
+    validateRequestContract(ctx, 'PATCH:/api/v1/referral-links/:linkId', {
+      body,
+      path: ctx.params,
+    })
+
+    const updated = await updateUserReferralLink(currentUser, linkId, {
+      label: body.label,
     })
 
     ctx.assert(updated, 404, 'Referral link not found')
@@ -85,16 +127,19 @@ app
   .delete(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/referral-links/:linkId')
     assertNotSuspended(currentUser)
-
-    await deleteUserReferralLink(currentUser, ctx.params.linkId!)
+    validateRequestContract(ctx, 'DELETE:/api/v1/referral-links/:linkId', { path: ctx.params })
+    await deleteUserReferralLink(currentUser, validateUUIDParam(ctx, 'linkId'))
     ctx.setStatus(204)
   })
 
 // POST /api/v1/referral-links/:linkId/activations - activate a referral link
 app.route('/api/v1/referral-links/:linkId/activations').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/referral-links/:linkId/activations')
+  validateRequestContract(ctx, 'POST:/api/v1/referral-links/:linkId/activations', {
+    path: ctx.params,
+  })
 
-  const activated = await activateUserReferralLink(currentUser, ctx.params.linkId!)
+  const activated = await activateUserReferralLink(currentUser, validateUUIDParam(ctx, 'linkId'))
   ctx.assert(activated, 404, 'Referral link not found')
 
   ctx.json({ referral_link: activated })
@@ -103,8 +148,14 @@ app.route('/api/v1/referral-links/:linkId/activations').post(async (ctx: Context
 // DELETE /api/v1/referral-links/:linkId/activations - deactivate a referral link
 app.route('/api/v1/referral-links/:linkId/activations').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/referral-links/:linkId/activations')
+  validateRequestContract(ctx, 'DELETE:/api/v1/referral-links/:linkId/activations', {
+    path: ctx.params,
+  })
 
-  const deactivated = await deactivateUserReferralLink(currentUser, ctx.params.linkId!)
+  const deactivated = await deactivateUserReferralLink(
+    currentUser,
+    validateUUIDParam(ctx, 'linkId'),
+  )
   ctx.assert(deactivated, 404, 'Referral link not found')
 
   ctx.json({ referral_link: deactivated })

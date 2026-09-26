@@ -29,12 +29,14 @@ import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import {
   getOptionalAuthAndRateLimit,
+  validateRequestContract,
   setAnonymousPublicCacheHeaders,
 } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
 
 app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts/:idOrSlug')
+  validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug', { path: ctx.params })
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')

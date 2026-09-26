@@ -23,6 +23,36 @@ export async function assertValidPostUpdate(
   changes: UpdatePostChanges,
   membershipPlan: ContributionLimitMembershipPlan = null,
 ) {
+  assertPostUpdatePreflight(creator, post, changes)
+  if (
+    post.post_type === 'review' &&
+    changes.markdown !== undefined &&
+    !creator.roles.includes('administrator')
+  ) {
+    assertValidReviewContent(changes.markdown)
+  }
+  assert(
+    post.post_type !== 'topic_recommendation',
+    422,
+    'Use the dedicated recommendation workflow',
+  )
+  if (changes.declared_language !== undefined) {
+    assert(
+      changes.declared_language === null || typeof changes.declared_language === 'string',
+      422,
+      'declared_language must be a string or null',
+    )
+  }
+  if (changes.structured_data !== undefined || changes.data_point_vertical !== undefined) {
+    await assertValidDataPointUpdate(creator, membershipPlan, post, changes)
+  }
+}
+
+export function assertPostUpdatePreflight(
+  creator: PrivateUser,
+  post: Post,
+  changes: UpdatePostChanges,
+): void {
   assert(currentUserCanUpdatePost(creator, post), 403, 'Forbidden')
   if (changes.ai_summary_markdown !== undefined) {
     assert(
@@ -48,28 +78,6 @@ export async function assertValidPostUpdate(
       )
     }
     assertPostContentEditable(creator, post)
-  }
-  if (
-    post.post_type === 'review' &&
-    changes.markdown !== undefined &&
-    !creator.roles.includes('administrator')
-  ) {
-    assertValidReviewContent(changes.markdown)
-  }
-  assert(
-    post.post_type !== 'topic_recommendation',
-    422,
-    'Use the dedicated recommendation workflow',
-  )
-  if (changes.declared_language !== undefined) {
-    assert(
-      changes.declared_language === null || typeof changes.declared_language === 'string',
-      422,
-      'declared_language must be a string or null',
-    )
-  }
-  if (changes.structured_data !== undefined || changes.data_point_vertical !== undefined) {
-    await assertValidDataPointUpdate(creator, membershipPlan, post, changes)
   }
 }
 

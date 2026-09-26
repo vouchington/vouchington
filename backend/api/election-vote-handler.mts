@@ -2,6 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { isUUID } from '@modules/utils'
+import { validateRequestContract } from './response-helpers.mts'
 import {
   getElectionVoteChoiceScore,
   getElectionVoteRateLimitKeys,
@@ -91,6 +92,9 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
     let choice: string | null = null
     if (!isClear) {
       const body = await ctx.request.json('10kb')
+      if (options.requestContractOperation) {
+        validateRequestContract(ctx, options.requestContractOperation, { body, path: ctx.params })
+      }
       ctx.assert(
         body !== null && typeof body === 'object' && !Array.isArray(body),
         422,
@@ -99,6 +103,8 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       choice = (body as Record<string, unknown>).choice as string
       ctx.assert(isElectionVoteChoice(policy, choice), 422, 'Invalid vote choice')
       score = getElectionVoteChoiceScore(policy, choice)
+    } else if (options.requestContractOperation) {
+      validateRequestContract(ctx, options.requestContractOperation, { path: ctx.params })
     }
 
     const sessionData = await ctx.getSessionTokenData()

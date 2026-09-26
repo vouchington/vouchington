@@ -181,6 +181,19 @@ describe('post.descendants', () => {
       const resultIds = response.body.results.map((r: { id: string }) => r.id)
       expect(resultIds).toContain(childId)
     })
+
+    it('masks a private root before malformed pagination details', async () => {
+      const rootPostId = await insertTestPost({
+        title: 'Private descendant query root',
+        slug: `private-descendant-query-root-${crypto.randomUUID()}`,
+        createdById: creator.id,
+        markdown: 'Root',
+        privacy: 'private',
+        broadcast: 'followers',
+      })
+
+      await createRequest().get(`/api/v1/posts/${rootPostId}/descendants?limit=zero`).expect(404)
+    })
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof deleteTestPost)

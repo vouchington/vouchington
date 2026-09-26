@@ -26,13 +26,33 @@ describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
       .expect(403)
   })
 
-  it('validates destination_id_or_slug', async () => {
+  it('returns 422 when destination_id_or_slug is missing', async () => {
     const admin = await createTestUser({ administrator: true })
     const source = await createTestTopic({ user: admin })
     const request = createRequest()
     await request.authenticateAs(admin)
 
-    await request.post(`/api/v1/topics/${source.id}/merges`).send({}).expect(400)
+    await request.post(`/api/v1/topics/${source.id}/merges`).send({}).expect(422)
+  })
+
+  it('rejects malformed bodies after the administrator guard', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const source = await createTestTopic({ user: administrator })
+    const regularUser = await createTestUser()
+
+    const forbiddenRequest = createRequest()
+    await forbiddenRequest.authenticateAs(regularUser)
+    await forbiddenRequest
+      .post(`/api/v1/topics/${source.id}/merges`)
+      .send({ destination_id_or_slug: 42 })
+      .expect(403)
+
+    const administratorRequest = createRequest()
+    await administratorRequest.authenticateAs(administrator)
+    await administratorRequest
+      .post(`/api/v1/topics/${source.id}/merges`)
+      .send({ destination_id_or_slug: 42 })
+      .expect(422)
   })
 
   it('merges source aliases into the destination for admins', async () => {

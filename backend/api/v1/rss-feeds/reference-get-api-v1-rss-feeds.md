@@ -23,6 +23,9 @@ Plural parameters use comma-separated values in the published API contract; the 
 also accepts repeated keys for compatibility. Topic and publisher-type lists resolve at most 10
 identifiers each.
 
+The content parser prepares a normalized validation projection before resolving identifiers; see
+[@services/search-params](../../../services/search-params/README.md) for that shared flow.
+
 Cached (short TTL) for unauthenticated users.
 
 Each result row excludes election summaries. Topic and hostname vote counts are returned as

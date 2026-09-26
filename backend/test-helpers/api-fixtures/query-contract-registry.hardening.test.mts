@@ -81,6 +81,9 @@ const expectedParameters = {
   'GET:/api/v1/posts/:id/votes': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/ancestors': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/descendants': ['after', 'limit'],
+  'GET:/api/v1/referral-link-validations': ['after', 'limit', 'search'],
+  'GET:/api/v1/referral-link-validations/:validationId/rules': ['after', 'limit'],
+  'GET:/api/v1/referral-links': ['after', 'limit', 'referral_program_id', 'user_id'],
   'GET:/api/v1/rss-feed-items': [
     'after',
     'category_topic',
@@ -120,6 +123,8 @@ const expectedParameters = {
     'topics',
   ],
   'GET:/api/v1/rss-feeds/:id/crawls': ['after', 'limit'],
+  'GET:/api/v1/rss-feeds/recommended': ['after', 'limit', 'source'],
+  'GET:/api/v1/rss-feeds/trending': ['after', 'limit', 'min_score', 'time_range'],
   'GET:/api/v1/topic-recommendations/top-hashtags': ['after', 'limit', 'mapping', 'q'],
   'GET:/api/v1/topics': [
     'after',
@@ -136,10 +141,13 @@ const expectedParameters = {
     'text_search_query',
     'topic_types',
   ],
+  'GET:/api/v1/topics/:id/prioritized-referral-links': ['all'],
   'GET:/api/v1/topics/:id/votes': ['after', 'limit'],
   'GET:/api/v1/topics/:idOrSlug/additional-hostnames': ['after', 'limit'],
   'GET:/api/v1/topics/:idOrSlug/aliases': ['after', 'limit'],
-  'GET:/api/v1/topics/aliases': ['after', 'limit'],
+  'GET:/api/v1/topics/aliases': ['after', 'limit', 'q'],
+  'GET:/api/v1/topics/compare': ['slugs'],
+  'GET:/api/v1/trending-referral-programs': ['after', 'limit'],
   'GET:/api/v1/users': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/communities/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/domains/:listType': ['after', 'limit'],
@@ -149,6 +157,7 @@ const expectedParameters = {
   'GET:/api/v1/users/:idOrSlug/urls/:listType': ['after', 'limit'],
   'GET:/api/v1/users/:idOrSlug/users/:listType': ['after', 'limit', 'q'],
   'GET:/api/v1/users/:userId/mod-notes': ['after', 'limit'],
+  'POST:/api/v1/rss-feeds/:id/refreshes': ['force'],
 } as const
 
 const acceptedOperations = new Set(Object.keys(expectedParameters))
@@ -170,6 +179,26 @@ describe('real backend API query contracts', () => {
     for (const [operation, names] of Object.entries(expectedParameters)) {
       expect(Object.keys(contracts[operation]!.parameters).toSorted()).toEqual(names)
     }
+  })
+
+  it('retains the meaningful descriptor kinds added by content validation', () => {
+    expect(contracts['GET:/api/v1/topics/:id/prioritized-referral-links']!.parameters.all).toEqual({
+      kind: 'boolean',
+    })
+    expect(contracts['POST:/api/v1/rss-feeds/:id/refreshes']!.parameters.force).toEqual({
+      kind: 'boolean',
+    })
+    expect(contracts['GET:/api/v1/topics/compare']!.parameters.slugs).toMatchObject({
+      kind: 'csv-array',
+    })
+    expect(contracts['GET:/api/v1/referral-links']!.parameters.limit).toMatchObject({
+      kind: 'integer',
+      maximum: 100,
+      minimum: 1,
+    })
+    expect(contracts['GET:/api/v1/rss-feed-items']!.parameters.media_type).toMatchObject({
+      kind: 'csv-array',
+    })
   })
 
   it(

@@ -16,6 +16,7 @@ import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 const topicVoteHandler = createVoteHandler({
   rateLimitPrefix: 'topic-election-vote',
   routeKey: 'PUT:/api/v1/topics/:id/vote',
+  requestContractOperation: 'PUT:/api/v1/topics/:id/vote',
   entityType: 'topic',
   getEntity: getTopicByAnyCached,
   entityNotFoundMessage: 'Topic not found',
@@ -31,6 +32,7 @@ const topicVoteHandler = createVoteHandler({
 const clearTopicVoteHandler = createVoteClearHandler({
   rateLimitPrefix: 'topic-election-vote',
   routeKey: 'DELETE:/api/v1/topics/:id/vote',
+  requestContractOperation: 'DELETE:/api/v1/topics/:id/vote',
   entityType: 'topic',
   getEntity: getTopicByAnyCached,
   entityNotFoundMessage: 'Topic not found',

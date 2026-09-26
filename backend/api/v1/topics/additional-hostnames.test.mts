@@ -56,12 +56,29 @@ describe('additional-hostnames', () => {
       expect(response.body.additional_hostname.topic_id).toBe(topic.id)
     })
 
-    it('returns 400 when hostname is missing', async () => {
+    it('returns 422 when hostname is missing', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topic = await createTestTopic({ hostname: `ah-missing-${random}.example.com` })
       const request = createRequest()
       await request.authenticateAs(adminUser)
-      await request.post(`/api/v1/topics/${topic.id}/additional-hostnames`).send({}).expect(400)
+      await request.post(`/api/v1/topics/${topic.id}/additional-hostnames`).send({}).expect(422)
+    })
+
+    it('rejects malformed hostnames only after authorization', async () => {
+      const random = Math.random().toString(36).slice(2, 15)
+      const topic = await createTestTopic({ hostname: `ah-contract-${random}.example.com` })
+      const anonymousRequest = createRequest()
+      await anonymousRequest
+        .post(`/api/v1/topics/${topic.id}/additional-hostnames`)
+        .send({ hostname: 42 })
+        .expect(401)
+
+      const administratorRequest = createRequest()
+      await administratorRequest.authenticateAs(adminUser)
+      await administratorRequest
+        .post(`/api/v1/topics/${topic.id}/additional-hostnames`)
+        .send({ hostname: 42 })
+        .expect(422)
     })
 
     it('normalizes a protocol-prefixed hostname to a bare hostname', async () => {

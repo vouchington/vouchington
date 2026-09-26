@@ -22,4 +22,5 @@ or
 
 Selected recipients must contain 1–100 distinct valid UUIDs, must all currently follow the sender,
 and cannot be combined with unknown request fields. `all_followers` requests contain only
-`audience`.
+`audience`. A missing target remains 404 and target/policy semantic failures remain 400 before a
+malformed union body is diagnosed as 422.

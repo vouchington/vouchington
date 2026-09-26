@@ -7,7 +7,6 @@ import type { ViewRssFeed } from '@services/rss-feeds/types'
 import {
   updateRssFeedWithStateAsCurrentUser,
   hardDeleteRssFeedByIdAsCurrentUser,
-  refreshRssFeedAsCurrentUser,
 } from '@services/rss-feeds'
 import {
   currentUserCanUpdateRssFeed,
@@ -24,32 +23,43 @@ import {
   toPaidSafeRssFeedCrawl,
 } from '@services/rss-feeds/crawls'
 import { getMembershipByUserId } from '@services/memberships'
-import { parseBooleanish } from '@ts-shared/utils/query'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
   requireAuthAndRateLimit,
   requireAuth,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { parseUpdateRssFeedBody } from '@services/rss-feeds/request-body'
 import { createPaginationParser } from '@modules/pagination'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiRequestContract, apiResponse } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const rssFeedCrawlsParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 50 },
 })
-
+type UpdateRssFeedBody = {
+  rss_feed_url?: string
+  topic_id?: string
+  title?: string | null
+  enabled?: boolean
+  discoverable?: boolean
+  reason?: string
+  ignore_robots_txt?: boolean | null
+  unreliable_status_codes?: number[] | null
+}
 app
   .route('/api/v1/rss-feeds/:id')
   .get(async (ctx: Context) => {
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feeds/:id')
-    const rawFeed = await getRssFeedByIdCached(ctx.params.id!)
+    validateRequestContract(ctx, 'GET:/api/v1/rss-feeds/:id', { path: ctx.params })
+    const id = validateUUIDParam(ctx, 'id')
+    const rawFeed = await getRssFeedByIdCached(id)
     ctx.assert(rawFeed, 404, 'RSS feed not found')
     const rssFeed = proxyRssFeedCoverArt(rawFeed as ViewRssFeed)
-
     setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
     const membership =
@@ -57,7 +67,6 @@ app
         ? await getMembershipByUserId(currentUser.id)
         : null
     const canViewLatestCrawl = currentUserCanViewLatestRssFeedCrawl(currentUser, membership)
-
     let latestCrawl = null
     if (canViewLatestCrawl) {
       const crawls = await searchRssFeedCrawls(rssFeed.id, { limit: 1 })
@@ -71,17 +80,27 @@ app
     })
   })
   .patch(async (ctx: Context) => {
+    apiRequestContract<'PATCH:/api/v1/rss-feeds/:id', UpdateRssFeedBody>(
+      'PATCH:/api/v1/rss-feeds/:id',
+    )
     const currentUser = await requireAuthAndRateLimit(
       ctx,
       currentUserCanUpdateRssFeed,
       'PATCH:/api/v1/rss-feeds/:id',
     )
     assertNotSuspended(currentUser)
-
-    const rssFeed = await getRssFeedByIdCached(ctx.params.id!)
+    validateRequestContract(ctx, 'PATCH:/api/v1/rss-feeds/:id', { path: ctx.params })
+    const id = validateUUIDParam(ctx, 'id')
+    const rssFeed = await getRssFeedByIdCached(id)
     ctx.assert(rssFeed, 404, 'RSS feed not found')
-
-    const rawBody = await ctx.request.json('1mb')
+    const rawBody = (await ctx.request.json('1mb')) as UpdateRssFeedBody
+    if (rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)) {
+      const bodyRecord = rawBody as Record<string, unknown>
+      if ('ignore_robots_txt' in bodyRecord || 'unreliable_status_codes' in bodyRecord) {
+        ctx.assert(isAdminUser(currentUser), 403, 'Unauthorized')
+      }
+    }
+    validateRequestContract(ctx, 'PATCH:/api/v1/rss-feeds/:id', { body: rawBody })
     const { enabled, discoverable, reason, ...changes } = parseUpdateRssFeedBody(rawBody)
 
     // Admin-only operator field: ignore_robots_txt
@@ -104,13 +123,11 @@ app
           'unreliable_status_codes',
         )
     }
-
     await updateRssFeedWithStateAsCurrentUser(currentUser, rssFeed.id, changes, {
       enabled,
       discoverable,
       reason,
     })
-
     const updated = await getRssFeedByIdCached(rssFeed.id)
     ctx.assert(updated, 404, 'RSS feed not found')
     ctx.json({ rss_feed: proxyRssFeedCoverArt(updated as ViewRssFeed) })
@@ -122,14 +139,13 @@ app
       'DELETE:/api/v1/rss-feeds/:id',
     )
     assertNotSuspended(currentUser)
-
-    const rssFeed = await getRssFeedByIdCached(ctx.params.id!)
+    validateRequestContract(ctx, 'DELETE:/api/v1/rss-feeds/:id', { path: ctx.params })
+    const id = validateUUIDParam(ctx, 'id')
+    const rssFeed = await getRssFeedByIdCached(id)
     ctx.assert(rssFeed, 404, 'RSS feed not found')
-
     await hardDeleteRssFeedByIdAsCurrentUser(currentUser, rssFeed.id)
     ctx.setStatus(204)
   })
-
 app.route('/api/v1/rss-feeds/:id/crawls').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/rss-feeds/:id/crawls', rssFeedCrawlsParser)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/rss-feeds/:id/crawls')
@@ -139,11 +155,16 @@ app.route('/api/v1/rss-feeds/:id/crawls').get(async (ctx: Context) => {
   if (!currentUserCanViewLatestRssFeedCrawl(currentUser, membership)) {
     return ctx.throw(403, 'Premium membership required')
   }
-
-  const rssFeed = await getRssFeedByIdCached(ctx.params.id!)
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feeds/:id/crawls', { path: ctx.params })
+  const id = validateUUIDParam(ctx, 'id')
+  const rssFeed = await getRssFeedByIdCached(id)
   ctx.assert(rssFeed, 404, 'RSS feed not found')
 
   const options = rssFeedCrawlsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, rssFeedCrawlsParser.queryContract)
+  if (options.after !== undefined) query.after = options.after
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feeds/:id/crawls', { query })
   const crawls = await searchRssFeedCrawls(rssFeed.id, options)
   ctx.json(apiResponse('GET:/api/v1/rss-feeds/:id/crawls', crawls))
 })
@@ -156,6 +177,7 @@ app.route('/api/v1/rss-feeds/:id/crawls/:crawlId').get(async (ctx: Context) => {
   if (!currentUserCanViewLatestRssFeedCrawl(currentUser, membership)) {
     return ctx.throw(403, 'Premium membership required')
   }
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feeds/:id/crawls/:crawlId', { path: ctx.params })
   validateUUIDParam(ctx, 'id')
   validateUUIDParam(ctx, 'crawlId')
 
@@ -175,26 +197,4 @@ app.route('/api/v1/rss-feeds/:id/crawls/:crawlId').get(async (ctx: Context) => {
       crawl: toPaidSafeRssFeedCrawl(crawl),
     }),
   )
-})
-
-app.route('/api/v1/rss-feeds/:id/refreshes').post(async (ctx: Context) => {
-  const currentUser = await requireAuthAndRateLimit(
-    ctx,
-    currentUserCanRefreshRssFeed,
-    'POST:/api/v1/rss-feeds/:id/refreshes',
-  )
-
-  const rssFeed = await getRssFeedByIdCached(ctx.params.id!)
-  ctx.assert(rssFeed, 404, 'RSS feed not found')
-
-  let force = false
-  if (ctx.query.force !== undefined) {
-    force = parseBooleanish(ctx.query.force)
-  } else if (ctx.request.is('json')) {
-    const body = (await ctx.request.json('1mb')) as { force?: unknown }
-    force = parseBooleanish(body.force)
-  }
-
-  const refresh = await refreshRssFeedAsCurrentUser(currentUser, rssFeed.id, force)
-  ctx.json({ success: true, message: 'RSS feed refresh enqueued', ...refresh })
 })

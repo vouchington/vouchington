@@ -54,15 +54,36 @@ describe('official-links', () => {
         .expect(403)
     })
 
+    it('rejects malformed official-link bodies without creating a link', async () => {
+      const request = createRequest()
+      await request.authenticateAs(adminUser!)
+
+      const before = await request
+        .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
+        .expect(200)
+      await request
+        .post(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
+        .send({ url: null, unexpected: true })
+        .expect(422)
+      const after = await request
+        .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
+        .expect(200)
+
+      expect(after.body.official_referral_links).toHaveLength(
+        before.body.official_referral_links.length,
+      )
+    })
+
     it('POST /api/v1/referral-programs/:id/official-referral-links returns 201 for admin', async () => {
       const request = createRequest()
       await request.authenticateAs(adminUser!)
 
       const res = await request
         .post(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
-        .send({ url: `https://${testHostname}/ref/official-${Date.now()}` })
+        .send({ url: `https://${testHostname}/ref/official-${Date.now()}`, label: null })
         .expect(201)
       expect(res.body.official_referral_link.id).toBeTruthy()
+      expect(res.body.official_referral_link.label).toBeNull()
       createdLinkId = res.body.official_referral_link.id
 
       const listed = await request

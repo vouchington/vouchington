@@ -82,6 +82,32 @@ describe('post.vote', () => {
           choice: 'like',
         })
       })
+
+      it('rejects an extra vote field without persisting a ballot', async () => {
+        const post = await createTestPost({ user })
+        const request = createRequest()
+        await request.authenticateAs(user)
+
+        await request
+          .put(`/api/v1/posts/${post.id}/vote`)
+          .send({ choice: 'like', unexpected: true })
+          .expect(422)
+
+        await expect(getPostElectionVote(user.id, post.id)).resolves.toBeNull()
+      })
+    })
+
+    describe('DELETE /api/v1/posts/:id/vote', () => {
+      it('clears an existing ballot with no request body', async () => {
+        const post = await createTestPost({ user })
+        const request = createRequest()
+        await request.authenticateAs(user)
+        await request.put(`/api/v1/posts/${post.id}/vote`).send({ choice: 'like' }).expect(204)
+
+        await request.delete(`/api/v1/posts/${post.id}/vote`).expect(204)
+
+        await expect(getPostElectionVote(user.id, post.id)).resolves.toBeNull()
+      })
     })
 
     describe('PUT /api/v1/posts/:id/vote Neutral', () => {

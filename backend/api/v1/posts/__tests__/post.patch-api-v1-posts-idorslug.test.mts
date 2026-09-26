@@ -12,6 +12,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 
 describe('post', () => {
   describe('Post Individual Routes', () => {
@@ -29,6 +30,25 @@ describe('post', () => {
     })
 
     describe('PATCH /api/v1/posts/:idOrSlug', () => {
+      it.each(['review', 'data_point'] as const)(
+        'returns coded 403 for official admin %s edits before valid or malformed body handling',
+        async postType => {
+          const postId = await insertTestPost({
+            title: `Official ${postType}`,
+            slug: `official-${postType}-${crypto.randomUUID()}`,
+            createdById: creator.id,
+            markdown: 'Original content',
+            postType,
+          })
+          const request = createRequest()
+          await request.authenticateAs(admin)
+
+          for (const body of [{ title: 'Valid edit' }, { title: 42 }]) {
+            const response = await request.patch(`/api/v1/posts/${postId}`).send(body).expect(403)
+            expect(response.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
+          }
+        },
+      )
       it('should update post when user is creator', async () => {
         const postId = await insertTestPost({
           title: 'Original Title',

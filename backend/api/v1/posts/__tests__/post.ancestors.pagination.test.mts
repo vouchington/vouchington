@@ -132,6 +132,13 @@ describe('post.ancestors pagination', () => {
     ])
   })
 
+  it('keeps malformed and repeated bounded pagination limits as 400 errors', async () => {
+    const { ids } = await createCommentChain(1)
+
+    await createRequest().get(`/api/v1/posts/${ids[0]!}/ancestors?limit=0`).expect(400)
+    await createRequest().get(`/api/v1/posts/${ids[0]!}/ancestors?limit=1&limit=2`).expect(400)
+  })
+
   it('does not offer a continuation when exactly five comment parents fit beside the target', async () => {
     const { ids, rootId } = await createCommentChain(6)
     const response = await createRequest()

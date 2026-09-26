@@ -4,12 +4,13 @@ import {
   MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS,
   markFollowerDistributionFailed,
   parseSendFollowersInput,
+  preflightPostDistributionTarget,
   sendPostToFollowers,
   sharePostWithFollowers,
 } from '@services/follower-distributions'
 import { assertNotSuspended } from '@services/users'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   apiNoRequestBody,
   apiRequestContract,
@@ -35,6 +36,7 @@ app.route('/api/v1/posts/:idOrSlug/shares').post(async (ctx: Context) => {
 
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/shares')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/shares', { path: ctx.params })
 
   const result = await sharePostWithFollowers(currentUser, ctx.params.idOrSlug!)
   await enqueueDistributionOrMarkFailed(result.distribution_id)
@@ -49,7 +51,10 @@ app.route('/api/v1/posts/:idOrSlug/sends').post(async (ctx: Context) => {
   apiRequestContract<'POST:/api/v1/posts/:idOrSlug/sends', SendFollowersRequestContract>(
     'POST:/api/v1/posts/:idOrSlug/sends',
   )
-  const input = parseSendFollowersInput(await ctx.request.json('128kb'))
+  await preflightPostDistributionTarget(currentUser, 'post_send', ctx.params.idOrSlug!)
+  const body = await ctx.request.json('128kb')
+  validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/sends', { body, path: ctx.params })
+  const input = parseSendFollowersInput(body)
   const result = await sendPostToFollowers(currentUser, ctx.params.idOrSlug!, input)
 
   await enqueueDistributionOrMarkFailed(result.distribution_id)

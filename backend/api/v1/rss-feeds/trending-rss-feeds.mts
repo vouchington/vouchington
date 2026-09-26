@@ -1,14 +1,16 @@
 import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { getTrendingRssFeeds } from '@services/trending-rss-feeds/get-trending-rss-feeds'
 import { getTrendingRssFeedsCached } from '@services/entity-fetch/search-caches'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
-import { createPaginationParser } from '@modules/pagination'
+import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
 import { indexById } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const VALID_TIME_RANGES = new Set(['day', 'week', 'month'])
 
@@ -16,11 +18,22 @@ const trendingRssFeedsParser = createPaginationParser({
   cursor: { type: 'score' },
   limit: { min: 1, max: 100, default: 20 },
 })
+const trendingRssFeedsQueryContract = defineQueryContract({
+  time_range: queryString(),
+  min_score: queryString(),
+})
 
 app.route('/api/v1/rss-feeds/trending').get(async ctx => {
+  apiQuery('GET:/api/v1/rss-feeds/trending', trendingRssFeedsParser, trendingRssFeedsQueryContract)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feeds/trending')
 
   const paginationOptions = trendingRssFeedsParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...trendingRssFeedsParser.queryContract,
+    ...trendingRssFeedsQueryContract.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = paginationOptions.limit
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feeds/trending', { query })
 
   let timeRange: 'day' | 'week' | 'month' = 'week'
   if (ctx.query.time_range !== undefined) {

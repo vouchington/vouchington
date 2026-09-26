@@ -5,14 +5,19 @@ import { createSourceFromUrl } from '@services/rss-feeds/create-source'
 import { searchRssFeedsCached } from '@services/entity-fetch'
 import { assertNotSuspended } from '@services/users'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { parseRssFeedsSearchParams } from '@services/search-params'
+import {
+  parseRssFeedsSearchParams,
+  prepareRssFeedsSearchParams,
+  resolveRssFeedsSearchParams,
+} from '@services/search-params'
 import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,
   setAnonymousPublicCacheHeaders,
+  validateRequestContract,
 } from '../../response-helpers.mts'
-import { apiQuery, apiRequest, apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiRequestContract, apiResponse } from '../../response-contract.mts'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
@@ -29,6 +34,12 @@ import {
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import createHttpError from 'http-errors'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+
+type CreateRssFeedBody = {
+  rss_feed_url: string
+  follow?: boolean
+}
 
 const rssFeedsPaginationParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -46,13 +57,22 @@ app
       rssFeedsRouteQueryContract,
     )
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feeds')
-    const parsedSearchParams = await parseRssFeedsSearchParams(ctx.query).catch(error =>
-      sendHashtagTopicSearchErrorResponse(ctx, error),
+    const paginationOptions = rssFeedsPaginationParser.parse(ctx.query)
+    const preparedSearchParams = prepareRssFeedsSearchParams(ctx.query)
+    validateRequestContract(ctx, 'GET:/api/v1/rss-feeds', {
+      query: {
+        ...preparedSearchParams.validationQuery,
+        ...prepareQueryForValidation(ctx.query, rssFeedsRouteQueryContract.queryContract),
+        ...(ctx.query.limit !== undefined && { limit: paginationOptions.limit }),
+      },
+    })
+    const parsedSearchParams = await resolveRssFeedsSearchParams(preparedSearchParams).catch(
+      error => sendHashtagTopicSearchErrorResponse(ctx, error),
     )
     if (!parsedSearchParams) return
     const { shouldReturnEmpty, searchOptions } = parsedSearchParams
 
-    const { limit, after } = rssFeedsPaginationParser.parse(ctx.query)
+    const { limit, after } = paginationOptions
 
     if (after && searchOptions.text_search_query) {
       throw createHttpError(400, 'Cursor pagination is not supported with text_search_query')
@@ -112,18 +132,13 @@ app
     )
   })
   .post(async (ctx: Context) => {
+    apiRequestContract<'POST:/api/v1/rss-feeds', CreateRssFeedBody>('POST:/api/v1/rss-feeds')
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/rss-feeds')
     assertNotSuspended(currentUser)
 
-    // apiRequest gives this wrapper-parsed body a real documented shape (rather than the
-    // harvester's honest-but-loose `unknown` fallback for a JSON read that feeds directly into
-    // another function call) — parseCreateSourceBody does its own runtime validation below.
-    const body = parseCreateSourceBody(
-      apiRequest(
-        'POST:/api/v1/rss-feeds',
-        (await ctx.request.json('1mb')) as { rss_feed_url?: unknown; follow?: unknown },
-      ),
-    )
+    const rawBody = (await ctx.request.json('1mb')) as CreateRssFeedBody
+    validateRequestContract(ctx, 'POST:/api/v1/rss-feeds', { body: rawBody })
+    const body = parseCreateSourceBody(rawBody)
     const membershipPlan = await getUserActivePlan(currentUser.id)
     const result = await createSourceFromUrl(currentUser, body.rss_feed_url, {
       assertContributionLimit: () =>

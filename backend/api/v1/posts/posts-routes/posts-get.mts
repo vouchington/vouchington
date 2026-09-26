@@ -15,14 +15,18 @@ import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { searchPostModerationsByPostIds } from '@services/moderation'
 import { getPostIds, getPublicPostIds, maskAnonymousPosts } from '@services/posts'
-import { parsePostsSearchParams } from '@services/search-params'
+import {
+  parsePostsSearchParams,
+  preparePostsSearchParams,
+  resolvePostsSearchParams,
+} from '@services/search-params'
 import { isAdminUser } from '@services/users'
 import { getPostCommunitiesRecord } from '@services/communities/post-communities-record'
 import { getUrlEmbedsByUrlIds, type UrlEmbed } from '@services/rss-feed-items/get-url-embed'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import { apiQuery } from '../../../response-contract.mts'
-import { getOptionalAuthAndRateLimit } from '../../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import {
   getAgentModerationElectionsRecord,
   indexPostModerationsByPostId,
@@ -34,8 +38,10 @@ import type { PostsResponseInput } from './posts-response-types.mts'
 app.route('/api/v1/posts').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/posts', parsePostsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts')
+  const preparedSearchParams = preparePostsSearchParams(ctx.query)
+  validateRequestContract(ctx, 'GET:/api/v1/posts', { query: preparedSearchParams.validationQuery })
 
-  const parsedSearchParams = await parsePostsSearchParams(ctx.query).catch(error =>
+  const parsedSearchParams = await resolvePostsSearchParams(preparedSearchParams).catch(error =>
     sendHashtagTopicSearchErrorResponse(ctx, error),
   )
   if (!parsedSearchParams) return

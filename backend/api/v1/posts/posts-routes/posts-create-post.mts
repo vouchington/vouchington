@@ -14,15 +14,27 @@ import {
 import { isHoneypotTriggered } from '@services/honeypot'
 import { getUserActivePlan } from '@services/memberships'
 import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
-import { validateCreatePostInput } from '@services/posts/create/validation'
-import { currentUserCanCreatePost } from '@services/posts/authorization'
+import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
+import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
+import {
+  assertOfficialAccountCanCreatePost,
+  currentUserCanCreatePost,
+} from '@services/posts/authorization'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { mintUUIDv7 } from '@ts-shared/session-jwt'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
-import { apiHeaders } from '../../../response-contract.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { apiHeaders, apiRequestContract } from '../../../response-contract.mts'
+
+type CreatePostRequestBody = CreatePostInput & {
+  hp_website?: string
+  hp_phone?: string
+  cf_turnstile_response?: string
+  recaptcha_token?: string
+}
 
 app.route('/api/v1/posts').post(async (ctx: Context) => {
+  apiRequestContract<'POST:/api/v1/posts', CreatePostRequestBody>('POST:/api/v1/posts')
   apiHeaders('POST:/api/v1/posts', {
     request: { 'Idempotency-Key': { type: 'string', format: 'uuid' } },
     responses: {
@@ -58,12 +70,13 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   const membershipPlan = await getUserActivePlan(currentUser.id)
   await assertCanContribute(currentUser, { membershipPlan })
 
-  const body = (await ctx.request.json('1mb')) as CreatePostInput & {
-    hp_website?: string
-    hp_phone?: string
-    cf_turnstile_response?: string
-    recaptcha_token?: string
-  }
+  const parsedBody = await ctx.request.json('1mb')
+  ctx.assert(
+    parsedBody !== null && typeof parsedBody === 'object' && !Array.isArray(parsedBody),
+    422,
+    'Invalid request body',
+  )
+  const body = parsedBody as CreatePostRequestBody
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {
     const now = new Date().toISOString()
@@ -101,22 +114,18 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     422,
     'Use the community posts endpoint to create community posts',
   )
-  // Skip Turnstile only for bare one-click link posts: url_id already resolved, no raw URL,
-  // no user-authored text, and no images. Raw-URL submissions, posts with user text, and posts
-  // with user-uploaded images always require the widget.
-  const isBareOneClickLink =
-    body.post_type === 'link' &&
-    !!body.url_id &&
-    !body.url &&
-    !body.title?.trim() &&
-    !body.markdown?.trim() &&
-    !body.images?.length
+  const admissionPostType = isSupportedPostType(body.post_type)
+    ? body.post_type
+    : body.post_type === undefined
+      ? 'discussion'
+      : 'invalid'
+  let isBareOneClickLink = false
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,
-    source: contributionPolicySourceForPostType(body.post_type, isAdminUser(currentUser)),
+    source: contributionPolicySourceForPostType(admissionPostType, isAdminUser(currentUser)),
     scope: 'global',
-    postType: body.post_type ?? 'discussion',
+    postType: admissionPostType,
     idempotencyKeyHeader: ctx.req.headers['idempotency-key'],
     intent: { route: 'posts.create', body },
     beforeCapacity: async () => {
@@ -128,6 +137,17 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
         403,
         'Only admins can set a post slug',
       )
+      assertCanCreateAdminOnlyPostType(currentUser, body.post_type ?? 'discussion')
+      assertOfficialAccountCanCreatePost(currentUser, body.post_type)
+      validateRequestContract(ctx, 'POST:/api/v1/posts', { body })
+      // The generated contract establishes string/array shape before inspecting user text.
+      isBareOneClickLink =
+        body.post_type === 'link' &&
+        !!body.url_id &&
+        !body.url &&
+        !body.title?.trim() &&
+        !body.markdown?.trim() &&
+        !body.images?.length
       await validateCreatePostInput(currentUser, body, membershipPlan)
       if (!isBareOneClickLink)
         await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'posts.create' })
