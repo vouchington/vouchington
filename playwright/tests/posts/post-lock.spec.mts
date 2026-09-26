@@ -47,7 +47,8 @@ test.describe('Post Lock — author/admin', () => {
 
     const lockButton = page.getByTestId('post-detail-lock-button')
     await expect(lockButton).toBeVisible()
-    await expect(lockButton).toHaveAttribute('aria-pressed', 'false')
+    await expect(lockButton).toHaveText('Lock')
+    await expect(lockButton).toHaveAttribute('title', 'Prevent new replies to this thread')
 
     await lockButton.click()
 
@@ -55,7 +56,8 @@ test.describe('Post Lock — author/admin', () => {
     // Assert the badge first, then re-open the kebab to verify the toggle flipped.
     await expect(page.getByTestId('post-detail-badge-locked')).toBeVisible()
     await page.getByTestId('post-detail-overflow-trigger').click()
-    await expect(lockButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(lockButton).toHaveText('Unlock')
+    await expect(lockButton).toHaveAttribute('title', 'Allow new replies to this thread')
   })
 })
 
