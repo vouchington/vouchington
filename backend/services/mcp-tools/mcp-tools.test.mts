@@ -102,6 +102,12 @@ describe('callMcpTool', () => {
     ).toThrow('MCP response limit')
   })
 
+  it('rejects tool results whose values fit but whose total exceeds the MCP response limit', () => {
+    const half = 'x'.repeat(MAX_MCP_TOOL_RESULT_BYTES / 2)
+
+    expect(() => serializeMcpToolResult([half, half])).toThrow('MCP response limit')
+  })
+
   it('bounds traversal when object properties serialize to no output', () => {
     const value = Object.fromEntries(
       Array.from({ length: MAX_MCP_TOOL_RESULT_VISITS }, (_, index) => [index, undefined]),
