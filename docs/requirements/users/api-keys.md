@@ -125,10 +125,30 @@ RSS feed endpoints are rate-limited to **3 requests per minute** per identity pe
 
 1. Go to Settings > API Keys (`/my/api-keys`)
 2. Click "Create API Key"
-3. Select RSS, user MCP, or admin MCP access, then enter a label
+3. Choose an RSS feed or MCP server key, pick the MCP key's scopes, then enter a label
 4. Copy the raw key immediately (it won't be shown again)
 
-The settings UI offers these presets: RSS read-only, user MCP read-only, user MCP read/write, admin MCP read-only, and admin MCP read/write. Admin MCP presets are visible only to administrators.
+An RSS key always carries `rss:read`. An MCP key's scope picker renders the
+[scope catalogue](#scope-catalogue) entries that accept the `api-key` surface, one row per resource
+with read and write checkboxes and the `mcp.<audience>` umbrella row first. Checking a scope also
+checks its `requires` prerequisite, and unchecking a prerequisite drops the scopes that need it, so
+the picker never sends a set the API rejects. Administrators also choose the key's audience ("Your
+account" or "Administrator"); switching audience clears the selection because a key holds one
+audience. Create stays disabled until the label and at least one scope are set.
+
+### Managing OAuth apps and connected apps
+
+The same page lists the caller's [OAuth apps](#oauth-apps) below their keys. Registering an app takes
+a name, one redirect URI per line, a confidential or public client type and catalogue scopes that
+accept the `oauth` surface; admin-audience scopes are offered only to administrators. A confidential
+app's client secret appears once, after registration or rotation, in a dismissible alert with a copy
+button. Each app row shows its client ID, redirect URIs, scopes and verification badge; editing sends
+only the changed name or redirect URIs and warns that saving clears verification, rotating asks for
+confirmation (confidential apps only), and revoking asks for confirmation.
+
+Settings > Connected apps (`/my/connected-apps`) lists the [grants](#connected-apps) on the account,
+with a verified or unverified badge, the granted scopes and the consent and last-used dates, and
+revokes one after confirmation.
 
 ### Using with RSS Feeds
 

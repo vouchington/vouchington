@@ -67,7 +67,10 @@ redirect URIs the administrator reviewed, so an owner's rename or re-pointing be
 approval returns 409 instead of verifying what staff never saw.
 Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
 sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
-verification.
+verification. Staff review the queue at `/admin/oauth-clients`, which defaults to unverified
+clients, filters to verified or all clients, shows each client's owner (or none for an anonymous
+registration), redirect URIs and scopes, and verifies the displayed name or removes verification
+from the row.
 
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
