@@ -7,6 +7,9 @@ function makeJob(data: StoryClusteringJobData): Job<StoryClusteringJobData> {
   return { data } as Job<StoryClusteringJobData>
 }
 
+// Loose shape check for a freshly generated batch id, not a pinned value -- it's random per run.
+const UUID_SHAPE = expect.stringMatching(/^[0-9a-f-]{36}$/)
+
 describe('process-misc', () => {
   const mockCluster = vi.fn<typeof import('@services/stories/cluster').clusterRssFeedItem>()
   const mockHasEmbedding =
@@ -15,6 +18,13 @@ describe('process-misc', () => {
     vi.fn<typeof import('@queues/ai-agents/enqueues/story-clustering').enqueueStoryClustering>()
   const mockGenerateSupportResponse =
     vi.fn<typeof import('@agents/customer-support').generateSupportResponse>()
+
+  const deps = {
+    clusterRssFeedItem: mockCluster,
+    hasRssFeedItemEmbedding: mockHasEmbedding,
+    enqueueStoryClustering: mockEnqueue,
+    generateSupportResponse: mockGenerateSupportResponse,
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -25,30 +35,54 @@ describe('process-misc', () => {
     const storyResult = { storyId: 'story-abc', created: true }
     mockCluster.mockResolvedValue(storyResult)
 
-    const result = await processStoryClustering(makeJob({ rss_feed_item_id: 'item-1' }), {
-      clusterRssFeedItem: mockCluster,
-      hasRssFeedItemEmbedding: mockHasEmbedding,
-      enqueueStoryClustering: mockEnqueue,
-      generateSupportResponse: mockGenerateSupportResponse,
-    })
+    const result = await processStoryClustering(makeJob({ rss_feed_item_id: 'item-1' }), deps)
 
     expect(result).toEqual(storyResult)
     expect(mockHasEmbedding).not.toHaveBeenCalled()
     expect(mockEnqueue).not.toHaveBeenCalled()
   })
 
+  it('dispatches with the job-supplied batch id when present', async () => {
+    mockCluster.mockResolvedValue({ storyId: 'story-abc', created: true })
+
+    await processStoryClustering(
+      makeJob({ rss_feed_item_id: 'item-1', batch_id: 'job-batch-id' }),
+      deps,
+    )
+
+    expect(mockCluster).toHaveBeenCalledWith('item-1', 'job-batch-id')
+  })
+
+  it('generates a batch id when the job predates batch_id', async () => {
+    mockCluster.mockResolvedValue({ storyId: 'story-abc', created: true })
+
+    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-1' }), deps)
+
+    expect(mockCluster).toHaveBeenCalledWith('item-1', UUID_SHAPE)
+  })
+
   it('re-enqueues when cluster returns null and embedding is missing', async () => {
     mockCluster.mockResolvedValue(null)
     mockHasEmbedding.mockResolvedValue(false)
 
-    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-2', embedding_retries: 0 }), {
-      clusterRssFeedItem: mockCluster,
-      hasRssFeedItemEmbedding: mockHasEmbedding,
-      enqueueStoryClustering: mockEnqueue,
-      generateSupportResponse: mockGenerateSupportResponse,
-    })
+    await processStoryClustering(
+      makeJob({ rss_feed_item_id: 'item-2', embedding_retries: 0 }),
+      deps,
+    )
 
-    expect(mockEnqueue).toHaveBeenCalledWith('item-2', undefined, 1)
+    expect(mockEnqueue).toHaveBeenCalledWith('item-2', undefined, 1, UUID_SHAPE)
+  })
+
+  it('preserves the job-supplied batch id across the embedding retry re-enqueue', async () => {
+    mockCluster.mockResolvedValue(null)
+    mockHasEmbedding.mockResolvedValue(false)
+
+    await processStoryClustering(
+      makeJob({ rss_feed_item_id: 'item-2', embedding_retries: 0, batch_id: 'job-batch-id' }),
+      deps,
+    )
+
+    expect(mockEnqueue).toHaveBeenCalledWith('item-2', undefined, 1, 'job-batch-id')
   })
 
   it('does not re-enqueue when retries are at cap', async () => {
@@ -56,12 +90,7 @@ describe('process-misc', () => {
 
     const result = await processStoryClustering(
       makeJob({ rss_feed_item_id: 'item-3', embedding_retries: 10 }),
-      {
-        clusterRssFeedItem: mockCluster,
-        hasRssFeedItemEmbedding: mockHasEmbedding,
-        enqueueStoryClustering: mockEnqueue,
-        generateSupportResponse: mockGenerateSupportResponse,
-      },
+      deps,
     )
 
     expect(result).toBeNull()
@@ -73,12 +102,7 @@ describe('process-misc', () => {
     mockCluster.mockResolvedValue(null)
     mockHasEmbedding.mockResolvedValue(true)
 
-    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-4' }), {
-      clusterRssFeedItem: mockCluster,
-      hasRssFeedItemEmbedding: mockHasEmbedding,
-      enqueueStoryClustering: mockEnqueue,
-      generateSupportResponse: mockGenerateSupportResponse,
-    })
+    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-4' }), deps)
 
     expect(mockEnqueue).not.toHaveBeenCalled()
   })
@@ -87,40 +111,28 @@ describe('process-misc', () => {
     mockCluster.mockResolvedValue(null)
     mockHasEmbedding.mockResolvedValue(false)
 
-    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-5', embedding_retries: 5 }), {
-      clusterRssFeedItem: mockCluster,
-      hasRssFeedItemEmbedding: mockHasEmbedding,
-      enqueueStoryClustering: mockEnqueue,
-      generateSupportResponse: mockGenerateSupportResponse,
-    })
+    await processStoryClustering(
+      makeJob({ rss_feed_item_id: 'item-5', embedding_retries: 5 }),
+      deps,
+    )
 
-    expect(mockEnqueue).toHaveBeenCalledWith('item-5', undefined, 6)
+    expect(mockEnqueue).toHaveBeenCalledWith('item-5', undefined, 6, UUID_SHAPE)
   })
 
   it('defaults missing embedding_retries to 0', async () => {
     mockCluster.mockResolvedValue(null)
     mockHasEmbedding.mockResolvedValue(false)
 
-    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-6' }), {
-      clusterRssFeedItem: mockCluster,
-      hasRssFeedItemEmbedding: mockHasEmbedding,
-      enqueueStoryClustering: mockEnqueue,
-      generateSupportResponse: mockGenerateSupportResponse,
-    })
+    await processStoryClustering(makeJob({ rss_feed_item_id: 'item-6' }), deps)
 
-    expect(mockEnqueue).toHaveBeenCalledWith('item-6', undefined, 1)
+    expect(mockEnqueue).toHaveBeenCalledWith('item-6', undefined, 1, UUID_SHAPE)
   })
 
   it('returns null when embedding is present', async () => {
     mockCluster.mockResolvedValue(null)
     mockHasEmbedding.mockResolvedValue(true)
 
-    const result = await processStoryClustering(makeJob({ rss_feed_item_id: 'item-7' }), {
-      clusterRssFeedItem: mockCluster,
-      hasRssFeedItemEmbedding: mockHasEmbedding,
-      enqueueStoryClustering: mockEnqueue,
-      generateSupportResponse: mockGenerateSupportResponse,
-    })
+    const result = await processStoryClustering(makeJob({ rss_feed_item_id: 'item-7' }), deps)
 
     expect(result).toBeNull()
     expect(mockEnqueue).not.toHaveBeenCalled()
@@ -129,12 +141,7 @@ describe('process-misc', () => {
   it('generates customer support responses', async () => {
     await processCustomerSupport(
       { data: { threadId: 'thread-1' } } as Job<CustomerSupportJobData>,
-      {
-        clusterRssFeedItem: mockCluster,
-        hasRssFeedItemEmbedding: mockHasEmbedding,
-        enqueueStoryClustering: mockEnqueue,
-        generateSupportResponse: mockGenerateSupportResponse,
-      },
+      deps,
     )
 
     expect(mockGenerateSupportResponse).toHaveBeenCalledWith('thread-1')
@@ -150,12 +157,7 @@ describe('process-misc', () => {
         },
         attemptsMade: 0,
       } as Job<CustomerSupportJobData>,
-      {
-        clusterRssFeedItem: mockCluster,
-        hasRssFeedItemEmbedding: mockHasEmbedding,
-        enqueueStoryClustering: mockEnqueue,
-        generateSupportResponse: mockGenerateSupportResponse,
-      },
+      deps,
     )
 
     expect(mockGenerateSupportResponse).toHaveBeenCalledWith('thread-1', {
@@ -175,12 +177,7 @@ describe('process-misc', () => {
         },
         attemptsMade: 1,
       } as Job<CustomerSupportJobData>,
-      {
-        clusterRssFeedItem: mockCluster,
-        hasRssFeedItemEmbedding: mockHasEmbedding,
-        enqueueStoryClustering: mockEnqueue,
-        generateSupportResponse: mockGenerateSupportResponse,
-      },
+      deps,
     )
 
     expect(mockGenerateSupportResponse).toHaveBeenCalledWith('thread-1', {

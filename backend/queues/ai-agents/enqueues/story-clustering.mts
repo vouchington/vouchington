@@ -1,4 +1,5 @@
 import type { JobOptions } from 'glide-mq'
+import { v7 as uuidv7 } from 'uuid'
 import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
@@ -12,12 +13,13 @@ export function enqueueStoryClustering(
   rss_feed_item_id: string,
   priority?: number,
   embeddingRetries = 0,
+  batchId?: string,
 ): Promise<void> {
-  return enqueueBulkStoryClustering([{ rss_feed_item_id, embeddingRetries }], priority)
+  return enqueueBulkStoryClustering([{ rss_feed_item_id, embeddingRetries, batchId }], priority)
 }
 
 export function enqueueBulkStoryClustering(
-  items: Array<{ rss_feed_item_id: string; embeddingRetries?: number }>,
+  items: Array<{ rss_feed_item_id: string; embeddingRetries?: number; batchId?: string }>,
   priority?: number,
 ): Promise<void> {
   if (items.length === 0) return Promise.resolve()
@@ -26,6 +28,11 @@ export function enqueueBulkStoryClustering(
     data: {
       rss_feed_item_id: item.rss_feed_item_id,
       embedding_retries: item.embeddingRetries,
+      // `uuidv7()` (not `randomUUID()`) so batch ids sort with time, matching
+      // `services/autotagger/claim-autotagger-receipt.mts`'s identical precedent --
+      // `classifier_decision_batches` itself is keyed and time-derived off a v7 id
+      // (`0635-00-00-classifiers.sql`).
+      batch_id: item.batchId ?? uuidv7(),
     } satisfies StoryClusteringJobData,
     opts: {
       attempts: AI_AGENTS_DEFAULTS.attempts,

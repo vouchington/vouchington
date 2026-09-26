@@ -56,6 +56,14 @@ export type CustomerSupportJobData =
 export type StoryClusteringJobData = {
   rss_feed_item_id: string
   embedding_retries?: number
+  /**
+   * Minted once at enqueue time (`mintStoryClusteringBatchId`,
+   * `queues/ai-agents/enqueues/story-clustering.mts`) and preserved across the embedding-retry
+   * re-enqueue, so a retried job replays its classifier decision instead of re-deciding. Optional
+   * only so pre-deploy-queued jobs without it still decode; `processStoryClustering` mints a
+   * fallback for those.
+   */
+  batch_id?: string
 }
 
 export type StoryPostJobData = {

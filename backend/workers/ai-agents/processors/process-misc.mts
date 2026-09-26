@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { v7 as uuidv7 } from 'uuid'
 import type { CustomerSupportJobData, StoryClusteringJobData } from '@queues/ai-agents/types'
 import { generateSupportResponse } from '@agents/customer-support'
 import { clusterRssFeedItem } from '@services/stories/cluster'
@@ -41,7 +42,10 @@ export async function processStoryClustering(
   job: Job<StoryClusteringJobData>,
   deps: ProcessMiscDeps = defaultDeps,
 ): Promise<unknown> {
-  const result = await deps.clusterRssFeedItem(job.data.rss_feed_item_id)
+  // Falls back to minting for jobs enqueued before `batch_id` existed; every job enqueued after
+  // this deploys already carries one (see `enqueueBulkStoryClustering`).
+  const batchId = job.data.batch_id ?? uuidv7()
+  const result = await deps.clusterRssFeedItem(job.data.rss_feed_item_id, batchId)
   if (result !== null) return result
 
   const retries = job.data.embedding_retries ?? 0
@@ -49,6 +53,8 @@ export async function processStoryClustering(
   const hasEmbedding = await deps.hasRssFeedItemEmbedding(job.data.rss_feed_item_id)
   if (hasEmbedding) return null
 
-  await deps.enqueueStoryClustering(job.data.rss_feed_item_id, undefined, retries + 1)
+  // Preserve batchId across the retry so the re-enqueued job replays this decision instead of
+  // dispatching a new one once the embedding becomes visible.
+  await deps.enqueueStoryClustering(job.data.rss_feed_item_id, undefined, retries + 1, batchId)
   return null
 }
