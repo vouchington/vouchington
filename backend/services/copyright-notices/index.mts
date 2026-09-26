@@ -59,17 +59,26 @@ export {
   createOutboundCopyrightCorrespondence,
 } from './correspondence.mts'
 export { createEligibleCopyrightRestoreIntent } from './restoration.mts'
-export { createDueStatutoryCopyrightRestoreIntents } from './statutory-restoration-schedule.mts'
 export {
-  listRecoverableCopyrightActionIntentIds,
+  createDueStatutoryCopyrightRestoreIntentsForDeadline,
+  searchDueStatutoryCopyrightRestorationDeadlineIds,
+} from './statutory-restoration-schedule.mts'
+export {
   replayFailedCopyrightActionIntent,
   processCopyrightActionIntent,
+  searchRecoverableCopyrightActionIntentIds,
 } from './action-delivery.mts'
 export { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+export { processCopyrightEnforcementRequest } from './enforcement-requests.mts'
 export {
-  processCopyrightEnforcementRequest,
-  reconcileCopyrightEnforcementRequests,
-} from './enforcement-requests.mts'
+  createMissingCopyrightEnforcementRequests,
+  searchReconcilableCopyrightEnforcementRequestIds,
+} from './enforcement-request-reconciliation.mts'
+export {
+  recoverRejectedCopyrightFormReviewEffect,
+  searchRecoverableCopyrightFormReviewIntakeIds,
+} from './form-reviews-recovery.mts'
+export type { CopyrightSweepIdPage } from './sweep-id-pages.mts'
 export { reviewCopyrightAppeal, reviewCopyrightCounterNotice } from './submission-reviews.mts'
 export {
   getPendingCopyrightAgentDispatches,

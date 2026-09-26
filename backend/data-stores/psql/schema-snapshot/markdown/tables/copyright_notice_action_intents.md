@@ -50,7 +50,6 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notice_action_inten_copyright_restriction_id_expe_key`: `CREATE UNIQUE INDEX copyright_notice_action_inten_copyright_restriction_id_expe_key ON public.copyright_notice_action_intents USING btree (copyright_restriction_id, expected_placement_revision, action)`
 - `copyright_notice_action_intents_pkey`: `CREATE UNIQUE INDEX copyright_notice_action_intents_pkey ON public.copyright_notice_action_intents USING btree (id)`
-- `idx_copyright_notice_action_intents__recoverable`: `CREATE INDEX idx_copyright_notice_action_intents__recoverable ON public.copyright_notice_action_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)`
 - `idx_copyright_notice_intents__deadline`: `CREATE INDEX idx_copyright_notice_intents__deadline ON public.copyright_notice_action_intents USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_intents__pending`: `CREATE INDEX idx_copyright_notice_intents__pending ON public.copyright_notice_action_intents USING btree (id) WHERE (completed_at IS NULL)`
 

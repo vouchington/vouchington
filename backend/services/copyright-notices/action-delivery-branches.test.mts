@@ -138,43 +138,15 @@ async function createRestoreIntent(input: {
   restrictionId: string
   target: { id: string; placement_revision: number }
 }) {
-  const {
-    appendCopyrightSubmissionAssessment,
-    createCopyrightCounterNotice,
-    createCounterNoticeDeadline,
-    createEligibleCopyrightRestoreIntent,
-  } = await import('./index.mts')
-  const counterNotice = await createCopyrightCounterNotice(
-    input.claimant as never,
-    input.noticeId,
-    crypto.randomUUID(),
-    {
-      name: 'Poster',
-      address: '1 Main Street',
-      telephone: '555-0100',
-      consentToFederalJurisdiction: true,
-      consentToServiceOfProcess: true,
-      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Poster',
-      targetIds: [input.target.id],
-    },
-  )
-  const assessment = await appendCopyrightSubmissionAssessment({
-    submissionId: counterNotice.submission.id,
-    assessedAt: new Date('2026-07-02T12:00:00.000Z'),
-    currentUser: input.moderator as never,
-    substantiallyCompliant: true,
-    targetIds: [input.target.id],
-  })
-  const deadline = await createCounterNoticeDeadline({ assessmentId: assessment.id })
-  const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-  const restore = await createEligibleCopyrightRestoreIntent({
+  const { createCounterNoticeRestoreIntent } =
+    await import('./evidence-and-holds-restoration-hold-fixtures.mts')
+  const { now, restore } = await createCounterNoticeRestoreIntent({
+    claimant: input.claimant as never,
     noticeId: input.noticeId,
+    moderator: input.moderator as never,
     targetId: input.target.id,
     restrictionId: input.restrictionId,
-    deadlineId: deadline.id,
-    expectedPlacementRevision: input.target.placement_revision,
-    now,
+    placementRevision: input.target.placement_revision,
   })
   return { id: restore.id, now }
 }

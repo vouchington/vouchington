@@ -42,7 +42,7 @@ _none_
 - `copyright_notice_enforcement_requests_pkey`: `CREATE UNIQUE INDEX copyright_notice_enforcement_requests_pkey ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id)`
 - `idx_copyright_notice_enforcement_requests__imposed_by`: `CREATE INDEX idx_copyright_notice_enforcement_requests__imposed_by ON public.copyright_notice_enforcement_requests USING btree (imposed_by_id) WHERE (imposed_by_id IS NOT NULL)`
 - `idx_copyright_notice_enforcement_requests__notice`: `CREATE INDEX idx_copyright_notice_enforcement_requests__notice ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_id)`
-- `idx_copyright_notice_enforcement_requests__pending`: `CREATE INDEX idx_copyright_notice_enforcement_requests__pending ON public.copyright_notice_enforcement_requests USING btree (updated_at, copyright_notice_submission_assessment_id) WHERE (state = 'pending'::text)`
+- `idx_copyright_notice_enforcement_requests__reconcilable`: `CREATE INDEX idx_copyright_notice_enforcement_requests__reconcilable ON public.copyright_notice_enforcement_requests USING btree (copyright_notice_submission_assessment_id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))`
 
 **Triggers:**
 

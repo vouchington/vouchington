@@ -10,15 +10,17 @@ import {
   readTestCopyrightEnforcementRequestState,
   readTestCopyrightFormReviewActor,
 } from '@voucha/test-helpers/data-stores/psql/copyright-form-reviews'
+import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
   createCopyrightFormIntake,
   getCopyrightNoticePrivateAggregate,
   processCopyrightEnforcementRequest,
+  recoverRejectedCopyrightFormReviewEffect,
+  searchRecoverableCopyrightFormReviewIntakeIds,
 } from './index.mts'
 import { appendCopyrightFormScreening } from './form-screenings.mts'
-import { recoverRejectedCopyrightFormReviewEffects } from './form-reviews-recovery.mts'
 
 async function createAutomatedCopyrightForm() {
   const claimant = await createTestUser()
@@ -70,6 +72,17 @@ async function rejectWithErasedModerator(intakeId: string): Promise<void> {
   await expect(readTestCopyrightFormReviewActor(intakeId)).resolves.toBeNull()
 }
 
+/** Recovers one owned rejection the sweep lists, then proves the sweep no longer lists it. */
+async function recoverListedFormReview(intakeId: string): Promise<void> {
+  await expect(
+    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
+  ).resolves.toEqual([intakeId])
+  await recoverRejectedCopyrightFormReviewEffect(intakeId)
+  await expect(
+    readTestOwnedCopyrightSweepIds(searchRecoverableCopyrightFormReviewIntakeIds, intakeId),
+  ).resolves.toEqual([])
+}
+
 describe('copyright rejected form-review recovery after actor erasure', () => {
   it('reverses the automated restriction from the durable erased rejection', async () => {
     const { assessment, notice } = await createAutomatedCopyrightForm()
@@ -83,7 +96,7 @@ describe('copyright rejected form-review recovery after actor erasure', () => {
     })
     await rejectWithErasedModerator(notice.intake.id)
 
-    await recoverRejectedCopyrightFormReviewEffects()
+    await recoverListedFormReview(notice.intake.id)
 
     const recovered = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     expect(recovered?.restrictions).toEqual([
@@ -98,7 +111,7 @@ describe('copyright rejected form-review recovery after actor erasure', () => {
     const { assessment, notice } = await createAutomatedCopyrightForm()
     await rejectWithErasedModerator(notice.intake.id)
 
-    await recoverRejectedCopyrightFormReviewEffects()
+    await recoverListedFormReview(notice.intake.id)
 
     await expect(readTestCopyrightEnforcementRequestState(assessment.id)).resolves.toBe('completed')
     await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('not_claimed')

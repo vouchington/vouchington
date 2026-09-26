@@ -2,79 +2,20 @@ import { describe, expect, it } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightCounterNotice,
-  createCounterNoticeDeadline,
-  createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('copyright notice overlapping legal holds', () => {
   it('replays a blocked restore after the final overlapping hold resolves', async () => {
-    const {
-      aggregate,
-      assessment: noticeAssessment,
-      claimant,
-      moderator,
-      notice,
-    } = await createCopyrightRestorationHoldFixture()
-    const target = aggregate.targets[0]!
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.id,
-      targetId: target.id,
-      assessmentId: noticeAssessment.id,
-      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-      imposedById: moderator.id,
-    })
     const publish: typeof publishImagePlacementDeliveryRecord = async () => undefined
-    const initialWithhold = (
-      await getCopyrightNoticePrivateAggregate(notice.id)
-    )?.actionIntents.find(intent => intent.action === 'withhold')
-    if (!initialWithhold) throw new Error('initial withhold intent disappeared')
-    await expect(
-      processCopyrightActionIntent(initialWithhold.id, new Date('2026-07-01T12:01:00.000Z'), {
-        publishImagePlacementDeliveryRecord: publish,
-      }),
-    ).resolves.toBe('applied')
-
-    const counterNotice = await createCopyrightCounterNotice(
-      claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Poster',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Poster',
-        targetIds: [target.id],
-      },
-    )
-    const counterAssessment = await appendCopyrightSubmissionAssessment({
-      submissionId: counterNotice.submission.id,
-      assessedAt: new Date('2026-07-02T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
-    })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
-    const restorationAt = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-    const initialRestore = await createEligibleCopyrightRestoreIntent({
-      noticeId: notice.id,
-      targetId: target.id,
-      restrictionId: restriction.id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: target.placement_revision,
-      now: restorationAt,
-    })
+    const { initialWithhold, moderator, notice, restorationAt, restore, restriction, target } =
+      await openHeldCounterNoticeRestore(publish)
+    const initialRestore = restore
     await expect(
       processCopyrightActionIntent(initialRestore.id, restorationAt, {
         publishImagePlacementDeliveryRecord: publish,
