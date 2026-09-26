@@ -5,5 +5,6 @@ export interface PostDetailOverflowMenuProps {
   communitySlug?: string | null
   isCommunityMod?: boolean
   isPostPinned?: boolean
+  onPinnedChange?: (isPinned: boolean) => void
   className?: string
 }

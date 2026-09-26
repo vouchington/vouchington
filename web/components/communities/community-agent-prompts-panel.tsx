@@ -8,9 +8,10 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface Props {
   prompts: CommunityAgentPrompt[]
   communitySlug: string
+  onPromptUpdated?: (prompt: CommunityAgentPrompt | null, promptId: string) => void
 }
 
-export function CommunityAgentPromptsPanel({ prompts, communitySlug }: Props) {
+export function CommunityAgentPromptsPanel({ prompts, communitySlug, onPromptUpdated }: Props) {
   const t = useTranslations()
   return (
     <section
@@ -42,6 +43,7 @@ export function CommunityAgentPromptsPanel({ prompts, communitySlug }: Props) {
               key={`${prompt.id}-${prompt.updated_at}`}
               prompt={prompt}
               communitySlug={communitySlug}
+              onPromptUpdated={updated => onPromptUpdated?.(updated, prompt.id)}
             />
           ))
         )}
