@@ -1,6 +1,6 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { getRssFeedItemFeedIds } from '@services/feeds'
 import createHttpError from 'http-errors'
@@ -50,6 +50,9 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/news', {
+    path: ctx.params,
+  })
 
   const paginationOptions = communityNewsParser.parse(ctx.query)
   const hashtagSearchOptions = await resolveHashtagTopicSearch(ctx.query.q).catch(error =>

@@ -5,7 +5,7 @@ import {
   getCommunityAgentPrompt,
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { getCommunityOrThrow } from './shared.mts'
 
@@ -31,6 +31,11 @@ app
     ctx.assert(prompt, 404, 'Prompt not found')
     ctx.assert(prompt.community_id === community.id, 404, 'Prompt not found')
     ctx.assert(prompt.created_by_id === currentUser.id, 403, 'Forbidden')
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/communities/:idOrSlug/agent-prompts/:promptId/allocations',
+      { path: ctx.params },
+    )
 
     await allocateCommunityAgentPromptSlot(currentUser.id, promptId)
 

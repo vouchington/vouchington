@@ -31403,7 +31403,7 @@
             }
           },
           {
-            "description": "Aggregate window; invalid or omitted values use 30d.",
+            "description": "Aggregate window; omitted values use 30d.",
             "in": "query",
             "name": "range",
             "required": false,

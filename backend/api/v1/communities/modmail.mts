@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getPrivateUserByAny } from '@services/users/get'
 import { getCommunityOrThrow } from '@services/communities/get'
@@ -31,6 +31,9 @@ app.route('/api/v1/communities/:idOrSlug/modmail').get(async (ctx: Context) => {
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const community = await getCommunityOrThrow(idOrSlug)
   const membership = await getCommunityMember(community.id, currentUser.id)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/modmail', {
+    path: ctx.params,
+  })
 
   const { after: encodedAfter, limit } = preciseTimestampPaginationParser.parse(ctx.query)
   const after = encodedAfter
@@ -75,11 +78,10 @@ app.route('/api/v1/communities/:idOrSlug/modmail').post(async (ctx: Context) => 
   ctx.assert(canOpen, 403, 'You must be a community member to open a modmail thread')
 
   const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid request body',
-  )
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/modmail', {
+    path: ctx.params,
+    body,
+  })
 
   const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
   const rawSubjectUserId =
@@ -121,6 +123,9 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').get(async (ct
   const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
   const isSubject = thread.subject_user_id === currentUser.id
   ctx.assert(isMod || isSubject, 403, 'Access denied')
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/modmail/:conversationId', {
+    path: ctx.params,
+  })
   ctx.json({ thread })
 })
 
@@ -147,11 +152,10 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
   ctx.assert(thread.community_id === community.id, 404, 'Modmail thread not found')
 
   const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid request body',
-  )
+  validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/modmail/:conversationId', {
+    path: ctx.params,
+    body,
+  })
 
   if (typeof body.assigned_mod_id === 'string') {
     ctx.assert(isUUID(body.assigned_mod_id), 422, 'assigned_mod_id must be a UUID')

@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getCommunityOrThrow } from '@services/communities/get'
 import { getCommunityMember } from '@services/communities/members/get'
@@ -44,6 +44,11 @@ app
     const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
     const isSubject = thread.subject_user_id === currentUser.id
     ctx.assert(isMod || isSubject, 403, 'Access denied')
+    validateRequestContract(
+      ctx,
+      'GET:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',
+      { path: ctx.params },
+    )
 
     const { after: encodedAfter, limit } = simplePaginationParser.parse(ctx.query)
     const after = encodedAfter
@@ -99,10 +104,10 @@ app
     )
 
     const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-    ctx.assert(
-      body !== null && typeof body === 'object' && !Array.isArray(body),
-      400,
-      'Invalid request body',
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',
+      { path: ctx.params, body },
     )
     ctx.assert(
       typeof body.text === 'string' && body.text.trim().length > 0,

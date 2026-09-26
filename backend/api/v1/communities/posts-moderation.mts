@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   approvePublication,
   loadCommunityForPublicationModerator,
@@ -20,11 +20,10 @@ app.route('/api/v1/communities/:idOrSlug/posts/:postId').patch(async (ctx: Conte
     reason_code?: unknown
     private_note?: unknown
   }
-  ctx.assert(
-    body && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Request body must be an object',
-  )
+  validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/posts/:postId', {
+    path: ctx.params,
+    body,
+  })
   ctx.assert(typeof body.status === 'string', 422, 'status must be a string')
   ctx.assert(
     body.reason === undefined || typeof body.reason === 'string',

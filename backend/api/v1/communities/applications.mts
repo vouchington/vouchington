@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   loadCommunityForModerator,
@@ -18,6 +18,9 @@ app
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/applications', {
+      path: ctx.params,
+    })
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
@@ -49,15 +52,15 @@ app
       answers: Record<string, unknown>
       message?: string
     }
-    ctx.assert(
-      body.answers && typeof body.answers === 'object' && !Array.isArray(body.answers),
-      422,
-      'answers is required',
-    )
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/applications', {
+      path: ctx.params,
+      body,
+    })
 
     let message: string | undefined
-    if (body.message !== undefined && body.message !== null) {
-      ctx.assert(typeof body.message === 'string', 422, 'message must be a string')
+    // The contract types `message` as a string (not nullable), so a present value is
+    // already guaranteed to be a string here; only the omitted case still needs a check.
+    if (body.message !== undefined) {
       const trimmed = body.message.trim()
       if (trimmed.length > 0) {
         ctx.assert(trimmed.length <= 5000, 422, 'message must be 5000 characters or fewer')
@@ -81,19 +84,15 @@ app.route('/api/v1/communities/:idOrSlug/applications/:id').patch(async (ctx: Co
     status: 'approved' | 'rejected'
     reason?: string
   }
-  ctx.assert(
-    body && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Request body must be an object',
-  )
-  ctx.assert(body.status, 422, 'status is required')
+  validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/applications/:id', {
+    path: ctx.params,
+    body,
+  })
 
   if (body.status === 'approved') {
     await approveApplication(currentUser, id)
-  } else if (body.status === 'rejected') {
-    await rejectApplication(currentUser, id, body.reason)
   } else {
-    ctx.throw(422, "Invalid status; must be one of 'approved' or 'rejected'")
+    await rejectApplication(currentUser, id, body.reason)
   }
 
   ctx.setStatus(204)

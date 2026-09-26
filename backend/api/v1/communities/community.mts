@@ -4,6 +4,7 @@ import {
   getOptionalAuthAndRateLimit,
   requireAuth,
   setAnonymousPublicCacheHeaders,
+  validateRequestContract,
 } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
@@ -24,6 +25,7 @@ app
   .route('/api/v1/communities/:idOrSlug')
   .get(async (ctx: Context) => {
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/communities/:idOrSlug')
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug', { path: ctx.params })
     const { idOrSlug } = ctx.params as { idOrSlug: string }
 
     const { community, membership, hasPendingApplication } =
@@ -112,6 +114,10 @@ app
         403,
         'Forbidden',
       )
+      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
+        path: ctx.params,
+        body,
+      })
       updated = await updateCommunityAndSetArchiveState(
         currentUser,
         community.id,
@@ -125,8 +131,16 @@ app
         403,
         'Forbidden',
       )
+      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
+        path: ctx.params,
+        body,
+      })
       updated = await updateCommunity(currentUser, community.id, input, membership)
     } else {
+      validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
+        path: ctx.params,
+        body,
+      })
       updated = await setCommunityArchiveState(
         currentUser,
         community.id,
@@ -147,6 +161,7 @@ app
 
     const membership = await getCommunityMember(community.id, currentUser.id)
     ctx.assert(currentUserCanDeleteCommunity(currentUser, community, membership), 403, 'Forbidden')
+    validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug', { path: ctx.params })
 
     await deleteCommunity(currentUser, community.id, membership)
 

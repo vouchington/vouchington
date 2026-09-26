@@ -10,14 +10,13 @@ import {
 } from '@services/moderation-analytics'
 import { defineQueryContract, queryEnum, queryString } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 
 const RANGE_VALUES = ['today', '7d', '30d', '90d', 'all'] as const
-const VALID_RANGES = new Set<ModerationAnalyticsRange>(RANGE_VALUES)
 const rangeQuery = defineQueryContract({
   range: queryEnum(RANGE_VALUES, {
     default: '30d',
-    description: 'Aggregate window; invalid or omitted values use 30d.',
+    description: 'Aggregate window; omitted values use 30d.',
   }),
   after: queryString({
     description: 'Opaque continuation cursor for an older all-time monthly page.',
@@ -54,25 +53,28 @@ app.route('/api/v1/communities/:idOrSlug/moderation-transparency').get(async (ct
       'Forbidden',
     )
   }
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-transparency', {
+    path: ctx.params,
+    query: ctx.query,
+  })
   const range = parseRange(ctx.query.range)
   ctx.json(
     await getCommunityModerationTransparency(
       community.id,
       range,
       new Date(),
-      getAfter(ctx, ctx.query.after, range),
+      getAfter(range, ctx.query.after),
     ),
   )
 })
 
+// The contract enforces `range`'s enum, so a present value is already guaranteed valid here;
+// only the omitted case still needs a default.
 function parseRange(raw: unknown): ModerationAnalyticsRange {
-  return typeof raw === 'string' && VALID_RANGES.has(raw as ModerationAnalyticsRange)
-    ? (raw as ModerationAnalyticsRange)
-    : '30d'
+  return typeof raw === 'string' ? (raw as ModerationAnalyticsRange) : '30d'
 }
 
-function getAfter(ctx: Context, raw: unknown, range: ModerationAnalyticsRange): string | undefined {
-  if (range !== 'all' || raw === undefined) return undefined
-  ctx.assert(typeof raw === 'string', 400, 'Invalid moderation transparency cursor')
-  return raw
+// The contract enforces `after` is a string when present, so no runtime re-check is needed here.
+function getAfter(range: ModerationAnalyticsRange, raw: unknown): string | undefined {
+  return range === 'all' ? (raw as string | undefined) : undefined
 }

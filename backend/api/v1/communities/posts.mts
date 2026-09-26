@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import {
   loadCommunityForViewer,
   loadCommunityForPublicationModerator,
@@ -46,6 +50,9 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   )
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/posts', {
+    path: ctx.params,
+  })
   const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
   const after = ctx.query.after as string | undefined
   const requestedSort = ctx.query.sort as string | undefined
@@ -126,6 +133,9 @@ app.route('/api/v1/communities/:idOrSlug/posts/pending').get(async (ctx: Context
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community } = await loadCommunityForPublicationModerator(currentUser, idOrSlug)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/posts/pending', {
+    path: ctx.params,
+  })
 
   const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
   const after = ctx.query.after as string | undefined

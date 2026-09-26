@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuth, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   getCommunityMember,
@@ -27,6 +32,7 @@ app
       403,
       'Forbidden',
     )
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/bans', { path: ctx.params })
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
@@ -70,11 +76,10 @@ app
     const body = await parseJsonBody<{ user_id?: unknown; reason?: unknown; expires_at?: unknown }>(
       ctx,
     )
-    ctx.assert(
-      body && typeof body === 'object' && !Array.isArray(body),
-      422,
-      'Request body must be a JSON object',
-    )
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/bans', {
+      path: ctx.params,
+      body,
+    })
     ctx.assert(body.user_id, 422, 'user_id is required')
     ctx.assert(
       typeof body.user_id === 'string' && isUUID(body.user_id),
@@ -120,6 +125,9 @@ app.route('/api/v1/communities/:idOrSlug/bans/:userId').delete(async (ctx: Conte
     403,
     'Forbidden',
   )
+  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/bans/:userId', {
+    path: ctx.params,
+  })
 
   await liftCommunityBan(currentUser, community.id, userId)
 
