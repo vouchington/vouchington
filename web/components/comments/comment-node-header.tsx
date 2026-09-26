@@ -62,7 +62,7 @@ export function CommentNodeHeader(props: CommentNodeHeaderProps) {
             ? t('extracted.comments.commentNodeHeader.expandCommentThread_5a325f11')
             : t('extracted.comments.commentNodeHeader.collapseCommentThread_24e66c3a')
         }
-        className='relative z-10 flex h-6 w-6 items-center justify-center rounded p-0'
+        className='relative z-10 flex h-6 w-6 min-h-6 min-w-6 shrink-0 items-center justify-center rounded p-0'
         data-pw='comment-collapse-button'
         onClick={e => {
           e.stopPropagation()
@@ -155,7 +155,7 @@ function CommentAuthorName(props: CommentNodeHeaderProps) {
       <UserLink
         user={post.created_by}
         tab={userTabForPostType('comment')}
-        className='relative z-10 inline-flex min-h-6 items-center font-medium text-foreground hover:underline'
+        className='relative z-10 inline-flex min-h-6 min-w-6 shrink-0 items-center font-medium text-foreground hover:underline'
         onClick={stopCommentHeaderLinkClickPropagation}
       >
         {props.username}

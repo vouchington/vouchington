@@ -2,8 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getCommunity, getPost, getMyFinancialProfile, getTopic } from '@/lib/api/server'
 import { PostForm } from '@/components/posts/post-form'
-import { PageWithAside } from '@/components/page-with-aside'
-import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
+import { EditPostPageBody } from './edit-post-page-body'
 import { getPostSlugFromType } from '@/lib/route-configs'
 import { toDataPointTopic } from './post-form/initial-state'
 import { isOfficialAccount } from '@/lib/auth/official-account'
@@ -60,37 +59,26 @@ export async function EditPostPage({ id, postType, title }: Props) {
         )
       : undefined
 
+  const officialGateMessage = isOfficialConsumerTrustPost
+    ? t('extracted.posts.editPostPage.officialAccountsCannotEditCommunityReviews_1a312816')
+    : null
+
   return (
-    <PageWithAside
-      aside={PostsDiscoveryAside}
-      showFooter={false}
+    <EditPostPageBody
+      title={title}
+      officialGateMessage={officialGateMessage}
     >
-      <div className='max-w-2xl space-y-4'>
-        <h1
-          className='text-2xl font-bold'
-          data-pw='edit-post-page-heading'
-        >
-          {title}
-        </h1>
-        {isOfficialConsumerTrustPost ? (
-          <p
-            className='text-sm text-muted-foreground'
-            data-pw='official-account-edit-post-gate'
-          >
-            {t('extracted.posts.editPostPage.officialAccountsCannotEditCommunityReviews_1a312816')}
-          </p>
-        ) : (
-          <PostForm
-            postType={postType}
-            post={post}
-            isAdmin={user.roles.includes('administrator')}
-            userFinancialProfile={financialProfileData?.financial_profile ?? null}
-            communityVisibility={communityData?.community.visibility}
-            initialDataPointTopic={initialDataPointTopic}
-            initialDiscussionCategories={initialDiscussionCategories}
-          />
-        )}
-      </div>
-    </PageWithAside>
+      {officialGateMessage == null ? (
+        <PostForm
+          postType={postType}
+          post={post}
+          isAdmin={user.roles.includes('administrator')}
+          userFinancialProfile={financialProfileData?.financial_profile ?? null}
+          communityVisibility={communityData?.community.visibility}
+          initialDataPointTopic={initialDataPointTopic}
+          initialDiscussionCategories={initialDiscussionCategories}
+        />
+      ) : null}
+    </EditPostPageBody>
   )
 }

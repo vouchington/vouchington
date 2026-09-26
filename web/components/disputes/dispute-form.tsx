@@ -61,7 +61,7 @@ export function DisputeForm({
         className='space-y-3'
         data-pw='dispute-submitted'
       >
-        <p className='text-sm text-green-700'>
+        <p className='text-sm text-green-700 dark:text-green-400'>
           {t('extracted.disputes.disputeForm.yourDisputeHasBeenSubmittedAnd_33859595')}{' '}
           <Link
             href='/my/disputes'

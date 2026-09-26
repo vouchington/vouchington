@@ -1,0 +1,52 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { PodcastEpisodePlayer } from '@/components/feed/podcast-episode-player'
+import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
+import type { PodcastEpisode } from '@/lib/podcast-player/types'
+import { newsItems, rssFeeds } from '@/storybook/entities/fixtures/feeds'
+import { StoryFrame } from '@/storybook/story-frame'
+
+const meta = {
+  title: 'Feed/Podcast Episode Player',
+  component: PodcastEpisodePlayer,
+} satisfies Meta<typeof PodcastEpisodePlayer>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+const show = rssFeeds[1]!
+const item = newsItems[1]!
+
+const episode: PodcastEpisode = {
+  episodeId: item.id,
+  enclosureUrl: 'https://feeds.example/points-podcast/weekly-points.mp3',
+  enclosureType: 'audio/mpeg',
+  durationSeconds: 1800,
+  title: 'Weekly points roundup: Sapphire Reserve changes',
+  showId: show.id,
+  showTitle: show.title,
+  showHref: '/topics/fintech-daily',
+}
+
+export const WeeklyPoints: Story = {
+  args: { episode },
+  render: args => (
+    <StoryFrame>
+      <PodcastPlayerProvider>
+        <PodcastEpisodePlayer {...args} />
+      </PodcastPlayerProvider>
+    </StoryFrame>
+  ),
+}
+
+export const MissingDuration: Story = {
+  args: {
+    episode: { ...episode, durationSeconds: undefined, title: 'Lounge access office hours' },
+  },
+  render: args => (
+    <StoryFrame>
+      <PodcastPlayerProvider>
+        <PodcastEpisodePlayer {...args} />
+      </PodcastPlayerProvider>
+    </StoryFrame>
+  ),
+}
