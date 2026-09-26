@@ -3,6 +3,18 @@ import { EditPostPageBody } from '@/components/posts/edit-post-page-body'
 import { PostForm } from '@/components/posts/post-form'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import {
+  clearTopicSearchFixture,
+  setTopicSearchFixture,
+} from '@/storybook/mocks/client-api-instance'
+import {
+  clearImageUploadFixture,
+  setImageUploadFixture,
+} from '@/storybook/mocks/image-upload-fixture'
+import {
+  clearSlugAvailabilityFixture,
+  setSlugAvailabilityFixture,
+} from '@/storybook/mocks/slug-availability-fixture'
+import {
   clearStoryMutationFixture,
   setStoryMutationFixture,
 } from '@/storybook/mocks/story-mutation-fixture'
@@ -14,7 +26,15 @@ const meta = {
   component: EditPostPageBody,
   beforeEach() {
     setStoryMutationFixture()
-    return () => clearStoryMutationFixture()
+    setSlugAvailabilityFixture()
+    setTopicSearchFixture()
+    setImageUploadFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearSlugAvailabilityFixture()
+      clearTopicSearchFixture()
+      clearImageUploadFixture()
+    }
   },
 } satisfies Meta
 

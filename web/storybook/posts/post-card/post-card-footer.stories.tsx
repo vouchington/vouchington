@@ -1,11 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostCardFooter } from '@/components/posts/post-card/post-card-footer'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { discussionPost, electionFor, metricsFor, reviewPost } from '../fixtures'
 
 const meta = {
   title: 'Posts/Post Card Footer',
   component: PostCardFooter,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

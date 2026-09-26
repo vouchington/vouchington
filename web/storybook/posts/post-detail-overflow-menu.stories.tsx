@@ -1,12 +1,28 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { userEvent, within } from 'storybook/test'
 import { PostDetailOverflowMenu } from '@/components/posts/post-detail-overflow-menu'
+import {
+  clearPinnedPostsFixture,
+  setPinnedPostsFixture,
+} from '@/storybook/mocks/pinned-posts-fixture'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { creditCardCommunity, discussionPost, postAuthor } from './fixtures'
 
 const meta = {
   title: 'Posts/Post Detail Overflow Menu',
   component: PostDetailOverflowMenu,
+  beforeEach() {
+    setStoryMutationFixture()
+    setPinnedPostsFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearPinnedPostsFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta
