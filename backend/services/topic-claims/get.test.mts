@@ -35,6 +35,7 @@ describe('getTopicClaimById', () => {
     expect(found).not.toBeNull()
     expect(found!.id).toBe(claim.id)
     expect(found!.topic_id).toBe(topicId)
+    expect(found).not.toHaveProperty('verification_token_hash')
   })
 
   it('returns null for unknown id', async () => {

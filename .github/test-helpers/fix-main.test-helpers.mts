@@ -1,7 +1,4 @@
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 
 export type WorkflowJob = {
@@ -39,36 +36,3 @@ export const harnessDispatch = readFileSync('.github/workflows/harness-dispatch.
 export const fixMainPrompt = readFileSync('docs/prompts/automation/fix-main.md', 'utf8')
 export const parsedMain = load(fixMain) as Workflow
 export const parsedDispatch = load(harnessDispatch) as Workflow
-
-export function renderCodexFixMainPrompt(relatedCandidates: string) {
-  const cwd = mkdtempSync(join(tmpdir(), 'fix-main-prompt-'))
-  const outputPath = join(cwd, 'prompt.md')
-
-  try {
-    execFileSync(
-      process.execPath,
-      [
-        'ci/render-harness-prompt.mts',
-        '--template',
-        'docs/prompts/automation/fix-main.md',
-        '--output',
-        outputPath,
-        '--var',
-        'WORKFLOW_NAME=CI',
-        '--var',
-        'RUN_URL=https://github.com/vouchington/vouchington/actions/runs/123',
-        '--var',
-        'RUN_ID=123',
-        '--var',
-        'COMMIT_SHA=abcdef123456',
-        '--var',
-        `RELATED_CANDIDATES=${relatedCandidates}`,
-      ],
-      { cwd: process.cwd(), stdio: 'pipe' },
-    )
-
-    return readFileSync(outputPath, 'utf8')
-  } finally {
-    rmSync(cwd, { force: true, recursive: true })
-  }
-}

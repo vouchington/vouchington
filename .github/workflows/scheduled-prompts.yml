@@ -102,6 +102,7 @@ jobs:
             ${{ steps.select.outputs.completion_mode == 'issue' &&
                 'docs/prompts/automation/scheduled-issue.md' ||
                 'docs/prompts/automation/scheduled-prompt.md' }}
+          merge-authority-doc: docs/development/merge-authority.md
           vars: |
             PROMPT_PATH=${{ steps.select.outputs.prompt_path }}
             PROMPT_NAME=${{ steps.select.outputs.prompt_name }}

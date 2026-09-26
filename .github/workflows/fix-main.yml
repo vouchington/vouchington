@@ -165,6 +165,7 @@ jobs:
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
           template: docs/prompts/automation/fix-main.md
+          merge-authority-doc: docs/development/merge-authority.md
           vars: |
             WORKFLOW_NAME=${{ github.event.workflow_run.name }}
             RUN_URL=${{ github.event.workflow_run.html_url }}

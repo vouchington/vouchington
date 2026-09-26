@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -76,6 +76,13 @@ export function DisputeReviewDialog({
   })
   const turnstile = useTurnstileToken()
 
+  useEffect(() => {
+    if (open) return
+
+    const resetTimeout = setTimeout(() => dispatch({ type: 'reset' }), 300)
+    return () => clearTimeout(resetTimeout)
+  }, [open])
+
   async function handleSubmit(e: { preventDefault: () => void }) {
     e.preventDefault()
     if (!state.reason || !state.claimText.trim()) return
@@ -110,13 +117,12 @@ export function DisputeReviewDialog({
 
   function handleClose() {
     onOpenChange(false)
-    setTimeout(() => dispatch({ type: 'reset' }), 300)
   }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={handleClose}
+      onOpenChange={onOpenChange}
     >
       <DialogContent
         data-pw='dispute-review-dialog'

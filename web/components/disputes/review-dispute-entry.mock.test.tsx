@@ -42,7 +42,6 @@ const verifiedClaim = {
   revoked_by_id: null,
   revocation_reason: null,
   verification_hostname_id: null,
-  verification_token_hash: null,
   verification_token_issued_at: null,
   domain_verified_at: null,
   verification_method: null,

@@ -12,7 +12,6 @@ import {
   fixMainPrompt,
   parsedDispatch,
   parsedMain,
-  renderCodexFixMainPrompt,
 } from '../test-helpers/fix-main.test-helpers.mts'
 
 type Workflow = {
@@ -123,52 +122,11 @@ describe('fix-main workflow', () => {
     expect(promptContextStep?.with?.['related-title-key']).toContain(
       'github.event.workflow_run.name',
     )
-    expect(renderStep?.with?.['vars']).toContain(
-      'needs.related-candidates.outputs.related-candidates',
+    expect(renderStep?.with?.['vars']).toMatch(
+      /^RELATED_CANDIDATES=\$\{\{ needs\.related-candidates\.outputs\.related-candidates\b/mu,
     )
+    expect(fixMainPrompt).toContain('{{RELATED_CANDIDATES}}')
     expect(renderStep?.uses).toContain('jonathanong/auto-harness/actions/harness-render-prompt@')
-  })
-
-  it('renders related candidate metadata alongside replacement instructions', () => {
-    const relatedCandidates = JSON.stringify([
-      {
-        headRefName: 'codex/ci-fix',
-        headRepoOwner: 'jongleberry',
-        isCrossRepository: false,
-        kind: 'pr',
-        labels: ['automation'],
-        number: 201,
-        title: 'Automation fix: CI @ oldsha',
-        url: 'https://github.com/vouchington/vouchington/pull/201',
-      },
-      {
-        headRefName: 'patch-1',
-        headRepoOwner: 'outside-contributor',
-        isCrossRepository: true,
-        kind: 'pr',
-        labels: ['automation', 'needs-human'],
-        number: 202,
-        title: 'Automation fix: CI @ forksha',
-        url: 'https://github.com/vouchington/vouchington/pull/202',
-      },
-      {
-        headRefName: null,
-        kind: 'issue',
-        labels: ['automation', 'workflow'],
-        number: 402,
-        title: 'Automation options: CI failure',
-        url: 'https://github.com/example/repo/issues/402',
-      },
-    ])
-
-    const rendered = renderCodexFixMainPrompt(relatedCandidates)
-
-    expect(rendered).toContain('"number":201')
-    expect(rendered).toContain('"headRefName":"codex/ci-fix"')
-    expect(rendered).toContain('"headRepoOwner":"outside-contributor"')
-    expect(rendered).toContain('"isCrossRepository":true')
-    expect(rendered).toContain('"labels":["automation","workflow"]')
-    expect(rendered).toContain('Automation options: CI failure')
   })
 
   it('binds only the Harness credential to the active dispatcher', () => {
