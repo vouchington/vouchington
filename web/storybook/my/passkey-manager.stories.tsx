@@ -1,10 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PasskeyManager } from '@/components/my/passkey-manager'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { Passkey } from '@/types/user'
 
 const meta = {
   title: 'My/Passkey Manager',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta

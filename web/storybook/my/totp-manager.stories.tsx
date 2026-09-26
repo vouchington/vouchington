@@ -1,10 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { TotpManager } from '@/components/my/totp-manager'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { TotpAuthenticator } from '@/types/user'
 
 const meta = {
   title: 'My/Totp Manager',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta

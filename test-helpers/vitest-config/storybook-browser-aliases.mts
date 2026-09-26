@@ -49,6 +49,7 @@ export const storybookMockResolveAliases: Array<{ find: string | RegExp; replace
     find: '@/lib/utils/image-url',
     replacement: storybookMock('image-url.ts'),
   },
+  { find: '@simplewebauthn/browser', replacement: storybookMock('webauthn.ts') },
   { find: 'next/image', replacement: storybookMock('next-image.tsx') },
   { find: 'next/headers', replacement: storybookMock('next-headers.ts') },
 ]

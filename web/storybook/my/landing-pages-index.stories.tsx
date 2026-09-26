@@ -1,11 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { LandingPagesIndex } from '@/components/my/landing-pages-index'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { landingPageWithItems } from '@/storybook/entities/fixtures/landing'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
 
 const meta = {
   title: 'My/Landing Pages Index',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta

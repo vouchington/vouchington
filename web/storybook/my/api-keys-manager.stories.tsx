@@ -1,12 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { ApiKeysManager } from '../../components/my/api-keys-manager'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { ApiKey } from '@/types/api-keys'
 import { storybookScopeCatalog } from './fixtures/scope-catalog'
 
 const meta = {
   title: 'My/Api Keys Manager',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta
