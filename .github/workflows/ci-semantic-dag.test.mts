@@ -137,7 +137,7 @@ describe('semantic CI dependency DAG', () => {
 
   it('never makes a PR test or Docker build wait on another test', () => {
     const jobs = workflow('.github/workflows/ci.yml').jobs
-    const allowedNeeds = new Set(['detect-changes', 'select-ci', ...staticJobs])
+    const allowedNeeds = new Set(['detect-changes', ...staticJobs])
 
     for (const job of staticGatedPrJobs) {
       expect(jobs?.[job]?.needs?.filter(need => !allowedNeeds.has(need))).toEqual([])

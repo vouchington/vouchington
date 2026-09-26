@@ -34,7 +34,7 @@ describe('backend credentialed test workflow', () => {
     expect(credentialedJob).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}')
     expect(credentialedJob).toContain('.github/actions/setup-aws')
     expect(credentialedJob).toContain(
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe "${FILES[@]}"',
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-stripe',
     )
     expect(credentialedJob).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",

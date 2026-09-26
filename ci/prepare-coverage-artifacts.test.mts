@@ -128,10 +128,9 @@ describe('Vouchington patch coverage artifact fan-in', () => {
           'test-web': { result: 'success' },
           storybook: { result: 'success' },
         }),
-        'empty',
         false,
       ),
-    ).toEqual(['tooling', 'web', 'web-storybook'])
+    ).toEqual(['tooling', 'web', 'web-storybook', 'web-storybook-browser'])
     expect(
       expectedCoverageProducerGroups(
         JSON.stringify({
@@ -139,7 +138,6 @@ describe('Vouchington patch coverage artifact fan-in', () => {
           'test-tooling': { result: 'skipped' },
           storybook: { result: 'success' },
         }),
-        'full',
         false,
       ),
     ).toEqual(['web-storybook', 'web-storybook-browser'])
@@ -149,14 +147,12 @@ describe('Vouchington patch coverage artifact fan-in', () => {
     expect(
       expectedCoverageProducerGroups(
         JSON.stringify({ 'test-portability': { result: 'success' } }),
-        'full',
         false,
       ),
     ).toEqual(['portability-linux'])
     expect(
       expectedCoverageProducerGroups(
         JSON.stringify({ 'test-portability': { result: 'success' } }),
-        'full',
         true,
       ),
     ).toEqual(['portability-linux', 'portability-macos'])
@@ -166,7 +162,6 @@ describe('Vouchington patch coverage artifact fan-in', () => {
     expect(() =>
       expectedCoverageProducerGroups(
         JSON.stringify({ 'test-new-producer': { result: 'success' } }),
-        'full',
         false,
       ),
     ).toThrowError('Successful coverage producer has no group contract: test-new-producer')

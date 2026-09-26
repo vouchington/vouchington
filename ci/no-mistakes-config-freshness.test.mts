@@ -1,36 +1,17 @@
 import { execFileSync } from 'node:child_process'
-import { globSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, matchesGlob } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
-import vitestConfig from '../vitest.config.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
-type EnvironmentConfig = {
-  exclude?: string[]
-  groups?: Array<{ limit?: unknown; type: string }>
-  include?: string[]
-  limit?: unknown
-}
-
 type NoMistakesConfig = {
-  tests?: {
-    vitest?: { projects?: Record<string, { integration_suites?: Record<string, string[]> }> }
-  }
-  test_plan?: {
-    playwright?: { environments?: Record<string, EnvironmentConfig> }
-    vitest?: { environments?: Record<string, EnvironmentConfig> }
-  }
   rules?: Array<{ name?: string; options?: Record<string, unknown>; rule?: string }>
-}
-
-type VitestProject = {
-  test?: { name?: string; include?: string[]; exclude?: string[] }
 }
 
 type OxlintConfig = {
@@ -47,33 +28,6 @@ function readNoMistakesConfig(): NoMistakesConfig {
 
 function readOxlintConfig(): OxlintConfig {
   return parseJsonc(readRepoFile('.oxlintrc.json')) as OxlintConfig
-}
-
-function getVitestProject(name: string): VitestProject {
-  const projects = (vitestConfig.test?.projects ?? []) as VitestProject[]
-  const project = projects.find(candidate => candidate.test?.name === name)
-  if (!project) {
-    throw new Error(`missing Vitest project ${name}`)
-  }
-  return project
-}
-
-function normalizeGlobPath(path: string): string {
-  return path.replaceAll('\\', '/')
-}
-
-function filterExcludedPaths(paths: string[], excludePatterns: string[]): string[] {
-  return paths
-    .map(normalizeGlobPath)
-    .filter(path => !excludePatterns.some(pattern => matchesGlob(path, normalizeGlobPath(pattern))))
-}
-
-function getVitestProjectFiles(name: string): Set<string> {
-  const project = getVitestProject(name)
-  const included = (project.test?.include ?? []).flatMap(pattern =>
-    globSync(pattern, { cwd: repoRoot }),
-  )
-  return new Set(filterExcludedPaths(included, project.test?.exclude ?? []))
 }
 
 function runOxlintOnMockBoundaryFixture(source: string): { status: number; output: string } {
@@ -118,17 +72,6 @@ describe('no-mistakes config freshness', () => {
     expect(readRepoFile('backend/agents/story-post/agent.mts')).toContain(
       '/* no-mistakes: integration=openrouter */\nexport async function callStoryPostAgent',
     )
-  })
-
-  it('normalizes glob paths before applying project exclusions', () => {
-    const included = [
-      String.raw`backend\agents\sample.openai.test.mts`,
-      String.raw`backend\agents\sample.openai.mock.test.mts`,
-    ]
-
-    expect(filterExcludedPaths(included, ['**/*.mock.test.mts'])).toEqual([
-      'backend/agents/sample.openai.test.mts',
-    ])
   })
 
   it('enables no-mistakes Next.js feature ban rules for the web project', () => {
@@ -200,63 +143,6 @@ describe('no-mistakes config freshness', () => {
     const untagged = runOxlintOnMockBoundaryFixture(mockFixture('streamOpenAIResponseEvents'))
     expect(untagged.status).not.toBe(0)
     expect(untagged.output).toContain('module-mock-boundary')
-  })
-
-  it('keeps local planner provider exclusions narrow while PR selection includes credentialed tests', () => {
-    const config = readNoMistakesConfig()
-    const vitestProjects = config.tests?.vitest?.projects ?? {}
-    const vitestEnvironments = config.test_plan?.vitest?.environments ?? {}
-    const playwrightEnvironments = config.test_plan?.playwright?.environments ?? {}
-
-    const providerExclusions = vitestEnvironments.prePush?.exclude ?? []
-    expect(providerExclusions).toEqual([
-      '**/*.openai*.test.mts',
-      '**/*.bedrock*.test.mts',
-      '**/*.stripe.test.mts',
-    ])
-    expect(vitestEnvironments.pullRequest?.exclude).toBeUndefined()
-    for (const pattern of providerExclusions) {
-      const matchedFiles = globSync(pattern, {
-        cwd: repoRoot,
-        exclude: ['**/node_modules/**', '**/.git/**'],
-      }).map(normalizeGlobPath)
-      const provider = pattern.match(/\.(openai|bedrock|stripe)/)?.[1]
-      expect(provider).toBeDefined()
-      const projectFiles = getVitestProjectFiles(`backend-${provider}`)
-      expect(matchedFiles).not.toEqual([])
-      for (const file of matchedFiles) {
-        expect(projectFiles).toContain(file)
-      }
-    }
-    expect(vitestProjects).toMatchObject({
-      'backend-aws': { integration_suites: { aws: ['aws'] } },
-      'backend-bedrock': { integration_suites: { bedrock: ['bedrock'] } },
-      'backend-openai': { integration_suites: { openai: ['openai'] } },
-    })
-    expect(getVitestProjectFiles('backend-aws')).toContain('backend/modules/aws/s3.test.mts')
-
-    expect(playwrightEnvironments.prePush?.exclude).toEqual([
-      'playwright/tests/storybook/**',
-      'playwright/credentialed/**',
-    ])
-    expect(playwrightEnvironments.prePushStorybook).toBeUndefined()
-    expect(playwrightEnvironments.credentialed?.include).toEqual(['playwright/credentialed/**'])
-    for (const pattern of playwrightEnvironments.credentialed?.include ?? []) {
-      expect(globSync(pattern, { cwd: repoRoot })).not.toEqual([])
-    }
-
-    // Regression #9440: `prePush`'s env-level `limit` pools its budget across every group,
-    // including `direct` -- the files the developer directly changed. Only fan-out-capable
-    // groups (`dependencies`, `coverage`) may carry their own scoped budget; `direct` must stay
-    // unbounded, or `no-mistakes tests plan --environment prePush` (the optional planning recipe
-    // in docs/checklists/commit.md) can silently omit those files. Re-adding an env-level `limit`
-    // would re-pool the budget even with these per-group limits in place, so assert it absent too.
-    for (const prePush of [vitestEnvironments.prePush, playwrightEnvironments.prePush]) {
-      expect(prePush?.limit).toBeUndefined()
-      for (const group of prePush?.groups ?? []) {
-        expect(group.limit !== undefined).toBe(group.type !== 'direct')
-      }
-    }
   })
 
   it('keeps filesystem exceptions limited to current files', () => {

@@ -6,18 +6,10 @@
 | -------------------------- | -------------------------------------- | ---- |
 | `pnpm run test:playwright` | E2E, a11y page scans, visual snapshots | web  |
 
-In CI, PRs run the Playwright specs selected by the `no-mistakes` N-API test-plan
-environment `pullRequest` (direct, coverage, dependency, and 1% sample groups), falling
-back to the full suite for configured high-risk dependency changes. Main pushes run the
-full suite when Playwright tests run at all — docs-only
-changes short-circuit CI and skip all test jobs. See [ci.md § Playwright CI Selection](ci.md#playwright-ci-selection) for the full rules and configuration variables.
-
-Inspect local planner behavior with:
-
-```bash
-pnpm exec no-mistakes tests plan playwright --environment pullRequest --changed-file web/components/sidebar-site-footer.tsx --changed-file web/app/layout.tsx --format json > plan.json
-pnpm exec no-mistakes tests why playwright/tests/navigation/sidebar.spec.mts --plan plan.json --format json
-```
+In CI, pull requests, merge groups, and `main` run the full Playwright suite whenever the
+Playwright path filter matches or a pull request changes workflows or local actions; docs-only
+changes skip all test jobs. See [area test suites](ci.md#area-test-suites). Reproduce the CI run
+locally with `pnpm run test:playwright`.
 
 ### Credentialed E2E Suite
 
@@ -32,8 +24,8 @@ pnpm exec playwright test --config playwright.credentialed.config.mts
 
 Individual specs skip themselves when credentials are absent (`S3_AWS_ACCESS_KEY_ID`,
 `AWS_ACCESS_KEY_ID`, or `OPENAI_API_KEY`), so the command is safe to run without credentials.
-In CI, the suite runs only on trusted PRs via the `test-playwright-credentialed` job.
-See [ci.md § Playwright CI Selection](ci.md#playwright-ci-selection) for details.
+In CI, the suite runs only in a trusted secret context via the `test-playwright-credentialed`
+job; see [CI Job Conditions](reference-ci-ci-job-conditions.md).
 
 Playwright and web-integration tests always run against **production builds** — never dev
 servers. `pnpm run test:playwright` and `pnpm run test:integration:web` automatically build

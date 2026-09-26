@@ -16,43 +16,17 @@ on:
         required: false
         type: boolean
         default: false
-      full_suite:
-        description: 'Run every shard with no test-file narrowing (default for main and workflow_dispatch)'
-        type: boolean
-        default: true
-      run_tests:
-        description: 'Run Vitest in the web-integration shard runner'
-        type: boolean
-        default: true
       shared_build_available:
         description: 'A preceding job in this run produced the shared web build'
         type: boolean
         default: false
-      shard_total_override:
-        description: 'Explicit shard count for a selected run'
-        required: false
-        type: string
-        default: ''
-      selected_test_files:
-        description: 'Newline-delimited selected test files (vouchington-tooling/gha-selected-files) to run instead of the full project when full_suite is false'
-        type: string
-        default: ''
   workflow_dispatch:
     inputs:
-      run_tests:
-        description: 'Run Vitest in the web-integration shard runner'
-        type: boolean
-        default: true
       upload_vitest_blob_artifact:
         description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
         required: false
         type: boolean
         default: false
-      shard_total_override:
-        description: 'Explicit shard count for a selected run'
-        required: false
-        type: string
-        default: ''
 
 permissions:
   contents: read
@@ -80,8 +54,6 @@ jobs:
           package-manager-cache: false
       - name: Resolve web-integration shard total
         id: shard-total
-        env:
-          SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}
         run: node ci/vitest/shard-total.mts test-web-integration
       - uses: ./.github/actions/make-shard-matrix
         id: shards
@@ -162,7 +134,6 @@ jobs:
           web-build-fs-cache-enabled: ${{ vars.WEB_BUILD_FS_CACHE_ENABLED }}
 
       - name: Run web integration tests
-        if: ${{ inputs.run_tests }}
         env:
           IMAGE_ORIGIN: http://127.0.0.1:3100
           CI_PROJECT: web-integration
@@ -171,31 +142,14 @@ jobs:
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: web-integration-shard-${{ matrix.shard }}.junit.xml
           VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-integration-shard-${{ matrix.shard }}.json
-          FULL_SUITE: ${{ inputs.full_suite }}
-          SELECTED_TEST_FILES: ${{ inputs.selected_test_files }}
-        run: |
-          # SELECTED_TEST_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
-          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion below
-          # preserve paths containing spaces or shell glob metacharacters. This avoids
-          # `mapfile` (bash 4.0+) to stay portable to macOS `/bin/bash` 3.2.
-          FILES=()
-          if [ "${FULL_SUITE:-true}" != "true" ]; then
-            if [ -z "$SELECTED_TEST_FILES" ]; then
-              FILES=("NO_TESTS_MATCHING_SELECTION")
-            else
-              while IFS= read -r file; do
-                if [ -n "$file" ]; then FILES+=("$file"); fi
-              done <<< "$SELECTED_TEST_FILES"
-            fi
-          fi
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
+        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
         timeout-minutes: 10
 
       - name: Preserve full web-integration-shard-${{ matrix.shard }} LCOV for Codecov
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
           if [ -f coverage/lcov.info ]; then
@@ -205,7 +159,7 @@ jobs:
       - name: Stamp web-integration-shard-${{ matrix.shard }} coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -213,7 +167,7 @@ jobs:
         run: node ci/coverage-manifest.mts patch "web-integration-shard-${{ matrix.shard }}" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
       - name: Upload web-integration-shard-${{ matrix.shard }} vitest blob to GitHub (fallback)
         id: vitest-blob-fallback-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -221,7 +175,7 @@ jobs:
           suite: web-integration-shard-${{ matrix.shard }}
       - name: Upload web-integration-shard-${{ matrix.shard }} vitest blob to GitHub (fallback attempt 2)
         id: vitest-blob-fallback-1-retry
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
         timeout-minutes: 3
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -230,7 +184,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted web-integration-shard-${{ matrix.shard }} vitest blob
         id: vitest-blob-outcome-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-blob
@@ -240,7 +194,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Persist web-integration-shard-${{ matrix.shard }} Vitest report attempt (attempt 1)
         id: vitest-report-attempt-1
-        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-report-attempt
@@ -248,7 +202,7 @@ jobs:
           suite: web-integration-shard-${{ matrix.shard }}
       - name: Persist web-integration-shard-${{ matrix.shard }} Vitest report attempt (attempt 2)
         id: vitest-report-attempt-1-retry
-        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
+        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-report-attempt
@@ -257,7 +211,7 @@ jobs:
           name-suffix: -retry
       - name: Assert web-integration-shard-${{ matrix.shard }} Vitest report attempt persisted
         id: vitest-report-attempt-1-outcome
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-report-attempt
@@ -267,7 +221,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload web-integration-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -275,7 +229,7 @@ jobs:
           suite: web-integration-shard-${{ matrix.shard }}
       - name: Upload web-integration-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -284,7 +238,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted web-integration-shard-${{ matrix.shard }} coverage pair
         id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -293,7 +247,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload full web-integration-shard-${{ matrix.shard }} LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov

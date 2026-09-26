@@ -22,7 +22,6 @@
       "complexity": 53
     },
     { "scope": "tooling", "file": ".github/workflows/workflow-test-helpers.mts", "complexity": 55 },
-    { "scope": "tooling", "file": "ci/vitest/ci-select.mts", "complexity": 107 },
     { "scope": "tooling", "file": "dev/agent-issue-labels/batch/manifest.mts", "complexity": 57 },
     {
       "scope": "tooling",

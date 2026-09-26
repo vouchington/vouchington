@@ -11,7 +11,6 @@ import {
   detectChangesWorkflow,
   gateScript,
   gateWrapper,
-  selectCiWorkflow,
   testCoverageWorkflow,
   testsProcessingWorkflow,
   testsProcessingWorkflowText,
@@ -61,10 +60,10 @@ describe('CI aggregate gates', () => {
     const testPlaywrightJob = workflow.jobs?.['test-playwright']
     expect(testPlaywrightJob?.if).toContain('!cancelled()')
     expect(testPlaywrightJob?.if).toContain("needs.static-code-analysis.result == 'success'")
-    // Path/topology selection (docs-only gate, select-ci wiring) is unrelated to the removed
+    // Area path selection (docs-only gate, playwright filter) is unrelated to the removed
     // dedupe/label outputs and stays intact; only the has-playwright-full label override is gone.
     expect(testPlaywrightJob?.if).toContain("needs.detect-changes.outputs.docs-only != 'true'")
-    expect(testPlaywrightJob?.if).toContain("needs.select-ci.outputs.run-test-playwright == 'true'")
+    expect(testPlaywrightJob?.if).toContain("needs.detect-changes.outputs.playwright == 'true'")
     expect(testPlaywrightJob?.if).not.toContain('has-playwright-full')
     expect(testPlaywrightJob?.if).not.toContain('pr-labels-json')
 
@@ -94,12 +93,7 @@ describe('CI aggregate gates', () => {
     expect(gateScript).toContain('"result":\\s*"(failure|cancelled)"')
   })
 
-  it('runs select-ci and test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {
-    expect(selectCiWorkflow.jobs?.['select-ci']?.if).toBe(
-      "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group')",
-    )
-    expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('docs-only')
-    expect(selectCiWorkflow.jobs?.['select-ci']?.if).not.toContain('has-vitest-full')
+  it('runs test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {
     expect(workflow.jobs?.['test-coverage']?.if).not.toContain('docs-only')
     expect(workflow.jobs?.['static-code-analysis']?.if).not.toContain(
       "needs.detect-changes.outputs.docs-only != 'true'",
@@ -107,12 +101,6 @@ describe('CI aggregate gates', () => {
     expect(workflow.jobs?.['static-code-analysis']?.with).toMatchObject({
       docs_only: "${{ needs.detect-changes.outputs.docs-only == 'true' }}",
     })
-    expect(workflow.jobs?.['test-web']?.if).toContain(
-      "needs.select-ci.outputs.skip-test-web != 'true'",
-    )
-    expect(workflow.jobs?.['test-backend-unit']?.if).toContain(
-      "needs.select-ci.outputs.skip-test-backend-unit != 'true'",
-    )
   })
 
   it('moves expensive report processing behind the reusable processing boundary', () => {

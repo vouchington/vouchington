@@ -4,8 +4,8 @@ Next.js app. Use [README.md](README.md) and [tests.md](../docs/development/tests
 the [local-site-testing skill](../.agents/skills/local-site-testing/SKILL.md) for local QA and the
 [agent-workflow implementation rules](../.agents/skills/agent-workflow/implementation.md)
 for PR evidence; never commit screenshots.
-Batch all compatible changed web source files in one planner invocation before running selected
-tests; follow the [canonical before-push recipe](../docs/checklists/commit.md#before-pushing).
+Before pushing, run the full suites of the web Vitest projects your change touches; follow the
+[canonical before-push recipe](../docs/checklists/commit.md#before-pushing).
 Run production Next and Storybook builds through the package scripts (`next build` /
 `storybook build` directly — no build lock, since GitHub-hosted runners are single-job VMs).
 

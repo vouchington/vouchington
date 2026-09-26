@@ -198,10 +198,9 @@ describe('Vitest CI triggers', () => {
     expectFilterMatches('playwright-credentialed', sharedPlaywrightInfrastructure)
   })
 
-  it('keeps selector tests and Cloudflare test support out of Playwright runtime CI', () => {
+  it('keeps Playwright CI tooling tests and Cloudflare test support out of Playwright runtime CI', () => {
     expectRefinedRuntimeFilterMisses('playwright', [
-      'ci/playwright/ci-select.test.mts',
-      'ci/playwright/__tests__/selection.test.mts',
+      'ci/playwright/shard-total.test.mts',
       'cloudflare-worker/test-helpers/src/mock-env.mts',
       'cloudflare-worker/src/auth/test-jwt-fixtures.mts',
       'dev/initialize',

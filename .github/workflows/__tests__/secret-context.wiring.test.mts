@@ -40,7 +40,7 @@ describe('secret-backed workflow context gates (wiring and routing)', () => {
 
     expect(pathFilters).toContain("- '.github/workflows/**/*.test.mts'")
     expect(toolingWorkflow).toContain(
-      'node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"',
+      'node ci/tooling-test-runner.mts --workflow-projects --bail=3',
     )
     expect(toolingWorkflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",

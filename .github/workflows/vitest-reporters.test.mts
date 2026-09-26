@@ -69,9 +69,7 @@ describe('Vitest CI reporters', () => {
     // both jobs are called by the same test-tooling workflow, whose fan-in owns one tooling
     // report. A second producer here would require a separate top-level expectation and would
     // make the existing tooling artifact ambiguous.
-    expect(isolatedRouteBounds.map(({ env }) => env)).toEqual([
-      { VITEST_SELECTED_FILES: "${{ !inputs.full_suite && inputs.selected_test_files || '' }}" },
-    ])
+    expect(isolatedRouteBounds.map(({ env }) => env)).toEqual([{}])
 
     for (const { command, env } of commands.filter(
       ({ command }) => !command.includes('--project i18n-route-bounds'),

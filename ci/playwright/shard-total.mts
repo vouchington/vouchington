@@ -1,7 +1,7 @@
-import { globSync } from 'node:fs'
+import { appendFileSync, globSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 import { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
-import { isRunnablePlaywrightSpec } from '../test-plan.mts'
 
 export { GITHUB_MATRIX_MAX_JOBS } from '../shard-limits.mts'
 
@@ -13,6 +13,11 @@ export const PLAYWRIGHT_ESTIMATED_SECONDS_PER_SPEC = 6.1
 // steps so each playwright-tests job targets seven to eight minutes under its ten-minute cap; the
 // current full suite resolves to six shards.
 export const PLAYWRIGHT_EXECUTION_BUDGET_SECONDS = 350
+
+export function isRunnablePlaywrightSpec(file: string): boolean {
+  return file.startsWith('playwright/tests/') && file.endsWith('.spec.mts')
+}
+
 function validatedShardTotalOverride(override?: string): number | undefined {
   if (override === undefined || override === '') return undefined
   if (!/^[1-9]\d*$/.test(override)) {
@@ -53,62 +58,22 @@ export function playwrightShardTotal(specFileCount: number, override?: string): 
   return shardTotal
 }
 
+export function shardMatrix(shardTotal: number): number[] {
+  return Array.from({ length: shardTotal }, (_, index) => index + 1)
+}
+
 export function runnablePlaywrightSpecCount(worktreeRoot: string): number {
   return globSync('playwright/tests/**/*', { cwd: worktreeRoot }).filter(isRunnablePlaywrightSpec)
     .length
 }
 
-type PlaywrightSelectionInput =
-  | {
-      mode: 'full'
-      fullSuiteSpecCount: number
-      reason: string
-      shardTotalOverride?: string
-    }
-  | {
-      mode: 'selected'
-      selectedFiles: readonly string[]
-      reason: string
-      shardTotalOverride?: string
-    }
-
-export interface PlaywrightSelectionOutputs {
-  skip: 'true' | 'false'
-  fullSuite: 'true' | 'false'
-  files: string[]
-  shardTotal: string
-  reason: string
-}
-
-export function playwrightSelectionOutputs(
-  input: PlaywrightSelectionInput,
-): PlaywrightSelectionOutputs {
-  if (input.mode === 'full') {
-    return {
-      skip: 'false',
-      fullSuite: 'true',
-      files: [],
-      shardTotal: String(playwrightShardTotal(input.fullSuiteSpecCount, input.shardTotalOverride)),
-      reason: input.reason,
-    }
-  }
-
-  const files = input.selectedFiles.filter(isRunnablePlaywrightSpec)
-  validatedShardTotalOverride(input.shardTotalOverride)
-  if (files.length === 0) {
-    return {
-      skip: 'true',
-      fullSuite: 'false',
-      files: [],
-      shardTotal: '1',
-      reason: 'skip - no affected tests',
-    }
-  }
-  return {
-    skip: 'false',
-    fullSuite: 'false',
-    files,
-    shardTotal: String(playwrightShardTotal(files.length, input.shardTotalOverride)),
-    reason: input.reason,
-  }
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const total = playwrightShardTotal(
+    runnablePlaywrightSpecCount(process.env['GITHUB_WORKSPACE'] ?? process.cwd()),
+    process.env['SHARD_TOTAL_OVERRIDE'],
+  )
+  const outputs = `shard-total=${total}\nshard-matrix=${JSON.stringify(shardMatrix(total))}\n`
+  const output = process.env['GITHUB_OUTPUT']
+  if (output) appendFileSync(output, outputs)
+  console.log(outputs.trimEnd())
 }

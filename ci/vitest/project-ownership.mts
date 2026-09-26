@@ -1,8 +1,8 @@
 // Canonical Vitest project ownership model. Every registered Vitest project must appear in
 // exactly one job's `projects` list here. This is the single source of truth that:
-//   - `ci/vitest/project-ownership-registry.mts` derives routing maps/sets from (imported by
-//     `ci/vitest/ci-select.mts` in turn — mirrors the tooling-project-policies.mts /
-//     tooling-project-registry.mts split: this file is raw data, that one is derived collections).
+//   - `ci/vitest/project-ownership-registry.mts` derives the project-to-job map and shard policies
+//     from it (mirrors the tooling-project-policies.mts / tooling-project-registry.mts split: this
+//     file is raw data, that one is derived collections).
 //   - `.github/workflows/vitest-project-ownership.test.mts` validates against the real
 //     `--project` commands in `.github/workflows/tests-*.yml` / `storybook.yml`.
 //   - `ci/vitest/generate-ownership-table.mts` renders into `.github/workflows/VITEST.md`.
@@ -21,7 +21,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'test-ts-shared',
     workflow: 'tests-ts-shared.yml',
     jobLabel: 'ts-shared',
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(['ts-shared']),
   },
@@ -29,7 +28,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'test-tooling',
     workflow: 'tests-tooling.yml',
     jobLabel: 'tooling',
-    sideDuty: false,
     // Derived from toolingWorkflowProjectNames, not re-enumerated — see tooling-project-registry.mts.
     invocation: 'tooling-registry',
     projects: noCredential(toolingWorkflowProjectNames),
@@ -38,7 +36,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'test-tooling',
     workflow: 'tests-tooling.yml',
     jobLabel: 'i18n-route-bounds',
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(dedicatedToolingWorkflowProjectNames),
   },
@@ -46,7 +43,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'test-portability',
     workflow: 'tests-portability.yml',
     jobLabel: 'Linux + macOS portability',
-    sideDuty: false,
     // Derived from VITEST_PROJECT_GROUPS.portability, not re-enumerated — see run-vitest-project-group.mts.
     invocation: 'portability-group',
     projects: noCredential(VITEST_PROJECT_GROUPS.portability),
@@ -56,7 +52,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     workflow: 'tests-backend-modules.yml',
     jobLabel: 'backend-modules',
     // Its depcruise/tsc static gates moved to checks-static.yml; pure Vitest now.
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential([
       'backend/data-stores/analytics',
@@ -77,7 +72,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       reportPrefix: 'backend-shard',
       filesPerShard: 350,
     },
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential([
       'backend/analytics-integration',
@@ -90,7 +84,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'test-postgres-schema',
     workflow: 'tests-postgres-schema.yml',
     jobLabel: 'postgres-schema-tests',
-    sideDuty: true,
     invocation: 'literal',
     projects: noCredential(['backend-postgres-schema', 'backend-activitypub-capacity']),
   },
@@ -98,7 +91,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'test-backend-credentialed',
     workflow: 'tests-backend-credentialed.yml',
     jobLabel: 'backend-credentialed-tests',
-    sideDuty: false,
     invocation: 'literal',
     projects: [
       { project: 'backend-aws', credential: 'AWS tests role' },
@@ -117,7 +109,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       reportPrefix: 'web-shard',
       filesPerShard: 500,
     },
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(['web']),
   },
@@ -125,7 +116,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     orchestratorJob: 'storybook',
     workflow: 'storybook.yml',
     jobLabel: 'storybook',
-    sideDuty: false,
     invocation: 'storybook',
     projects: [
       { project: 'web-storybook', credential: NONE },
@@ -146,7 +136,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       reportPrefix: 'web-api-shard',
       filesPerShard: 64,
     },
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(['web-api']),
   },
@@ -159,7 +148,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
       reportPrefix: 'web-integration-shard',
       shards: 1,
     },
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(['web-integration']),
   },
@@ -168,7 +156,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     workflow: 'tests-lambdas.yml',
     jobLabel: 'lambdas-tests',
     // Its depcruise/tsc gates (and the SES ARM64 artifact build) moved to checks-static.yml.
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(['lambdas', 'lambdas-mocks']),
   },
@@ -177,7 +164,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     workflow: 'tests-cloudflare-worker.yml',
     jobLabel: 'cloudflare-worker-tests',
     // Its tsc/smoke/wrangler-dry-run static gates moved to checks-static.yml; pure Vitest now.
-    sideDuty: false,
     invocation: 'literal',
     projects: noCredential(['cloudflare-worker', 'cloudflare-worker-mocks']),
   },

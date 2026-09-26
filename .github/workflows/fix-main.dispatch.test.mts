@@ -237,14 +237,6 @@ describe('fix-main workflow', () => {
     expect(fixMainPrompt).toContain('ci/transient-retry/rules.mts')
   })
 
-  it('requires immediate and selector fixes for a Vitest PR-selection miss', () => {
-    expect(fixMainPrompt).toContain('## Vitest PR-selection miss investigation')
-    expect(fixMainPrompt).toContain('`select-ci`')
-    expect(fixMainPrompt).toContain('`ci/vitest/ci-select.mts`')
-    expect(fixMainPrompt).toContain('fix both the immediate breakage and the miss')
-    expect(fixMainPrompt).toContain('expected-but-unselected test')
-  })
-
   it('runs the immutable built-in client without caller authoring credentials', () => {
     const dispatchJob = parsedDispatch.jobs?.dispatch
     expect(

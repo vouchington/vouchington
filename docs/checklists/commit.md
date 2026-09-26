@@ -25,22 +25,11 @@ Before the first push, run these cheap local steps (also covered in [agent-workf
 3. `git diff --name-only origin/main...HEAD` — scope check before rebasing
 4. `pnpm exec oxfmt --check <changed supported files>`
 
-Optional planning (not a push requirement): batch compatible sources with `pnpm exec no-mistakes tests plan vitest --environment prePush --changed-file <source-file-a> --changed-file <source-file-b> --format paths`. For long lists, use `--changed-files <manifest>`.
-
-That changed-file form is local planning without a comparison baseline. For a dependency manifest or
-lockfile change, reproduce the semantic plan from the exact two revisions instead; do not infer that
-an empty direct/dependency group means that the dependency is safe:
-
-```bash
-git fetch origin main
-pnpm exec no-mistakes tests plan vitest --environment pullRequest --base origin/main --head HEAD --format json
-pnpm exec no-mistakes tests plan playwright --environment pullRequest --base origin/main --head HEAD --format json
-```
-
-Use `--format json` to inspect causal reasons separately from the safety sample and to surface a
-missing-baseline or unsupported-dependency warning. The configured environment then decides whether
-that warning keeps its sample, falls back to a broader suite, or both; it must never be treated as a
-silent causal zero-selection result.
+Optional broader check (not a push requirement): run the full suites of the areas you touched —
+`pnpm exec vitest run --project <project-a> --project <project-b>` for each owning project in
+[VITEST.md](../../.github/workflows/VITEST.md), and `pnpm run test:playwright` when
+Playwright-relevant paths changed. CI never selects individual test files; it runs the full suite
+of every area whose path filter matches ([area test suites](../development/ci.md#area-test-suites)).
 
 ## See Also
 

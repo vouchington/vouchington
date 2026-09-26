@@ -1,8 +1,6 @@
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 
-import { decodeSelectedFiles } from 'vouchington-tooling/gha-selected-files'
-
 export function makeAttemptEnv(
   env: NodeJS.ProcessEnv,
   attempt: number,
@@ -90,11 +88,5 @@ export function vitestArgs(env: NodeJS.ProcessEnv): string[] {
     'web-storybook-browser',
   ]
   if (env.STORYBOOK_BROWSER_COVERAGE !== '0') args.push('--coverage')
-  // Empty/absent VITEST_SELECTED_FILES means no positional filter, so Vitest runs every
-  // story in the project — the fail-open default for both full-suite runs and PRs where
-  // no-mistakes found nothing under web-storybook-browser to narrow. The value is
-  // newline-delimited (`vouchington-tooling/gha-selected-files` encodeSelectedFiles), not
-  // space-delimited, so story paths containing spaces or glob metacharacters survive.
-  args.push(...decodeSelectedFiles(env.VITEST_SELECTED_FILES))
   return args
 }

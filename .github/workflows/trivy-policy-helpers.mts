@@ -10,7 +10,6 @@ import {
   isComponentSbomGeneration,
   isTrivyPackageScanCommand,
   trivyPackageScanCommandSegments,
-  trivyPackageScanSubcommand,
 } from './trivy-policy-command-helpers.mts'
 
 export {
@@ -19,7 +18,6 @@ export {
   isComponentSbomGeneration,
   isTrivyPackageScanCommand,
   trivyPackageScanCommandSegments,
-  trivyPackageScanSubcommand,
 }
 
 export type Ignore = Partial<Record<'expired_at' | 'id' | 'purls' | 'statement', unknown>>
