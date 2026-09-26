@@ -1,22 +1,24 @@
 # MCP Server API
 
-Stateless MCP Streamable HTTP endpoint. Exposes user-scoped Voucha tools to MCP clients via API key authentication. Admin tools use the separate admin MCP endpoint documented in [../admin/README.md](../admin/README.md#mcp-clients).
+Stateless MCP Streamable HTTP endpoint. Exposes user-scoped Voucha tools to MCP clients that authenticate with an OAuth access token or an MCP API key. Admin tools use the separate admin MCP endpoint documented in [../admin/README.md](../admin/README.md#mcp-clients).
 
 Public discovery documents such as `/llms.txt` advertise this endpoint so that agents use MCP instead of browser automation; see [Agent Access](../../../../docs/requirements/platform/agent-access.md).
 
 ## Endpoints
 
-| Method   | Route         | Authentication     | HTTP Caching | Description                 |
-| -------- | ------------- | ------------------ | ------------ | --------------------------- |
-| `POST`   | `/api/v1/mcp` | Bearer MCP API key | No           | Handle MCP JSON-RPC request |
-| `GET`    | `/api/v1/mcp` | —                  | No           | 405 Method Not Allowed      |
-| `DELETE` | `/api/v1/mcp` | —                  | No           | 405 Method Not Allowed      |
+| Method   | Route         | Authentication                       | HTTP Caching | Description                 |
+| -------- | ------------- | ------------------------------------ | ------------ | --------------------------- |
+| `POST`   | `/api/v1/mcp` | Bearer OAuth access token or API key | No           | Handle MCP JSON-RPC request |
+| `GET`    | `/api/v1/mcp` | —                                    | No           | 405 Method Not Allowed      |
+| `DELETE` | `/api/v1/mcp` | —                                    | No           | 405 Method Not Allowed      |
 
 ## Authentication
 
-Uses Bearer API keys of type `mcp` (not session cookies). The API key must have `mcp.user:read` scope. Write operations (non-read-only user tools) additionally require `mcp.user:write`.
+The bearer credential is an OAuth access token bound to this resource, or an API key of type `mcp`. Session cookies are never read. Each tool declares the scopes it needs; `mcp.user:read` and `mcp.user:write` cover every user read and write scope.
 
-Create MCP API keys at `POST /api/v1/my/api-keys` with `type: "mcp"`.
+MCP clients that support OAuth need only the endpoint URL. A request without a credential gets `401` with a `WWW-Authenticate` challenge that names the [protected-resource metadata](../../oauth/README.md#routes), and a single `tools/call` that lacks a scope gets `403` with `error="insufficient_scope"` and the scopes to re-authorize with. See [MCP challenges](../../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md#mcp-challenges).
+
+For clients without OAuth, create an MCP API key at `POST /api/v1/my/api-keys` with `type: "mcp"`. API-key scope failures stay in-band JSON-RPC errors.
 
 Codex:
 
@@ -43,12 +45,13 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 
 ## Performance
 
-| Endpoint         | Round Trips | Caching | Notes                                                                                              |
-| ---------------- | ----------- | ------- | -------------------------------------------------------------------------------------------------- |
-| POST /api/v1/mcp | 3-5         | None    | API key validate + user fetch + rate limit + tool execute; response body streams with backpressure |
+| Endpoint         | Round Trips | Caching | Notes                                                                                                 |
+| ---------------- | ----------- | ------- | ----------------------------------------------------------------------------------------------------- |
+| POST /api/v1/mcp | 3-5         | None    | Credential validate + user fetch + rate limit + tool execute; response body streams with backpressure |
 
 ## Related
 
 - Service: [MCP Tools service](../../../services/mcp-tools/)
 - API Keys: [api-keys service](../../../services/api-keys/)
+- OAuth: [authorization-server service](../../../services/oauth-authorization-server/)
 - Parent: [API CLAUDE](../../CLAUDE.md)

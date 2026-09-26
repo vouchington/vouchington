@@ -40,4 +40,19 @@ describe('external server-to-server ingress routing', () => {
     expect(isExternalServerToServerIngress('GET', '/authorize')).toBe(false)
     expect(isExternalServerToServerIngress('POST', '/authorize')).toBe(false)
   })
+
+  it('classifies only GET OAuth discovery documents as external ingress', () => {
+    for (const path of [
+      '/.well-known/oauth-authorization-server',
+      '/.well-known/oauth-protected-resource/api/v1/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+    ]) {
+      expect(isExternalServerToServerIngress('GET', path)).toBe(true)
+      expect(isExternalServerToServerIngress('GET', `${path}/`)).toBe(true)
+      expect(isExternalServerToServerIngress('POST', path)).toBe(false)
+    }
+    expect(isExternalServerToServerIngress('GET', '/.well-known/oauth-protected-resource')).toBe(
+      false,
+    )
+  })
 })

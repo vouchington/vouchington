@@ -7,6 +7,12 @@ const FEDERATION_GET_INGRESS_PATHS = new Set([
   '/nodeinfo/2.0',
   '/client-metadata.json',
 ])
+// RFC 8414 and RFC 9728 discovery documents that MCP and OAuth clients fetch before any session exists.
+const OAUTH_DISCOVERY_GET_INGRESS_PATHS = new Set([
+  '/.well-known/oauth-authorization-server',
+  '/.well-known/oauth-protected-resource/api/v1/mcp',
+  '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+])
 const ACTIVITYPUB_ACTOR_PATH_RE =
   /^\/ap\/users\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
@@ -36,6 +42,7 @@ export const isExternalServerToServerIngress = (method: string, pathname: string
   if (normalizedMethod === 'GET') {
     return (
       FEDERATION_GET_INGRESS_PATHS.has(normalizedPathname) ||
+      OAUTH_DISCOVERY_GET_INGRESS_PATHS.has(normalizedPathname) ||
       ACTIVITYPUB_ACTOR_PATH_RE.test(normalizedPathname)
     )
   }

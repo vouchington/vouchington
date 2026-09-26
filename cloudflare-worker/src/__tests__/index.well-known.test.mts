@@ -67,7 +67,10 @@ describe('worker fetch handler — well-known discovery documents', () => {
       mcp: {
         url: 'https://voucha.ai/api/v1/mcp',
         transport: 'streamable-http',
-        authentication: { type: 'bearer' },
+        authentication: {
+          type: 'bearer',
+          credentials: ['OAuth access token', 'user MCP API key'],
+        },
         api_keys: 'https://voucha.ai/my/api-keys',
       },
     })

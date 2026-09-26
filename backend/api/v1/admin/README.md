@@ -28,7 +28,7 @@ For growth metrics details, see [growth-metrics/README.md](./growth-metrics/READ
 
 ## MCP Clients
 
-The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. Configure it in your client with a Bearer token, and leave [`.mcp.json`](../../../../.mcp.json) unchanged.
+The admin MCP endpoint is streamable HTTP at `POST /api/v1/admin/mcp`. Configure it in your client with a Bearer token, and leave [`.mcp.json`](../../../../.mcp.json) unchanged. The token is an admin MCP API key or an OAuth access token bound to the admin resource, which only administrators can authorize; OAuth clients discover it from `/.well-known/oauth-protected-resource/api/v1/admin/mcp` through the `401` challenge.
 
 Claude Code:
 

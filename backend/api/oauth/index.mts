@@ -10,8 +10,6 @@ import {
   beginOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
-  exchangeOAuthAuthorizationCode,
-  exchangeOAuthRefreshToken,
   getOAuthAuthorizationErrorRedirect,
   getOAuthAuthorizationRequestForUser,
   OAuthProtocolError,
@@ -31,6 +29,8 @@ import {
   sendOAuthError,
   setOAuthResponseHeaders,
 } from './protocol-helpers.mts'
+import { exchangeOAuthTokenGrant } from './token-grant.mts'
+import './discovery.mts'
 
 const FORM_MEDIA_TYPES = ['application/x-www-form-urlencoded'] as const
 
@@ -99,31 +99,7 @@ app.route('/token').post(
       const form = await parseFormBody(ctx)
       const client = parseOAuthClientAuthentication(ctx, form)
       await authenticateOAuthClient(client.clientId, client.clientSecret)
-      const grantType = form.get('grant_type')
-      if (grantType === 'authorization_code') {
-        ctx.json(
-          await exchangeOAuthAuthorizationCode({
-            clientId: client.clientId,
-            clientSecret: client.clientSecret,
-            code: requiredFormValue(form, 'code'),
-            codeVerifier: form.get('code_verifier'),
-            redirectUri: requiredFormValue(form, 'redirect_uri'),
-          }),
-        )
-        return
-      }
-      if (grantType === 'refresh_token') {
-        ctx.json(
-          await exchangeOAuthRefreshToken({
-            clientId: client.clientId,
-            clientSecret: client.clientSecret,
-            refreshToken: requiredFormValue(form, 'refresh_token'),
-            ...(form.has('scope') ? { scope: requiredFormValue(form, 'scope') } : {}),
-          }),
-        )
-        return
-      }
-      throw new OAuthProtocolError('unsupported_grant_type', 'grant_type is not supported')
+      ctx.json(await exchangeOAuthTokenGrant(form, client))
     } catch (error) {
       if (!(error instanceof OAuthProtocolError)) throw error
       sendOAuthError(ctx, error)

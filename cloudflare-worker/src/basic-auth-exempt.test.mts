@@ -57,6 +57,18 @@ describe('isBasicAuthExemptRequest', () => {
     expect(isBasicAuthExemptRequest('GET', '/authorize')).toBe(false)
   })
 
+  it('exempts only GET requests to OAuth discovery documents', () => {
+    for (const path of [
+      '/.well-known/oauth-authorization-server',
+      '/.well-known/oauth-protected-resource/api/v1/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+    ]) {
+      expect(isBasicAuthExemptRequest('GET', path)).toBe(true)
+      expect(isBasicAuthExemptRequest('POST', path)).toBe(false)
+    }
+    expect(isBasicAuthExemptRequest('GET', '/.well-known/oauth-protected-resource')).toBe(false)
+  })
+
   it('does not exempt wrong-method machine routes', () => {
     expect(isBasicAuthExemptRequest('GET', '/api/v1/mcp')).toBe(false)
     expect(isBasicAuthExemptRequest('GET', '/api/v1/admin/mcp')).toBe(false)

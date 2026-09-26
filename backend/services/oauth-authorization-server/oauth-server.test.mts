@@ -12,7 +12,6 @@ import {
 import {
   createTestApprovedOAuthAuthorization,
   randomTestOAuthRedirectUri,
-  TEST_OAUTH_RESOURCE,
   TEST_OAUTH_SCOPE,
 } from './test-support.mts'
 import {
@@ -60,13 +59,13 @@ describe('OAuth authorization-code exchange', () => {
     expect(rejected).toHaveLength(1)
     expect(rejected[0]?.reason).toMatchObject({ code: 'invalid_grant' })
     const token = fulfilled[0]!.value
-    await expect(
-      validateOAuthAccessToken(token.access_token, { resource: TEST_OAUTH_RESOURCE }),
-    ).resolves.toMatchObject({
+    await expect(validateOAuthAccessToken(token.access_token, 'user')).resolves.toMatchObject({
       client_id: flow.client.client_id,
       user_id: owner.id,
       scopes: ['mcp.user:read', 'mcp.user:write'],
     })
+    // The token is bound to the user resource, so the admin resource never accepts it.
+    await expect(validateOAuthAccessToken(token.access_token, 'admin')).resolves.toBeNull()
     await expect(
       getTestOAuthCredentialStorage({
         accessToken: token.access_token,

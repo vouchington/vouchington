@@ -6634,6 +6634,12 @@ importers:
       '@modules/scopes':
         specifier: workspace:^
         version: link:../../modules/scopes
+      '@services/api-keys':
+        specifier: workspace:^
+        version: link:../api-keys
+      '@services/oauth-authorization-server':
+        specifier: workspace:^
+        version: link:../oauth-authorization-server
       '@services/users':
         specifier: workspace:^
         version: link:../users
