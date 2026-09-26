@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { InboxButton } from '@/components/notifications/inbox-button'
+import { InboxButton } from '../../components/notifications/inbox-button'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {

@@ -155,6 +155,13 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       find: 'next/script',
       replacement: fileURLToPath(new URL('../storybook/mocks/next-script.tsx', import.meta.url)),
     },
+    {
+      // Provider buttons load Apple, Facebook, and Google scripts when client IDs are set.
+      find: /^@\/hooks\/use-(apple|github|google|linkedin|microsoft|x)-auth$|^@\/hooks\/use-facebook-sdk$/,
+      replacement: fileURLToPath(
+        new URL('../storybook/mocks/oauth-provider-auth.ts', import.meta.url),
+      ),
+    },
     ...(
       [
         ['@/lib/i18n/get-translations', 'get-translations.ts'],

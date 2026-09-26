@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MfaReauthDialog } from '@/components/my/mfa-reauth-dialog'
+import { EmailVerificationPane } from '@/components/my/mfa-reauth-dialog/verification-panes'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
@@ -30,6 +31,23 @@ export const EmailCode: Story = {
         mfaStatus={{ has_mfa: false, passkeys_count: 0, totp_count: 0 }}
         onVerified={() => {}}
         onClose={() => {}}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const EmailCodeSent: Story = {
+  render: () => (
+    <StoryFrame width='max-w-md'>
+      <EmailVerificationPane
+        emailCode=''
+        emailSent
+        handleEmailVerify={() => {}}
+        handleResendEmail={() => {}}
+        handleSendEmail={() => {}}
+        loading={false}
+        sentToEmail='cardholder@example.com'
+        setEmailCode={() => {}}
       />
     </StoryFrame>
   ),

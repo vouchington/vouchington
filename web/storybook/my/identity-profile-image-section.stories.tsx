@@ -22,6 +22,11 @@ export const WithImage: Story = {
         handleRemoveImage={async () => {}}
         imageLoading={false}
         profileImageId='profile-image-cardholder'
+        profileImagePlacement={{
+          image_id: 'profile-image-cardholder',
+          placement_id: 'placement-cardholder',
+          placement_revision: 1,
+        }}
         username={username}
       />
     </StoryFrame>
