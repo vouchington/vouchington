@@ -52,7 +52,7 @@ jobs:
           # server-level default still matters: it covers db:migrate, explain:seed, and any
           # planning outside the capture transaction, which the per-capture SET LOCAL does not
           # reach. Keep the two values equal — see #11081.
-          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c work_mem=32MB'
+          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log -c work_mem=32MB'
         ports:
           - 5432
         # The complete evidence corpus occupies about 600MB, with PostgreSQL retaining another

@@ -7,7 +7,11 @@ import { maxCiVitestWorkers } from '../../test-helpers/vitest-config/environment
 const pgvectorImagePattern = /pgvector\/pgvector:[^\s'"\\)]+/g
 const workflowDirectory = '.github/workflows'
 const ciPostgresMaxConnections = 300
-const requiredInitdbArgs = `-c max_connections=${ciPostgresMaxConnections}`
+// Tests trigger ERRORs on purpose, and every ERROR already reaches the client that caused it, so
+// the server-log copy (plus its STATEMENT line) only floods the service-container log. LOG ranks
+// above ERROR in log_min_messages, so startup, checkpoint, and crash lines still print.
+const ciPostgresLogMinMessages = 'log'
+const requiredInitdbArgs = `-c max_connections=${ciPostgresMaxConnections} -c log_min_messages=${ciPostgresLogMinMessages}`
 const requiredDockerInitdbArgs = `POSTGRES_INITDB_ARGS="${requiredInitdbArgs}"`
 
 // Every postgres service must use exactly `requiredInitdbArgs`, except a workflow explicitly
@@ -113,7 +117,7 @@ describe('PostgreSQL workflow image policy', () => {
     }
   })
 
-  it('raises every GitHub Actions postgres service above the default max_connections', () => {
+  it('gives every GitHub Actions postgres service the shared CI server settings', () => {
     const postgresServices = workflowYamlFiles().flatMap(name =>
       postgresServiceJobs(name).map(job => ({ workflow: name, ...job })),
     )
@@ -127,7 +131,7 @@ describe('PostgreSQL workflow image policy', () => {
     )
   })
 
-  it('raises the initialize-smoke docker postgres above the default max_connections', () => {
+  it('gives the initialize-smoke docker postgres the shared CI server settings', () => {
     expect(readWorkflow('initialize-smoke-test.yml')).toContain(requiredDockerInitdbArgs)
   })
 })

@@ -8,6 +8,7 @@ export type PolicyStep = {
   run?: string
   uses?: string
   with?: Record<string, unknown>
+  env?: Record<string, unknown>
 }
 type StepHost = {
   jobs?: Record<string, { steps?: PolicyStep[] }>

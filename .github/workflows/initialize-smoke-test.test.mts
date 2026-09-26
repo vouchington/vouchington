@@ -68,7 +68,6 @@ describe('initialize-smoke-test workflow', () => {
     const run = stepRun('Ensure PostgreSQL is available')
 
     expect(run).toContain('export PGUSER=postgres')
-    expect(run).toContain('POSTGRES_INITDB_ARGS="-c max_connections=300"')
     expect(run).toContain('source "$SMOKE_WORKTREE/dev/lib/worktree-resource-env.sh"')
     expect(run).toContain('smoke_db_name=$(worktree_resource_owned_db_name "$SMOKE_WORKTREE")')
     expect(run).toContain(

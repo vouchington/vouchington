@@ -100,6 +100,7 @@ runs:
       env:
         GIT_COMMIT: ${{ github.sha }}
         DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        BUILDX_METADATA_PROVENANCE: disabled
 
     - name: Build all backend images
       id: bake-all
@@ -117,6 +118,7 @@ runs:
       env:
         GIT_COMMIT: ${{ github.sha }}
         DOCKER_BUILD_RECORD_UPLOAD: 'false'
+        BUILDX_METADATA_PROVENANCE: disabled
 
     - name: Report Docker image sizes
       shell: bash
