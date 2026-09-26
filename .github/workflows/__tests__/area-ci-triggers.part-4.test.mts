@@ -7,16 +7,13 @@ import { describe, expect, it } from 'vitest'
 type WorkflowStep = { id?: string; with?: { filters?: string } }
 type WorkflowJob = { if?: string; outputs?: Record<string, string>; steps?: WorkflowStep[] }
 type Workflow = { jobs?: Record<string, WorkflowJob> & { 'detect-changes'?: WorkflowJob } }
-type PathFilters = Record<string, string[]>
-
-const workflow = load(readFileSync('.github/workflows/ci.yml', 'utf8')) as Workflow
 const detectChangesWorkflow = load(
   readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
 ) as Workflow
-const filters = load(readFileSync('.github/ci-path-filters.yml', 'utf8')) as PathFilters
-const refinedFilters = load(
-  readFileSync('.github/ci-runtime-path-filters.yml', 'utf8'),
-) as PathFilters
+import {
+  primaryPathFilters as filters,
+  runtimePathFilters as refinedFilters,
+} from '../../test-helpers/path-filter-test-fixtures.mts'
 
 function pathMatches(globs: string[], path: string, every = false): boolean {
   const matches = (glob: string) => picomatch.isMatch(path, glob, { dot: true })
@@ -41,7 +38,7 @@ function changedFilesMatchPrimary(filterName: string, paths: string[]): boolean 
   return paths.some(path => pathMatches(globs!, path))
 }
 
-describe('Vitest CI Docker triggers', () => {
+describe('Area CI Docker triggers', () => {
   it('routes worker policy changes through image validation', () => {
     const workerPolicyPath = 'backend/modules/worker-queue-inventory/worker-queue-policy.json'
     for (const filterName of ['build-backend-infra']) {
@@ -56,7 +53,7 @@ describe('Vitest CI Docker triggers', () => {
     expectPrimaryMatches('build-web-infra', smokePortInputs)
   })
 
-  it('uses primary infra filters on PRs and broad refined filters otherwise', () => {
+  it('uses primary image filters on PRs and refined image filters on merge groups', () => {
     const outputs = detectChangesWorkflow.jobs?.['detect-changes']?.outputs ?? {}
     expect(outputs['build-backend-infra']).toBe('${{ steps.filter.outputs.build-backend-infra }}')
     expect(outputs['build-web-infra']).toBe('${{ steps.filter.outputs.build-web-infra }}')
@@ -67,12 +64,14 @@ describe('Vitest CI Docker triggers', () => {
       ['build-backend', 'build-backend-infra', 'build-backend'],
       ['build-web', 'build-web-infra', 'build-web'],
     ]) {
+      const area = jobName.slice('build-'.length)
+      const workflow = load(readFileSync(`.github/workflows/${area}.yml`, 'utf8')) as Workflow
       const condition = workflow.jobs?.[jobName]?.if ?? ''
-      expect(condition).toContain(
-        `github.event_name == 'pull_request' && needs.detect-changes.outputs.${infraFilter} == 'true'`,
-      )
-      expect(condition).toContain(`needs.detect-changes.outputs.${broadFilter} == 'true'`)
-      expect(condition).toContain("needs.detect-changes.outputs.workflow-action-changes != 'false'")
+      expect(condition).toContain("github.event_name == 'pull_request'")
+      expect(condition).toContain(`needs.changes.outputs.${infraFilter} == 'true'`)
+      expect(condition).toContain("github.event_name == 'merge_group'")
+      expect(condition).toContain(`needs.changes.outputs.${broadFilter} == 'true'`)
+      expect(condition).toContain("needs.changes.outputs.workflow-action-changes == 'true'")
     }
   })
 

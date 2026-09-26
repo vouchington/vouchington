@@ -21,21 +21,10 @@ external-provider boundary and are permitted per the repo mock policy.
 ## Coverage
 
 The `web-api` and `web-integration` Vitest projects run with `--coverage` in CI and instrument
-`web/lib/api/**` source. Patch coverage for `web/lib/api/**` is enforced at **100%** by
-`.coverage-rules.yml`.
-
-To measure integration-suite-only coverage of `web/lib/api/` locally:
-
-```sh
-pnpm run test:web-api:coverage
-```
-
-This runs the `web-api` project with `VITEST_COVERAGE_SCOPE=web-lib-api`, scoping the report to
-`web/lib/api/**/*.{ts,mts}`. The `web-integration` project is excluded from this command because it
-requires prebuilt CF Worker + Next.js artifacts (run `pnpm run test:integration:web:setup` first if
-you also want full-stack coverage).
-Local coverage loads the validated worktree `.env`, then removes `CF_WORKER_SECRET` for both
-projects so API-helper and full-stack coverage cannot inherit Worker-to-backend authentication.
+`web/lib/api/**` source. The web area's full-LCOV patch gate enforces **100%** coverage for
+`web/lib/api/**` under `.coverage-rules.yml`. Local coverage preview commands are not a CI
+contract; run the owning suite locally and use the area's full-LCOV `area-check` only after
+collecting its artifacts.
 
 ### Integration-infeasible files
 

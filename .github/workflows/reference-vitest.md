@@ -2,7 +2,7 @@
 
 [Back to Workflow Reference](WORKFLOWS.md#vitest)
 
-`ci.yml` starts each workflow below when its area path filter matches, when a pull request changes
+Each area workflow starts when its area path filter matches, when a pull request changes
 `.github/workflows/**` or `.github/actions/**`, and on every merge group; each started workflow runs
 its full suite and never runs for docs-only pull requests. `test-backend-unit`, `test-web`, and
 `test-web-api` size shards from the live file count; `test-web-integration` keeps a one-shard

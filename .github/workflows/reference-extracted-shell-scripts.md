@@ -13,7 +13,7 @@ visible in review:
 
 - Add the script path to any workflow-level `pull_request.paths` and `push.paths` filters for
   standalone workflows that invoke it.
-- Add or verify `ci.yml` path-filter coverage for the owning reusable workflow, plus the generic
+- Add or verify path-filter coverage in the owning area workflow, plus the generic
   `tooling` filter. `shell-scripts` already matches every `*.sh` via `**/*.sh`; do not add `ci/**`
   to wake initialize-smoke for a TypeScript change.
 - Cover the script with a focused Vitest execution test for the successful command line and any

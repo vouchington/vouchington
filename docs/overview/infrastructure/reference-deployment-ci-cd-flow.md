@@ -14,8 +14,9 @@ flowchart TD
     Materialize --> Providers["provider image/package update"]
 ```
 
-`ci.yml` runs on pull requests and manual dispatch. It validates backend and web images but does
-not publish runtime artifacts.
+The [area workflows](../../../.github/workflows/reference-workflow-automation-pull-requests.md)
+run on pull requests and merge groups. Their backend and web image jobs validate without publishing
+runtime artifacts; trusted main workflows own publication.
 
 The completed source-run receiver emits exactly one route-specific event for each successful
 default-branch source workflow. A successful `main-web` run triggered only to validate Lambda or

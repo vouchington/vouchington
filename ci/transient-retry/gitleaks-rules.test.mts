@@ -6,7 +6,7 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 
 const gitleaksJobName = 'gitleaks'
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Gitleaks',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],

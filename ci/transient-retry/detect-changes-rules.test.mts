@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { decide } from './decide.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
 
-const detectChangesJobName = 'detect-changes'
+const detectChangesJobName = 'changes / detect-changes'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [detectChangesJobName],
@@ -32,6 +32,40 @@ const github5xxAnnotation = [
 ].join('\n')
 
 describe('detect-changes-paths-filter-github-5xx', () => {
+  it.each([
+    ['Web', 'web'],
+    ['Backend', 'backend'],
+    ['Cloudflare Worker', 'cloudflare-worker'],
+    ['Lambdas', 'lambdas'],
+    ['Tooling', 'tooling'],
+  ])('matches %s detector failure with its downstream gate', async (workflowName, gate) => {
+    await expect(
+      decide(
+        makeCtx({
+          workflowName,
+          failedJobNames: [detectChangesJobName, gate],
+          failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
+        }),
+        RULES,
+      ),
+    ).resolves.toMatchObject({
+      decision: 'rerun',
+      matchedRule: 'detect-changes-paths-filter-github-5xx',
+    })
+  })
+
+  it('does not hide an unrelated workflow gate failure', async () => {
+    await expect(
+      decide(
+        makeCtx({
+          failedJobNames: [detectChangesJobName, 'backend'],
+          failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
+        }),
+        RULES,
+      ),
+    ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
+  })
+
   it('matches the detect-changes GitHub 5xx annotation on attempt 1', async () => {
     const result = await decide(
       makeCtx({
@@ -45,7 +79,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
   })
 
   it('matches the reusable-workflow detect-changes job name', async () => {
-    const jobName = 'detect-changes / detect-changes'
+    const jobName = 'changes / detect-changes'
     const result = await decide(
       makeCtx({
         failedJobNames: [jobName],

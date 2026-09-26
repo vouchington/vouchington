@@ -7,12 +7,6 @@ const parsedWorkflow = load(workflow) as {
   permissions?: Record<string, string>
   jobs?: Record<string, { permissions?: Record<string, string> }>
 }
-const stepsWorkflow = load(workflow) as {
-  jobs?: Record<
-    string,
-    { steps?: Array<{ env?: Record<string, string>; name?: string; run?: string }> }
-  >
-}
 function jobSection(jobName: string): string {
   const start = workflow.indexOf(`\n  ${jobName}:`)
   expect(start).toBeGreaterThanOrEqual(0)
@@ -84,36 +78,21 @@ describe('Web Tests workflow', () => {
     expect(workflow).not.toContain('smoke-test-web.sh')
   })
 
-  it('uses shard-specific test and coverage artifacts', () => {
+  it('preserves shard-specific JUnit and full LCOV with required upload retries', () => {
     const tests = jobSection('web-tests')
 
     expect(tests).toContain('VITEST_JUNIT_OUTPUT_FILE: web-shard-${{matrix.shard}}.junit.xml')
-    expect(tests).toContain(
-      'VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-shard-${{matrix.shard}}.json',
-    )
-    expect(tests).toContain('uses: ./.github/actions/upload-vitest-blob')
     expect(tests).toContain('name: web-test-report-shard-${{ matrix.shard }}')
     expect(tests).toContain(
       'run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"',
     )
     expect(tests).toContain('SUITE: web-shard-${{ matrix.shard }}')
-    expect(tests).toContain('FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}')
-    expect(tests).toContain('RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}')
-    expect(tests).toContain('uses: ./.github/actions/upload-coverage-pair')
+    expect(tests).toContain('FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}')
+    expect(tests).toContain('RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}')
+    expect(tests).toContain('uses: ./.github/actions/upload-full-lcov')
     expect(tests).toContain('suite: web-shard-${{ matrix.shard }}')
-    expect(tests).toContain('fallback attempt 2')
-  })
-
-  it('stamps web coverage with the prepared shard total', () => {
-    const stamp = stepsWorkflow.jobs?.['web-tests']?.steps?.find(
-      step => step.name === 'Stamp web-shard-${{ matrix.shard }} coverage provenance',
-    )
-
-    expect(stamp?.env).toMatchObject({
-      CI_SHARD: '${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}',
-      PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}',
-      PR_HEAD_SHA: '${{ github.event.pull_request.head.sha }}',
-    })
+    expect(tests).toContain('FAMILY: full-lcov')
+    expect(tests).toContain("inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure'")
   })
 
   it('never round-trips the Vite transform cache through actions/cache', () => {
@@ -138,12 +117,12 @@ describe('Web Tests workflow', () => {
     const tests = jobSection('web-tests')
     const install = tests.indexOf('uses: ./.github/actions/setup-node-pnpm')
     const runTests = tests.indexOf('      - name: Run web tests')
-    const uploadBlob = tests.indexOf(
-      'name: Upload web-shard-${{ matrix.shard }} vitest blob to GitHub (fallback)',
+    const uploadCoverage = tests.indexOf(
+      'name: Upload full web-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',
     )
 
     expect(install).toBeGreaterThanOrEqual(0)
     expect(runTests).toBeGreaterThan(install)
-    expect(uploadBlob).toBeGreaterThan(runTests)
+    expect(uploadCoverage).toBeGreaterThan(runTests)
   })
 })

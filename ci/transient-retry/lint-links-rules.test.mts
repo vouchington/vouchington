@@ -113,7 +113,7 @@ describe('lint-links-github-5xx', () => {
 
   it('does not match wrong workflow or sibling failed jobs', async () => {
     const wrongWorkflow = await decide(
-      makeCtx({ workflowName: 'CI', failedJobLogs: failedJobLogs(github500Log) }),
+      makeCtx({ workflowName: 'Web', failedJobLogs: failedJobLogs(github500Log) }),
       RULES,
     )
     const mixedJobs = await decide(
@@ -258,7 +258,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
 
   it('does not match wrong workflow or sibling failed jobs', async () => {
     const wrongWorkflow = await decide(
-      makeCtx({ workflowName: 'CI', failedJobLogs: failedJobLogs(setupLycheeCurl28Log) }),
+      makeCtx({ workflowName: 'Web', failedJobLogs: failedJobLogs(setupLycheeCurl28Log) }),
       RULES,
     )
     const mixedJobs = await decide(

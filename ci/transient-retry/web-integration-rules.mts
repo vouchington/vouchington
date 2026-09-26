@@ -1,4 +1,4 @@
-import { ciAggregateFailureJobNames } from './ci-aggregate-failure-jobs.mts'
+import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 import { stripAnsi } from './storybook-shared.mts'
 import type { TransientRetryRule } from './types.mts'
 import {
@@ -43,13 +43,13 @@ export const webIntegrationWranglerSocketClosedRule: TransientRetryRule = {
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
-    if (ctx.workflowName !== 'CI' || ctx.conclusion !== 'failure') return false
+    if (ctx.workflowName !== 'Web' || ctx.conclusion !== 'failure') return false
     const webIntegrationJobName = ctx.failedJobNames.find(isWebIntegrationShardJob)
     if (!webIntegrationJobName) return false
     if (ctx.failedJobNames.filter(isWebIntegrationShardJob).length !== 1) return false
     if (
       ctx.failedJobNames.some(
-        name => !isWebIntegrationShardJob(name) && !ciAggregateFailureJobNames.has(name),
+        name => !isWebIntegrationShardJob(name) && !isAreaGateJob(ctx.workflowName, name),
       )
     ) {
       return false

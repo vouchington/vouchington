@@ -2,17 +2,26 @@ import { describe, expect, it } from 'vitest'
 
 import {
   findRunnerShutdownConsumer,
-  isCoverageProducerJob,
   isWebApiShardJob,
 } from './runner-shutdown-consumer-registry.mts'
 
 const webApiShard = 'test-web-api / web-api-tests (2)'
 
 describe('web API runner-shutdown consumer', () => {
-  it('registers a web API shard as a known consumer and coverage producer', () => {
+  it.each([
+    'test-tooling / tooling',
+    'tooling-tests / tooling',
+    'static-web / static-web',
+    'static-checks / static-web',
+    'storybook / storybook',
+    'storybook-build / storybook',
+  ])('retains the area and main consumer %s', jobName => {
+    expect(findRunnerShutdownConsumer(jobName)).toBeDefined()
+  })
+
+  it('registers a web API shard as a known consumer', () => {
     expect(isWebApiShardJob(webApiShard)).toBe(true)
     expect(findRunnerShutdownConsumer(webApiShard)).toBeDefined()
-    expect(isCoverageProducerJob(webApiShard)).toBe(true)
   })
 
   it.each([
@@ -25,6 +34,5 @@ describe('web API runner-shutdown consumer', () => {
   ])('rejects lookalike web API job %s', jobName => {
     expect(isWebApiShardJob(jobName)).toBe(false)
     expect(findRunnerShutdownConsumer(jobName)).toBeUndefined()
-    expect(isCoverageProducerJob(jobName)).toBe(false)
   })
 })

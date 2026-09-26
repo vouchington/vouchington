@@ -52,10 +52,10 @@ const routeBaselineAssertionLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
-  failedJobNames: [webIntegrationJobName, 'Patch Coverage', 'tests', 'build'],
+  failedJobNames: [webIntegrationJobName, 'web'],
   failedJobLogs: () => Promise.resolve(new Map([[webIntegrationJobName, wranglerSocketClosedLog]])),
   failedJobAnnotations: () => Promise.resolve([]),
   ...overrides,

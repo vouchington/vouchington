@@ -13,7 +13,18 @@ export type { GhApiExecutor } from 'vouchington-tooling/gha-runtime-audit'
 export const vouchingtonRuntimeAuditOptions: Omit<RuntimeAuditOptions, 'repository'> = {
   branch: 'main',
   workflows: [
-    { name: 'CI', event: 'pull_request' },
+    { name: 'Static', event: 'pull_request' },
+    { name: 'Backend', event: 'pull_request' },
+    { name: 'Web', event: 'pull_request' },
+    { name: 'Cloudflare Worker', event: 'pull_request' },
+    { name: 'Lambdas', event: 'pull_request' },
+    { name: 'Tooling', event: 'pull_request' },
+    { name: 'Static', event: 'merge_group' },
+    { name: 'Backend', event: 'merge_group' },
+    { name: 'Web', event: 'merge_group' },
+    { name: 'Cloudflare Worker', event: 'merge_group' },
+    { name: 'Lambdas', event: 'merge_group' },
+    { name: 'Tooling', event: 'merge_group' },
     { name: /^Main CI \(.+\)$/, event: 'push' },
   ],
   // Raised from the tool default (360s) alongside the fewer/longer-running-shards CI target

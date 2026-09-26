@@ -39,7 +39,7 @@ function jobTimeoutCeilingLog(runCommand: string, minutes: number): string {
 }
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Static',
   conclusion: 'timed_out',
   runAttempt: 1,
   failedJobNames: [],

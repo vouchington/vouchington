@@ -86,7 +86,7 @@ jobs:
     secrets: inherit
 
   # Builds the deployable backend images and publishes them to GHCR via publish-backend-images.yml,
-  # which reuses build-backend-images/action.yml -- the same composite action ci.yml's
+  # which reuses build-backend-images/action.yml -- the same composite action backend.yml's
   # build-backend job uses to build and validate the same images without publishing them.
   #
   # Gated on static-checks only, like every other job here, so it runs alongside the test jobs

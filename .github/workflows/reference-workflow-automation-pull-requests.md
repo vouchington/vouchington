@@ -1,81 +1,35 @@
-# Workflow automation: Pull requests
+# Pull-request workflow automation
 
-[Back to Workflow automation map](reference-workflow-automation-map.md) · [Back to Workflow Reference](README.md)
+[Back to Workflow automation map](reference-workflow-automation-map.md) · [Back to Workflow Reference](WORKFLOWS.md)
 
-Pull requests and merge groups run the per-area workflows: `static`, `backend`, `web`,
-`cloudflare-worker`, `lambdas`, and `tooling`. Each one's `changes` job
-([`ci-detect-changes.yml`](ci-detect-changes.yml)) selects its area, and a selected area runs its
-full suites. Area static checks gate the suites, which run in parallel. The area `coverage` job
-blocks on patch coverage of the area's owned files, and `codecov` uploads each suite under its own
-flag (informational). The job named after the area is its required check; it passes when the area
-is skipped. [`nightly.yml`](nightly.yml) calls every area workflow for a full run (see
-[Always run](reference-workflow-automation-always-run.md)).
-
-`ci.yml` still runs in parallel; its `tests` and `build` fan-ins are report-only until the workflow
-is deleted. The [Main ruleset's required gates](AGENTS.md#scoped-invariants) include the per-area
-jobs.
-Every gated job needs `detect-changes`, and `static-code-analysis` gates all of them plus
-both Docker validation builds (`backend-smoke` through `static-backend`), so those edges are drawn
-once to the group. Docs-only changes skip the gated jobs. No test or Docker build waits on another
-test: each starts once its static gates pass or intentionally skip, and both Playwright suites wait
-on all four area static checks.
-See the semantic CI DAG in [AGENTS.md](AGENTS.md) and [CI](../../docs/development/ci.md). For the
-exact job graph, run `pnpm run ci:topology --format mermaid --workflow .github/workflows/ci.yml`.
+Pull requests and merge groups start independent required checks: `static`, `backend`, `web`,
+`cloudflare-worker`, `lambdas`, `tooling`, and `gitleaks`. Each area workflow uses
+[`ci-detect-changes.yml`](ci-detect-changes.yml) to select its own area. Selected areas run their
+static checks, full owned suites, full-LCOV patch-coverage gate, and final area gate. A skipped area
+reports success. Codecov uploads full LCOV only as informational evidence.
 
 ```mermaid
-flowchart TD
-    pr-trigger["pull_request / merge_group checks_requested"]
-
-    subgraph area-workflows["Area workflows: changes → area static → full suites → coverage → gate ✓"]
-        static["static<br/>(static-code-analysis → static ✓)"]
-        backend["backend<br/>(static-backend → modules, unit, credentialed, schema,<br/>smoke, EXPLAIN, build-backend → backend ✓)"]
-        web["web<br/>(static-web → web, web-api, web-integration, Storybook,<br/>Playwright, build-web → web ✓)"]
-        cloudflare-worker["cloudflare-worker<br/>(static → tests → cloudflare-worker ✓)"]
-        lambdas["lambdas<br/>(static → tests → lambdas ✓)"]
-        tooling["tooling<br/>(ts-shared, tooling, portability,<br/>initialize smoke → tooling ✓)"]
-    end
-    pr-trigger --> area-workflows
-    area-workflows -. "per-suite flags" .-> area-codecov["codecov<br/>(OIDC; informational)"]
-
-    pr-trigger --> ci["ci<br/>(CI orchestrator)"]
-    pr-trigger --> label-pr["label-pr<br/>(PR labeling; pull requests only)"]
-    ci --> detect-changes["detect-changes"]
-    detect-changes --> static-code-analysis["static-code-analysis<br/>(cross-repo lint + policy; no-mistakes in parallel)"]
-
-    subgraph gated["Gated jobs"]
-        static-backend["static-backend<br/>(area static)"]
-        static-web["static-web<br/>(area static + shared web build)"]
-        static-lambdas["static-lambdas<br/>(area static)"]
-        static-cloudflare-worker["static-cloudflare-worker<br/>(area static)"]
-        static-backend --> test-backend-modules["test-backend-modules"] & test-backend-unit["test-backend-unit"] & test-backend-credentialed["test-backend-credentialed"]
-        static-backend --> test-postgres-schema["test-postgres-schema"] & test-explain-analyze["test-explain-analyze"] & backend-smoke["backend-smoke<br/>(migrations + API/worker smoke)"]
-        static-web --> test-web["test-web"] & test-web-api["test-web-api"] & test-web-integration["test-web-integration"]
-        static-lambdas --> test-lambdas["test-lambdas"]
-        static-cloudflare-worker --> test-cloudflare-worker["test-cloudflare-worker"]
-        static-backend & static-web & static-lambdas & static-cloudflare-worker --> test-playwright["test-playwright"]
-        static-backend & static-web & static-lambdas & static-cloudflare-worker --> test-playwright-credentialed["test-playwright-credentialed<br/>(trusted secret context only)"]
-        test-ts-shared["test-ts-shared"]
-        initialize-smoke-test["initialize-smoke-test"]
-        storybook["storybook<br/>(tests + build)"]
-        test-tooling["test-tooling"]
-        test-portability["test-portability<br/>(macOS + Linux)"]
-    end
-
-    static-code-analysis --> gated
-    detect-changes -. "area path filters" .-> gated
-    static-backend -- "trusted secrets, image changes" --> build-backend["build-backend<br/>(api + worker images)"]
-    static-web -- "trusted secrets, image changes" --> build-web["build-web<br/>(web image)"]
-    detect-changes -. "image path filters" .-> build-backend & build-web
-    gated -- "Vitest, Storybook, tooling, portability" --> test-coverage["test-coverage<br/>(Patch Coverage gate)"]
-    gated -- "directly or through test-coverage" --> tests-processing["tests-processing<br/>(report merge + fan-in)"]
-    static-code-analysis --> tests-processing
-    test-coverage --> tests-processing
-    tests-processing --> tests["tests ✓"]
-    tests & build-backend & build-web --> build["build ✓"]
-
-    ci -. "workflow_run completed<br/>(Dependabot PRs)" .-> fix-dependabot["fix-dependabot"]
-    fix-dependabot --> harness-dispatch["harness-dispatch<br/>(reusable)"]
-    merge-queue-ejection["merge-queue-ejection<br/>(Auto Harness triage)"]
-    tests & build & area-workflows -. "merge queue dequeued<br/>(CI_FAILURE / CI_TIMEOUT)" .-> merge-queue-ejection
-    merge-queue-ejection --> harness-dispatch
+flowchart LR
+  event[Pull request or merge group] --> static[static]
+  static --> static-code-analysis[Repository policy checks]
+  event --> backend[backend]
+  event --> web[web]
+  event --> cloudflare-worker[cloudflare-worker]
+  event --> lambdas[lambdas]
+  event --> tooling[tooling]
+  event --> gitleaks[gitleaks]
+  backend --> backendGate[backend gate]
+  web --> webGate[web gate]
+  cloudflare-worker --> cloudflare-worker-gate[cloudflare-worker gate]
+  lambdas --> lambdasGate[lambdas gate]
+  tooling --> toolingGate[tooling gate]
+  event -. pull requests only .-> label-pr[PR labeling]
+  static & backend & web & cloudflare-worker & lambdas & tooling -. failed Dependabot PR run .-> fix-dependabot[Dependabot failure triage]
+  event -. queue dequeue on CI failure or timeout .-> merge-queue-ejection[Queue ejection triage]
+  fix-dependabot & merge-queue-ejection --> harness-dispatch[Auto Harness dispatch]
 ```
+
+The `static` check is its own required check. The area gates and `gitleaks` are likewise
+independent required checks; there is no monolithic CI workflow or cross-area report fan-in.
+Successful main workflows remain separate from this pull-request topology. See
+[CI](../../docs/development/ci.md) for the area contract.

@@ -12,7 +12,7 @@ import {
 function artifact(overrides: Partial<ArtifactLike> = {}): ArtifactLike {
   return {
     id: 1,
-    name: 'coverage-web',
+    name: 'lcov-full-web-shard-1',
     size_in_bytes: 100,
     expired: false,
     created_at: '2026-01-01T00:00:00Z',
@@ -35,11 +35,13 @@ describe('summarize', () => {
 
 describe('planRunDeletions', () => {
   it('keeps a non-expired delete-classified artifact', () => {
-    expect(planRunDeletions([artifact({ name: 'coverage-web' })])).toHaveLength(1)
+    expect(planRunDeletions([artifact({ name: 'lcov-full-web-shard-1' })])).toHaveLength(1)
   })
 
   it('drops an expired artifact', () => {
-    expect(planRunDeletions([artifact({ name: 'coverage-web', expired: true })])).toEqual([])
+    expect(planRunDeletions([artifact({ name: 'lcov-full-web-shard-1', expired: true })])).toEqual(
+      [],
+    )
   })
 
   it('retains an unclassified artifact without aborting the plan', () => {

@@ -53,10 +53,10 @@ const echoedTimeoutSourceLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
-  failedJobNames: [playwrightShardOneJobName, playwrightShardTwoJobName, 'tests', 'build'],
+  failedJobNames: [playwrightShardOneJobName, playwrightShardTwoJobName, 'web'],
   failedJobLogs: () =>
     Promise.resolve(
       new Map([
@@ -77,9 +77,14 @@ describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
   })
 
   it('also matches Main CI (web) playwright shard shutdown (previously excluded)', async () => {
-    expect(await runnerShutdownLeafRerunMatch(makeCtx({ workflowName: 'Main CI (web)' }))).toBe(
-      true,
-    )
+    expect(
+      await runnerShutdownLeafRerunMatch(
+        makeCtx({
+          workflowName: 'Main CI (web)',
+          failedJobNames: [playwrightShardOneJobName, playwrightShardTwoJobName],
+        }),
+      ),
+    ).toBe(true)
   })
 
   it('does not match non-idempotent workflows', async () => {
@@ -91,7 +96,7 @@ describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
   it('does not match when a non-aggregate job also failed', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
-        failedJobNames: [playwrightShardOneJobName, 'test-web / web-tests (1)', 'tests', 'build'],
+        failedJobNames: [playwrightShardOneJobName, 'test-web / web-tests (1)', 'web'],
       }),
     )
     expect(matched).toBe(false)
@@ -100,7 +105,7 @@ describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
   it('does not match normal Playwright assertion failures', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
-        failedJobNames: [playwrightShardOneJobName, 'tests', 'build'],
+        failedJobNames: [playwrightShardOneJobName, 'web'],
         failedJobLogs: () =>
           Promise.resolve(new Map([[playwrightShardOneJobName, assertionFailureLog]])),
       }),
@@ -129,8 +134,8 @@ describe('main-web-playwright-setup-apt-lock', () => {
     async aptFailureLog => {
       const result = await decide(
         makeCtx({
-          workflowName: 'CI',
-          failedJobNames: [playwrightShardOneJobName, 'tests', 'build'],
+          workflowName: 'Web',
+          failedJobNames: [playwrightShardOneJobName, 'web'],
           failedJobLogs: async () => new Map([[playwrightShardOneJobName, aptFailureLog]]),
         }),
         RULES,
@@ -143,7 +148,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
   it('matches setup wait timeouts before Playwright install starts', async () => {
     const result = await decide(
       makeCtx({
-        workflowName: 'CI',
+        workflowName: 'Web',
         failedJobNames: [playwrightShardOneJobName],
         failedJobLogs: () =>
           Promise.resolve(new Map([[playwrightShardOneJobName, aptWaitTimeoutLog]])),
@@ -180,7 +185,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
   it('matches credentialed Playwright setup timeouts', async () => {
     const result = await decide(
       makeCtx({
-        workflowName: 'CI',
+        workflowName: 'Web',
         failedJobNames: [credentialedPlaywrightJobName],
         failedJobLogs: () =>
           Promise.resolve(new Map([[credentialedPlaywrightJobName, aptWaitTimeoutLog]])),
@@ -205,11 +210,11 @@ describe('main-web-playwright-setup-apt-lock', () => {
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
   })
 
-  it('matches CI Storybook setup timeouts with Patch Coverage downstream', async () => {
+  it('matches Web Storybook setup timeouts with its area gate', async () => {
     const result = await decide(
       makeCtx({
-        workflowName: 'CI',
-        failedJobNames: [storybookJobName, 'Patch Coverage'],
+        workflowName: 'Web',
+        failedJobNames: [storybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, aptWaitTimeoutLog]])),
       }),
       RULES,

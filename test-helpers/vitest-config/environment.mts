@@ -47,7 +47,6 @@ const isToolingCoverage = coverageScope === 'tooling'
 const isWebStorybookBrowserCoverage = coverageScope === 'web-storybook-browser'
 const isWebStorybookCoverage = coverageScope === 'web-storybook'
 const isWebLibApiCoverage = coverageScope === 'web-lib-api'
-const isChangedCoverage = coverageScope === 'changed'
 export const coverageFlags = {
   isScopedCoverage:
     isToolingCoverage ||
@@ -55,13 +54,11 @@ export const coverageFlags = {
     coverageScope === 'web' ||
     isWebStorybookCoverage ||
     isWebStorybookBrowserCoverage ||
-    isWebLibApiCoverage ||
-    isChangedCoverage,
+    isWebLibApiCoverage,
   isToolingCoverage,
   isWebLibApiCoverage,
   isWebStorybookBrowserCoverage,
   isWebStorybookCoverage,
-  isChangedCoverage,
 }
 if (coverageScope && !coverageFlags.isScopedCoverage) {
   process.stderr.write(

@@ -8,48 +8,32 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
   const storybook = scope === 'web-storybook'
   const storybookBrowser = scope === 'web-storybook-browser'
   const webLibApi = scope === 'web-lib-api'
-  // No `include` below: an unset `include` makes @vitest/coverage-v8 report only files the
-  // process actually loaded, instead of statically instrumenting every matched file at zero
-  // coverage. That is required so a changed file with genuinely no test hits is *absent* from
-  // the LCOV (coverage-check's scope-block "no coverage data" signal), and it also skips the
-  // whole-repo static pass that makes every other scope below expensive.
-  const changed = scope === 'changed'
   const scoped =
-    tooling ||
-    portability ||
-    scope === 'web' ||
-    storybook ||
-    storybookBrowser ||
-    webLibApi ||
-    changed
+    tooling || portability || scope === 'web' || storybook || storybookBrowser || webLibApi
   return {
-    ...(changed
-      ? {}
-      : {
-          include: portability
-            ? ['lambdas/dev-server.mts', 'cloudflare-worker/scripts/wrangler/runtime.mts']
-            : tooling
-              ? [
-                  'ci/**/*.{mts,ts,tsx}',
-                  'dev/**/*.{mts,ts,tsx}',
-                  'playwright/helpers/**/*.{mts,ts,tsx}',
-                  'static-code-analysis/**/*.{mts,ts,tsx}',
-                  'test-tooling/**/*.{mts,ts,tsx}',
-                ]
-              : storybook
-                ? [
-                    'web/storybook/entities/entity-fixtures.ts',
-                    'web/storybook/entities/topics-story-recommendations.ts',
-                    'web/test-helpers/storybook/component-story-coverage/message.ts',
-                  ]
-                : storybookBrowser
-                  ? ['web/components/**/*.{ts,tsx}', 'web/hooks/**/*.{ts,tsx}']
-                  : scope === 'web'
-                    ? ['web/**/*.{mts,ts,tsx}']
-                    : webLibApi
-                      ? ['web/lib/api/**/*.{ts,mts}']
-                      : ['**/*.{mts,ts,tsx}'],
-        }),
+    include: portability
+      ? ['lambdas/dev-server.mts', 'cloudflare-worker/scripts/wrangler/runtime.mts']
+      : tooling
+        ? [
+            'ci/**/*.{mts,ts,tsx}',
+            'dev/**/*.{mts,ts,tsx}',
+            'playwright/helpers/**/*.{mts,ts,tsx}',
+            'static-code-analysis/**/*.{mts,ts,tsx}',
+            'test-tooling/**/*.{mts,ts,tsx}',
+          ]
+        : storybook
+          ? [
+              'web/storybook/entities/entity-fixtures.ts',
+              'web/storybook/entities/topics-story-recommendations.ts',
+              'web/test-helpers/storybook/component-story-coverage/message.ts',
+            ]
+          : storybookBrowser
+            ? ['web/components/**/*.{ts,tsx}', 'web/hooks/**/*.{ts,tsx}']
+            : scope === 'web'
+              ? ['web/**/*.{mts,ts,tsx}']
+              : webLibApi
+                ? ['web/lib/api/**/*.{ts,mts}']
+                : ['**/*.{mts,ts,tsx}'],
     exclude: [
       ...(scoped ? [] : ['ci/**', 'dev/**', 'playwright/**', 'static-code-analysis/**']),
       'integration-tests/**',

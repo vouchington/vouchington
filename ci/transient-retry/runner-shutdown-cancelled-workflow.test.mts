@@ -16,15 +16,14 @@ const shutdownLog = [
 ].join('\n')
 
 const makeCtx = (cancelledShardLog: string): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'cancelled',
   runAttempt: 2,
-  failedJobNames: [failedShardJobName, cancelledShardJobName, 'tests', 'build'],
+  failedJobNames: [failedShardJobName, cancelledShardJobName, 'web'],
   jobConclusions: new Map([
     [failedShardJobName, 'failure'],
     [cancelledShardJobName, 'cancelled'],
-    ['tests', 'failure'],
-    ['build', 'failure'],
+    ['web', 'failure'],
   ]),
   failedJobLogs: () =>
     Promise.resolve(

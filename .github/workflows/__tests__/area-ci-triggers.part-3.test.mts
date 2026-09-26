@@ -1,19 +1,13 @@
 import { readFileSync } from 'node:fs'
 
-import { parse as load } from 'yaml'
-
 import picomatch from 'picomatch'
 
 import { describe, expect, it } from 'vitest'
 
 import { assertNoWorkflowViolations } from '../../test-helpers/workflow-test-helpers.mts'
 
-type PathFilters = Record<string, string[]>
-
 const dockerignoreText = readFileSync('.dockerignore', 'utf8')
-const refineRuntimeWebFilters = load(
-  readFileSync('.github/ci-runtime-path-filters.yml', 'utf8'),
-) as PathFilters
+import { runtimePathFilters as refineRuntimeWebFilters } from '../../test-helpers/path-filter-test-fixtures.mts'
 
 function filterMatches(
   globs: string[],
@@ -40,7 +34,7 @@ function refinedRuntimeFilterMatchesChangedFiles(filterName: string, paths: stri
   return paths.some(path => filterMatches(globs!, path, 'every', { dot: true }))
 }
 
-describe('Vitest CI triggers', () => {
+describe('Area CI triggers', () => {
   it('keeps Storybook-owned tests and runtime web source wired to Storybook', () => {
     expectRefinedRuntimeFilterMatches('storybook', [
       'web/storybook/__tests__/component-story-coverage.test.ts',
@@ -52,7 +46,7 @@ describe('Vitest CI triggers', () => {
     ])
   })
 
-  it('still runs expensive runtime jobs when runtime source is mixed with excluded files', () => {
+  it('matches runtime filters when runtime source is mixed with excluded files', () => {
     expect(
       refinedRuntimeFilterMatchesChangedFiles('playwright', [
         'web/components/button.test.tsx',

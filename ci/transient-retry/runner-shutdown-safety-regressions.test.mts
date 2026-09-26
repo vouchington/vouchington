@@ -47,7 +47,7 @@ const makeCtx = (
   logs: Map<string, string>,
   overrides: Partial<WorkflowRunContext> = {},
 ): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames,
@@ -98,13 +98,13 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
         ),
     ],
     [
-      'Patch Coverage downstream',
+      'an independent coverage check',
       () =>
         makeCtx(
-          [webTestsJobName, 'Patch Coverage', 'tests', 'build'],
+          [webTestsJobName, 'coverage / Patch Coverage', 'web'],
           new Map([
             [webTestsJobName, cleanShutdownLog],
-            ['Patch Coverage', cgroupOom],
+            ['coverage / Patch Coverage', cgroupOom],
           ]),
         ),
     ],
@@ -112,7 +112,7 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
       'store-playwright-otel downstream',
       () =>
         makeCtx(
-          [playwrightJobName, 'store-playwright-otel', 'tests', 'build'],
+          [playwrightJobName, 'store-playwright-otel', 'web'],
           new Map([
             [playwrightJobName, cleanShutdownLog],
             ['store-playwright-otel', `##[error]No Playwright OTel artifacts found\n${cgroupOom}`],
@@ -142,21 +142,21 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
   it('does NOT treat Patch Coverage as downstream of a Playwright-only shutdown', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
-        [playwrightJobName, 'Patch Coverage', 'tests', 'build'],
+        [playwrightJobName, 'coverage / Patch Coverage', 'web'],
         new Map([[playwrightJobName, cleanShutdownLog]]),
       ),
     )
     expect(matched).toBe(false)
   })
 
-  it('allows Patch Coverage as downstream of a coverage-producing web-tests shutdown', async () => {
+  it('does NOT treat coverage checks as downstream of a web-tests shutdown', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeCtx(
-        [webTestsJobName, 'Patch Coverage', 'tests', 'build'],
+        [webTestsJobName, 'coverage / Patch Coverage', 'web'],
         new Map([[webTestsJobName, cleanShutdownLog]]),
       ),
     )
-    expect(matched).toBe(true)
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun backend-unit when migration failure appears before shutdown', async () => {

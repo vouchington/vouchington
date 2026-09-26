@@ -17,21 +17,20 @@ const matchingLog = [
   'Tests  1 failed | 4090 passed (4091)',
   '##[error]Process completed with exit code 1.',
   '##[group]Run actions/upload-artifact@vNEXT',
-  '  name: vitest-blob-tooling',
-  '  path: .vitest-reports/*.json',
+  '  name: coverage-tooling',
+  '  path: coverage/lcov.info',
   "##[error]The action 'Run actions/upload-artifact@vNEXT' has timed out after 1 minutes.",
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Tooling',
   conclusion: 'cancelled',
   runAttempt: 1,
-  failedJobNames: [toolingJobName, 'test-web / web-checks', 'tests', 'build'],
+  failedJobNames: [toolingJobName, 'test-ts-shared / ts-shared-tests', 'tooling'],
   jobConclusions: new Map([
     [toolingJobName, 'failure'],
-    ['test-web / web-checks', 'cancelled'],
-    ['tests', 'cancelled'],
-    ['build', 'cancelled'],
+    ['test-ts-shared / ts-shared-tests', 'cancelled'],
+    ['tooling', 'cancelled'],
   ]),
   failedJobLogs: () => Promise.resolve(new Map([[toolingJobName, matchingLog]])),
   failedJobAnnotations: () => Promise.resolve([]),
@@ -39,7 +38,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 })
 
 describe('tooling teardown plus artifact upload timeout safety', () => {
-  it('does not rerun a real tooling test failure even when a later vitest-blob upload times out', async () => {
+  it('does not rerun a real tooling test failure even when a later coverage upload times out', async () => {
     const result = await decide(makeCtx(), RULES)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -97,12 +96,11 @@ describe('tooling teardown plus artifact upload timeout safety', () => {
   it('does not rerun when another job genuinely failed', async () => {
     const result = await decide(
       makeCtx({
-        failedJobNames: [toolingJobName, 'test-web / web-checks', 'tests', 'build'],
+        failedJobNames: [toolingJobName, 'test-ts-shared / ts-shared-tests', 'tooling'],
         jobConclusions: new Map([
           [toolingJobName, 'failure'],
-          ['test-web / web-checks', 'failure'],
-          ['tests', 'cancelled'],
-          ['build', 'cancelled'],
+          ['test-ts-shared / ts-shared-tests', 'failure'],
+          ['tooling', 'cancelled'],
         ]),
       }),
       RULES,

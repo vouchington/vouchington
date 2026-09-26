@@ -63,11 +63,3 @@ export const toolingWorkflowProjectNames = configuredToolingProjectNames.filter(
 export const dedicatedToolingWorkflowProjectNames = configuredToolingProjectNames.filter(
   name => toolingProjectPolicies[name].runInDedicatedToolingWorkflow,
 )
-
-export const localCoverageToolingProjectNames = configuredToolingProjectNames.filter(
-  name => toolingProjectPolicies[name].runInLocalCoverage,
-)
-
-export const dbBackedToolingProjectNames = configuredToolingProjectNames.filter(
-  name => toolingProjectPolicies[name].environmentPolicy === 'worktree-db',
-)

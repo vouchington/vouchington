@@ -24,8 +24,8 @@ function pathFilterSection(workflow: string, filterName: string): string {
 
 describe('secret-backed workflow context gates (permissions and security)', () => {
   it('passes trusted context into the single backend workflow call', () => {
-    const workflow = read('.github/workflows/ci.yml')
-    const staticAnalysis = jobSection(workflow, 'static-code-analysis')
+    const workflow = read('.github/workflows/backend.yml')
+    const staticAnalysis = jobSection(read('.github/workflows/static.yml'), 'static-code-analysis')
     const backendUnit = jobSection(workflow, 'test-backend-unit')
     const backendIntegration = jobSection(workflow, 'test-backend-credentialed')
 
@@ -43,14 +43,14 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(backendIntegration).toContain('contents: read')
     expect(backendIntegration).toContain('id-token: write')
     expect(backendIntegration).toContain(
-      "trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}",
+      "trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}",
     )
     expect(backendIntegration).toContain('secrets:')
     expect(backendIntegration).toContain(
-      "OPENAI_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}",
+      "OPENAI_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}",
     )
     expect(backendIntegration).toContain(
-      "OPENROUTER_API_KEY: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}",
+      "OPENROUTER_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}",
     )
     expect(backendIntegration).not.toContain('secrets: inherit')
     expect(workflow).not.toContain('test-backend-trusted')
@@ -68,21 +68,21 @@ describe('secret-backed workflow context gates (permissions and security)', () =
   })
 
   it('downscopes local-only reusable workflow callers', () => {
-    const workflow = read('.github/workflows/ci.yml')
     const coverageTransportJobs = [
-      'test-ts-shared',
-      'test-tooling',
-      'test-web',
-      'test-cloudflare-worker',
+      ['tooling', 'test-ts-shared'],
+      ['tooling', 'test-tooling'],
+      ['web', 'test-web'],
+      ['cloudflare-worker', 'test-cloudflare-worker'],
     ]
     const localOnlyJobs = [
-      'initialize-smoke-test',
-      'test-web-integration',
-      'test-lambdas',
-      'test-explain-analyze',
+      ['tooling', 'initialize-smoke-test'],
+      ['web', 'test-web-integration'],
+      ['lambdas', 'test-lambdas'],
+      ['backend', 'test-explain-analyze'],
     ]
 
-    for (const job of coverageTransportJobs) {
+    for (const [area, job] of coverageTransportJobs) {
+      const workflow = read(`.github/workflows/${area}.yml`)
       const section = jobSection(workflow, job)
 
       expect(section).toContain('permissions:')
@@ -92,7 +92,8 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       expect(section).not.toContain('secrets: inherit')
     }
 
-    for (const job of localOnlyJobs) {
+    for (const [area, job] of localOnlyJobs) {
+      const workflow = read(`.github/workflows/${area}.yml`)
       const section = jobSection(workflow, job)
 
       expect(section).toContain('permissions:')
@@ -101,13 +102,11 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       expect(section).not.toContain('secrets: inherit')
     }
 
-    const playwrightJob = jobSection(workflow, 'test-playwright')
+    const playwrightJob = jobSection(read('.github/workflows/web.yml'), 'test-playwright')
     expect(playwrightJob).toContain('permissions:')
     expect(playwrightJob).toContain('contents: read')
     expect(playwrightJob).not.toContain('id-token: write')
-    expect(playwrightJob).toContain(
-      "otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.trusted-secret-context == 'true' }}",
-    )
+    expect(playwrightJob).not.toContain('otel_enabled:')
     expect(playwrightJob).not.toContain('secrets: inherit')
 
     // store-playwright-otel moved to main-web.yml (main-only push workflow)
@@ -125,18 +124,20 @@ describe('secret-backed workflow context gates (permissions and security)', () =
   })
 
   it('downscopes non-secret orchestration jobs that execute local shell', () => {
-    const workflow = read('.github/workflows/ci.yml')
-    const jobs = ['detect-changes', 'static-code-analysis']
-
-    for (const job of jobs) {
-      const section = jobSection(workflow, job)
+    for (const [area, job] of [
+      ['backend', 'changes'],
+      ['static', 'static-code-analysis'],
+    ]) {
+      const section = jobSection(read(`.github/workflows/${area}.yml`), job)
 
       expect(section).toContain('permissions:')
       expect(section).toContain('contents: read')
       expect(section).not.toContain('id-token: write')
     }
 
-    expect(jobSection(workflow, 'detect-changes')).toContain('pull-requests: read')
+    expect(jobSection(read('.github/workflows/backend.yml'), 'changes')).toContain(
+      'pull-requests: read',
+    )
   })
 
   it('keeps local-only reusable workflows free of secrets', () => {

@@ -56,15 +56,15 @@ describe('backend module test workflow', () => {
     expect(workflow).not.toContain('actions/cache')
   })
 
-  it('publishes backend-modules coverage and Vitest blob artifacts', () => {
-    expect(workflow).toContain('uses: ./.github/actions/upload-vitest-blob')
+  it('publishes backend-modules full LCOV with required upload retries', () => {
     expect(workflow).toContain(
       'run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"',
     )
-    expect(workflow).toContain('FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}')
-    expect(workflow).toContain('RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}')
-    expect(workflow).toContain('uses: ./.github/actions/upload-coverage-pair')
+    expect(workflow).toContain('FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}')
+    expect(workflow).toContain('RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}')
+    expect(workflow).toContain('uses: ./.github/actions/upload-full-lcov')
     expect(workflow).toContain('suite: backend-modules')
-    expect(workflow).toContain('fallback attempt 2')
+    expect(workflow).toContain('FAMILY: full-lcov')
+    expect(workflow).toContain("inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure'")
   })
 })

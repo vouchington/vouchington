@@ -1,11 +1,7 @@
 import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  dbBackedToolingProjectNames,
-  localCoverageToolingProjectNames,
-  toolingTestProjectNames,
-} from '../test-helpers/vitest-config/tooling-project-registry.mts'
+import { toolingTestProjectNames } from '../test-helpers/vitest-config/tooling-project-registry.mts'
 
 const dockerFreeBackendProjects = [
   'backend/data-stores/analytics',
@@ -80,18 +76,6 @@ export const VITEST_PROJECT_GROUPS = {
     'cloudflare-worker-mocks',
     'cloudflare-worker-portability',
   ],
-  'local-coverage-web-storybook': ['web-storybook', 'web-storybook-component-coverage'],
-  'local-coverage-backend-modules': dockerFreeBackendProjects,
-  'local-coverage-tooling': localCoverageToolingProjectNames,
-  'local-coverage-backend-data-stores': [
-    'backend/analytics-integration',
-    'backend-data-stores',
-    'backend-postgres-schema',
-    'backend-activitypub-capacity',
-    'backend-mocks',
-  ],
-  'local-coverage-web-integration': ['web-integration', 'web-api'],
-  'local-coverage-playwright-helpers': dbBackedToolingProjectNames,
 } as const satisfies Record<string, readonly string[]>
 
 export type VitestProjectGroup = keyof typeof VITEST_PROJECT_GROUPS

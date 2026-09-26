@@ -18,7 +18,7 @@ type Workflow = {
   jobs?: Record<string, WorkflowJob>
 }
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],

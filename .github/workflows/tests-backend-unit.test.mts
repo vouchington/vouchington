@@ -96,17 +96,6 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
   })
 
-  it('stamps backend coverage with the prepared shard total', () => {
-    const stamp = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
-      step => step.name === 'Stamp backend-shard-${{ matrix.shard }} coverage provenance',
-    )
-    expect(stamp?.env).toMatchObject({
-      CI_SHARD: '${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}',
-      PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}',
-      PR_HEAD_SHA: '${{ github.event.pull_request.head.sha }}',
-    })
-  })
-
   it('builds email templates and migrates each shard without owning backend smoke', () => {
     // Email-templates build is folded into .github/actions/setup-backend. Each
     // shard still owns that setup and migration; the standalone smoke workflow
@@ -139,10 +128,10 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(backendJob).not.toContain('OPENAI_API_KEY')
   })
 
-  it('keeps consumed LCOV fallback uploads best-effort but not under a 1-minute cap', () => {
+  it('keeps consumed full LCOV upload attempts best-effort', () => {
     const backendJob = jobSection('backend-tests')
     const fallbackStepIndex = backendJob.indexOf(
-      'name: Upload backend-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 1)',
+      'name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',
     )
     const fallbackStep = backendJob.slice(
       fallbackStepIndex,
@@ -151,7 +140,7 @@ describe('backend uncredentialed Docker test workflow', () => {
 
     expect(fallbackStepIndex).toBeGreaterThanOrEqual(0)
     expect(fallbackStep).toContain('continue-on-error: true')
-    expect(fallbackStep).toContain('uses: ./.github/actions/upload-coverage-pair')
+    expect(fallbackStep).toContain('uses: ./.github/actions/upload-full-lcov')
     expect(fallbackStep).toContain('suite: backend-shard-${{ matrix.shard }}')
   })
 
@@ -167,13 +156,13 @@ describe('backend uncredentialed Docker test workflow', () => {
       'name: vitest-fork-diagnostics-backend-shard-${{ matrix.shard }}',
     )
 
-    // Ordering: diagnostics run after the test step and before the pre-existing blob upload.
+    // Ordering: diagnostics run after the test step and before full LCOV publication.
     expect(testStepIndex).toBeGreaterThanOrEqual(0)
     expect(reportSummaryIndex).toBeGreaterThan(testStepIndex)
     expect(uploadIndex).toBeGreaterThan(reportSummaryIndex)
     expect(
       backendJob.indexOf(
-        'name: Upload backend-shard-${{ matrix.shard }} vitest blob to GitHub (fallback)',
+        'name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',
       ),
     ).toBeGreaterThan(uploadIndex)
 

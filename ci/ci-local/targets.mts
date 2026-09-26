@@ -147,7 +147,7 @@ export const targets = {
       ),
       workflowCommand(
         'web API tests',
-        "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=web-api-test-report.junit.xml VITEST_BLOB_OUTPUT_FILE=.vitest-reports/web-api.json pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-api'",
+        "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=web-api-test-report.junit.xml pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-api'",
         'tests-web-api.yml',
         'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-api',
       ),
@@ -165,7 +165,7 @@ export const targets = {
       ),
       workflowCommand(
         'web integration tests',
-        "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=web-integration-test-report.junit.xml VITEST_BLOB_OUTPUT_FILE=.vitest-reports/web-integration.json pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration'",
+        "bash -c 'if [ -f .env ]; then source .env; fi; unset CF_WORKER_SECRET; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=web-integration-test-report.junit.xml pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration'",
         'tests-web-integration.yml',
         'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration',
       ),
@@ -182,7 +182,7 @@ export const targets = {
       ),
       workflowCommand(
         'postgres schema tests',
-        'bash -c \'if [ -f .env ]; then set -a; source .env; set +a; fi; export READ_DATABASE_URL="$DATABASE_URL"; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=postgres-schema-test-report.junit.xml VITEST_BLOB_OUTPUT_FILE=.vitest-reports/postgres-schema.json VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity\'',
+        'bash -c \'if [ -f .env ]; then set -a; source .env; set +a; fi; export READ_DATABASE_URL="$DATABASE_URL"; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=postgres-schema-test-report.junit.xml VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity\'',
         'tests-postgres-schema.yml',
         'VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
       ),

@@ -1111,7 +1111,6 @@ rules:
         - ci/lint-links.sh
         - ci/check-needs-results.sh
         - ci/coverage-artifacts.sh
-        - ci/merge-vitest-reports.sh
         - ci/with-node-test-options
       shebangDirs:
         - .
@@ -2038,14 +2037,6 @@ rules:
         # A standalone web-integration run prepares its matrix and shared web build before shards start.
         - job: '.github/workflows/tests-web-integration.yml#prep'
           maxMinutes: 20
-        # Fail-safe ceiling covering checkout/setup/validation plus headroom for the GitHub-artifact
-        # coverage download and merge, including a 5m sharded-artifact fallback.
-        - job: '.github/workflows/ci-test-coverage.yml#test-coverage'
-          maxMinutes: 14
-        # Fail-safe ceiling covering checkout/setup/validation plus headroom for the GitHub-artifact
-        # coverage download and merge, including a 5m sharded-artifact fallback.
-        - job: '.github/workflows/ci-tests-processing.yml#tests-processing'
-          maxMinutes: 14
         # setup-node-pnpm (5m) plus the strictly serial sweep engine (20m) sum 25m; cap adds
         # buffer for the unbounded checkout/workspace-restore steps ahead of them. See #11280.
         - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'

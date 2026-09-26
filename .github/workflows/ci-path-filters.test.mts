@@ -4,6 +4,10 @@ import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
 
 import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
+import {
+  primaryPathFilters,
+  runtimePathFilters,
+} from '../test-helpers/path-filter-test-fixtures.mts'
 
 type Workflow = {
   jobs?: Record<
@@ -22,7 +26,6 @@ type PathFilters = Record<string, string[]>
 const detectChangesWorkflow = load(
   readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
 ) as Workflow
-const ciWorkflow = load(readFileSync('.github/workflows/ci.yml', 'utf8')) as Workflow
 const mainChecks = load(readFileSync('.github/workflows/main-checks.yml', 'utf8')) as {
   on?: { push?: { paths?: string[] } }
   jobs?: Record<
@@ -40,11 +43,11 @@ const mainChecks = load(readFileSync('.github/workflows/main-checks.yml', 'utf8'
 }
 
 function loadDetectChangesFilters(): PathFilters {
-  return load(readFileSync('.github/ci-path-filters.yml', 'utf8')) as PathFilters
+  return primaryPathFilters
 }
 
 function loadRuntimeFilters(): PathFilters {
-  return load(readFileSync('.github/ci-runtime-path-filters.yml', 'utf8')) as PathFilters
+  return runtimePathFilters
 }
 
 function loadMainChecksFilters(): PathFilters {
@@ -85,13 +88,23 @@ describe('detect-changes path filters', () => {
   })
 
   it('fails open for filter changes and routes CI control workflows through topology', () => {
-    const filterPaths = ['.github/ci-path-filters.yml', '.github/ci-runtime-path-filters.yml']
+    const filterPaths = ['.github/ci-path-filters.yml']
+    const areaPaths = ['backend', 'web', 'cloudflare-worker', 'lambdas', 'tooling', 'static'].map(
+      area => `.github/workflows/${area}.yml`,
+    )
     const workflowPaths = [
-      ...Object.values(ciWorkflow.jobs ?? {}).flatMap(job => {
-        const path = job.uses?.replace(/^\.\//u, '')
-        return path?.startsWith('.github/workflows/ci-') ? [path] : []
-      }),
-      '.github/workflows/ci.yml',
+      ...new Set(
+        areaPaths.flatMap(path => {
+          const workflow = load(readFileSync(path, 'utf8')) as Workflow
+          return [
+            path,
+            ...Object.values(workflow.jobs ?? {}).flatMap(job => {
+              const path = job.uses?.replace(/^\.\//u, '')
+              return path?.startsWith('.github/workflows/ci-') ? [path] : []
+            }),
+          ]
+        }),
+      ),
     ].toSorted()
 
     for (const [filters, every] of [

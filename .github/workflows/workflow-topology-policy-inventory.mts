@@ -28,13 +28,8 @@ export const jobInventory = {
     'static-backend static-cloudflare static-lambdas static-web',
   ),
   '.github/workflows/checks-backend-smoke.yml': jobs('smoke'),
-  '.github/workflows/ci.yml': jobs(
-    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing',
-  ),
   '.github/workflows/ci-detect-changes.yml': jobs('detect-changes'),
-  '.github/workflows/ci-test-coverage.yml': jobs('test-coverage'),
   '.github/workflows/ci-upload-codecov.yml': jobs('upload-codecov'),
-  '.github/workflows/ci-tests-processing.yml': jobs('tests-processing'),
   '.github/workflows/cleanup-artifacts.yml': jobs('cleanup-run cleanup-sweep'),
   '.github/workflows/harness-dispatch.yml': jobs('dispatch'),
   '.github/workflows/fix-dependabot.yml': jobs(
@@ -106,7 +101,6 @@ export const unlockedWorkflowReasons = {
   '.github/workflows/tests-playwright.yml': "runs under its caller's concurrency",
   '.github/workflows/tests-portability.yml': "runs under its caller's concurrency",
   '.github/workflows/ci-detect-changes.yml': 'short-lived read-only CI classification',
-  '.github/workflows/ci-test-coverage.yml': 'short-lived coverage report evaluation',
   '.github/workflows/ci-upload-codecov.yml': 'independent informational coverage upload',
   '.github/workflows/checks-backend-smoke.yml': 'parallel-safe idempotent manual tests',
   '.github/workflows/checks-static.yml': 'parallel-safe idempotent manual tests',

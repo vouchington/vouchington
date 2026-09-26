@@ -43,39 +43,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `checks-static.yml`                 | `static-web`                    | job    | `ubuntu-latest`                       | 35            |
 | `ci-area-coverage.yml`              | `coverage`                      | job    | `ubuntu-latest`                       | 10            |
 | `ci-detect-changes.yml`             | `detect-changes`                | job    | `ubuntu-slim`                         | 3             |
-| `ci-test-coverage.yml`              | `test-coverage`                 | job    | `ubuntu-latest`                       | 14            |
-| `ci-tests-processing.yml`           | `tests-processing`              | job    | `ubuntu-latest`                       | 14            |
 | `ci-upload-codecov.yml`             | `upload-codecov`                | matrix | `ubuntu-latest`                       | 8             |
-| `ci.yml`                            | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
-| `ci.yml`                            | `build`                         | job    | `ubuntu-latest`                       | 5             |
-| `ci.yml`                            | `build-backend`                 | job    | → `build-backend.yml`                 | 360           |
-| `ci.yml`                            | `build-web`                     | job    | → `build-web.yml`                     | 360           |
-| `ci.yml`                            | `detect-changes`                | job    | → `ci-detect-changes.yml`             | 360           |
-| `ci.yml`                            | `initialize-smoke-test`         | job    | → `initialize-smoke-test.yml`         | 360           |
-| `ci.yml`                            | `static-backend`                | job    | → `checks-static.yml`                 | 360           |
-| `ci.yml`                            | `static-cloudflare-worker`      | job    | → `checks-static.yml`                 | 360           |
-| `ci.yml`                            | `static-code-analysis`          | job    | → `static-code-analysis.yml`          | 360           |
-| `ci.yml`                            | `static-lambdas`                | job    | → `checks-static.yml`                 | 360           |
-| `ci.yml`                            | `static-web`                    | job    | → `checks-static.yml`                 | 360           |
-| `ci.yml`                            | `storybook`                     | job    | → `storybook.yml`                     | 360           |
-| `ci.yml`                            | `test-backend-credentialed`     | job    | → `tests-backend-credentialed.yml`    | 360           |
-| `ci.yml`                            | `test-backend-modules`          | job    | → `tests-backend-modules.yml`         | 360           |
-| `ci.yml`                            | `test-backend-unit`             | job    | → `tests-backend-unit.yml`            | 360           |
-| `ci.yml`                            | `test-cloudflare-worker`        | job    | → `tests-cloudflare-worker.yml`       | 360           |
-| `ci.yml`                            | `test-coverage`                 | job    | → `ci-test-coverage.yml`              | 360           |
-| `ci.yml`                            | `test-explain-analyze`          | job    | → `explain-analyze.yml`               | 360           |
-| `ci.yml`                            | `test-lambdas`                  | job    | → `tests-lambdas.yml`                 | 360           |
-| `ci.yml`                            | `test-playwright`               | job    | → `tests-playwright.yml`              | 360           |
-| `ci.yml`                            | `test-playwright-credentialed`  | job    | → `tests-playwright-credentialed.yml` | 360           |
-| `ci.yml`                            | `test-portability`              | job    | → `tests-portability.yml`             | 360           |
-| `ci.yml`                            | `test-postgres-schema`          | job    | → `tests-postgres-schema.yml`         | 360           |
-| `ci.yml`                            | `test-tooling`                  | job    | → `tests-tooling.yml`                 | 360           |
-| `ci.yml`                            | `test-ts-shared`                | job    | → `tests-ts-shared.yml`               | 360           |
-| `ci.yml`                            | `test-web`                      | job    | → `tests-web.yml`                     | 360           |
-| `ci.yml`                            | `test-web-api`                  | job    | → `tests-web-api.yml`                 | 360           |
-| `ci.yml`                            | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
-| `ci.yml`                            | `tests`                         | job    | `ubuntu-latest`                       | 5             |
-| `ci.yml`                            | `tests-processing`              | job    | → `ci-tests-processing.yml`           | 360           |
 | `cleanup-artifacts.yml`             | `cleanup-run`                   | job    | `ubuntu-slim`                         | 10            |
 | `cleanup-artifacts.yml`             | `cleanup-sweep`                 | job    | `ubuntu-latest`                       | 26            |
 | `cloudflare-worker.yml`             | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |

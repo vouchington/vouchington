@@ -6,7 +6,7 @@ import {
 } from '../../test-helpers/vitest-ci-reporters.mts'
 import { formatTeardownOverrunDiagnostics } from '../../test-helpers/vitest-teardown-overrun-diagnostics.mts'
 
-// Companion file `vitest-reporters.test.mts` covers the reporter/blob-upload workflow wiring;
+// Companion file `vitest-reporters.test.mts` covers the reporter workflow wiring;
 // this file was split out to stay under the 300-line vitest test-file cap and covers only the
 // worker-exit and teardown-overrun diagnostics formatting.
 describe('Vitest CI reporters (part 2)', () => {

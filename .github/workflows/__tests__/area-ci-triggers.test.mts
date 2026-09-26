@@ -1,20 +1,13 @@
-import { readFileSync } from 'node:fs'
-
-import { parse as load } from 'yaml'
-
 import picomatch from 'picomatch'
 
 import { describe, expect, it } from 'vitest'
 
 import { assertNoWorkflowViolations } from '../../test-helpers/workflow-test-helpers.mts'
 
-type PathFilters = Record<string, string[]>
-
-const filters = load(readFileSync('.github/ci-path-filters.yml', 'utf8')) as PathFilters
-
-const refineRuntimeWebFilters = load(
-  readFileSync('.github/ci-runtime-path-filters.yml', 'utf8'),
-) as PathFilters
+import {
+  primaryPathFilters as filters,
+  runtimePathFilters as refineRuntimeWebFilters,
+} from '../../test-helpers/path-filter-test-fixtures.mts'
 
 function filterMatches(
   globs: string[],
@@ -70,7 +63,7 @@ const refinedRuntimeFilters = [
   'build-backend',
 ] as const
 
-describe('Vitest CI triggers', () => {
+describe('Area CI triggers', () => {
   it('selects backend tests for the deployed Valkey admin entrypoint without the deleted script path', () => {
     expectFilterMatches('backend', [
       'backend/entrypoints/api/valkey-admin.mts',
@@ -141,7 +134,7 @@ describe('Vitest CI triggers', () => {
 
   it('runs tooling tests for workflow and tooling fixtures they validate', () => {
     expectFilterMatches('tooling', [
-      '.github/workflows/ci.yml',
+      '.github/workflows/backend.yml',
       '.github/workflows/tests-backend-unit.yml',
       '.github/workflows/checks-backend-smoke.yml',
       '.github/workflows/README.md',

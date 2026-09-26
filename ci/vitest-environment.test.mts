@@ -86,17 +86,6 @@ describe('vitest environment coverage config', () => {
     ])
   })
 
-  it('leaves include unset for the changed scope so uninstrumented files stay absent from LCOV', async () => {
-    process.env.VITEST_COVERAGE_SCOPE = 'changed'
-    process.argv = ['node', 'vitest', 'run', 'ci/coverage-local-changed.test.mts', '--coverage']
-
-    const { coverageConfig, coverageFlags } = await loadEnvironment('multiple-projects')
-
-    expect(coverageFlags.isScopedCoverage).toBe(true)
-    expect(coverageFlags.isChangedCoverage).toBe(true)
-    expect(coverageConfig().include).toBeUndefined()
-  })
-
   it('disables coverage when a CI workflow does not publish it', async () => {
     process.env.VITEST_COVERAGE_ENABLED = 'false'
     process.argv = ['node', 'vitest', 'run', '--project', 'backend-modules']

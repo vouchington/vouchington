@@ -15,6 +15,6 @@
   broader refined runtime filters and `workflow-action-changes` fail-open fallback so source or
   workflow changes still rebuild deployable images.
 - Apart from the intentional root dependency fail-open, do not trigger PR Docker image builds for
-  unrelated actions or workspace manifests. Within `ci.yml`, keep PR Docker filters and the refined
+  unrelated actions or workspace manifests. Within the backend and web area workflows, keep PR Docker filters and the refined
   broad filters from matching Markdown-only, test-only, test-helper-only, or Storybook-only changes.
   Keep `.dockerignore` aligned so ignored files are not sent to the shared repo-root Docker context.

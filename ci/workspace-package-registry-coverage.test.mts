@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url'
 import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import {
+  primaryPathFilters as ciPathFilters,
+  runtimePathFilters as ciRuntimeFilters,
+} from '../.github/test-helpers/path-filter-test-fixtures.mts'
 
 /**
  * Every top-level package is hand-registered in four places: `.syncpackrc.json` `source`,
@@ -17,8 +21,6 @@ import { describe, expect, it } from 'vitest'
  */
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
-
-type PathFilterGroups = Record<string, string[]>
 
 function readYaml<T>(relativePath: string): T {
   return parseYaml(readFileSync(`${repoRoot}/${relativePath}`, 'utf8')) as T
@@ -33,8 +35,6 @@ const trackedManifests = allTrackedFiles.filter(
 )
 
 const syncpack = readYaml<{ source?: string[] }>('.syncpackrc.json')
-const ciPathFilters = readYaml<PathFilterGroups>('.github/ci-path-filters.yml')
-const ciRuntimeFilters = readYaml<PathFilterGroups>('.github/ci-runtime-path-filters.yml')
 const workspacePackages = readYaml<{ packages?: string[] }>('pnpm-workspace.yaml').packages ?? []
 
 /**
@@ -68,9 +68,9 @@ function allCiPathFilterEntries(): string[] {
 }
 
 /**
- * `.github/ci-runtime-path-filters.yml` pastes each primary group's positive globs into
+ * Each `runtime-*` group in `.github/ci-path-filters.yml` combines its primary positive globs into
  * one `{a,b,c}` brace-alternation item instead of separate list entries. Splitting any
- * fully-braced item back into its comma-separated members lets the two files' glob sets
+ * fully-braced item back into its comma-separated members lets the two groups' glob sets
  * compare equal regardless of that packaging difference (and regardless of order — the
  * pasted bundle does not always preserve the primary list's item order).
  */
@@ -221,13 +221,12 @@ describe('workspace package registry coverage', () => {
   })
 
   it("mirrors every runtime path-filter group's positive globs against its primary group", () => {
-    // .github/ci-runtime-path-filters.yml's own header says it plainly: the positive brace globs
-    // "intentionally mirror the same-named primary filters" so that the trailing `!`-prefixed
-    // lines are "the only refinement". Those exclusions are deliberate narrowing (e.g. storybook
+    // Runtime groups mirror primary positive globs; the trailing `!`-prefixed exclusions
+    // are the only refinement. Those exclusions are deliberate narrowing (e.g. storybook
     // ignores test-only edits that primary's broader `web:` gate still matches) — comparing
     // post-exclusion files against primary would fail by design, not by drift. What must stay in
     // sync is only the pasted-in positive bundle itself, since dorny has no way to reference
-    // another file's group and a hand-copy can silently fall behind an edit to the primary group.
+    // another group's entries and a hand-copy can silently fall behind an edit to the primary group.
     //
     // Comparing declared glob strings, not which currently-tracked files they match, also catches
     // a primary glob added for a path nothing has been created under yet: file-matching would see

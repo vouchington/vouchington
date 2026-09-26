@@ -11,7 +11,7 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],

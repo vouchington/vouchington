@@ -159,33 +159,6 @@ describe('CI cache policy', () => {
     )
   })
 
-  it('deletes inter-job blob artifacts after the tests fan-in consumes them', () => {
-    const workflow = readFileSync('.github/workflows/ci-tests-processing.yml', 'utf8')
-    const testsJobStart = workflow.indexOf('\n  tests-processing:')
-    expect(testsJobStart).toBeGreaterThanOrEqual(0)
-    const afterTests = workflow.slice(testsJobStart + 1)
-    const nextJobStart = afterTests.search(/\n {2}[a-z][a-z0-9-]*:\n/)
-    const testsJob = nextJobStart === -1 ? afterTests : afterTests.slice(0, nextJobStart)
-
-    // The tests job must have actions: write to delete artifacts
-    expect(testsJob).toContain('actions: write')
-    // The cleanup step must exist and target the inter-job blob prefixes
-    expect(testsJob).toContain('name: Delete inter-job blob artifacts')
-    expect(testsJob).not.toContain('if: always()')
-    expect(testsJob).toContain('id: all-checks-passed')
-    expect(testsJob).toContain(
-      "if: steps.all-checks-passed.outcome == 'success' && (steps.merge-vitest-reports.outcome == 'success' || steps.merge-vitest-reports.outcome == 'skipped')",
-    )
-    expect(testsJob).toContain('test("^(vitest-blob-|vitest-report-attempt-|coverage-)")')
-    // Cleanup must run after Vitest reports and required-job fan-in are consumed.
-    expect(testsJob.indexOf('name: Merge Vitest reports')).toBeLessThan(
-      testsJob.indexOf('name: Delete inter-job blob artifacts'),
-    )
-    expect(testsJob.indexOf('name: All checks passed')).toBeLessThan(
-      testsJob.indexOf('name: Delete inter-job blob artifacts'),
-    )
-  })
-
   it('keeps binary download paths versioned', () => {
     const setupLychee = readFileSync('.github/actions/setup-lychee/action.yml', 'utf8')
     const gitleaks = readFileSync('.github/workflows/gitleaks.yml', 'utf8')

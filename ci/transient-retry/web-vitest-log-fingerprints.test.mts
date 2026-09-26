@@ -39,7 +39,7 @@ const cleanPlaywrightShutdownLog = [
 const noPlaywrightOtelArtifactsLog = '##[error]No Playwright OTel artifacts found'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],
@@ -51,7 +51,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 describe('web-vitest-sigsegv', () => {
   it('matches the current publishing web Vitest SIGSEGV fingerprint on attempt 1', async () => {
     const ctx = makeCtx({
-      failedJobNames: [webTestsJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [webTestsJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
@@ -76,7 +76,7 @@ describe('web-vitest-sigsegv', () => {
 
   it('does not match a web assertion failure', async () => {
     const ctx = makeCtx({
-      failedJobNames: [webTestsJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [webTestsJobName, 'web'],
       failedJobLogs: () =>
         Promise.resolve(
           new Map([[webTestsJobName, 'AssertionError: expected button to be visible']]),
@@ -90,7 +90,7 @@ describe('web-vitest-sigsegv', () => {
 
   it('does not match when the web test job is not the failed leaf job', async () => {
     const ctx = makeCtx({
-      failedJobNames: ['Patch Coverage', 'tests', 'build'],
+      failedJobNames: ['web'],
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
@@ -101,7 +101,7 @@ describe('web-vitest-sigsegv', () => {
 
   it('does not match when another non-aggregate job also fails', async () => {
     const ctx = makeCtx({
-      failedJobNames: [webTestsJobName, 'test-backend-unit / backend-tests (1)', 'tests', 'build'],
+      failedJobNames: [webTestsJobName, 'test-backend-unit / backend-tests (1)', 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
@@ -113,7 +113,7 @@ describe('web-vitest-sigsegv', () => {
   it('does not match the same fingerprint after the retry cap is exhausted', async () => {
     const ctx = makeCtx({
       runAttempt: 2,
-      failedJobNames: [webTestsJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [webTestsJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 

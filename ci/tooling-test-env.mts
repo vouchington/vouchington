@@ -6,87 +6,7 @@ import {
   collectDbBackedTestSetupInput,
   evaluateDbBackedTestSetup,
 } from '../dev/check-db-backed-test-setup.mts'
-import { DB_ENV_NAMES, WORKTREE_RESOURCE_ENV_NAMES } from './db-env-names.mts'
-
-export { DB_ENV_NAMES, WORKTREE_RESOURCE_ENV_NAMES }
-
-export type CoverageEnvSuite = {
-  coverageScope?: string
-  requiresWebInit?: boolean
-  serialExecution?: boolean
-  unsetEnv?: readonly string[]
-}
-
-// Deliberately strict to "web": gates web-only coverage suites (playwright-helpers,
-// web-integration) that need the full stack, unlike the DB/Valkey-backed suites below
-// which accept "backend" too (see hasDataStoreInit in dev/check-db-backed-test-setup).
-export function hasWebInit(cwd = '.'): boolean {
-  try {
-    return (
-      existsSync(join(cwd, '.initialized')) &&
-      readFileSync(join(cwd, '.initialized'), 'utf8').trim() === 'web' &&
-      existsSync(join(cwd, '.env'))
-    )
-  } catch {
-    return false
-  }
-}
-
-export function envForSuite(
-  suite: CoverageEnvSuite,
-  baseEnv: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = suite.requiresWebInit
-    ? { ...baseEnv }
-    : envWithoutWorktreeResources(baseEnv)
-
-  if (suite.coverageScope) env.VITEST_COVERAGE_SCOPE = suite.coverageScope
-  if (suite.serialExecution) env.VITEST_MAX_WORKERS = '1'
-  return env
-}
-
-export function envForCoverageRun(
-  suite: CoverageEnvSuite,
-  cwd: string,
-  baseEnv: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
-  const env = suite.requiresWebInit
-    ? envForDbBackedSuite(cwd, baseEnv)
-    : envForSuite(suite, baseEnv)
-  if (suite.coverageScope) env.VITEST_COVERAGE_SCOPE = suite.coverageScope
-  if (suite.serialExecution) env.VITEST_MAX_WORKERS = '1'
-  const unsetEnv = new Set(suite.unsetEnv)
-  return Object.fromEntries(Object.entries(env).filter(([name]) => !unsetEnv.has(name)))
-}
-
-export function envForDbBackedSuite(cwd: string, baseEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  return validatedCurrentWorktreeEnv(cwd, baseEnv, 'coverage')
-}
-
-function validatedCurrentWorktreeEnv(
-  cwd: string,
-  baseEnv: NodeJS.ProcessEnv,
-  purpose: 'coverage' | 'tooling test',
-): NodeJS.ProcessEnv {
-  const env = loadCurrentWorktreeEnv(cwd, baseEnv)
-  const setup = collectDbBackedTestSetupInput(cwd, env, { probeServices: false })
-  const validation = evaluateDbBackedTestSetup(setup)
-  if (!validation.ok) {
-    const errors =
-      purpose === 'tooling test'
-        ? validation.errors.map(toolingSetupErrorWithoutShellSourcing)
-        : validation.errors
-    throw new Error([`DB/Valkey-backed ${purpose} setup is not ready.`, ...errors].join('\n'))
-  }
-
-  return env
-}
-
-function toolingSetupErrorWithoutShellSourcing(error: string): string {
-  const hintStart = error.indexOf(' Run ./dev/initialize backend (or web)')
-  if (hintStart === -1) return error
-  return `${error.slice(0, hintStart)} Run ./dev/initialize backend (or web) before rerunning tooling tests.`
-}
+import { WORKTREE_RESOURCE_ENV_NAMES } from './db-env-names.mts'
 
 export function envWithoutWorktreeResources(
   baseEnv: NodeJS.ProcessEnv = process.env,
@@ -102,7 +22,25 @@ export function envForDbBackedToolingProject(
   cwd: string,
   baseEnv: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
-  return validatedCurrentWorktreeEnv(cwd, baseEnv, 'tooling test')
+  const env = loadCurrentWorktreeEnv(cwd, baseEnv)
+  const setup = collectDbBackedTestSetupInput(cwd, env, { probeServices: false })
+  const validation = evaluateDbBackedTestSetup(setup)
+  if (!validation.ok) {
+    throw new Error(
+      [
+        'DB/Valkey-backed tooling test setup is not ready.',
+        ...validation.errors.map(toolingSetupErrorWithoutShellSourcing),
+      ].join('\n'),
+    )
+  }
+
+  return env
+}
+
+function toolingSetupErrorWithoutShellSourcing(error: string): string {
+  const hintStart = error.indexOf(' Run ./dev/initialize backend (or web)')
+  if (hintStart === -1) return error
+  return `${error.slice(0, hintStart)} Run ./dev/initialize backend (or web) before rerunning tooling tests.`
 }
 
 // Mutates `targetEnv` (default `process.env`) instead of replacing it: Vitest's `vi.stubEnv` and
@@ -123,9 +61,7 @@ export function replaceEnvInPlace(
 
 export function loadCurrentWorktreeEnv(cwd: string, baseEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const envFile = join(cwd, '.env')
-  if (!existsSync(envFile)) {
-    return { ...baseEnv }
-  }
+  if (!existsSync(envFile)) return { ...baseEnv }
 
   const sourceEnv = envWithoutWorktreeResources(baseEnv)
   try {

@@ -25,14 +25,10 @@ type Workflow = {
   }
 }
 
-type PathFilters = Record<string, string[]>
-
 const detectChangesWorkflow = load(
   readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
 ) as Workflow
-const refineRuntimeWebFilters = load(
-  readFileSync('.github/ci-runtime-path-filters.yml', 'utf8'),
-) as PathFilters
+import { runtimePathFilters as refineRuntimeWebFilters } from '../../test-helpers/path-filter-test-fixtures.mts'
 
 function filterMatches(
   globs: string[],
@@ -83,14 +79,14 @@ const expensiveRuntimeFilters = [
   'build-backend',
 ] as const
 
-describe('Vitest CI triggers', () => {
+describe('Area CI triggers', () => {
   it('routes web dependency-cruiser config changes only to their owning web test job', () => {
     const dependencyCruiserConfig = ['web/.dependency-cruiser.cjs']
     const detectChangesOutputs = detectChangesWorkflow.jobs?.['detect-changes']?.outputs ?? {}
 
     for (const filterName of refinedRuntimeFilters) {
       expect(detectChangesOutputs[filterName]).toContain(
-        `steps.refine-runtime-web.outputs.${filterName}`,
+        `steps.refine-runtime-web.outputs.runtime-${filterName}`,
       )
       if (filterName === 'web') continue
       expectRefinedRuntimeFilterMisses(filterName, dependencyCruiserConfig)
@@ -129,7 +125,7 @@ describe('Vitest CI triggers', () => {
     expectRefinedRuntimeFilterMatches('build-backend', ['backend/services/foo.mts'])
   })
 
-  it('skips markdown, Vitest files, and test helpers for expensive runtime jobs', () => {
+  it('excludes markdown, Vitest files, and test helpers from runtime filters', () => {
     for (const filterName of expensiveRuntimeFilters) {
       expectRefinedRuntimeFilterMisses(filterName, [
         '.github/actions/build-web-targets/build-web-targets.test.mts',
@@ -177,7 +173,7 @@ describe('Vitest CI triggers', () => {
     ).toBe(false)
   })
 
-  it('keeps Storybook-only changes out of Playwright, web integration, and Docker builds', () => {
+  it('excludes Storybook-only changes from other runtime filters', () => {
     const storybookOnlyFiles = [
       'web/.storybook/main.ts',
       'web/components/button.stories.tsx',

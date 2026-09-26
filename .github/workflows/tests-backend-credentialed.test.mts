@@ -40,22 +40,16 @@ describe('backend credentialed test workflow', () => {
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
     expect(credentialedJob).toContain(
-      'VITEST_BLOB_OUTPUT_FILE: .vitest-reports/backend-credentialed.json',
+      'VITEST_JUNIT_OUTPUT_FILE: backend-credentialed-test-report.junit.xml',
     )
-    const vitestBlobFallback = stepSection(
-      credentialedJob,
-      'Upload backend-credentialed vitest blob to GitHub (fallback)',
-    )
-    expect(vitestBlobFallback).toContain('uses: ./.github/actions/upload-vitest-blob')
-    expect(vitestBlobFallback).toContain('suite: backend-credentialed')
     const fallback = stepSection(
       credentialedJob,
-      'Upload backend-credentialed coverage pair to GitHub (fallback attempt 1)',
+      'Upload full backend-credentialed LCOV to GitHub (attempt 1)',
     )
-    expect(fallback).toContain('uses: ./.github/actions/upload-coverage-pair')
+    expect(fallback).toContain('uses: ./.github/actions/upload-full-lcov')
     expect(fallback).toContain('suite: backend-credentialed')
     expect(fallback).toContain('continue-on-error: true')
-    expect(credentialedJob).toContain('fallback attempt 2')
+    expect(credentialedJob).toContain('Upload full backend-credentialed LCOV to GitHub (attempt 2)')
     expect(workflow).not.toContain('backend-aws-tests:')
     expect(workflow).not.toContain('backend-openai-tests:')
     expect(workflow).not.toContain('backend-openrouter-tests:')

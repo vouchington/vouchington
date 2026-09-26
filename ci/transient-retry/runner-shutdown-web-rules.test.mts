@@ -18,7 +18,7 @@ const webTestsJob = 'test-web / web-tests (1)'
 
 function makeWebTestsContext(log: string): WorkflowRunContext {
   return {
-    workflowName: 'CI',
+    workflowName: 'Web',
     conclusion: 'failure',
     runAttempt: 1,
     failedJobNames: [webTestsJob],

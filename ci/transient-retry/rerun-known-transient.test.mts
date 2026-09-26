@@ -20,7 +20,7 @@ function makeExecFile(calls: string[][]): GhApiExecFile {
       return {
         stdout: JSON.stringify({
           conclusion: 'failure',
-          name: 'CI',
+          name: 'Web',
           run_attempt: 1,
         }),
         stderr: '',
@@ -30,7 +30,7 @@ function makeExecFile(calls: string[][]): GhApiExecFile {
       return {
         stdout: JSON.stringify({
           conclusion: 'success',
-          name: 'CI',
+          name: 'Web',
           run_attempt: 1,
         }),
         stderr: '',
@@ -45,7 +45,7 @@ function makeExecFile(calls: string[][]): GhApiExecFile {
           {
             jobs: [
               { name: 'test-web / web-tests (1)', id: 10, conclusion: 'failure' },
-              { name: 'tests', id: 11, conclusion: 'failure' },
+              { name: 'web', id: 11, conclusion: 'failure' },
             ],
           },
         ]),

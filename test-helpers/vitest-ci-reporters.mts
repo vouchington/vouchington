@@ -59,15 +59,12 @@ export function ciReporters(): VitestReporters | undefined {
           : []),
         githubActionsReporter(),
         'junit',
-        'blob',
         'hanging-process',
         createVitestWorkerExitDiagnosticsReporter(),
       ]
-    case 'merge':
-      return ['minimal']
     default:
       throw new Error(
-        `Unknown VITEST_CI_REPORTERS value "${process.env.VITEST_CI_REPORTERS}". Accepted values: run, merge.`,
+        `Unknown VITEST_CI_REPORTERS value "${process.env.VITEST_CI_REPORTERS}". Accepted value: run.`,
       )
   }
 }
@@ -75,6 +72,5 @@ export function ciReporters(): VitestReporters | undefined {
 export function ciOutputFile(): VitestOutputFile | undefined {
   const outputFile: Record<string, string> = {}
   if (process.env.VITEST_JUNIT_OUTPUT_FILE) outputFile.junit = process.env.VITEST_JUNIT_OUTPUT_FILE
-  if (process.env.VITEST_BLOB_OUTPUT_FILE) outputFile.blob = process.env.VITEST_BLOB_OUTPUT_FILE
   return Object.keys(outputFile).length === 0 ? undefined : outputFile
 }

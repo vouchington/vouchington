@@ -12,7 +12,6 @@ import {
 } from './runner-shutdown-fingerprints.mts'
 import { stripAnsi } from './storybook-shared.mts'
 import type { TransientRetryRule } from './types.mts'
-import { CI_AGGREGATE_FAN_IN_JOB_NAMES } from './ci-aggregate-jobs.mts'
 import {
   buildWebTargetsStepMarker,
   isWebIntegrationShardJob,
@@ -79,7 +78,6 @@ export const mainWebStaticBuildSilentExitRule: TransientRetryRule = {
     const hasFailedPlaywrightShard = ctx.failedJobNames.some(isPlaywrightShardSetupJob)
     const leafJobs = ctx.failedJobNames.filter(
       name =>
-        !CI_AGGREGATE_FAN_IN_JOB_NAMES.has(name) &&
         !(
           name === storePlaywrightOtelJobName &&
           isStorePlaywrightOtelDownstream(ctx, hasFailedPlaywrightShard, logs)

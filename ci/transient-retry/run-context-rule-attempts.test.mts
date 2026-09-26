@@ -114,7 +114,7 @@ describe('deriveRuleAttempts', () => {
         ],
         runAttempt: 2,
         runId: '123',
-        workflowName: 'CI',
+        workflowName: 'Web',
       }),
     ).rejects.toThrow('Cannot replay rule log-backed')
   })
@@ -151,7 +151,7 @@ describe('deriveRuleAttempts', () => {
         ],
         runAttempt: 2,
         runId: '123',
-        workflowName: 'CI',
+        workflowName: 'Web',
       }),
     ).rejects.toThrow('Cannot replay rule annotation-backed')
   })
@@ -207,14 +207,14 @@ describe('deriveRuleAttempts', () => {
       rules,
       runAttempt: 3,
       runId: '123',
-      workflowName: 'CI',
+      workflowName: 'Web',
     })
 
     expect(ruleAttempts).toEqual(new Map([['credentialed-prefix', 1]]))
     await expect(
       decide(
         {
-          workflowName: 'CI',
+          workflowName: 'Web',
           conclusion: 'failure',
           runAttempt: 3,
           ruleAttempts,
@@ -286,7 +286,7 @@ describe('deriveRuleAttempts', () => {
         rules,
         runAttempt: 4,
         runId: '123',
-        workflowName: 'CI',
+        workflowName: 'Web',
       }),
     ).resolves.toEqual(new Map([['known-prefix', 1]]))
   })

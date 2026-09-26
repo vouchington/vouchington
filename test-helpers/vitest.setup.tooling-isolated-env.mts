@@ -1,3 +1,3 @@
-import { envWithoutWorktreeResources, replaceEnvInPlace } from '../ci/coverage-suite-env.mts'
+import { envWithoutWorktreeResources, replaceEnvInPlace } from '../ci/tooling-test-env.mts'
 
 replaceEnvInPlace(envWithoutWorktreeResources())

@@ -19,16 +19,6 @@ has_lcov_artifacts() {
     [ -n "$(find "$coverage_artifacts_dir" -type f -name lcov.info -print -quit)" ]
 }
 
-skip_without_lcov_artifacts() {
-  local label="$1"
-  if has_lcov_artifacts; then
-    return 1
-  fi
-
-  echo "No LCOV artifacts found; skipping ${label} because no coverage-producing jobs ran."
-  return 0
-}
-
 merge_coverage_artifacts() {
   "$coverage_check_bin" merge --artifacts "$coverage_artifacts_dir" --output "${coverage_artifacts_merged_dir}/lcov.info"
 }
@@ -62,27 +52,6 @@ collect_whitespace_ignore_args() {
 }
 
 case "$command" in
-  html)
-    "$coverage_check_bin" html \
-      --artifacts "$coverage_artifacts_dir" \
-      --output ./coverage-html
-    ;;
-  pr-check)
-    if skip_without_lcov_artifacts "PR patch coverage"; then
-      exit 0
-    fi
-    merge_coverage_artifacts
-    collect_whitespace_ignore_args
-    "$coverage_check_bin" check \
-      --rules .coverage-rules.yml \
-      --artifacts "$coverage_artifacts_merged_dir" \
-      --suite current-pr \
-      --base "$COVERAGE_BASE" \
-      --head "$COVERAGE_HEAD" \
-      "${whitespace_ignore_args[@]+"${whitespace_ignore_args[@]}"}" \
-      --pr "${COVERAGE_PR:?COVERAGE_PR is required}" \
-      --repo "${COVERAGE_REPO:?COVERAGE_REPO is required}"
-    ;;
   area-check)
     # An area's coverage job runs only after at least one of its suites succeeded, and every suite
     # that succeeds uploads its full LCOV, so an empty artifact directory is a broken upload.
@@ -104,7 +73,7 @@ case "$command" in
       "${whitespace_ignore_args[@]+"${whitespace_ignore_args[@]}"}"
     ;;
   *)
-    echo "Usage: $0 {html|pr-check|area-check}" >&2
+    echo "Usage: $0 area-check" >&2
     exit 2
     ;;
 esac

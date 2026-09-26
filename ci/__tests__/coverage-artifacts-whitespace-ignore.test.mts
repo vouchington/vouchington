@@ -48,14 +48,13 @@ describe('coverage-artifacts whitespace-only patch coverage ignores', () => {
       'TN:\nSF:web/content.ts\nDA:1,1\nend_of_record\n',
     )
 
-    await execFileAsync('./ci/coverage-artifacts.sh', ['pr-check'], {
+    await execFileAsync('./ci/coverage-artifacts.sh', ['area-check'], {
       env: {
         ...process.env,
+        COVERAGE_AREA: 'web',
         COVERAGE_ARTIFACTS_DIR: artifactsDir,
         COVERAGE_BASE: 'origin/main',
         COVERAGE_HEAD: 'HEAD',
-        COVERAGE_PR: '5019',
-        COVERAGE_REPO: 'vouchington/vouchington',
         COVERAGE_CHECK_BIN: `${binDir}/pnpm`,
         PATH: `${binDir}:${process.env.PATH ?? ''}`,
         PNPM_ARGS_PATH: argsPath,

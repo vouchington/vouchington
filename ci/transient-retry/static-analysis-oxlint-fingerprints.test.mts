@@ -50,16 +50,31 @@ const oxlintTsgolintVendoredCheckoutShapeLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Static',
   conclusion: 'failure',
   runAttempt: 1,
-  failedJobNames: [staticAnalysisJobName, 'tests', 'build'],
+  failedJobNames: [staticAnalysisJobName, 'static'],
   failedJobLogs: () => Promise.resolve(new Map([[staticAnalysisJobName, oxlintTsgolintFaultLog]])),
   failedJobAnnotations: () => Promise.resolve([]),
   ...overrides,
 })
 
 describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
+  it('does not classify another job log as the oxlint failure', async () => {
+    await expect(
+      decide(
+        makeCtx({
+          failedJobLogs: async () =>
+            new Map([
+              ['static', oxlintTsgolintFaultLog],
+              [staticAnalysisJobName, 'ordinary lint diagnostic'],
+            ]),
+        }),
+        RULES,
+      ),
+    ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
+  })
+
   it('matches an oxlint tsgolint runtime fault on attempt 1', async () => {
     const result = await decide(makeCtx(), RULES)
     expect(result.decision).toBe('rerun')
