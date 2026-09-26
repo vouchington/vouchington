@@ -22,7 +22,7 @@
     "http-assert": "^1.5.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1139.0",
+    "@aws-sdk/client-sqs": "^3.1140.0",
     "@modules/aws": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
