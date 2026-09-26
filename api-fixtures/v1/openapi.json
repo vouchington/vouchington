@@ -61385,7 +61385,10 @@
                   "rewards_program",
                   "rewards_program_status",
                   "referral_program",
-                  "card"
+                  "card",
+                  "bank_account",
+                  "rss_feed",
+                  "fediverse_instance"
                 ],
                 "type": "string"
               },

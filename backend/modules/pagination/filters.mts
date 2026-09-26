@@ -20,6 +20,9 @@ export const VALID_TOPIC_TYPES = [
   'rewards_program_status',
   'referral_program',
   'card',
+  'bank_account',
+  'rss_feed',
+  'fediverse_instance',
 ] as const satisfies ReadonlyArray<TopicTypes>
 
 /**
