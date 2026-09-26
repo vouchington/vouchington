@@ -54,6 +54,11 @@ function PromptPanelPreview({
       <CommunityAgentPromptsPanel
         communitySlug={communitySlug}
         prompts={prompts}
+        onPromptCreated={created => {
+          setPrompts(current =>
+            current.some(item => item.id === created.id) ? current : [...current, created],
+          )
+        }}
         onPromptUpdated={(updated, promptId) => {
           setPrompts(current =>
             updated == null

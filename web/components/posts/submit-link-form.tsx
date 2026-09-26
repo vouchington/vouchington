@@ -15,7 +15,7 @@ import {
   useEmailVerificationRecovery,
 } from '@/lib/email-verification-recovery-context'
 
-export function SubmitLinkForm() {
+export function SubmitLinkForm({ onCreated }: { onCreated?: (href: string) => void }) {
   const t = useTranslations()
   const router = useRouter()
   const [url, setUrl] = useState('')
@@ -38,7 +38,9 @@ export function SubmitLinkForm() {
       })
       const post = result.post
       if (post) {
-        router.push(getCanonicalPostPath(post))
+        const href = getCanonicalPostPath(post)
+        onCreated?.(href)
+        router.push(href)
       }
     } catch (error) {
       if (isEmailVerificationRequired(error)) {

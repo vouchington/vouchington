@@ -2,7 +2,10 @@
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { createCommunityAgentPrompt } from '@/lib/api/client/community-agent-prompts'
+import {
+  createCommunityAgentPrompt,
+  type CommunityAgentPrompt,
+} from '@/lib/api/client/community-agent-prompts'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
@@ -10,9 +13,10 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
   communitySlug: string
+  onPromptCreated?: (prompt: CommunityAgentPrompt) => void
 }
 
-export function CommunityAgentPromptForm({ communitySlug }: Props) {
+export function CommunityAgentPromptForm({ communitySlug, onPromptCreated }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [prompt, setPrompt] = useState('')
@@ -36,8 +40,9 @@ export function CommunityAgentPromptForm({ communitySlug }: Props) {
     setValidationError(null)
     startPending(async () => {
       try {
-        await createCommunityAgentPrompt(communitySlug, { prompt })
+        const created = await createCommunityAgentPrompt(communitySlug, { prompt })
         setPrompt('')
+        onPromptCreated?.(created.community_agent_prompt)
         onSuccess(t('extracted.communities.communityAgentPromptForm.promptCreated_8ce11e7a'))
         startRefreshing(() => router.refresh())
       } catch (error) {

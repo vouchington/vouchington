@@ -9,9 +9,15 @@ interface Props {
   prompts: CommunityAgentPrompt[]
   communitySlug: string
   onPromptUpdated?: (prompt: CommunityAgentPrompt | null, promptId: string) => void
+  onPromptCreated?: (prompt: CommunityAgentPrompt) => void
 }
 
-export function CommunityAgentPromptsPanel({ prompts, communitySlug, onPromptUpdated }: Props) {
+export function CommunityAgentPromptsPanel({
+  prompts,
+  communitySlug,
+  onPromptUpdated,
+  onPromptCreated,
+}: Props) {
   const t = useTranslations()
   return (
     <section
@@ -28,7 +34,10 @@ export function CommunityAgentPromptsPanel({ prompts, communitySlug, onPromptUpd
           )}
         </p>
       </div>
-      <CommunityAgentPromptForm communitySlug={communitySlug} />
+      <CommunityAgentPromptForm
+        communitySlug={communitySlug}
+        onPromptCreated={onPromptCreated}
+      />
       <div
         className='space-y-2'
         data-pw='community-agent-prompt-list'

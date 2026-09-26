@@ -20,6 +20,12 @@ import {
   pinnedPostsFixtureEnabled,
   pinnedPostsResponse,
 } from '@/storybook/mocks/pinned-posts-fixture'
+import { categoryRelationsResponse } from '@/storybook/mocks/category-relations-store'
+
+export {
+  clearCategoryRelationsFixture,
+  setCategoryRelationsFixture,
+} from '@/storybook/mocks/category-relations-store'
 
 export {
   clearPinnedPostsFixture,
@@ -36,7 +42,6 @@ let myListsFixture: ListsSearchResponseBody | undefined
 let moderationContextFixture: UserModerationContextResponse | undefined
 let userSearchFixture = false
 let topicSearchFixture = false
-let categoryRelationsFixture = false
 const clientRequestGet = ClientRequest.prototype.get
 
 export function setNotificationSettingsFixture(preferences: EmailPreferences): void {
@@ -116,14 +121,6 @@ export function clearTopicSearchFixture(): void {
   topicSearchFixture = false
 }
 
-export function setCategoryRelationsFixture(): void {
-  categoryRelationsFixture = true
-}
-
-export function clearCategoryRelationsFixture(): void {
-  categoryRelationsFixture = false
-}
-
 export function setModerationContextFixture(): void {
   moderationContextFixture = {
     context: {
@@ -178,13 +175,8 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   if (endpoint === '/api/v1/lists/contains' && myListsFixture !== undefined) {
     return Promise.resolve({ list_ids: Object.keys(myListsFixture.lists) } as T)
   }
-  if (endpoint.startsWith('/api/v1/entity-relations/') && categoryRelationsFixture) {
-    return Promise.resolve({
-      results: [],
-      page_info: emptyPage,
-      entity_relations: {},
-    } as T)
-  }
+  const relations = categoryRelationsResponse(endpoint)
+  if (relations !== undefined) return Promise.resolve(relations as T)
   if (endpoint.endsWith('/pinned-posts') && pinnedPostsFixtureEnabled()) {
     return Promise.resolve(pinnedPostsResponse() as T)
   }
