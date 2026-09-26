@@ -11,8 +11,12 @@ import {
   readTestPublicationSnapshot,
   readTestPublicationRetainedKeys,
   insertTestPublicationTopicSlugFanout,
-  hasTestPublicationSnapshot,
 } from '@voucha/test-helpers/entities/post-publication-snapshots'
+import {
+  getTestPublicationCleanupTraversalBound,
+  hasTestPublicationSnapshot,
+  lockTestPublicationSnapshots,
+} from '@voucha/test-helpers/entities/post-publication-cleanup'
 import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 import {
@@ -24,8 +28,38 @@ import { cleanupPostPublicationIdentitySnapshots } from './snapshot-cleanup.mts'
 import { activatePostPublicationTypedProtocol } from './identity-protocol.mts'
 import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
 import { recordPostPublicationChange } from './capture.mts'
+import { insertTestPublicationSnapshotHeaderFanout } from '@voucha/test-helpers/entities/post-publication-query-plans'
 
 describe('bounded publication receipt retention and reclamation', () => {
+  it('bounds locked-header candidates and revisits skipped headers after wrap', async () => {
+    const { work, candidate } = await createTestPublicationSnapshotWork()
+    const ids = await insertTestPublicationSnapshotHeaderFanout({
+      workId: work.id,
+      generation: work.generation,
+      postId: candidate.id,
+      count: 20,
+      abandoned: true,
+    })
+    await using lock = await beginTransaction()
+    await lockTestPublicationSnapshots(lock, ids)
+    const lockedBound = await getTestPublicationCleanupTraversalBound(10)
+    for (let page = 0; page < lockedBound; page += 1) {
+      const result = await cleanupPostPublicationIdentitySnapshots(10)
+      expect(result.scanned).toBeLessThanOrEqual(10)
+      expect(result.snapshots).toBeLessThanOrEqual(10)
+      expect(result.keys).toBeLessThanOrEqual(10)
+    }
+    expect(await Promise.all(ids.map(hasTestPublicationSnapshot))).toEqual(ids.map(() => true))
+    await lock.commit()
+    const bound = await getTestPublicationCleanupTraversalBound(10)
+    let remaining = ids
+    for (let page = 0; page < bound && remaining.length > 0; page += 1) {
+      await cleanupPostPublicationIdentitySnapshots(10)
+      const exists = await Promise.all(remaining.map(hasTestPublicationSnapshot))
+      remaining = remaining.filter((_, index) => exists[index])
+    }
+    expect(remaining).toEqual([])
+  })
   it('keeps the accepted pointer during replacement and rejects sources changed before acceptance', async () => {
     await activatePostPublicationTypedProtocol()
     const { work, candidate, user } = await createTestPublicationSnapshotWork()
@@ -155,10 +189,7 @@ describe('bounded publication receipt retention and reclamation', () => {
       }),
     ).toBe(true)
     const before = await readTestPublicationSnapshot(accepted.snapshotId)
-    expect(await cleanupPostPublicationIdentitySnapshots(1, work.id)).toEqual({
-      keys: 0,
-      snapshots: 0,
-    })
+    expect((await cleanupPostPublicationIdentitySnapshots(1)).scanned).toBeLessThanOrEqual(1)
     expect(await readTestPublicationSnapshot(accepted.snapshotId)).toEqual(before)
     await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 101)
     await using query = await beginTransaction()
@@ -183,18 +214,17 @@ describe('bounded publication receipt retention and reclamation', () => {
     const incomplete = await materializePostPublicationIdentitySnapshot(current, candidate, 10)
     expect(incomplete.complete).toBe(false)
     await expireTestPostPublicationDirtyWorkLease(current.id)
-    let totalKeys = 0
+    const traversalBound = await getTestPublicationCleanupTraversalBound(7)
     for (
       let page = 0;
-      page < 20 && (await hasTestPublicationSnapshot(stale.snapshotId));
+      page < traversalBound && (await hasTestPublicationSnapshot(stale.snapshotId));
       page += 1
     ) {
-      const reclaimed = await cleanupPostPublicationIdentitySnapshots(7, next.id)
+      const reclaimed = await cleanupPostPublicationIdentitySnapshots(7)
       expect(reclaimed.keys).toBeLessThanOrEqual(7)
       expect(reclaimed.snapshots).toBeLessThanOrEqual(7)
-      totalKeys += reclaimed.keys
+      expect(reclaimed.scanned).toBeLessThanOrEqual(7)
     }
-    expect(totalKeys).toBe(100)
     expect(await hasTestPublicationSnapshot(stale.snapshotId)).toBe(false)
     expect(await hasTestPublicationSnapshot(incomplete.snapshotId)).toBe(true)
     const finalLease = await claimPostPublicationDirtyWork(currentPending, 120)
@@ -208,10 +238,10 @@ describe('bounded publication receipt retention and reclamation', () => {
     ).toBe(true)
     for (
       let page = 0;
-      page < 3 && (await hasTestPublicationSnapshot(incomplete.snapshotId));
+      page < traversalBound && (await hasTestPublicationSnapshot(incomplete.snapshotId));
       page += 1
     )
-      await cleanupPostPublicationIdentitySnapshots(7, finalLease.id)
+      await cleanupPostPublicationIdentitySnapshots(7)
     expect(await hasTestPublicationSnapshot(incomplete.snapshotId)).toBe(false)
     expect(await readTestPublicationSnapshot(accepted.snapshotId)).toEqual(before)
   })

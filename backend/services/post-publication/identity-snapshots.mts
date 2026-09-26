@@ -1,12 +1,8 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
-import {
-  publicationIdentityRowsSql,
-  publicationIdentityValueSql,
-  publicationSnapshotMismatchSql,
-  type PublicationSnapshotKey,
-} from './identity-source.mts'
+import { publicationSnapshotMismatchSql } from './identity-source.mts'
+import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { retainSnapshotPage, insertSnapshotKeys } from './snapshot-key-writes.mts'
 import { markPostPublicationTypedProtocol } from './identity-protocol.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
@@ -52,20 +48,19 @@ export async function materializePostPublicationIdentitySnapshot(
   }
   let complete = snapshot.completed_at !== null
   if (!complete) {
-    const keys = await listPublicationIdentitySourcePage(
+    const page = await listPublicationIdentitySourcePage(
       query,
       post.id,
       snapshot.cursor_kind,
       snapshot.cursor_value,
       limit,
     )
-    await insertSnapshotKeys(query, snapshot.id, keys)
-    await retainSnapshotPage(query, work.id, keys)
-    complete = keys.length < limit
-    const cursor = keys.at(-1)
+    await insertSnapshotKeys(query, snapshot.id, page.keys)
+    await retainSnapshotPage(query, work.id, page.keys)
+    complete = page.complete
     await query(sql`/* checkpointPostPublicationIdentitySnapshot */ UPDATE post_publication_identity_snapshots
-      SET source_cursor_kind = ${cursor?.kind ?? snapshot.cursor_kind},
-        source_cursor_value = ${cursor ? identityCursorValue(cursor) : snapshot.cursor_value},
+      SET source_cursor_kind = ${page.cursorKind},
+        source_cursor_value = ${page.cursorValue},
         completed_at = CASE WHEN ${complete} THEN CURRENT_TIMESTAMP ELSE NULL END WHERE id = ${snapshot.id}`)
   }
   if (complete) {
@@ -143,40 +138,11 @@ export async function retainSnapshotReceiptPage(
     snapshot.receipt_cursor_value,
     limit,
   )
-  const cursor = page.at(-1)
-  const complete = page.length < limit
+  const complete = page.complete
   await query(sql`/* checkpointPublicationReceiptRetention */ UPDATE post_publication_identity_snapshots
-    SET receipt_cursor_kind = ${cursor?.kind ?? snapshot.receipt_cursor_kind},
-      receipt_cursor_value = ${cursor ? identityCursorValue(cursor) : snapshot.receipt_cursor_value},
+    SET receipt_cursor_kind = ${page.cursorKind},
+      receipt_cursor_value = ${page.cursorValue},
       receipt_retained_at = CASE WHEN ${complete} THEN CURRENT_TIMESTAMP ELSE NULL END,
       receipt_source_version = ${version} WHERE id = ${snapshot.id}`)
   return complete
-}
-
-export async function listPublicationIdentitySourcePage(
-  query: TransactionQuery,
-  postId: string,
-  cursorKind: string | null,
-  cursorValue: string | null,
-  limit: number,
-): Promise<PublicationSnapshotKey[]> {
-  const statement = sql`/* listPostPublicationIdentitySourcePage */ WITH source AS (`
-  statement
-    .append(publicationIdentityRowsSql(sql`${postId}::uuid`))
-    .append(sql`), ordered AS (SELECT *, `)
-    .append(publicationIdentityValueSql()).append(sql` AS value FROM source)
-    SELECT kind, uuid_value::text AS "uuidValue", text_value AS "textValue", post_type::text AS "postType", day::text AS day
-    FROM ordered WHERE (${cursorKind}::text IS NULL OR (kind COLLATE "C", value) > (${cursorKind}::text COLLATE "C", ${cursorValue}::text COLLATE "C"))
-    ORDER BY kind COLLATE "C", value LIMIT ${limit}`)
-  const { rows } = await query<PublicationSnapshotKey>(statement)
-  return rows
-}
-
-export function identityCursorValue(key: PublicationSnapshotKey): string {
-  const value =
-    key.uuidValue ??
-    key.textValue ??
-    (key.postType && key.day ? `${key.postType}:${key.day}` : null)
-  if (value === null) throw new TypeError('Publication identity requires an exact cursor value')
-  return value
 }

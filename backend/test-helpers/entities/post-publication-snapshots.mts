@@ -170,15 +170,18 @@ export async function insertTestPublicationFeedFanout(
 export async function readTestPublicationSnapshot(snapshotId: string): Promise<{
   completed: boolean
   abandoned: boolean
+  sourceCursor: string | null
   keys: Array<{ kind: string; value: string }>
 }> {
   const { rows } = await write<{
     completed: boolean
     abandoned: boolean
+    source_cursor: string | null
     kind: string | null
     value: string | null
   }>(sql`/* readTestPublicationSnapshot */
     SELECT snapshot.completed_at IS NOT NULL AS completed, snapshot.abandoned_at IS NOT NULL AS abandoned,
+      snapshot.source_cursor_kind || ':' || snapshot.source_cursor_value AS source_cursor,
       key.kind, COALESCE(key.uuid_value::text, key.text_value, key.post_type::text || ':' || key.day::text) AS value
     FROM post_publication_identity_snapshots snapshot LEFT JOIN post_publication_identity_snapshot_keys key ON key.snapshot_id = snapshot.id
     WHERE snapshot.id = ${snapshotId} ORDER BY key.kind, value`)
@@ -186,14 +189,9 @@ export async function readTestPublicationSnapshot(snapshotId: string): Promise<{
   return {
     completed: rows[0].completed,
     abandoned: rows[0].abandoned,
+    sourceCursor: rows[0].source_cursor,
     keys: rows.flatMap(row =>
       row.kind && row.value ? [{ kind: row.kind, value: row.value }] : [],
     ),
   }
-}
-
-export async function hasTestPublicationSnapshot(snapshotId: string): Promise<boolean> {
-  const { rows } = await write<{ exists: boolean }>(sql`/* hasTestPublicationSnapshot */
-    SELECT EXISTS (SELECT 1 FROM post_publication_identity_snapshots WHERE id = ${snapshotId}) AS exists`)
-  return rows[0]?.exists ?? false
 }

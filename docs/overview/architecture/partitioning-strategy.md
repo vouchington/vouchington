@@ -175,6 +175,12 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Post moderation ledger: `post_moderation_attempts`, `post_moderation_dispositions`,
   `post_moderation_versions`, and `post_moderation_work_items`. Rows follow the retained post and
   remain selectively addressable through their version, source, attempt, and post indexes.
+- Publication identity snapshots: `post_publication_identity_snapshots` and
+  `post_publication_identity_snapshot_keys`. Accepted receipts retain one exact snapshot per post;
+  abandoned and superseded attempts are reclaimed by the bounded cyclic sweep in
+  [post-publication](../../../backend/services/post-publication/README.md). Snapshot and native key
+  indexes keep pages selective; revisit partitioning under the registry's growth trigger while
+  preserving globally unique receipt pointers and bounded reclamation.
 - Notification push effects: `notification_push_intents` and
   `notification_push_intent_subscription_receipts`.
   Pending intents remain durable recovery work. Delivered and suppressed intents are deleted after

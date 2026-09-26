@@ -47,10 +47,6 @@ export function publicationIdentityRowsSql(postId: SQLStatement): SQLStatement {
   return statement
 }
 
-export function publicationIdentityValueSql(): SQLStatement {
-  return sql`COALESCE(uuid_value::text, text_value, post_type::text || ':' || day::text) COLLATE "C"`
-}
-
 export function publicationSnapshotMismatchSql(
   postId: SQLStatement,
   snapshotId: SQLStatement,

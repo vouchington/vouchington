@@ -82,6 +82,7 @@ describe('bounded publication identity snapshots', () => {
     const [candidate] = await listPublicationCandidates(work, 1, [post.id], true)
     if (!candidate) throw new Error('Expected snapshot candidate')
     let previousCount = 0
+    let previousCursor: string | null = null
     let snapshotId: string | undefined
     let complete = false
     for (let page = 0; page < 40; page += 1) {
@@ -90,7 +91,9 @@ describe('bounded publication identity snapshots', () => {
       expect(result.snapshotId).toBe(snapshotId)
       const stored = await readTestPublicationSnapshot(snapshotId)
       expect(stored.keys.length - previousCount).toBeLessThanOrEqual(100)
-      expect(stored.keys.length).toBeGreaterThan(previousCount)
+      expect(stored.keys.length).toBeGreaterThanOrEqual(previousCount)
+      expect(result.complete || stored.sourceCursor !== previousCursor).toBe(true)
+      previousCursor = stored.sourceCursor
       previousCount = stored.keys.length
       complete = result.complete
       if (complete) break

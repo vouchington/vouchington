@@ -10,6 +10,17 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_protocol (
 
 INSERT INTO post_publication_identity_protocol (singleton) VALUES (TRUE) ON CONFLICT DO NOTHING;
 
+CREATE TABLE IF NOT EXISTS post_publication_identity_cleanup_progress (
+  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
+  cursor_snapshot_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO post_publication_identity_cleanup_progress (singleton) VALUES (TRUE) ON CONFLICT DO NOTHING;
+COMMENT ON TABLE post_publication_identity_cleanup_progress IS 'Bounded cyclic snapshot-header sweep, independent from the shared protocol writer lock.';
+COMMENT ON COLUMN post_publication_identity_cleanup_progress.singleton IS 'Checked singleton key serializes only cleanup sweeps.';
+COMMENT ON COLUMN post_publication_identity_cleanup_progress.cursor_snapshot_id IS 'Last examined header; no FK because reclaimed headers are deleted.';
+COMMENT ON COLUMN post_publication_identity_cleanup_progress.updated_at IS 'Last committed sweep progress.';
+
 CREATE TABLE IF NOT EXISTS post_publication_identity_snapshots (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   dirty_work_id UUID NOT NULL,
@@ -55,6 +66,9 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
       AND post_type IS NOT NULL AND day IS NOT NULL)
   )
 );
+
+CREATE INDEX IF NOT EXISTS idx_post_publication_identity_snapshot_keys__snapshot_id_id
+  ON post_publication_identity_snapshot_keys (snapshot_id, id);
 
 ALTER TABLE post_publication_projection_receipts
   ADD COLUMN applied_snapshot_id UUID;
@@ -123,10 +137,10 @@ COMMENT ON COLUMN post_publication_identity_snapshots.generation IS 'Captured wo
 COMMENT ON COLUMN post_publication_identity_snapshots.post_id IS 'Candidate identifier retained after deletion.';
 COMMENT ON COLUMN post_publication_identity_snapshots.eligibility_fingerprint IS 'Scalar candidate and root eligibility version.';
 COMMENT ON COLUMN post_publication_identity_snapshots.is_public IS 'Eligibility captured for this attempt.';
-COMMENT ON COLUMN post_publication_identity_snapshots.source_cursor_kind IS 'Last atomically staged canonical source kind.';
-COMMENT ON COLUMN post_publication_identity_snapshots.source_cursor_value IS 'Last atomically staged canonical source value.';
-COMMENT ON COLUMN post_publication_identity_snapshots.receipt_cursor_kind IS 'Last atomically retained prior receipt kind.';
-COMMENT ON COLUMN post_publication_identity_snapshots.receipt_cursor_value IS 'Last atomically retained prior receipt value.';
+COMMENT ON COLUMN post_publication_identity_snapshots.source_cursor_kind IS 'Native source branch advanced by the last atomically staged physical row page.';
+COMMENT ON COLUMN post_publication_identity_snapshots.source_cursor_value IS 'Last native branch row key, independent from emitted or deduplicated identities.';
+COMMENT ON COLUMN post_publication_identity_snapshots.receipt_cursor_kind IS 'Typed snapshot keys or compatibility JSON array branch for prior receipt retention.';
+COMMENT ON COLUMN post_publication_identity_snapshots.receipt_cursor_value IS 'Last typed key ID or compatibility array ordinal retained atomically.';
 COMMENT ON COLUMN post_publication_identity_snapshots.receipt_retained_at IS 'EOF of prior receipt retention before current source staging.';
 COMMENT ON COLUMN post_publication_identity_snapshots.receipt_source_version IS 'Accepted prior receipt version checked on every stage.';
 COMMENT ON COLUMN post_publication_identity_snapshots.completed_at IS 'Exact source comparison and scalar validation completion time.';

@@ -9,7 +9,9 @@ Readers join a candidate post to `COALESCE(candidate.root_id, candidate.id)` and
 predicate; callers must not restate a partial publication check.
 
 Post-publication reconciliation materializes the identities affected by this predicate in bounded
-relational pages before cache, sitemap, or receipt effects. Its snapshot lifecycle and coordinated
+relational pages before cache, sitemap, or receipt effects. Page cursors follow indexed physical
+source rows before identity mapping; duplicate or filtered rows still advance progress. Snapshot
+reclamation also bounds examined headers before ownership checks. Its snapshot lifecycle and coordinated
 worker activation barrier are owned by
 [`backend/services/post-publication`](../../../backend/services/post-publication/README.md).
 

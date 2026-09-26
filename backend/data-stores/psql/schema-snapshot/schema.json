@@ -62305,6 +62305,80 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "post_publication_identity_cleanup_progress": {
+      "checkConstraints": {
+        "post_publication_identity_cleanup_progress_singleton_check": "CHECK (singleton)"
+      },
+      "columns": {
+        "cursor_snapshot_id": {
+          "collation": null,
+          "comment": "Last examined header; no FK because reclaimed headers are deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "singleton": {
+          "collation": null,
+          "comment": "Checked singleton key serializes only cleanup sweeps.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed sweep progress.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Bounded cyclic snapshot-header sweep, independent from the shared protocol writer lock.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_identity_cleanup_progress_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_cleanup_progress_pkey ON public.post_publication_identity_cleanup_progress USING btree (singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "singleton",
+              "descending": false,
+              "expression": "singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["singleton"],
+        "definition": "PRIMARY KEY (singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "post_publication_identity_protocol": {
       "checkConstraints": {
         "post_publication_identity_protocol_protocol_version_check": "CHECK ((protocol_version = ANY (ARRAY['legacy'::text, 'typed-v1'::text])))",
@@ -62514,6 +62588,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_publication_identity_snapshot_keys__snapshot_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_identity_snapshot_keys__snapshot_id_id ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "snapshot_id",
+              "descending": false,
+              "expression": "snapshot_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -62713,7 +62814,7 @@
         },
         "receipt_cursor_kind": {
           "collation": null,
-          "comment": "Last atomically retained prior receipt kind.",
+          "comment": "Typed snapshot keys or compatibility JSON array branch for prior receipt retention.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62724,7 +62825,7 @@
         },
         "receipt_cursor_value": {
           "collation": null,
-          "comment": "Last atomically retained prior receipt value.",
+          "comment": "Last typed key ID or compatibility array ordinal retained atomically.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62757,7 +62858,7 @@
         },
         "source_cursor_kind": {
           "collation": null,
-          "comment": "Last atomically staged canonical source kind.",
+          "comment": "Native source branch advanced by the last atomically staged physical row page.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62768,7 +62869,7 @@
         },
         "source_cursor_value": {
           "collation": null,
-          "comment": "Last atomically staged canonical source value.",
+          "comment": "Last native branch row key, independent from emitted or deduplicated identities.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -63655,6 +63756,33 @@
               "expression": "created_at",
               "nullsFirst": true,
               "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_slugs__post_id_slug": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_slugs__post_id_slug ON public.post_slugs USING btree (post_id, slug)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "slug",
+              "descending": false,
+              "expression": "slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
             }
           ],
           "predicate": null,

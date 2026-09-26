@@ -32,10 +32,21 @@ legacy worker and audit mutations after activation; their read-only audit output
 they are upgraded. Snapshot attempts intentionally outlive dirty-work acknowledgement and their
 keys are reclaimed in bounded pages.
 
-The source is [`identity-source.mts`](identity-source.mts): authored and relation topics, positive
+The exact set is [`identity-source.mts`](identity-source.mts): authored and relation topics, positive
 relation-only alias membership, distinct author UUID/username keys, candidate and root communities,
 every post slug, live root-story feed sources, and exact sitemap type/day tuples. Source pages and
-previous-receipt retention pages have independent durable cursors on the same attempt. Every page
+previous-receipt retention pages have independent durable cursors on the same attempt.
+[`identity-source-paging.mts`](identity-source-paging.mts) advances one source branch and its native
+indexed row key, limiting physical rows before mapping or filtering identities. Duplicate identities,
+deleted relations and aliases with no topic still advance source progress; relational insertion
+deduplicates their retained keys. Feed progress includes the item and feed keys. Disappearing
+descendant sitemap targets page descendant post IDs before projecting the type/day tuple.
+Native pages preserve the scoped composite index interval. Their positive safe-integer row budgets
+are structural SQL literals so generic prepared plans can cost an early stop; identity and cursor
+values remain parameters.
+Typed prior receipts page the composite snapshot/key interval; compatibility receipts page bounded JSON array ordinals
+in PostgreSQL. Neither reader repeats a whole-set union or expands a complete array for each page.
+Every page
 locks the current dirty-work generation and lease before inserting keys and checkpoints. Effects
 wait for both stages. EOF compares exact sets in PostgreSQL and revalidates scalar eligibility;
 drift abandons the attempt, while completed attempts are reused across retries and other posts in
@@ -64,9 +75,17 @@ as empty identities by an old process. An old fingerprint includes JSON; the typ
 fingerprint intentionally causes a one-time receipt refresh during migration.
 
 Each existing scheduled reconciliation invocation reclaims an independent bounded page even when
-there is no dirty work. Cleanup excludes accepted pointers, deletes a capped key page first, and
-removes only empty stale/abandoned attempts. The receipt foreign key prevents deletion of accepted
-storage, which outlives dirty acknowledgement. Snapshot keys never cascade on deletion.
+there is no dirty work. Cleanup advances a persisted cyclic header cursor, caps examined headers
+before locking or checking accepted/current-generation ownership, and deletes keys through their native
+snapshot/id interval, sharing [`snapshot-key-pages.mts`](snapshot-key-pages.mts) with typed receipt
+retention. The composite ordering prevents a prepared plan from scanning unrelated interleaved
+snapshot keys through the global key-ID primary key. A partially reclaimed snapshot pins sweep progress until its key page reaches EOF;
+header EOF wraps the sweep so newly stale snapshots behind the cursor are revisited. The separate
+candidate page bounds per-ID lock probes before `SKIP LOCKED`; skipped headers advance that
+candidate boundary and are revisited after wrap instead of expanding the physical scan.
+cleanup singleton locks only cleanup calls. Cleanup excludes accepted pointers and removes only
+empty stale/abandoned attempts. The receipt foreign key prevents deletion of accepted storage,
+which outlives dirty acknowledgement. Snapshot keys never cascade on deletion.
 
 ```mermaid
 flowchart LR

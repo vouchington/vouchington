@@ -1,12 +1,12 @@
+import { publicationPageLimit } from './page-limit.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
+import sql from 'sql-template-strings'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
-import {
-  identityCursorValue,
-  listPublicationIdentitySourcePage,
-  POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE,
-} from './identity-snapshots.mts'
+import { POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE } from './identity-snapshots.mts'
+import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { retainSnapshotPage } from './snapshot-key-writes.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
+import { nativeSourceBounds, nativeSourceRange } from './native-source-range.mts'
 
 export type PostPublicationPostScopeContext = { dirtyWorkId: string; postId: string }
 
@@ -38,31 +38,40 @@ async function retainPostScope(
       limit,
     )
     // oxlint-disable-next-line no-await-in-loop -- retain every page before advancing its cursor.
-    await retainSnapshotPage(query, scope.dirtyWorkId, page)
-    if (page.length < limit) break
-    cursorKind = page.at(-1)!.kind
-    cursorValue = identityCursorValue(page.at(-1)!)
+    await retainSnapshotPage(query, scope.dirtyWorkId, page.keys)
+    if (page.complete) break
+    cursorKind = page.cursorKind
+    cursorValue = page.cursorValue
   }
   let descendantCursor: string | null = null
   while (true) {
-    const { rows }: { rows: Array<{ value: string; post_type: string; day: string }> } =
-      // oxlint-disable-next-line no-await-in-loop -- root deletion must capture every distinct descendant shard.
-      await query<{ value: string; post_type: string; day: string }>(
-        `/* listDescendantPostPublicationSitemapPage */
-      WITH targets AS (SELECT DISTINCT post_type, (created_at AT TIME ZONE 'UTC')::date AS day
-        FROM posts WHERE root_id = $1 AND post_type = ANY($2::post_types[])), ordered AS (
-        SELECT post_type::text, day::text, post_type::text || ':' || day::text AS value FROM targets)
-      SELECT * FROM ordered WHERE ($3::text IS NULL OR value COLLATE "C" > $3 COLLATE "C")
-      ORDER BY value COLLATE "C" LIMIT $4`,
-        [scope.postId, SITEMAP_CONFIG.POST_TYPES, descendantCursor, limit],
+    const statement = sql`/* listDescendantPostPublicationSitemapPage */
+      WITH `
+      .append(nativeSourceBounds(scope.postId))
+      .append(
+        sql`, page AS MATERIALIZED (SELECT id, post_type, created_at FROM posts CROSS JOIN native_bounds WHERE `,
       )
+    statement.append(
+      nativeSourceRange('root_id', ['id'], descendantCursor === null ? null : [descendantCursor]),
+    )
+    statement.append(sql` ORDER BY root_id, id LIMIT `).append(publicationPageLimit(limit))
+      .append(sql`)
+      SELECT id, CASE WHEN post_type = ANY(${SITEMAP_CONFIG.POST_TYPES}::post_types[]) THEN post_type::text END AS post_type,
+        (created_at AT TIME ZONE 'UTC')::date::text AS day FROM page ORDER BY id`)
+    const { rows }: { rows: Array<{ id: string; post_type: string | null; day: string }> } =
+      // oxlint-disable-next-line no-await-in-loop -- root deletion must capture every distinct descendant shard.
+      await query<{ id: string; post_type: string | null; day: string }>(statement)
     // oxlint-disable-next-line no-await-in-loop -- retention is atomic with the disappearing source.
     await retainPostPublicationKeys(
       query,
       scope.dirtyWorkId,
-      rows.map(row => ({ kind: 'sitemap_target', postType: row.post_type, day: row.day })),
+      rows.flatMap(row =>
+        row.post_type === null
+          ? []
+          : [{ kind: 'sitemap_target' as const, postType: row.post_type, day: row.day }],
+      ),
     )
     if (rows.length < limit) break
-    descendantCursor = rows.at(-1)!.value
+    descendantCursor = rows.at(-1)!.id
   }
 }

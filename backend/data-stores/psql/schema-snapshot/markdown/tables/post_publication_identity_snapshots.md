@@ -6,24 +6,24 @@ Immutable-at-acceptance bounded identity materialization attempts; intentionally
 
 Not partitioned — growth: unbounded.
 
-| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                   |
-| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
-| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                           |
-| `dirty_work_id`           | `uuid`                     | no       |                              |          |           |           | Work identifier retained after acknowledgement; not a cascading relation. |
-| `generation`              | `bigint`                   | no       |                              |          |           |           | Captured work generation fencing this attempt.                            |
-| `post_id`                 | `uuid`                     | no       |                              |          |           |           | Candidate identifier retained after deletion.                             |
-| `eligibility_fingerprint` | `text`                     | no       |                              |          |           |           | Scalar candidate and root eligibility version.                            |
-| `is_public`               | `boolean`                  | no       |                              |          |           |           | Eligibility captured for this attempt.                                    |
-| `source_cursor_kind`      | `text`                     | yes      |                              |          |           |           | Last atomically staged canonical source kind.                             |
-| `source_cursor_value`     | `text`                     | yes      |                              |          |           |           | Last atomically staged canonical source value.                            |
-| `completed_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Exact source comparison and scalar validation completion time.            |
-| `abandoned_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Source drift or supersession invalidated this attempt.                    |
-| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                           |
-| `receipt_cursor_kind`     | `text`                     | yes      |                              |          |           |           | Last atomically retained prior receipt kind.                              |
-| `receipt_cursor_value`    | `text`                     | yes      |                              |          |           |           | Last atomically retained prior receipt value.                             |
-| `receipt_retained_at`     | `timestamp with time zone` | yes      |                              |          |           |           | EOF of prior receipt retention before current source staging.             |
-| `receipt_source_version`  | `text`                     | yes      |                              |          |           |           | Accepted prior receipt version checked on every stage.                    |
-| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                           |
+| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
+| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
+| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                     |
+| `dirty_work_id`           | `uuid`                     | no       |                              |          |           |           | Work identifier retained after acknowledgement; not a cascading relation.           |
+| `generation`              | `bigint`                   | no       |                              |          |           |           | Captured work generation fencing this attempt.                                      |
+| `post_id`                 | `uuid`                     | no       |                              |          |           |           | Candidate identifier retained after deletion.                                       |
+| `eligibility_fingerprint` | `text`                     | no       |                              |          |           |           | Scalar candidate and root eligibility version.                                      |
+| `is_public`               | `boolean`                  | no       |                              |          |           |           | Eligibility captured for this attempt.                                              |
+| `source_cursor_kind`      | `text`                     | yes      |                              |          |           |           | Native source branch advanced by the last atomically staged physical row page.      |
+| `source_cursor_value`     | `text`                     | yes      |                              |          |           |           | Last native branch row key, independent from emitted or deduplicated identities.    |
+| `completed_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Exact source comparison and scalar validation completion time.                      |
+| `abandoned_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Source drift or supersession invalidated this attempt.                              |
+| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
+| `receipt_cursor_kind`     | `text`                     | yes      |                              |          |           |           | Typed snapshot keys or compatibility JSON array branch for prior receipt retention. |
+| `receipt_cursor_value`    | `text`                     | yes      |                              |          |           |           | Last typed key ID or compatibility array ordinal retained atomically.               |
+| `receipt_retained_at`     | `timestamp with time zone` | yes      |                              |          |           |           | EOF of prior receipt retention before current source staging.                       |
+| `receipt_source_version`  | `text`                     | yes      |                              |          |           |           | Accepted prior receipt version checked on every stage.                              |
+| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 

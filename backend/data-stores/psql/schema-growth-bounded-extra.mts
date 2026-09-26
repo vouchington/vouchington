@@ -4,6 +4,10 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One coalesced marker per immutable delivery key; successful exact-token reconciliation deletes it, bounding cardinality to outstanding repair work.',
   ],
   [
+    'post_publication_identity_cleanup_progress',
+    'A checked true primary key permits exactly one bounded sweep cursor.',
+  ],
+  [
     'post_publication_identity_protocol',
     'A checked true primary key permits exactly one rollout barrier.',
   ],

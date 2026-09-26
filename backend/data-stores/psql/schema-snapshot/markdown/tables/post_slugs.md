@@ -31,6 +31,7 @@ _none_
 **Indexes:**
 
 - `idx_post_slugs__post_id__created_at_desc`: `CREATE INDEX idx_post_slugs__post_id__created_at_desc ON public.post_slugs USING btree (post_id, created_at DESC) INCLUDE (slug)`
+- `idx_post_slugs__post_id_slug`: `CREATE INDEX idx_post_slugs__post_id_slug ON public.post_slugs USING btree (post_id, slug)`
 - `post_slugs_pkey`: `CREATE UNIQUE INDEX post_slugs_pkey ON public.post_slugs USING btree (slug)`
 
 **Triggers:**
