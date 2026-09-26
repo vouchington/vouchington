@@ -1966,7 +1966,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "moderation_transparency_community_id": {
@@ -1977,7 +1977,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "post_id": {
@@ -2032,7 +2032,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21,
+          "ordinalPosition": 19,
           "type": "integer"
         },
         "votes_count_none": {
@@ -2043,7 +2043,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20,
+          "ordinalPosition": 18,
           "type": "integer"
         },
         "votes_count_up": {
@@ -2054,7 +2054,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "votes_score_down": {
@@ -2065,7 +2065,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 16,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -2076,7 +2076,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 21,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -2087,7 +2087,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 15,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -2098,7 +2098,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 20,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -2109,7 +2109,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 14,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -30458,69 +30458,6 @@
       "primaryKey": {
         "columns": ["id"],
         "definition": "PRIMARY KEY (id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "election_vote_migration_claims": {
-      "checkConstraints": {
-        "election_vote_migration_claims_migration_id_check": "CHECK (((migration_id = TRIM(BOTH FROM migration_id)) AND ((char_length(migration_id) >= 1) AND (char_length(migration_id) <= 255))))"
-      },
-      "columns": {
-        "claimed_at": {
-          "collation": null,
-          "comment": "Time the migration claim was inserted; claim rows are immutable.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "migration_id": {
-          "collation": null,
-          "comment": "Stable identifier for the one-shot election vote migration that owns this claim.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
-        }
-      },
-      "comment": "Durable claims that make one-shot election vote migrations converge without rescanning vote tables.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "election_vote_migration_claims_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX election_vote_migration_claims_pkey ON public.election_vote_migration_claims USING btree (migration_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "migration_id",
-              "descending": false,
-              "expression": "migration_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["migration_id"],
-        "definition": "PRIMARY KEY (migration_id)"
       },
       "relationKind": "table",
       "triggers": {},
@@ -66054,7 +65991,6 @@
         "chk_posts_votes_score_up": "CHECK ((votes_score_up >= (0)::double precision))",
         "chk_posts_votes_snapshot_complete": "CHECK ((((votes_snapshot_xmax IS NULL) AND (votes_snapshot_xip_count IS NULL)) OR ((votes_snapshot_xmax IS NOT NULL) AND (votes_snapshot_xip_count IS NOT NULL) AND (votes_snapshot_xip_count >= 0))))",
         "chk_structured_data_post_type": "CHECK (((structured_data IS NULL) OR (post_type = 'data_point'::post_types)))",
-        "posts_ban_evasion_post_embedding_input_sha256_check": "CHECK (((ban_evasion_post_embedding_input_sha256 IS NULL) OR (octet_length(ban_evasion_post_embedding_input_sha256) = 32)))",
         "posts_ban_evasion_post_embedding_input_sha256_length": "CHECK (((ban_evasion_post_embedding_input_sha256 IS NULL) OR (octet_length(ban_evasion_post_embedding_input_sha256) = 32)))",
         "posts_bedrock_nova_multimodal_v1_content_sha256_check": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
         "posts_bedrock_nova_multimodal_v1_input_sha256_check": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
@@ -66099,7 +66035,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "archived_at": {
@@ -66110,7 +66046,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -66121,7 +66057,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "ban_evasion_post_embedding_input_sha256": {
@@ -66132,7 +66068,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 51,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -66143,7 +66079,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 38,
+          "ordinalPosition": 46,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -66154,7 +66090,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 48,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -66165,7 +66101,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 49,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -66176,7 +66112,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 47,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -66187,7 +66123,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 50,
           "type": "integer"
         },
         "broadcast": {
@@ -66220,7 +66156,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -66231,7 +66167,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "created_via": {
@@ -66264,7 +66200,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 39,
           "type": "uuid"
         },
         "data_point_vertical": {
@@ -66275,7 +66211,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 36,
           "type": "text"
         },
         "declared_language": {
@@ -66286,7 +66222,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 40,
           "type": "text"
         },
         "deleted_at": {
@@ -66297,7 +66233,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -66308,7 +66244,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "id": {
@@ -66330,7 +66266,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "is_anonymous": {
@@ -66352,7 +66288,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 24,
           "type": "uuid"
         },
         "lingua_rs_content_sha256": {
@@ -66363,7 +66299,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 42,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -66374,7 +66310,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 45,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -66385,7 +66321,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 41,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -66396,7 +66332,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 43,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -66407,7 +66343,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 44,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -66418,7 +66354,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 52,
           "type": "bytea"
         },
         "markdown": {
@@ -66473,7 +66409,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "root_id": {
@@ -66495,7 +66431,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 53,
           "type": "tsvector"
         },
         "structured_data": {
@@ -66506,7 +66442,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 37,
           "type": "jsonb"
         },
         "title": {
@@ -66528,7 +66464,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -66539,7 +66475,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "url_id": {
@@ -66550,7 +66486,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 38,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -66561,7 +66497,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 51,
+          "ordinalPosition": 21,
           "type": "integer"
         },
         "votes_count_none": {
@@ -66572,7 +66508,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 50,
+          "ordinalPosition": 20,
           "type": "integer"
         },
         "votes_count_up": {
@@ -66583,7 +66519,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 49,
+          "ordinalPosition": 19,
           "type": "integer"
         },
         "votes_score_down": {
@@ -66594,7 +66530,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 48,
+          "ordinalPosition": 18,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -66605,7 +66541,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 23,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -66616,7 +66552,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 47,
+          "ordinalPosition": 17,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -66627,7 +66563,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 22,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -66638,7 +66574,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 16,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -88777,7 +88713,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 12,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -88788,7 +88724,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 14,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -88799,7 +88735,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -88810,7 +88746,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 13,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -88821,7 +88757,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 16,
           "type": "integer"
         },
         "created_at": {
@@ -88832,7 +88768,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -88843,7 +88779,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 11,
           "type": "jsonb"
         },
         "deleted_at": {
@@ -88854,7 +88790,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -88865,7 +88801,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 25,
           "type": "integer"
         },
         "enclosure_length": {
@@ -88876,7 +88812,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 24,
           "type": "bigint"
         },
         "enclosure_type": {
@@ -88887,7 +88823,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "enclosure_url": {
@@ -88898,7 +88834,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "id": {
@@ -88920,7 +88856,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 30,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -88931,7 +88867,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -88942,7 +88878,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -88953,7 +88889,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 31,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -88964,7 +88900,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 32,
           "type": "jsonb"
         },
         "media_type": {
@@ -88975,7 +88911,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 21,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -88986,7 +88922,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -88997,7 +88933,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 17,
           "type": "tsvector"
         },
         "story_id": {
@@ -89008,7 +88944,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -89019,7 +88955,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -89030,7 +88966,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "updated_at": {
@@ -89041,7 +88977,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -89052,7 +88988,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "video_id": {
@@ -89063,7 +88999,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "video_platform": {
@@ -89074,7 +89010,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "votes_count_down": {
@@ -89085,7 +89021,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 36,
+          "ordinalPosition": 7,
           "type": "integer"
         },
         "votes_count_none": {
@@ -89096,7 +89032,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 6,
           "type": "integer"
         },
         "votes_count_up": {
@@ -89107,7 +89043,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34,
+          "ordinalPosition": 5,
           "type": "integer"
         },
         "votes_score_down": {
@@ -89118,7 +89054,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33,
+          "ordinalPosition": 4,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -89129,7 +89065,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 9,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -89140,7 +89076,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 32,
+          "ordinalPosition": 3,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -89151,7 +89087,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 8,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -89162,7 +89098,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 2,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -89173,7 +89109,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 37,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -89184,7 +89120,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 36,
           "type": "xid8"
         }
       },
@@ -95111,7 +95047,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 34,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -95122,7 +95058,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 36,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -95133,7 +95069,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -95144,7 +95080,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 35,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -95155,7 +95091,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 38,
           "type": "integer"
         },
         "created_at": {
@@ -95166,7 +95102,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -95177,7 +95113,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "created_via": {
@@ -95210,7 +95146,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -95221,7 +95157,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 26,
           "type": "uuid"
         },
         "hero_image_id": {
@@ -95232,7 +95168,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 32,
           "type": "uuid"
         },
         "homepage_url_id": {
@@ -95243,7 +95179,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "hostname_id": {
@@ -95254,7 +95190,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 30,
           "type": "uuid"
         },
         "id": {
@@ -95276,7 +95212,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 43,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -95287,7 +95223,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 46,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -95298,7 +95234,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 42,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -95309,7 +95245,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 44,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -95320,7 +95256,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 45,
           "type": "jsonb"
         },
         "logo_image_id": {
@@ -95331,7 +95267,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "markdown": {
@@ -95353,7 +95289,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "merged_by_id": {
@@ -95364,7 +95300,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 29,
           "type": "uuid"
         },
         "merged_into_topic_id": {
@@ -95375,7 +95311,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 27,
           "type": "uuid"
         },
         "name": {
@@ -95408,7 +95344,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 41,
           "type": "uuid"
         },
         "rewards_program_id": {
@@ -95419,7 +95355,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 40,
           "type": "uuid"
         },
         "search_vector": {
@@ -95430,7 +95366,7 @@
           "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 39,
           "type": "tsvector"
         },
         "slug": {
@@ -95463,7 +95399,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -95474,7 +95410,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 24,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -95485,7 +95421,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 18,
           "type": "integer"
         },
         "votes_count_none": {
@@ -95496,7 +95432,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 43,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "votes_count_up": {
@@ -95507,7 +95443,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 42,
+          "ordinalPosition": 16,
           "type": "integer"
         },
         "votes_score_down": {
@@ -95518,7 +95454,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41,
+          "ordinalPosition": 15,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -95529,7 +95465,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 20,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -95540,7 +95476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 40,
+          "ordinalPosition": 14,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -95551,7 +95487,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 19,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -95562,7 +95498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 39,
+          "ordinalPosition": 13,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -97833,7 +97769,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -97844,7 +97780,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "dns_disabled_at": {
@@ -97987,7 +97923,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "votes_count_down": {
@@ -97998,7 +97934,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 27,
           "type": "integer"
         },
         "votes_count_none": {
@@ -98009,7 +97945,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 26,
           "type": "integer"
         },
         "votes_count_up": {
@@ -98020,7 +97956,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 25,
           "type": "integer"
         },
         "votes_score_down": {
@@ -98031,7 +97967,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 24,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -98042,7 +97978,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 29,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -98053,7 +97989,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 23,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -98064,7 +98000,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 28,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -98075,7 +98011,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 22,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -98086,7 +98022,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 30,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -106207,7 +106143,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 51,
           "type": "timestamp with time zone"
         },
         "cards_visibility": {
@@ -106262,7 +106198,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 56,
+          "ordinalPosition": 64,
           "type": "timestamp with time zone"
         },
         "default_post_broadcast": {
@@ -106295,7 +106231,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 66,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -106306,7 +106242,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 59,
+          "ordinalPosition": 67,
           "type": "uuid"
         },
         "direct_messages_audience": {
@@ -106394,7 +106330,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 55,
+          "ordinalPosition": 63,
           "type": "uuid"
         },
         "is_system": {
@@ -106559,7 +106495,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 61,
           "type": "text"
         },
         "pending_verification_session_id": {
@@ -106570,7 +106506,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 60,
           "type": "text"
         },
         "processing_restricted_at": {
@@ -106581,7 +106517,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 50,
           "type": "timestamp with time zone"
         },
         "profile_image_id": {
@@ -106592,7 +106528,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 62,
           "type": "uuid"
         },
         "public_verified_name_display": {
@@ -106603,7 +106539,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 48,
+          "ordinalPosition": 56,
           "type": "public_verified_name_displays"
         },
         "referrer_id": {
@@ -106614,7 +106550,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 49,
           "type": "uuid"
         },
         "rewards_program_statuses_visibility": {
@@ -106691,7 +106627,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 57,
+          "ordinalPosition": 65,
           "type": "timestamp with time zone"
         },
         "use_display_name_from": {
@@ -106724,7 +106660,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 54,
           "type": "timestamp with time zone"
         },
         "verification_provider": {
@@ -106735,7 +106671,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 53,
           "type": "identity_verification_providers"
         },
         "verification_status": {
@@ -106746,7 +106682,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 44,
+          "ordinalPosition": 52,
           "type": "identity_verification_statuses"
         },
         "verified_badge_visible": {
@@ -106757,7 +106693,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 47,
+          "ordinalPosition": 55,
           "type": "boolean"
         },
         "verified_first_name": {
@@ -106768,7 +106704,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 57,
           "type": "text"
         },
         "verified_full_name": {
@@ -106779,7 +106715,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 59,
           "type": "text"
         },
         "verified_last_name_initial": {
@@ -106790,7 +106726,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 58,
           "type": "text"
         },
         "vote_weight": {
@@ -106834,7 +106770,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 65,
+          "ordinalPosition": 46,
           "type": "integer"
         },
         "votes_count_none": {
@@ -106845,7 +106781,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 64,
+          "ordinalPosition": 45,
           "type": "integer"
         },
         "votes_count_up": {
@@ -106856,7 +106792,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 63,
+          "ordinalPosition": 44,
           "type": "integer"
         },
         "votes_score_down": {
@@ -106867,7 +106803,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 62,
+          "ordinalPosition": 43,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -106878,7 +106814,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 67,
+          "ordinalPosition": 48,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -106889,7 +106825,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 61,
+          "ordinalPosition": 42,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -106900,7 +106836,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 66,
+          "ordinalPosition": 47,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -106911,7 +106847,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 60,
+          "ordinalPosition": 41,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -107595,7 +107531,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 47,
           "type": "timestamp with time zone"
         },
         "details": {
@@ -107606,7 +107542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 43,
           "type": "jsonb"
         },
         "flag_type": {
@@ -107617,7 +107553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 42,
           "type": "vote_integrity_flag_types"
         },
         "hostname_id": {
@@ -107661,7 +107597,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "relation__post__category__topic_alias_subject_id": {
@@ -107672,7 +107608,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "relation__post__category__topic_id": {
@@ -107683,7 +107619,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "relation__post__category__topic_subject_id": {
@@ -107694,7 +107630,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "relation__post__related__post_id": {
@@ -107705,7 +107641,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "relation__post__related__post_subject_id": {
@@ -107716,7 +107652,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "relation__post__related__url_id": {
@@ -107727,7 +107663,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "relation__post__related__url_subject_id": {
@@ -107738,7 +107674,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "relation__rss_feed_item__category__topic_alias_id": {
@@ -107749,7 +107685,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 40,
           "type": "uuid"
         },
         "relation__rss_feed_item__category__topic_alias_subject_id": {
@@ -107760,7 +107696,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 41,
           "type": "uuid"
         },
         "relation__rss_feed_item__category__topic_id": {
@@ -107771,7 +107707,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 38,
           "type": "uuid"
         },
         "relation__rss_feed_item__category__topic_subject_id": {
@@ -107782,7 +107718,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 39,
           "type": "uuid"
         },
         "relation__topic__category__topic_id": {
@@ -107793,7 +107729,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 20,
           "type": "uuid"
         },
         "relation__topic__category__topic_subject_id": {
@@ -107804,7 +107740,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 21,
           "type": "uuid"
         },
         "relation__topic__faq__post_id": {
@@ -107815,7 +107751,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 24,
           "type": "uuid"
         },
         "relation__topic__faq__post_subject_id": {
@@ -107826,7 +107762,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 25,
           "type": "uuid"
         },
         "relation__topic__faq__url_id": {
@@ -107837,7 +107773,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 30,
           "type": "uuid"
         },
         "relation__topic__faq__url_subject_id": {
@@ -107848,7 +107784,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "relation__topic__guide__url_id": {
@@ -107859,7 +107795,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 32,
           "type": "uuid"
         },
         "relation__topic__guide__url_subject_id": {
@@ -107870,7 +107806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "relation__topic__landing_page__url_id": {
@@ -107881,7 +107817,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "relation__topic__landing_page__url_subject_id": {
@@ -107892,7 +107828,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "relation__topic__publisher_type__topic_id": {
@@ -107903,7 +107839,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "relation__topic__publisher_type__topic_subject_id": {
@@ -107914,7 +107850,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "relation__topic__related__post_id": {
@@ -107925,7 +107861,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 26,
           "type": "uuid"
         },
         "relation__topic__related__post_subject_id": {
@@ -107936,7 +107872,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 27,
           "type": "uuid"
         },
         "relation__topic__related__topic_id": {
@@ -107947,7 +107883,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 18,
           "type": "uuid"
         },
         "relation__topic__related__topic_subject_id": {
@@ -107958,7 +107894,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 19,
           "type": "uuid"
         },
         "relation__topic__related__url_id": {
@@ -107969,7 +107905,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "relation__topic__related__url_subject_id": {
@@ -107980,7 +107916,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 29,
           "type": "uuid"
         },
         "relation__topic__terms_of_service__url_id": {
@@ -107991,7 +107927,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 36,
           "type": "uuid"
         },
         "relation__topic__terms_of_service__url_subject_id": {
@@ -108002,7 +107938,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 37,
           "type": "uuid"
         },
         "relation__user__category__topic_id": {
@@ -108013,7 +107949,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "relation__user__category__topic_subject_id": {
@@ -108024,7 +107960,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "resolution": {
@@ -108035,7 +107971,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 46,
           "type": "vote_integrity_resolutions"
         },
         "resolved_at": {
@@ -108046,7 +107982,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 44,
           "type": "timestamp with time zone"
         },
         "resolved_by_id": {
@@ -108057,7 +107993,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 45,
           "type": "uuid"
         },
         "rss_feed_item_id": {
@@ -108090,7 +108026,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 48,
           "type": "timestamp with time zone"
         }
       },
