@@ -54,7 +54,7 @@ export function DeleteCommentButton({
         <Button
           type='button'
           variant='ghost'
-          className='h-auto w-auto p-0 text-xs text-muted-foreground hover:text-foreground'
+          className='inline-flex min-h-6 min-w-6 items-center p-0 text-xs text-muted-foreground hover:text-foreground'
           data-pw='delete-comment-button'
         >
           <DeleteIcon data-icon='inline-start' />

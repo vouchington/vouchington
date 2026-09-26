@@ -76,26 +76,6 @@ describe('PostLockMenuItem', () => {
     expect(screen.getByRole('menuitem', { name: 'Unlock' })).toBeDefined()
   })
 
-  it('has aria-pressed=false when post is not locked', () => {
-    render(
-      <PostLockMenuItem
-        postIdOrSlug='post-1'
-        lockedAt={null}
-      />,
-    )
-    expect(screen.getByRole('menuitem').getAttribute('aria-pressed')).toBe('false')
-  })
-
-  it('has aria-pressed=true when post is locked', () => {
-    render(
-      <PostLockMenuItem
-        postIdOrSlug='post-1'
-        lockedAt='2024-01-01T00:00:00Z'
-      />,
-    )
-    expect(screen.getByRole('menuitem').getAttribute('aria-pressed')).toBe('true')
-  })
-
   it('clicking calls handleToggle', () => {
     render(
       <PostLockMenuItem

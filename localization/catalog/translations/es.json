@@ -2979,6 +2979,7 @@
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.removeThisPostFromTheCommunity_721fa01a","value":"¿Eliminar este artículo de la comunidad? El artículo en sí no será eliminado."},
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublishFromCommunity_a77d2489","value":"Dejar de Publicar en la Comunidad"},
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublish_2db04a54","value":"Dejar de Publicar"},
+{"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublished_b6e07310","value":"Retirado"},
 {"id":"copy.extracted.preferences.page.customizeYourBrowsingExperience_99eaeb2e","value":"Personaliza tu experiencia de navegación"},
 {"id":"copy.extracted.privacy.page.controlWhoCanSeeYourActivity_50daae77","value":"Controla quién puede ver tu actividad y datos de perfil"},
 {"id":"copy.extracted.privacyForm.postDefaultSelect.selectPrivacySetting_4587a12c","value":"Seleccionar configuración de privacidad"},

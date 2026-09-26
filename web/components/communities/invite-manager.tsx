@@ -11,15 +11,16 @@ import { InviteItem } from './invite-item'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { sendInvite, revokeInvite } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
-import type { CommunityInvitesResponseBody } from '@/types/api-responses'
+import type { CommunityInvite, CommunityInvitesResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface InviteManagerProps {
   data: CommunityInvitesResponseBody
   communitySlug: string
+  onInviteCreated?: (invite: CommunityInvite) => void
 }
 
-export function InviteManager({ data, communitySlug }: InviteManagerProps) {
+export function InviteManager({ data, communitySlug, onInviteCreated }: InviteManagerProps) {
   const t = useTranslations()
   const { refresh } = useRouter()
   const endpoint = `/api/v1/communities/${encodeURIComponent(communitySlug)}/invites`
@@ -44,10 +45,11 @@ export function InviteManager({ data, communitySlug }: InviteManagerProps) {
     setError(null)
     setSendLoading(true)
     try {
-      await sendInvite(communitySlug, {
+      const created = await sendInvite(communitySlug, {
         email: email || undefined,
         username: username || undefined,
       })
+      onInviteCreated?.(created.community_invite)
       setEmail('')
       setUsername('')
       refresh()

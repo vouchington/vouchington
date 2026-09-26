@@ -60,7 +60,7 @@ export function CommentPermalink({
         <Link
           prefetch={false}
           href={`/${rootPostType}/${rootPostPathId}`}
-          className='font-medium text-blue-600 hover:underline'
+          className='font-medium text-blue-600 hover:underline dark:text-blue-400'
           data-pw='comment-permalink-root-link'
         >
           ←{' '}

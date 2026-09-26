@@ -61,6 +61,29 @@ const urlResults = [
   { id: 'url-2', url: 'https://news.example.com/points' },
 ]
 
+export function storybookUserSummary(id: string): {
+  username: string | null
+  profile_image_id: null
+} {
+  const user = userResults.find(item => item.id === id)
+  return { username: user?.username ?? null, profile_image_id: null }
+}
+
+export function storybookTopicSummary(id: string): {
+  id: string
+  name: string
+  slug: string
+  topic_type: string
+} {
+  const topic = topicCatalog.find(item => item.id === id)
+  return {
+    id,
+    name: topic?.name ?? id,
+    slug: id,
+    topic_type: topic?.topic_type ?? 'topic',
+  }
+}
+
 export function storybookAutocompleteResponse(
   pathname: string,
   searchParams?: TopicSearchParams,

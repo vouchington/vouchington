@@ -6,7 +6,9 @@ const storybookMockAliases = {
   '@/components/admin/referral-link-validations/validations-list-table':
     'validations-list-table.tsx',
   '@/components/agents/agent-detail': 'agent-detail.tsx',
+  '@/components/asides/contribute-cta-aside': 'contribute-cta-aside.tsx',
   '@/components/asides/trending-topics-aside': 'trending-topics-aside.tsx',
+  '@/components/asides/upgrade-membership-aside': 'upgrade-membership-aside.tsx',
   '@/components/communities/communities-sidebar-group': 'communities-sidebar-group.tsx',
   '@/components/communities/modmail-inbox': 'modmail-inbox.tsx',
   '@/components/feed/feed-page-header': 'feed-page-header.tsx',

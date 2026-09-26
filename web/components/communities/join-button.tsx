@@ -29,6 +29,13 @@ export default function JoinButton({
   const pathname = usePathname()
   const { currentUser } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [memberOverride, setMemberOverride] = useState<boolean | null>(null)
+  const membershipKey = `${communitySlug}:${membership == null}:${membership?.removed_at ?? ''}`
+  const [seenMembershipKey, setSeenMembershipKey] = useState(membershipKey)
+  if (seenMembershipKey !== membershipKey) {
+    setSeenMembershipKey(membershipKey)
+    setMemberOverride(null)
+  }
 
   if (!currentUser) {
     const loginHref = `/login?next=${encodeURIComponent(pathname)}`
@@ -48,7 +55,7 @@ export default function JoinButton({
     )
   }
 
-  const isMember = membership != null && membership.removed_at == null
+  const isMember = memberOverride ?? (membership != null && membership.removed_at == null)
   const isPrivate = visibility === 'private'
 
   if (!isMember && isPrivate && hasPendingApplication) {
@@ -85,6 +92,7 @@ export default function JoinButton({
     setLoading(true)
     try {
       await joinCommunity(communitySlug)
+      setMemberOverride(true)
       refresh()
     } catch {
       toast.error('Failed to join community. Please try again.')
@@ -97,6 +105,7 @@ export default function JoinButton({
     setLoading(true)
     try {
       await leaveCommunity(communitySlug)
+      setMemberOverride(false)
       refresh()
     } catch {
       toast.error('Failed to leave community. Please try again.')

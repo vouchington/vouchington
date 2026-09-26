@@ -53,7 +53,7 @@ const baseData: CommunityInvitesResponseBody = {
 describe('InviteManager — keyboard submit convention', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSendInvite.mockResolvedValue(undefined as never)
+    mockSendInvite.mockResolvedValue({ community_invite: { id: 'invite-test' } } as never)
     mockRevokeInvite.mockResolvedValue(undefined as never)
   })
 

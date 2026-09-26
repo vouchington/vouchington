@@ -9,9 +9,10 @@ interface CheckoutButtonProps {
   planSlug: string
   productId: string
   planName: string
+  onCheckout?: (checkoutUrl: string) => void
 }
 
-export function CheckoutButton({ planSlug, productId, planName }: CheckoutButtonProps) {
+export function CheckoutButton({ planSlug, productId, planName, onCheckout }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const buttonTestId = `subscribe-to-${planSlug}-button`
@@ -32,6 +33,10 @@ export function CheckoutButton({ planSlug, productId, planName }: CheckoutButton
       const checkoutUrl = purchase_intent.launch.checkout_url
       if (new URL(checkoutUrl).protocol !== 'https:') {
         setError('Checkout redirect URL is not secure. Please try again.')
+        return
+      }
+      if (onCheckout) {
+        onCheckout(checkoutUrl)
         return
       }
       window.location.assign(checkoutUrl)
