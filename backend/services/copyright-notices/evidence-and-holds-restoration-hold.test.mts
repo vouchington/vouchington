@@ -2,50 +2,20 @@ import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
-import {
-  createCopyrightRestorationHoldFixture,
-  createCounterNoticeRestoreIntent,
-  deliverInitialCopyrightWithhold,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('copyright notice restoration holds', () => {
   it('re-restricts an exact restored tuple for a hold received before restoration, then restores only after resolution', async () => {
-    const {
-      aggregate,
-      assessment: noticeAssessment,
-      claimant,
-      moderator,
-      notice,
-    } = await createCopyrightRestorationHoldFixture()
-    const target = aggregate.targets[0]!
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.id,
-      targetId: target.id,
-      assessmentId: noticeAssessment.id,
-      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-      imposedById: moderator.id,
-    })
-    const initialWithhold = (
-      await getCopyrightNoticePrivateAggregate(notice.id)
-    )?.actionIntents.find(intent => intent.action === 'withhold')
-    if (!initialWithhold) throw new Error('initial withhold intent disappeared')
     const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
-    await deliverInitialCopyrightWithhold(notice.id, publish)
-    const { now: restorationAt, restore } = await createCounterNoticeRestoreIntent({
-      claimant,
-      noticeId: notice.id,
-      moderator,
-      targetId: target.id,
-      restrictionId: restriction.id,
-      placementRevision: target.placement_revision,
-    })
+    const { initialWithhold, moderator, notice, restorationAt, restore, restriction, target } =
+      await openHeldCounterNoticeRestore(publish)
     await expect(
       processCopyrightActionIntent(restore.id, restorationAt, {
         publishImagePlacementDeliveryRecord: publish,

@@ -2,17 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
-import {
-  createCopyrightRestorationHoldFixture,
-  createCounterNoticeRestoreIntent,
-  deliverInitialCopyrightWithhold,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { type createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('late legal-hold edge publication', () => {
   it('rolls back every late-hold record when the edge provider rejects the denial', async () => {
@@ -67,27 +63,9 @@ async function restorePlacementForLateHold(): Promise<{
   restorationAt: Date
   targetId: string
 }> {
-  const { aggregate, assessment, claimant, moderator, notice } =
-    await createCopyrightRestorationHoldFixture()
-  const target = aggregate.targets[0]
-  if (!target) throw new Error('copyright hold target disappeared')
-  const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-    noticeId: notice.id,
-    targetId: target.id,
-    assessmentId: assessment.id,
-    imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-    imposedById: moderator.id,
-  })
   const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
-  await deliverInitialCopyrightWithhold(notice.id, publish)
-  const { now: restorationAt, restore } = await createCounterNoticeRestoreIntent({
-    claimant,
-    noticeId: notice.id,
-    moderator,
-    targetId: target.id,
-    restrictionId: restriction.id,
-    placementRevision: target.placement_revision,
-  })
+  const { moderator, notice, restorationAt, restore, target } =
+    await openHeldCounterNoticeRestore(publish)
   await processCopyrightActionIntent(restore.id, restorationAt, {
     publishImagePlacementDeliveryRecord: publish,
   })

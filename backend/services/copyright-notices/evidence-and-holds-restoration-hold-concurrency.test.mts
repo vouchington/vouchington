@@ -2,44 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
-  acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
 } from './index.mts'
-import {
-  createCopyrightRestorationHoldFixture,
-  createCounterNoticeRestoreIntent,
-  deliverInitialCopyrightWithhold,
-} from './evidence-and-holds-restoration-hold-fixtures.mts'
+import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('late legal-hold and restoration concurrency', () => {
   it('serializes the placement fence before case records, leaving a concurrent restored tuple denied', async () => {
-    const {
-      aggregate,
-      assessment: noticeAssessment,
-      claimant,
-      moderator,
-      notice,
-    } = await createCopyrightRestorationHoldFixture()
-    const target = aggregate.targets[0]!
-    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
-      noticeId: notice.id,
-      targetId: target.id,
-      assessmentId: noticeAssessment.id,
-      imposedAt: new Date('2026-07-01T12:00:00.000Z'),
-      imposedById: moderator.id,
-    })
     const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
-    await deliverInitialCopyrightWithhold(notice.id, publish)
-    const { now: restorationAt, restore } = await createCounterNoticeRestoreIntent({
-      claimant,
-      noticeId: notice.id,
-      moderator,
-      targetId: target.id,
-      restrictionId: restriction.id,
-      placementRevision: target.placement_revision,
-    })
+    const { moderator, notice, restorationAt, restore, target } =
+      await openHeldCounterNoticeRestore(publish)
     const holdSubmission = await appendCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
