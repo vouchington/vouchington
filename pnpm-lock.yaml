@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.38.0
       no-mistakes:
-        specifier: ^0.65.0
-        version: 0.65.0
+        specifier: ^0.66.0
+        version: 0.66.0
       oxfmt:
         specifier: ^0.70.0
         version: 0.70.0
@@ -12366,8 +12366,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.65.0
-        version: 0.65.0
+        specifier: ^0.66.0
+        version: 0.66.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -12611,8 +12611,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.65.0
-        version: 0.65.0
+        specifier: ^0.66.0
+        version: 0.66.0
       oxfmt:
         specifier: ^0.70.0
         version: 0.70.0
@@ -20334,30 +20334,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.65.0:
-    resolution: {integrity: sha512-Vz1lQjtSfJjBTkD8a4e7v7qMQU/CSUqf1h9cqpQuzdxNnXie+hW5lW/NrPB8uYSiRoQqOOJ3iuN0mIGXCxaiCg==}
+  no-mistakes-darwin-arm64@0.66.0:
+    resolution: {integrity: sha512-C+n0dgPbvQf2/NV8WSyQBzUupExdlm9CqkmWEYbz+tbygOF6T86ykNtDxfqIA3B0bGlKcxJTqWX/e6EzQnpTfg==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.65.0:
-    resolution: {integrity: sha512-TIhcCOIBfYA1vhooiDZmulvnDAVXv2T12Ql/DHPp2wDNENa5Bbhsr+6+/hGQ3R5LrvLeQxG7BEG5VppIhZITgw==}
+  no-mistakes-linux-arm64-gnu@0.66.0:
+    resolution: {integrity: sha512-gUCrbwq3RW6JZFlW9sz7xpZejvP4MBzfdWsM/0kGUpEH0McxJ/4RbH1WiBoUJP6w8+0YNqFPnHZWZfB5KntNJA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.65.0:
-    resolution: {integrity: sha512-Bu1W8anwmL52BLPpyuuuDx6lb0ipslvQ7NmNdgj0xZlVIkHhejQZ5L9f1kJukxg/PxKo6fiunAGyGZ8Zxr5yjg==}
+  no-mistakes-linux-x64-gnu@0.66.0:
+    resolution: {integrity: sha512-rIBYuWjjXP/0r5hFMm0L76H/+0lEEDITkqZaEiAGZ//5nSPoys6+VfyV3T12QnGbWwXVpsAIfuVMfj6/PXlwGw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.65.0:
-    resolution: {integrity: sha512-xxBwWd4QxUpDWNKSwLyDFREDcgkTgxaOIVK2XV2A8JqO/45YVfYL6IGgVSEkKwqXtsTb9QgecTOrDaCDK05wXA==}
+  no-mistakes-win32-x64-msvc@0.66.0:
+    resolution: {integrity: sha512-bzuB0Mx0FKBsb9lYhJC2X+is6IO47+I1wEdzkQZbNcl8MWMGOUhtN4TUO1yVCnAk526F56RuYDTNMOGBuUdD6Q==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.65.0:
-    resolution: {integrity: sha512-7KSj5fpk5aPqWSbq5yOu0rkfL3M8MP3N6KxzsYGntAjYiLqI0pK2O0woYrAZ9njmbvuPEgIg9xwITJtkQpSKYw==}
+  no-mistakes@0.66.0:
+    resolution: {integrity: sha512-t1B9HAzxy6PnJUVibcT/Dp5IjfQE8OcPr2Fn3dvQWZuAgFIhRaFCRr4vba2CPrRDWKHeRB/GUGqoIiattYQDCw==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -29559,24 +29559,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.65.0:
+  no-mistakes-darwin-arm64@0.66.0:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.65.0:
+  no-mistakes-linux-arm64-gnu@0.66.0:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.65.0:
+  no-mistakes-linux-x64-gnu@0.66.0:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.65.0:
+  no-mistakes-win32-x64-msvc@0.66.0:
     optional: true
 
-  no-mistakes@0.65.0:
+  no-mistakes@0.66.0:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.65.0
-      no-mistakes-linux-arm64-gnu: 0.65.0
-      no-mistakes-linux-x64-gnu: 0.65.0
-      no-mistakes-win32-x64-msvc: 0.65.0
+      no-mistakes-darwin-arm64: 0.66.0
+      no-mistakes-linux-arm64-gnu: 0.66.0
+      no-mistakes-linux-x64-gnu: 0.66.0
+      no-mistakes-win32-x64-msvc: 0.66.0
 
   node-app-attest@1.0.1:
     dependencies:
