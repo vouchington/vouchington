@@ -1,9 +1,6 @@
 import { ClientRequest } from '@/lib/api/client/request'
-import {
-  accountImageState,
-  accountPost,
-  updatedLandingPage,
-} from '@/storybook/mocks/my-account-routes'
+import { updatedLandingPage } from '@/storybook/mocks/my-account-landing'
+import { accountImageState, accountPost } from '@/storybook/mocks/my-account-routes'
 
 let myAccountFixture = false
 const previousGet = ClientRequest.prototype.get

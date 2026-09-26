@@ -1,5 +1,4 @@
-import { landingPageWithItems } from '@/storybook/entities/fixtures/landing'
-import type { LandingPageItem, LandingPageWithItems } from '@/types/landing-pages'
+import { updatedLandingPage } from '@/storybook/mocks/my-account-landing'
 
 function record(body: unknown): Record<string, unknown> {
   return typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {}
@@ -17,76 +16,26 @@ function topicNames(body: unknown): string[] {
     : []
 }
 
-function matchesSubmittedItem(existing: LandingPageItem, input: Record<string, unknown>): boolean {
-  if (existing.type === 'profile_link' && input.type === 'profile_link') {
-    return existing.profile_link.id === input.profile_link_id
-  }
-  if (existing.type === 'review' && input.type === 'review')
-    return existing.review.id === input.review_id
-  if (existing.type === 'referral_link' && input.type === 'referral_link') {
-    return existing.referral_link.id === input.referral_link_id
-  }
-  if (existing.type === 'topic_group' && input.type === 'topic_group') {
-    return existing.topic.id === input.topic_id
-  }
-  return false
-}
-
-function submittedItems(fields: Record<string, unknown>): LandingPageItem[] | undefined {
-  if (!Array.isArray(fields.items)) return undefined
-  return fields.items.flatMap(item => {
-    const input = record(item)
-    if (input.type === 'link') {
-      const label = typeof input.label === 'string' ? input.label : 'Link'
-      const url = typeof input.url === 'string' ? input.url : 'https://example.com'
-      return [{ id: `lp-link-${url}`, type: 'link' as const, label, url }]
-    }
-    const match = landingPageWithItems.items.find(existing => matchesSubmittedItem(existing, input))
-    return match ? [match] : []
-  })
-}
-
-export function updatedLandingPage(body: unknown): LandingPageWithItems {
-  const fields = record(body)
-  const items = submittedItems(fields)
-  return {
-    ...landingPageWithItems,
-    title: typeof fields.title === 'string' ? fields.title : landingPageWithItems.title,
-    subtitle:
-      typeof fields.subtitle === 'string' || fields.subtitle === null
-        ? fields.subtitle
-        : landingPageWithItems.subtitle,
-    slug: typeof fields.slug === 'string' ? fields.slug : landingPageWithItems.slug,
-    is_default: fields.is_default === true || landingPageWithItems.is_default,
-    ...(items === undefined ? {} : { items }),
-  }
-}
-
 const storyTimestamp = '2026-05-01T12:00:00.000Z'
 
-export function accountPost(endpoint: string, body: unknown): unknown | undefined {
-  if (endpoint === '/api/v1/my/import/topics') {
-    return { results: topicNames(body).map(input => ({ input, status: 'followed' })) }
+function apiKeyPost(body: unknown): unknown {
+  return {
+    raw_key: 'vk_story_secret',
+    api_key: {
+      id: 'api-key-story',
+      prefix: 'vk_story',
+      type: textField(body, 'type') || 'rss',
+      label: textField(body, 'label') || 'Story key',
+      permissions: Array.isArray(record(body).permissions) ? record(body).permissions : [],
+      created_at: storyTimestamp,
+      last_used_at: null,
+      revoked_at: null,
+      updated_at: storyTimestamp,
+    },
   }
-  if (endpoint === '/api/v1/my/landing-pages') {
-    return { landing_page: { ...updatedLandingPage(body), id: 'landing-page-story' } }
-  }
-  if (endpoint === '/api/v1/my/api-keys') {
-    return {
-      raw_key: 'vk_story_secret',
-      api_key: {
-        id: 'api-key-story',
-        prefix: 'vk_story',
-        type: textField(body, 'type') || 'rss',
-        label: textField(body, 'label') || 'Story key',
-        permissions: Array.isArray(record(body).permissions) ? record(body).permissions : [],
-        created_at: storyTimestamp,
-        last_used_at: null,
-        revoked_at: null,
-        updated_at: storyTimestamp,
-      },
-    }
-  }
+}
+
+function passkeyPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/auth/passkeys/registration/options') {
     return {
       options: { challenge: 'storybook-challenge', rp: { name: 'Voucha', id: 'localhost' } },
@@ -104,6 +53,10 @@ export function accountPost(endpoint: string, body: unknown): unknown | undefine
       },
     }
   }
+  return undefined
+}
+
+function totpPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/auth/totp') {
     return {
       authenticator: {
@@ -124,6 +77,21 @@ export function accountPost(endpoint: string, body: unknown): unknown | undefine
       },
     }
   }
+  return undefined
+}
+
+export function accountPost(endpoint: string, body: unknown): unknown | undefined {
+  if (endpoint === '/api/v1/my/import/topics') {
+    return { results: topicNames(body).map(input => ({ input, status: 'followed' })) }
+  }
+  if (endpoint === '/api/v1/my/landing-pages') {
+    return { landing_page: { ...updatedLandingPage(body), id: 'landing-page-story' } }
+  }
+  if (endpoint === '/api/v1/my/api-keys') return apiKeyPost(body)
+  const passkey = passkeyPost(endpoint, body)
+  if (passkey !== undefined) return passkey
+  const totp = totpPost(endpoint, body)
+  if (totp !== undefined) return totp
   if (endpoint === '/api/v1/images/upload-url') {
     return {
       upload: {
