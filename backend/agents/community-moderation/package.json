@@ -29,7 +29,7 @@
     "@services/community-agent-prompts": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/posts": "workspace:^",
-    "openai": "^7.15.0"
+    "openai": "^7.23.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

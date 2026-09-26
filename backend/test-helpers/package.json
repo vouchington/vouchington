@@ -49,7 +49,7 @@
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
     "jose": "^6.2.12",
-    "openai": "^7.15.0",
+    "openai": "^7.23.0",
     "otpauth": "^9.5.2",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",

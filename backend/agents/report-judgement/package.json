@@ -27,7 +27,7 @@
     "@modules/openai-utils": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-reports": "workspace:^",
-    "openai": "^7.15.0"
+    "openai": "^7.23.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"
