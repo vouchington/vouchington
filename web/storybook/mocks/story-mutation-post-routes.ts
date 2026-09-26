@@ -15,6 +15,7 @@ import { categoryRelationPost } from './category-relations-store'
 import { applyListMembership } from './list-membership-fixture'
 import { purchaseIntent } from './story-mutation-purchase'
 import { conversationParticipant } from './story-mutation-participant'
+import { followerActionPost } from './story-mutation-follower-post'
 
 let nextInvite = 0
 
@@ -127,24 +128,6 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint.endsWith('/modmail')) return { thread: { id: 'modmail-thread-story' } }
   if (endpoint.endsWith('/mod-notes')) return modNote(body)
   return storyClaimMutation(endpoint, body)
-}
-
-function followerActionPost(endpoint: string): unknown | undefined {
-  if (endpoint === '/api/v1/reports') {
-    return {
-      report: {
-        id: 'report-story',
-        status: 'pending',
-        entity_type: 'post',
-        entity_id: 'post-story',
-      },
-      isDuplicate: false,
-    }
-  }
-  if (/\/posts\/[^/]+\/(?:shares|sends)$/.test(endpoint)) {
-    return { status: 'accepted', distribution_id: 'distribution-story' }
-  }
-  return undefined
 }
 
 export function storyMutationPost(endpoint: string, body: unknown): unknown | undefined {
