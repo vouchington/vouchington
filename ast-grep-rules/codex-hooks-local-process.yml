@@ -8,7 +8,7 @@ utils:
   child-process-module:
     regex: ^['"`](?:node:)?child_process['"`]$
   network-module:
-    regex: ^['"`](?:node:)?(?:http|https|net)['"`]$
+    regex: ^['"`](?:node:)?(?:http|http2|https|net)['"`]$
   network-command-token:
     regex: ^['"`](?:gh|gh-stack|curl|wget|fetch|ls-remote|pull|push|clone|update)['"`]$
   structured-process-call:
@@ -19,6 +19,10 @@ utils:
           regex: ^(?:execFile|execFileSync|spawn|spawnSync)$
 rule:
   any:
+    - all:
+        - kind: identifier
+        - regex: ^getBuiltinModule$
+    - kind: spread_element
     - all:
         - kind: import_statement
         - has:
@@ -37,6 +41,16 @@ rule:
                 all:
                   - kind: export_clause
                   - regex: \b(?:exec|execSync|execFile|execFileSync|spawn|spawnSync)\b
+            - has:
+                stopBy: neighbor
+                all:
+                  - kind: lexical_declaration
+                  - regex: \b(?:exec|execSync|execFile|execFileSync|spawn|spawnSync)\b
+            - has:
+                stopBy: neighbor
+                all:
+                  - kind: identifier
+                  - regex: ^(?:exec|execSync|execFile|execFileSync|spawn|spawnSync)$
     - all:
         - kind: import_statement
         - has:
@@ -135,6 +149,11 @@ rule:
         - matches: network-command-token
 examples:
   - code: |
+      import { execFileSync, spawnSync } from 'node:child_process'
+      export const run = execFileSync
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
       import { fork } from 'node:child_process'
       fork('./network-worker.mjs')
     isValid: false
@@ -178,6 +197,15 @@ examples:
   - code: |
       import { execFileSync } from 'node:child_process'
       execFileSync('git', ['remote', 'show', 'origin'])
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['show', ...args], { cwd })
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import http2 from 'node:http2'
     isValid: false
     file: 'dev/codex-hooks/local-process.mts'
   - code: |

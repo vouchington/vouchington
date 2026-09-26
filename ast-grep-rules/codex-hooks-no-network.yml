@@ -9,9 +9,12 @@ ignores:
   - 'dev/codex-hooks/local-process.mts'
 utils:
   forbidden-module:
-    regex: ^['"`](?:node:)?(?:child_process|http|https|net)['"`]$
+    regex: ^['"`](?:node:)?(?:child_process|http|http2|https|net)['"`]$
 rule:
   any:
+    - all:
+        - kind: identifier
+        - regex: ^getBuiltinModule$
     - all:
         - any:
             - kind: import_statement
@@ -62,6 +65,15 @@ examples:
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
       const childProcess = process.getBuiltinModule('node:child_process')
+    isValid: false
+    file: 'dev/codex-hooks/policy/core.mts'
+  - code: |
+      import { getBuiltinModule as loadBuiltin } from 'node:process'
+      const childProcess = loadBuiltin('node:child_process')
+    isValid: false
+    file: 'dev/codex-hooks/policy/core.mts'
+  - code: |
+      import http2 from 'node:http2'
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
