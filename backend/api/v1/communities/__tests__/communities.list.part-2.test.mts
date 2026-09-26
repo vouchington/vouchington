@@ -144,6 +144,15 @@ describe('communities', () => {
         await request.get('/api/v1/communities?eligible_post_type=story').expect(400)
       })
 
+      it.each(['member_id=someone-else', 'list_scope=everyone', 'feed_category=videos'])(
+        'rejects the invalid query value %s',
+        async query => {
+          const request = createRequest()
+          await request.authenticateAs(user)
+          await request.get(`/api/v1/communities?${query}`).expect(400)
+        },
+      )
+
       it('filters eligible discussion communities to active memberships', async () => {
         const random = createRandomString(8)
         const [joinedCommunity, removedCommunity, nonMemberCommunity] = await Promise.all([

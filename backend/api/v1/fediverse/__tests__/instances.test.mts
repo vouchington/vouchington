@@ -69,6 +69,13 @@ describe('GET /api/v1/fediverse/instances', () => {
     })
   })
 
+  it('rejects a query with more hashtags than the search allows', async () => {
+    const query = Array.from({ length: 11 }, (_, index) => `#tag${index}`).join(' ')
+    await createRequest()
+      .get(`/api/v1/fediverse/instances?q=${encodeURIComponent(query)}`)
+      .expect(422)
+  })
+
   it('returns fediverse instances with topic/election sidecars', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({

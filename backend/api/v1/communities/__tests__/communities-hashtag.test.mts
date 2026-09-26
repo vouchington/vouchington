@@ -26,6 +26,13 @@ describe('GET /api/v1/communities – hashtag topic search', () => {
     expect(response.body.results).toEqual([])
   })
 
+  it('rejects a query with more hashtags than the search allows', async () => {
+    const query = Array.from({ length: 11 }, (_, index) => `#tag${index}`).join(' ')
+    await createRequest()
+      .get(`/api/v1/communities?q=${encodeURIComponent(query)}`)
+      .expect(422)
+  })
+
   it('filters by ?q=%23known-slug and returns matching community', async () => {
     const rand = createRandomString(8)
     const topicSlug = `ht-topic-${rand}`
