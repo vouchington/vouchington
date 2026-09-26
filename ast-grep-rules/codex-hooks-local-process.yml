@@ -20,6 +20,13 @@ utils:
 rule:
   any:
     - all:
+        - kind: import_statement
+        - has:
+            field: source
+            matches: child-process-module
+        - not:
+            pattern: import { execFileSync, spawnSync } from 'node:child_process'
+    - all:
         - kind: export_statement
         - any:
             - has:
@@ -125,6 +132,11 @@ rule:
             - kind: template_string
         - matches: network-command-token
 examples:
+  - code: |
+      import { fork } from 'node:child_process'
+      fork('./network-worker.mjs')
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
   - code: |
       export { execFileSync } from 'node:child_process'
     isValid: false
