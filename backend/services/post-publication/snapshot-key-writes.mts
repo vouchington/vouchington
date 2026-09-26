@@ -5,6 +5,17 @@ import {
   type PostPublicationRetainedKey,
 } from './retained-key-writes.mts'
 
+/** Persists a source page and its disappearing-key retention before the owner checkpoints it. */
+export async function persistPublicationSnapshotPage(
+  query: TransactionQuery,
+  snapshotId: string,
+  dirtyWorkId: string,
+  keys: readonly PublicationSnapshotKey[],
+): Promise<void> {
+  await insertSnapshotKeys(query, snapshotId, keys)
+  await retainSnapshotPage(query, dirtyWorkId, keys)
+}
+
 export async function insertSnapshotKeys(
   query: TransactionQuery,
   snapshotId: string,

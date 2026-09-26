@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
 import { publicationSnapshotMismatchSql } from './identity-source.mts'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
-import { retainSnapshotPage, insertSnapshotKeys } from './snapshot-key-writes.mts'
+import { persistPublicationSnapshotPage } from './snapshot-key-writes.mts'
 import { markPostPublicationTypedProtocol } from './identity-protocol.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
@@ -55,8 +55,7 @@ export async function materializePostPublicationIdentitySnapshot(
       snapshot.cursor_value,
       limit,
     )
-    await insertSnapshotKeys(query, snapshot.id, page.keys)
-    await retainSnapshotPage(query, work.id, page.keys)
+    await persistPublicationSnapshotPage(query, snapshot.id, work.id, page.keys)
     complete = page.complete
     await query(sql`/* checkpointPostPublicationIdentitySnapshot */ UPDATE post_publication_identity_snapshots
       SET source_cursor_kind = ${page.cursorKind},

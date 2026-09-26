@@ -94,9 +94,17 @@ export async function deleteOrphanPostPublicationProjectionReceipts(
 ): Promise<boolean> {
   if (postIds.length === 0) return true
   await using query = await beginTransaction()
-  await query(
-    `/* markPostPublicationTypedProtocol */ SELECT set_config('voucha.post_publication_protocol', 'typed-v1', true)`,
-  )
+  const rowCount = await deleteOrphanReceiptPage(query, work, postIds)
+  if (rowCount === postIds.length) await query.commit()
+  return rowCount === postIds.length
+}
+
+async function deleteOrphanReceiptPage(
+  query: TransactionQuery,
+  work: ClaimedPostPublicationDirtyWork,
+  postIds: string[],
+): Promise<number | null> {
+  await markPostPublicationTypedProtocol(query)
   const { rowCount } = await query(
     `/* deleteOrphanPostPublicationProjectionReceipts */
     DELETE FROM post_publication_projection_receipts receipt
@@ -108,6 +116,5 @@ export async function deleteOrphanPostPublicationProjectionReceipts(
       )`,
     [postIds, work.id, work.generation, work.lease_token],
   )
-  if (rowCount === postIds.length) await query.commit()
-  return rowCount === postIds.length
+  return rowCount
 }

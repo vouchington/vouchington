@@ -119,6 +119,12 @@ before/after.
 Two independent checks now catch this drift instead of letting it pass silently. See
 [Migration Rules](CLAUDE.md#migration-rules) for the in-place-edit policy these checks back up.
 
+The structural snapshot includes column ordinal positions. Refining an unpublished migration after
+local application must preserve the canonical `CREATE TABLE` column order: an incrementally patched
+development database can match the snapshot while a complete fresh migration does not. Validate
+both the live snapshot and a complete fresh migration; applying only the new migration to cloned
+development tables cannot establish fresh-install equivalence.
+
 - **Checksum mismatch** (`MigrationChecksumMismatchError` from `@vouchington/postgres`):
   each ledger row records a SHA-256 hash of the migration file's SQL text alongside its filename. If
   a migration's filename already has a ledger row but the file's current content hash does not match

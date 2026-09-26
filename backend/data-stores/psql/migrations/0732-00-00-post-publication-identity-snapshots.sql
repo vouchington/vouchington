@@ -3,9 +3,9 @@
 CREATE TABLE IF NOT EXISTS post_publication_identity_protocol (
   singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
   activated_at TIMESTAMPTZ,
+  protocol_version TEXT NOT NULL DEFAULT 'legacy' CHECK (protocol_version IN ('legacy', 'typed-v1')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  protocol_version TEXT NOT NULL DEFAULT 'legacy' CHECK (protocol_version IN ('legacy', 'typed-v1'))
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO post_publication_identity_protocol (singleton) VALUES (TRUE) ON CONFLICT DO NOTHING;
@@ -30,14 +30,14 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshots (
   is_public BOOLEAN NOT NULL,
   source_cursor_kind TEXT,
   source_cursor_value TEXT,
+  completed_at TIMESTAMPTZ,
+  abandoned_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   receipt_cursor_kind TEXT,
   receipt_cursor_value TEXT,
   receipt_retained_at TIMESTAMPTZ,
   receipt_source_version TEXT,
-  completed_at TIMESTAMPTZ,
-  abandoned_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK ((source_cursor_kind IS NULL) = (source_cursor_value IS NULL)),
   CHECK ((receipt_cursor_kind IS NULL) = (receipt_cursor_value IS NULL))
 );
