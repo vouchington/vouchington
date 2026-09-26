@@ -64,7 +64,8 @@ describe('POST /api/v1/posts CAPTCHA', () => {
       })
       .expect(422)
 
-    expect(response.body.message).toContain('Unsupported post_type')
+    expect(response.body.message).toContain('Invalid request body: /post_type')
+    expect(mockFetch).not.toHaveBeenCalled()
     await expect(
       getContributionAdmissionConsumptionCountForTest(user.id, 'discussion'),
     ).resolves.toBe(0)
