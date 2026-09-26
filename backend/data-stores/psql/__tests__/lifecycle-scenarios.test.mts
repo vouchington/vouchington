@@ -163,35 +163,20 @@ async function createAppeal(
   appellant: NonNullable<Awaited<ReturnType<typeof createTestUser>>>,
   suspension: boolean,
 ) {
+  let target: { target_type: 'suspension' } | { target_type: 'warning'; target_id: string }
   if (suspension) {
     await suspendTestUserGetId(appellant.id, 'Lifecycle scenario suspension')
-    return (
-      await createModerationAppeal(
-        WEB_PROVENANCE,
-        appellant,
-        parseCreateModerationAppealInput({
-          target_type: 'suspension',
-          appeal_reason: 'Appeal reason.',
-        }),
-      )
-    ).appeal
+    target = { target_type: 'suspension' }
+  } else {
+    const warning = await insertTestUserWarning({
+      userId: appellant.id,
+      issuedById: administrator.id,
+      reason: 'Lifecycle scenario warning',
+    })
+    target = { target_type: 'warning', target_id: warning.id }
   }
-  const warning = await insertTestUserWarning({
-    userId: appellant.id,
-    issuedById: administrator.id,
-    reason: 'Lifecycle scenario warning',
-  })
-  return (
-    await createModerationAppeal(
-      WEB_PROVENANCE,
-      appellant,
-      parseCreateModerationAppealInput({
-        target_type: 'warning',
-        target_id: warning.id,
-        appeal_reason: 'Appeal reason.',
-      }),
-    )
-  ).appeal
+  const input = parseCreateModerationAppealInput({ ...target, appeal_reason: 'Appeal reason.' })
+  return (await createModerationAppeal(WEB_PROVENANCE, appellant, input)).appeal
 }
 
 async function runIntegrityAuthorityScenario(

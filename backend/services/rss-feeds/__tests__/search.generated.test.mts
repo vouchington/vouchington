@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 
-import { createRssFeed } from '../create.mts'
+import { createTestRssFeed } from '../test-fixtures.mts'
 
 import { upsertRssFeedCategories } from '../categories.mts'
 
@@ -16,7 +16,6 @@ import {
   addRssFeedTopicPublisherTypeWithScore,
   insertEntityRelation,
   insertTestTopicParentRelation,
-  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('search.generated', () => {
@@ -24,11 +23,9 @@ describe('search.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({ hostname: `search-${random}.example.com` })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     // Enable the feed
@@ -46,18 +43,14 @@ describe('search.generated', () => {
     const topic1 = await createTestTopic({ hostname: `search-1-${random}.example.com` })
     const topic2 = await createTestTopic({ hostname: `search-2-${random}.example.com` })
 
-    const feed1 = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed1-${random}.xml`,
-      topic_id: topic1.id,
+    const feed1 = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed1-${random}.xml`,
+      topicId: topic1.id,
       title: `Test Feed 1 ${random}`,
     })
-    const feed2 = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed2-${random}.xml`,
-      topic_id: topic2.id,
+    const feed2 = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed2-${random}.xml`,
+      topicId: topic2.id,
       title: `Test Feed 2 ${random}`,
     })
     await updateRssFeedById(feed1.id, { enabled: true })
@@ -76,25 +69,19 @@ describe('search.generated', () => {
     const topic2 = await createTestTopic({ hostname: `primary-2-${random}.example.com` })
     const topic3 = await createTestTopic({ hostname: `primary-3-${random}.example.com` })
 
-    const topic1Feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/topic-1-primary-${random}.xml`,
-      topic_id: topic1.id,
+    const topic1Feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/topic-1-primary-${random}.xml`,
+      topicId: topic1.id,
       title: `Topic 1 Primary ${random}`,
     })
-    const topic2Feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/topic-2-primary-${random}.xml`,
-      topic_id: topic2.id,
+    const topic2Feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/topic-2-primary-${random}.xml`,
+      topicId: topic2.id,
       title: `Topic 2 Primary ${random}`,
     })
-    const disabledFeed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/disabled-primary-${random}.xml`,
-      topic_id: topic3.id,
+    const disabledFeed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/disabled-primary-${random}.xml`,
+      topicId: topic3.id,
       title: `Disabled Primary ${random}`,
     })
     await updateRssFeedById(topic1Feed.id, { enabled: true })
@@ -116,11 +103,9 @@ describe('search.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({ hostname: `disabled-${random}.example.com` })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { enabled: false })
@@ -136,18 +121,14 @@ describe('search.generated', () => {
     const topic1 = await createTestTopic({ hostname: `all-1-${random}.example.com` })
     const topic2 = await createTestTopic({ hostname: `all-2-${random}.example.com` })
 
-    const feed1 = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed1-${random}.xml`,
-      topic_id: topic1.id,
+    const feed1 = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed1-${random}.xml`,
+      topicId: topic1.id,
       title: `Test Feed 1 ${random}`,
     })
-    const feed2 = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed2-${random}.xml`,
-      topic_id: topic2.id,
+    const feed2 = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed2-${random}.xml`,
+      topicId: topic2.id,
       title: `Test Feed 2 ${random}`,
     })
     await updateRssFeedById(feed1.id, { enabled: true })
@@ -164,11 +145,9 @@ describe('search.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({ hostname: `hidden-${random}.example.com` })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Hidden Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { enabled: true, discoverable: false })
@@ -192,11 +171,9 @@ describe('search.generated', () => {
       slug: `muted-publisher-${random}`,
       hostname: `muted-publisher-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Dominant Mute Feed ${random}`,
     })
     await addRssFeedTopicPublisherTypeWithScore(topic.id, dominantType.id, 2)
@@ -218,11 +195,9 @@ describe('search.generated', () => {
       slug: `secondary-filter-publisher-${random}`,
       hostname: `secondary-filter-publisher-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/filter-feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/filter-feed-${random}.xml`,
+      topicId: topic.id,
       title: `Dominant Filter Feed ${random}`,
     })
     await addRssFeedTopicPublisherTypeWithScore(topic.id, dominantType.id, 2)
@@ -245,18 +220,14 @@ describe('search.generated', () => {
     const topicPodcast = await createTestTopic({ hostname: `podcast-ft-${random}.example.com` })
     const topicArticle = await createTestTopic({ hostname: `article-ft-${random}.example.com` })
 
-    const podcastFeed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/podcast-ft-${random}.xml`,
-      topic_id: topicPodcast.id,
+    const podcastFeed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/podcast-ft-${random}.xml`,
+      topicId: topicPodcast.id,
       title: `Podcast Feed ${random}`,
     })
-    const articleFeed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/article-ft-${random}.xml`,
-      topic_id: topicArticle.id,
+    const articleFeed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/article-ft-${random}.xml`,
+      topicId: topicArticle.id,
       title: `Article Feed ${random}`,
     })
     await updateRssFeedById(podcastFeed.id, { enabled: true, feed_type: 'podcast' })
@@ -276,11 +247,9 @@ describe('search.generated', () => {
     const categorySlug = `test-cat-${random}`
     const categoryTopic = await createTestTopic({ slug: categorySlug, name: categorySlug })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/cat-feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/cat-feed-${random}.xml`,
+      topicId: topic.id,
       title: `Category Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { enabled: true })

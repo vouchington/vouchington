@@ -1,5 +1,5 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { createRssFeed } from '../create.mts'
+import { createTestRssFeed } from '../test-fixtures.mts'
 import { updateRssFeedById } from '../update.mts'
 import { updateRssFeedByIdAsCurrentUser } from '../update-current-user.mts'
 import { getRssFeedById } from '../get.mts'
@@ -10,7 +10,6 @@ import {
   getRssFeedDeclaredLanguageForTest,
   listTestPostPublicationImpactTopicIds,
   setRssFeedDeclaredLanguageForTest,
-  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { randomUUID } from 'node:crypto'
@@ -29,11 +28,9 @@ describe('update.generated (fields)', () => {
       hostname: `update-title-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Original Title ${random}`,
     })
     await updateRssFeedById(feed.id, { title: `Updated Title ${random}` })
@@ -49,14 +46,12 @@ describe('update.generated (fields)', () => {
       hostname: `update-url-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
-    // createRssFeed returns raw table row, so rss_feed_url_id is available directly
+    // The fixture returns the raw table row, so rss_feed_url_id is available directly
     const oldUrlId = feed.rss_feed_url_id
     await updateRssFeedById(feed.id, { rss_feed_url: `https://example.com/new-feed-${random}.xml` })
 
@@ -72,11 +67,9 @@ describe('update.generated (fields)', () => {
       hostname: `update-url-fragment-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
 
@@ -92,11 +85,9 @@ describe('update.generated (fields)', () => {
       hostname: `update-url-private-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
 
@@ -116,11 +107,9 @@ describe('update.generated (fields)', () => {
       hostname: `topic-switch-new-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic1.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic1.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { topic_id: topic2.id })
@@ -141,11 +130,9 @@ describe('update.generated (fields)', () => {
       hostname: `etag-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { etag: '"test-etag"' })
@@ -161,11 +148,9 @@ describe('update.generated (fields)', () => {
       hostname: `etag-null-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { etag: '"test-etag"' })
@@ -182,11 +167,9 @@ describe('update.generated (fields)', () => {
       hostname: `modified-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     const testDate = new Date('2025-01-01T00:00:00Z')
@@ -203,11 +186,9 @@ describe('update.generated (fields)', () => {
       hostname: `fetched-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { last_fetched_at: true })
@@ -223,11 +204,9 @@ describe('update.generated (fields)', () => {
       hostname: `declared-language-undefined-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await setRssFeedDeclaredLanguageForTest(feed.id, 'fr')
@@ -245,11 +224,9 @@ describe('update.generated (fields)', () => {
       hostname: `declared-language-set-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
 
@@ -265,11 +242,9 @@ describe('update.generated (fields)', () => {
       hostname: `declared-language-clear-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await setRssFeedDeclaredLanguageForTest(feed.id, 'fr')
@@ -286,11 +261,9 @@ describe('update.generated (fields)', () => {
       hostname: `nochanges-${random}.example.com`,
     })
 
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     const result = await updateRssFeedById(feed.id, {})

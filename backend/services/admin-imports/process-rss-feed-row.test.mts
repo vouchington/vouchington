@@ -57,9 +57,14 @@ describe('processRssFeedRow', () => {
     const result = await processRow(user, row)
 
     expect(result).toBe('entity-abc-123')
-    expect(importSingleRssFeed).toHaveBeenCalledWith(SYSTEM_PROVENANCE, user, 'https://example.com/feed.xml', {
-      follow: false,
-    })
+    expect(importSingleRssFeed).toHaveBeenCalledWith(
+      SYSTEM_PROVENANCE,
+      user,
+      'https://example.com/feed.xml',
+      {
+        follow: false,
+      },
+    )
   })
 
   it('returns entity_id on followed status', async () => {
@@ -121,8 +126,13 @@ describe('processRssFeedRow', () => {
 
     await processRow(user, row)
 
-    expect(importSingleRssFeed).toHaveBeenCalledWith(SYSTEM_PROVENANCE, user, 'https://example.com/feed.xml', {
-      follow: false,
-    })
+    expect(importSingleRssFeed).toHaveBeenCalledWith(
+      SYSTEM_PROVENANCE,
+      user,
+      'https://example.com/feed.xml',
+      {
+        follow: false,
+      },
+    )
   })
 })

@@ -29,18 +29,16 @@ export async function insertTestCommunity(options: InsertTestCommunityOptions): 
   const { rows } = await write(
     sql`/* insertTestCommunity */
     INSERT INTO communities (
-      name, slug, visibility, member_roster_visibility, list_type,
+      name, slug, visibility, created_via, member_roster_visibility, list_type,
       post_approval_required_at, allow_review_posts, allow_data_point_posts,
-      member_invites_allowed_at, trusted_at, rules_markdown, created_by_id,
-      created_via
+      member_invites_allowed_at, trusted_at, rules_markdown, created_by_id
     )
     VALUES (
-      ${name}, ${slug}, ${options.visibility ?? 'public'},
+      ${name}, ${slug}, ${options.visibility ?? 'public'}, 'system',
       ${options.member_roster_visibility ?? 'public'}, ${options.list_type ?? null},
       ${options.post_approval_required_at ?? null}, ${options.allow_review_posts ?? false},
       ${options.allow_data_point_posts ?? false}, ${options.member_invites_allowed_at ?? null},
-      ${options.trusted_at ?? null}, ${options.rules_markdown ?? null}, ${options.createdById},
-      'system'
+      ${options.trusted_at ?? null}, ${options.rules_markdown ?? null}, ${options.createdById}
     )
     RETURNING *
     `,

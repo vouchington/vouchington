@@ -67,10 +67,7 @@ export async function getTestLatestModerationReportAgainstUser(
 ): Promise<{ id: string; moderationTransparencyCommunityId: string | null }> {
   const { rows } = await read<{ id: string; moderationTransparencyCommunityId: string | null }>(sql`
     SELECT id, moderation_transparency_community_id AS "moderationTransparencyCommunityId"
-    FROM moderation_reports
-    WHERE reported_user_id = ${reportedUserId}::uuid
-    ORDER BY id DESC
-    LIMIT 1
+    FROM moderation_reports WHERE reported_user_id = ${reportedUserId}::uuid ORDER BY id DESC LIMIT 1
   `)
   if (!rows[0]) throw new Error(`User ${reportedUserId} has no moderation report`)
   return rows[0]

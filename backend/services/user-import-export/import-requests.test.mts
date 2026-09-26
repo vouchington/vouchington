@@ -23,6 +23,10 @@ const eligibleForTopicRecommendations = () => ({
   assertCanCreateTopicRecommendations: async () => {},
   importAttemptId: randomUUID(),
 })
+type ImportTopicsOptions = Parameters<typeof importTopics>[3]
+function importWebTopics(user: PrivateUser, names: string[], options: ImportTopicsOptions) {
+  return importTopics(WEB_PROVENANCE, user, names, options)
+}
 
 describe('user import requests', () => {
   let user: PrivateUser
@@ -34,12 +38,7 @@ describe('user import requests', () => {
   it('records pending topic recommendation imports', async () => {
     const topicName = `Imported Pending Topic ${Date.now()}`
 
-    const [result] = await importTopics(
-      WEB_PROVENANCE,
-      user,
-      [topicName],
-      eligibleForTopicRecommendations(),
-    )
+    const [result] = await importWebTopics(user, [topicName], eligibleForTopicRecommendations())
 
     expect(result).toMatchObject({
       input: topicName,
@@ -83,12 +82,7 @@ describe('user import requests', () => {
   it('records followed topic imports', async () => {
     const topic = await createTestTopic({ user })
 
-    const [result] = await importTopics(
-      WEB_PROVENANCE,
-      user,
-      [topic.name],
-      eligibleForTopicRecommendations(),
-    )
+    const [result] = await importWebTopics(user, [topic.name], eligibleForTopicRecommendations())
 
     expect(result).toMatchObject({
       input: topic.name,
@@ -108,10 +102,9 @@ describe('user import requests', () => {
   it('batches existing topic imports while preserving input order', async () => {
     const first = await createTestTopic({ user })
     const second = await createTestTopic({ user })
-    await importTopics(WEB_PROVENANCE, user, [first.name], eligibleForTopicRecommendations())
+    await importWebTopics(user, [first.name], eligibleForTopicRecommendations())
 
-    const results = await importTopics(
-      WEB_PROVENANCE,
+    const results = await importWebTopics(
       user,
       [first.name, second.name, '   '],
       eligibleForTopicRecommendations(),
@@ -131,8 +124,7 @@ describe('user import requests', () => {
   it('preserves sequential semantics for duplicate existing topics', async () => {
     const topic = await createTestTopic({ user })
 
-    const results = await importTopics(
-      WEB_PROVENANCE,
+    const results = await importWebTopics(
       user,
       [topic.name, topic.name],
       eligibleForTopicRecommendations(),
@@ -146,7 +138,7 @@ describe('user import requests', () => {
 
   it('rejects topic names that cannot produce a slug', async () => {
     await expect(
-      importTopics(WEB_PROVENANCE, user, ['!!!'], eligibleForTopicRecommendations()),
+      importWebTopics(user, ['!!!'], eligibleForTopicRecommendations()),
     ).resolves.toEqual([
       {
         input: '!!!',
@@ -160,7 +152,7 @@ describe('user import requests', () => {
     const topicName = `Rejected Imported Topic ${randomUUID()}`
 
     await expect(
-      importTopics(WEB_PROVENANCE, user, [topicName], {
+      importWebTopics(user, [topicName], {
         assertCanCreateTopicRecommendations: async () => {
           throw new Error('recommendation rejected')
         },
@@ -172,8 +164,7 @@ describe('user import requests', () => {
   it('follows existing topics while returning missing recommendations as gated errors', async () => {
     const topic = await createTestTopic({ user })
 
-    const results = await importTopics(
-      WEB_PROVENANCE,
+    const results = await importWebTopics(
       user,
       [topic.name, `Gated Missing Topic ${randomUUID()}`],
       {
@@ -204,7 +195,7 @@ describe('user import requests', () => {
     }
 
     await expect(
-      importTopics(WEB_PROVENANCE, user, [topic.name], {
+      importWebTopics(user, [topic.name], {
         ...eligibleForTopicRecommendations(),
         recordImportRequests,
       }),

@@ -141,13 +141,7 @@ export async function insertTestRssFeedWithUrlId(data: {
   await setTestTopicHostnameLink(data.topicId, hostnameResult.rows[0].id as string)
 
   const { rows } = await write(sql`/* insertTestRssFeedWithUrlId */
-    INSERT INTO rss_feeds (
-      rss_feed_url_id,
-      topic_id,
-      title,
-      feed_type,
-      created_via
-    )
+    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type, created_via)
     VALUES (
       ${rssFeedUrlObj!.id},
       ${data.topicId},

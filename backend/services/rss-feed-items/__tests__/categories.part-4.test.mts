@@ -5,7 +5,6 @@ import {
   getRssFeedItemCategories,
   upsertRssFeedItemCategories,
 } from '../categories.mts'
-import { createTopic } from '@services/topics'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { caches } from '@services/entity-cache/caches'
@@ -23,7 +22,6 @@ const getRssFeedItemByIdCached = caches.rss_feed_items.cacheGetByAny(getRssFeedI
 import {
   beginTransaction,
   createTestTopic,
-  createTestUser,
   getEntityRelation,
   getRssFeedItemCategoryTopicRelationDeletedAt,
   getTestRssFeedCategories,
@@ -35,7 +33,6 @@ import {
   lockTestRssFeedItemCategory,
   setTestEntityRelationIdAndScore,
   waitForTestPostgresLockWaiter,
-  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('categories', () => {
@@ -161,8 +158,7 @@ describe('categories', () => {
     expect(beforeCategory?.topic).toBeNull()
 
     // Add the alias so the backfill can match it
-    const user = await createTestUser({ administrator: true })
-    const backfillTopic = await createTopic(WEB_PROVENANCE, user!, {
+    const backfillTopic = await createTestTopic({
       name: `Backfill Topic ${random}`,
       slug: `backfill-topic-${random}`,
     })

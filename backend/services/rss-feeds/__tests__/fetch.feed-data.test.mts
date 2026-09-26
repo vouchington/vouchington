@@ -6,7 +6,7 @@ import { addUrl } from '@services/urls'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import type { checkRssFeedCrawlable } from '../fetch-robots-check.mts'
 import { fetchRssFeed } from '../fetch.mts'
-import { createRssFeed } from '../create.mts'
+import { createTestRssFeed } from '../test-fixtures.mts'
 import { updateRssFeedById } from '../update.mts'
 import { getRssFeedById } from '../get.mts'
 import {
@@ -16,7 +16,7 @@ import {
 } from '../crawls.mts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createRssFeedItemEmbeddingContent } from '../../rss-feed-items/content.mts'
-import { createTestTopic, insertTestRssFeedItem, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { createTestTopic, insertTestRssFeedItem } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
 
@@ -64,11 +64,9 @@ describe('fetch.feed-data', () => {
       slug: `test-topic-${random}`,
       hostname: `fetch-mock-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/feed-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/feed-${random}.xml`,
+      topicId: topic.id,
       title: `Test Feed ${random}`,
     })
     await updateRssFeedById(feed.id, {
@@ -91,11 +89,9 @@ describe('fetch.feed-data', () => {
       slug: `topic-chapters-${random}`,
       hostname: `fetch-chapters-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/chapters-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/chapters-${random}.xml`,
+      topicId: topic.id,
       title: `Feed chapters ${random}`,
     })
     await updateRssFeedById(feed.id, { enabled: true, etag: '"chapter-etag"' })
@@ -165,11 +161,9 @@ describe('fetch.feed-data', () => {
       slug: `topic-${random}`,
       hostname: `fetch-latest-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/f-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/f-${random}.xml`,
+      topicId: topic.id,
       title: `Feed ${random}`,
     })
     await updateRssFeedById(feed.id, { enabled: true })
@@ -190,11 +184,9 @@ describe('fetch.feed-data', () => {
       slug: `topic-304-${random}`,
       hostname: `fetch-304-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/304-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/304-${random}.xml`,
+      topicId: topic.id,
       title: `Feed 304 ${random}`,
     })
     await updateRssFeedById(feed.id, { enabled: true })
@@ -239,11 +231,9 @@ describe('fetch.feed-data', () => {
       slug: `topic-headers-${random}`,
       hostname: `fetch-headers-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/headers-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/headers-${random}.xml`,
+      topicId: topic.id,
       title: `Feed headers ${random}`,
     })
     await updateRssFeedById(feed.id, {
@@ -274,11 +264,9 @@ describe('fetch.feed-data', () => {
       slug: `topic-bad-last-modified-${random}`,
       hostname: `fetch-bad-last-modified-${random}.example.com`,
     })
-    const feed = await createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/bad-last-modified-${random}.xml`,
-      topic_id: topic.id,
+    const feed = await createTestRssFeed({
+      rssFeedUrl: `https://example.com/bad-last-modified-${random}.xml`,
+      topicId: topic.id,
       title: `Feed bad last modified ${random}`,
     })
     const seedLastModifiedAt = new Date('2024-01-01T00:00:00.000Z')
