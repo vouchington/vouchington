@@ -5,10 +5,12 @@ import {
   imageUploadCompletion,
   imageUploadUrl,
   modNote,
+  communityAgentPrompt,
   purchaseIntent,
   storyMutationAt,
   storyText,
 } from './story-mutation-bodies'
+import { categoryRelationPost } from './category-relations-store'
 
 function exactPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/markdown/preview') {
@@ -87,16 +89,7 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
       },
     }
   }
-  if (endpoint.startsWith('/api/v1/entity-relations/')) {
-    return {
-      relation: {
-        id: 'relation-story',
-        created_at: storyMutationAt,
-        created_by_id: null,
-        object_data: {},
-      },
-    }
-  }
+  if (endpoint.startsWith('/api/v1/entity-relations/')) return categoryRelationPost(body)
   if (endpoint.endsWith('/items/posts') || endpoint.endsWith('/lock')) return {}
   if (endpoint.endsWith('/allocations') || endpoint.endsWith('/escalation')) return {}
   if (endpoint.endsWith('/ratings') || endpoint.endsWith('/import')) {
@@ -114,7 +107,7 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/images/upload-url') return imageUploadUrl(body)
   if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint))
     return imageUploadCompletion(endpoint)
-  if (endpoint.endsWith('/agent-prompts')) return { prompt: { id: 'prompt-story' } }
+  if (endpoint.endsWith('/agent-prompts')) return communityAgentPrompt(body)
   if (endpoint.endsWith('/invites')) return communityInvite(body)
   if (endpoint.endsWith('/members')) return {}
   if (endpoint.endsWith('/modmail')) return { thread: { id: 'modmail-thread-story' } }

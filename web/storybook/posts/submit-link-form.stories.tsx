@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import {
   clearStoryMutationFixture,
@@ -18,10 +19,15 @@ const meta = {
 export default meta
 type Story = StoryObj
 
-export const Empty: Story = {
-  render: () => (
+function LinkPreview() {
+  const [href, setHref] = useState<string | null>(null)
+  return (
     <StoryFrame width='max-w-xl'>
-      <SubmitLinkForm />
+      {href ? <p>{href}</p> : <SubmitLinkForm onCreated={setHref} />}
     </StoryFrame>
-  ),
+  )
+}
+
+export const Empty: Story = {
+  render: () => <LinkPreview />,
 }

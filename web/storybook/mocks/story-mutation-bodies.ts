@@ -1,3 +1,5 @@
+import { posts } from '@/storybook/entities/fixtures/posts'
+
 export const storyMutationAt = '2026-09-26T00:00:00.000Z'
 
 export function storyField(body: unknown, key: string): unknown {
@@ -65,15 +67,53 @@ function editedPostType(endpoint: string, body: unknown): string {
   return id.startsWith('post-') ? id.slice('post-'.length) : 'discussion'
 }
 
+function editedSource(endpoint: string, body: unknown) {
+  const id = storyTail(endpoint)
+  const postType = editedPostType(endpoint, body)
+  return (
+    posts.find(post => post.id === id) ??
+    posts.find(post => post.post_type === postType) ??
+    posts.find(post => post.post_type === 'comment')!
+  )
+}
+
 export function patchedPost(endpoint: string, body: unknown): unknown {
+  const source = editedSource(endpoint, body)
   const markdown = storyField(body, 'markdown')
+  const title = storyField(body, 'title')
   return {
     post: {
+      ...source,
       id: storyTail(endpoint),
       post_type: editedPostType(endpoint, body),
-      slug: 'post-story',
       ...(typeof markdown === 'string' ? { markdown } : {}),
-      archived_at: storyField(body, 'archive') === true ? storyMutationAt : null,
+      ...(typeof title === 'string' ? { title } : {}),
+      archived_at: storyField(body, 'archive') === true ? storyMutationAt : source.archived_at,
+      clearance_status: source.clearance_status ?? 'approved',
+      can_delete: source.can_delete ?? true,
+      can_edit_content: source.can_edit_content ?? true,
+    },
+  }
+}
+
+export function communityAgentPrompt(body: unknown): unknown {
+  return {
+    community_agent_prompt: {
+      id: 'prompt-story',
+      community_id: 'community-credit-cards',
+      created_by_id: 'user-cardholder',
+      agent_id: 'agent-community-mod',
+      prompt: storyText(body, 'prompt'),
+      model_name: 'gpt-4.1-mini',
+      model_provider: 'openai',
+      slot_allocated: false,
+      on_flag_action: 'none',
+      activated_at: null,
+      deactivated_at: null,
+      created_at: storyMutationAt,
+      updated_at: storyMutationAt,
+      deleted_at: null,
+      deleted_by_id: null,
     },
   }
 }
