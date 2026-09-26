@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PodcastEpisodePlayer } from '@/components/feed/podcast-episode-player'
 import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
 import type { PodcastEpisode } from '@/lib/podcast-player/types'
+import { topicHref } from '@/lib/links/entity-href'
 import { newsItems, rssFeeds } from '@/storybook/entities/fixtures/feeds'
 import { StoryFrame } from '@/storybook/story-frame'
 
@@ -25,7 +26,7 @@ const episode: PodcastEpisode = {
   title: 'Weekly points roundup: Sapphire Reserve changes',
   showId: show.id,
   showTitle: show.title,
-  showHref: '/topics/fintech-daily',
+  showHref: topicHref(show.topic, 'latest'),
 }
 
 export const WeeklyPoints: Story = {

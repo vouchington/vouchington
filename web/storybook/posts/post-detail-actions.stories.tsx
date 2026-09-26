@@ -1,12 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostDetailActions } from '@/components/posts/post-detail-actions'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
+import {
+  clearMyCommunitiesFixture,
+  setMyCommunitiesFixture,
+} from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 import { commentPost, discussionPost, electionFor, reviewPost } from './fixtures'
 
 const meta = {
   title: 'Posts/Post Detail Actions',
   component: PostDetailActions,
+  beforeEach() {
+    setMyCommunitiesFixture()
+    return () => clearMyCommunitiesFixture()
+  },
 } satisfies Meta
 
 export default meta

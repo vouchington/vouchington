@@ -23,8 +23,9 @@ let inboxFixture: NotificationsUnreadSummaryResponseBody | undefined
 let myCommunitiesFixture: CommunitiesSearchResponseBody | undefined
 let myListsFixture: ListsSearchResponseBody | undefined
 let moderationContextFixture: UserModerationContextResponse | undefined
-let topicSearchFixture = false
 let userSearchFixture = false
+let topicSearchFixture = false
+let categoryRelationsFixture = false
 const clientRequestGet = ClientRequest.prototype.get
 
 export function setNotificationSettingsFixture(preferences: EmailPreferences): void {
@@ -44,6 +45,10 @@ export function clearInboxFixture(): void {
   inboxFixture = undefined
 }
 
+export function clearMyCommunitiesFixture(): void {
+  myCommunitiesFixture = undefined
+}
+
 export function setMyCommunitiesFixture(): void {
   myCommunitiesFixture = {
     results: [{ __entity_type: 'community', id: creditCards.id }],
@@ -52,6 +57,10 @@ export function setMyCommunitiesFixture(): void {
     users: {},
     community_metrics: {},
   }
+}
+
+export function clearMyListsFixture(): void {
+  myListsFixture = undefined
 }
 
 export function setMyListsFixture(): void {
@@ -87,6 +96,22 @@ export function clearUserSearchFixture(): void {
   userSearchFixture = false
 }
 
+export function setTopicSearchFixture(): void {
+  topicSearchFixture = true
+}
+
+export function clearTopicSearchFixture(): void {
+  topicSearchFixture = false
+}
+
+export function setCategoryRelationsFixture(): void {
+  categoryRelationsFixture = true
+}
+
+export function clearCategoryRelationsFixture(): void {
+  categoryRelationsFixture = false
+}
+
 export function setModerationContextFixture(): void {
   moderationContextFixture = {
     context: {
@@ -109,14 +134,6 @@ export function setModerationContextFixture(): void {
     ],
     page_info: { has_next_page: false },
   }
-}
-
-export function setTopicSearchFixture(): void {
-  topicSearchFixture = true
-}
-
-export function clearTopicSearchFixture(): void {
-  topicSearchFixture = false
 }
 
 ClientRequest.prototype.get = function storybookClientRequestGet<T>(
@@ -148,6 +165,16 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   }
   if (endpoint === '/api/v1/lists' && myListsFixture !== undefined) {
     return Promise.resolve(myListsFixture as T)
+  }
+  if (endpoint === '/api/v1/lists/contains' && myListsFixture !== undefined) {
+    return Promise.resolve({ list_ids: Object.keys(myListsFixture.lists) } as T)
+  }
+  if (endpoint.startsWith('/api/v1/entity-relations/') && categoryRelationsFixture) {
+    return Promise.resolve({
+      results: [],
+      page_info: emptyPage,
+      entity_relations: {},
+    } as T)
   }
   if (endpoint.endsWith('/moderation-context') && moderationContextFixture !== undefined) {
     return Promise.resolve(moderationContextFixture as T)

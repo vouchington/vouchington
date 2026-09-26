@@ -31,7 +31,7 @@ export const Empty: Story = {
 export const ShowMore: Story = {
   render: () => (
     <StoryFrame width='max-w-sm'>
-      <ShowMoreLink href='/news/story-transfer-bonus' />
+      <ShowMoreLink href='/news?rss_item=rss-item-0' />
     </StoryFrame>
   ),
 }

@@ -6,11 +6,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { posts } from '@/storybook/entities/fixtures/posts'
+import { clearMyListsFixture, setMyListsFixture } from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Lists/Add To List Menu Item',
   component: AddToListMenuItem,
+  beforeEach() {
+    setMyListsFixture()
+    return () => clearMyListsFixture()
+  },
 } satisfies Meta<typeof AddToListMenuItem>
 
 export default meta

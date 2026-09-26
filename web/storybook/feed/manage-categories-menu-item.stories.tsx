@@ -6,11 +6,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { newsItems } from '@/storybook/entities/fixtures/feeds'
+import {
+  clearCategoryRelationsFixture,
+  setCategoryRelationsFixture,
+} from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Feed/Manage Categories Menu Item',
   component: ManageCategoriesMenuItem,
+  beforeEach() {
+    setCategoryRelationsFixture()
+    return () => clearCategoryRelationsFixture()
+  },
 } satisfies Meta<typeof ManageCategoriesMenuItem>
 
 export default meta

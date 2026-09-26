@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostCardFooter } from '@/components/posts/post-card/post-card-footer'
 import { StoryFrame } from '@/storybook/story-frame'
-import { commentPost, electionFor, metricsFor, reviewPost } from '../fixtures'
+import { discussionPost, electionFor, metricsFor, reviewPost } from '../fixtures'
 
 const meta = {
   title: 'Posts/Post Card Footer',
@@ -27,13 +27,13 @@ export const Review: Story = {
   ),
 }
 
-export const Comment: Story = {
+export const Discussion: Story = {
   render: () => (
     <StoryFrame width='max-w-xl'>
       <PostCardFooter
-        post={commentPost}
-        routePath='post'
-        commentCount={metricsFor(commentPost).count.descendants}
+        post={discussionPost}
+        routePath='discussion'
+        commentCount={metricsFor(discussionPost).count.descendants}
         hideDownCount={false}
         initialSaved={false}
         initialHidden={false}

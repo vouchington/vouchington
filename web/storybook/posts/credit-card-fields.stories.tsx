@@ -1,12 +1,20 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CreditCardFields } from '@/components/posts/credit-card-fields'
+import {
+  clearTopicSearchFixture,
+  setTopicSearchFixture,
+} from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 import { cardTopic, creditCardData } from './fixtures'
 
 const meta = {
   title: 'Posts/Credit Card Fields',
   component: CreditCardFields,
+  beforeEach() {
+    setTopicSearchFixture()
+    return () => clearTopicSearchFixture()
+  },
 } satisfies Meta
 
 export default meta

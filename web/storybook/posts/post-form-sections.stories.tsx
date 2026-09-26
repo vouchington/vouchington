@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ReviewTopicsFieldset, type ReviewTopicEntry } from '@/components/posts/post-form-sections'
+import {
+  clearTopicSearchFixture,
+  setTopicSearchFixture,
+} from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 import { cardTopic, rewardsTopic } from './fixtures'
 
@@ -12,6 +16,10 @@ const ratedTopics: ReviewTopicEntry[] = [
 const meta = {
   title: 'Posts/Review Topics Fieldset',
   component: ReviewTopicsFieldset,
+  beforeEach() {
+    setTopicSearchFixture()
+    return () => clearTopicSearchFixture()
+  },
 } satisfies Meta
 
 export default meta
