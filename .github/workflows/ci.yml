@@ -23,8 +23,6 @@ jobs:
     needs: [detect-changes]
     if: '!cancelled()'
     uses: ./.github/workflows/static-code-analysis.yml
-    with:
-      docs_only: ${{ needs.detect-changes.outputs.docs-only == 'true' }}
     permissions:
       contents: read
 
@@ -126,6 +124,7 @@ jobs:
     uses: ./.github/workflows/tests-ts-shared.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       actions: read
@@ -140,6 +139,7 @@ jobs:
     uses: ./.github/workflows/tests-tooling.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       actions: read
@@ -155,6 +155,7 @@ jobs:
     uses: ./.github/workflows/tests-backend-modules.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       contents: read
@@ -170,6 +171,7 @@ jobs:
     uses: ./.github/workflows/tests-backend-unit.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       contents: read
@@ -206,6 +208,7 @@ jobs:
     with:
       trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     secrets:
       AWS_TEST_ROLE_ARN: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
@@ -237,6 +240,7 @@ jobs:
     uses: ./.github/workflows/tests-web.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       actions: read
@@ -259,6 +263,7 @@ jobs:
       # Stable per-PR cancellation key so a new head cancels its stale Storybook build.
       concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
 
   test-web-api:
@@ -271,6 +276,7 @@ jobs:
     uses: ./.github/workflows/tests-web-api.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       contents: read
@@ -287,6 +293,7 @@ jobs:
     with:
       shared_build_available: ${{ needs.static-web.result == 'success' }}
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       contents: read
@@ -318,7 +325,6 @@ jobs:
     uses: ./.github/workflows/tests-playwright.yml
     with:
       shared_build_available: ${{ needs.static-web.result == 'success' }}
-      event-name: ${{ github.event_name }}
       otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     permissions:
       actions: read
@@ -350,7 +356,6 @@ jobs:
       )
     uses: ./.github/workflows/tests-playwright-credentialed.yml
     with:
-      event-name: ${{ github.event_name }}
       trusted_secret_context: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' }}
     secrets:
       AWS_TEST_ROLE_ARN: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
@@ -371,6 +376,7 @@ jobs:
     uses: ./.github/workflows/tests-cloudflare-worker.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       actions: read
@@ -386,6 +392,7 @@ jobs:
     uses: ./.github/workflows/tests-lambdas.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       actions: read
@@ -414,6 +421,7 @@ jobs:
     uses: ./.github/workflows/tests-portability.yml
     with:
       publish_coverage: ${{ github.event_name == 'pull_request' }}
+      publish_coverage_pair: ${{ github.event_name == 'pull_request' }}
       upload_vitest_blob_artifact: true
     permissions:
       actions: read
@@ -467,28 +475,6 @@ jobs:
       contents: read
       actions: read
       pull-requests: write
-
-  # Independent, non-required reporter: Codecov cannot delay or fail Patch Coverage or `tests`.
-  upload-codecov:
-    needs:
-      - test-ts-shared
-      - test-tooling
-      - test-backend-modules
-      - test-backend-unit
-      - test-backend-credentialed
-      - test-web
-      - test-web-api
-      - storybook
-      - test-web-integration
-      - test-cloudflare-worker
-      - test-lambdas
-      - test-portability
-    if: "always() && !cancelled() && github.event_name == 'pull_request'"
-    uses: ./.github/workflows/ci-upload-codecov.yml
-    permissions:
-      actions: read
-      contents: read
-      id-token: write
 
   tests-processing:
     needs:

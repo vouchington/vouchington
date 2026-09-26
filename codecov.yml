@@ -1,6 +1,11 @@
-# Codecov is an informational-only reporter. It never gates a pull request: the in-house
-# patch-coverage gate (`test-coverage` / coverage-check against `.coverage-rules.yml`) remains
-# the sole blocking coverage check. See docs/development/reference-ci-coverage-gates.md.
+# Codecov is an informational-only reporter. It never gates a pull request: each area workflow's
+# Patch Coverage job (ci-area-coverage.yml: coverage-check against the area-owned rules in
+# `.coverage-rules.yml`) is the blocking coverage check. See
+# docs/development/reference-ci-coverage-gates.md.
+#
+# Area workflows upload one flag per suite on pull requests, merge groups and the nightly run. A
+# run uploads only the suites of the areas it touched, so every other flag carries forward from the
+# parent commit.
 coverage:
   status:
     project:
@@ -9,3 +14,29 @@ coverage:
     patch:
       default:
         informational: true
+
+flag_management:
+  default_rules:
+    carryforward: true
+
+component_management:
+  individual_components:
+    - component_id: backend
+      paths:
+        - backend/**
+        - email-templates/**
+    - component_id: web
+      paths:
+        - web/**
+    - component_id: cloudflare-worker
+      paths:
+        - cloudflare-worker/**
+    - component_id: lambdas
+      paths:
+        - lambdas/**
+    - component_id: tooling
+      paths:
+        - ts-shared/**
+        - ci/**
+        - dev/**
+        - .github/**

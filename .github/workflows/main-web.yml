@@ -159,7 +159,6 @@ jobs:
       contents: read
     with:
       shared_build_available: true
-      event-name: ${{ github.event_name }}
       # OTel trace export is opt-in (debugging only) — default off to avoid
       # continuous GitHub Actions artifact storage cost from every main run
       # (see cost-reduction PR). Dispatch tests-playwright.yml directly with

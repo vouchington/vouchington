@@ -27,7 +27,10 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
 - When a workflow gains, loses, or renames an unrestricted `push` trigger or a direct `push` trigger
   on `main`, update `fix-main.yml`; its subscription regression test must pass.
 - Preserve the `Main` ruleset gates: exactly `tests`, `build`, and `gitleaks` are
-  required before merge. Other scans remain report-only unless they feed one of those gates.
+  required before merge until the ruleset switches to the area gates `static`, `backend`, `web`,
+  `cloudflare-worker`, `lambdas`, `tooling`, and `gitleaks`. Keep every area gate job named after
+  its area, always running (`!cancelled()`), and passing when its area is skipped. Other scans
+  remain report-only unless they feed one of those gates.
 - **Semantic CI DAG:** in PR and merge-group CI, `static-code-analysis` gates the area-static
   checks, and those gate every test, both Playwright suites, and both Docker validation builds. No
   test or build waits on another test or build, so they all run in parallel once their static gates
@@ -36,6 +39,12 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   `static-web` runtime build precedes its integration and Playwright consumers. Grouped-main
   workflows keep their independent fan-out and `cancel-in-progress: false` policy.
   `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
+- **Area workflow DAG:** each area workflow runs `changes` → `static-<area>` (when the area has
+  one) → its suites in parallel → `coverage`, `codecov`, and the area gate. `static.yml` has no
+  `changes` job, so no-mistakes' `tsconfig-gate-coverage` rule can prove its typechecks run. A
+  suite never waits on another suite, the `changes` area output selects the area instead of
+  trigger `paths:`, and `nightly.yml` calls every area workflow. `area-workflows.test.mts` and `area-coverage.test.mts`
+  enforce the DAG, triggers, literal concurrency prefixes, and coverage wiring.
 - Treat runner labels, runner-demand budgets, and concurrency as shared-capacity contracts. Follow
   [the canonical checklist](../../docs/checklists/github-actions.md) and update its documented
   policy/test touch points instead of copying label arrays or group expressions here.

@@ -27,6 +27,9 @@ describe('artifactUploadOutcomeExitCode', () => {
     ['coverage-pair', 'suite', 'skipped', 'skipped', 1],
     ['coverage-pair', 'suite', 'unknown', 'success', 2],
     ['coverage-pair', '', 'success', 'skipped', 2],
+    ['full-lcov', 'suite', 'success', 'skipped', 0],
+    ['full-lcov', 'suite', 'failure', 'success', 0],
+    ['full-lcov', 'suite', 'failure', 'failure', 1],
     ['vitest-blob', 'suite', 'success', 'skipped', 0],
     ['vitest-blob', 'suite', 'failure', 'failure', 1],
     ['vitest-report-attempt', 'suite', 'success', 'skipped', 0],
@@ -55,6 +58,14 @@ describe('artifact-upload-outcome.mts process contract', () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toBe(
       '::error::COVERAGE_TRANSPORT_EXHAUSTED suite=web-integration-shard-1 Neither S3 nor GitHub artifacts persisted the coverage pair.\n',
+    )
+  })
+
+  it('names the suite whose full LCOV neither attempt persisted', () => {
+    const result = runOutcome('full-lcov', 'web-api-shard-2', 'failure', 'failure')
+    expect(result.status).toBe(1)
+    expect(result.stderr).toBe(
+      '::error::FULL_LCOV_EXHAUSTED suite=web-api-shard-2 Neither GitHub artifact upload attempt persisted the full LCOV.\n',
     )
   })
 

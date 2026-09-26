@@ -12,6 +12,7 @@ Manual `workflow_dispatch` does not change its diagram.
 - [Main](reference-workflow-automation-main.md): runs only for `main`, from a push or a
   `workflow_run` on `main`.
 
-Reusable workflows that CI calls appear as CI jobs in Pull requests. `static-code-analysis` and
-`tests-portability` also run directly on a push to `main`, so they appear in Main too. The `Main`
-ruleset requires `tests` and `build` (Pull requests) and `gitleaks` (Always run) before merge.
+Reusable workflows that CI or an area workflow calls appear as jobs in Pull requests. The area
+workflows also run in full from `nightly` (Always run). The `Main` ruleset requires `tests` and
+`build` (Pull requests) and `gitleaks` (Always run) before merge until it switches to the area gates
+`static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, and `tooling`.

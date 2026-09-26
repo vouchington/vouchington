@@ -1,17 +1,21 @@
 #!/usr/bin/env node
-// Replaces ci/coverage-transport.mts and ci/vitest-report-attempt-outcome.mts. All three families
-// reduce to the identical predicate — exit 0 iff either upload attempt reports 'success' — now that
+// Replaces ci/coverage-transport.mts and ci/vitest-report-attempt-outcome.mts. Every family
+// reduces to the identical predicate — exit 0 iff either upload attempt reports 'success' — now that
 // the S3 primary coverage transport is gone (PR #11394); only each family's exhaustion marker text
-// differs, and that text is reproduced byte-for-byte from the script it replaces (see
+// differs. Every family but full-lcov reproduces byte-for-byte the text of the script it replaced (see
 // .github/workflows/reference-artifact-rerun-safety.md and ci/transient-retry/coverage-artifact-rules.mts,
 // which parse the coverage-pair marker verbatim to authorize an automatic main-CI rerun).
 
 import { fileURLToPath } from 'node:url'
 
 const STEP_OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped'])
-const FAMILIES = new Set(['coverage-pair', 'vitest-blob', 'vitest-report-attempt'])
+const FAMILIES = new Set(['coverage-pair', 'full-lcov', 'vitest-blob', 'vitest-report-attempt'])
 
-export type ArtifactUploadFamily = 'coverage-pair' | 'vitest-blob' | 'vitest-report-attempt'
+export type ArtifactUploadFamily =
+  | 'coverage-pair'
+  | 'full-lcov'
+  | 'vitest-blob'
+  | 'vitest-report-attempt'
 
 function isFamily(value: string): value is ArtifactUploadFamily {
   return FAMILIES.has(value)
@@ -47,6 +51,8 @@ function exhaustedMarker(
   switch (family) {
     case 'coverage-pair':
       return `::error::COVERAGE_TRANSPORT_EXHAUSTED suite=${suite} Neither S3 nor GitHub artifacts persisted the coverage pair.`
+    case 'full-lcov':
+      return `::error::FULL_LCOV_EXHAUSTED suite=${suite} Neither GitHub artifact upload attempt persisted the full LCOV.`
     case 'vitest-blob':
       return `::error::COVERAGE_TRANSPORT_BLOB_EXHAUSTED suite=${suite} Neither S3 nor GitHub artifacts persisted the vitest blob.`
     case 'vitest-report-attempt':

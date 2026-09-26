@@ -11,10 +11,6 @@ on:
     secrets:
       AWS_TEST_ROLE_ARN:
         required: true
-concurrency:
-  group: build-web-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 permissions:
   actions: read
   contents: read

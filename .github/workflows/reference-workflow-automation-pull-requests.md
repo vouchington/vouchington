@@ -2,20 +2,39 @@
 
 [Back to Workflow automation map](reference-workflow-automation-map.md) · [Back to Workflow Reference](README.md)
 
-`ci.yml` orchestrates pull requests and merge groups. Every gated job needs `detect-changes`, and
-`static-code-analysis` gates all of them plus both Docker validation builds (`backend-smoke` through
-`static-backend`), so those edges are drawn once to the group. Its reusable workflow runs the
-`no-mistakes` job in parallel with the static checks. Docs-only changes skip the gated jobs.
-`detect-changes` path filters decide which jobs start, each started job runs its full suite, and
-merge groups start every Vitest job. No test or Docker build waits on another test: each starts
-once its static gates pass or intentionally skip, and both Playwright suites wait on all four area
-static checks.
-See the semantic CI DAG in [CLAUDE.md](CLAUDE.md). For the exact job graph, run
-`pnpm run ci:topology --format mermaid --workflow .github/workflows/ci.yml`.
+Pull requests and merge groups run the per-area workflows: `static`, `backend`, `web`,
+`cloudflare-worker`, `lambdas`, and `tooling`. Each one's `changes` job
+([`ci-detect-changes.yml`](ci-detect-changes.yml)) selects its area, and a selected area runs its
+full suites. Area static checks gate the suites, which run in parallel. The area `coverage` job
+blocks on patch coverage of the area's owned files, and `codecov` uploads each suite under its own
+flag (informational). The job named after the area is its required check; it passes when the area
+is skipped. [`nightly.yml`](nightly.yml) calls every area workflow for a full run (see
+[Always run](reference-workflow-automation-always-run.md)).
+
+`ci.yml` still runs in parallel until the ruleset requires the area gates instead of `tests` and
+`build`. Every gated job needs `detect-changes`, and `static-code-analysis` gates all of them plus
+both Docker validation builds (`backend-smoke` through `static-backend`), so those edges are drawn
+once to the group. Docs-only changes skip the gated jobs. No test or Docker build waits on another
+test: each starts once its static gates pass or intentionally skip, and both Playwright suites wait
+on all four area static checks.
+See the semantic CI DAG in [CLAUDE.md](CLAUDE.md) and [CI](../../docs/development/ci.md). For the
+exact job graph, run `pnpm run ci:topology --format mermaid --workflow .github/workflows/ci.yml`.
 
 ```mermaid
 flowchart TD
     pr-trigger["pull_request / merge_group checks_requested"]
+
+    subgraph area-workflows["Area workflows: changes → area static → full suites → coverage → gate ✓"]
+        static["static<br/>(static-code-analysis → static ✓)"]
+        backend["backend<br/>(static-backend → modules, unit, credentialed, schema,<br/>smoke, EXPLAIN, build-backend → backend ✓)"]
+        web["web<br/>(static-web → web, web-api, web-integration, Storybook,<br/>Playwright, build-web → web ✓)"]
+        cloudflare-worker["cloudflare-worker<br/>(static → tests → cloudflare-worker ✓)"]
+        lambdas["lambdas<br/>(static → tests → lambdas ✓)"]
+        tooling["tooling<br/>(ts-shared, tooling, portability,<br/>initialize smoke → tooling ✓)"]
+    end
+    pr-trigger --> area-workflows
+    area-workflows -. "per-suite flags" .-> area-codecov["codecov<br/>(OIDC; informational)"]
+
     pr-trigger --> ci["ci<br/>(CI orchestrator)"]
     pr-trigger --> label-pr["label-pr<br/>(PR labeling; pull requests only)"]
     ci --> detect-changes["detect-changes"]
@@ -46,7 +65,6 @@ flowchart TD
     static-web -- "trusted secrets, image changes" --> build-web["build-web<br/>(web image)"]
     detect-changes -. "image path filters" .-> build-backend & build-web
     gated -- "Vitest, Storybook, tooling, portability" --> test-coverage["test-coverage<br/>(Patch Coverage gate)"]
-    gated -. "pull requests only" .-> upload-codecov["upload-codecov<br/>(OIDC; informational)"]
     gated -- "directly or through test-coverage" --> tests-processing["tests-processing<br/>(report merge + fan-in)"]
     static-code-analysis --> tests-processing
     test-coverage --> tests-processing
@@ -56,6 +74,6 @@ flowchart TD
     ci -. "workflow_run completed<br/>(Dependabot PRs)" .-> fix-dependabot["fix-dependabot"]
     fix-dependabot --> harness-dispatch["harness-dispatch<br/>(reusable)"]
     merge-queue-ejection["merge-queue-ejection<br/>(Auto Harness triage)"]
-    tests & build -. "merge queue dequeued<br/>(CI_FAILURE / CI_TIMEOUT)" .-> merge-queue-ejection
+    tests & build & area-workflows -. "merge queue dequeued<br/>(CI_FAILURE / CI_TIMEOUT)" .-> merge-queue-ejection
     merge-queue-ejection --> harness-dispatch
 ```

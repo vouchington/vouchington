@@ -1,0 +1,49 @@
+name: CI area patch coverage
+
+# Blocking patch-coverage gate for one area workflow. It merges the full LCOV its suites uploaded in
+# this run and checks the change against only the .coverage-rules.yml rules the area owns
+# (ci/coverage-area-rules.mts), so a shared file blocks exactly once. See
+# docs/development/reference-ci-coverage-gates.md.
+on:
+  workflow_call:
+    inputs:
+      area:
+        description: 'Owning area in .coverage-rules.yml'
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  coverage:
+    name: Patch Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Checks out pull-request code, so it gets no id-token or write scope.
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      # A pull-request merge commit and a merge-group squash commit both have the base as their first
+      # parent, so HEAD^1..HEAD is exactly the change under review.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
+      - name: Download full LCOV artifacts
+        timeout-minutes: 5
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          pattern: lcov-full-*
+          path: ./coverage-artifacts
+      - name: Check area patch coverage
+        timeout-minutes: 3
+        env:
+          COVERAGE_AREA: ${{ inputs.area }}
+          COVERAGE_HEAD: ${{ github.sha }}
+        run: COVERAGE_BASE="$(git rev-parse HEAD^1)" ./ci/coverage-artifacts.sh area-check

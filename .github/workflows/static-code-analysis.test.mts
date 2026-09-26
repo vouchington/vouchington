@@ -10,24 +10,22 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).not.toContain('run: node_modules/@ast-grep/cli/ast-grep scan')
   })
 
-  it('runs the jscpd threshold on every non-docs event without fetching a base ref', () => {
+  it('runs the jscpd threshold on every event without fetching a base ref', () => {
     type Step = { uses?: string; run?: string; if?: string; 'timeout-minutes'?: number }
     const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
     const steps = parsed.jobs['static-code-analysis']?.steps ?? []
     const jscpd = steps.find(step => step.run === 'pnpm exec jscpd .')
 
-    expect(jscpd?.if).toBe('${{ inputs.docs_only != true }}')
+    expect(jscpd?.if).toBeUndefined()
     expect(jscpd?.['timeout-minutes']).toBeLessThanOrEqual(3)
     expect(steps.some(step => step.uses === './.github/actions/fetch-base-ref')).toBe(false)
   })
 
-  it('runs directly for every main push and serializes direct and reusable invocations', () => {
-    expect(workflow).toContain('  push:\n    branches: [main]')
-    expect(workflow).not.toMatch(/push:\n(?: {4}.*\n)* {4}paths:/)
-    expect(workflow).toContain(
-      'group: static-code-analysis-${{ github.event.pull_request.number || github.ref_name }}',
-    )
-    expect(workflow).toContain("cancel-in-progress: ${{ github.event_name == 'pull_request' }}")
+  it("runs only when called or dispatched, under its caller's concurrency", () => {
+    const parsed = load(workflow) as { on: Record<string, unknown>; concurrency?: unknown }
+
+    expect(Object.keys(parsed.on).sort()).toEqual(['workflow_call', 'workflow_dispatch'])
+    expect(parsed.concurrency).toBeUndefined()
   })
 
   it('delegates Node and pnpm installation to the shared setup-node-pnpm action', () => {
@@ -45,7 +43,7 @@ describe('static-code-analysis workflow', () => {
 
   it('checks the row catalog through the no-write Platform formatter', () => {
     expect(workflow).toContain(
-      '      - name: Check localization catalog format\n        if: ${{ inputs.docs_only != true }}\n        run: pnpm exec vouchington-localization format --check --source localization/catalog',
+      '      - name: Check localization catalog format\n        run: pnpm exec vouchington-localization format --check --source localization/catalog',
     )
   })
 
@@ -86,47 +84,19 @@ describe('static-code-analysis workflow', () => {
     )
   })
 
-  it('accepts a docs_only workflow_call input that defaults false so main push stays full', () => {
-    expect(workflow).toMatch(
-      /workflow_call:\n {4}inputs:\n {6}docs_only:\n(?: {8}.*\n)* {8}type: boolean\n(?: {8}.*\n)* {8}default: false/,
-    )
-    expect(workflow).toContain('if: ${{ inputs.docs_only != true }}')
-    expect(workflow).toContain('if: ${{ inputs.docs_only == true }}')
-  })
+  it('runs every step on every call, so docs-only changes get the full analysis', () => {
+    type Job = { steps: { name?: string; run?: string; if?: string }[] }
+    const parsed = load(workflow) as {
+      on: { workflow_call: unknown }
+      jobs: Record<string, Job>
+    }
 
-  it('keeps markdown-relevant checks on docs-only PRs and skips TypeScript lint graph work', () => {
-    const noMistakesStep = workflow.indexOf('      - name: Run no-mistakes')
-    const liveTopologyStep = workflow.indexOf('      - name: Check live workflow topology')
-    const routeSelectorStep = workflow.indexOf(
-      '      - name: Check web route localization selector map',
-    )
-    const typecheckScripts = workflow.indexOf('      - name: Typecheck scripts')
-    const oxlint = workflow.indexOf('pnpm exec oxlint --type-aware --deny-warnings')
-    const knip = workflow.indexOf('pnpm exec knip --treat-config-hints-as-errors')
-
-    expect(noMistakesStep).toBeGreaterThanOrEqual(0)
-    expect(liveTopologyStep).toBeGreaterThan(noMistakesStep)
-    expect(routeSelectorStep).toBeGreaterThan(liveTopologyStep)
-    expect(workflow.slice(noMistakesStep, liveTopologyStep)).not.toContain(
-      'if: ${{ inputs.docs_only != true }}',
-    )
-    expect(workflow.slice(liveTopologyStep, routeSelectorStep)).toContain(
-      'if: ${{ inputs.docs_only != true }}',
-    )
-    expect(workflow.slice(typecheckScripts, typecheckScripts + 120)).toContain(
-      'if: ${{ inputs.docs_only != true }}',
-    )
-    expect(workflow.slice(oxlint, oxlint + 120)).toContain('if: ${{ inputs.docs_only != true }}')
-    expect(workflow.slice(knip, knip + 120)).toContain('if: ${{ inputs.docs_only != true }}')
-    expect(workflow).toContain(
-      'node static-code-analysis/run-node-checks.mts --checks repo-file-policy,targeted-guardrails,config-inventory-policy',
-    )
-    const mise = workflow.indexOf('      - name: Install CI tools via mise')
-    expect(mise).toBeGreaterThanOrEqual(0)
-    expect(workflow.slice(mise, oxlint)).not.toContain('if: ${{ inputs.docs_only')
-    const oxfmt = workflow.indexOf('pnpm exec oxfmt --check')
-    expect(oxfmt).toBeGreaterThan(knip)
-    expect(workflow.slice(oxfmt, oxfmt + 80)).not.toContain('if: ${{ inputs.docs_only != true }}')
+    expect(parsed.on.workflow_call).toBeNull()
+    for (const job of Object.values(parsed.jobs)) {
+      for (const step of job.steps) {
+        expect(step.if, step.name ?? step.run).toBeUndefined()
+      }
+    }
   })
 
   it('runs no-mistakes in parallel with static checks without a cross-PR job queue', () => {

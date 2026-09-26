@@ -1,12 +1,20 @@
 name: Upload Full LCOV
 description: >-
-  Best-effort upload of a suite's full (pre-patch-sparsification) LCOV report as a GitHub
-  artifact, for later informational-only ingestion by Codecov. Never read by the in-house
-  patch-coverage gate.
+  Uploads one attempt of a suite's full (pre-patch-sparsification) LCOV report as the GitHub
+  artifact lcov-full-<suite>, which its area's blocking patch-coverage gate (ci-area-coverage.yml)
+  and the informational Codecov upload read. Callers retry once under the -retry name-suffix and
+  require one attempt to succeed.
 inputs:
   suite:
     description: Lowercase hyphen-delimited coverage suite identity.
     required: true
+  name-suffix:
+    description: >-
+      Optional suffix appended to the artifact name, so the retry cannot collide with an
+      unfinalized upload a failed first attempt left behind (overwrite:true does not delete an
+      unfinalized artifact, so its reserved name still 409s). Consumers match both names.
+    required: false
+    default: ''
 runs:
   using: composite
   steps:
@@ -17,15 +25,15 @@ runs:
         LC_ALL: C
       run: |
         case "$SUITE" in
-          ''|-*|*-|*--*|*[![:lower:][:digit:]-]*)
-            echo "::error::Invalid coverage suite: expected lowercase alphanumeric segments separated by single hyphens" >&2
+          ''|-*|*-|*--*|*[![:lower:][:digit:]-]*|retry|*-retry)
+            echo "::error::Invalid coverage suite: expected lowercase alphanumeric segments separated by single hyphens, and must not be \"retry\" or end in \"-retry\" (reserved for the retry name-suffix)" >&2
             exit 1
             ;;
         esac
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         overwrite: true
-        name: lcov-full-${{ inputs.suite }}
+        name: lcov-full-${{ inputs.suite }}${{ inputs.name-suffix }}
         path: coverage-full/lcov.info
         retention-days: 1
-        if-no-files-found: warn
+        if-no-files-found: error

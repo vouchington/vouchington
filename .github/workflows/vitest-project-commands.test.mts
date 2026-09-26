@@ -80,10 +80,6 @@ describe('durable Vitest workflow commands', () => {
     expect(portability).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
-    expect(portability).toContain("- 'lambdas/dev-server.test.mts'")
-    expect(portability).toContain("- 'cloudflare-worker/scripts/wrangler/runtime.test.mts'")
-    expect(portability).not.toContain("- 'ci/**'")
-    expect(portability).not.toContain("- '.agents/skills/retrospective/SKILL.md'")
 
     const projectGroups = readFileSync('ci/run-vitest-project-group.mts', 'utf8')
     for (const project of ['lambdas-portability', 'cloudflare-worker-portability']) {

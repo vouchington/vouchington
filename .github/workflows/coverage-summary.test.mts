@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -18,6 +18,8 @@ type Workflow = {
     {
       if?: string
       permissions?: Record<string, string>
+      uses?: string
+      with?: Record<string, unknown>
       steps?: Array<{
         id?: string
         name?: string
@@ -62,11 +64,8 @@ describe('PR patch coverage', () => {
   it('keeps patch coverage as the sole PR coverage gate', () => {
     const workflow = read('.github/workflows/ci.yml')
     const coverageWorkflow = read('.github/workflows/ci-test-coverage.yml')
-    const codecovWorkflow = read('.github/workflows/ci-upload-codecov.yml')
     const coverageJob = jobSection(coverageWorkflow, 'test-coverage')
-    const codecovJob = jobSection(codecovWorkflow, 'upload-codecov')
     const coverageCaller = jobSection(workflow, 'test-coverage')
-    const codecovCaller = jobSection(workflow, 'upload-codecov')
     const testsJob = jobSection(workflow, 'tests-processing')
 
     expect(coverageJob).toContain('name: Patch Coverage')
@@ -75,17 +74,7 @@ describe('PR patch coverage', () => {
     expect(coverageJob).toContain('pull-requests: write')
     expect(coverageJob).not.toContain('id-token: write')
     expect(coverageCaller).not.toContain('id-token: write')
-    expect(codecovCaller).toContain('id-token: write')
-    expect(codecovCaller).toContain('uses: ./.github/workflows/ci-upload-codecov.yml')
-    expect(codecovJob).toContain('id-token: write')
-    expect(codecovJob).toContain('continue-on-error: true')
-    expect(codecovJob).toMatch(/uses: codecov\/codecov-action@[0-9a-f]{40} # v\d/)
-    expect(codecovJob).toContain('use_oidc: true')
-    expect(codecovJob).not.toContain('run:')
-    expect(codecovJob).toContain('persist-credentials: false')
     expect(coverageWorkflow).not.toContain('CODECOV_TOKEN')
-    expect(codecovWorkflow).not.toContain('CODECOV_TOKEN')
-    expect(codecovWorkflow).not.toContain('./.github/actions/')
     expect(coverageCaller).not.toContain('CODECOV_TOKEN')
     expect(coverageJob).toContain('name: Prepare coverage artifacts')
     expect(coverageJob).toContain('name: Report current PR coverage and enforce patch coverage')
@@ -94,14 +83,6 @@ describe('PR patch coverage', () => {
     expect(testsJob).not.toContain('upload-codecov')
     expect(workflow).not.toContain(`\n  ${['coverage', 'store'].join('-')}:`)
     expect(workflow).not.toContain('prepared-lcov')
-  })
-
-  it('keeps the informational Codecov uploader eligible for public fork PRs', () => {
-    const workflow = load(read('.github/workflows/ci.yml')) as Workflow
-
-    expect(workflow.jobs?.['upload-codecov']?.if).toBe(
-      "always() && !cancelled() && github.event_name == 'pull_request'",
-    )
   })
 
   it('uses exact pull request base and head SHAs for the patch', () => {
@@ -251,36 +232,41 @@ describe('PR patch coverage', () => {
     expect(postgres).not.toContain(uploadCoveragePairAction)
   })
 
-  it('publishes coverage from main-called test workflows only for PR consumers', () => {
-    const ci = read('.github/workflows/ci.yml')
+  it('publishes the sparse coverage pair only for the ci.yml pull-request consumer', () => {
+    const prOnly = "${{ github.event_name == 'pull_request' }}"
+    const workflows = readdirSync('.github/workflows')
+      .filter(file => file.endsWith('.yml'))
+      .map(file => ({ file, workflow: load(read(`.github/workflows/${file}`)) as Workflow }))
+    const ciJobs = Object.values(workflows.find(({ file }) => file === 'ci.yml')!.workflow.jobs!)
 
     for (const path of coverageProducerWorkflows) {
-      const source = read(path)
-      const workflow = load(source) as Workflow
-      const coveragePublishSteps = Object.values(workflow.jobs ?? {}).flatMap(job =>
-        (job.steps ?? []).filter(step => step.uses === uploadCoveragePairAction),
+      const workflow = load(read(path)) as Workflow
+      const steps = Object.values(workflow.jobs ?? {}).flatMap(job => job.steps ?? [])
+      const pairSteps = steps.filter(
+        step => step.uses === uploadCoveragePairAction || step.id?.startsWith('coverage-stamp-'),
       )
 
-      expect(workflow.on?.workflow_call?.inputs?.publish_coverage?.default).toBe(false)
-      expect(workflow.on?.workflow_dispatch?.inputs?.publish_coverage).toBeUndefined()
-      expect(coveragePublishSteps.length).toBeGreaterThan(0)
-      for (const step of coveragePublishSteps) {
-        expect(step.if).toContain('inputs.publish_coverage')
+      for (const input of ['publish_coverage', 'publish_coverage_pair']) {
+        expect(workflow.on?.workflow_call?.inputs?.[input]?.default, input).toBe(false)
+        expect(workflow.on?.workflow_dispatch?.inputs?.[input], input).toBeUndefined()
       }
+      expect(pairSteps.length).toBeGreaterThan(0)
+      for (const step of pairSteps) expect(step.if).toMatch(/\binputs\.publish_coverage_pair\b/)
+
+      const callers = ciJobs.filter(job => job.uses === `./${path}`)
+      expect(callers, path).toHaveLength(1)
+      expect(callers[0]!.with).toMatchObject({
+        publish_coverage: prOnly,
+        publish_coverage_pair: prOnly,
+      })
     }
 
-    for (const path of coverageProducerWorkflows) {
-      const callStart = ci.indexOf(`uses: ./${path}`)
-      if (callStart < 0) throw new Error(`Missing CI caller for ${path}`)
-      const callerTail = ci.slice(callStart)
-      const nextJob = callerTail.search(/\n {2}[a-z][a-z0-9-]*:\n/)
-      const caller = nextJob === -1 ? callerTail : callerTail.slice(0, nextJob)
-      if (!caller.includes("publish_coverage: ${{ github.event_name == 'pull_request' }}")) {
-        throw new Error(`CI caller for ${path} does not publish PR coverage`)
+    // Area workflows publish full LCOV on every event; only ci.yml consumes the pair.
+    for (const { file, workflow } of workflows) {
+      if (file === 'ci.yml') continue
+      for (const job of Object.values(workflow.jobs ?? {})) {
+        expect(job.with ?? {}, file).not.toHaveProperty('publish_coverage_pair')
       }
-    }
-    for (const path of ['.github/workflows/main-backend.yml', '.github/workflows/main-web.yml']) {
-      expect(read(path)).not.toContain('publish_coverage: true')
     }
   })
 })

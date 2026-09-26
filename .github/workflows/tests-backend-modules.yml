@@ -4,7 +4,12 @@ on:
   workflow_call:
     inputs:
       publish_coverage:
-        description: 'Whether to publish LCOV for a same-run PR coverage consumer'
+        description: 'Whether to collect coverage and publish the full LCOV for the area coverage gate and Codecov'
+        required: false
+        type: boolean
+        default: false
+      publish_coverage_pair:
+        description: 'Whether to also publish the sparse coverage pair for the ci.yml Patch Coverage consumer'
         required: false
         type: boolean
         default: false
@@ -41,7 +46,7 @@ jobs:
         with:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
-        if: ${{ inputs.publish_coverage }}
+        if: ${{ inputs.publish_coverage_pair }}
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
@@ -75,7 +80,7 @@ jobs:
           include-hidden-files: true
           retention-days: 1
           if-no-files-found: ignore
-      - name: Preserve full backend-modules LCOV for Codecov
+      - name: Preserve full backend-modules LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
@@ -86,7 +91,7 @@ jobs:
       - name: Stamp backend-modules coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -147,7 +152,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload backend-modules coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -155,7 +160,7 @@ jobs:
           suite: backend-modules
       - name: Upload backend-modules coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -164,7 +169,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted backend-modules coverage pair
         id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -172,10 +177,30 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload full backend-modules LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+      - name: Upload full backend-modules LCOV to GitHub (attempt 1)
+        id: full-lcov-1
+        if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: backend-modules
+      - name: Upload full backend-modules LCOV to GitHub (attempt 2)
+        id: full-lcov-1-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: backend-modules
+          name-suffix: -retry
+      - name: Require a persisted full backend-modules LCOV
+        id: full-lcov-outcome-1
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: backend-modules
+          FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

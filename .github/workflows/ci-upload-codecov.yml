@@ -1,13 +1,21 @@
 name: CI Codecov upload
 
+# Informational only: every step may fail without failing the caller, and no area gate waits on it.
+# Each upload carries one suite flag, so Codecov carries forward the flags a run did not upload
+# (codecov.yml).
 on:
   workflow_call:
+    inputs:
+      uploads:
+        description: 'JSON array of {"flag", "pattern"}: a Codecov flag and the lcov-full-* artifact pattern its suite uploads'
+        required: true
+        type: string
 
 permissions: {}
 
 jobs:
   upload-codecov:
-    name: Codecov
+    name: Codecov (${{ matrix.flag }})
     runs-on: ubuntu-latest
     timeout-minutes: 8
     continue-on-error: true
@@ -15,31 +23,37 @@ jobs:
       actions: read
       contents: read
       id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.uploads) }}
     steps:
+      # Depth 2 lets the Codecov CLI report a pull request's head commit (HEAD^2 of the merge commit).
       - id: codecov-checkout
         continue-on-error: true
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 2
           persist-credentials: false
-      - name: Download full LCOV artifacts from GitHub
+      - name: Download ${{ matrix.flag }} full LCOV
         id: download-full-lcov
         continue-on-error: true
         timeout-minutes: 5
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          pattern: lcov-full-*
-          path: ./lcov-full-fallback
           repository: ${{ github.repository }}
           run-id: ${{ github.run_id }}
-      - name: Upload full LCOV to Codecov (informational)
-        if: "!cancelled() && steps.codecov-checkout.outcome == 'success' && steps.download-full-lcov.outcome == 'success'"
+          pattern: ${{ matrix.pattern }}
+          path: ./lcov-full
+      - name: Upload ${{ matrix.flag }} to Codecov
+        if: "!cancelled() && steps.codecov-checkout.outcome == 'success' && steps.download-full-lcov.outcome == 'success' && hashFiles('lcov-full/**/lcov.info') != ''"
         continue-on-error: true
         timeout-minutes: 3
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          directory: ./lcov-full-fallback
-          disable_search: false
+          directory: ./lcov-full
           fail_ci_if_error: false
+          flags: ${{ matrix.flag }}
+          name: ${{ matrix.flag }}
           use_oidc: true

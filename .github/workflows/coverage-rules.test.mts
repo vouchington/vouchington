@@ -6,6 +6,7 @@ type CoverageRules = {
   rules: Array<{
     paths: string
     patch_coverage_min: number
+    area?: string
   }>
 }
 
@@ -16,7 +17,7 @@ describe('.coverage-rules.yml', () => {
     expect(rules.rules).toEqual(
       expect.arrayContaining([
         { paths: 'static-code-analysis/**', patch_coverage_min: 0 },
-        { paths: 'email-templates/**', patch_coverage_min: 100 },
+        { paths: 'email-templates/**', patch_coverage_min: 100, area: 'backend' },
       ]),
     )
   })
@@ -29,10 +30,12 @@ describe('.coverage-rules.yml', () => {
         {
           paths: 'backend/**',
           patch_coverage_min: 95,
+          area: 'backend',
         },
         {
           paths: 'web/**',
           patch_coverage_min: 80,
+          area: 'web',
         },
       ]),
     )
@@ -46,6 +49,7 @@ describe('.coverage-rules.yml', () => {
         {
           paths: 'cloudflare-worker/**',
           patch_coverage_min: 100,
+          area: 'cloudflare-worker',
         },
       ]),
     )
