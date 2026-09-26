@@ -91,12 +91,12 @@ describe('static-code-analysis workflow', () => {
       jobs: Record<string, Job>
     }
 
+    const conditionalSteps = Object.values(parsed.jobs).flatMap(job =>
+      job.steps.filter(step => step.if !== undefined).map(step => step.name ?? step.run),
+    )
+
     expect(parsed.on.workflow_call).toBeNull()
-    for (const job of Object.values(parsed.jobs)) {
-      for (const step of job.steps) {
-        expect(step.if, step.name ?? step.run).toBeUndefined()
-      }
-    }
+    expect(conditionalSteps).toEqual([])
   })
 
   it('runs no-mistakes in parallel with static checks without a cross-PR job queue', () => {

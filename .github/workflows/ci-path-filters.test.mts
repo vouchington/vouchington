@@ -119,12 +119,11 @@ describe('detect-changes path filters', () => {
     expect(detectChangesWorkflow.jobs?.['detect-changes']?.outputs?.portability).toBe(
       '${{ steps.filter.outputs.portability }}',
     )
-    for (const path of [
+    const portabilityTests = [
       'lambdas/dev-server.test.mts',
       'cloudflare-worker/scripts/wrangler/runtime.test.mts',
-    ]) {
-      expect(filterMatches(portability, path), path).toBe(true)
-    }
+    ]
+    expect(portabilityTests.filter(path => !filterMatches(portability, path))).toEqual([])
     expect(portability).not.toContain('ci/**')
   })
 

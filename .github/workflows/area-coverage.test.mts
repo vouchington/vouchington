@@ -58,6 +58,17 @@ function areaWorkflows(): Array<{ area: string; path: string; jobs: Record<strin
     }))
 }
 
+// How many upload patterns match each artifact; nightly needs exactly one per artifact.
+const patternMatches = (artifacts: string[], uploads: Upload[]): Record<string, number> =>
+  Object.fromEntries(
+    artifacts.map(artifact => [
+      artifact,
+      uploads.filter(upload => picomatch.isMatch(artifact, upload.pattern)).length,
+    ]),
+  )
+const eachOnce = (artifacts: string[]): Record<string, number> =>
+  Object.fromEntries(artifacts.map(artifact => [artifact, 1]))
+
 function jobCalling(jobs: Record<string, Job>, reusable: string): [string, Job] {
   const matches = Object.entries(jobs).filter(([, job]) => job.uses === reusable)
   expect(matches).toHaveLength(1)
@@ -91,18 +102,16 @@ describe('area coverage wiring', () => {
 
       expect(producers.length).toBeGreaterThan(0)
       expect(coverage.with).toEqual({ area })
-      for (const [id, job] of producers) {
-        expect(job.with?.publish_coverage, id).toBe(true)
-        expect(needsOf(coverage), id).toContain(id)
-      }
-      expect(needsOf(codecov).toSorted()).toEqual(producers.map(([id]) => id).toSorted())
+      const producerIds = producers.map(([id]) => id)
+      expect(producers.map(([id, job]) => [id, job.with?.publish_coverage])).toEqual(
+        producerIds.map(id => [id, true]),
+      )
+      expect(needsOf(coverage)).toEqual(expect.arrayContaining(producerIds))
+      expect(needsOf(codecov).toSorted()).toEqual(producerIds.toSorted())
 
       // Each producer's artifacts match exactly one upload pattern, and every pattern matches.
       const artifacts = producers.flatMap(([, job]) => fullLcovArtifacts(job.uses!.slice(2)))
-      for (const artifact of artifacts) {
-        const matching = uploads.filter(upload => picomatch.isMatch(artifact, upload.pattern))
-        expect(matching, artifact).toHaveLength(1)
-      }
+      expect(patternMatches(artifacts, uploads)).toEqual(eachOnce(artifacts))
       for (const upload of uploads) {
         expect(artifacts.some(artifact => picomatch.isMatch(artifact, upload.pattern))).toBe(true)
       }
@@ -133,25 +142,41 @@ describe('area coverage wiring', () => {
       ),
     ].filter(reusable => fullLcovUploads(reusable).length > 0)
 
-    expect(reusables.length).toBeGreaterThan(0)
-    for (const reusable of reusables) {
+    const uploads = reusables.flatMap(reusable =>
+      fullLcovUploads(reusable).map(upload => ({
+        reusable,
+        condition: upload.if ?? '',
+        suffix: upload.with?.['name-suffix'],
+      })),
+    )
+    const outcomes = reusables.flatMap(reusable => {
       const steps = Object.values(readWorkflow(reusable).jobs ?? {}).flatMap(job => job.steps ?? [])
-      for (const upload of fullLcovUploads(reusable)) {
-        expect(upload.if, reusable).toMatch(/^\$\{\{ inputs\.publish_coverage[ }]/)
-        expect(upload.if, reusable).not.toMatch(/coverage-stamp|publish_coverage_pair|cancelled/)
+      const suites = new Set(fullLcovUploads(reusable).map(step => step.with?.suite))
+      return [...suites].map(suite => ({
+        reusable,
+        suite,
+        condition: steps.find(step => step.env?.FAMILY === 'full-lcov' && step.env?.SUITE === suite)
+          ?.if,
+      }))
+    })
+
+    expect(reusables.length).toBeGreaterThan(0)
+    expect(uploads).toEqual(
+      uploads.map(({ reusable, condition }) => ({
+        reusable,
+        condition: expect.stringMatching(/^\$\{\{ inputs\.publish_coverage[ }]/),
         // A retry reusing the first attempt's name would 409 on an unfinalized upload.
-        const retry = upload.if?.includes(".outcome == 'failure'") ?? false
-        expect(upload.with?.['name-suffix'], `${reusable} ${String(upload.if)}`).toBe(
-          retry ? '-retry' : undefined,
-        )
-      }
-      for (const suite of new Set(fullLcovUploads(reusable).map(step => step.with?.suite))) {
-        const outcome = steps.find(
-          step => step.env?.FAMILY === 'full-lcov' && step.env?.SUITE === suite,
-        )
-        expect(outcome?.if, `${reusable} ${String(suite)}`).toBe('${{ inputs.publish_coverage }}')
-      }
-    }
+        suffix: condition.includes(".outcome == 'failure'") ? '-retry' : undefined,
+      })),
+    )
+    expect(
+      uploads.filter(({ condition }) =>
+        /coverage-stamp|publish_coverage_pair|cancelled/.test(condition),
+      ),
+    ).toEqual([])
+    expect(outcomes).toEqual(
+      outcomes.map(outcome => ({ ...outcome, condition: '${{ inputs.publish_coverage }}' })),
+    )
   })
 
   // nightly.yml runs every area in one workflow run, so one suite's artifacts must never match
@@ -170,10 +195,7 @@ describe('area coverage wiring', () => {
 
     expect(new Set(flags).size).toBe(flags.length)
     for (const flag of flags) expect(flag).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-    for (const artifact of artifacts) {
-      const matching = uploads.filter(upload => picomatch.isMatch(artifact, upload.pattern))
-      expect(matching, artifact).toHaveLength(1)
-    }
+    expect(patternMatches(artifacts, uploads)).toEqual(eachOnce(artifacts))
   })
 
   it('keeps the blocking area check free of OIDC and Codecov credentials', () => {

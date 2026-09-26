@@ -246,15 +246,20 @@ describe('PR patch coverage', () => {
         step => step.uses === uploadCoveragePairAction || step.id?.startsWith('coverage-stamp-'),
       )
 
-      for (const input of ['publish_coverage', 'publish_coverage_pair']) {
-        expect(workflow.on?.workflow_call?.inputs?.[input]?.default, input).toBe(false)
-        expect(workflow.on?.workflow_dispatch?.inputs?.[input], input).toBeUndefined()
-      }
+      const inputs = ['publish_coverage', 'publish_coverage_pair']
+      expect(
+        inputs.map(input => ({
+          path,
+          input,
+          default: workflow.on?.workflow_call?.inputs?.[input]?.default,
+          dispatchable: workflow.on?.workflow_dispatch?.inputs?.[input] !== undefined,
+        })),
+      ).toEqual(inputs.map(input => ({ path, input, default: false, dispatchable: false })))
       expect(pairSteps.length).toBeGreaterThan(0)
       for (const step of pairSteps) expect(step.if).toMatch(/\binputs\.publish_coverage_pair\b/)
 
       const callers = ciJobs.filter(job => job.uses === `./${path}`)
-      expect(callers, path).toHaveLength(1)
+      expect({ path, callers: callers.length }).toEqual({ path, callers: 1 })
       expect(callers[0]!.with).toMatchObject({
         publish_coverage: prOnly,
         publish_coverage_pair: prOnly,
@@ -262,11 +267,13 @@ describe('PR patch coverage', () => {
     }
 
     // Area workflows publish full LCOV on every event; only ci.yml consumes the pair.
-    for (const { file, workflow } of workflows) {
-      if (file === 'ci.yml') continue
-      for (const job of Object.values(workflow.jobs ?? {})) {
-        expect(job.with ?? {}, file).not.toHaveProperty('publish_coverage_pair')
-      }
-    }
+    const pairCallers = workflows
+      .filter(({ file }) => file !== 'ci.yml')
+      .flatMap(({ file, workflow }) =>
+        Object.values(workflow.jobs ?? {})
+          .filter(job => job.with !== undefined && 'publish_coverage_pair' in job.with)
+          .map(() => file),
+      )
+    expect(pairCallers).toEqual([])
   })
 })

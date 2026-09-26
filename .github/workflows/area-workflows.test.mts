@@ -57,17 +57,17 @@ describe('area workflows', () => {
   // only the nightly run.
   it.each(areas)('passes $area every secret and permission it needs', ({ caller, workflow }) => {
     const secrets = Object.keys(workflow.on?.workflow_call?.secrets ?? {})
-    expect(Object.keys(caller.secrets ?? {}).toSorted()).toEqual(secrets.toSorted())
-    for (const secret of secrets) {
-      expect(caller.secrets?.[secret]).toBe(`\${{ secrets.${secret} }}`)
-    }
-    for (const job of Object.values(workflow.jobs ?? {})) {
-      for (const [scope, level] of Object.entries(job.permissions ?? {})) {
+    const permissionGaps = Object.values(workflow.jobs ?? {})
+      .flatMap(job => Object.entries(job.permissions ?? {}))
+      .filter(([scope, level]) => {
         const granted = caller.permissions?.[scope]
-        expect(granted, scope).toBeDefined()
-        if (level === 'write') expect(granted, scope).toBe('write')
-      }
-    }
+        return granted === undefined || (level === 'write' && granted !== 'write')
+      })
+
+    expect(caller.secrets ?? {}).toEqual(
+      Object.fromEntries(secrets.map(secret => [secret, `\${{ secrets.${secret} }}`])),
+    )
+    expect(permissionGaps).toEqual([])
   })
 
   // A trigger-level `paths:` filter would leave a skipped area's required check pending forever,
@@ -94,27 +94,32 @@ describe('area workflows', () => {
 
   it.each(selectedAreas)('orders $area as changes, static, suites', ({ area, workflow }) => {
     const jobs = workflow.jobs ?? {}
-    const staticJob = `static-${area}`
-    const selector = jobs[staticJob] ? staticJob : undefined
+    const selected = `needs.changes.outputs.area-${area} == 'true'`
+    const staticJobs = Object.keys(jobs).filter(id => id === `static-${area}`)
     const suites = Object.keys(jobs).filter(
-      id => ![area, 'changes', staticJob].includes(id) && !fanIns.has(id),
+      id => ![area, 'changes', ...staticJobs].includes(id) && !fanIns.has(id),
     )
+    const suiteShape = (id: string) => {
+      const needs = needsOf(jobs[id]!)
+      return {
+        id,
+        // A suite waits only for the area selection and its static checks, never another suite.
+        waitsOnSelectionOnly: needs.every(need => need === 'changes' || staticJobs.includes(need)),
+        // The area static checks gate it; without them, it selects the area itself.
+        gated:
+          staticJobs.length > 0
+            ? staticJobs.every(job => needs.includes(job))
+            : (jobs[id]!.if?.includes(selected) ?? false),
+      }
+    }
 
     expect(jobs.changes?.uses).toBe(detectChanges)
-    if (selector) {
-      expect(needsOf(jobs[selector]!)).toEqual(['changes'])
-      expect(jobs[selector]!.if).toBe(`needs.changes.outputs.area-${area} == 'true'`)
-    }
-    for (const id of suites) {
-      const needs = needsOf(jobs[id]!)
-      // A suite waits only for the area selection and its static checks, never another suite.
-      expect(
-        needs.every(need => need === 'changes' || need === selector),
-        id,
-      ).toBe(true)
-      if (selector) expect(needs, id).toContain(selector)
-      else expect(jobs[id]!.if, id).toContain(`needs.changes.outputs.area-${area} == 'true'`)
-    }
+    expect(staticJobs.map(id => ({ id, needs: needsOf(jobs[id]!), if: jobs[id]!.if }))).toEqual(
+      staticJobs.map(id => ({ id, needs: ['changes'], if: selected })),
+    )
+    expect(suites.map(suiteShape)).toEqual(
+      suites.map(id => ({ id, waitsOnSelectionOnly: true, gated: true })),
+    )
   })
 
   // no-mistakes' tsconfig-gate-coverage counts the repository typechecks only through a root that
