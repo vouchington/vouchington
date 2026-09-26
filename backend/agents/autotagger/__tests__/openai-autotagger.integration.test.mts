@@ -28,6 +28,21 @@ import {
 const CATEGORY_TABLE = 'relation__post__category__topic'
 const MODEL = 'openai/gpt-5.4-nano'
 
+function completedProviderResponse(
+  response: ReturnType<typeof makeSdkResponse>,
+): Awaited<ReturnType<typeof CreateOpenRouterResponse>> {
+  if (response.status !== 'completed') throw new Error('Expected a completed provider response')
+  return {
+    id: response.id,
+    status: response.status,
+    output: response.output,
+    output_text: response.output_text,
+    model: response.model,
+    service_tier: response.service_tier,
+    usage: response.usage ?? undefined,
+  }
+}
+
 describe('callOpenAIAutotagger with real tools and persistence', () => {
   it('adds exactly one topic through the real tool loop and persists the run transcript', async () => {
     const owner = await createTestUser()
@@ -48,13 +63,15 @@ describe('callOpenAIAutotagger with real tools and persistence', () => {
       arguments: JSON.stringify({ topic_id: topic.id }),
       status: 'completed' as const,
     }
-    const response = makeSdkResponse({
-      id: 'resp-autotag-one',
-      model: MODEL,
-      status: 'completed',
-      output: [toolCall],
-      usage: null,
-    })
+    const response = completedProviderResponse(
+      makeSdkResponse({
+        id: 'resp-autotag-one',
+        model: MODEL,
+        status: 'completed',
+        output: [toolCall],
+        usage: undefined,
+      }),
+    )
     const createOpenRouterResponse = vi
       .fn<typeof CreateOpenRouterResponse>()
       .mockResolvedValue(response)
@@ -164,11 +181,13 @@ describe('callOpenAIAutotagger with real tools and persistence', () => {
       entity_type: 'post',
       entity_id: post.id,
     })
-    const response = makeSdkTextResponse('No related topic.', {
-      id: 'resp-autotag-no-tool',
-      model: MODEL,
-      usage: null,
-    })
+    const response = completedProviderResponse(
+      makeSdkTextResponse('No related topic.', {
+        id: 'resp-autotag-no-tool',
+        model: MODEL,
+        usage: undefined,
+      }),
+    )
     const createOpenRouterResponse = vi
       .fn<typeof CreateOpenRouterResponse>()
       .mockResolvedValue(response)
