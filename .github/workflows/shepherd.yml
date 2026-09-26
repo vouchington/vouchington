@@ -200,7 +200,7 @@ jobs:
 
       - name: Render prompt
         id: render
-        uses: jonathanong/auto-harness/actions/harness-render-prompt@710a7603cadd9d19dbac6b0cd45fc1e5e4f4c29b # main (#808)
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@710a7603cadd9d19dbac6b0cd45fc1e5e4f4c29b # v1.0.0+808
         with:
           template: docs/prompts/automation/shepherd.md
           vars: |
