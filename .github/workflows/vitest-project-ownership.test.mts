@@ -8,7 +8,7 @@ import {
   toolingWorkflowProjectNames,
 } from '../../test-helpers/vitest-config/tooling-project-registry.mts'
 import { vitestArgs } from '../../ci/storybook-browser-runner-env.mts'
-import { shellLogicalLines } from './workflow-test-helpers.mts'
+import { shellLogicalLines } from '../test-helpers/workflow-test-helpers.mts'
 
 // Validates the model in ci/vitest/project-ownership.mts against the real `--project` commands in
 // .github/workflows/tests-*.yml / storybook.yml, across all four invocation forms. See

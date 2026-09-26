@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, it } from 'vitest'
 
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 // Hosts whose downloads don't need manual sha256sum verification because
 // they are authenticated GitHub API endpoints or loopback addresses.

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { workflowHasTrigger } from './workflow-test-helpers.mts'
+import { workflowHasTrigger } from '../test-helpers/workflow-test-helpers.mts'
 
 type Step = { uses?: string; run?: string; with?: Record<string, unknown> }
 type Job = {

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, it } from 'vitest'
 
-import { assertWorkflowInvariant } from './workflow-test-helpers.mts'
+import { assertWorkflowInvariant } from '../test-helpers/workflow-test-helpers.mts'
 
 type Workflow = {
   jobs?: Record<

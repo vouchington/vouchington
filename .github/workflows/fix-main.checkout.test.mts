@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parsedDispatch } from './fix-main.test-helpers.mts'
+import { parsedDispatch } from '../test-helpers/fix-main.test-helpers.mts'
 
 describe('fix-main workflow', () => {
   it('checks out only the immutable workflow implementation without persisted credentials', () => {

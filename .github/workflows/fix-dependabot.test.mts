@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsedDependabot as parsed, promptText } from './fix-dependabot.test-helpers.mts'
+import {
+  parsedDependabot as parsed,
+  promptText,
+} from '../test-helpers/fix-dependabot.test-helpers.mts'
 
 describe('fix-dependabot workflow', () => {
   it('keeps dependency repair validation inside the exact live branch boundary', () => {

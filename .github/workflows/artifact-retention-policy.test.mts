@@ -6,8 +6,8 @@ import {
   artifactNameFromBlock,
   invalidRetentionBlocks,
   uploadArtifactBlocks,
-} from './artifact-retention-policy.test-helpers.mts'
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+} from '../test-helpers/artifact-retention-policy.test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 // Generated at runtime (not embedded as a literal) so this fixture ref does not trip
 // no-test-git-sha / test-no-dependency-pins.

@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { SUITE_CASE_PATTERN, VALID_SUITE } from './coverage-summary.test-helpers.mts'
+import { SUITE_CASE_PATTERN, VALID_SUITE } from '../test-helpers/coverage-summary.test-helpers.mts'
 
 const read = (path: string): string => readFileSync(path, 'utf8')
 

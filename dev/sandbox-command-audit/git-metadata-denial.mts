@@ -1,3 +1,4 @@
+import { hasUnsafeShellEvaluation, commandSegments } from './git-metadata-segments.mts'
 // Shared Claude/Codex matcher: Git metadata write denials need write-path fixes, not allowlisting.
 
 const ASSIGNMENT_PREFIX = /[A-Za-z_][A-Za-z0-9_]*=(?:"(?:\\.|[^"\\])*"|'[^']*'|[^\s;&|'"]+)/
@@ -10,51 +11,6 @@ const ENV_INVOCATION = new RegExp(
 const SHELL_SETUP_PATTERN =
   /^(?:set(?:\s|$)|cd(?:\s|$)|export(?:\s|$)|[A-Za-z_][A-Za-z0-9_]*=(?:"(?:\\.|[^"\\])*"|'[^']*'|[^\s;&|'"]+)$)/
 const SAFE_REPORTING_COMMAND_PATTERN = /^(?:echo|printf|true|:)(?:\s|$)/
-
-function hasUnsafeShellEvaluation(segment: string): boolean {
-  let quote: "'" | '"' | undefined
-  let escaped = false
-
-  for (let index = 0; index < segment.length; index += 1) {
-    const character = segment[index]!
-    if (escaped) {
-      escaped = false
-      continue
-    }
-    if (character === '\\' && quote !== "'") {
-      escaped = true
-      continue
-    }
-    if (quote === "'") {
-      if (character === "'") quote = undefined
-      continue
-    }
-    if (quote === '"') {
-      if (character === '"') quote = undefined
-      else if (character === '`' || (character === '$' && segment[index + 1] === '(')) {
-        return true
-      }
-      continue
-    }
-    if (character === "'") {
-      quote = "'"
-      continue
-    }
-    if (character === '"') {
-      quote = '"'
-      continue
-    }
-    if (character === '`' || (character === '$' && segment[index + 1] === '(')) {
-      return true
-    }
-    if (character !== '<' && character !== '>') continue
-
-    const descriptorTarget = segment.slice(index + 1).match(/^&[\d-]+/)
-    if (descriptorTarget === null) return true
-    index += descriptorTarget[0].length
-  }
-  return false
-}
 
 function isGitCommand(segment: string): boolean {
   const env = ENV_INVOCATION.exec(segment)
@@ -97,68 +53,6 @@ function isGitMetadataPath(path: string): boolean {
       relative === 'logs/refs' ||
       relative.startsWith('logs/refs/'))
   )
-}
-
-function commandSegments(command: string): string[] {
-  const segments: string[] = []
-  let start = 0
-  let quote: "'" | '"' | undefined
-  let escaped = false
-
-  for (let index = 0; index < command.length; index += 1) {
-    const character = command[index]!
-    if (escaped) {
-      escaped = false
-      continue
-    }
-    if (character === '\\' && quote !== "'") {
-      escaped = true
-      continue
-    }
-    if (quote !== undefined) {
-      if (character === quote) quote = undefined
-      continue
-    }
-    if (character === "'" || character === '"') {
-      quote = character
-      continue
-    }
-    const startsComment = character === '#' && (index === start || /\s/.test(command[index - 1]!))
-    if (startsComment) {
-      const segment = command.slice(start, index).trim()
-      if (segment.length > 0) segments.push(segment)
-      const newlineIndex = command.indexOf('\n', index + 1)
-      if (newlineIndex < 0) {
-        start = command.length
-        break
-      }
-      index = newlineIndex
-      start = newlineIndex + 1
-      continue
-    }
-
-    const pairedSeparator =
-      (character === '&' && command[index + 1] === '&') ||
-      (character === '|' && command[index + 1] === '|')
-    const ampersandIsRedirection =
-      character === '&' &&
-      (command[index - 1] === '>' || command[index - 1] === '<' || command[index + 1] === '>')
-    const singleSeparator =
-      character === ';' ||
-      character === '|' ||
-      (character === '&' && !ampersandIsRedirection) ||
-      /[\r\n]/.test(character)
-    if (!pairedSeparator && !singleSeparator) continue
-
-    const segment = command.slice(start, index).trim()
-    if (segment.length > 0) segments.push(segment)
-    if (pairedSeparator) index += 1
-    start = index + 1
-  }
-
-  const finalSegment = command.slice(start).trim()
-  if (finalSegment.length > 0) segments.push(finalSegment)
-  return segments
 }
 
 function hasCorrelatedGitCommand(command: string): boolean {

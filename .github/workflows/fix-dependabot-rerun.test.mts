@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsedDependabot as parsed, workflowText } from './fix-dependabot.test-helpers.mts'
+import {
+  parsedDependabot as parsed,
+  workflowText,
+} from '../test-helpers/fix-dependabot.test-helpers.mts'
 
 const eventInputs = {
   EVENT_HEAD_SHA: '${{ github.event.workflow_run.head_sha }}',

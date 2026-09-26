@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { inlineLocalComposites, stepLists, type PolicyStep } from './pnpm-policy.test-helpers.mts'
+import {
+  inlineLocalComposites,
+  stepLists,
+  type PolicyStep,
+} from '../test-helpers/pnpm-policy.test-helpers.mts'
 
 const isNodeSetup = (step: PolicyStep) => step.uses?.startsWith('actions/setup-node@') === true
 const isPnpmSetup = (step: PolicyStep) => step.uses?.startsWith('pnpm/action-setup@') === true

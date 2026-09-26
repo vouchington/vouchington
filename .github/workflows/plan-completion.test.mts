@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { workflowHasMainPushTrigger, workflowTriggerNames } from './workflow-test-helpers.mts'
+import {
+  workflowHasMainPushTrigger,
+  workflowTriggerNames,
+} from '../test-helpers/workflow-test-helpers.mts'
 
 type Workflow = {
   concurrency?: { 'cancel-in-progress'?: unknown; group?: unknown }

@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
 
-import { parsedDependabot } from '../.github/workflows/fix-dependabot.test-helpers.mts'
-import { parsedMain } from '../.github/workflows/fix-main.test-helpers.mts'
+import { parsedDependabot } from '../.github/test-helpers/fix-dependabot.test-helpers.mts'
+import { parsedMain } from '../.github/test-helpers/fix-main.test-helpers.mts'
 
 export type WorkflowJobLike = {
   if?: string

@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import { parseGithubOutput } from '../../test-helpers/github-output.mts'
+import { parseGithubOutput } from './github-output.mts'
 
 export function executeFixRequestExtraction(
   extractionScript: string,

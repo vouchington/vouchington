@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
-import type { WorkflowCallEdge, WorkflowTopology } from 'no-mistakes'
+export { callerCalleePermissionMismatches } from './workflow-permissions-mismatches.mts'
 
-type Workflow = {
+export type Workflow = {
   permissions?: unknown
   on?: unknown
   jobs?: Record<string, Job>
@@ -14,11 +14,13 @@ type Job = {
   permissions?: unknown
 }
 
-function readWorkflow(path: string): Workflow {
+export function readWorkflow(path: string): Workflow {
   return load(readFileSync(path, 'utf8')) as Workflow
 }
 
-function parsePermissions(perms: unknown): Map<string, string> | 'read-all' | 'write-all' | null {
+export function parsePermissions(
+  perms: unknown,
+): Map<string, string> | 'read-all' | 'write-all' | null {
   if (perms == null) return null
   if (perms === 'read-all') return 'read-all'
   if (perms === 'write-all') return 'write-all'
@@ -50,7 +52,7 @@ function expandReadAllPermissions(): Map<string, string> {
   return new Map(READ_ALL_PERMISSIONS.map(permission => [permission, 'read']))
 }
 
-function permissionsToMap(
+export function permissionsToMap(
   permissions: Map<string, string> | 'read-all' | null,
 ): Map<string, string> | null {
   if (permissions === 'read-all') return expandReadAllPermissions()
@@ -79,7 +81,7 @@ function unionPermissions(
   return result
 }
 
-function requiredWorkflowPermissions(
+export function requiredWorkflowPermissions(
   workflow: Workflow,
 ): Map<string, string> | 'read-all' | 'write-all' | null {
   const topLevelPerms = parsePermissions(workflow.permissions)
@@ -107,55 +109,4 @@ export function missingTopLevelPermissionPaths(paths: readonly string[]): string
     if (!('permissions' in workflow)) missing.push(path)
   }
   return missing
-}
-
-export function callerCalleePermissionMismatches(topology: WorkflowTopology): string[] {
-  const mismatches: string[] = []
-  const jobsById = new Map(topology.jobs.map(job => [job.id, job]))
-  const workflowsByPath = new Map(topology.workflows.map(workflow => [workflow.path, workflow]))
-  const localCalls = topology.edges.filter(
-    (edge): edge is WorkflowCallEdge => edge.kind === 'calls' && edge.local,
-  )
-
-  for (const call of localCalls) {
-    const callerJob = jobsById.get(call.from)
-    const callee = call.to ? workflowsByPath.get(call.to) : undefined
-    if (!callerJob || !callee?.callable) continue
-    const callerPath = callerJob.workflowId
-    const caller = readWorkflow(callerPath)
-    const job = caller.jobs?.[callerJob.key]
-    if (!job) continue
-    const calleePath = callee.path
-    const calleeWorkflow = readWorkflow(calleePath)
-
-    const calleePerms = requiredWorkflowPermissions(calleeWorkflow)
-    const jobPerms = parsePermissions(job.permissions)
-    if (jobPerms == null) {
-      mismatches.push(
-        `  ${callerPath} job "${callerJob.key}" → ${calleePath}: missing explicit job-level permissions`,
-      )
-      continue
-    }
-
-    if (jobPerms === 'write-all' || calleePerms === 'write-all') {
-      if (jobPerms !== calleePerms) {
-        mismatches.push(
-          `  ${callerPath} job "${callerJob.key}" → ${calleePath}: caller grants ${jobPerms}, callee requires ${calleePerms}`,
-        )
-      }
-      continue
-    }
-
-    const callerMap = permissionsToMap(jobPerms) ?? new Map<string, string>()
-    const calleeMap = permissionsToMap(calleePerms) ?? new Map<string, string>()
-    const callerEntries = [...callerMap].toSorted(([left], [right]) => left.localeCompare(right))
-    const calleeEntries = [...calleeMap].toSorted(([left], [right]) => left.localeCompare(right))
-    if (JSON.stringify(callerEntries) !== JSON.stringify(calleeEntries)) {
-      mismatches.push(
-        `  ${callerPath} job "${callerJob.key}" → ${calleePath}: caller grants ${JSON.stringify(Object.fromEntries(callerEntries))}, callee requires ${JSON.stringify(Object.fromEntries(calleeEntries))}`,
-      )
-    }
-  }
-
-  return mismatches
 }

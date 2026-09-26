@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseGithubOutput } from '../../test-helpers/github-output.mts'
+import { parseGithubOutput } from './github-output.mts'
 
 const MALICIOUS_PR_TITLE = [
   'Preserve this entire title',
@@ -87,7 +87,7 @@ export function executeGateWithTitle(
         ...options.prFields,
         head: {
           ref: 'fix/pr-title-output',
-          sha: '1111111111111111111111111111111111111111',
+          sha: '1'.repeat(40),
           repo: { full_name: options.headRepo ?? 'vouchington/vouchington' },
         },
         html_url: trustedPrUrl,

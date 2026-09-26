@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 type Step = {
   name?: string
