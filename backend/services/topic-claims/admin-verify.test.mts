@@ -33,6 +33,7 @@ describe('adminVerifyTopicClaim', () => {
     expect(verified.verified_at).not.toBeNull()
     expect(verified.verified_by_id).toBe(staffUser.id)
     expect(verified.verification_method).toBe('manual_admin')
+    expect(verified).not.toHaveProperty('verification_token_hash')
   })
 
   it('throws 404 if claim is already verified', async () => {
@@ -83,6 +84,7 @@ describe('rejectTopicClaim', () => {
     expect(rejected.rejected_at).not.toBeNull()
     expect(rejected.rejected_by_id).toBe(staffUser.id)
     expect(rejected.rejection_reason).toBe('Insufficient evidence')
+    expect(rejected).not.toHaveProperty('verification_token_hash')
   })
 
   it('throws 422 when rejection_reason is empty', async () => {
@@ -120,6 +122,7 @@ describe('revokeTopicClaim', () => {
     expect(revoked.revoked_at).not.toBeNull()
     expect(revoked.revoked_by_id).toBe(staffUser.id)
     expect(revoked.revocation_reason).toBe('Ownership transferred')
+    expect(revoked).not.toHaveProperty('verification_token_hash')
   })
 
   it('throws 404 when claim is not verified', async () => {

@@ -38,6 +38,7 @@ describe('createTopicClaim', () => {
     expect(claim.claimed_role).toBe('Card issuer')
     expect(claim.verified_at).toBeNull()
     expect(claim.rejected_at).toBeNull()
+    expect(claim).not.toHaveProperty('verification_token_hash')
   })
 
   it('creates a claim by topic slug without casting the slug to UUID', async () => {
