@@ -22,9 +22,9 @@ const DISPATCH_TIMEOUT_MS = 55_000
  * Only a bad or incomplete answer set (thrown after the response arrives, and before persistence
  * starts) is an "invalid-result". A `StructuredDecisionError` is always "provider-error", and so is
  * this function's own dispatch timeout firing (`signal.aborted`): `createStructuredDecisionClient`
- * never wraps an aborted fetch/retry-sleep into a `StructuredDecisionError` -- it propagates the raw
- * abort reason -- so without this check a timeout would fall through to "anything else" below and
- * go unrecorded, silently wasting the 5s of headroom AUTOTAGGER_CLASSIFIER_LEASE_SECONDS
+ * never wraps an aborted fetch into a `StructuredDecisionError` -- it propagates the raw abort
+ * reason -- so without this check a timeout would fall through to "anything else" below and go
+ * unrecorded, silently wasting the 5s of headroom AUTOTAGGER_CLASSIFIER_LEASE_SECONDS
  * (dispatch-classifier.mts) reserves specifically so a timeout's failure can still be recorded
  * before the lease itself expires. Anything else (a pre-call validation bug, or a
  * persistence-identity/DB failure) is not a bad *result* at all -- it is rethrown uncaught so the

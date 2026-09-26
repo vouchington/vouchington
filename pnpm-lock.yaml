@@ -294,6 +294,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/ai-usage':
+        specifier: workspace:^
+        version: link:../../services/ai-usage
       '@services/autotagger':
         specifier: workspace:^
         version: link:../../services/autotagger
@@ -318,6 +321,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
@@ -325,6 +331,9 @@ importers:
         specifier: workspace:^
         version: link:../../types
     devDependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../../services/elections-votes
@@ -337,6 +346,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.11.0
+        version: 8.11.0
 
   backend/agents/chat:
     dependencies:

@@ -41,7 +41,7 @@ function makeOpenRouterBody(overrides: Record<string, unknown> = {}): unknown {
     id: 'decision-1',
     model: 'typesafe/jev-1.13-20260917',
     provider: 'TypeSafe',
-    usage: { input_tokens: 12, output_tokens: 0 },
+    usage: { input_tokens: 12, output_tokens: 0, cost: 0.0002 },
     answers: [
       {
         id: 'quality',
@@ -79,7 +79,6 @@ describe('createStructuredDecisionClient', () => {
       transport: 'openrouter',
       apiKey: 'test-key',
       fetch,
-      sleep: async () => undefined,
     })
 
     const result = await client.decide(request)
@@ -178,7 +177,6 @@ describe('createStructuredDecisionClient', () => {
       fetch: vi
         .fn<StructuredDecisionFetch>()
         .mockResolvedValue(makeResponse(makeOpenRouterBody(overrides))),
-      sleep: async () => undefined,
     })
     await expect(client.decide(request)).rejects.toMatchObject<Partial<StructuredDecisionError>>({
       code: 'invalid-response',
@@ -239,37 +237,18 @@ describe('createStructuredDecisionClient', () => {
       fetch: vi
         .fn<StructuredDecisionFetch>()
         .mockResolvedValue(makeResponse(makeOpenRouterBody(overrides))),
-      sleep: async () => undefined,
     })
     await expect(client.decide(request)).rejects.toMatchObject<Partial<StructuredDecisionError>>({
       code: 'invalid-response',
     })
   })
 
-  it('retries same transport on a retryable response without changing the request', async () => {
-    const fetch = vi
-      .fn<StructuredDecisionFetch>()
-      .mockResolvedValueOnce(makeResponse({ error: 'busy' }, 529))
-      .mockResolvedValueOnce(makeResponse(makeOpenRouterBody()))
-    const client = createStructuredDecisionClient({
-      transport: 'openrouter',
-      apiKey: 'test-key',
-      fetch,
-      sleep: async () => undefined,
-    })
-    await client.decide(request)
-    expect(fetch).toHaveBeenCalledTimes(2)
-    expect(fetch.mock.calls[0]?.[0]).toBe('https://openrouter.ai/api/alpha/decisions')
-    expect(fetch.mock.calls[1]?.[0]).toBe('https://openrouter.ai/api/alpha/decisions')
-  })
-
-  it('does not retry invalid successful responses or ordinary 4xx responses', async () => {
+  it('makes exactly one attempt for invalid successful responses and ordinary 4xx responses', async () => {
     const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(makeResponse({ answers: [] }))
     const client = createStructuredDecisionClient({
       transport: 'openrouter',
       apiKey: 'test-key',
       fetch,
-      sleep: async () => undefined,
     })
     await expect(client.decide(request)).rejects.toMatchObject({ code: 'invalid-response' })
     expect(fetch).toHaveBeenCalledOnce()
@@ -281,7 +260,6 @@ describe('createStructuredDecisionClient', () => {
       transport: 'openrouter',
       apiKey: 'test-key',
       fetch,
-      sleep: async () => undefined,
     })
     await expect(client.decide({ state: '', questions: [] })).rejects.toMatchObject({
       code: 'invalid-request',

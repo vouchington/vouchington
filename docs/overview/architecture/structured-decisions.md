@@ -14,14 +14,17 @@ flowchart LR
   Decode --> Result[Typed results, native answers, and raw envelope]
 ```
 
-Callers explicitly select one transport. Retries repeat the same Jev model on that transport only;
-the client never changes provider or model after an ambiguous attempt. Every returned answer must
+Callers explicitly select one transport. The client makes exactly one attempt per call and never
+retries; optional `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks let a caller
+record billed usage and enforce a spend cap without this module ever importing a billing service
+itself. Every returned answer must
 match one requested ID and primitive, use valid probabilities, and completely cover the request.
 Partial, malformed, duplicate, unknown, and non-normalized results reject as a whole.
 Each normalized answer also retains its validated native provider fragment so the classifier layer
 can persist one auditable response per candidate without copying the entire response envelope.
 
-The deterministic test suite owns request validation, provider decoding, and retry behavior. One
+The deterministic test suite owns request validation, provider decoding, and ambiguous-billed-attempt
+classification. One
 credentialed OpenRouter test verifies the native contract using all three primitives. The opt-in
 benchmark uses a bounded candidate-count sweep and repeated fixed anchor to record success or
 failure, probability drift, latency, usage, and deterministic cost comparisons in a private local
@@ -83,8 +86,9 @@ limit. OpenRouter requests use its advertised 32,000-token model context. Questi
 and packed by deterministic first fit in input order; a single question that cannot fit fails before
 any provider request.
 
-Shards execute sequentially through one supplied C1 client, which retains ownership of same-route
-retry behavior. Every answer must map back to exactly one requested question and every bound
+Shards execute sequentially through one supplied C1 client, which makes exactly one attempt per
+shard and never retries a same-route call. Every answer must map back to exactly one requested
+question and every bound
 candidate must appear exactly once across the batch. Provider calls finish before persistence begins.
 The caller supplies the prompt version it rendered; execution rejects if that version is no longer
 the classifier's active prompt before any provider call. Topic classifiers accept either a post or

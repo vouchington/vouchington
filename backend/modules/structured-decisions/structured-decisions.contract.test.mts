@@ -42,7 +42,6 @@ describe('structured-decision transport contracts', () => {
       transport: 'typesafe',
       apiKey: 'test-key',
       fetch: vi.fn<StructuredDecisionFetch>().mockResolvedValue(response(body)),
-      sleep: async () => undefined,
     }).decide(request)
 
     expect(result.answers).toMatchObject([
@@ -68,7 +67,6 @@ describe('structured-decision transport contracts', () => {
       transport: 'typesafe',
       apiKey: 'test-key',
       fetch,
-      sleep: async () => undefined,
     }).decide(request)
 
     expect(result.provider).toBe('TypeSafe')
@@ -90,7 +88,6 @@ describe('structured-decision transport contracts', () => {
       transport: 'openrouter',
       apiKey: 'test-key',
       fetch,
-      sleep: async () => undefined,
     }).decide(request)
     expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body)).provider).toEqual({
       only: ['TypeSafe'],
@@ -141,7 +138,6 @@ describe('structured-decision transport contracts', () => {
       transport: 'openrouter',
       apiKey: 'test-key',
       fetch,
-      sleep: async () => undefined,
     })
     await expect(client.decide(scoreRequest)).resolves.toMatchObject({ answers: [{ score: 1.5 }] })
     fetch.mockResolvedValue(response({ ...success, answers: { score: { ...score, score: 2.1 } } }))

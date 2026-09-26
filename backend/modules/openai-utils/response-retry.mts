@@ -4,7 +4,11 @@ import type {
   ResponseCreateParamsStreaming,
   ResponseStreamEvent,
 } from 'openai/resources/responses/responses'
-import { getHeaderValue, getRetryAfterDurationMs } from '@modules/utils'
+import {
+  getHeaderValue,
+  getRetryAfterDurationMs,
+  isAmbiguousBilledHttpStatus,
+} from '@modules/utils'
 import openai from './client.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import { isOpenAIFlexResourceUnavailableError } from './rate-limit.mts'
@@ -101,5 +105,5 @@ function isUnknownBilledOpenAIResponseAttempt(error: unknown): boolean {
   if (isExplicitClientCancelError(error)) return false
   if (error instanceof APIConnectionError) return true
   if (!(error instanceof APIError)) return false
-  return error.status === 408 || error.status === 409 || error.status === 429 || error.status >= 500
+  return isAmbiguousBilledHttpStatus(error.status)
 }

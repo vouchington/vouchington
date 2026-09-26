@@ -26,6 +26,7 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/conversations-messages": "workspace:^",
@@ -34,13 +35,16 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/tools": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {
+    "@data-stores/valkey": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.0"
   }
 }

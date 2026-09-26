@@ -1,19 +1,19 @@
-import { getRetryAfterDurationMs, isNetworkError } from '@modules/utils/http'
+import { isAmbiguousBilledHttpStatus, isNetworkError } from '@modules/utils/http'
 import type { Response } from 'undici'
 import { decodeResult } from './decode.mts'
 import { createTransportRequest, fetchStructuredDecisionProvider } from './transport.mts'
 import {
   StructuredDecisionError,
   type CreateStructuredDecisionClientOptions,
+  type StructuredDecisionAttemptHooks,
   type StructuredDecisionClient,
   type StructuredDecisionFetch,
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
-  type StructuredDecisionSleep,
+  type StructuredDecisionUsage,
 } from './types.mts'
 import { validateRequest } from './validation.mts'
 
-const MAX_ATTEMPTS = 3
 export function createStructuredDecisionClient(
   options: CreateStructuredDecisionClientOptions,
 ): StructuredDecisionClient {
@@ -23,55 +23,55 @@ export function createStructuredDecisionClient(
       'A structured-decision API key is required.',
     )
   const fetch = options.fetch ?? fetchStructuredDecisionProvider
-  const sleep = options.sleep ?? sleepWithAbort
   return {
     decide: async (request, signal) => {
       validateRequest(request)
       throwIfAborted(signal)
       const dispatch = createTransportRequest(options.transport, options.apiKey, request)
+      const requestStartedAt = new Date()
+      // The client makes exactly one attempt, so this is the only chance to recheck a billing
+      // precondition (e.g. the daily spend cap) close to the physical request.
+      await options.hooks?.beforeAttempt?.({ requestStartedAt })
+      throwIfAborted(signal)
       return attemptDecision({
-        attempt: 1,
         dispatch,
         fetch,
+        hooks: options.hooks,
         request,
+        requestStartedAt,
         signal,
-        sleep,
         transport: options.transport,
       })
     },
   }
 }
+
 type AttemptOptions = {
-  attempt: number
   dispatch: ReturnType<typeof createTransportRequest>
   fetch: StructuredDecisionFetch
+  hooks: StructuredDecisionAttemptHooks | undefined
   request: StructuredDecisionRequest
+  requestStartedAt: Date
   signal?: AbortSignal
-  sleep: StructuredDecisionSleep
   transport: CreateStructuredDecisionClientOptions['transport']
 }
+
 async function attemptDecision(options: AttemptOptions): Promise<StructuredDecisionResult> {
+  let response: Response
   try {
-    const response = await options.fetch(options.dispatch.url, {
+    response = await options.fetch(options.dispatch.url, {
       method: 'POST',
       headers: options.dispatch.headers,
       body: JSON.stringify(options.dispatch.body),
       signal: options.signal,
     })
-    if (!response.ok) return retryResponse(response, options)
-    return decodeResult(
-      await readJson(response),
-      options.request,
-      options.transport,
-      options.dispatch.provider,
-    )
   } catch (error) {
-    if (error instanceof StructuredDecisionError) throw error
+    // Checked before classifying the error as ambiguous: `AbortSignal.timeout`'s abort surfaces
+    // as a `DOMException` named `TimeoutError`, which `isNetworkError` also treats as a network
+    // failure -- without this ordering, every caller-driven timeout/cancellation would latch an
+    // uncertainty record it never actually caused.
     throwIfAborted(options.signal)
-    if (isNetworkError(error) && options.attempt < MAX_ATTEMPTS) {
-      await options.sleep(100 * 2 ** (options.attempt - 1), options.signal)
-      return attemptDecision({ ...options, attempt: options.attempt + 1 })
-    }
+    if (isNetworkError(error)) await latchUnknownBilledAttempt(options, error)
     throw new StructuredDecisionError(
       'provider-error',
       'Structured-decision transport failed.',
@@ -79,26 +79,33 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
       { cause: error },
     )
   }
+  if (!response.ok) return rejectResponse(response, options)
+  return decodeBilledResponse(response, options)
 }
-async function retryResponse(
-  response: Response,
-  options: AttemptOptions,
-): Promise<StructuredDecisionResult> {
+
+async function rejectResponse(response: Response, options: AttemptOptions): Promise<never> {
   const error = new StructuredDecisionError(
     'provider-error',
     `Structured-decision provider returned HTTP ${response.status}.`,
     response.status,
   )
   await cancelBody(response)
-  if (!isRetryableStatus(response.status) || options.attempt >= MAX_ATTEMPTS) throw error
-  await options.sleep(retryAfterMs(response), options.signal)
-  return attemptDecision({ ...options, attempt: options.attempt + 1 })
+  if (isAmbiguousBilledHttpStatus(response.status)) await latchUnknownBilledAttempt(options, error)
+  throw error
 }
-async function readJson(response: Response): Promise<unknown> {
+
+async function decodeBilledResponse(
+  response: Response,
+  options: AttemptOptions,
+): Promise<StructuredDecisionResult> {
+  let raw: unknown
   try {
-    return await response.json()
+    raw = await response.json()
   } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error
+    // Any failure reading/parsing the body of a 2xx response is ambiguous, not just a
+    // `SyntaxError` -- a truncated stream throws a plain connection error from `.json()` too, and
+    // it is exactly as billing-ambiguous as malformed JSON.
+    await latchUnknownBilledAttempt(options, error)
     throw new StructuredDecisionError(
       'invalid-response',
       'Provider returned malformed JSON.',
@@ -106,13 +113,61 @@ async function readJson(response: Response): Promise<unknown> {
       { cause: error },
     )
   }
+  // Usage is only validated/reported when a caller actually wants billing recorded: a caller
+  // that passes no `onBilledResponse` hook keeps the old lenient behavior (decode proceeds even
+  // if `usage` is absent or malformed), since nothing downstream depends on it in that case.
+  if (options.hooks?.onBilledResponse) {
+    const usage = parseBilledUsage(raw)
+    if (!usage) {
+      const error = new StructuredDecisionError(
+        'invalid-response',
+        'Provider response did not contain readable usage.',
+      )
+      await latchUnknownBilledAttempt(options, error)
+      throw error
+    }
+    await options.hooks.onBilledResponse({
+      id: record(raw) ? raw.id : undefined,
+      model: record(raw) ? raw.model : undefined,
+      usage,
+      requestStartedAt: options.requestStartedAt,
+    })
+  }
+  return decodeResult(raw, options.request, options.transport, options.dispatch.provider)
 }
-function isRetryableStatus(status: number): boolean {
-  return status === 429 || status === 529 || status >= 500
+
+async function latchUnknownBilledAttempt(options: AttemptOptions, error: unknown): Promise<void> {
+  await options.hooks?.onUnknownBilledAttempt?.({
+    requestStartedAt: options.requestStartedAt,
+    error,
+  })
 }
-function retryAfterMs(response: Response): number {
-  return Math.min(getRetryAfterDurationMs(response.headers.get('retry-after')) ?? 100, 5_000)
+
+// Only `input_tokens`/`output_tokens` gate whether a 2xx is trustworthy enough to record --
+// `cost` is passed through unchecked (including when absent or the wrong type): a missing or
+// malformed cost is a pricing-fallback concern for the ledger writer
+// (`getExplicitCostMicrounits`/`calcCostMicrounits`, `@services/ai-usage/record.mts`), which
+// already fails closed to an unpriced row rather than something this transport-level boundary
+// should reclassify as an uncertain-billing failure.
+function parseBilledUsage(raw: unknown): StructuredDecisionUsage | null {
+  if (!record(raw) || !record(raw.usage)) return null
+  const { input_tokens, output_tokens, cost } = raw.usage
+  if (!isFiniteNonNegative(input_tokens) || !isFiniteNonNegative(output_tokens)) return null
+  return {
+    input_tokens,
+    output_tokens,
+    ...(typeof cost === 'number' ? { cost } : {}),
+  }
 }
+
+function isFiniteNonNegative(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 async function cancelBody(response: Response): Promise<void> {
   try {
     await response.body?.cancel()
@@ -120,22 +175,7 @@ async function cancelBody(response: Response): Promise<void> {
     // Best-effort connection cleanup must not replace the provider outcome.
   }
 }
-async function sleepWithAbort(durationMs: number, signal?: AbortSignal): Promise<void> {
-  throwIfAborted(signal)
-  await new Promise<void>((resolve, reject) => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const onAbort = () => {
-      if (timer) clearTimeout(timer)
-      signal?.removeEventListener('abort', onAbort)
-      reject(signal?.reason)
-    }
-    timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort)
-      resolve()
-    }, durationMs)
-    signal?.addEventListener('abort', onAbort, { once: true })
-  })
-}
+
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw signal.reason
 }

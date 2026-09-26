@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { AGENT_PRIORITY, AI_AGENTS_QUEUE_NAME } from './config.mts'
+import { AGENT_PRIORITY, AI_AGENTS_QUEUE_NAME, AI_AGENT_JOB_PRODUCES_SPEND } from './config.mts'
 
 describe('config', () => {
   it('chat has highest priority (lowest number)', () => {
@@ -25,5 +25,10 @@ describe('config', () => {
       expect(typeof p).toBe('number')
       expect(p).toBeGreaterThan(0)
     }
+  })
+
+  it('the worker gate treats both autotagger jobs as spend-producing again (#616)', () => {
+    expect(AI_AGENT_JOB_PRODUCES_SPEND['autotagger-post']).toBe(true)
+    expect(AI_AGENT_JOB_PRODUCES_SPEND['autotagger-rss-feed-item']).toBe(true)
   })
 })

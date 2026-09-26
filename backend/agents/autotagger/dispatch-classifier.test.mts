@@ -217,4 +217,21 @@ describe('dispatchAutotaggerClassifier', () => {
     expect(attempts.map(attempt => attempt.outcome)).toEqual(['expired', null])
     expect(attempts[1]?.completed_at).not.toBeNull()
   })
+
+  it('builds the structured-decision client with the C6 billing hooks wired (issue #616)', async () => {
+    const { subject, state, candidates, topics } = await buildDispatchFixture(1)
+    const topic = topics[0]!
+    const fake = createFakeStructuredDecisionClient({ [topic.id]: 0.95 })
+
+    await dispatchAutotaggerClassifier(
+      { subject, state, candidates, maxCandidates: candidates.length },
+      { createClient: fake.createClient },
+    )
+
+    expect(fake.createClient).toHaveBeenCalledOnce()
+    const options = fake.createClient.mock.calls[0]?.[0]
+    expect(options?.hooks?.beforeAttempt).toBeTypeOf('function')
+    expect(options?.hooks?.onBilledResponse).toBeTypeOf('function')
+    expect(options?.hooks?.onUnknownBilledAttempt).toBeTypeOf('function')
+  })
 })
