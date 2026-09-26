@@ -8,7 +8,7 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
-import { assertWorkflowInvariant } from './workflow-test-helpers.mts'
+import { assertWorkflowInvariant } from '../test-helpers/workflow-test-helpers.mts'
 
 type CiWorkflow = {
   jobs?: Record<

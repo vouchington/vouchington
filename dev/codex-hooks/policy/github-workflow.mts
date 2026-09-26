@@ -19,6 +19,7 @@ import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
+import { githubPrBodyDecision } from './github-workflow-pr-body.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
@@ -52,89 +53,16 @@ export function findGitHubWorkflowBlock(
       const invocationCwd = commandCwd(tokens, index, cwd)
       const contentRulesApply = !exemptFromContentRules(invocation, index, invocationCwd)
 
-      if (
-        contentRulesApply &&
-        area === 'pr' &&
-        (action === 'create' || action === 'new' || action === 'edit')
-      ) {
-        const ghOptions = parseGhOptions(invocation.optionTokens)
-        if ((action === 'create' || action === 'new') && !ghOptions.draft) {
-          return {
-            reason:
-              'New PRs must be opened as draft first. Use --draft or `node dev/pr-description.mts create ...`.',
-          }
-        }
-        const repo = effectiveGhRepo(ghOptions.repo.at(-1), prefix.env)
-        const baseBlock = findHandRolledStackBaseBlock(
-          action,
-          invocation.optionTokens,
-          invocationCwd,
-        )
-        if (baseBlock !== null) {
-          return baseBlock
-        }
-        if (ghOptions.body.length === 0 && ghOptions.bodyFile.length === 0) {
-          continue
-        }
-        if (ghBodyIsOpaqueToHook(ghOptions)) {
-          continue
-        }
-        if (
-          invocationCwd === undefined &&
-          ghOptions.body.length === 0 &&
-          ghOptions.bodyFile.length > 0
-        ) {
-          continue
-        }
-
-        const body = ghBodyFromOptions(ghOptions, invocationCwd ?? cwd)
-        if (body === null) {
-          // The hook could not resolve or read the body file (e.g. $TMPDIR differs between the
-          // hook process and the agent sandbox, an env var is unset, or the cwd is wrong).
-          // The file may still exist and be valid when gh runs — fail-open rather than emit a
-          // misleading "no closing keyword" block. Same treatment as stdin (bodyFile === '-')
-          // and inline $(cmd) bodies that are already marked opaque by ghBodyIsOpaqueToHook.
-          continue
-        }
-        // The hook enforces draft-first creation and the closing-keyword or scheduled no-source
-        // requirement; the full set of PR body rules (## Related issues heading, Workspace setup:
-        // line, etc.) lives in dev/pr-description/validate.mts. Keep both in sync when changing
-        // PR body policy.
-        if (
-          !hasClosingIssueReference(body) &&
-          !isScheduledPromptNoSourceBody(body) &&
-          !isFixMainInterimClassifierNoClosingRefBody(body)
-        ) {
-          return {
-            reason:
-              'PR bodies must include at least one GitHub closing keyword such as "Closes #123" for resolved issues, or the exact scheduled-prompt no-source representation, or the exact Fix Main interim-classifier no-closing-ref representation alongside a Refs entry.',
-          }
-        }
-        const escapeCommentLeaks = findEscapeCommentClosingKeywordLeaks(body)
-        if (escapeCommentLeaks.length > 0) {
-          return { reason: escapeCommentLeaks[0] }
-        }
-        const canResolveClosingIssueReferences = invocationCwd !== undefined || repo !== undefined
-        const unresolvableExceptionBlock = findUnresolvableFixMainExceptionBlock(
-          body,
-          canResolveClosingIssueReferences,
-          options.validateClosingIssueReferences === true,
-        )
-        if (unresolvableExceptionBlock !== null) {
-          return unresolvableExceptionBlock
-        }
-        if (canResolveClosingIssueReferences) {
-          const issueRefBlock = findClosingIssueReferenceBlock(
-            body,
-            invocationCwd ?? cwd,
-            options,
-            { env: prefix.env, repo },
-          )
-          if (issueRefBlock !== null) {
-            return issueRefBlock
-          }
-        }
-      }
+      const prBodyDecision = githubPrBodyDecision({
+        contentRulesApply,
+        cwd,
+        invocation,
+        invocationCwd,
+        options,
+        prefix,
+      })
+      if (prBodyDecision === 'skip') continue
+      if (prBodyDecision !== 'fallthrough') return prBodyDecision
 
       const stackBlock = findGitHubStackWorkflowBlock(invocation, options, {
         command,

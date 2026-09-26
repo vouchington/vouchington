@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { parsedDependabot } from '../.github/workflows/fix-dependabot.test-helpers.mts'
-import { parsedMain } from '../.github/workflows/fix-main.test-helpers.mts'
+import { parsedDependabot } from '../.github/test-helpers/fix-dependabot.test-helpers.mts'
+import { parsedMain } from '../.github/test-helpers/fix-main.test-helpers.mts'
 import { MAX_SOURCE_RUN_AGE_MS } from './source-run-assessment.mts'
 import { SOURCE_RUN_GUARD_JOB_NAMES, SOURCE_RUN_GUARD_SHELL } from './source-run-guard-shell.mts'
 import {

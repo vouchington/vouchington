@@ -2,7 +2,7 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { SOURCE_RUN_GUARD_JOB_NAMES } from '../../ci/source-run-guard-shell.mts'
-import { fixMain, parsedDispatch, parsedMain } from './fix-main.test-helpers.mts'
+import { fixMain, parsedDispatch, parsedMain } from '../test-helpers/fix-main.test-helpers.mts'
 
 const NO_CHECKOUT_SOURCE_STATE_JOBS = SOURCE_RUN_GUARD_JOB_NAMES
 

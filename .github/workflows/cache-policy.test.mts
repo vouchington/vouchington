@@ -8,8 +8,8 @@ import {
   runsPnpmInstall,
   workflowYamlPaths as yamlPaths,
   type PolicyStep as CacheStep,
-} from './pnpm-policy.test-helpers.mts'
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+} from '../test-helpers/pnpm-policy.test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 type CacheWorkflow = {
   jobs?: Record<

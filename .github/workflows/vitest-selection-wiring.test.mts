@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { assertWorkflowInvariant } from './workflow-test-helpers.mts'
+import { assertWorkflowInvariant } from '../test-helpers/workflow-test-helpers.mts'
 
 type Step = {
   name?: string

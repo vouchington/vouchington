@@ -2,7 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { assertNoWorkflowViolations, type WorkflowStep } from './workflow-test-helpers.mts'
+import {
+  assertNoWorkflowViolations,
+  type WorkflowStep,
+} from '../test-helpers/workflow-test-helpers.mts'
 
 type CacheStep = WorkflowStep & { with?: Record<string, unknown> }
 type CacheDocument = {

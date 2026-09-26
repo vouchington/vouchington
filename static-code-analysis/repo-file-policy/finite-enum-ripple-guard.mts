@@ -1,3 +1,4 @@
+import { checkTopicTypes, checkPostTypes } from './finite-enum-ripple-types.mts'
 // oxlint-disable max-lines -- enum ripple guard keeps related cross-surface checks together.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -30,342 +31,6 @@ export function checkFiniteEnumRippleGuard(
   checkPostTypes(errors, files, readTracked)
 }
 
-function checkTopicTypes(
-  errors: string[],
-  files: FiniteEnumFiles,
-  readTracked: ReadTrackedFile,
-): void {
-  const backendTopicsPath = 'backend/types/entities/topic.mts'
-  const webTopicsPath = 'web/types/topics.ts'
-  const routeConfigsPath = 'web/lib/route-configs.ts'
-  if (!hasAllFiles(files, [backendTopicsPath, webTopicsPath])) return
-
-  const backendEntries = parseTopicTypeEntries(readTracked(backendTopicsPath), backendTopicsPath)
-  const webEntries = parseTopicTypeEntries(readTracked(webTopicsPath), webTopicsPath)
-
-  const backendSlugByValue = new Map(backendEntries.map(entry => [entry.value, entry.slug]))
-  const backendSlugPluralByValue = new Map(
-    backendEntries.map(entry => [entry.value, entry.slugPlural]),
-  )
-  for (const webEntry of webEntries) {
-    const backendSlug = backendSlugByValue.get(webEntry.value)
-    if (backendSlug && backendSlug !== webEntry.slug) {
-      errors.push(
-        finiteEnumError(
-          webTopicsPath,
-          `topicTypes.${webEntry.value}.slug is "${webEntry.slug}" but ${backendTopicsPath} uses "${backendSlug}"`,
-        ),
-      )
-    }
-    const backendSlugPlural = backendSlugPluralByValue.get(webEntry.value)
-    if (backendSlugPlural && backendSlugPlural !== webEntry.slugPlural) {
-      errors.push(
-        finiteEnumError(
-          webTopicsPath,
-          `topicTypes.${webEntry.value}.slugPlural is "${webEntry.slugPlural}" but ${backendTopicsPath} uses "${backendSlugPlural}"`,
-        ),
-      )
-    }
-  }
-
-  const topRouteSlugs = routePageSlugs(files.topicDetailPages, true)
-  const routeSlugs = routePageSlugs(files.topicDetailPages)
-  compareSets(errors, {
-    label: 'topic route directories',
-    actualLabel: 'web/app/(topics)/*/[id]/page routed files',
-    actualValues: topRouteSlugs,
-    expectedLabel: `${backendTopicsPath} topicTypes slugs`,
-    expectedValues: backendEntries.map(entry => entry.slug),
-  })
-  compareSets(errors, {
-    label: 'topic routed pages',
-    actualLabel: 'web/app/(topics)/*/[id] routed files',
-    actualValues: routeSlugs,
-    expectedLabel: `${backendTopicsPath} topicTypes slugs`,
-    expectedValues: backendEntries.map(entry => entry.slug),
-  })
-
-  if (hasAllFiles(files, [routeConfigsPath])) {
-    const routeConfigContent = readTracked(routeConfigsPath)
-    if (routeConfigContent.includes('topicRouteConfigs')) {
-      const routeConfigs = parseTopicRouteConfigEntries(routeConfigContent, routeConfigsPath)
-      const slugPluralByValue = new Map(
-        backendEntries.map(entry => [entry.value, entry.slugPlural]),
-      )
-      const valueBySlug = new Map(backendEntries.map(entry => [entry.slug, entry.value]))
-      const typedRouteConfigs = routeConfigs.map(config => ({
-        ...config,
-        inferredTopicType: valueBySlug.get(config.singularPath),
-      }))
-      for (const config of typedRouteConfigs) {
-        if (
-          config.topicTypes.length > 0 ||
-          config.spendingCategory ||
-          !config.inferredTopicType ||
-          config.key === 'topics'
-        ) {
-          continue
-        }
-        errors.push(
-          finiteEnumError(
-            routeConfigsPath,
-            `topicRouteConfigs.${config.key} has singularPath "${config.singularPath}" but does not declare topicTypes`,
-          ),
-        )
-      }
-      const enumRouteConfigs = typedRouteConfigs.filter(config => config.topicTypes.length > 0)
-      for (const config of routeConfigs) {
-        if (config.key === config.pluralPath) continue
-        errors.push(
-          finiteEnumError(
-            routeConfigsPath,
-            `topicRouteConfigs.${config.key} has pluralPath "${config.pluralPath}" but the route config key is "${config.key}"`,
-          ),
-        )
-      }
-      for (const config of enumRouteConfigs) {
-        const topicType = config.topicTypes[0]
-        const expectedSlug = topicType ? backendSlugByValue.get(topicType) : undefined
-        const expectedSlugPlural = topicType ? slugPluralByValue.get(topicType) : undefined
-        if (
-          config.topicTypes.length === 1 &&
-          config.singularPath === expectedSlug &&
-          config.pluralPath === expectedSlugPlural
-        ) {
-          continue
-        }
-        errors.push(
-          finiteEnumError(
-            routeConfigsPath,
-            `topicRouteConfigs.${config.key} maps singularPath "${config.singularPath}" and pluralPath "${config.pluralPath}" to [${config.topicTypes.join(', ')}] but topicTypes expects "${expectedSlug ?? 'missing'}" and "${expectedSlugPlural ?? 'missing'}"`,
-          ),
-        )
-      }
-      compareSets(errors, {
-        label: 'topic route config values',
-        actualLabel: `${routeConfigsPath} topicRouteConfigs`,
-        actualValues: enumRouteConfigs.flatMap(config => config.topicTypes),
-        expectedLabel: backendTopicsPath,
-        expectedValues: enumRouteConfigs.flatMap(config =>
-          config.topicTypes.filter(value => slugPluralByValue.has(value)),
-        ),
-      })
-      compareSets(errors, {
-        label: 'topic collection route config paths',
-        actualLabel: `${routeConfigsPath} topicRouteConfigs`,
-        actualValues: enumRouteConfigs.map(config => config.pluralPath),
-        expectedLabel: `${backendTopicsPath} topicTypes slugPlural`,
-        expectedValues: enumRouteConfigs.flatMap(config => {
-          const slugPlural = config.topicTypes[0]
-            ? slugPluralByValue.get(config.topicTypes[0])
-            : undefined
-          return slugPlural ? [slugPlural] : []
-        }),
-      })
-      compareSets(errors, {
-        label: 'topic top-level collection route directories',
-        actualLabel: 'web/app/(topics)/* collection pages',
-        actualValues: routePageSlugs(files.topicCollectionPages, true),
-        expectedLabel: `${routeConfigsPath} topicRouteConfigs pluralPath`,
-        expectedValues: routeConfigs.map(config => config.pluralPath),
-      })
-      compareSets(errors, {
-        label: 'topic collection routed pages',
-        actualLabel: 'web/app/(topics)/* collection routed pages',
-        actualValues: uniqueSorted(files.topicCollectionPages.map(page => page.slug)),
-        expectedLabel: `${routeConfigsPath} topicRouteConfigs pluralPath`,
-        expectedValues: routeConfigs.map(config => config.pluralPath),
-      })
-      checkCollectionPagePathLiterals(
-        files.topicCollectionPages,
-        errors,
-        'topics',
-        new Set(routeConfigs.map(config => config.pluralPath)),
-        readTracked,
-      )
-      checkTopicCollectionComponentPathLiterals(
-        errors,
-        routeConfigs,
-        files.topicComponentFiles,
-        readTracked,
-      )
-    }
-  }
-
-  for (const page of files.topicDetailPages) {
-    for (const args of parseTopicRouteFactoryArgs(readTracked(page.file), page.file)) {
-      if (page.slug === args.slug) continue
-      errors.push(
-        finiteEnumError(
-          page.file,
-          `topic route factory slug mismatch; route directory is "${page.slug}" but factory uses "${args.slug}"`,
-        ),
-      )
-    }
-  }
-}
-
-function checkPostTypes(
-  errors: string[],
-  files: FiniteEnumFiles,
-  readTracked: ReadTrackedFile,
-): void {
-  const postTypesPath = 'backend/types/entities/post.mts'
-  const routeConfigsPath = 'web/lib/route-configs.ts'
-  if (!hasAllFiles(files, [postTypesPath, routeConfigsPath])) return
-
-  const postTypes = parsePostTypeUnion(readTracked(postTypesPath), postTypesPath)
-  const publicPostTypes = postTypes.filter(value => !INTERNAL_POST_TYPES.has(value))
-  const routeConfigContent = readTracked(routeConfigsPath)
-  const slugToType = parsePostSlugToType(routeConfigContent, routeConfigsPath)
-  const topRouteSlugs = routePageSlugs(files.postDetailPages, true)
-  const routeSlugs = routePageSlugs(files.postDetailPages)
-
-  compareSets(errors, {
-    label: 'public post route config values',
-    actualLabel: `${routeConfigsPath} postSlugToType`,
-    actualValues: [...slugToType.values()],
-    expectedLabel: `${postTypesPath} public PostType values`,
-    expectedValues: publicPostTypes,
-  })
-  compareSets(errors, {
-    label: 'public post route directories',
-    actualLabel: 'web/app/(posts)/*/[id]/page routed files',
-    actualValues: topRouteSlugs,
-    expectedLabel: `${routeConfigsPath} postSlugToType slugs`,
-    expectedValues: [...slugToType.keys()],
-  })
-  compareSets(errors, {
-    label: 'public post routed pages',
-    actualLabel: 'web/app/(posts)/*/[id] routed files',
-    actualValues: routeSlugs,
-    expectedLabel: `${routeConfigsPath} postSlugToType slugs`,
-    expectedValues: [...slugToType.keys()],
-  })
-
-  if (routeConfigContent.includes('postRouteConfigs')) {
-    const routeConfigs = parsePostRouteConfigEntries(routeConfigContent, routeConfigsPath)
-    const typedRouteConfigs = routeConfigs.filter(config => config.postTypes.length > 0)
-    for (const config of routeConfigs) {
-      if (config.postTypes.length > 0 || config.key === 'posts') continue
-      errors.push(
-        finiteEnumError(
-          routeConfigsPath,
-          `postRouteConfigs.${config.key} has singularPath "${config.singularPath}" but does not declare postTypes`,
-        ),
-      )
-    }
-    for (const config of routeConfigs) {
-      if (config.key === config.pluralPath) continue
-      errors.push(
-        finiteEnumError(
-          routeConfigsPath,
-          `postRouteConfigs.${config.key} has pluralPath "${config.pluralPath}" but the route config key is "${config.key}"`,
-        ),
-      )
-    }
-    compareSets(errors, {
-      label: 'public post collection route config values',
-      actualLabel: `${routeConfigsPath} postRouteConfigs`,
-      actualValues: typedRouteConfigs.flatMap(config => config.postTypes),
-      expectedLabel: `${postTypesPath} public PostType values`,
-      expectedValues: publicPostTypes,
-    })
-    compareSets(errors, {
-      label: 'public post collection route config singular paths',
-      actualLabel: `${routeConfigsPath} postRouteConfigs`,
-      actualValues: typedRouteConfigs.map(config => config.singularPath),
-      expectedLabel: `${routeConfigsPath} postSlugToType slugs`,
-      expectedValues: [...slugToType.keys()],
-    })
-    for (const config of typedRouteConfigs) {
-      const expectedType = slugToType.get(config.singularPath)
-      if (expectedType && config.postTypes.length === 1 && config.postTypes[0] === expectedType) {
-        continue
-      }
-      errors.push(
-        finiteEnumError(
-          routeConfigsPath,
-          `postRouteConfigs.${config.key} maps singularPath "${config.singularPath}" to [${config.postTypes.join(', ')}] but postSlugToType expects "${expectedType ?? 'missing'}"`,
-        ),
-      )
-    }
-    compareSets(errors, {
-      label: 'public post top-level collection route directories',
-      actualLabel: 'web/app/(posts)/* collection pages',
-      actualValues: routePageSlugs(files.postCollectionPages, true),
-      expectedLabel: `${routeConfigsPath} postRouteConfigs pluralPath`,
-      expectedValues: routeConfigs.map(config => config.pluralPath),
-    })
-    compareSets(errors, {
-      label: 'public post collection routed pages',
-      actualLabel: 'web/app/(posts)/* collection routed pages',
-      actualValues: uniqueSorted(files.postCollectionPages.map(page => page.slug)),
-      expectedLabel: `${routeConfigsPath} postRouteConfigs pluralPath`,
-      expectedValues: routeConfigs.map(config => config.pluralPath),
-    })
-    checkPostCreatePageTypes(errors, typedRouteConfigs, files.postCreatePages, readTracked)
-    checkCollectionPagePathLiterals(
-      files.postCollectionPages,
-      errors,
-      'posts',
-      new Set(typedRouteConfigs.map(config => config.pluralPath)),
-      readTracked,
-    )
-  }
-
-  const detailFactoryArgs = files.postDetailPages.flatMap(page =>
-    parsePostDetailRouteFactoryArgs(readTracked(page.file), page.file).map(args => ({
-      ...args,
-      file: page.file,
-      routeSlug: page.slug,
-    })),
-  )
-  compareSets(errors, {
-    label: 'public post route factory slugs',
-    actualLabel: 'web/app/(posts)/*/[id] route factory calls',
-    actualValues: uniqueSorted(detailFactoryArgs.map(args => args.slug)),
-    expectedLabel: 'web/app/(posts)/*/[id] routed files',
-    expectedValues: routeSlugs,
-  })
-  compareSets(errors, {
-    label: 'public post route factory values',
-    actualLabel: 'web/app/(posts)/*/[id] route factory calls',
-    actualValues: uniqueSorted(detailFactoryArgs.map(args => args.postType)),
-    expectedLabel: `${routeConfigsPath} postSlugToType values`,
-    expectedValues: [...slugToType.values()],
-  })
-  for (const args of detailFactoryArgs) {
-    const expectedType = slugToType.get(args.routeSlug)
-    if (args.slug === args.routeSlug && expectedType === args.postType) continue
-    errors.push(
-      finiteEnumError(
-        args.file,
-        `post route factory args mismatch; route directory is "${args.routeSlug}" and expected type is "${expectedType ?? 'missing'}" but factory uses "${args.postType}", "${args.slug}"`,
-      ),
-    )
-  }
-}
-
-type ReadTrackedFile = (file: string) => string
-
-interface RoutedPage {
-  file: string
-  isTopLevel: boolean
-  slug: string
-}
-
-interface FiniteEnumFiles {
-  existingFileSet: ReadonlySet<string>
-  postCollectionPages: RoutedPage[]
-  postCreatePages: RoutedPage[]
-  postDetailPages: RoutedPage[]
-  topicCollectionPages: RoutedPage[]
-  topicComponentFiles: string[]
-  topicDetailPages: RoutedPage[]
-}
-
-/** Classifies the already-existing tracked inventory once for every enum ripple check. */
 export function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]): FiniteEnumFiles {
   const files: FiniteEnumFiles = {
     existingFileSet: new Set(existingTrackedFiles),
@@ -409,11 +74,11 @@ export function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]):
   return files
 }
 
-function hasAllFiles(files: FiniteEnumFiles, paths: readonly string[]): boolean {
+export function hasAllFiles(files: FiniteEnumFiles, paths: readonly string[]): boolean {
   return paths.every(file => files.existingFileSet.has(file))
 }
 
-function createTrackedFileReader(ctx: SharedContext): ReadTrackedFile {
+export function createTrackedFileReader(ctx: SharedContext): ReadTrackedFile {
   const contents = new Map<string, string>()
   return file => {
     const cached = contents.get(file)
@@ -424,7 +89,7 @@ function createTrackedFileReader(ctx: SharedContext): ReadTrackedFile {
   }
 }
 
-function collectionSlug(
+export function collectionSlug(
   file: string,
   group: 'posts' | 'topics',
 ): Omit<RoutedPage, 'file'> | undefined {
@@ -436,7 +101,7 @@ function collectionSlug(
   return { isTopLevel: parts.length === 2, slug: parts[0] }
 }
 
-function checkPostCreatePageTypes(
+export function checkPostCreatePageTypes(
   errors: string[],
   routeConfigs: { pluralPath: string; postTypes: string[] }[],
   pages: readonly RoutedPage[],
@@ -463,14 +128,14 @@ function checkPostCreatePageTypes(
   }
 }
 
-function collectPostCreateTypeLiterals(content: string): string[] {
+export function collectPostCreateTypeLiterals(content: string): string[] {
   return [
     ...content.matchAll(/\bpostType\s*=\s*['"]([^'"]+)['"]/g),
     ...content.matchAll(/\baction\s*:\s*['"]([^'"]+)['"]/g),
   ].map(item => item[1])
 }
 
-function checkCollectionPagePathLiterals(
+export function checkCollectionPagePathLiterals(
   pages: readonly RoutedPage[],
   errors: string[],
   group: 'posts' | 'topics',
@@ -495,7 +160,7 @@ function checkCollectionPagePathLiterals(
   }
 }
 
-function checkTopicCollectionComponentPathLiterals(
+export function checkTopicCollectionComponentPathLiterals(
   errors: string[],
   routeConfigs: { pluralPath: string; singularPath: string }[],
   componentFiles: readonly string[],
@@ -520,7 +185,7 @@ function checkTopicCollectionComponentPathLiterals(
   }
 }
 
-function collectNavigationPathLiterals(content: string): string[] {
+export function collectNavigationPathLiterals(content: string): string[] {
   const paths: string[] = []
   for (const match of content.matchAll(/\b(?:push|replace|redirect)\(\s*['"`]\/([^'"`$)}]+)/g)) {
     const literalPath = match[1]
@@ -529,7 +194,7 @@ function collectNavigationPathLiterals(content: string): string[] {
   return paths
 }
 
-function compareSets(
+export function compareSets(
   errors: string[],
   options: {
     label: string
@@ -571,11 +236,11 @@ function compareSets(
   errors.push(finiteEnumError(options.actualLabel, parts.join('; ')))
 }
 
-function uniqueSorted(values: readonly string[]): string[] {
+export function uniqueSorted(values: readonly string[]): string[] {
   return [...new Set(values)].toSorted()
 }
 
-function routePageSlugs(pages: readonly RoutedPage[], topOnly = false): string[] {
+export function routePageSlugs(pages: readonly RoutedPage[], topOnly = false): string[] {
   const slugs = new Set<string>()
   for (const page of pages) {
     if (!topOnly || page.isTopLevel) slugs.add(page.slug)
@@ -583,7 +248,7 @@ function routePageSlugs(pages: readonly RoutedPage[], topOnly = false): string[]
   return [...slugs].toSorted()
 }
 
-function duplicateValues(values: readonly string[]): string[] {
+export function duplicateValues(values: readonly string[]): string[] {
   const seen = new Set<string>()
   const duplicates = new Set<string>()
   for (const value of values) {
@@ -593,6 +258,8 @@ function duplicateValues(values: readonly string[]): string[] {
   return [...duplicates].toSorted()
 }
 
-function finiteEnumError(file: string, message: string): string {
+export function finiteEnumError(file: string, message: string): string {
   return `::error file=${file}::${file}: ${message}. Follow ${CHECKLIST}.`
 }
+
+export { checkTopicTypes, checkPostTypes }

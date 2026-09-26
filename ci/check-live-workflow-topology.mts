@@ -14,7 +14,7 @@ import {
   staleInventoryEntries,
 } from '../.github/workflows/workflow-secrets-policy.mts'
 import { unprovisionedSecretsWithoutReadinessStep } from '../.github/workflows/workflow-secrets-readiness.mts'
-import { assertNoWorkflowViolations } from '../.github/workflows/workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../.github/test-helpers/workflow-test-helpers.mts'
 import { evaluateWorkflowTopologyPolicy } from '../.github/workflows/workflow-topology-policy.mts'
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
 import { writeJobsInventoryDoc } from './render-workflow-runner-inventory.mts'

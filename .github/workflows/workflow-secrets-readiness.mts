@@ -3,6 +3,7 @@ import type { WorkflowJobNode, WorkflowStep, WorkflowTopology } from 'no-mistake
 import { SECRET_INVENTORY, type SecretInventoryEntry } from './workflow-secrets-inventory.mts'
 import { conditionEntails } from './workflow-condition-entailment.mts'
 import { referencingWorkflowsByName, workflowPathById } from './workflow-secrets-policy.mts'
+import { stripShellComments } from './workflow-secrets-comment.mts'
 
 /**
  * True when `workflowPath` is the callee of a `workflow_call` contract that declares
@@ -43,37 +44,6 @@ function workflowScopeReferencesSecret(
 ): boolean {
   const workflow = topology.workflows.find(candidate => candidate.path === workflowPath)
   return (workflow?.secretReferences ?? []).includes(secretName)
-}
-
-/**
- * `run` with comments blanked out — both whole comment lines and trailing inline comments (a `#`
- * starting a shell word, i.e. preceded by whitespace or line-start) — so a commented-out `exit 1`
- * can never satisfy the proximity check below, whether it sits alone on its own line or trails
- * real code like `echo missing # exit 1`. Preserves the character positions of everything else,
- * since `hasReadinessStep` below matches and slices this same string, not the original. Tracks
- * single/double quote state so a `#` inside a quoted string (`echo "a # b"`) is never treated as a
- * comment start; this is a pragmatic heuristic for the repo's simple readiness-check idiom, not a
- * full shell tokenizer.
- */
-function stripComments(run: string): string {
-  return run
-    .split('\n')
-    .map(line => {
-      let inSingleQuote = false
-      let inDoubleQuote = false
-      for (let index = 0; index < line.length; index += 1) {
-        const char = line[index]
-        if (char === "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote
-        else if (char === '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote
-        else if (char === '#' && !inSingleQuote && !inDoubleQuote) {
-          const previousChar = line[index - 1]
-          if (index === 0 || (previousChar !== undefined && /\s/.test(previousChar)))
-            return line.slice(0, index)
-        }
-      }
-      return line
-    })
-    .join('\n')
 }
 
 /**
@@ -118,7 +88,7 @@ function hasReadinessStep(
     }
     if (boundVarNames.length === 0) return false
 
-    const executable = stripComments(step.run ?? '')
+    const executable = stripShellComments(step.run ?? '')
     const guards = boundVarNames.some(varName => {
       const emptinessCheck = new RegExp(String.raw`-z\s+"?\$\{?${varName}\b[^"]*"?`)
       const match = emptinessCheck.exec(executable)

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 const TEST_ACTION_REF_LITERAL_RE =
   /(?:toContain|toEqual|toBe)\(\s*['"`][^'"`]*(?:uses:(?:\s+|\\s[+*]?))?(?<![@\w.-])[\w.-]+(?:\/[\w.-]+)+@(?:v\d+(?:\.\d+){0,2}|[0-9a-f]{40})\b/g

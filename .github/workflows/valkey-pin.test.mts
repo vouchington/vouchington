@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-import { assertWorkflowInvariant } from './workflow-test-helpers.mts'
+import { assertWorkflowInvariant } from '../test-helpers/workflow-test-helpers.mts'
 
 const WORKFLOW_VALKEY_FILES = [
   '.github/workflows/build-backend.yml',
