@@ -41,6 +41,7 @@ describe('Docs Publish workflow', () => {
     expect(workflow.on?.push?.paths).toEqual(
       expect.arrayContaining([
         'api-fixtures/v1/mcp.json',
+        'ci/render-docs-cli.mts',
         'ci/render-docs-page.mts',
         'ci/render-mcp-docs.mts',
         '.github/actions/**',

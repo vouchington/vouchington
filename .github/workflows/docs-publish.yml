@@ -7,6 +7,7 @@ on:
       - 'api-fixtures/v1/mcp.json'
       - 'api-fixtures/v1/openapi.json'
       - 'backend/data-stores/psql/schema-snapshot/**'
+      - 'ci/render-docs-cli.mts'
       - 'ci/render-docs-page.mts'
       - 'ci/render-mcp-docs.mts'
       - 'ci/render-psql-docs.mts'

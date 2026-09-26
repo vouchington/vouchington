@@ -3,6 +3,7 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runRenderDocsCli } from './render-docs-cli.mts'
 import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -118,26 +119,12 @@ export async function renderPsqlDocs({
   ])
 }
 
-function usage(): string {
-  return 'Usage: render-psql-docs.mts <output-dir>'
+export function main(argv: string[]): Promise<number> {
+  return runRenderDocsCli(argv, 'Usage: render-psql-docs.mts <output-dir>', outputDir =>
+    renderPsqlDocs({ outputDir }),
+  )
 }
 
-export async function main(argv: string[]): Promise<number> {
-  const [outputDir] = argv
-  if (!outputDir) {
-    console.error(usage())
-    return 2
-  }
-  try {
-    await renderPsqlDocs({ outputDir })
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error))
-    return 1
-  }
-  return 0
-}
-
-const invokedPath = process.argv[1]
-if (invokedPath !== undefined && fileURLToPath(import.meta.url) === resolve(invokedPath)) {
+if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)))
 }

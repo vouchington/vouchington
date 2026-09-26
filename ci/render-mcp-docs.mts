@@ -3,6 +3,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runRenderDocsCli } from './render-docs-cli.mts'
 import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -115,25 +116,15 @@ export async function renderMcpDocs({
   ])
 }
 
-export async function main(argv: string[]): Promise<number> {
-  const [outputDir] = argv
-  if (!outputDir) {
-    console.error('Usage: render-mcp-docs.mts <output-dir>')
-    return 2
-  }
-  try {
-    await renderMcpDocs({ outputDir })
-  } catch (error) {
-    console.error((error as Error).message)
-    return 1
-  }
-  return 0
+export function main(argv: string[]): Promise<number> {
+  return runRenderDocsCli(argv, 'Usage: render-mcp-docs.mts <output-dir>', outputDir =>
+    renderMcpDocs({ outputDir }),
+  )
 }
 
 /* v8 ignore start -- direct-execution entry; the CLI test spawns it in a child process, and
    main() (the testable half) is covered directly in render-mcp-docs.test.mts. */
-const invokedPath = process.argv[1]
-if (invokedPath !== undefined && fileURLToPath(import.meta.url) === resolve(invokedPath)) {
+if (import.meta.main) {
   process.exit(await main(process.argv.slice(2)))
 }
 /* v8 ignore stop */
