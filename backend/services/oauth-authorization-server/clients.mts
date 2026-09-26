@@ -1,5 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { write, type QueryExecutor } from '@data-stores/psql'
+import { write, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import { hasEveryScope } from '@modules/scopes'
 import { hashToken } from '@modules/token-secrets'
 import { OAuthProtocolError, invalidClientMetadata, invalidRequest } from './errors.mts'
@@ -112,7 +112,31 @@ export async function authenticateOAuthClient(
   assertOAuthClientAuthentication(client, clientSecret)
 }
 
-export function assertOAuthClientAuthentication(
+/**
+ * Authenticates a token-endpoint client against its row, share-locked until `query` commits. A
+ * secret rotation or revocation therefore waits for this transaction, or this read waits for it
+ * and rejects the replaced secret, so no token is issued to a secret after its rotation returns.
+ */
+export async function authenticateLockedOAuthClient(
+  clientId: string,
+  clientSecret: string | undefined,
+  query: TransactionQuery,
+): Promise<OAuthClient> {
+  const result = await query<OAuthClient>(
+    `/* authenticateLockedOAuthClient */ SELECT *
+     FROM oauth_clients
+     WHERE client_id = $1
+       AND revoked_at IS NULL
+     FOR SHARE`,
+    [clientId],
+  )
+  const client = result.rows[0]
+  if (!client) throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
+  assertOAuthClientAuthentication(client, clientSecret)
+  return client
+}
+
+function assertOAuthClientAuthentication(
   client: OAuthClient,
   clientSecret: string | undefined,
 ): void {

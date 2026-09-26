@@ -2,7 +2,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { assertOAuthClientAuthentication, getOAuthClient } from './clients.mts'
+import { authenticateLockedOAuthClient } from './clients.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
@@ -34,9 +34,7 @@ export async function exchangeOAuthRefreshToken(input: {
   scope?: string
 }): Promise<OAuthTokenResponse> {
   await using query = await beginTransaction()
-  const client = await getOAuthClient(input.clientId, query)
-  if (!client) throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
-  assertOAuthClientAuthentication(client, input.clientSecret)
+  const client = await authenticateLockedOAuthClient(input.clientId, input.clientSecret, query)
   const token = await lockRefreshToken(input.refreshToken, query)
   if (!token) throw new OAuthProtocolError('invalid_grant', 'refresh token is invalid')
   assertRefreshClient(token, client)

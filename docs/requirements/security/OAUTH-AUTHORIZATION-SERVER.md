@@ -21,6 +21,10 @@ OpenID Connect, ID-token, or UserInfo flows.
   share lock on the client row, so a URI the owner has removed, even concurrently, receives neither
   a code nor tokens.
 - Authorization errors redirect only after the client and redirect URI have both been verified.
+- Code exchange, refresh and revocation authenticate the client against its row under a share lock
+  held until their transaction commits. A secret rotation or client revocation waits for in-flight
+  token requests, and later requests see the new state, so a replaced secret obtains no tokens once
+  rotation returns.
 - Codes, access tokens, refresh tokens, and client secrets are stored only as purpose-bound hashes.
   Plaintext credentials are returned once.
 - Authorization codes are single-use. Their exchange and token issuance share one PostgreSQL

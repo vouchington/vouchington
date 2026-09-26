@@ -56,6 +56,10 @@ owner-scoped statements inside the owner's active-user lock; a changed name or r
 clears staff verification. Consent decisions and code exchange recheck, in the same statement that
 share-locks the client row, that the client is live and the request's redirect URI is still
 registered, so re-pointing an app retires the removed URI even for requests already in flight.
+Code exchange, refresh and revocation authenticate the client with `authenticateLockedOAuthClient`,
+which checks the secret against the share-locked row, so rotating a secret or revoking an app
+serializes with in-flight token requests and the replaced secret stops working once rotation
+returns.
 `client-metadata-validation.mts` holds the RFC 7591 metadata validators that dynamic registration
 and owner apps share. Management views live in `management-types.mts`.
 

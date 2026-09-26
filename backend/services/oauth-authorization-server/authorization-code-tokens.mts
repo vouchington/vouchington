@@ -3,7 +3,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES, REFRESH_TOKEN_TTL_MS } from './constants.mts'
-import { assertOAuthClientAuthentication, getOAuthClient } from './clients.mts'
+import { authenticateLockedOAuthClient } from './clients.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
 import { assertTokenRequestResource, validatePkceVerifier } from './validation.mts'
@@ -32,9 +32,7 @@ export async function exchangeOAuthAuthorizationCode(input: {
   resource?: string
 }): Promise<OAuthTokenResponse> {
   await using query = await beginTransaction()
-  const client = await getOAuthClient(input.clientId, query)
-  if (!client) throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
-  assertOAuthClientAuthentication(client, input.clientSecret)
+  const client = await authenticateLockedOAuthClient(input.clientId, input.clientSecret, query)
   const verifier = validatePkceVerifier(input.codeVerifier)
   const code = await lockAuthorizationCode(input.code, query)
   if (!code) throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')

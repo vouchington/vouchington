@@ -43,7 +43,7 @@ describe('OAuth redirect URI replacement racing consent and code exchange', () =
       replaceTestOAuthRedirectUrisWhileWaiting({
         clientId: flow.client.client_id,
         redirectUris: [randomTestOAuthRedirectUri()],
-        waiterQueryMarker: '/* lockAuthorizationCode */',
+        waiterQueryMarker: '/* authenticateLockedOAuthClient */',
         start: () =>
           exchangeOAuthAuthorizationCode({
             clientId: flow.client.client_id,
