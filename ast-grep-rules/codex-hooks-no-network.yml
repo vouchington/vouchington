@@ -58,14 +58,21 @@ rule:
             field: arguments
             has:
               nthChild: 2
-              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*[^,\]]+|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
+              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*[^,\]]+|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
     - all:
         - matches: child-process-call
         - has:
             field: arguments
             has:
               nthChild: 1
-              regex: ^['"`]git\s+(?:(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)\s+(?:"[^"]*"|'[^']*'|[^\s'"`]+)|(?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--git-dir=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--work-tree=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--namespace=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--config-env=(?:"[^"]*"|'[^']*'|[^\s'"`]+)))\s+)*(?:(?:fetch|ls-remote|pull|push|clone)(?:['"`]|\s|[;&|<>()]|$)|(remote|submodule)\s+(?:(?:-v|--verbose|--no-verbose|--quiet)\s+)*update(?:['"`]|\s|[;&|<>()]|$))
+              regex: ^['"`]git\s.*\b(fetch|ls-remote|pull|push|clone)\b
+    - all:
+        - matches: child-process-call
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              regex: ^['"`]git\s+(?:(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)\s+(?:"[^"]*"|'[^']*'|[^\s'"`]+)|(?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--git-dir=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--work-tree=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--namespace=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--config-env=(?:"[^"]*"|'[^']*'|[^\s'"`]+))|\d*(?:>>?|<<?|<>|>&|<&)\s*(?:"[^"]*"|'[^']*'|[^\s'"`]+))\s+)*(?:remote|'remote'|"remote"|submodule|'submodule'|"submodule")\s+(?:(?:(?:-v|--verbose|--no-verbose|--quiet)|\d*(?:>>?|<<?|<>|>&|<&)\s*(?:"[^"]*"|'[^']*'|[^\s'"`]+))\s+)*(?:update|'update'|"update")(?:['"`]|\s|[;&|<>()]|$)
     - pattern: fetch($$$ARGS)
     - pattern: globalThis.fetch
     - pattern: global.fetch
@@ -178,6 +185,9 @@ examples:
       execSync('git submodule update&&echo done')
       execSync('git --git-dir "/tmp/repo path" remote update')
       execSync('git --work-tree="/tmp/tree path" submodule update')
+      execSync('git --literal-pathspecs remote update')
+      execSync('git remote </dev/null update')
+      execSync("git 'remote' 'update'")
     isValid: false
     file: 'dev/codex-hooks/post-tool-use-checkers.mts'
   - code: |
