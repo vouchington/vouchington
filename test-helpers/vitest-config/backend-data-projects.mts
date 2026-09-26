@@ -34,6 +34,7 @@ const backendDataStoreTestDefaults = {
     // solely if it's the first file in its worker to do so, since the module body doesn't
     // re-run for later files sharing the cached module graph.
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
+    './test-helpers/vitest.setup.shared-db-scope-guard.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
     './test-helpers/vitest.setup.glide-mq-workers.mts',
     './backend/test-helpers/vitest.setup.aws-mocks.mts',
@@ -64,6 +65,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/*.openai*.test.mts',
         '**/*.openrouter.test.mts',
         '**/*.bedrock.test.mts',
+        'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
         '**/*.s3.test.mts',
         '**/*.stripe.test.mts',
         'backend/data-stores/analytics/**/*.test.mts',
@@ -86,6 +88,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     test: {
       ...backendDataStoreTestDefaults,
       name: 'backend-activitypub-capacity',
+      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [
         'backend/api/activitypub/inbox-capacity.test.mts',
         'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
@@ -119,6 +122,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: true,
       name: 'backend-mocks',
+      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [
         'backend/{agents,api,modules,data-stores,entrypoints,flows,queues,scripts,services,sitemaps,tools,worker-runtime,workers}/**/*.mock.test.mts',
       ],
@@ -134,6 +138,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
         // first or the real SDK singleton gets bound during preload and tests can't intercept it.
         './backend/test-helpers/vitest.setup.sentry-mock.mts',
+        './test-helpers/vitest.setup.shared-db-scope-guard.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',

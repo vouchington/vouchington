@@ -20,9 +20,9 @@ describe('OAuth authorization exchange worker processors', () => {
       await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
     })
 
-    const result = await processDispatchOAuthAuthorizationExchanges()
+    const result = await processDispatchOAuthAuthorizationExchanges([authorizationId])
 
-    expect(result.enqueued).toBeGreaterThanOrEqual(1)
+    expect(result.enqueued).toBe(1)
     expect(await oauthAuthorizationExchangeQueue.getJob(authorizationId)).toMatchObject({
       data: { authorizationId },
     })
@@ -34,7 +34,9 @@ describe('OAuth authorization exchange worker processors', () => {
       processOAuthAuthorizationExchangeJob(job('exchangeOAuthAuthorization', { authorizationId })),
     ).resolves.toBeUndefined()
     await expect(
-      processOAuthAuthorizationExchangeJob(job('dispatchOAuthAuthorizationExchanges', {})),
+      processOAuthAuthorizationExchangeJob(job('dispatchOAuthAuthorizationExchanges', {}), () =>
+        processDispatchOAuthAuthorizationExchanges([]),
+      ),
     ).resolves.toBeUndefined()
     await expect(processOAuthAuthorizationExchangeJob(job('unknownOAuthJob', {}))).rejects.toThrow(
       'Unknown job name: unknownOAuthJob',

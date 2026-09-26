@@ -134,9 +134,11 @@ describe('copyright action persisted delivery authority', () => {
     await reconcileTestDeliveryRepairMarker(deliveryKey)
     await processMediaDeliveryRegistryRecord(deliveryKey)
     const stableGeneration = edge.records.get(deliveryKey)!.generation
-    await stageAllCurrentImagePlacementDeliveryRecords()
+    const current = await getImagePlacementForCopyright(scene.target.placement_key)
+    if (!current) throw new Error('Copyright placement missing')
+    await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
     await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
-    await stageAllCurrentImagePlacementDeliveryRecords()
+    await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
     await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
     expect(edge.records.get(deliveryKey)?.generation).toBe(stableGeneration)
   })
@@ -187,7 +189,10 @@ describe('copyright action persisted delivery authority', () => {
         code: '55P03',
       })
     }
-    const replay = replayFailedMediaDeliveryRegistryRecords({ actorUserId: scene.moderator.id })
+    const replay = replayFailedMediaDeliveryRegistryRecords({
+      actorUserId: scene.moderator.id,
+      deliveryKeys: [deliveryKey],
+    })
     let result: PromiseSettledResult<Awaited<typeof replay>> | undefined
     const observedReplay = replay.then(
       value => {

@@ -258,7 +258,7 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
       ),
     ).toEqual({ outcome: 'stale' })
 
-    const rearmed = (await activityPubInboxDeliveryTransitions.rearm()).find(
+    const rearmed = (await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])).find(
       candidate => candidate.deliveryId === delivery.deliveryId,
     )
     expect(rearmed).toBeDefined()

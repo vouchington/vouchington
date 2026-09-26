@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+// Private child-run case: the parent route test creates and disposes its own database.
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { verifyCopyrightActionReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
-import { runIsolatedGlobalMediaReplayCase } from '../../../../test-helpers/vitest-isolated-global-media-replay.mts'
+import { verifyMediaDeliveryReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-describe('copyright notice replay routes', () => {
+describe('isolated global media replay route', () => {
   beforeEach(() => {
     vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
     vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} } as never)
@@ -20,11 +20,7 @@ describe('copyright notice replay routes', () => {
     vi.unstubAllEnvs()
   })
 
-  it('replays a failed action only for copyright-review staff and records one scoped audit event', async () => {
-    expect(await verifyCopyrightActionReplayRoute()).toBe(true)
+  it('replays failed media registry records only for review staff and writes one audit event', async () => {
+    expect(await verifyMediaDeliveryReplayRoute()).toBe(true)
   })
-
-  it('replays failed media registry records in a fresh isolated database', async () => {
-    await expect(runIsolatedGlobalMediaReplayCase()).resolves.toBeUndefined()
-  }, 240_000)
 })

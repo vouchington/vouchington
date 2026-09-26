@@ -14,11 +14,13 @@ const webApiProject: TestProjectConfiguration = {
     pool: 'forks',
     isolate: false,
     name: 'web-api',
+    runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
     include: ['integration-tests/web-api/**/*.test.mts'],
     exclude: ['**/node_modules/**', '**/.git/**'],
     environment: 'node',
     globalSetup: './test-helpers/vitest.setup.data-stores.mts',
     setupFiles: [
+      './test-helpers/vitest.setup.shared-db-scope-guard.mts',
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
       './test-helpers/vitest.setup.glide-mq-workers.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',
@@ -26,7 +28,6 @@ const webApiProject: TestProjectConfiguration = {
     ],
   },
 }
-
 const webIntegrationProject: TestProjectConfiguration = {
   extends: true,
   resolve: { alias: webAlias },
@@ -48,7 +49,6 @@ const webIntegrationProject: TestProjectConfiguration = {
     hookTimeout: 90_000,
   },
 }
-
 export const webProjects: TestProjectConfiguration[] = [
   {
     extends: true,

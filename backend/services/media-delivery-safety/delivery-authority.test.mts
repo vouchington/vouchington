@@ -136,9 +136,30 @@ describe('delivery authority and durable denial repair', () => {
     const edge = enableEdge()
     await recordImageDeliveryRepairMarker(tuple)
     const token = await getTestDeliveryRepairMarker(deliveryKey)
-    await expect(reconcileMediaDeliveryRepairMarkers(0)).resolves.toBe(0)
+    await expect(reconcileMediaDeliveryRepairMarkers(0, [deliveryKey])).resolves.toBe(0)
     expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBe(token)
+  })
+
+  it('consumes only an owned repair marker and preserves the unrelated token', async () => {
+    const selected = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
+    const unrelated = {
+      placementId: crypto.randomUUID(),
+      revision: 0,
+      imageId: crypto.randomUUID(),
+    }
+    const selectedKey = getImagePlacementDeliveryKey(selected)
+    const unrelatedKey = getImagePlacementDeliveryKey(unrelated)
+    enableEdge()
+    await Promise.all([
+      recordImageDeliveryRepairMarker(selected),
+      recordImageDeliveryRepairMarker(unrelated),
+    ])
+    const unrelatedToken = await getTestDeliveryRepairMarker(unrelatedKey)
+    expect(await reconcileMediaDeliveryRepairMarkers(10, [selectedKey])).toBe(1)
+    expect(await getTestDeliveryRepairMarker(selectedKey)).toBeNull()
+    expect(await getTestDeliveryRepairMarker(unrelatedKey)).toBe(unrelatedToken)
+    await reconcileTestDeliveryRepairMarker(unrelatedKey)
   })
 
   it('retains a missing-tuple repair marker while publication is disabled', async () => {
@@ -149,7 +170,7 @@ describe('delivery authority and durable denial repair', () => {
     const token = await getTestDeliveryRepairMarker(deliveryKey)
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
     await reconcileTestDeliveryRepairMarker(deliveryKey)
-    await expect(reconcileMediaDeliveryRepairMarkers(1)).resolves.toBe(0)
+    await expect(reconcileMediaDeliveryRepairMarkers(1, [deliveryKey])).resolves.toBe(0)
     expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBe(token)
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')

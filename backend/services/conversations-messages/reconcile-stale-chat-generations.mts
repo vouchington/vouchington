@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 
 export const CHAT_RUNTIME_GENERATION_STALE_AFTER_MS = 10 * 60 * 1000
 export const CHAT_RUNTIME_GENERATION_BATCH_SIZE = 100
@@ -30,8 +31,19 @@ export async function getStaleChatRuntimeGenerationJobs(
   options: {
     staleAfterMs?: number
     batchSize?: number
+    runIds?: readonly string[]
   } = {},
 ): Promise<StaleChatRuntimeGenerationBatch> {
+  if (options.runIds?.length === 0) {
+    return {
+      cutoff: new Date(
+        Date.now() - (options.staleAfterMs ?? CHAT_RUNTIME_GENERATION_STALE_AFTER_MS),
+      ),
+      candidates: [],
+    }
+  }
+  observeSharedDbScope('getStaleChatRuntimeGenerationJobs', sharedDbIdsScope(options.runIds))
+  const idScope = options.runIds ? [...options.runIds] : null
   const staleAfterMs = options.staleAfterMs ?? CHAT_RUNTIME_GENERATION_STALE_AFTER_MS
   const batchSize = Math.min(
     Math.max(Math.trunc(options.batchSize ?? CHAT_RUNTIME_GENERATION_BATCH_SIZE), 1),
@@ -42,6 +54,7 @@ export async function getStaleChatRuntimeGenerationJobs(
     SELECT id, 'chat_' || conversation_message_id::text AS signal_job_id, started_at
     FROM conversation_message_agentic_runs
     WHERE started_at < ${cutoff}
+      AND (${idScope}::uuid[] IS NULL OR id = ANY(${idScope}::uuid[]))
       AND completed_at IS NULL
       AND failed_at IS NULL
       AND deleted_at IS NULL

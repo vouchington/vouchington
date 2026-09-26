@@ -22,7 +22,11 @@ describe('OAuth authorization expiry windows', () => {
     onTestFinished(async () => deleteTestOAuthAuthorizationFixtures({ authorizationIds: ids }))
 
     await expect(
-      cleanupExpiredOAuthAuthorizations({ lowerBoundDate: window.lowerBoundDate, now: window.now }),
+      cleanupExpiredOAuthAuthorizations({
+        lowerBoundDate: window.lowerBoundDate,
+        now: window.now,
+        authorizationIds: ids,
+      }),
     ).resolves.toEqual({ deleted: 2, hasMore: false })
     expect(await getTestOAuthAuthorization(ids[0]!)).not.toBeNull()
     expect(await getTestOAuthAuthorization(ids[1]!)).toBeNull()

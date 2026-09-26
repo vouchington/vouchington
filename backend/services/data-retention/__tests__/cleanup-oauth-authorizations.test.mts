@@ -14,7 +14,7 @@ import {
 describe('cleanupExpiredOAuthAuthorizations', () => {
   it('deletes only its bounded expiry window across pages', async () => {
     const window = createTestExpiryWindow()
-    const authorizationIds = Array.from({ length: 4 }, () => v7())
+    const authorizationIds = Array.from({ length: 5 }, () => v7())
     onTestFinished(async () => {
       await deleteTestOAuthAuthorizationFixtures({ authorizationIds })
     })
@@ -29,6 +29,10 @@ describe('cleanupExpiredOAuthAuthorizations', () => {
       }),
       insertTestOAuthAuthorization({ id: authorizationIds[2], expiresAt: window.now }),
       insertTestOAuthAuthorization({
+        id: authorizationIds[4],
+        expiresAt: window.firstEligibleDate,
+      }),
+      insertTestOAuthAuthorization({
         id: authorizationIds[3],
         expiresAt: window.afterUpperBoundDate,
       }),
@@ -40,6 +44,7 @@ describe('cleanupExpiredOAuthAuthorizations', () => {
         lowerBoundDate: window.lowerBoundDate,
         maxBatches: 1,
         now: window.now,
+        authorizationIds: authorizationIds.slice(0, 4),
       }),
     ).resolves.toEqual({ deleted: 1, hasMore: true })
     await expect(
@@ -47,6 +52,7 @@ describe('cleanupExpiredOAuthAuthorizations', () => {
         batchSize: 10,
         lowerBoundDate: window.lowerBoundDate,
         now: window.now,
+        authorizationIds: authorizationIds.slice(0, 4),
       }),
     ).resolves.toEqual({ deleted: 1, hasMore: false })
 
@@ -54,6 +60,7 @@ describe('cleanupExpiredOAuthAuthorizations', () => {
     await expect(getTestOAuthAuthorization(authorizationIds[1])).resolves.toBeNull()
     await expect(getTestOAuthAuthorization(authorizationIds[2])).resolves.toBeNull()
     await expect(getTestOAuthAuthorization(authorizationIds[3])).resolves.not.toBeNull()
+    await expect(getTestOAuthAuthorization(authorizationIds[4])).resolves.not.toBeNull()
   })
 
   it('cascades ephemeral completed state before provider-account retention', async () => {

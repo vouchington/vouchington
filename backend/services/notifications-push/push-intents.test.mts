@@ -27,9 +27,18 @@ describe('listAvailableNotificationPushIntents', () => {
       follower.id,
       follower.username,
     )
-    const firstPage = await listAvailableNotificationPushIntents(100_000)
+    const unrelatedRecipient = await createTestUserDirect()
+    const [unrelatedNotification] = await createFollowNotification(
+      unrelatedRecipient.id,
+      follower.id,
+      follower.username,
+    )
+    const firstPage = await listAvailableNotificationPushIntents(100_000, {
+      notificationIds: [notification!.id],
+    })
     const ownIntent = firstPage.find(intent => intent.notification_id === notification!.id)
     expect(ownIntent).toMatchObject({ user_id: recipient.id, notification_id: notification!.id })
+    expect(firstPage.map(intent => intent.notification_id)).not.toContain(unrelatedNotification!.id)
     const nextPage = await listAvailableNotificationPushIntents(100_000, {
       scanBefore: ownIntent!.scan_before,
       after: {
@@ -39,6 +48,9 @@ describe('listAvailableNotificationPushIntents', () => {
       },
     })
     expect(nextPage.map(intent => intent.notification_id)).not.toContain(notification!.id)
+    expect(
+      await getTestNotificationPushIntent(unrelatedRecipient.id, unrelatedNotification!.id),
+    ).toMatchObject({ status: 'pending' })
   })
 })
 

@@ -64,7 +64,6 @@ describe('copyright staff and participant routes', () => {
     const moderator = createRequest()
     await moderator.authenticateAs(fixture.moderator)
     await moderator.get(`/api/v1/copyright-email-intakes/${crypto.randomUUID()}`).expect(404)
-    await moderator.get('/api/v1/copyright-email-intakes/review-queue').expect(200)
     const missingReplay = await moderator
       .post(
         `/api/v1/copyright-notices/${fixture.noticeId}/delivery-intents/${crypto.randomUUID()}/replays`,

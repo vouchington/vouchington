@@ -1,5 +1,9 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -29,6 +33,7 @@ export async function searchCopyrightStaffEmailIntakes(
   if (!currentUserCanReviewCopyrightNotices(currentUser)) {
     return { intakes: [], hasNextPage: false }
   }
+  observeSharedDbScope('searchCopyrightStaffEmailIntakes', sharedDbCursorScope(options.after?.id))
   await using transaction = await beginTransaction()
   const query = sql`/* searchCopyrightStaffEmailIntakes */
     SELECT intake.id, intake.received_at, parse.status AS parse_status, recommendation.id AS recommendation_id,

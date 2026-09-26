@@ -30,6 +30,36 @@ probabilistic, or unnecessarily serialize parallel tests.
 
 ### Stateful test helpers must be parallel-safe
 
+### Catalogued shared-DB scan guard
+
+Seven DB-backed Vitest projects install the shared-DB scope observer before test-file imports.
+The production-neutral service observer is inert outside tests. Its finite operation catalog lives
+in `backend/data-stores/psql/shared-db-scope-observer.mts`; it covers copyright staff heads and
+recovery/sweep pages, media registry staging/replay/recovery and repair markers, ActivityPub
+delivery recovery/rearm, OAuth exchange recovery/expiry deletion, notification push-intent
+recovery, and stale chat generation selection. It does **not** prove every SQL query scoped.
+
+These service calls must bind owned IDs/keys before their `ORDER BY`/`LIMIT` or use a complete
+bound keyset cursor. Timestamps, scan snapshots, and page sizes alone are not ownership scopes.
+Explicit empty-ID inputs return before SQL. Production global calls remain legal. Tests should
+assert an owned and an equally eligible unrelated fixture, verifying the latter is excluded and
+unchanged; mutating sweeps also need a before/after row or token assertion.
+
+The setup callback appends every unscoped attempt before throwing. The runner fails the owning
+file after `afterAll`, even when a test or hook catches the service error; collection failures
+are finalized separately. Each appended violation carries Vitest's current file path, and
+process-global per-file reported counts prevent a later `isolate: false` file from inheriting a
+prior failure when Vitest collects files ahead or creates a fresh runner instance. The
+`backend-data-stores` runner composes this check with the existing GlideMQ attachment guard.
+`test-helpers/vitest-shared-db-scope-guard.integration.test.mts` exercises swallowed test,
+`afterAll`, setup, collection, reset-modules, and clean-next-file cases in a one-fork subprocess.
+The intentional global staff media-replay route assertion runs in a separate child Vitest process
+against a newly created local database. Its lifecycle checks nonexistence, migrates the
+new database (including migration-owned invariant seeds), uses a distinct GlideMQ queue prefix, then drops only that exact database after the
+child exits. The parent route test remains in `backend-data-stores` so CI exercises the child case.
+
+### Stateful test helpers must be parallel-safe
+
 A module-scoped object exported from a test helper must be **either** created/torn down per-test (`beforeEach`/`afterEach`) **or** be append-only and keyed by a per-request/per-test discriminator so concurrent test files cannot clobber each other.
 
 The GlideMQ Vitest shim is fork-local, so a test's `crawl_urls` queue jobs and `obliterate()` calls cannot affect another Vitest process. Cross-process locks must not coordinate this isolation: they only add contention and can fail under the shared database statement timeout. Keep queue cleanup in the test that owns it, and scope assertions to that test's jobs where queue state is not freshly obliterated.

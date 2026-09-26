@@ -1,5 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   isMediaDeliveryRegistryPublicationEnabled,
   putMediaDeliveryRegistryRecord,
@@ -46,12 +47,20 @@ export async function recordLegacyImageDeliveryRepairMarker(imageId: string): Pr
 }
 
 /** Repairs a bounded set of completed pre-commit denials using only committed tuple authority. */
-export async function reconcileMediaDeliveryRepairMarkers(limit: number): Promise<number> {
+export async function reconcileMediaDeliveryRepairMarkers(
+  limit: number,
+  deliveryKeys?: readonly string[],
+): Promise<number> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return 0
+  if (deliveryKeys?.length === 0) return 0
+  observeSharedDbScope('reconcileMediaDeliveryRepairMarkers', sharedDbIdsScope(deliveryKeys))
+  const keyScope = deliveryKeys ? [...deliveryKeys] : null
   const { rows } = await write<DeliveryRepairMarker>(sql`
     /* reconcileMediaDeliveryRepairMarkers:list */
     SELECT delivery_key, marker_token, route_kind, placement_id, placement_revision, asset_id
-    FROM media_delivery_repair_markers ORDER BY created_at, delivery_key LIMIT ${limit}
+    FROM media_delivery_repair_markers
+    WHERE (${keyScope}::text[] IS NULL OR delivery_key = ANY(${keyScope}::text[]))
+    ORDER BY created_at, delivery_key LIMIT ${limit}
   `)
   for (const marker of rows) {
     // oxlint-disable-next-line no-await-in-loop -- each marker owns one retained authority transaction.

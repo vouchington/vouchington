@@ -17,6 +17,7 @@ export function searchDueStatutoryCopyrightRestorationDeadlineIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright restoration deadline cursor',
+    'searchDueStatutoryCopyrightRestorationDeadlineIds',
     'restorationDeadline',
     query,
     statement => read(statement),

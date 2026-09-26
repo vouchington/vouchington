@@ -265,6 +265,7 @@ export function searchRecoverableCopyrightDeliveryIntentIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright delivery intent cursor',
+    'searchRecoverableCopyrightDeliveryIntentIds',
     'rowId',
     sql`/* searchRecoverableCopyrightDeliveryIntentIds */
       SELECT id

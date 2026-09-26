@@ -101,6 +101,7 @@ export default defineConfig({
           pool: 'forks',
           isolate: false,
           name: 'backend-aws',
+          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
           include: [
             'backend/**/*.s3.test.mts',
             'backend/modules/aws/s3.test.mts',
@@ -109,6 +110,7 @@ export default defineConfig({
           exclude: ['**/node_modules/**', '**/.git/**'],
           globalSetup: './test-helpers/vitest.setup.data-stores.mts',
           setupFiles: [
+            './test-helpers/vitest.setup.shared-db-scope-guard.mts',
             './test-helpers/vitest.setup.dynamic-config-isolation.mts',
             './test-helpers/vitest.setup.glide-mq-workers.mts',
             './test-helpers/vitest.setup.fork-leak-detection.mts',
@@ -123,10 +125,12 @@ export default defineConfig({
           pool: 'forks',
           isolate: false,
           name: 'backend-openai',
+          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
           include: ['backend/**/*.openai*.test.mts'],
           exclude: ['**/node_modules/**', '**/.git/**'],
           globalSetup: './test-helpers/vitest.setup.data-stores.mts',
           setupFiles: [
+            './test-helpers/vitest.setup.shared-db-scope-guard.mts',
             './test-helpers/vitest.setup.dynamic-config-isolation.mts',
             './test-helpers/vitest.setup.glide-mq-workers.mts',
             './backend/test-helpers/vitest.setup.aws-mocks.mts',

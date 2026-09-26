@@ -81,6 +81,7 @@ export function searchRecoverableCopyrightActionIntentIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright action intent cursor',
+    'searchRecoverableCopyrightActionIntentIds',
     'rowId',
     sql`/* searchRecoverableCopyrightActionIntentIds */
       SELECT id

@@ -49,11 +49,21 @@ describe('OAuth authorization exchange recovery', () => {
   it('returns retryable rows and rejects exhausted rows without starving the scan', async () => {
     const retryableId = await insertCallbackReceivedAuthorization(4)
     const exhaustedId = await insertCallbackReceivedAuthorization(5)
+    const unrelatedRetryableId = await insertCallbackReceivedAuthorization(4)
+    const unrelatedExhaustedId = await insertCallbackReceivedAuthorization(5)
 
-    const recoverable = await getRecoverableOAuthAuthorizationIds(500)
+    const recoverable = await getRecoverableOAuthAuthorizationIds(500, [retryableId, exhaustedId])
 
     expect(recoverable).toContain(retryableId)
     expect(recoverable).not.toContain(exhaustedId)
+    expect(recoverable).not.toContain(unrelatedRetryableId)
+    expect(recoverable).not.toContain(unrelatedExhaustedId)
+    expect(await getTestOAuthAuthorization(unrelatedRetryableId)).toMatchObject({
+      status: 'callback_received',
+    })
+    expect(await getTestOAuthAuthorization(unrelatedExhaustedId)).toMatchObject({
+      status: 'callback_received',
+    })
     const exhausted = await getTestOAuthAuthorization(exhaustedId)
     expect({
       status: exhausted?.status,
@@ -72,7 +82,7 @@ describe('OAuth authorization exchange recovery', () => {
       callbackAgeSeconds: 11,
     })
 
-    const recoverable = await getRecoverableOAuthAuthorizationIds(500)
+    const recoverable = await getRecoverableOAuthAuthorizationIds(500, [expiredXId])
 
     expect(recoverable).not.toContain(expiredXId)
     const expired = await getTestOAuthAuthorization(expiredXId)
@@ -100,7 +110,7 @@ describe('OAuth authorization exchange recovery', () => {
     registerAuthorizationCleanup(flowId, githubUserId)
 
     await completeTestOAuthAuthorizationWhileRecoveryWaits(flowId, githubUserId, () =>
-      getRecoverableOAuthAuthorizationIds(500),
+      getRecoverableOAuthAuthorizationIds(500, [flowId]),
     )
 
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({

@@ -31,7 +31,7 @@ describe('runDataRetentionCleanup', () => {
       softDeletedUsers: emptyWindow,
       oldReferralAttributions: emptyWindow,
       orphanedOAuthAccounts: emptyWindow,
-      expiredOAuthAuthorizations: emptyWindow,
+      expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
       expiredOAuthServerArtifacts: emptyWindow,
       expiredBlueskyLinkCompletions: emptyWindow,
       abandonedBlueskyLinkSessions: emptyWindow,

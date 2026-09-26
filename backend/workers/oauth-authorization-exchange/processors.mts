@@ -1,14 +1,16 @@
 import { getRecoverableOAuthAuthorizationIds } from '@services/oauth'
 import { enqueueOrReactivateBulkOAuthAuthorizationExchanges } from '@queues/oauth-authorization-exchange/enqueues'
 
-export async function processDispatchOAuthAuthorizationExchanges(): Promise<{
+export async function processDispatchOAuthAuthorizationExchanges(
+  authorizationIds?: readonly string[],
+): Promise<{
   enqueued: number
 }> {
-  const authorizationIds = await getRecoverableOAuthAuthorizationIds()
-  if (authorizationIds.length > 0) {
+  const recoverableIds = await getRecoverableOAuthAuthorizationIds(500, authorizationIds)
+  if (recoverableIds.length > 0) {
     await enqueueOrReactivateBulkOAuthAuthorizationExchanges(
-      authorizationIds.map(authorizationId => ({ authorizationId })),
+      recoverableIds.map(authorizationId => ({ authorizationId })),
     )
   }
-  return { enqueued: authorizationIds.length }
+  return { enqueued: recoverableIds.length }
 }

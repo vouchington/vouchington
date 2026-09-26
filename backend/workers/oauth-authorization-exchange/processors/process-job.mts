@@ -3,14 +3,17 @@ import type { OAuthAuthorizationExchangeJobs } from '@queues/oauth-authorization
 import { processOAuthAuthorizationExchange } from '@services/oauth'
 import { processDispatchOAuthAuthorizationExchanges } from '../processors.mts'
 
-export async function processOAuthAuthorizationExchangeJob(job: Job): Promise<void> {
+export async function processOAuthAuthorizationExchangeJob(
+  job: Job,
+  dispatch: typeof processDispatchOAuthAuthorizationExchanges = processDispatchOAuthAuthorizationExchanges,
+): Promise<void> {
   const name = job.name as OAuthAuthorizationExchangeJobs
   if (name === 'exchangeOAuthAuthorization') {
     await processOAuthAuthorizationExchange(String(job.data.authorizationId))
     return
   }
   if (name === 'dispatchOAuthAuthorizationExchanges') {
-    await processDispatchOAuthAuthorizationExchanges()
+    await dispatch()
     return
   }
   throw new Error(`Unknown job name: ${job.name}`)
