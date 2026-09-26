@@ -1,4 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+// Import order matters here -- see the comment in undici-mock.mts.
+import {
+  createCaptchaUndiciMock,
+  mockFetch,
+  TEST_CAPTCHA_TOKEN,
+} from '@voucha/test-helpers/captcha/undici-mock'
+import { Response as UndiciResponse } from 'undici'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUserWithAge,
@@ -12,17 +19,8 @@ import { insertTestImage } from '@voucha/test-helpers/entities/images'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from '@services/contribution-gating/config'
-import { Response as UndiciResponse } from 'undici'
-import type * as Undici from 'undici'
 
-const mockFetch = vi.hoisted(() => vi.fn<typeof Undici.fetch>())
-
-vi.mock<typeof import('undici')>(import('undici'), async importOriginal => {
-  const actual = await importOriginal()
-  return { ...actual, fetch: mockFetch }
-})
-
-const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
+vi.mock<typeof import('undici')>(import('undici'), () => createCaptchaUndiciMock())
 
 describe('POST /api/v1/posts CAPTCHA', () => {
   beforeEach(() => {
