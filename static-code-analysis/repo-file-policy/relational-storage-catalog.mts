@@ -54,6 +54,8 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'post_publication_dirty_work.cursor_key_id',
   'post_publication_dirty_work.cursor_post_id',
   'post_publication_dirty_work.cursor_topic_id',
+  'post_publication_identity_bridge_cleanup_progress.cursor_identity_id',
+  'post_publication_identity_cleanup_progress.cursor_snapshot_id',
   'post_publication_reconciliation_audit_checkpoints.cursor_post_id',
   'story_post_related_url_projection_jobs.prune_cursor_id',
   'story_post_related_url_projection_jobs.relation_high_water_id',
