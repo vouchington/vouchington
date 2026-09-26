@@ -450,7 +450,6 @@
       "git *",
       "pnpm exec *",
       "pnpm run *",
-      "pnpm --dir *",
       "pnpm install",
       "pnpm install *",
       "pnpm test",

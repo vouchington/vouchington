@@ -190,7 +190,7 @@ describe('agent sandbox configuration', () => {
 
   it('documents pnpm approval prefixes', () => {
     for (const content of [agentWorkflowBeforePushing, agentWorkflowStartOfWork]) {
-      for (const prefix of ['["pnpm", "run"]', '["pnpm", "exec"]', '["pnpm", "--dir"]']) {
+      for (const prefix of ['["pnpm", "run"]', '["pnpm", "exec"]']) {
         expect(content.includes(prefix) || content.includes(prefix.replaceAll('"', '\\"'))).toBe(
           true,
         )
@@ -200,6 +200,18 @@ describe('agent sandbox configuration', () => {
     expect(agentWorkflowStartOfWork).toContain('node_modules/.bin')
     expect(agentWorkflowStartOfWork).toContain('serially')
     expect(impactDiscovery).toContain('node_modules/.bin')
+  })
+
+  it('keeps broad arbitrary pnpm execution forms on the sandboxed path', () => {
+    for (const pattern of [
+      ['pnpm', 'dlx'],
+      ['pnpm', '--filter'],
+      ['pnpm', '--dir'],
+      ['corepack', 'pnpm'],
+    ]) {
+      expect(codexRules).not.toContain(codexRuleFor(pattern))
+    }
+    expect(claudeSettings.sandbox.excludedCommands).not.toContain('pnpm --dir *')
   })
 
   it('allows the bare pr-shepherd CLI invocation across all three surfaces', () => {
