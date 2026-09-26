@@ -112,4 +112,43 @@ describe('billing hooks', () => {
       expect.objectContaining({ usage: { input_tokens: 12, output_tokens: 0, cost: 0.0002 } }),
     )
   })
+
+  it.each([
+    ['missing', undefined],
+    ['null', null],
+    ['an array', [12, 0]],
+    ['missing output tokens', { input_tokens: 12 }],
+    ['negative input tokens', { input_tokens: -1, output_tokens: 0 }],
+    ['string token counts', { input_tokens: '12', output_tokens: '0' }],
+  ])(
+    'latches an unknown billed attempt instead of recording when usage is %s',
+    async (_label, usage) => {
+      const fetch = vi
+        .fn<StructuredDecisionFetch>()
+        .mockResolvedValue(makeResponse(makeOpenRouterBody({ usage })))
+      const onBilledResponse = onBilledResponseMock().mockResolvedValue(undefined)
+      const onUnknownBilledAttempt =
+        vi.fn<NonNullable<StructuredDecisionAttemptHooks['onUnknownBilledAttempt']>>()
+      const client = createStructuredDecisionClient({
+        transport: 'openrouter',
+        apiKey: 'test-key',
+        fetch,
+        hooks: { onBilledResponse, onUnknownBilledAttempt },
+      })
+
+      await expect(client.decide(request)).rejects.toMatchObject({
+        code: 'invalid-response',
+        message: 'Provider response did not contain readable usage.',
+      })
+
+      expect(onBilledResponse).not.toHaveBeenCalled()
+      expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
+      expect(onUnknownBilledAttempt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestStartedAt: expect.any(Date),
+          error: expect.objectContaining({ code: 'invalid-response' }),
+        }),
+      )
+    },
+  )
 })
