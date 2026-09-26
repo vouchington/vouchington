@@ -2,8 +2,8 @@
   "format": ["typescript", "tsx", "javascript", "sql", "bash", "css"],
   "crossFormats": "typescript,tsx",
   "failOnEmpty": true,
-  "similarity": 0.9,
-  "minLines": 200,
+  "similarity": 0.85,
+  "minLines": 150,
   "exitCode": 1,
   "ignore": [
     "**/migrations/**",
