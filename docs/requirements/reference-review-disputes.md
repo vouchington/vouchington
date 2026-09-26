@@ -19,4 +19,8 @@
 | `moderation_appeal` | Resolve     | Moderator         | `/appeals`       | `web/components/appeals/appeal-row.tsx`             | Accept (lift), reduce (partial), or deny the appeal             |
 | `moderation_appeal` | Re-run-AI   | Moderator         | `/appeals`       | `web/components/appeals/appeal-row.tsx`             | Re-drafts AI recommendation                                     |
 
+The controlled [review-dispute dialog](../../web/components/disputes/dispute-review-dialog.tsx)
+owns its draft-reset lifecycle: closing schedules the reset, while reopening or unmounting cancels
+the pending reset so an active draft is retained.
+
 ---
