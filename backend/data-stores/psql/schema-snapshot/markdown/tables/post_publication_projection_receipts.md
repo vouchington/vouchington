@@ -6,13 +6,14 @@ Durable current-state receipt for cache, rating and sitemap projections owned by
 
 RANGE partitioned on `post_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                    | Type                       | Nullable | Default                                                               | Identity | Generated | Collation | Comment                                                                                              |
-| ------------------------- | -------------------------- | -------- | --------------------------------------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| `post_id`                 | `uuid`                     | no       |                                                                       |          |           |           | Post identity retained without an FK so deletion remains auditable and repairable.                   |
-| `eligibility_fingerprint` | `text`                     | no       |                                                                       |          |           |           | Canonical primary-state publication eligibility fingerprint applied by the worker.                   |
-| `applied_generation`      | `bigint`                   | no       |                                                                       |          |           |           | Dirty-work generation whose owned projections produced this receipt.                                 |
-| `applied_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                   |          |           |           | Timestamp when the recorded projection identity was last applied successfully.                       |
-| `applied_identity`        | `jsonb`                    | no       | `'{"topicIds": [], "identityKeys": [], "sitemapTargets": []}'::jsonb` |          |           |           | Exact projection identities last applied by reconciliation, retained for compensating shadow repair. |
+| Column                    | Type                       | Nullable | Default                                                               | Identity | Generated | Collation | Comment                                                                                                       |
+| ------------------------- | -------------------------- | -------- | --------------------------------------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `post_id`                 | `uuid`                     | no       |                                                                       |          |           |           | Post identity retained without an FK so deletion remains auditable and repairable.                            |
+| `eligibility_fingerprint` | `text`                     | no       |                                                                       |          |           |           | Canonical primary-state publication eligibility fingerprint applied by the worker.                            |
+| `applied_generation`      | `bigint`                   | no       |                                                                       |          |           |           | Dirty-work generation whose owned projections produced this receipt.                                          |
+| `applied_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                   |          |           |           | Timestamp when the recorded projection identity was last applied successfully.                                |
+| `applied_identity`        | `jsonb`                    | no       | `'{"topicIds": [], "identityKeys": [], "sitemapTargets": []}'::jsonb` |          |           |           | Exact projection identities last applied by reconciliation, retained for compensating shadow repair.          |
+| `applied_snapshot_id`     | `uuid`                     | yes      |                                                                       |          |           |           | Complete typed snapshot accepted after projection effects; old JSON remains only for expand/contract readers. |
 
 **Primary key:** `PRIMARY KEY (post_id)`
 
@@ -25,11 +26,14 @@ _none_
 - `post_publication_projection_receipts_applied_generation_check`: `CHECK ((applied_generation > 0))`
 
 **Foreign keys:**
-_none_
+
+- `fk_post_publication_projection_receipts__snapshot`: `FOREIGN KEY (applied_snapshot_id) REFERENCES post_publication_identity_snapshots(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_post_publication_projection_receipts__applied_snapshot_id`: `CREATE INDEX idx_post_publication_projection_receipts__applied_snapshot_id ON ONLY public.post_publication_projection_receipts USING btree (applied_snapshot_id) WHERE (applied_snapshot_id IS NOT NULL)`
 - `post_publication_projection_receipts_pkey`: `CREATE UNIQUE INDEX post_publication_projection_receipts_pkey ON ONLY public.post_publication_projection_receipts USING btree (post_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_post_publication_projection_receipts_protocol`: `CREATE TRIGGER trigger_post_publication_projection_receipts_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_projection_receipts FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()`

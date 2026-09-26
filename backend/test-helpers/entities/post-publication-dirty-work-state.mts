@@ -1,5 +1,6 @@
-import { read, write, type TransactionQuery } from '@data-stores/psql'
+import { read, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { writeTestPostPublicationProtocol as writePostPublicationProtocol } from '../data-stores/psql/post-publication-protocol.mts'
 
 export async function getTestPostPublicationShadowAuditCheckpoint(
   checkpointName: string,
@@ -17,7 +18,7 @@ export async function setTestPostPublicationShadowAuditCheckpoint(
   checkpointName: string,
   cursorPostId: string | null,
 ): Promise<void> {
-  await write(sql`
+  await writePostPublicationProtocol(sql`
     /* setTestPostPublicationShadowAuditCheckpoint */
     INSERT INTO post_publication_reconciliation_audit_checkpoints (checkpoint_name, cursor_post_id)
     VALUES (${checkpointName}, ${cursorPostId})
@@ -27,7 +28,7 @@ export async function setTestPostPublicationShadowAuditCheckpoint(
 
 /** Makes one owned lease stale without touching concurrent dirty-work fixtures. */
 export async function expireTestPostPublicationDirtyWorkLease(dirtyWorkId: string): Promise<void> {
-  await write(sql`
+  await writePostPublicationProtocol(sql`
     /* expireTestPostPublicationDirtyWorkLease */
     UPDATE post_publication_dirty_work
     SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second'

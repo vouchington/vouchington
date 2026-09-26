@@ -20,11 +20,11 @@ import {
   acknowledgePostPublicationDirtyWork,
   acknowledgePostPublicationProjectionReceipts,
   claimPostPublicationDirtyWork,
-  reconcilePostPublicationDirtyWork,
   recordPostPublicationChange,
   updatePostPublicationDirtyWorkCursors,
   withPostPublicationReconciliationLocks,
 } from './public.mts'
+import { reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork } from './test-fixtures.mts'
 describe('post publication reconciliation', () => {
   it('expands an intermediate post scope through every nested reply', async () => {
     const root = await createTestPost()

@@ -126,6 +126,8 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'phone_number_login_tokens',
   'podcast_playback_positions',
   'post__stories',
+  'post_publication_identity_snapshots',
+  'post_publication_identity_snapshot_keys',
   'post_autotagger_result_topics',
   'post_dispute_annotations',
   'post_locks',

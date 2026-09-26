@@ -24,6 +24,62 @@ Retained keys and projection receipts are range-partitioned, each with a default
 Receipt-only hard-delete tombstones are selected and deleted in bounded pages; successful deletion
 is the page cursor, so no additional checkpoint table or cursor column is required.
 
+When the operator activates the `typed-v1` protocol after deploying expanded workers and audit
+processes, each candidate's exact identities are materialized in bounded relational snapshot pages
+before any effect or receipt update. A receipt only points at a complete snapshot after effects
+succeed, so the prior accepted snapshot remains usable during replacement. Database guards reject
+legacy worker and audit mutations after activation; their read-only audit output is stale until
+they are upgraded. Snapshot attempts intentionally outlive dirty-work acknowledgement and their
+keys are reclaimed in bounded pages.
+
+The source is [`identity-source.mts`](identity-source.mts): authored and relation topics, positive
+relation-only alias membership, distinct author UUID/username keys, candidate and root communities,
+every post slug, live root-story feed sources, and exact sitemap type/day tuples. Source pages and
+previous-receipt retention pages have independent durable cursors on the same attempt. Every page
+locks the current dirty-work generation and lease before inserting keys and checkpoints. Effects
+wait for both stages. EOF compares exact sets in PostgreSQL and revalidates scalar eligibility;
+drift abandons the attempt, while completed attempts are reused across retries and other posts in
+the same work page. The receipt writer validates the candidate's exact complete pointer again after
+the existing projection/enqueue acceptance boundary. Replacement leaves the previous receipt intact.
+
+Audit repair only records dirty work. The worker stages old receipt identities without returning
+JSON to Node, including receipts written before expansion and orphan receipts after hard deletion.
+Current source capture still pages all disappearing identities in the caller's mutation transaction,
+including descendant sitemap shards when their root is changed or removed.
+
+Rollout is additive and starts inactive. Deploy the expanded API, worker and audit processes before
+running the operator command from the initialized worktree:
+
+```bash
+source .env
+node backend/scripts/activate-post-publication-identity-protocol.mts
+```
+
+Activation is monotonic and idempotent. The singleton's exclusive activation lock waits for prior
+writer transactions holding its shared lock; ordinary writer transactions share that lock and do
+not serialize unrelated scopes. After activation, old worker receipt/cursor/lease/acknowledgement
+and audit checkpoint writes are rejected, while API insertion and generation increments remain
+allowed. Activation cannot be reversed: typed stages or accepted receipts must never be interpreted
+as empty identities by an old process. An old fingerprint includes JSON; the typed scalar
+fingerprint intentionally causes a one-time receipt refresh during migration.
+
+Each existing scheduled reconciliation invocation reclaims an independent bounded page even when
+there is no dirty work. Cleanup excludes accepted pointers, deletes a capped key page first, and
+removes only empty stale/abandoned attempts. The receipt foreign key prevents deletion of accepted
+storage, which outlives dirty acknowledgement. Snapshot keys never cascade on deletion.
+
+```mermaid
+flowchart LR
+  capture[Transactional disappearing-source pages] --> dirty[Dirty generation]
+  dirty --> previous[Resumable previous receipt pages]
+  previous --> current[Resumable canonical source pages]
+  current --> eof{Exact EOF and scalar match?}
+  eof -->|drift| current
+  eof -->|complete| effects[Existing effects and durable enqueues]
+  effects --> receipt[Validate exact pointer and accept receipt]
+  receipt --> cleanup[Bounded unaccepted snapshot reclamation]
+```
+
 Projection receipts are the durable acceptance boundary for worker-owned effects: a receipt is
 written only after cache invalidation plus durable sitemap and hashtag queue enqueues succeed.
 Those downstream queues own their retry policy. The operator shadow audit compares canonical

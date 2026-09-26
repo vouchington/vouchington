@@ -19,7 +19,10 @@ import {
   claimPostPublicationDirtyWork,
   updatePostPublicationDirtyWorkCursors,
 } from './dirty-work.mts'
-import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
+import {
+  reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
+  getTestPublicationProjectionIdentity,
+} from './test-fixtures.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import { retainAppliedProjectionIdentity } from './shadow-repair.mts'
 
@@ -144,7 +147,7 @@ describe('post publication retained identity keys', () => {
       selected.posts.map(candidate => candidate.id),
     )
 
-    expect(canonical.posts[0]?.projection_identity.identityKeys).toEqual(
+    expect((await getTestPublicationProjectionIdentity(canonical.posts[0]!)).identityKeys).toEqual(
       expect.arrayContaining([expect.objectContaining({ kind: 'author', value: user.id })]),
     )
     expect(canonical.identityKeys).toEqual(

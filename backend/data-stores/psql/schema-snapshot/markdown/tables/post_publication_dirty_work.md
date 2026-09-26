@@ -56,4 +56,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_post_publication_dirty_work_protocol`: `CREATE TRIGGER trigger_post_publication_dirty_work_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_dirty_work FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()`
 - `trigger_post_publication_dirty_work_updated_at`: `CREATE TRIGGER trigger_post_publication_dirty_work_updated_at BEFORE UPDATE ON public.post_publication_dirty_work FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

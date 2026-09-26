@@ -19,12 +19,14 @@ export type ReconciliationPost = {
   is_public: boolean
   eligibility_fingerprint: string
   projection_identity: PublicationProjectionIdentity
+  identity_snapshot_id?: string
 }
 
 export async function listPublicationCandidates(
   work: ClaimedPostPublicationDirtyWork,
   limit: number,
   selectedPostIds?: readonly string[],
+  typed = false,
 ): Promise<ReconciliationPost[]> {
   const scopedPosts = selectedPostIds
     ? sql`SELECT UNNEST(${selectedPostIds}::uuid[]) AS id`
@@ -83,8 +85,14 @@ export async function listPublicationCandidates(
       candidate.created_by_id,
       candidate.community_id, candidate.post_type,
       to_char(candidate.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS sitemap_day, `)
-  query.append(publicationEligibilityFingerprintSql()).append(sql` AS eligibility_fingerprint, `)
-  query.append(publicationProjectionIdentitySql()).append(sql` AS projection_identity,
+  query
+    .append(publicationEligibilityFingerprintSql(typed))
+    .append(sql` AS eligibility_fingerprint, `)
+  query.append(
+    typed
+      ? sql`'{"topicIds":[],"identityKeys":[],"sitemapTargets":[]}'::jsonb`
+      : publicationProjectionIdentitySql(),
+  ).append(sql` AS projection_identity,
       (`)
   query.append(buildPublicPostEligibilityFilter('candidate', 'root')).append(sql`) AS is_public
     FROM scoped_posts scoped

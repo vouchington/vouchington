@@ -7,17 +7,20 @@ import {
   type PublicationProjectionIdentity,
 } from './projection-identity.mts'
 import { retainAppliedProjectionIdentity } from './shadow-repair.mts'
+import {
+  isPostPublicationTypedProtocolActive,
+  markPostPublicationTypedProtocol,
+} from './identity-protocol.mts'
+import { publicationSnapshotMismatchSql } from './identity-source.mts'
+import {
+  makeShadowAuditResult,
+  type PostPublicationShadowAuditResult,
+} from './shadow-audit-result.mts'
+export type { PostPublicationShadowAuditResult } from './shadow-audit-result.mts'
+import { recordPostPublicationShadowRepair } from './record-shadow-repair.mts'
 const SHADOW_AUDIT_CHECKPOINT = 'post-publication-shadow'
 export const POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE = 100
-export type PostPublicationShadowAuditResult = {
-  dryRun: boolean
-  scannedByScope: { post: number; author: number; community: number; rssFeed: number }
-  discrepanciesByScope: { post: number; author: number; community: number; rssFeed: number }
-  checkpoint: string | null
-  /** True when the caller should invoke the same audit again with `checkpoint`. */
-  hasMore: boolean
-}
-type ShadowAuditCandidate = {
+export type ShadowAuditCandidate = {
   id: string
   has_author: boolean
   has_community: boolean
@@ -25,6 +28,7 @@ type ShadowAuditCandidate = {
   is_discrepant: boolean
   applied_identity: PublicationProjectionIdentity | null
   current_identity: PublicationProjectionIdentity
+  typed: boolean
 }
 /** Bounded operator audit: dry runs are read-only; repairs record post transitions before advancing the checkpoint. */
 export async function runPostPublicationShadowAudit(options: {
@@ -40,6 +44,7 @@ export async function runPostPublicationShadowAudit(options: {
   const checkpointName = options.checkpointName ?? SHADOW_AUDIT_CHECKPOINT
   if (options.dryRun) return inspectPostPublicationShadowAudit(limit, options.cursor ?? null)
   await using query = await beginTransaction()
+  await markPostPublicationTypedProtocol(query)
   const result = await repairPostPublicationShadowAudit(query, limit, checkpointName)
   await query.commit()
   return result
@@ -77,6 +82,10 @@ async function retainShadowAuditCandidate(
   query: TransactionQuery,
   candidate: ShadowAuditCandidate,
 ): Promise<void> {
+  if (candidate.typed) {
+    await recordPostPublicationShadowRepair(query, candidate.id)
+    return
+  }
   const work = await recordPostPublicationChange(query, {
     scope: { type: 'post', postId: candidate.id },
     reason: 'post_updated',
@@ -120,6 +129,7 @@ async function listShadowAuditCandidates(
   limit: number,
 ): Promise<ShadowAuditCandidate[]> {
   const executor = query ?? write
+  const typed = await isPostPublicationTypedProtocolActive(query)
   const compare = sql`/* listPostPublicationShadowAuditCandidates */
     WITH source_ids AS MATERIALIZED (
       SELECT id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids
@@ -133,15 +143,26 @@ async function listShadowAuditCandidates(
       root.community_id IS NOT NULL AS has_community,
       EXISTS (SELECT 1 FROM post__stories ps JOIN rss_feed_items item ON item.story_id = ps.story_id
         JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id WHERE ps.post_id = root.id) AS has_rss_source,
-      receipt.applied_identity, `
+      ${typed}::boolean AS typed, `
+  compare.append(typed ? sql`NULL::jsonb AS applied_identity, ` : sql`receipt.applied_identity, `)
   compare.append(sql`CASE WHEN candidate.id IS NULL THEN
       '{"topicIds": [], "identityKeys": [], "sitemapTargets": []}'::jsonb ELSE `)
-  compare.append(publicationProjectionIdentitySql()).append(sql` END AS current_identity,
+  compare.append(
+    typed
+      ? sql`'{"topicIds":[],"identityKeys":[],"sitemapTargets":[]}'::jsonb`
+      : publicationProjectionIdentitySql(),
+  ).append(sql` END AS current_identity,
       (candidate.id IS NULL OR receipt.post_id IS NULL OR receipt.eligibility_fingerprint IS DISTINCT FROM `)
-  compare
-    .append(publicationEligibilityFingerprintSql())
-    .append(sql` OR receipt.applied_identity IS DISTINCT FROM `)
-  compare.append(publicationProjectionIdentitySql()).append(sql` OR EXISTS (
+  compare.append(publicationEligibilityFingerprintSql(typed))
+  if (typed)
+    compare
+      .append(sql` OR receipt.applied_snapshot_id IS NULL OR `)
+      .append(publicationSnapshotMismatchSql(sql`source_page.id`, sql`receipt.applied_snapshot_id`))
+  else
+    compare
+      .append(sql` OR receipt.applied_identity IS DISTINCT FROM `)
+      .append(publicationProjectionIdentitySql())
+  compare.append(sql` OR EXISTS (
         SELECT 1 FROM post_publication_dirty_work work
         LEFT JOIN post_publication_dirty_work_keys retained ON retained.dirty_work_id = work.id
           AND retained.kind IN ('impact_post', 'impact_community')
@@ -175,26 +196,4 @@ async function advanceShadowAuditCheckpoint(
     )`,
     [checkpointName, cursorPostId],
   )
-}
-function makeShadowAuditResult(
-  dryRun: boolean,
-  candidates: ShadowAuditCandidate[],
-  limit: number,
-): PostPublicationShadowAuditResult {
-  const discrepancies = candidates.filter(candidate => candidate.is_discrepant)
-  return {
-    dryRun,
-    scannedByScope: countShadowAuditScopes(candidates),
-    discrepanciesByScope: countShadowAuditScopes(discrepancies),
-    checkpoint: candidates.at(-1)?.id ?? null,
-    hasMore: candidates.length === limit,
-  }
-}
-function countShadowAuditScopes(candidates: ShadowAuditCandidate[]) {
-  return {
-    post: candidates.length,
-    author: candidates.filter(candidate => candidate.has_author).length,
-    community: candidates.filter(candidate => candidate.has_community).length,
-    rssFeed: candidates.filter(candidate => candidate.has_rss_source).length,
-  }
 }

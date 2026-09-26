@@ -6,6 +6,11 @@ import { retainCurrentPublicationIdentityKeys } from './current-identity-keys.mt
 import { retainCurrentPublicationTopicIds } from './topic-keys.mts'
 import { listPublicationCandidates, type ReconciliationPost } from './publication-candidates.mts'
 import { retainRssFeedNotificationImpacts } from './retain-rss-feed-notification-impacts.mts'
+import { retainOrphanPublicationIdentities } from './orphan-identities.mts'
+import {
+  isPostPublicationTypedProtocolActive,
+  materializePostPublicationIdentitySnapshot,
+} from './identity-snapshots.mts'
 
 export type { ReconciliationPost } from './publication-candidates.mts'
 
@@ -39,20 +44,37 @@ export async function reconcilePostPublicationDirtyWork(
   rssFeedItemIds: string[]
   hasMoreIdentityKeys: boolean
   cursorKeyId: string | null
+  hasIncompleteSnapshots: boolean
 }> {
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Publication page limit must be positive')
 
+  const typedProtocol = await isPostPublicationTypedProtocolActive()
   const [posts, orphanReceiptPage] = await Promise.all([
-    listPublicationCandidates(work, limit, selectedPostIds),
+    listPublicationCandidates(work, limit, selectedPostIds, typedProtocol),
     listOrphanReceiptPostIds(work, limit),
   ])
-  await retainCurrentPublicationTopicIds(
-    work.id,
-    posts.map(post => post.id),
-    work.topic_alias_id,
-  )
-  if (selectedPostIds)
+  const snapshots = typedProtocol
+    ? await posts.reduce(
+        async (pending, post) => {
+          const result = await pending
+          const snapshot = await materializePostPublicationIdentitySnapshot(work, post, limit)
+          if (snapshot.complete) post.identity_snapshot_id = snapshot.snapshotId
+          result.push(snapshot)
+          return result
+        },
+        Promise.resolve([] as Array<{ snapshotId: string; complete: boolean }>),
+      )
+    : []
+  const orphanIdentitiesComplete =
+    !typedProtocol || (await retainOrphanPublicationIdentities(work, orphanReceiptPage.ids, limit))
+  if (!typedProtocol)
+    await retainCurrentPublicationTopicIds(
+      work.id,
+      posts.map(post => post.id),
+      work.topic_alias_id,
+    )
+  if (selectedPostIds && !typedProtocol)
     if (
       !(await retainCurrentPublicationIdentityKeys(
         work,
@@ -63,8 +85,10 @@ export async function reconcilePostPublicationDirtyWork(
   // Topic UUID order is independent of post UUID order. First retain topics from every post page;
   // only then drain the single generation-fenced topic cursor.
   const hasMorePosts = (selectedPostIds ?? posts).length === limit
+  const hasIncompleteSnapshots =
+    snapshots.some(snapshot => !snapshot.complete) || !orphanIdentitiesComplete
   const topicPage =
-    hasMorePosts || orphanReceiptPage.hasMore
+    hasMorePosts || orphanReceiptPage.hasMore || hasIncompleteSnapshots
       ? { ids: [], hasMore: false }
       : await listPublicationTopicIds(work, limit)
   if (
@@ -80,7 +104,7 @@ export async function reconcilePostPublicationDirtyWork(
   )
     await retainRssFeedNotificationImpacts(work.id, work.rss_feed_id)
   const retainedKeyPage =
-    !hasMorePosts && !orphanReceiptPage.hasMore && !topicPage.hasMore
+    !hasMorePosts && !orphanReceiptPage.hasMore && !topicPage.hasMore && !hasIncompleteSnapshots
       ? await listPostPublicationIdentityKeys(work, limit)
       : {
           identityKeys: [],
@@ -112,6 +136,7 @@ export async function reconcilePostPublicationDirtyWork(
     rssFeedItemIds: retainedKeyPage.rssFeedItemIds,
     hasMoreIdentityKeys: retainedKeyPage.hasMore,
     cursorKeyId: retainedKeyPage.lastKeyId,
+    hasIncompleteSnapshots,
   }
 }
 

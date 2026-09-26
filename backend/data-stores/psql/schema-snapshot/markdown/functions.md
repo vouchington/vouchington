@@ -402,6 +402,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_m
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_post_publication_protocol_deactivation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_post_publication_protocol_deactivation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_review_dispute_subject_snapshot`
 
 ```sql
@@ -936,6 +944,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_mipr_case_op_context()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_require_mipr_succeeded_refund_observation_context()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_require_post_publication_typed_protocol`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_post_publication_typed_protocol()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

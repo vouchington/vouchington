@@ -669,6 +669,9 @@
     "fn_guard_membership_refund_operation_attempt_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;\n  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.attempt_ordinal, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.attempt_ordinal, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';\nEND $function$\n"
     },
+    "fn_guard_post_publication_protocol_deactivation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_post_publication_protocol_deactivation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.protocol_version = 'legacy' AND OLD.protocol_version = 'typed-v1' THEN\n    RAISE EXCEPTION 'typed publication protocol activation is irreversible';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_review_dispute_subject_snapshot": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -869,6 +872,9 @@
     },
     "fn_require_mipr_succeeded_refund_observation_context": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_mipr_succeeded_refund_observation_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency TEXT;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_require_post_publication_typed_protocol": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_post_publication_typed_protocol()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE protocol post_publication_identity_protocol%ROWTYPE;\nBEGIN\n  SELECT * INTO protocol FROM post_publication_identity_protocol WHERE singleton FOR SHARE;\n  IF TG_TABLE_NAME = 'post_publication_dirty_work' THEN\n    IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n    IF TG_OP = 'UPDATE' THEN\n      IF NEW.generation > OLD.generation THEN RETURN NEW; END IF;\n    END IF;\n  END IF;\n  IF protocol.protocol_version = 'typed-v1'\n    AND current_setting('voucha.post_publication_protocol', TRUE) IS DISTINCT FROM 'typed-v1' THEN\n    RAISE EXCEPTION 'post-publication typed protocol requires an expanded worker transaction';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n"
     },
     "fn_require_verified_membership_provider_observation_evidence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_provider_evidence_records evidence\n    WHERE evidence.id = NEW.membership_provider_evidence_id\n      AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL\n  ) THEN\n    RAISE EXCEPTION 'membership provider observations require verified evidence' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -62040,6 +62046,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_post_publication_dirty_work_protocol": "CREATE TRIGGER trigger_post_publication_dirty_work_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_dirty_work FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()",
         "trigger_post_publication_dirty_work_updated_at": "CREATE TRIGGER trigger_post_publication_dirty_work_updated_at BEFORE UPDATE ON public.post_publication_dirty_work FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -62298,6 +62305,602 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "post_publication_identity_protocol": {
+      "checkConstraints": {
+        "post_publication_identity_protocol_protocol_version_check": "CHECK ((protocol_version = ANY (ARRAY['legacy'::text, 'typed-v1'::text])))",
+        "post_publication_identity_protocol_singleton_check": "CHECK (singleton)"
+      },
+      "columns": {
+        "activated_at": {
+          "collation": null,
+          "comment": "Time of irreversible typed protocol activation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "protocol_version": {
+          "collation": null,
+          "comment": "Legacy compatibility or activated typed-v1 writer contract.",
+          "defaultExpression": "'legacy'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "singleton": {
+          "collation": null,
+          "comment": "Checked true key limits this rollout barrier to one row.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Operator-controlled rollout barrier. typed-v1 blocks legacy worker and audit mutations.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_identity_protocol_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_protocol_pkey ON public.post_publication_identity_protocol USING btree (singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "singleton",
+              "descending": false,
+              "expression": "singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["singleton"],
+        "definition": "PRIMARY KEY (singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_publication_identity_protocol_updated_at": "CREATE TRIGGER trigger_post_publication_identity_protocol_updated_at BEFORE UPDATE ON public.post_publication_identity_protocol FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_post_publication_protocol_deactivation": "CREATE TRIGGER trigger_post_publication_protocol_deactivation BEFORE UPDATE ON public.post_publication_identity_protocol FOR EACH ROW EXECUTE FUNCTION fn_guard_post_publication_protocol_deactivation()"
+      },
+      "uniqueConstraints": {}
+    },
+    "post_publication_identity_snapshot_keys": {
+      "checkConstraints": {
+        "post_publication_identity_snapshot_keys_check": "CHECK ((((kind = ANY (ARRAY['topic'::text, 'author'::text, 'community'::text, 'rss_feed'::text])) AND (uuid_value IS NOT NULL) AND (text_value IS NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = ANY (ARRAY['author_username'::text, 'community_slug'::text, 'post_slug'::text])) AND (uuid_value IS NULL) AND (text_value IS NOT NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = 'sitemap_target'::text) AND (uuid_value IS NULL) AND (text_value IS NULL) AND (post_type IS NOT NULL) AND (day IS NOT NULL))))",
+        "post_publication_identity_snapshot_keys_kind_check": "CHECK ((kind = ANY (ARRAY['topic'::text, 'author'::text, 'author_username'::text, 'community'::text, 'community_slug'::text, 'post_slug'::text, 'rss_feed'::text, 'sitemap_target'::text])))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "day": {
+          "collation": null,
+          "comment": "UTC publication day of a sitemap tuple.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "date"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "kind": {
+          "collation": null,
+          "comment": "Discriminant selecting the exact typed identity representation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "post_type": {
+          "collation": null,
+          "comment": "Post type of a sitemap tuple.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "post_types"
+        },
+        "snapshot_id": {
+          "collation": null,
+          "comment": "Owning snapshot; restrict deletion until bounded key reclamation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "text_value": {
+          "collation": null,
+          "comment": "Username or slug identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "uuid_value": {
+          "collation": null,
+          "comment": "UUID identity for topics, authors, communities or feeds.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        }
+      },
+      "comment": "Typed exact projection identities for a publication snapshot; delete explicitly in bounded pages before removing a snapshot.",
+      "foreignKeys": {
+        "post_publication_identity_snapshot_keys_snapshot_id_fkey": {
+          "columns": ["snapshot_id"],
+          "definition": "FOREIGN KEY (snapshot_id) REFERENCES post_publication_identity_snapshots(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_identity_snapshots",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, kind, uuid_value, text_value, post_type, day) NULLS NOT DISTINCT",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "snapshot_id",
+              "descending": false,
+              "expression": "snapshot_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "uuid_value",
+              "descending": false,
+              "expression": "uuid_value",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "text_value",
+              "descending": false,
+              "expression": "text_value",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "post_type",
+              "descending": false,
+              "expression": "post_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "date_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_identity_snapshot_keys_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key": {
+          "columns": ["snapshot_id", "kind", "uuid_value", "text_value", "post_type", "day"],
+          "definition": "UNIQUE NULLS NOT DISTINCT (snapshot_id, kind, uuid_value, text_value, post_type, day)"
+        }
+      }
+    },
+    "post_publication_identity_snapshots": {
+      "checkConstraints": {
+        "post_publication_identity_snapshots_check": "CHECK (((source_cursor_kind IS NULL) = (source_cursor_value IS NULL)))",
+        "post_publication_identity_snapshots_check1": "CHECK (((receipt_cursor_kind IS NULL) = (receipt_cursor_value IS NULL)))",
+        "post_publication_identity_snapshots_generation_check": "CHECK ((generation > 0))"
+      },
+      "columns": {
+        "abandoned_at": {
+          "collation": null,
+          "comment": "Source drift or supersession invalidated this attempt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Exact source comparison and scalar validation completion time.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "dirty_work_id": {
+          "collation": null,
+          "comment": "Work identifier retained after acknowledgement; not a cascading relation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "eligibility_fingerprint": {
+          "collation": null,
+          "comment": "Scalar candidate and root eligibility version.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "generation": {
+          "collation": null,
+          "comment": "Captured work generation fencing this attempt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "bigint"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "is_public": {
+          "collation": null,
+          "comment": "Eligibility captured for this attempt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "boolean"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Candidate identifier retained after deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "receipt_cursor_kind": {
+          "collation": null,
+          "comment": "Last atomically retained prior receipt kind.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "receipt_cursor_value": {
+          "collation": null,
+          "comment": "Last atomically retained prior receipt value.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "text"
+        },
+        "receipt_retained_at": {
+          "collation": null,
+          "comment": "EOF of prior receipt retention before current source staging.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "receipt_source_version": {
+          "collation": null,
+          "comment": "Accepted prior receipt version checked on every stage.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
+        "source_cursor_kind": {
+          "collation": null,
+          "comment": "Last atomically staged canonical source kind.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
+        "source_cursor_value": {
+          "collation": null,
+          "comment": "Last atomically staged canonical source value.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 16,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Immutable-at-acceptance bounded identity materialization attempts; intentionally independent from dirty work.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "idx_post_publication_identity_snapshots__post_completed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_identity_snapshots__post_completed ON public.post_publication_identity_snapshots USING btree (post_id, completed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "completed_at",
+              "descending": false,
+              "expression": "completed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "post_publication_identity_snapshots_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_snapshots_pkey ON public.post_publication_identity_snapshots USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_post_publication_identity_snapshots__attempt_post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_post_publication_identity_snapshots__attempt_post ON public.post_publication_identity_snapshots USING btree (dirty_work_id, generation, post_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "dirty_work_id",
+              "descending": false,
+              "expression": "dirty_work_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "generation",
+              "descending": false,
+              "expression": "generation",
+              "nullsFirst": false,
+              "opclass": "int8_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_post_publication_identity_snapshots_updated_at": "CREATE TRIGGER trigger_post_publication_identity_snapshots_updated_at BEFORE UPDATE ON public.post_publication_identity_snapshots FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "post_publication_projection_receipts": {
       "checkConstraints": {
         "chk_post_publication_projection_receipts_applied_identity_objec": "CHECK ((jsonb_typeof(applied_identity) = 'object'::text))",
@@ -62337,6 +62940,17 @@
           "ordinalPosition": 5,
           "type": "jsonb"
         },
+        "applied_snapshot_id": {
+          "collation": null,
+          "comment": "Complete typed snapshot accepted after projection effects; old JSON remains only for expand/contract readers.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
         "eligibility_fingerprint": {
           "collation": null,
           "comment": "Canonical primary-state publication eligibility fingerprint applied by the worker.",
@@ -62361,9 +62975,39 @@
         }
       },
       "comment": "Durable current-state receipt for cache, rating and sitemap projections owned by post-publication reconciliation.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "fk_post_publication_projection_receipts__snapshot": {
+          "columns": ["applied_snapshot_id"],
+          "definition": "FOREIGN KEY (applied_snapshot_id) REFERENCES post_publication_identity_snapshots(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_identity_snapshots",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_publication_projection_receipts__applied_snapshot_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_projection_receipts__applied_snapshot_id ON ONLY public.post_publication_projection_receipts USING btree (applied_snapshot_id) WHERE (applied_snapshot_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "applied_snapshot_id",
+              "descending": false,
+              "expression": "applied_snapshot_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(applied_snapshot_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "post_publication_projection_receipts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -62401,7 +63045,9 @@
         "definition": "PRIMARY KEY (post_id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_post_publication_projection_receipts_protocol": "CREATE TRIGGER trigger_post_publication_projection_receipts_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_projection_receipts FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()"
+      },
       "uniqueConstraints": {}
     },
     "post_publication_reconciliation_audit_checkpoints": {
@@ -62474,7 +63120,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_post_pub_audit_checkpoints_updated_at": "CREATE TRIGGER trigger_post_pub_audit_checkpoints_updated_at BEFORE UPDATE ON public.post_publication_reconciliation_audit_checkpoints FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_post_pub_audit_checkpoints_updated_at": "CREATE TRIGGER trigger_post_pub_audit_checkpoints_updated_at BEFORE UPDATE ON public.post_publication_reconciliation_audit_checkpoints FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_post_publication_audit_checkpoints_protocol": "CREATE TRIGGER trigger_post_publication_audit_checkpoints_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_reconciliation_audit_checkpoints FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()"
       },
       "uniqueConstraints": {}
     },

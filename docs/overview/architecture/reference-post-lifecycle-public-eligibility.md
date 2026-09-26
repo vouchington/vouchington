@@ -8,6 +8,11 @@ canonical SQL owner is
 Readers join a candidate post to `COALESCE(candidate.root_id, candidate.id)` and compose that
 predicate; callers must not restate a partial publication check.
 
+Post-publication reconciliation materializes the identities affected by this predicate in bounded
+relational pages before cache, sitemap, or receipt effects. Its snapshot lifecycle and coordinated
+worker activation barrier are owned by
+[`backend/services/post-publication`](../../../backend/services/post-publication/README.md).
+
 ## Predicates
 
 - **Core public state**: candidate and root are not deleted and are approved; the root has

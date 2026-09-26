@@ -1,10 +1,13 @@
 import { write } from '@data-stores/psql'
+import { writePostPublicationProtocol } from './identity-protocol.mts'
+import { cleanupPostPublicationIdentitySnapshots } from './snapshot-cleanup.mts'
 import type { ClaimedPostPublicationDirtyWork, PostPublicationDirtyWork } from './types.mts'
 
 export async function listAvailablePostPublicationDirtyWork(
   limit: number,
 ): Promise<PostPublicationDirtyWork[]> {
   assertPositive(limit)
+  await cleanupPostPublicationIdentitySnapshots()
   const { rows } = await write<PostPublicationDirtyWork>(
     `/* listAvailablePostPublicationDirtyWork */
     SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons,
@@ -21,7 +24,7 @@ export async function claimPostPublicationDirtyWork(
   leaseSeconds: number,
 ): Promise<ClaimedPostPublicationDirtyWork | undefined> {
   assertPositive(leaseSeconds)
-  const { rows } = await write<ClaimedPostPublicationDirtyWork>(
+  const { rows } = await writePostPublicationProtocol<ClaimedPostPublicationDirtyWork>(
     `/* claimPostPublicationDirtyWork */
     UPDATE post_publication_dirty_work SET lease_token = uuidv7(), leased_at = CURRENT_TIMESTAMP,
       lease_expires_at = CURRENT_TIMESTAMP + ($1::integer * INTERVAL '1 second')
@@ -39,7 +42,7 @@ export async function updatePostPublicationDirtyWorkCursors(
   const updatesCursor =
     cursors.postId !== undefined || cursors.topicId !== undefined || cursors.keyId !== undefined
   if (!updatesCursor) throw new TypeError('Post publication cursor update requires a cursor')
-  const { rowCount } = await write(
+  const { rowCount } = await writePostPublicationProtocol(
     `/* updatePostPublicationDirtyWorkCursors */ UPDATE post_publication_dirty_work
     SET cursor_post_id = CASE WHEN $1 THEN $2::uuid ELSE cursor_post_id END,
       cursor_topic_id = CASE WHEN $3 THEN $4::uuid ELSE cursor_topic_id END,
@@ -63,7 +66,7 @@ export async function updatePostPublicationDirtyWorkCursors(
 export async function acknowledgePostPublicationDirtyWork(
   work: Pick<PostPublicationDirtyWork, 'id' | 'generation'> & { leaseToken: string },
 ): Promise<boolean> {
-  const { rowCount } = await write(
+  const { rowCount } = await writePostPublicationProtocol(
     `/* acknowledgePostPublicationDirtyWork */ DELETE FROM post_publication_dirty_work
     WHERE id = $1 AND generation = $2 AND lease_token = $3 AND lease_expires_at > CURRENT_TIMESTAMP`,
     [work.id, work.generation, work.leaseToken],
@@ -75,7 +78,7 @@ export async function renewPostPublicationDirtyWorkLease(
   leaseSeconds: number,
 ): Promise<boolean> {
   assertPositive(leaseSeconds)
-  const { rowCount } = await write(
+  const { rowCount } = await writePostPublicationProtocol(
     `/* renewPostPublicationDirtyWorkLease */ UPDATE post_publication_dirty_work
     SET lease_expires_at = CURRENT_TIMESTAMP + ($1::integer * INTERVAL '1 second')
     WHERE id = $2 AND generation = $3 AND lease_token = $4 AND lease_expires_at > CURRENT_TIMESTAMP`,
@@ -86,7 +89,7 @@ export async function renewPostPublicationDirtyWorkLease(
 export async function releasePostPublicationDirtyWorkLease(
   work: Pick<PostPublicationDirtyWork, 'id' | 'generation'> & { leaseToken: string },
 ): Promise<boolean> {
-  const { rowCount } = await write(
+  const { rowCount } = await writePostPublicationProtocol(
     `/* releasePostPublicationDirtyWorkLease */ UPDATE post_publication_dirty_work
     SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
     WHERE id = $1 AND generation = $2 AND lease_token = $3 AND lease_expires_at > CURRENT_TIMESTAMP`,

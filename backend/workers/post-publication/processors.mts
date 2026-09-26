@@ -117,6 +117,10 @@ export async function processReconcilePostPublication(
               undefined,
               selected.posts.map(post => post.id),
             )
+            if (result.hasIncompleteSnapshots) {
+              await deps.enqueueContinuePostPublicationReconciliation()
+              return
+            }
             await applyPostPublicationProjectionEffects(result, deps)
             await enqueuePostPublicationNotificationEffects(result, deps)
             if (!(await deps.acknowledgePostPublicationProjectionReceipts(work, result.posts)))

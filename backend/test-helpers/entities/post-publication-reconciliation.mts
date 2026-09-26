@@ -1,5 +1,6 @@
 import { advisoryLockPool, read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { writeTestPostPublicationProtocol as writePostPublicationProtocol } from '../data-stores/psql/post-publication-protocol.mts'
 
 export async function countTestPostPublicationAdvisoryLockConnections(
   action: () => Promise<void>,
@@ -111,7 +112,7 @@ export async function setTestPostPublicationDirtyWorkTopicCursor(params: {
     WHERE `
   statement.append(column).append(sql` = ${params.scopeId}::uuid
   `)
-  await write(statement)
+  await writePostPublicationProtocol(statement)
 }
 
 export async function getTestPostPublicationDirtyWorkTopicCursor(params: {
@@ -146,7 +147,7 @@ export async function createTestOrphanPostPublicationProjectionReceipts(
   dirtyWorkId: string,
   count: number,
 ): Promise<string[]> {
-  const { rows } = await write<{ post_id: string }>(sql`
+  const { rows } = await writePostPublicationProtocol<{ post_id: string }>(sql`
     /* createTestOrphanPostPublicationProjectionReceipts */
     WITH orphan_ids AS MATERIALIZED (
       SELECT uuidv7() AS post_id FROM generate_series(1, ${count})

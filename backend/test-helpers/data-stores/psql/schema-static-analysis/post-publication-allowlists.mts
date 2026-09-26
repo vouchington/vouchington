@@ -1,5 +1,17 @@
 export const POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS = [
   [
+    'post_publication_identity_snapshots.dirty_work_id',
+    'Snapshot storage intentionally outlives dirty-work acknowledgement.',
+  ],
+  [
+    'post_publication_identity_snapshots.post_id',
+    'Exact accepted identities must survive hard deletion of their post.',
+  ],
+  [
+    'post_publication_identity_snapshot_keys.uuid_value',
+    'Typed exact identity tombstones preserve deleted source keys.',
+  ],
+  [
     'notifications.publication_post_id',
     'Stable reconciliation target intentionally survives hard deletion of the referenced post.',
   ],
@@ -40,6 +52,10 @@ export const POST_PUBLICATION_TABLES_WITHOUT_CREATED_AT = [
 ] as const
 
 export const POST_PUBLICATION_TABLES_WITHOUT_UPDATED_AT = [
+  [
+    'post_publication_identity_snapshot_keys',
+    'Snapshot identity rows are immutable; attempt checkpoints own progress timing.',
+  ],
   [
     'post_publication_dirty_work_keys',
     'Retained-key rows are inserted once and cascade on acknowledgement; parent updated_at owns lifecycle timing.',

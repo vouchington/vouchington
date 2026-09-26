@@ -106,6 +106,7 @@ export function makeResult(
     rssFeedItemIds: options.rssFeedItemIds ?? [],
     hasMoreIdentityKeys: options.hasMoreIdentityKeys ?? false,
     cursorKeyId: options.cursorKeyId ?? null,
+    hasIncompleteSnapshots: false,
   }
 }
 
