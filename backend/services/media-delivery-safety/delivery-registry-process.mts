@@ -1,16 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import {
-  invalidateMediaDeliveryPath,
-  isMediaDeliveryRegistryPublicationEnabled,
-  putMediaDeliveryRegistryRecord,
-} from '@modules/aws/media-delivery-registry'
+import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import {
-  getMediaDeliveryPath,
-  type ImageDeliveryRecord,
-  type MediaDeliveryDependencies,
-} from './delivery-registry-types.mts'
-import { runSequentially } from '@modules/utils/run-sequentially'
+import type { ImageDeliveryRecord, MediaDeliveryDependencies } from './delivery-registry-types.mts'
+import { publishStagedMediaDeliveryRecord } from './delivery-registry-publish.mts'
 
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 const MAX_ATTEMPTS = 5
@@ -24,19 +16,8 @@ export async function processMediaDeliveryRegistryRecord(
   if (!isMediaDeliveryRegistryPublicationEnabled()) return 'not_claimed'
   const record = await claimMediaDeliveryRegistryRecord(deliveryKey, now)
   if (!record) return 'not_claimed'
-  const deps = { invalidateMediaDeliveryPath, putMediaDeliveryRegistryRecord, ...dependencies }
   try {
-    await runSequentially([
-      () =>
-        deps.putMediaDeliveryRegistryRecord({
-          deliveryKey: record.delivery_key,
-          state: record.desired_state,
-          generation: record.generation,
-        }),
-      () => markMediaDeliveryRegistryProjected(record.delivery_key, record.generation, now),
-      () => deps.invalidateMediaDeliveryPath(getMediaDeliveryPath(record)),
-      () => markMediaDeliveryRegistryCompleted(record.delivery_key, record.generation, now),
-    ])
+    await publishStagedMediaDeliveryRecord(record.delivery_key, { dependencies })
     return 'completed'
   } catch (error) {
     await failMediaDeliveryRegistryRecord(
@@ -75,32 +56,9 @@ async function claimMediaDeliveryRegistryRecord(
   return rows[0] ?? null
 }
 
-async function markMediaDeliveryRegistryProjected(
-  deliveryKey: string,
-  generation: number,
-  now: Date,
-): Promise<void> {
-  await write(sql`/* markMediaDeliveryRegistryProjected */
-    UPDATE media_delivery_registry_records SET projected_at = ${now}
-    WHERE delivery_key = ${deliveryKey} AND state = 'claimed' AND generation = ${generation}
-  `)
-}
-
-async function markMediaDeliveryRegistryCompleted(
-  deliveryKey: string,
-  generation: number,
-  now: Date,
-): Promise<void> {
-  await write(sql`/* markMediaDeliveryRegistryCompleted */
-    UPDATE media_delivery_registry_records
-    SET state = 'completed', completed_at = ${now}, invalidated_at = ${now}, next_attempt_at = NULL
-    WHERE delivery_key = ${deliveryKey} AND state = 'claimed' AND generation = ${generation}
-  `)
-}
-
 async function failMediaDeliveryRegistryRecord(
   deliveryKey: string,
-  generation: number,
+  generation: string,
   now: Date,
   failureMessage: string,
 ): Promise<void> {

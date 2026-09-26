@@ -4,6 +4,7 @@ import type {
   listRecoverableMediaDeliveryRegistryKeys,
   processMediaDeliveryRegistryRecord,
   stageAllCurrentImagePlacementDeliveryRecords,
+  reconcileMediaDeliveryRepairMarkers,
 } from '@services/media-delivery-safety'
 import {
   processApplyMediaDeliveryRegistryRecord,
@@ -47,6 +48,7 @@ describe('media delivery registry processors', () => {
       .fn<typeof enqueueApplyMediaDeliveryRegistryRecord>()
       .mockResolvedValue(undefined)
     const stage = vi.fn<typeof stageAllCurrentImagePlacementDeliveryRecords>().mockResolvedValue(2)
+    const repair = vi.fn<typeof reconcileMediaDeliveryRepairMarkers>().mockResolvedValue(0)
     const now = new Date('2026-07-01T12:00:00.000Z')
 
     await expect(
@@ -54,10 +56,12 @@ describe('media delivery registry processors', () => {
         listRecoverableMediaDeliveryRegistryKeys: list,
         enqueueApplyMediaDeliveryRegistryRecord: enqueue,
         stageAllCurrentImagePlacementDeliveryRecords: stage,
+        reconcileMediaDeliveryRepairMarkers: repair,
         now: () => now,
       }),
     ).resolves.toEqual({ enqueued: 2 })
     expect(stage).toHaveBeenCalledOnce()
+    expect(repair).toHaveBeenCalledWith(100)
     expect(list).toHaveBeenCalledWith(100, now)
     expect(enqueue).toHaveBeenCalledTimes(2)
   })

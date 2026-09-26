@@ -1,19 +1,25 @@
-import { write } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import { beginTransaction, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import {
-  invalidateMediaDeliveryPath,
   isMediaDeliveryRegistryPublicationEnabled,
-  putMediaDeliveryRegistryRecord,
   type MediaDeliveryRegistryState,
 } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import { lockImageDeliveryMutation } from './delivery-lock.mts'
+import { lockImageDeliveryMutation, assertImageDeliveryTransaction } from './delivery-lock.mts'
 import {
   stageImagePlacementDeliveryRecord,
   stageLegacyImageDeliveryRecord,
 } from './delivery-registry-staging.mts'
-import { getMediaDeliveryPath, type ImageDeliveryRecord } from './delivery-registry-types.mts'
-import { runSequentially } from '@modules/utils/run-sequentially'
+import {
+  recordImageDeliveryRepairMarker,
+  recordLegacyImageDeliveryRepairMarker,
+} from './delivery-repair-markers.mts'
+import type { ImageDeliveryRecord, MediaDeliveryDependencies } from './delivery-registry-types.mts'
+import { publishPersistedDeliveryRecord } from './delivery-registry-acknowledgement.mts'
+import {
+  imageDeliveryIsAuthorized,
+  lockImageDeliveryLegalAuthority,
+} from './delivery-authority.mts'
 
 export async function publishImagePlacementDeliveryRecord(
   input: {
@@ -24,28 +30,116 @@ export async function publishImagePlacementDeliveryRecord(
   },
   options: QueryOptions = {},
 ): Promise<void> {
-  const query = options.query ?? write
-  const staged = await stageImagePlacementDeliveryRecord(input, { query })
-  if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  const record: ImageDeliveryRecord = {
-    delivery_key: staged.deliveryKey,
-    desired_state: input.state,
-    route_kind: 'placement',
-    placement_id: input.placementId,
-    placement_revision: input.revision,
-    asset_id: input.imageId,
-    generation: staged.generation,
+  if (!options.query) {
+    await using transaction = await beginTransaction()
+    await publishImagePlacementDeliveryRecord(input, { query: transaction })
+    await transaction.commit()
+    return
   }
-  await runSequentially([
-    () =>
-      putMediaDeliveryRegistryRecord({
-        deliveryKey: staged.deliveryKey,
-        state: input.state,
-        generation: staged.generation,
-      }),
-    () => invalidateMediaDeliveryPath(getMediaDeliveryPath(record)),
-    () => markPublishedRecord(query, staged.deliveryKey, input.state, staged.generation),
-  ])
+  const query = options.query
+  await lockImageDeliveryMutation(query, {
+    placementIds: [input.placementId],
+    placementOnly: true,
+  })
+  if (input.state === 'allow')
+    await lockImageDeliveryLegalAuthority(query, {
+      route_kind: 'placement',
+      placement_id: input.placementId,
+    })
+  if (input.state === 'withheld' && isMediaDeliveryRegistryPublicationEnabled())
+    await recordImageDeliveryRepairMarker(input)
+  const staged = await stageImagePlacementDeliveryRecord(input, { query })
+  if (input.state === 'withheld') {
+    if (isMediaDeliveryRegistryPublicationEnabled())
+      await publishPersistedDeliveryRecord(
+        {
+          delivery_key: staged.deliveryKey,
+          desired_state: 'withheld',
+          route_kind: 'placement',
+          placement_id: input.placementId,
+          placement_revision: input.revision,
+          asset_id: input.imageId,
+          generation: staged.generation,
+        },
+        query,
+      )
+    return
+  }
+  await publishStagedMediaDeliveryRecord(staged.deliveryKey, { query })
+}
+
+/** Publishes only the immutable tuple already staged by an authority-owning transaction. */
+export async function publishStagedMediaDeliveryRecord(
+  deliveryKey: string,
+  options: QueryOptions & { dependencies?: Partial<MediaDeliveryDependencies> } = {},
+): Promise<void> {
+  if (!isMediaDeliveryRegistryPublicationEnabled()) return
+  if (!options.query) {
+    await using transaction = await beginTransaction()
+    await publishStagedMediaDeliveryRecord(deliveryKey, {
+      query: transaction,
+      dependencies: options.dependencies,
+    })
+    await transaction.commit()
+    return
+  }
+  const query = options.query ?? write
+  assertImageDeliveryTransaction(query)
+  const { rows } = await query<ImageDeliveryRecord>(sql`
+    /* publishStagedMediaDeliveryRecord */
+    SELECT delivery_key, desired_state, route_kind, placement_id, placement_revision, asset_id, generation
+    FROM media_delivery_registry_records
+    WHERE delivery_key = ${deliveryKey}
+  `)
+  const record = rows[0]
+  if (!record) throw new Error(`Missing staged image placement delivery record ${deliveryKey}`)
+  if (
+    record.route_kind === 'placement' &&
+    (!record.placement_id || record.placement_revision === null)
+  )
+    throw new Error(`Placement delivery record ${deliveryKey} is missing its exact tuple`)
+  await lockImageDeliveryMutation(query, {
+    placementIds: record.placement_id ? [record.placement_id] : [],
+    imageIds: record.route_kind === 'legacy-image' ? [record.asset_id] : [],
+    placementOnly: record.route_kind === 'placement',
+  })
+  await lockImageDeliveryLegalAuthority(query, record)
+  const current = await readCurrentPlacementDeliveryRecord(query, deliveryKey)
+  if (!current) throw new Error(`Missing staged image placement delivery record ${deliveryKey}`)
+  const publishable =
+    current.desired_state === 'withheld' || (await imageDeliveryIsAuthorized(query, current))
+  if (!publishable) {
+    // This denial is newly minted inside the publication transaction. If its acknowledgement
+    // rolls back, repair must advance beyond the token already accepted by the edge.
+    if (current.route_kind === 'legacy-image')
+      await recordLegacyImageDeliveryRepairMarker(current.asset_id)
+    else
+      await recordImageDeliveryRepairMarker({
+        placementId: current.placement_id!,
+        revision: current.placement_revision!,
+        imageId: current.asset_id,
+      })
+  }
+  const recordToPublish = publishable
+    ? current
+    : await (
+        current.route_kind === 'legacy-image'
+          ? stageLegacyImageDeliveryRecord(current.asset_id, 'withheld', {
+              query,
+              forceGeneration: true,
+            })
+          : stageImagePlacementDeliveryRecord(
+              {
+                placementId: current.placement_id!,
+                revision: current.placement_revision!,
+                imageId: current.asset_id,
+                state: 'withheld',
+              },
+              { query, forceGeneration: true },
+            )
+      ).then(() => readCurrentPlacementDeliveryRecord(query, deliveryKey))
+  if (!recordToPublish) throw new Error(`Failed to restage withheld delivery record ${deliveryKey}`)
+  await publishPersistedDeliveryRecord(recordToPublish, query, options.dependencies)
 }
 
 export async function publishLegacyImageDeliveryRecord(
@@ -53,81 +147,49 @@ export async function publishLegacyImageDeliveryRecord(
   state: MediaDeliveryRegistryState,
   options: QueryOptions = {},
 ): Promise<void> {
-  const query = options.query ?? write
+  if (!options.query) {
+    await using transaction = await beginTransaction()
+    await publishLegacyImageDeliveryRecord(imageId, state, { query: transaction })
+    await transaction.commit()
+    return
+  }
+  const query = options.query
+  assertImageDeliveryTransaction(query)
+  // Legacy denial is also called while an exact-placement fence is held. It never expands that
+  // domain; only an allow requires the image mutation fence.
+  if (state === 'allow') await lockImageDeliveryMutation(query, { imageIds: [imageId] })
+  if (state === 'withheld' && isMediaDeliveryRegistryPublicationEnabled())
+    await recordLegacyImageDeliveryRepairMarker(imageId)
   const staged = await stageLegacyImageDeliveryRecord(imageId, state, { query })
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  await runSequentially([
-    () =>
-      putMediaDeliveryRegistryRecord({
-        deliveryKey: staged.deliveryKey,
-        state,
-        generation: staged.generation,
-      }),
-    () => invalidateMediaDeliveryPath(`/images/${imageId}`),
-    () => markPublishedRecord(query, staged.deliveryKey, state, staged.generation),
-  ])
-}
-
-export async function prepublishImagePlacementDenials(
-  input: { postId?: string; imageId?: string; retainImageIds?: string[] },
-  options: QueryOptions & { query?: TransactionQuery } = {},
-): Promise<void> {
-  const query = options.query ?? write
-  if (options.query) {
-    await lockImageDeliveryMutation(options.query, {
-      postIds: input.postId ? [input.postId] : [],
-      imageIds: input.imageId ? [input.imageId] : [],
-    })
+  if (state === 'allow') {
+    await publishStagedMediaDeliveryRecord(staged.deliveryKey, { query })
+    return
   }
-  const { rows } = await query<{ placement_id: string; revision: number; image_id: string }>(sql`
-    /* prepublishImagePlacementDenials */
-    SELECT placement.id AS placement_id, placement.revision, binding.image_id
-    FROM media_placements placement
-    JOIN (
-      SELECT placement_id, image_id, post_id FROM image_placements
-      UNION ALL SELECT placement_id, image_id, NULL::uuid AS post_id FROM image_surface_placements
-    ) binding ON binding.placement_id = placement.id
-    WHERE placement.retired_at IS NULL
-      AND (${input.postId ?? null}::uuid IS NULL OR binding.post_id = ${input.postId ?? null}::uuid)
-      AND (${input.imageId ?? null}::uuid IS NULL OR binding.image_id = ${input.imageId ?? null}::uuid)
-      AND NOT (binding.image_id = ANY(${input.retainImageIds ?? []}::uuid[]))
-    FOR UPDATE OF placement
-  `)
-  for (const row of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- every prior exact tuple must be denied before retirement.
-    await publishImagePlacementDeliveryRecord(
-      {
-        placementId: row.placement_id,
-        revision: row.revision,
-        imageId: row.image_id,
-        state: 'withheld',
-      },
-      { query },
-    )
-  }
+  await publishPersistedDeliveryRecord(
+    {
+      delivery_key: staged.deliveryKey,
+      desired_state: state,
+      route_kind: 'legacy-image',
+      asset_id: imageId,
+      placement_id: null,
+      placement_revision: null,
+      generation: staged.generation,
+    },
+    query,
+  )
 }
 
-/** Denies every externally routable form of an image before its safety state becomes unavailable. */
-export async function prepublishImageDeliveryDenials(
-  imageId: string,
-  options: QueryOptions & { query?: TransactionQuery } = {},
-): Promise<void> {
-  await prepublishImagePlacementDenials({ imageId }, options)
-  await publishLegacyImageDeliveryRecord(imageId, 'withheld', options)
-}
-
-async function markPublishedRecord(
-  query: QueryOptions['query'] extends infer Query ? NonNullable<Query> : never,
+async function readCurrentPlacementDeliveryRecord(
+  query: NonNullable<QueryOptions['query']>,
   deliveryKey: string,
-  state: MediaDeliveryRegistryState,
-  generation: number,
-): Promise<void> {
-  const { rowCount } = await query(sql`/* markPublishedMediaDeliveryRecord */
-    UPDATE media_delivery_registry_records
-    SET state = 'completed', projected_at = CURRENT_TIMESTAMP, invalidated_at = CURRENT_TIMESTAMP,
-      completed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL, failure_message = NULL
-    WHERE delivery_key = ${deliveryKey} AND desired_state = ${state} AND generation = ${generation}
+): Promise<ImageDeliveryRecord | null> {
+  const { rows } = await query<ImageDeliveryRecord>(sql`
+    /* readCurrentPlacementDeliveryRecord */
+    SELECT delivery_key, desired_state, route_kind, placement_id, placement_revision, asset_id, generation
+    FROM media_delivery_registry_records
+    WHERE delivery_key = ${deliveryKey}
+    FOR UPDATE
   `)
-  if (rowCount !== 1)
-    throw new Error(`Media delivery generation changed while publishing ${deliveryKey}`)
+  return rows[0] ?? null
 }

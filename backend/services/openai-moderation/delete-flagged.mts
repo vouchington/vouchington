@@ -1,11 +1,14 @@
 import { getImageByAny } from '@services/images/get'
 import { deleteImageById } from '@services/images/delete'
 import * as imageS3 from '@services/images/s3'
-import { read, write } from '@data-stores/psql'
+import { read, write, beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { recordImageAutoRemoval } from './image-auto-removal-audit.mts'
-import { prepublishImageDeliveryDenials } from '@services/media-delivery-safety'
+import {
+  prepublishImageDeliveryDenials,
+  lockImageDeliveryMutation,
+} from '@services/media-delivery-safety'
 
 export const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = 25
 
@@ -19,7 +22,6 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   const isSexualMinors = results?.some(r => r.categories?.['sexual/minors'] === true) ?? false
 
   if (isSexualMinors) {
-    await prepublishImageDeliveryDenials(image.id)
     const pending = await markImageQuarantinePending(image.id)
     if (!pending) return false
 
@@ -58,7 +60,6 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
     return true
   }
 
-  await prepublishImageDeliveryDenials(imageId)
   await deleteImageById(imageId)
   try {
     await recordImageAutoRemoval(imageId)
@@ -88,13 +89,17 @@ export async function reconcilePendingImageQuarantines(): Promise<{ reconciled: 
 }
 
 async function markImageQuarantinePending(imageId: string): Promise<boolean> {
-  const { rows } = await write(sql`/* markImageQuarantinePending */
+  await using transaction = await beginTransaction()
+  await lockImageDeliveryMutation(transaction, { imageIds: [imageId] })
+  await prepublishImageDeliveryDenials(imageId, { query: transaction })
+  const { rows } = await transaction(sql`/* markImageQuarantinePending */
     UPDATE images
     SET quarantine_pending_at = COALESCE(quarantine_pending_at, NOW())
     WHERE id = ${imageId}
       AND deleted_at IS NULL
     RETURNING id
   `)
+  await transaction.commit()
   return rows.length > 0
 }
 

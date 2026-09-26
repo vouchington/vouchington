@@ -1,3 +1,4 @@
+import { beginTransaction } from '@data-stores/psql'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as mediaDeliveryRegistryProvider from '@modules/aws/media-delivery-registry'
 import {
@@ -10,6 +11,7 @@ import {
   insertTestPostImage,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
+import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
 import {
   compensateFailedImageDeliveryMutation,
   getImagePlacementDeliveryKey,
@@ -53,7 +55,7 @@ describe('media delivery registry processor', () => {
     expect(put).toHaveBeenCalledWith({
       deliveryKey,
       state: 'allow',
-      generation: expect.any(Number),
+      generation: expect.stringMatching(/^\d+$/),
     })
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
       desired_state: 'allow',
@@ -109,6 +111,84 @@ describe('media delivery registry processor', () => {
     })
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
       desired_state: 'allow',
+      state: 'completed',
+    })
+  })
+
+  it('allocates a later generation after a rolled-back denial staging transaction', async () => {
+    const user = await createTestUserDirect()
+    const imageId = await insertTestImage(user.id)
+    await setTestUserProfileImage(user.id, imageId)
+    const [placement] = await getTestImageSurfacePlacements({ userId: user.id })
+    if (!placement) throw new Error('surface placement was not created')
+    const input = {
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+    }
+    const initial = await stageImagePlacementDeliveryRecord({ ...input, state: 'allow' })
+    let rolledBackGeneration: string
+    {
+      await using transaction = await beginTransaction()
+      const staged = await stageImagePlacementDeliveryRecord(
+        { ...input, state: 'withheld' },
+        { query: transaction },
+      )
+      rolledBackGeneration = staged.generation
+    }
+    const repaired = await stageImagePlacementDeliveryRecord({ ...input, state: 'withheld' })
+
+    expect(BigInt(rolledBackGeneration!)).toBeGreaterThan(BigInt(initial.generation))
+    expect(BigInt(repaired.generation)).toBeGreaterThan(BigInt(rolledBackGeneration!))
+  })
+
+  it('replaces an allow staged from a retired surface tuple with a newer withheld generation', async () => {
+    const user = await createTestUserDirect()
+    const imageId = await insertTestImage(user.id)
+    await setTestUserProfileImage(user.id, imageId)
+    const [placement] = await getTestImageSurfacePlacements({ userId: user.id })
+    if (!placement) throw new Error('surface placement was not created')
+    stubPublication()
+    const put = vi
+      .spyOn(mediaDeliveryRegistryProvider, 'putMediaDeliveryRegistryRecord')
+      .mockResolvedValue({ $metadata: {} })
+    vi.spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath').mockResolvedValue({
+      $metadata: {},
+    })
+    const deliveryKey = getImagePlacementDeliveryKey({
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+    })
+    await stageImagePlacementDeliveryRecord({
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
+    await using transaction = await beginTransaction()
+    await syncImageSurfacePlacement(
+      { surfaceKind: 'user-profile-image', userId: user.id },
+      null,
+      transaction,
+    )
+    await transaction.commit()
+    // A stale reconciliation snapshot can attempt this upsert after retirement committed.
+    await stageImagePlacementDeliveryRecord({
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
+
+    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('completed')
+    expect(put).toHaveBeenLastCalledWith({
+      deliveryKey,
+      state: 'withheld',
+      generation: expect.stringMatching(/^\d+$/),
+    })
+    expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
+      desired_state: 'withheld',
       state: 'completed',
     })
   })

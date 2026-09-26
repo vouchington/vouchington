@@ -19,7 +19,10 @@ import {
   softDeleteAndScrubUserProfile,
 } from './delete-profile-pii.mts'
 import type { PrivateUser } from './types.mts'
-import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
+import {
+  prepublishImageSurfaceDenials,
+  lockImageSurfaceOwner,
+} from '@services/media-delivery-safety'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 
 type UserDeletionTarget = {
@@ -82,6 +85,7 @@ async function lockAndGetUserDeletionTarget(
   userId: string,
 ): Promise<UserDeletionTarget> {
   await lockUserDeletionLifecycle(query, userId)
+  await lockImageSurfaceOwner({ surfaceKind: 'user-profile-image', userId }, query)
   return getUserDeletionTarget(query, userId)
 }
 
@@ -90,7 +94,19 @@ async function scrubUserDeletionIdentities(
   userId: string,
   requestedById: string,
 ): Promise<void> {
-  await prepublishImageSurfaceDenial({ surfaceKind: 'user-profile-image', userId }, query)
+  const { rows: links } = await query<{ id: string }>(sql`
+    SELECT id FROM user_profile_links WHERE user_id = ${userId} ORDER BY id
+  `)
+  await prepublishImageSurfaceDenials(
+    [
+      { surfaceKind: 'user-profile-image', userId },
+      ...links.map(link => ({
+        surfaceKind: 'user-profile-link-image' as const,
+        userProfileLinkId: link.id,
+      })),
+    ],
+    query,
+  )
   const softDeleteRowCount = await softDeleteAndScrubUserProfile(userId, requestedById, query)
   assert(softDeleteRowCount > 0, 409, 'User is already deleted')
   await revokeVerifiedIdentitiesForDeletedUser(userId, query)

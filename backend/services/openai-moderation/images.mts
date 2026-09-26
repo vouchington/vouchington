@@ -1,13 +1,16 @@
 import { getImageByAny } from '@services/images/get'
 import { presignImageReadUrl } from '@services/images/s3'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
-import { read, write } from '@data-stores/psql'
+import { read, beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { deleteFlaggedImage } from './delete-flagged.mts'
 import { createOpenAIModeration } from './request.mts'
 import { publishTerminalImageState } from './terminal-image-state.mts'
-import { prepublishImageDeliveryDenials } from '@services/media-delivery-safety'
+import {
+  prepublishImageDeliveryDenials,
+  lockImageDeliveryMutation,
+} from '@services/media-delivery-safety'
 
 type UpsertImageModerationDependencies = {
   createOpenAIModeration: typeof createOpenAIModeration
@@ -58,7 +61,6 @@ export async function upsertImageOpenAIModeration(
 
   const existing = await findExistingImageOpenAIModeration(image.sha_256)
   if (existing) {
-    if (existing.flagged) await prepublishImageDeliveryDenials(imageId)
     const applied = await applyImageOpenAIModerationResults(
       imageId,
       existing.results,
@@ -90,7 +92,6 @@ export async function upsertImageOpenAIModeration(
   const results = await dependencies.createOpenAIModeration([], [imageUrl])
   const flagged = results.some(result => result.flagged)
 
-  if (flagged) await prepublishImageDeliveryDenials(imageId)
   const applied = await applyImageOpenAIModerationResults(imageId, results, flagged)
   if (!applied) {
     return {
@@ -128,7 +129,10 @@ async function applyImageOpenAIModerationResults(
   results: unknown,
   flagged: boolean,
 ): Promise<boolean> {
-  const { rows } = await write(sql`/* applyImageOpenAIModerationResults */
+  await using transaction = await beginTransaction()
+  await lockImageDeliveryMutation(transaction, { imageIds: [imageId] })
+  if (flagged) await prepublishImageDeliveryDenials(imageId, { query: transaction })
+  const { rows } = await transaction(sql`/* applyImageOpenAIModerationResults */
     UPDATE images
     SET openai_omni_moderation_results = ${JSON.stringify(results)}::jsonb,
         openai_omni_moderation_flagged = ${flagged},
@@ -138,6 +142,7 @@ async function applyImageOpenAIModerationResults(
     RETURNING id
   `)
 
+  await transaction.commit()
   return rows.length > 0
 }
 

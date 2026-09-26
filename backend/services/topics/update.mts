@@ -1,6 +1,6 @@
 import type { PrivateUser } from '@services/users/types'
 import type { CreateTopicUpdates, Topic } from './types.mts'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getTopicByAny } from './get.mts'
 import assert from 'http-assert'
@@ -18,7 +18,10 @@ import {
 } from './update-fields.mts'
 import { createTopicAliases, finalizeClaimedTopicAliases } from './aliases.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
+import {
+  prepublishImageSurfaceDenials,
+  type ImageSurfaceReference,
+} from '@services/media-delivery-safety'
 export const updateTopic = async (
   updater: PrivateUser,
   topic: Topic,
@@ -35,18 +38,12 @@ export const updateTopic = async (
     const hasUpdates = hasTopicFieldUpdates(changes)
     if (hasUpdates) {
       await assertValidTopicFieldUpdates(topic, changes, allowTypeChange, options)
-      if ('logo_image_id' in changes && changes.logo_image_id !== topic.logo_image_id) {
-        await prepublishImageSurfaceDenial(
-          { surfaceKind: 'topic-logo-image', topicId: topic.id },
-          options.query ?? write,
-        )
-      }
-      if ('hero_image_id' in changes && changes.hero_image_id !== topic.hero_image_id) {
-        await prepublishImageSurfaceDenial(
-          { surfaceKind: 'topic-hero-image', topicId: topic.id },
-          options.query ?? write,
-        )
-      }
+      const references: ImageSurfaceReference[] = []
+      if ('logo_image_id' in changes)
+        references.push({ surfaceKind: 'topic-logo-image', topicId: topic.id })
+      if ('hero_image_id' in changes)
+        references.push({ surfaceKind: 'topic-hero-image', topicId: topic.id })
+      if (references.length) await prepublishImageSurfaceDenials(references, options.query ?? write)
       const updateQuery = sql`/* updateTopicInStore */ UPDATE topics SET updated_by_id = ${updater.id}`
       appendTopicUpdateFields(updateQuery, changes)
       let resolvedHostnameId: string | null | undefined
@@ -73,14 +70,11 @@ export const updateTopic = async (
 
     return getTopicByAny(topic.id, options)
   }
-  const transactionOptions = queryOptions.query
-    ? { query: queryOptions.query }
-    : queryOptions.client
-      ? queryOptions
-      : null
   let topic2
-  if (transactionOptions) {
-    topic2 = await updateInStore(transactionOptions)
+  if (queryOptions.query) {
+    topic2 = await updateInStore({ query: queryOptions.query })
+  } else if (queryOptions.client) {
+    topic2 = await withTransactionOptions(queryOptions, updateInStore)
   } else {
     await using query = await beginTransaction()
     topic2 = await updateInStore({ query })

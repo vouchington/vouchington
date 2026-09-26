@@ -12,7 +12,7 @@ describe('media delivery registry keys', () => {
         placement_id: null,
         placement_revision: null,
         asset_id: 'image-1',
-        generation: 1,
+        generation: '1',
       }),
     ).toBe('/images/image-1')
   })
@@ -26,7 +26,7 @@ describe('media delivery registry keys', () => {
         placement_id: null,
         placement_revision: null,
         asset_id: 'image-1',
-        generation: 1,
+        generation: '1',
       }),
     ).toThrow('Placement delivery record image-placement:missing is missing its exact tuple')
   })

@@ -6,28 +6,12 @@ import {
   publishImagePlacementDeliveryRecord,
   publishLegacyImageDeliveryRecord,
   stageImagePlacementDeliveryRecord,
+  lockImageSurfacePlacements,
+  imageSurfaceWhere as surfaceWhere,
+  type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
 
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
-
-type ImageSurfaceReference =
-  | { surfaceKind: 'user-profile-image'; userId: string }
-  | { surfaceKind: 'topic-logo-image' | 'topic-hero-image'; topicId: string }
-  | { surfaceKind: 'community-profile-image' | 'community-banner-image'; communityId: string }
-  | { surfaceKind: 'user-profile-link-image'; userProfileLinkId: string }
-
-function surfaceWhere(reference: ImageSurfaceReference): ReturnType<typeof sql> {
-  if ('userId' in reference) {
-    return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.user_id = ${reference.userId}`
-  }
-  if ('topicId' in reference) {
-    return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.topic_id = ${reference.topicId}`
-  }
-  if ('communityId' in reference) {
-    return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.community_id = ${reference.communityId}`
-  }
-  return sql`surface.surface_kind = ${reference.surfaceKind} AND surface.user_profile_link_id = ${reference.userProfileLinkId}`
-}
 
 function surfaceColumns(reference: ImageSurfaceReference): {
   userId: string | null
@@ -68,7 +52,10 @@ export async function syncImageSurfacePlacement(
   imageId: string | null,
   query: QueryExecutor,
 ): Promise<ImagePlacementTuple | null> {
+  await lockImageSurfacePlacements([reference], query)
   await assertImageReadyForPublicSurface(imageId, query)
+  // The pre-denial and retirement share this lock domain with recovery.  Re-read after acquiring
+  // it: the tuple observed before the advisory lock is never authority to publish or retire.
   const current = await getImageSurfacePlacement(reference, query)
   if (current?.image_id === imageId) return current
 
@@ -186,7 +173,6 @@ async function assertImageReadyForPublicSurface(
       AND openai_omni_moderation_flagged = FALSE
       AND openai_omni_moderation_results IS NOT NULL
       AND openai_omni_moderation_created_at IS NOT NULL
-    FOR SHARE
   `)
   if (rows.length !== 1) throw new Error('Image is not ready for a public surface')
 }

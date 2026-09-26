@@ -12,7 +12,7 @@ import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { recordTopicMergePublicationChanges } from '@services/post-publication'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import { lockTopicMergeAliasPublicationScopes } from './alias-publication-locks.mts'
-import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
+import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
 type MergeRow = Pick<Topic, 'id' | 'slug'> & Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
@@ -31,12 +31,11 @@ export async function mergeTopicAliases(
   )
   await lockTopicRssFeedAttachmentLifecycle(query, sourceTopic.id)
   await recordTopicMergePublicationChanges(query, sourceTopic.id, aliasScopes.lockedAliasIds)
-  await prepublishImageSurfaceDenial(
-    { surfaceKind: 'topic-logo-image', topicId: sourceTopic.id },
-    query,
-  )
-  await prepublishImageSurfaceDenial(
-    { surfaceKind: 'topic-hero-image', topicId: sourceTopic.id },
+  await prepublishImageSurfaceDenials(
+    [
+      { surfaceKind: 'topic-logo-image', topicId: sourceTopic.id },
+      { surfaceKind: 'topic-hero-image', topicId: sourceTopic.id },
+    ],
     query,
   )
   // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below

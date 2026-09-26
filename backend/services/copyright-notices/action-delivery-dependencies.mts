@@ -5,7 +5,10 @@ import {
   withholdImagePlacementForCopyright,
 } from '@services/images/placements'
 import { clearUnavailableImagePlacementCopyrightWithholding } from '@services/images/placement-copyright-resolution'
-import { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import {
+  publishImagePlacementDeliveryRecord,
+  publishStagedMediaDeliveryRecord,
+} from '@services/media-delivery-safety'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 
 async function publishCopyrightLegalImagePlacementDeliveryRecord(
@@ -15,22 +18,31 @@ async function publishCopyrightLegalImagePlacementDeliveryRecord(
   return publishImagePlacementDeliveryRecord(...args)
 }
 
+async function publishStagedCopyrightDeliveryRecord(deliveryKey: string): Promise<void> {
+  assertMediaDeliveryLegalEnforcementEnabled()
+  await publishStagedMediaDeliveryRecord(deliveryKey)
+}
+
 export type CopyrightActionDeliveryDependencies = {
+  assertMediaDeliveryLegalEnforcementEnabled: typeof assertMediaDeliveryLegalEnforcementEnabled
   clearUnavailableImagePlacementCopyrightWithholding: typeof clearUnavailableImagePlacementCopyrightWithholding
   getImagePlacementForCopyright: typeof getImagePlacementForCopyright
   withholdImagePlacementForCopyright: typeof withholdImagePlacementForCopyright
   restoreImagePlacementForCopyright: typeof restoreImagePlacementForCopyright
   getPostIdForImagePlacementCopyright: typeof getPostIdForImagePlacementCopyright
   publishImagePlacementDeliveryRecord: typeof publishImagePlacementDeliveryRecord
+  publishStagedMediaDeliveryRecord: typeof publishStagedMediaDeliveryRecord
 }
 
 const defaultDependencies: CopyrightActionDeliveryDependencies = {
+  assertMediaDeliveryLegalEnforcementEnabled,
   clearUnavailableImagePlacementCopyrightWithholding,
   getImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
   restoreImagePlacementForCopyright,
   getPostIdForImagePlacementCopyright,
   publishImagePlacementDeliveryRecord: publishCopyrightLegalImagePlacementDeliveryRecord,
+  publishStagedMediaDeliveryRecord: publishStagedCopyrightDeliveryRecord,
 }
 
 export function getCopyrightActionDeliveryDependencies(

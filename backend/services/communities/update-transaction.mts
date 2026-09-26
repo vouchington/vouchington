@@ -1,5 +1,8 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { prepublishImageSurfaceDenial } from '@services/media-delivery-safety'
+import {
+  prepublishImageSurfaceDenials,
+  type ImageSurfaceReference,
+} from '@services/media-delivery-safety'
 import { recordPostPublicationChange } from '@services/post-publication'
 import type { CommunityWithOwner } from './get.mts'
 import type { UpdateCommunityInput } from './update.mts'
@@ -26,6 +29,7 @@ export async function updateCommunityInTransaction(input: {
 async function applyLockedCommunityUpdate(
   input: Parameters<typeof updateCommunityInTransaction>[0],
 ) {
+  await prepublishChangedCommunitySurfaces(input)
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
   const rowCount = await prepublishAndUpdateCommunity(input)
   return { locked, rowCount }
@@ -34,7 +38,6 @@ async function applyLockedCommunityUpdate(
 async function prepublishAndUpdateCommunity(
   input: Parameters<typeof updateCommunityInTransaction>[0],
 ): Promise<number | null> {
-  await prepublishChangedCommunitySurfaces(input)
   const result = await input.query(input.statement.text, input.statement.values)
   return result.rowCount
 }
@@ -57,24 +60,14 @@ async function prepublishChangedCommunitySurfaces(input: {
   update: UpdateCommunityInput
   query: TransactionQuery
 }): Promise<void> {
-  if (
-    'profile_image_id' in input.update &&
-    input.update.profile_image_id !== input.community.profile_image_id
-  ) {
-    await prepublishImageSurfaceDenial(
-      { surfaceKind: 'community-profile-image', communityId: input.communityId },
-      input.query,
-    )
+  const references: ImageSurfaceReference[] = []
+  if ('profile_image_id' in input.update) {
+    references.push({ surfaceKind: 'community-profile-image', communityId: input.communityId })
   }
-  if (
-    'banner_image_id' in input.update &&
-    input.update.banner_image_id !== input.community.banner_image_id
-  ) {
-    await prepublishImageSurfaceDenial(
-      { surfaceKind: 'community-banner-image', communityId: input.communityId },
-      input.query,
-    )
+  if ('banner_image_id' in input.update) {
+    references.push({ surfaceKind: 'community-banner-image', communityId: input.communityId })
   }
+  await prepublishImageSurfaceDenials(references, input.query)
 }
 
 function publicationChanged(

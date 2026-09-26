@@ -33,22 +33,6 @@ export async function finalizeCopyrightActionAfterDelivery(
     query: transaction,
   })
   if (action === 'withhold' && legal.restriction_lifted_at !== null) {
-    if (
-      current &&
-      !current.deleted &&
-      !current.withheld &&
-      !(await hasOtherActiveCopyrightRestrictions(legal, transaction))
-    ) {
-      await dependencies.publishImagePlacementDeliveryRecord(
-        {
-          placementId: current.placementId,
-          revision: current.revision,
-          imageId: current.imageId,
-          state: 'allow',
-        },
-        { query: transaction },
-      )
-    }
     await completeCopyrightActionIntentInTransaction({
       intentId,
       outcome: 'stale',

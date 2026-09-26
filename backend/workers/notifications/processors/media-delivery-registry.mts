@@ -3,6 +3,7 @@ import {
   listRecoverableMediaDeliveryRegistryKeys,
   processMediaDeliveryRegistryRecord,
   stageAllCurrentImagePlacementDeliveryRecords,
+  reconcileMediaDeliveryRepairMarkers,
 } from '@services/media-delivery-safety'
 
 type MediaDeliveryRegistryProcessorDependencies = {
@@ -10,6 +11,7 @@ type MediaDeliveryRegistryProcessorDependencies = {
   listRecoverableMediaDeliveryRegistryKeys: typeof listRecoverableMediaDeliveryRegistryKeys
   processMediaDeliveryRegistryRecord: typeof processMediaDeliveryRegistryRecord
   stageAllCurrentImagePlacementDeliveryRecords: typeof stageAllCurrentImagePlacementDeliveryRecords
+  reconcileMediaDeliveryRepairMarkers: typeof reconcileMediaDeliveryRepairMarkers
   now: () => Date
 }
 
@@ -35,6 +37,9 @@ export async function processReconcileMediaDeliveryRegistry(
   const stage =
     dependencies.stageAllCurrentImagePlacementDeliveryRecords ??
     stageAllCurrentImagePlacementDeliveryRecords
+  const repair =
+    dependencies.reconcileMediaDeliveryRepairMarkers ?? reconcileMediaDeliveryRepairMarkers
+  await repair(100)
   await stage()
   const deliveryKeys = await list(100, now())
   await Promise.all(deliveryKeys.map(deliveryKey => enqueue(deliveryKey)))
