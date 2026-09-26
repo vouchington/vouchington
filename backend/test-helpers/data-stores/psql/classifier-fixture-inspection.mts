@@ -89,7 +89,8 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
         WHERE parent.relname IN (
           'classifier_decision_batch_candidates',
           'topic_classifier_results',
-          'story_classifier_results'
+          'story_classifier_results',
+          'rss_feed_item_classifier_results'
         )
         ORDER BY parent.relname, child.relname
       `)

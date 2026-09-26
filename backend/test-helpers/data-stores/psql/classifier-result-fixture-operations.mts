@@ -171,5 +171,31 @@ export function buildClassifierResultFixtureOperations(data: ClassifierFixtureDa
           ${data.storyId}, ${batchId}, ${callId}, ${data.classifierId}, NULL,
           ${data.promptVersionId}, 0.5, 0.25, 0.75, '{}'::jsonb, 'global'
         )`),
+    insertRssFeedItemResult: (batchId: string, callId: string, probability = 0.6) =>
+      write(sql`/* insertClassifierFixtureRssFeedItemResult */
+        INSERT INTO rss_feed_item_classifier_results (
+          rss_feed_item_id, batch_id, decision_call_id, classifier_id, candidate_id, threshold_id,
+          prompt_version_id, probability, effective_lower_threshold, effective_upper_threshold,
+          raw_response, scope_category
+        ) VALUES (
+          ${data.standaloneRssFeedItemId}, ${batchId}, ${callId}, ${data.storyClassifierId},
+          NULL, NULL, ${data.storyPromptVersionId},
+          ${probability}, 0.2500, 0.7500,
+          jsonb_build_object(
+            'type', 'choice', 'choice', 'rss_feed_item', 'probability', ${probability}::numeric
+          ),
+          'global'
+        ) RETURNING probability::text`),
+    rejectRssFeedItemResultWithStoredCandidate: (batchId: string, callId: string) =>
+      write(sql`/* rejectClassifierFixtureRssFeedItemResultWithStoredCandidate */
+        INSERT INTO rss_feed_item_classifier_results (
+          rss_feed_item_id, batch_id, decision_call_id, classifier_id, candidate_id, threshold_id,
+          prompt_version_id, probability, effective_lower_threshold, effective_upper_threshold,
+          raw_response, scope_category
+        ) VALUES (
+          ${data.standaloneRssFeedItemId}, ${batchId}, ${callId}, ${data.storyClassifierId},
+          ${data.storyCandidateId}, ${data.storyThresholdId}, ${data.storyPromptVersionId},
+          0.6, 0.2500, 0.7500, '{}'::jsonb, 'global'
+        )`),
   }
 }

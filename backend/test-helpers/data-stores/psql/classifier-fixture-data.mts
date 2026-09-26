@@ -28,6 +28,7 @@ export type ClassifierFixtureData = {
   storyCandidateId: string
   storyThresholdId: string
   rssFeedItemId: string
+  standaloneRssFeedItemId: string
 }
 
 export async function createClassifierFixtureData(): Promise<ClassifierFixtureData> {
@@ -42,6 +43,10 @@ export async function createClassifierFixtureData(): Promise<ClassifierFixtureDa
   const post = await createTestPost({ user: owner })
   const rssFeedId = await createTestRssFeedWithTiming(topic.id)
   const rssFeedItem = await createTestRssFeedItemWithUrl(rssFeedId)
+  // A second, distinct RSS feed item standing in for a standalone-item Choice candidate
+  // (never the batch's own subject) so rss_feed_item_classifier_results has a real,
+  // FK-satisfying entity to score. See migrations/0730-00-00-story-clustering-rss-item-results.sql.
+  const standaloneRssFeedItem = await createTestRssFeedItemWithUrl(rssFeedId)
   const story = await insertTestStory({ title: `Classifier story ${suffix}` })
   const community = await insertTestCommunity({ createdById: owner.id })
   const { rows: classifierRows } = await write<{ id: string }>(sql`
@@ -143,5 +148,6 @@ export async function createClassifierFixtureData(): Promise<ClassifierFixtureDa
     storyCandidateId,
     storyThresholdId: storyThresholdRows[0]!.id,
     rssFeedItemId: rssFeedItem.id,
+    standaloneRssFeedItemId: standaloneRssFeedItem.id,
   }
 }

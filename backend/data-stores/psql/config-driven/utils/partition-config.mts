@@ -40,13 +40,17 @@ export const POST_PARTITION_TABLES: string[] = [
 ]
 
 /**
- * Classifier results retain one row per candidate. Topic and story ownership use
- * separate parents so UUIDv7 RANGE pruning remains direct for either entity.
+ * Classifier results retain one row per candidate. Topic, story, and standalone RSS
+ * feed item ownership use separate parents so UUIDv7 RANGE pruning remains direct for
+ * either entity. rss_feed_item_classifier_results holds story-family Choice results for
+ * standalone-item candidates (never stored/pre-registered, unlike story_classifier_results'
+ * candidates) — see migrations/0730-00-00-story-clustering-rss-item-results.sql.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
+  'rss_feed_item_classifier_results',
 ]
 
 /**

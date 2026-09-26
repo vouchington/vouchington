@@ -53,6 +53,24 @@ describe('classifier result storage', () => {
     )
   })
 
+  it('persists valid story-classifier lineage in the concrete standalone-item result family', async () => {
+    const fixture = await createClassifierFixture()
+    const lineage = await fixture.createStoryBatch()
+
+    await expect(
+      fixture.insertRssFeedItemResult(lineage.batchId, lineage.callId),
+    ).resolves.toMatchObject({ rowCount: 1 })
+  })
+
+  it('rejects a standalone-item result carrying a stored candidate/threshold', async () => {
+    const fixture = await createClassifierFixture()
+    const lineage = await fixture.createStoryBatch()
+
+    await expect(
+      fixture.rejectRssFeedItemResultWithStoredCandidate(lineage.batchId, lineage.callId),
+    ).rejects.toMatchObject({ code: '23514' })
+  })
+
   it('stores runtime-prefiltered candidates without materializing candidate rows', async () => {
     const fixture = await createClassifierFixture()
     const lineage = await fixture.createTopicBatch()
@@ -132,7 +150,7 @@ describe('classifier result storage', () => {
     ).resolves.toEqual({ batches: 1, calls: 1, candidates: 0, results: 0 })
   })
 
-  it('creates concrete default RANGE partitions for both result families', async () => {
+  it('creates concrete default RANGE partitions for all result families', async () => {
     const fixture = await createClassifierFixture()
     const facts = await fixture.getPartitionFacts()
 
@@ -141,6 +159,12 @@ describe('classifier result storage', () => {
         parent: 'classifier_decision_batch_candidates',
         child: 'classifier_decision_batch_candidates__default',
         strategy: 'RANGE (batch_id)',
+        bound: 'DEFAULT',
+      },
+      {
+        parent: 'rss_feed_item_classifier_results',
+        child: 'rss_feed_item_classifier_results__default',
+        strategy: 'RANGE (rss_feed_item_id)',
         bound: 'DEFAULT',
       },
       {
