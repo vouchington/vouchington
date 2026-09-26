@@ -204,7 +204,7 @@ jobs:
 
       - name: Render prompt
         id: render
-        uses: jonathanong/auto-harness/actions/harness-render-prompt@710a7603cadd9d19dbac6b0cd45fc1e5e4f4c29b # v1.0.0+808
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
           template: docs/prompts/automation/fix-issue.md
           vars: |
