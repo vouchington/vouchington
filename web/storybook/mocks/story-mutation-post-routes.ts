@@ -11,6 +11,7 @@ import {
   storyText,
 } from './story-mutation-bodies'
 import { categoryRelationPost } from './category-relations-store'
+import { conversationParticipant } from './story-mutation-participant'
 
 function exactPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/markdown/preview') {
@@ -77,17 +78,7 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
     return { conversation: { id: 'conversation-story' } }
   }
   if (/^\/api\/v1\/my\/messages\/[^/]+\/participants$/.test(endpoint)) {
-    return {
-      participant: {
-        id: 'participant-story',
-        conversation_id: endpoint.split('/')[5] ?? 'conversation-story',
-        user_id: storyText(body, 'user_id'),
-        role: 'member',
-        created_at: storyMutationAt,
-        username: null,
-        profile_image_id: null,
-      },
-    }
+    return conversationParticipant(endpoint, body)
   }
   if (endpoint.startsWith('/api/v1/entity-relations/')) return categoryRelationPost(body)
   if (endpoint.endsWith('/items/posts') || endpoint.endsWith('/lock')) return {}

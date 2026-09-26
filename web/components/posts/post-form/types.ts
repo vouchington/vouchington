@@ -21,6 +21,7 @@ export interface PostFormProps {
   communityPendingRedirectPath?: string
   initialCommunitySlug?: string
   communityOptions?: CommunityPostOption[]
+  onSubmitted?: (href: string) => void
 }
 
 export interface AudienceDefaults {

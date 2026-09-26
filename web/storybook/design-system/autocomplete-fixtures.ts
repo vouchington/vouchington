@@ -61,6 +61,14 @@ const urlResults = [
   { id: 'url-2', url: 'https://news.example.com/points' },
 ]
 
+export function storybookUserSummary(id: string): {
+  username: string | null
+  profile_image_id: null
+} {
+  const user = userResults.find(item => item.id === id)
+  return { username: user?.username ?? null, profile_image_id: null }
+}
+
 export function storybookTopicSummary(id: string): {
   id: string
   name: string

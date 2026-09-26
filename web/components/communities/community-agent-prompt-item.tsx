@@ -87,7 +87,7 @@ export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdate
           onPromptUpdated?.({
             ...prompt,
             slot_allocated: true,
-            activated_at: prompt.activated_at ?? '2026-05-01T12:00:00.000Z',
+            activated_at: prompt.activated_at ?? new Date().toISOString(),
           })
           onSuccess(t('extracted.communities.communityAgentPromptItem.slotAllocated_417c6c1d'))
         }

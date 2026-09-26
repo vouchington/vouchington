@@ -2,12 +2,20 @@ import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AdvancedOptions } from '@/components/posts/post-form/advanced-options'
 import type { Post, PostBroadcast, PostPrivacy } from '@/types/posts'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { reviewPost } from '../fixtures'
 
 const meta = {
   title: 'Posts/Advanced Options',
   component: AdvancedOptions,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

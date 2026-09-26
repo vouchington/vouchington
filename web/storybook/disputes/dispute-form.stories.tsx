@@ -14,13 +14,22 @@ type Story = StoryObj<typeof meta>
 const claimText =
   'The Sapphire Reserve review says the $300 travel credit posts automatically. It only applies after you enroll, and the charge has to code as travel.'
 
-function ReadyForm({ error }: { error: string | null }) {
+function ReadyForm({
+  error,
+  interactive = false,
+}: {
+  error: string | null
+  interactive?: boolean
+}) {
   const turnstile = useTurnstileToken()
   const [reason, setReason] = useState('factually_inaccurate')
   const [text, setText] = useState(claimText)
+  const [submitted, setSubmitted] = useState(false)
+  const [visible, setVisible] = useState(true)
+  if (!visible) return null
   return (
     <DisputeForm
-      submitted={false}
+      submitted={submitted}
       reason={reason}
       claimText={text}
       loading={false}
@@ -28,8 +37,13 @@ function ReadyForm({ error }: { error: string | null }) {
       turnstile={turnstile}
       onReasonChange={setReason}
       onClaimTextChange={setText}
-      onSubmit={event => event.preventDefault()}
-      onClose={() => {}}
+      onSubmit={event => {
+        event.preventDefault()
+        if (interactive) setSubmitted(true)
+      }}
+      onClose={() => {
+        if (interactive) setVisible(false)
+      }}
     />
   )
 }
@@ -37,7 +51,10 @@ function ReadyForm({ error }: { error: string | null }) {
 export const Ready: Story = {
   render: () => (
     <StoryFrame>
-      <ReadyForm error={null} />
+      <ReadyForm
+        error={null}
+        interactive
+      />
     </StoryFrame>
   ),
 }
