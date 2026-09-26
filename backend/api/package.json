@@ -269,9 +269,9 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudfront": "^3.1139.0",
-    "@aws-sdk/client-dynamodb": "^3.1139.0",
-    "@aws-sdk/client-s3": "^3.1139.0",
+    "@aws-sdk/client-cloudfront": "^3.1140.0",
+    "@aws-sdk/client-dynamodb": "^3.1140.0",
+    "@aws-sdk/client-s3": "^3.1140.0",
     "@services/ap-post-likes": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@types/node": "^26.6.2",
