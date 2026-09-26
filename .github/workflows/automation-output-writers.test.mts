@@ -1,6 +1,12 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { parse as load } from 'yaml'
+
+type RenderStep = { uses?: string; with?: Record<string, string> }
+type Workflow = { jobs?: Record<string, { steps?: RenderStep[] }> }
+
+const mergeAuthorityDoc = 'docs/development/merge-authority.md'
 
 const workflowPaths = readdirSync('.github/workflows')
   .filter(file =>
@@ -61,5 +67,21 @@ describe('automation output writers', () => {
 
   it('does not expose the selected scheduled prompt body as an output', () => {
     expect(yamlByPath.get('.github/workflows/scheduled-prompts.yml')).not.toContain('prompt_body')
+  })
+
+  it('points every rendered merge guard at the merge-authority policy doc', () => {
+    const renderSteps = workflowPaths.flatMap(path =>
+      Object.values((load(yamlByPath.get(path) ?? '') as Workflow).jobs ?? {}).flatMap(
+        job =>
+          job.steps?.filter(step =>
+            step.uses?.startsWith('jonathanong/auto-harness/actions/harness-render-prompt@'),
+          ) ?? [],
+      ),
+    )
+
+    expect(renderSteps).toHaveLength(7)
+    for (const step of renderSteps)
+      expect(step.with?.['merge-authority-doc']).toBe(mergeAuthorityDoc)
+    expect(existsSync(mergeAuthorityDoc)).toBe(true)
   })
 })

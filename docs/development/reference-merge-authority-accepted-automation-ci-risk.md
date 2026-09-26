@@ -9,6 +9,8 @@ The universal human-only merge guard appended by `ci/render-harness-prompt.mts` 
 guidance. Exact live revalidation and exact-lease pushes constrain publication, while the
 [Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
 records the accepted direct-host risk. Only the repository owner performs merges.
+Every render step sets the action's `merge-authority-doc` input, so the guard ends by pointing the
+dispatched session at [Merge Authority](merge-authority.md).
 
 Interactive GitHub tooling may authenticate as an Admin-capable identity and can bypass rulesets.
 That separate interactive risk remains governed by the human merge decision; repository automation
