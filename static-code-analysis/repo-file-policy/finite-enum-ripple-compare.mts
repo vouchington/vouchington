@@ -1,15 +1,10 @@
-import type {
-  FiniteEnumFiles,
-  ReadTrackedFile,
-  RoutedPage,
-} from './finite-enum-ripple-model.mts'
+import type { FiniteEnumFiles, ReadTrackedFile, RoutedPage } from './finite-enum-ripple-model.mts'
 
 const CHECKLIST = 'docs/development/finite-enum-ripple-checklist.md'
 
 export function hasAllFiles(files: FiniteEnumFiles, paths: readonly string[]): boolean {
   return paths.every(file => files.existingFileSet.has(file))
 }
-
 
 export function checkPostCreatePageTypes(
   errors: string[],
