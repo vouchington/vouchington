@@ -29,7 +29,7 @@ async function createCounterNoticedRestriction() {
     claimant: claimant as never,
     noticeId: notice.id,
     moderator,
-    targetId: target.id,
+    targetIds: [target.id],
   })
   return { deadline, moderator, notice, target }
 }

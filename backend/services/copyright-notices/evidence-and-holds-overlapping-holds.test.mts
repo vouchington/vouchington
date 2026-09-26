@@ -47,7 +47,7 @@ describe('copyright notice overlapping legal holds', () => {
       claimant,
       noticeId: notice.id,
       moderator,
-      targetId: target.id,
+      targetIds: [target.id],
     })
     const restorationAt = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
     const initialRestore = await createEligibleCopyrightRestoreIntent({

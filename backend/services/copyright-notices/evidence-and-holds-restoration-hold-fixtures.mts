@@ -5,14 +5,17 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import {
   appendCopyrightSubmissionAssessment,
   createCopyrightCounterNotice,
   createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
   createCounterNoticeDeadline,
+  createEligibleCopyrightRestoreIntent,
   createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
+  processCopyrightActionIntent,
 } from './index.mts'
 
 export async function createCopyrightRestorationHoldFixture() {
@@ -90,11 +93,25 @@ async function createAssessmentAndReceipt(
   return { assessment, receipt }
 }
 
+export async function deliverInitialCopyrightWithhold(
+  noticeId: string,
+  publish: typeof publishImagePlacementDeliveryRecord,
+): Promise<void> {
+  const withhold = (await getCopyrightNoticePrivateAggregate(noticeId))?.actionIntents.find(
+    intent => intent.action === 'withhold',
+  )
+  if (!withhold) throw new Error('initial withhold intent disappeared')
+  await processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
+    publishImagePlacementDeliveryRecord: publish,
+  })
+}
+
 export async function createCompliantCounterNoticeDeadline(input: {
   claimant: Parameters<typeof createCopyrightCounterNotice>[0]
   noticeId: string
   moderator: Parameters<typeof appendCopyrightSubmissionAssessment>[0]['currentUser']
-  targetId: string
+  targetIds: string[]
+  assessedAt?: Date
 }) {
   const counterNotice = await createCopyrightCounterNotice(
     input.claimant,
@@ -108,15 +125,42 @@ export async function createCompliantCounterNoticeDeadline(input: {
       consentToServiceOfProcess: true,
       goodFaithMisidentificationUnderPenaltyOfPerjury: true,
       electronicSignature: 'Poster',
-      targetIds: [input.targetId],
+      targetIds: input.targetIds,
     },
   )
   const counterAssessment = await appendCopyrightSubmissionAssessment({
     submissionId: counterNotice.submission.id,
-    assessedAt: new Date('2026-07-02T12:00:00.000Z'),
+    assessedAt: input.assessedAt ?? new Date('2026-07-02T12:00:00.000Z'),
     currentUser: input.moderator,
     substantiallyCompliant: true,
-    targetIds: [input.targetId],
+    targetIds: input.targetIds,
   })
   return createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
+}
+
+export async function createCounterNoticeRestoreIntent(input: {
+  claimant: Parameters<typeof createCopyrightCounterNotice>[0]
+  noticeId: string
+  moderator: Parameters<typeof appendCopyrightSubmissionAssessment>[0]['currentUser']
+  targetId: string
+  restrictionId: string
+  placementRevision: number
+  offsetMs?: number
+}) {
+  const deadline = await createCompliantCounterNoticeDeadline({
+    claimant: input.claimant,
+    noticeId: input.noticeId,
+    moderator: input.moderator,
+    targetIds: [input.targetId],
+  })
+  const now = new Date(deadline.earliest_restoration_at.getTime() + (input.offsetMs ?? 60_000))
+  const restore = await createEligibleCopyrightRestoreIntent({
+    noticeId: input.noticeId,
+    targetId: input.targetId,
+    restrictionId: input.restrictionId,
+    deadlineId: deadline.id,
+    expectedPlacementRevision: input.placementRevision,
+    now,
+  })
+  return { deadline, now, restore }
 }

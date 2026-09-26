@@ -1,5 +1,4 @@
 import { enqueueApplyMediaDeliveryRegistryRecord } from '@queues/notifications/enqueues'
-import { invokeAt } from './invoke-at.mts'
 import {
   listRecoverableMediaDeliveryRegistryKeys,
   processMediaDeliveryRegistryRecord,
@@ -20,7 +19,8 @@ export async function processApplyMediaDeliveryRegistryRecord(
 ): Promise<'completed' | 'not_claimed'> {
   const process =
     dependencies.processMediaDeliveryRegistryRecord ?? processMediaDeliveryRegistryRecord
-  return invokeAt(now => process(data.deliveryKey, now), dependencies.now)
+  const now = dependencies.now ?? (() => new Date())
+  return await process(data.deliveryKey, now())
 }
 
 export async function processReconcileMediaDeliveryRegistry(

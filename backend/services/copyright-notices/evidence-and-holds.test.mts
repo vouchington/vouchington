@@ -12,15 +12,14 @@ import {
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
-  createCopyrightCounterNotice,
   createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
   createOutboundCopyrightCorrespondence,
-  createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
   resolveCopyrightLegalHold,
 } from './index.mts'
+import { createCompliantCounterNoticeDeadline } from './evidence-and-holds-restoration-hold-fixtures.mts'
 
 async function createTwoTargetFixture() {
   const [claimant, moderatorRecord] = await Promise.all([
@@ -111,29 +110,13 @@ describe('copyright notice evidence and holds', () => {
         }),
       ),
     )
-    const counterNotice = await createCopyrightCounterNotice(
+    const deadline = await createCompliantCounterNoticeDeadline({
       claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Poster',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Poster',
-        targetIds: [heldTarget.id, otherTarget.id],
-      },
-    )
-    const counterAssessment = await appendCopyrightSubmissionAssessment({
-      submissionId: counterNotice.submission.id,
-      assessedAt: new Date('2026-07-01T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
+      noticeId: notice.id,
+      moderator,
       targetIds: [heldTarget.id, otherTarget.id],
+      assessedAt: new Date('2026-07-01T12:00:00.000Z'),
     })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
     const restorationNow = new Date(deadline.earliest_restoration_at.getTime() + 86_400_000)
     const holdSubmission = await appendCopyrightNoticeSubmission({
       noticeId: notice.id,
