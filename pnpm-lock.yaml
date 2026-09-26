@@ -2315,8 +2315,8 @@ importers:
   backend/modules/bluesky-oauth:
     dependencies:
       '@atproto-labs/fetch-node':
-        specifier: ^0.3.7
-        version: 0.3.7
+        specifier: ^0.4.0
+        version: 0.4.0
       '@atproto-labs/handle-resolver-node':
         specifier: ^0.2.8
         version: 0.2.10
@@ -13226,10 +13226,6 @@ packages:
     resolution: {integrity: sha512-KBgUdQQ76XL/xjQbuMfVBOEa5jaragR9NPq1uMoM4iXKnW5GGcEMHMPu+WrTxYNBku0b7MhPUfCs1pKtyLBP6g==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/fetch-node@0.3.7':
-    resolution: {integrity: sha512-WZvjXIeEHGeOPmeckyGiSGeoHhkvzwnKtSrRSxgnHakkNqlKNLmPbUIYOIiJgiYgBSOCbse5NpPLRu3Zdw2+gA==}
-    engines: {node: '>=22'}
-
   '@atproto-labs/fetch-node@0.4.0':
     resolution: {integrity: sha512-5Yi8fz/JDGEoObRgRJuglcodB/MJeQnnoqokOGSQK5ItISObSttbGIgHE1UMU1njcwxbvKtbGMWHUCRgqML2Dw==}
     engines: {node: '>=22'}
@@ -21846,6 +21842,10 @@ packages:
     resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
     engines: {node: '>=22.19.0'}
 
+  undici@8.11.2:
+    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
+    engines: {node: '>=22.19.0'}
+
   unenv@2.0.0-rc.24:
     resolution: {integrity: sha512-i7qRCmY42zmCwnYlh9H2SvLEypEFGye5iRmEMKjcGi7zk9UquigRjFtTLz0TYqr0ZGLZhaMHl/foy1bZR+Cwlw==}
 
@@ -22404,15 +22404,6 @@ snapshots:
       '@atproto/did': 0.5.5
       zod: 3.25.76
 
-  '@atproto-labs/fetch-node@0.3.7':
-    dependencies:
-      '@atproto-labs/fetch': 0.3.6
-      '@atproto-labs/pipe': 0.2.4
-      ipaddr.js: 2.5.0
-      undici_v6: undici@6.28.1
-      undici_v7: undici@7.29.1
-      undici_v8: undici@8.11.0
-
   '@atproto-labs/fetch-node@0.4.0':
     dependencies:
       '@atproto-labs/fetch': 0.3.6
@@ -22420,7 +22411,7 @@ snapshots:
       ipaddr.js: 2.5.0
       undici_v6: undici@6.28.1
       undici_v7: undici@7.29.1
-      undici_v8: undici@8.11.0
+      undici_v8: undici@8.11.2
 
   '@atproto-labs/fetch@0.3.6':
     dependencies:
@@ -31408,6 +31399,8 @@ snapshots:
   undici@7.29.1: {}
 
   undici@8.11.0: {}
+
+  undici@8.11.2: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
