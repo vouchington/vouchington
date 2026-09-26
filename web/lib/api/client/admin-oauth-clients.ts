@@ -8,7 +8,7 @@ import type {
   OAuthClientVerificationFilter,
 } from '@/types/oauth-apps'
 
-export function getAdminOAuthClients(options: {
+export function fetchAdminOAuthClients(options: {
   verification: OAuthClientVerificationFilter
   after?: string
   limit?: number

@@ -5,7 +5,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly adminOAuthClients: Pick<
     typeof import('@/lib/api/client/admin-oauth-clients'),
-    'getAdminOAuthClients' | 'unverifyOAuthClient' | 'verifyOAuthClient'
+    'fetchAdminOAuthClients' | 'unverifyOAuthClient' | 'verifyOAuthClient'
   >
   readonly apiKeys: Pick<typeof import('@/lib/api/client/api-keys'), 'createApiKey' | 'getApiKeys'>
   readonly auth: Pick<typeof import('@/lib/api/client/auth'), 'acknowledgeOAuthAuthorization'>

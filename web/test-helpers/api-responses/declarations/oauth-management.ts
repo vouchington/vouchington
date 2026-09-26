@@ -87,7 +87,7 @@ export const OAUTH_MANAGEMENT_DECLARATIONS = [
     'web.admin.oauth-clients.list',
     webAdminOAuthClientsList,
     context =>
-      context.client.adminOAuthClients.getAdminOAuthClients({
+      context.client.adminOAuthClients.fetchAdminOAuthClients({
         verification: 'unverified',
         limit: 1,
       }),
