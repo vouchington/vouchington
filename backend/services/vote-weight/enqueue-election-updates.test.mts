@@ -5,7 +5,6 @@ import {
   insertPostElectionVote,
   insertTestPost,
   insertUserVouchElectionVote,
-  getEnqueuedJobId,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
@@ -50,7 +49,8 @@ describe('enqueueElectionUpdatesForUser', () => {
     ])
     expect(submittedJobIds).toEqual([])
 
-    const unrelatedJobId = getEnqueuedJobId(unrelatedJobs[0])
+    const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
+    if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
     const unrelatedJob = await elections.getJob(unrelatedJobId)
     expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
   }, 60_000)
@@ -128,7 +128,8 @@ describe('enqueueElectionUpdatesForUser', () => {
     ])
     expect(submittedJobIds).toEqual([])
 
-    const unrelatedJobId = getEnqueuedJobId(unrelatedJobs[0])
+    const [unrelatedJobId] = getBulkEnqueuedJobIds(unrelatedJobs)
+    if (!unrelatedJobId) throw new Error('Unrelated election enqueue did not persist a job')
     const unrelatedJob = await elections.getJob(unrelatedJobId)
     expect(unrelatedJob?.data.electionId).toBe(unrelatedPostId)
   }, 60_000)

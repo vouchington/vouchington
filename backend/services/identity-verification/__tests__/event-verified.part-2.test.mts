@@ -16,7 +16,7 @@ const mockGetVerificationResult = vi.fn<typeof stripeIdentityProvider.getVerific
 const mockFingerprint = vi.fn<typeof computeIdentityFingerprint>()
 const mockRecalculateVoteWeight =
   vi.fn<(userId: string) => Promise<{ weight: number; changed: boolean }>>()
-const mockEnqueueElectionUpdates = vi.fn<(userId: string) => Promise<void>>()
+const mockEnqueueElectionUpdates = vi.fn<(userId: string) => Promise<string[]>>()
 
 function onVerificationSessionVerifiedForTest(
   ...args: Parameters<typeof onVerificationSessionVerified>
@@ -62,7 +62,7 @@ describe('onVerificationSessionVerified', () => {
     mockFingerprint.mockReturnValue('a'.repeat(64))
     mockInvalidateUsers.mockResolvedValue(undefined)
     mockRecalculateVoteWeight.mockResolvedValue({ weight: 1, changed: false })
-    mockEnqueueElectionUpdates.mockResolvedValue(undefined)
+    mockEnqueueElectionUpdates.mockResolvedValue([])
     mockBeginTransaction
       .mockImplementationOnce(async () => {
         const query = vi.fn<VitestLooseMock>().mockResolvedValue(makePreGuardResult('vs_test'))
@@ -147,7 +147,7 @@ describe('onVerificationSessionVerified', () => {
       )
       return createTransactionResource(query as never)
     })
-    mockEnqueueElectionUpdates.mockResolvedValue(undefined)
+    mockEnqueueElectionUpdates.mockResolvedValue([])
 
     await onVerificationSessionVerifiedForTest('evt_2', {
       id: 'vs_test',
