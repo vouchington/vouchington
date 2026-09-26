@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import getTopicDetailsTool from './get-topic-details.mts'
 import { createTestUser } from '@voucha/test-helpers'
-import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
+import { insertTestTopic, updateTopicMarkdown } from '@voucha/test-helpers/entities/topics'
 import type { PrivateUser } from '@services/users/types'
 
 describe('get_topic_details tool — real DB', () => {
@@ -29,6 +29,26 @@ describe('get_topic_details tool — real DB', () => {
     expect(result.slug).toBe(`details-tool-topic-${suffix}`)
     expect(result.topic_type).toBe('topic')
     expect(result.aliases).toBeInstanceOf(Array)
+  })
+
+  it('marks the topic markdown as external content', async () => {
+    const topicId = await insertTestTopic({
+      name: `Details Tool Markdown ${suffix}`,
+      slug: `details-tool-markdown-${suffix}`,
+      createdById: user.id,
+    })
+    await updateTopicMarkdown(topicId, `Member notes ${suffix}`)
+
+    const result = await getTopicDetailsTool.function(user)({ topic_id: topicId })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.markdown).toMatch(
+      new RegExp(
+        `^<external-content source="user_content" contentType="topic">\\n.*Member notes ${suffix}`,
+      ),
+    )
+    expect(result.markdown).toContain('</external-content>')
   })
 
   it('returns card type topic', async () => {
