@@ -38,24 +38,92 @@ utils:
         all:
           - kind: import_statement
           - regex: \bfrom\s*['"](?:node:)?child_process['"]
-          - pattern: import * as $CHILD_PROCESS from '$SOURCE'
+          - any:
+              - pattern: import * as $CHILD_PROCESS from '$SOURCE'
+              - pattern: import $CHILD_PROCESS from '$SOURCE'
   shell-child-process-call:
     any:
-      - all:
-          - kind: call_expression
-          - has:
-              field: function
-              regex: ^(exec|execSync)$
+      - matches: named-shell-child-process-call
       - all:
           - matches: namespace-child-process-call
           - any:
               - pattern: $CHILD_PROCESS.exec($$$ARGS)
               - pattern: $CHILD_PROCESS.execSync($$$ARGS)
+  named-shell-child-process-call:
+    any:
+      - all:
+          - pattern: exec($$$ARGS)
+          - matches: imports-named-exec
+      - all:
+          - pattern: execSync($$$ARGS)
+          - matches: imports-named-exec-sync
+      - all:
+          - pattern: $EXEC($$$ARGS)
+          - matches: imports-aliased-exec
+      - all:
+          - pattern: $EXEC_SYNC($$$ARGS)
+          - matches: imports-aliased-exec-sync
+  imports-named-exec:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - regex: \bfrom\s*['"](?:node:)?child_process['"]
+          - has:
+              stopBy: end
+              kind: import_specifier
+              regex: ^exec$
+  imports-named-exec-sync:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - regex: \bfrom\s*['"](?:node:)?child_process['"]
+          - has:
+              stopBy: end
+              kind: import_specifier
+              regex: ^execSync$
+  imports-aliased-exec:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - regex: \bfrom\s*['"](?:node:)?child_process['"]
+          - has:
+              stopBy: end
+              kind: import_specifier
+              pattern:
+                context: "import { exec as $EXEC } from 'child_process'"
+                selector: import_specifier
+  imports-aliased-exec-sync:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - regex: \bfrom\s*['"](?:node:)?child_process['"]
+          - has:
+              stopBy: end
+              kind: import_specifier
+              pattern:
+                context: "import { execSync as $EXEC_SYNC } from 'child_process'"
+                selector: import_specifier
   child-process-shell-option:
     all:
       - kind: object
       - has:
-          stopBy: end
+          stopBy: neighbor
           all:
             - kind: pair
             - has:
@@ -63,7 +131,8 @@ utils:
                 regex: ^(?:shell|['"]shell['"])$
             - has:
                 field: value
-                regex: ^true$
+                not:
+                  regex: ^false$
   network-module:
     regex: ^['"](node:)?(http|https|net)['"]$
 rule:
@@ -71,11 +140,17 @@ rule:
     - matches: shell-child-process-call
     - all:
         - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              stopBy: end
-              matches: child-process-shell-option
+        - any:
+            - has:
+                field: arguments
+                has:
+                  nthChild: 2
+                  matches: child-process-shell-option
+            - has:
+                field: arguments
+                has:
+                  nthChild: 3
+                  matches: child-process-shell-option
     - all:
         - matches: child-process-call
         - has:
@@ -157,11 +232,24 @@ examples:
     isValid: false
     file: 'dev/codex-hooks/policy/github-workflow.mts'
   - code: |
+      import cp from 'node:child_process'
+      cp.exec('git status')
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
+  - code: |
+      import { exec, execSync as runSynchronously } from 'node:child_process'
+      exec('git status')
+      runSynchronously('git status')
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
+  - code: |
       import { execFile, execFileSync, spawn, spawnSync } from 'node:child_process'
       spawn('git status', { shell: true })
       spawnSync('git status', { shell: true })
       execFile('git status', { 'shell': true })
       execFileSync('git status', { shell: true })
+      spawn('git status', { shell: '/bin/sh' })
+      spawnSync('git status', { shell: configuredShell })
     isValid: false
     file: 'dev/codex-hooks/policy/github-workflow.mts'
   - code: |
@@ -295,6 +383,7 @@ examples:
   - code: |
       import { spawnSync } from 'node:child_process'
       const { status } = spawnSync('git', ['show', `HEAD:${rel}`], { cwd: worktreeRoot })
+      spawnSync('git', ['status'], { shell: false })
     isValid: true
     file: 'dev/codex-hooks/post-tool-use-checkers.mts'
   - code: |
@@ -321,6 +410,16 @@ examples:
         },
       }
       runner.execSync('git status')
+    isValid: true
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      const execSync = (command: string) => command
+      execSync('git status')
+    isValid: true
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { spawn } from 'node:child_process'
+      spawn('git', ['status'], { onExit: () => ({ shell: true }) })
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
