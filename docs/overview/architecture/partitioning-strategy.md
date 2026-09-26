@@ -53,7 +53,8 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `post_explicit_topic_categories`                        | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_feed_shares`                                      | RANGE         | `recipient_user_id`                    | default            | none              | target-scoped      |
 | `post_publication_dirty_work_keys`                      | RANGE         | `dirty_work_id`                        | default            | none              | target-scoped      |
-| `post_publication_projection_receipts`                  | RANGE         | `post_id`                              | default            | none              | target-scoped      |
+| `post_publication_post_identities`                      | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `post_publication_projection_receipts`                  | RANGE         | `post_identity_id`                     | default            | none              | target-scoped      |
 | `post_read_states`                                      | RANGE         | `user_id`                              | default            | none              | target-scoped      |
 | `post_review_topic_ratings`                             | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_revisions`                                        | RANGE         | `id`                                   | default            | none              | target-scoped      |
@@ -175,6 +176,19 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Post moderation ledger: `post_moderation_attempts`, `post_moderation_dispositions`,
   `post_moderation_versions`, and `post_moderation_work_items`. Rows follow the retained post and
   remain selectively addressable through their version, source, attempt, and post indexes.
+- Publication identity snapshots: `post_publication_identity_snapshots` and
+  `post_publication_identity_snapshot_keys`. Accepted receipts retain one exact snapshot per post;
+  abandoned and superseded attempts are reclaimed by the bounded cyclic sweep in
+  [post-publication](../../../backend/services/post-publication/README.md). Snapshot and native key
+  indexes keep pages selective; revisit partitioning under the registry's growth trigger while
+  preserving globally unique receipt pointers and bounded reclamation.
+- Publication repair identities: `post_publication_post_identities` is UUIDv7 range-partitioned
+  because accepted receipts retain durable post references indefinitely. The community, author,
+  RSS feed, RSS item, topic alias, and story identity bridge tables retain only active work/key
+  references; a cyclic raw-capped sweep reclaims unreferenced bridges. Their selective live-FK,
+  work-scope, and retained-impact indexes support deletion and cleanup. See the
+  [publication ownership model](../../../backend/services/post-publication/README.md); reconsider
+  non-post partitioning if that backlog invariant changes or measured planner/write pressure warrants it.
 - Notification push effects: `notification_push_intents` and
   `notification_push_intent_subscription_receipts`.
   Pending intents remain durable recovery work. Delivered and suppressed intents are deleted after

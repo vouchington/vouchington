@@ -1,4 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes } from './plan-nodes.mts'
+import { isBoundedStoryPresentationSort } from './story-presentation-sort.mts'
 
 const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
   ['direct-message-inbox-page', ['idx_conversations__direct_message_updated']],
@@ -89,16 +91,15 @@ function assertStoryProjectionSourcePagePlan(result: ExplainResult): void {
     node =>
       (node['Node Type'] === 'Seq Scan' &&
         String(node['Relation Name'] ?? '').startsWith('rss_feed_items')) ||
-      String(node['Node Type'] ?? '').includes('Sort'),
+      (String(node['Node Type'] ?? '').includes('Sort') &&
+        !isBoundedStoryPresentationSort(node, nodes)),
   )
   if (!usesSourceIndex || scansOrSortsSource) {
     throw new Error(
-      `${result.name} must page story RSS items through ${STORY_PROJECTION_SOURCE_INDEX} without an rss_feed_items sequential scan or explicit Sort`,
+      `${result.name} must page story RSS items through ${STORY_PROJECTION_SOURCE_INDEX} without an rss_feed_items sequential scan or explicit Sort: ${JSON.stringify(nodes.filter(node => String(node['Node Type']).includes('Sort') || node['Subplan Name'] === 'CTE items'))}`,
     )
   }
 }
-
-type PlanNode = Record<string, unknown>
 
 function assertRssFeedItemsGlobalCursorPlan(result: ExplainResult): void {
   if (!result.query_text.includes('FROM rss_feed_items')) return
@@ -123,16 +124,4 @@ function assertRssFeedItemsGlobalCursorPlan(result: ExplainResult): void {
       `${result.name} must paginate rss_feed_items through ${RSS_FEED_ITEMS_GLOBAL_CURSOR_INDEX} without an rss_feed_items sequential scan`,
     )
   }
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }

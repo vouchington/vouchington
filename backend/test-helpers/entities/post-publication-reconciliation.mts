@@ -1,3 +1,4 @@
+import { retainedKeyPayloadSql } from '../../services/post-publication/concrete-key-columns.mts'
 import { advisoryLockPool, read, write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -59,7 +60,8 @@ export async function listTestPostPublicationIdentityKeys(params: {
   authorUserId: string
   postId: string
 }): Promise<Array<{ kind: string; value: string }>> {
-  const { rows } = await read<{ kind: string; value: string }>(sql`
+  const { rows } = await read<{ kind: string; value: string }>(
+    `
     /* listTestPostPublicationIdentityKeys */
     SELECT CASE key.kind
         WHEN 'identity_author' THEN 'author'
@@ -70,11 +72,13 @@ export async function listTestPostPublicationIdentityKeys(params: {
         WHEN 'identity_rss_feed' THEN 'rss_feed'
       END AS kind,
       COALESCE(key.uuid_value::text, key.text_value) AS value
-    FROM post_publication_dirty_work_keys key
+    FROM (SELECT key.id, key.dirty_work_id, ${retainedKeyPayloadSql()} FROM post_publication_dirty_work_keys key) key
     JOIN post_publication_dirty_work work ON work.id = key.dirty_work_id
-    WHERE work.author_user_id = ${params.authorUserId} OR work.post_id = ${params.postId}
+    WHERE work.author_user_id = $1 OR work.post_id = $2
     ORDER BY key.id
-  `)
+  `,
+    [params.authorUserId, params.postId],
+  )
   return rows
 }
 
@@ -136,7 +140,7 @@ export async function hasTestPostPublicationProjectionReceipt(postId: string): P
   const { rows } = await read<{ exists: boolean }>(sql`
     /* hasTestPostPublicationProjectionReceipt */
     SELECT EXISTS (
-      SELECT 1 FROM post_publication_projection_receipts WHERE post_id = ${postId}
+      SELECT 1 FROM post_publication_projection_receipts WHERE post_identity_id = ${postId}
     ) AS exists
   `)
   return rows[0]?.exists ?? false
@@ -150,17 +154,24 @@ export async function createTestOrphanPostPublicationProjectionReceipts(
     /* createTestOrphanPostPublicationProjectionReceipts */
     WITH orphan_ids AS MATERIALIZED (
       SELECT uuidv7() AS post_id FROM generate_series(1, ${count})
+    ), inserted_identities AS (
+      INSERT INTO post_publication_post_identities (id) SELECT post_id FROM orphan_ids RETURNING id
+    ), inserted_snapshots AS (
+      INSERT INTO post_publication_identity_snapshots
+        (dirty_work_id, generation, post_identity_id, eligibility_fingerprint, is_public, completed_at)
+      SELECT ${dirtyWorkId}, 1, id, 'test-orphan-receipt', false, CURRENT_TIMESTAMP FROM inserted_identities
+      RETURNING id, post_identity_id
     ), inserted_receipts AS (
       INSERT INTO post_publication_projection_receipts (
-        post_id, eligibility_fingerprint, applied_generation
+        post_identity_id, eligibility_fingerprint, applied_generation, applied_snapshot_id
       )
-      SELECT post_id, 'test-orphan-receipt', 1 FROM orphan_ids
-      RETURNING post_id
+      SELECT post_identity_id, 'test-orphan-receipt', 1, id FROM inserted_snapshots
+      RETURNING post_identity_id AS post_id
     ), retained_impacts AS (
-      INSERT INTO post_publication_dirty_work_keys (dirty_work_id, kind, uuid_value)
-      SELECT ${dirtyWorkId}, 'impact_post', post_id FROM orphan_ids
+      INSERT INTO post_publication_dirty_work_keys (dirty_work_id, impact_post_identity_id)
+      SELECT ${dirtyWorkId}, id FROM inserted_identities
       ON CONFLICT DO NOTHING
-      RETURNING uuid_value
+      RETURNING impact_post_identity_id AS uuid_value
     )
     SELECT inserted_receipts.post_id
     FROM inserted_receipts

@@ -1547,6 +1547,66 @@ rules:
       sqlInclude:
         - backend/data-stores/psql/migrations/**/*.sql
       allowedMigrations:
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: impact_post_identity_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: impact_community_identity_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: impact_rss_feed_item_identity_id
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: topic_key
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: author_key
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: community_key
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: rss_feed_key
+          type: UUID
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: author_username
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: post_slug
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: community_slug
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
+          table: post_publication_dirty_work_keys
+          column: topic_alias
+          type: TEXT
+          nullable: true
+        - path: backend/data-stores/psql/migrations/0732-00-00-post-publication-identity-snapshots.sql
+          table: post_publication_projection_receipts
+          column: applied_snapshot_id
+          type: UUID
+          nullable: false
         - path: backend/data-stores/psql/migrations/0648-00-00-copyright-action-intent-delivery.sql
           table: copyright_notice_action_intents
           column: state

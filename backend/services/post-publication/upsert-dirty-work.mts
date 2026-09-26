@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
+import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 import type {
   PostPublicationDirtyWork,
   PostPublicationReason,
@@ -22,6 +23,7 @@ export async function upsertPostPublicationDirtyWork(
 ): Promise<PostPublicationDirtyWork[]> {
   if (scopeIds.length === 0) return []
   const scopeColumn = SCOPE_COLUMNS[scopeType]
+  await retainPublicationIdentityBridges(query, scopeType, scopeIds)
   // Column names and partial-index conflict targets are SQL syntax rather than bindable values.
   // This closed record is the complete allowlist for both interpolated fragments.
   const { rows } = await query<PostPublicationDirtyWork>(

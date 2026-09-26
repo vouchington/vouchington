@@ -146,7 +146,7 @@ export async function retainCurrentRssFeedPublicationKeys(
   await query(
     `/* retainCurrentRssFeedPublicationKeys */
     INSERT INTO post_publication_dirty_work_keys
-      (dirty_work_id, kind, uuid_value)
+      (dirty_work_id, topic_key, rss_feed_key)
     WITH input AS (
       SELECT *
       FROM UNNEST($1::uuid[], $2::uuid[]) AS row(dirty_work_id, rss_feed_id)
@@ -156,19 +156,22 @@ export async function retainCurrentRssFeedPublicationKeys(
     UNION
     SELECT input.dirty_work_id, 'impact_topic', feed.topic_id
     FROM input
-    JOIN rss_feeds feed ON feed.id = input.rss_feed_id
+    JOIN post_publication_rss_feed_identities identity ON identity.id = input.rss_feed_id
+    JOIN rss_feeds feed ON feed.id = identity.rss_feed_id
     WHERE feed.topic_id IS NOT NULL
     UNION
     SELECT input.dirty_work_id, 'impact_topic', category.topic_id
     FROM input
-    JOIN rss_feed_item_sources source ON source.rss_feed_id = input.rss_feed_id
+    JOIN post_publication_rss_feed_identities identity ON identity.id = input.rss_feed_id
+    JOIN rss_feed_item_sources source ON source.rss_feed_id = identity.rss_feed_id
     JOIN rss_feed_item_categories category
       ON category.rss_feed_item_id = source.rss_feed_item_id
     WHERE category.topic_id IS NOT NULL
     )
-    SELECT DISTINCT dirty_work_id, kind, uuid_value FROM keys
-    ORDER BY dirty_work_id, kind, uuid_value
-    ON CONFLICT (dirty_work_id, kind, uuid_value) WHERE uuid_value IS NOT NULL DO NOTHING`,
+    SELECT DISTINCT dirty_work_id, CASE WHEN kind = 'impact_topic' THEN uuid_value END AS topic_key,
+      CASE WHEN kind = 'identity_rss_feed' THEN uuid_value END AS rss_feed_key FROM keys
+    ORDER BY dirty_work_id, topic_key, rss_feed_key
+    ON CONFLICT DO NOTHING`,
     [rows.map(row => row.dirtyWorkId), rows.map(row => row.rssFeedId)],
   )
 }

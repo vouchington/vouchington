@@ -13,7 +13,7 @@ import sql from 'sql-template-strings'
 import { entityRelationElectionTables } from './target.mts'
 import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'
 
-const PRIMARY_REFRESH_BATCH_SIZE = 1_000
+export const PRIMARY_REFRESH_BATCH_SIZE = 1_000
 const topHashtagRelationTables = new Set([
   'relation__post__category__topic_alias',
   'relation__rss_feed_item__category__topic_alias',

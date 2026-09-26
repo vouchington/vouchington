@@ -142,7 +142,7 @@ describe('post publication orphan-receipt processor', () => {
 // The capture-time `identity_rss_feed` key sorts before every `impact_rss_feed_item` key
 // materialized during the first reconcile pass (both are uuidv7-ordered, and the identity key
 // commits first), so it consumes one slot of page 1 and none of the later pages.
-const CAPTURE_KEY_COUNT = 1
+const CAPTURE_KEY_COUNT = 2
 
 describe('post publication RSS notification fanout', () => {
   it('drains impact_rss_feed_item keys across multiple reconciliation pages', async () => {

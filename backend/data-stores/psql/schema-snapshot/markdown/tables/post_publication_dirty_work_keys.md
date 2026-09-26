@@ -6,15 +6,23 @@ Typed retained tombstone keys for pending publication repair. Rows cascade on ex
 
 RANGE partitioned on `dirty_work_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column          | Type         | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                                    |
-| --------------- | ------------ | -------- | ---------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| `id`            | `uuid`       | no       | `uuidv7()` |          |           |           |                                                                                                            |
-| `dirty_work_id` | `uuid`       | no       |            |          |           |           | Owning repair scope; exact acknowledgement cascades removal of its retained keys.                          |
-| `kind`          | `text`       | no       |            |          |           |           | Discriminator that determines which one of the typed key payload shapes is valid.                          |
-| `uuid_value`    | `uuid`       | yes      |            |          |           |           | Retained impacted-entity or public-identity UUID selected by kind; no source FK preserves deletion repair. |
-| `text_value`    | `text`       | yes      |            |          |           |           | Retained public cache identity selected by kind, including deleted slugs.                                  |
-| `post_type`     | `post_types` | yes      |            |          |           |           | Exact sitemap post type retained for a sitemap target.                                                     |
-| `day`           | `date`       | yes      |            |          |           |           | Exact UTC sitemap day retained for a sitemap target.                                                       |
+| Column                             | Type         | Nullable | Default    | Identity | Generated | Collation | Comment                                                                           |
+| ---------------------------------- | ------------ | -------- | ---------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
+| `id`                               | `uuid`       | no       | `uuidv7()` |          |           |           |                                                                                   |
+| `dirty_work_id`                    | `uuid`       | no       |            |          |           |           | Owning repair scope; exact acknowledgement cascades removal of its retained keys. |
+| `post_type`                        | `post_types` | yes      |            |          |           |           | Exact sitemap post type retained for a sitemap target.                            |
+| `day`                              | `date`       | yes      |            |          |           |           | Exact UTC sitemap day retained for a sitemap target.                              |
+| `impact_post_identity_id`          | `uuid`       | yes      |            |          |           |           | Concrete durable repair identity relationship.                                    |
+| `impact_community_identity_id`     | `uuid`       | yes      |            |          |           |           | Concrete durable repair identity relationship.                                    |
+| `impact_rss_feed_item_identity_id` | `uuid`       | yes      |            |          |           |           | Concrete durable repair identity relationship.                                    |
+| `topic_key`                        | `uuid`       | yes      |            |          |           |           | Immutable topic key projection value, never joined to a live entity.              |
+| `author_key`                       | `uuid`       | yes      |            |          |           |           | Immutable author key projection value, never joined to a live entity.             |
+| `community_key`                    | `uuid`       | yes      |            |          |           |           | Immutable community key projection value, never joined to a live entity.          |
+| `rss_feed_key`                     | `uuid`       | yes      |            |          |           |           | Immutable rss feed key projection value, never joined to a live entity.           |
+| `author_username`                  | `text`       | yes      |            |          |           |           | Immutable author username projection value, never joined to a live entity.        |
+| `post_slug`                        | `text`       | yes      |            |          |           |           | Immutable post slug projection value, never joined to a live entity.              |
+| `community_slug`                   | `text`       | yes      |            |          |           |           | Immutable community slug projection value, never joined to a live entity.         |
+| `topic_alias`                      | `text`       | yes      |            |          |           |           | Immutable topic alias projection value, never joined to a live entity.            |
 
 **Primary key:** `PRIMARY KEY (dirty_work_id, id)`
 
@@ -23,19 +31,23 @@ _none_
 
 **Check constraints:**
 
-- `post_publication_dirty_work_keys_check`: `CHECK ((((kind = ANY (ARRAY['impact_post'::text, 'impact_topic'::text, 'impact_community'::text, 'impact_rss_feed_item'::text, 'identity_author'::text, 'identity_community'::text, 'identity_rss_feed'::text])) AND (uuid_value IS NOT NULL) AND (text_value IS NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = ANY (ARRAY['identity_author_username'::text, 'identity_post_slug'::text, 'identity_community_slug'::text, 'identity_topic_alias'::text])) AND (uuid_value IS NULL) AND (text_value IS NOT NULL) AND ((char_length(text_value) >= 1) AND (char_length(text_value) <= 255)) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = 'sitemap_target'::text) AND (uuid_value IS NULL) AND (text_value IS NULL) AND (post_type IS NOT NULL) AND (day IS NOT NULL))))`
-- `post_publication_dirty_work_keys_kind_check`: `CHECK ((kind = ANY (ARRAY['impact_post'::text, 'impact_topic'::text, 'impact_community'::text, 'impact_rss_feed_item'::text, 'identity_author'::text, 'identity_author_username'::text, 'identity_community'::text, 'identity_rss_feed'::text, 'identity_post_slug'::text, 'identity_community_slug'::text, 'identity_topic_alias'::text, 'sitemap_target'::text])))`
+- `chk_post_publication_dirty_work_keys__concrete_payload`: `CHECK (((num_nonnulls(impact_post_identity_id, impact_community_identity_id, impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key, author_username, post_slug, community_slug, topic_alias, post_type) = 1) AND ((post_type IS NULL) = (day IS NULL))))`
 
 **Foreign keys:**
 
+- `fk_post_publication_dirty_work_keys__community_identity`: `FOREIGN KEY (impact_community_identity_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work_keys__post_identity`: `FOREIGN KEY (impact_post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work_keys__rss_feed_item_identity`: `FOREIGN KEY (impact_rss_feed_item_identity_id) REFERENCES post_publication_rss_feed_item_identities(id) ON DELETE RESTRICT`
 - `post_publication_dirty_work_keys_dirty_work_id_fkey`: `FOREIGN KEY (dirty_work_id) REFERENCES post_publication_dirty_work(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_post_pub_dirty_work_keys__impact_community_identity_id`: `CREATE INDEX idx_post_pub_dirty_work_keys__impact_community_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_community_identity_id) WHERE (impact_community_identity_id IS NOT NULL)`
+- `idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id`: `CREATE INDEX idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_rss_feed_item_identity_id) WHERE (impact_rss_feed_item_identity_id IS NOT NULL)`
+- `idx_post_publication_dirty_work_keys__impact_post_identity_id`: `CREATE INDEX idx_post_publication_dirty_work_keys__impact_post_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_post_identity_id) WHERE (impact_post_identity_id IS NOT NULL)`
+- `idx_post_publication_dirty_work_keys__topic_key`: `CREATE INDEX idx_post_publication_dirty_work_keys__topic_key ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, topic_key) WHERE (topic_key IS NOT NULL)`
 - `post_publication_dirty_work_keys_pkey`: `CREATE UNIQUE INDEX post_publication_dirty_work_keys_pkey ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, id)`
-- `uq_post_publication_dirty_work_keys__sitemap_target`: `CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__sitemap_target ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, kind, post_type, day) WHERE (post_type IS NOT NULL)`
-- `uq_post_publication_dirty_work_keys__text_value`: `CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__text_value ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, kind, text_value) WHERE (text_value IS NOT NULL)`
-- `uq_post_publication_dirty_work_keys__uuid_value`: `CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__uuid_value ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, kind, uuid_value) WHERE (uuid_value IS NOT NULL)`
+- `uq_post_publication_dirty_work_keys__concrete_payload`: `CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__concrete_payload ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, impact_post_identity_id, impact_community_identity_id, impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key, author_username, post_slug, community_slug, topic_alias, post_type, day) NULLS NOT DISTINCT`
 
 **Triggers:**
 _none_

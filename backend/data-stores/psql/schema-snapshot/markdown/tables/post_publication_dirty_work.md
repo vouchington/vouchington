@@ -6,26 +6,26 @@ One de-duplicated current-state publication repair scope. A generation and lease
 
 Not partitioned — growth: bounded.
 
-| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
-| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
-| `post_id`           | `uuid`                     | yes      |                              |          |           |           | Post scope retained without an FK so deletion cannot erase pending repair work.                 |
-| `author_user_id`    | `uuid`                     | yes      |                              |          |           |           | Author scope retained without an FK so account deletion cannot erase pending repair work.       |
-| `community_id`      | `uuid`                     | yes      |                              |          |           |           | Community scope retained without an FK so deletion cannot erase pending repair work.            |
-| `rss_feed_id`       | `uuid`                     | yes      |                              |          |           |           | RSS feed scope retained without an FK so deletion cannot erase pending repair work.             |
-| `topic_alias_id`    | `uuid`                     | yes      |                              |          |           |           | Topic alias scope retained without an FK so reassignment cannot erase pending repair work.      |
-| `story_id`          | `uuid`                     | yes      |                              |          |           |           | Story scope retained without an FK so source deletion cannot erase pending repair work.         |
-| `reasons`           | `text[]`                   | no       |                              |          |           |           | Finite set of coalesced eligibility-change reasons requiring the same current-state repair.     |
-| `generation`        | `bigint`                   | no       | `1`                          |          |           |           | Monotonic compare-and-set generation incremented whenever the scope becomes dirty again.        |
-| `cursor_post_id`    | `uuid`                     | yes      |                              |          |           |           | Last post UUID completed by the current generation; NULL starts or restarts post expansion.     |
-| `cursor_topic_id`   | `uuid`                     | yes      |                              |          |           |           | Last topic UUID completed by the current generation; NULL starts or restarts topic expansion.   |
-| `cursor_key_id`     | `uuid`                     | yes      |                              |          |           |           | Last retained-key UUID completed by the current generation; NULL starts or restarts key repair. |
-| `lease_token`       | `uuid`                     | yes      |                              |          |           |           | Worker ownership token rotated by each successful lease claim.                                  |
-| `leased_at`         | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp when the current worker lease was acquired.                                           |
-| `lease_expires_at`  | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp after which another worker may claim this generation.                                 |
-| `cursor_updated_at` | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp of the latest generation-fenced cursor checkpoint.                                    |
-| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
-| `updated_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                        |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                |
+| `post_id`           | `uuid`                     | yes      |                              |          |           |           | Exact post repair scope, referencing durable post identity rather than the nullable live entity.               |
+| `author_user_id`    | `uuid`                     | yes      |                              |          |           |           | Exact author repair scope, referencing durable author identity rather than the nullable live entity.           |
+| `community_id`      | `uuid`                     | yes      |                              |          |           |           | Exact community repair scope, referencing durable community identity rather than the nullable live entity.     |
+| `rss_feed_id`       | `uuid`                     | yes      |                              |          |           |           | Exact rss_feed repair scope, referencing durable rss_feed identity rather than the nullable live entity.       |
+| `topic_alias_id`    | `uuid`                     | yes      |                              |          |           |           | Exact topic_alias repair scope, referencing durable topic_alias identity rather than the nullable live entity. |
+| `story_id`          | `uuid`                     | yes      |                              |          |           |           | Exact story repair scope, referencing durable story identity rather than the nullable live entity.             |
+| `reasons`           | `text[]`                   | no       |                              |          |           |           | Finite set of coalesced eligibility-change reasons requiring the same current-state repair.                    |
+| `generation`        | `bigint`                   | no       | `1`                          |          |           |           | Monotonic compare-and-set generation incremented whenever the scope becomes dirty again.                       |
+| `cursor_post_id`    | `uuid`                     | yes      |                              |          |           |           | Last post UUID completed by the current generation; NULL starts or restarts post expansion.                    |
+| `cursor_topic_id`   | `uuid`                     | yes      |                              |          |           |           | Last topic UUID completed by the current generation; NULL starts or restarts topic expansion.                  |
+| `cursor_key_id`     | `uuid`                     | yes      |                              |          |           |           | Last retained-key UUID completed by the current generation; NULL starts or restarts key repair.                |
+| `lease_token`       | `uuid`                     | yes      |                              |          |           |           | Worker ownership token rotated by each successful lease claim.                                                 |
+| `leased_at`         | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp when the current worker lease was acquired.                                                          |
+| `lease_expires_at`  | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp after which another worker may claim this generation.                                                |
+| `cursor_updated_at` | `timestamp with time zone` | yes      |                              |          |           |           | Timestamp of the latest generation-fenced cursor checkpoint.                                                   |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                |
+| `updated_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -41,7 +41,13 @@ _none_
 - `post_publication_dirty_work_reasons_check`: `CHECK (((cardinality(reasons) > 0) AND (reasons <@ ARRAY['post_created'::text, 'post_updated'::text, 'post_content_reset'::text, 'post_audience_changed'::text, 'post_archived'::text, 'post_deleted'::text, 'post_topics_changed'::text, 'post_related_urls_changed'::text, 'post_ratings_changed'::text, 'post_clearance_changed'::text, 'post_moderation_flag_changed'::text, 'community_publication_changed'::text, 'moderation_appeal_resolved'::text, 'author_suspension_changed'::text, 'author_deleted'::text, 'community_visibility_changed'::text, 'rss_feed_discoverability_changed'::text, 'rss_feed_enablement_changed'::text, 'rss_feed_source_changed'::text])))`
 
 **Foreign keys:**
-_none_
+
+- `fk_post_publication_dirty_work__author_identity`: `FOREIGN KEY (author_user_id) REFERENCES post_publication_author_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work__community_identity`: `FOREIGN KEY (community_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work__post_identity`: `FOREIGN KEY (post_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work__rss_feed_identity`: `FOREIGN KEY (rss_feed_id) REFERENCES post_publication_rss_feed_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work__story_identity`: `FOREIGN KEY (story_id) REFERENCES post_publication_story_identities(id) ON DELETE RESTRICT`
+- `fk_post_publication_dirty_work__topic_alias_identity`: `FOREIGN KEY (topic_alias_id) REFERENCES post_publication_topic_alias_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 

@@ -16,7 +16,10 @@ import {
   claimPostPublicationDirtyWork,
   updatePostPublicationDirtyWorkCursors,
 } from './dirty-work.mts'
-import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
+import {
+  reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
+  getTestPublicationProjectionIdentity,
+} from './test-fixtures.mts'
 import { recordPostPublicationChange } from './capture.mts'
 
 describe('topic alias publication reconciliation', () => {
@@ -54,13 +57,9 @@ describe('topic alias publication reconciliation', () => {
     expect(firstPage.posts.map(post => post.id)).toEqual(
       [...posts.map(post => post.id)].sort().slice(0, 2),
     )
-    expect(firstPage.posts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          projection_identity: expect.objectContaining({ topicIds: [owner.id] }),
-        }),
-      ]),
-    )
+    expect((await getTestPublicationProjectionIdentity(firstPage.posts[0]!)).topicIds).toEqual([
+      owner.id,
+    ])
     const fence = {
       id: claimed.id,
       generation: claimed.generation,

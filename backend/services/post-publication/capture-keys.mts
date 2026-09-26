@@ -94,7 +94,7 @@ export async function retainCurrentPostPublicationKeys(
   }
   if (scope.type === 'community') {
     const { rows } = await query<{ slug: string | null }>(
-      `/* getCurrentCommunityPublicationKeys */ SELECT slug FROM communities WHERE id = $1`,
+      `/* getCurrentCommunityPublicationKeys */ SELECT community.slug FROM post_publication_community_identities identity JOIN communities community ON community.id = identity.community_id WHERE identity.id = $1`,
       [scope.communityId],
     )
     addTextKey(keys, 'identity_community_slug', rows[0]?.slug ?? undefined)

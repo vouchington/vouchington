@@ -14,6 +14,11 @@ import {
   listTestPostPublicationImpactTopicIds,
 } from '@voucha/test-helpers'
 import { describe, expect, it, onTestFinished } from 'vitest'
+import {
+  enableQueryCapture,
+  stopTestQueryCapture,
+  countCapturedQueriesByAnnotation,
+} from '@voucha/test-helpers/query-capture'
 
 describe('post update publication capture', () => {
   it('defers archive capture to the final composite-update publication write', async () => {
@@ -25,12 +30,21 @@ describe('post update publication capture', () => {
     })
     if (!post) throw new Error('Expected post')
     onTestFinished(() => hardDeleteTestPosts([post.id]))
-    const before = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
+    const before = await getTestPostPublicationDirtyWorkForScope({
+      type: 'post',
+      id: post.id,
+    })
     if (!before) throw new Error('Expected post creation publication work')
 
-    await updatePost(author, post, { archive: true, title: `${post.title} updated` })
+    await updatePost(author, post, {
+      archive: true,
+      title: `${post.title} updated`,
+    })
 
-    const after = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
+    const after = await getTestPostPublicationDirtyWorkForScope({
+      type: 'post',
+      id: post.id,
+    })
     expect(BigInt(after!.generation)).toBeGreaterThan(BigInt(before.generation))
     expect(after?.reasons).toContain('post_content_reset')
     expect(after?.reasons).not.toContain('post_archived')
@@ -59,9 +73,27 @@ describe('post update publication capture', () => {
     })
     const title = `Publication topic footprint updated ${suffix}`
 
-    await expect(updatePost(administrator, post, { title })).resolves.toMatchObject({ title })
+    enableQueryCapture()
+    let queries: ReturnType<typeof stopTestQueryCapture>
+    try {
+      await expect(updatePost(administrator, post, { title })).resolves.toMatchObject({ title })
+    } finally {
+      queries = stopTestQueryCapture()
+    }
+    expect(
+      countCapturedQueriesByAnnotation(queries, 'updateEntityRelationVoteStatsIfChanged'),
+    ).toBe(0)
+    expect(
+      countCapturedQueriesByAnnotation(
+        queries,
+        'updateEntityRelationElectionVoteStatsFromPrimaryBatch',
+      ),
+    ).toBe(2)
 
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
+    const work = await getTestPostPublicationDirtyWorkForScope({
+      type: 'post',
+      id: post.id,
+    })
     expect(work).toBeDefined()
     expect(work!.reasons).toContain('post_updated')
     await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual(
@@ -73,7 +105,10 @@ describe('post update publication capture', () => {
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!author) throw new Error('Expected author')
     const suffix = createRandomString(10)
-    const topic = await createTestTopic({ user: author, name: `Relation-only topic ${suffix}` })
+    const topic = await createTestTopic({
+      user: author,
+      name: `Relation-only topic ${suffix}`,
+    })
     const aliasId = await createTopHashtagAliasForTest(topic.id, `relation-only-${suffix}`)
     const post = await createPost(author, {
       post_type: 'discussion',
@@ -93,7 +128,10 @@ describe('post update publication capture', () => {
     // through any other path.
     await updatePost(author, post, { title: `${post.title} updated` })
 
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
+    const work = await getTestPostPublicationDirtyWorkForScope({
+      type: 'post',
+      id: post.id,
+    })
     expect(work).toBeDefined()
     await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual([topic.id])
   })

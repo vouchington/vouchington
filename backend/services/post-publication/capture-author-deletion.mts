@@ -5,6 +5,8 @@ import { recordPostPublicationChange } from './capture.mts'
 import { recordPostPublicationChanges } from './capture-posts.mts'
 import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import { lockAuthorPublicationLifecycle } from './lock.mts'
+import { retainPublicationIdentityBridges } from './identity-bridges.mts'
+import { getAuthorDeletionPublicationTargets } from './capture-author-deletion-candidates.mts'
 export type PreparedAuthorDeletionPublicationCapture = {
   authorUsername: string | null
 }
@@ -92,6 +94,12 @@ async function lockAuthorDeletionPosts(
     )
     const rows: Array<{ id: string }> = result.rows
     if (rows.length === 0) return
+    // oxlint-disable-next-line no-await-in-loop -- prepare all post bridges before the later author scope bridge.
+    await retainPublicationIdentityBridges(
+      query,
+      'post',
+      rows.map(row => row.id),
+    )
     afterPostId = rows.at(-1)!.id
   }
 }
@@ -120,32 +128,6 @@ async function lockAuthorDeletionContributedHashtagSources(
     if (rows.length === 0) return
     afterSourceId = rows.at(-1)!.id
   }
-}
-
-export async function getAuthorDeletionPublicationTargets(
-  query: TransactionQuery,
-  authorUserId: string,
-  afterPostId: string | null,
-  batchSize = POST_PUBLICATION_CAPTURE_BATCH_SIZE,
-): Promise<Array<{ postId: string; isAuthored: boolean }>> {
-  const { rows } = await query<{ id: string; is_authored: boolean }>(
-    `/* getAuthorDeletionPublicationTargets */
-    SELECT post.id, post.created_by_id = $1::uuid AS is_authored
-    FROM posts post
-    WHERE (
-      post.created_by_id = $1::uuid
-      OR EXISTS (
-        SELECT 1
-        FROM post_topic_alias_sources source
-        WHERE source.post_id = post.id AND source.contributor_id = $1::uuid
-      )
-    )
-      AND ($2::uuid IS NULL OR post.id > $2::uuid)
-    ORDER BY post.id
-    LIMIT $3`,
-    [authorUserId, afterPostId, batchSize],
-  )
-  return rows.map(row => ({ postId: row.id, isAuthored: row.is_authored }))
 }
 
 export async function retainAuthorDeletionContributedTopicImpacts(

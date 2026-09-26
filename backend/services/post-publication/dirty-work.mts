@@ -1,10 +1,14 @@
 import { write } from '@data-stores/psql'
+import { cleanupPostPublicationIdentitySnapshots } from './snapshot-cleanup.mts'
+import { cleanupPostPublicationIdentityBridges } from './identity-bridge-cleanup.mts'
 import type { ClaimedPostPublicationDirtyWork, PostPublicationDirtyWork } from './types.mts'
 
 export async function listAvailablePostPublicationDirtyWork(
   limit: number,
 ): Promise<PostPublicationDirtyWork[]> {
   assertPositive(limit)
+  await cleanupPostPublicationIdentitySnapshots()
+  await cleanupPostPublicationIdentityBridges()
   const { rows } = await write<PostPublicationDirtyWork>(
     `/* listAvailablePostPublicationDirtyWork */
     SELECT id, post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id, reasons,

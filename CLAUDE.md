@@ -2,6 +2,8 @@
 
 Always work from this worktree root — not the main checkout. Always work in a non-main worktree unless the user explicitly instructs otherwise, or you are inside a GitHub Actions Codex workflow whose checkout is the workspace.
 
+Voucha has not launched. Do not assume live users, production data, mixed-version workers, or a rollout window. Follow the pre-launch migration policy for schema changes; any compatibility exception requires explicit human direction.
+
 ## Principles
 
 - **Grill the user** — keep asking questions until the requirements are unambiguous; don't fill gaps with assumptions.

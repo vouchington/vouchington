@@ -20,11 +20,11 @@ import {
   acknowledgePostPublicationDirtyWork,
   acknowledgePostPublicationProjectionReceipts,
   claimPostPublicationDirtyWork,
-  reconcilePostPublicationDirtyWork,
   recordPostPublicationChange,
   updatePostPublicationDirtyWorkCursors,
   withPostPublicationReconciliationLocks,
 } from './public.mts'
+import { reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork } from './test-fixtures.mts'
 describe('post publication reconciliation', () => {
   it('expands an intermediate post scope through every nested reply', async () => {
     const root = await createTestPost()
@@ -260,7 +260,6 @@ describe('post publication reconciliation', () => {
       sitemap_day: new Date().toISOString().slice(0, 10),
       is_public: true,
       eligibility_fingerprint: 'stale-receipt',
-      projection_identity: { topicIds: [], identityKeys: [], sitemapTargets: [] },
     }
     await expect(acknowledgePostPublicationProjectionReceipts(claimed, [stalePost])).resolves.toBe(
       false,

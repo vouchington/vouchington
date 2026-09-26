@@ -4,6 +4,7 @@ import { retainPostPublicationImpacts } from './capture-impacts.mts'
 import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
+import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
 
 type StoryTopicPublicationChange = {
   storyId: string
@@ -36,6 +37,14 @@ export async function recordStoryTopicPublicationChanges(
     }),
   )
   const work: PostPublicationDirtyWork[] = []
+  await preparePostPublicationIdentityBridges(
+    query,
+    changesByStory.map(change => ({
+      scope: { type: 'story' as const, storyId: change.scopeId },
+      reason: 'post_topics_changed',
+      impactedPostIds: [...change.impacts.postIds],
+    })),
+  )
   for (
     let offset = 0;
     offset < changesByStory.length;

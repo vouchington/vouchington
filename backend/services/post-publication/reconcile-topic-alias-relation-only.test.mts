@@ -10,7 +10,10 @@ import {
 import { describe, expect, it } from 'vitest'
 import { linkTopicAlias, unlinkTopicAlias } from '../topics/aliases.mts'
 import { claimPostPublicationDirtyWork } from './dirty-work.mts'
-import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
+import {
+  reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
+  getTestPublicationProjectionIdentity,
+} from './test-fixtures.mts'
 import { recordPostPublicationChange } from './capture.mts'
 
 describe('topic alias publication reconciliation: relation-only membership', () => {
@@ -65,14 +68,10 @@ describe('topic alias publication reconciliation: relation-only membership', () 
 
     const initialPage = await reconcilePostPublicationDirtyWork(claimed, 10)
 
-    expect(initialPage.posts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: post.id,
-          projection_identity: expect.objectContaining({ topicIds: [initialOwner.id] }),
-        }),
-      ]),
-    )
+    expect(initialPage.posts.map(candidate => candidate.id)).toContain(post.id)
+    expect((await getTestPublicationProjectionIdentity(initialPage.posts[0]!)).topicIds).toEqual([
+      initialOwner.id,
+    ])
     await expect(listTestPostPublicationImpactTopicIds(work.id)).resolves.toEqual(
       expect.arrayContaining([initialOwner.id]),
     )
@@ -92,14 +91,10 @@ describe('topic alias publication reconciliation: relation-only membership', () 
 
     const relinkedPage = await reconcilePostPublicationDirtyWork(claimed, 10)
 
-    expect(relinkedPage.posts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: post.id,
-          projection_identity: expect.objectContaining({ topicIds: [replacementOwner.id] }),
-        }),
-      ]),
-    )
+    expect(relinkedPage.posts.map(candidate => candidate.id)).toContain(post.id)
+    expect((await getTestPublicationProjectionIdentity(relinkedPage.posts[0]!)).topicIds).toEqual([
+      replacementOwner.id,
+    ])
     await expect(listTestPostPublicationImpactTopicIds(work.id)).resolves.toEqual(
       expect.arrayContaining([initialOwner.id, replacementOwner.id]),
     )

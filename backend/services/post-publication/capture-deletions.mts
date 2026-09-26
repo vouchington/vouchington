@@ -13,6 +13,10 @@ import {
   recordPreparedAuthorDeletionPublicationWork,
 } from './capture-author-deletion.mts'
 import { lockAuthorDeletionPublicationScopes } from './lock-author-deletion-scopes.mts'
+import {
+  retainPublicationIdentityBridges,
+  type PublicationIdentityBridgeFamily,
+} from './identity-bridges.mts'
 
 export { processAuthorDeletionPublicationBatch } from './capture-author-deletion-batch.mts'
 export { lockAuthorPublicationLifecycle } from './lock.mts'
@@ -110,6 +114,12 @@ async function lockRssFeedHardDeletePosts(
     )
     const rows: Array<{ id: string }> = result.rows
     if (rows.length === 0) return
+    // oxlint-disable-next-line no-await-in-loop -- locked native post pages prepare the entire first bridge family before item/feed/alias writes.
+    await retainLockedFeedIdentityPage(
+      query,
+      'post',
+      rows.map(row => row.id),
+    )
     afterPostId = rows.at(-1)!.id
   }
 }
@@ -159,7 +169,24 @@ async function lockRssFeedHardDeleteSources(
     )
     const rows: Array<{ rss_feed_item_id: string }> = result.rows
     if (rows.length === 0) return
+    // oxlint-disable-next-line no-await-in-loop -- source locks already follow all post-family preparation; item bridges precede feed/alias writes.
+    await retainLockedFeedIdentityPage(
+      query,
+      'rss_feed_item',
+      rows.map(row => row.rss_feed_item_id),
+    )
     afterItemId = rows.at(-1)!.rss_feed_item_id
+  }
+}
+
+async function retainLockedFeedIdentityPage(
+  query: TransactionQuery,
+  family: PublicationIdentityBridgeFamily,
+  ids: string[],
+): Promise<void> {
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    // oxlint-disable-next-line no-await-in-loop -- only bounded chunks of the existing ordered locked preimage enter bridge ownership.
+    await retainPublicationIdentityBridges(query, family, ids.slice(offset, offset + 100))
   }
 }
 

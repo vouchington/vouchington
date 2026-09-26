@@ -111,12 +111,15 @@ export async function processReconcilePostPublication(
           selected.posts.map(post => post.id),
           async () => {
             // Re-read canonical primary state after all sorted post locks are held.
-            // ast-grep-ignore: no-three-sequential-awaits -- canonical reread, projection effects, and notification effects are ordered before receipt acknowledgement
             const result = await deps.reconcilePostPublicationDirtyWork(
               work,
               undefined,
               selected.posts.map(post => post.id),
             )
+            if (result.hasIncompleteSnapshots) {
+              await deps.enqueueContinuePostPublicationReconciliation()
+              return
+            }
             await applyPostPublicationProjectionEffects(result, deps)
             await enqueuePostPublicationNotificationEffects(result, deps)
             if (!(await deps.acknowledgePostPublicationProjectionReceipts(work, result.posts)))
