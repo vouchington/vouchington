@@ -62555,10 +62555,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_post_publication_dirty_work_keys__impact_community_identity": {
+        "idx_post_pub_dirty_work_keys__impact_community_identity_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_publication_dirty_work_keys__impact_community_identity ON ONLY public.post_publication_dirty_work_keys USING btree (impact_community_identity_id) WHERE (impact_community_identity_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_post_pub_dirty_work_keys__impact_community_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_community_identity_id) WHERE (impact_community_identity_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -62570,6 +62570,26 @@
             }
           ],
           "predicate": "(impact_community_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_rss_feed_item_identity_id) WHERE (impact_rss_feed_item_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "impact_rss_feed_item_identity_id",
+              "descending": false,
+              "expression": "impact_rss_feed_item_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(impact_rss_feed_item_identity_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -62590,26 +62610,6 @@
             }
           ],
           "predicate": "(impact_post_identity_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_publication_dirty_work_keys__impact_rss_feed_item_iden": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_publication_dirty_work_keys__impact_rss_feed_item_iden ON ONLY public.post_publication_dirty_work_keys USING btree (impact_rss_feed_item_identity_id) WHERE (impact_rss_feed_item_identity_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "impact_rss_feed_item_identity_id",
-              "descending": false,
-              "expression": "impact_rss_feed_item_identity_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(impact_rss_feed_item_identity_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
