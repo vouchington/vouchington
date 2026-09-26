@@ -84,6 +84,53 @@ checks every table's columns, validated constraints, valid index and trigger, th
 `posts` partition row, the OAuth client label columns, and that no view references either
 provenance column.
 
+## Recording
+
+Every insert path into the nine tables takes a required `ContentProvenance`
+([`content-provenance.mts`](../../../backend/types/entities/content-provenance.mts)), so a writer
+that does not state its channel fails to compile. Its union type also keeps an OAuth client off
+every channel except `api` and `mcp`.
+
+| Writer                                                         | Records                                                        |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
+| REST route called with a session                               | The request's validated client: `web`, `swift` or `dotnet`     |
+| MCP tool call                                                  | `mcp`, plus the OAuth client when the bearer is an OAuth token |
+| REST route called with an API key or OAuth token               | `api`; no REST write route accepts these credentials yet       |
+| Queue jobs, config-driven seeds, scripts and admin imports     | `system`                                                       |
+| Platform-authored content: story posts and ban-evasion reports | `system`                                                       |
+
+Routes call `getRequestContentProvenance()` right after authentication. It maps the
+[request origin](../../overview/architecture/request-client-info.md#request-origin) to a channel
+with the pure `resolveContentProvenance`
+([`content-provenance.mts`](../../../backend/modules/request-client-info/content-provenance.mts)).
+Services never read the request context themselves, because jobs and seeds run outside a request.
+
+### Unclassified Session Writes Fail Closed
+
+In observe mode, a session request whose client headers are missing or invalid proceeds without a
+client. When it reaches a content-creating route, the route returns `400` with
+`code: INVALID_CLIENT_INFO`, the code enforce mode already uses, and writes nothing. Reads and other
+routes keep observe-mode behavior.
+
+- Recording `web` would silently classify an unknown client as web, which
+  [request client info](../../overview/architecture/request-client-info.md) forbids.
+- Recording `NULL` would mark the row as predating tracking, which the Contract stage rejects.
+- An `unknown` channel would need an enum migration for traffic that enforce mode rejects anyway.
+
+Deploy the Record stage only after production observe logs show no
+`Invalid request client information observed` warnings on content-creating routes.
+
+### Platform-Authored Content Records `system`
+
+Story posts and ban-evasion detector reports record `system` whichever request or job triggers
+them, because the platform wrote them, not the user who opened the story discussion. Content a job
+creates for a user also records `system`: queued user feed imports, article sync posts and unfurled
+referral links.
+
+Open question for the Expose stage: a first-party AI feature that writes content as `system` hides
+the AI involvement from the label. Today topic recommendations are created only by user routes and
+stories are platform-authored, so no AI-authored content is labeled yet.
+
 ## Rollout
 
 Provenance ships as an expand and contract change, following the
@@ -93,7 +140,7 @@ rules. Each stage is a sub-issue of [#237](https://github.com/vouchington/vouchi
 | Stage    | Change                                                                                  | Status  |
 | -------- | --------------------------------------------------------------------------------------- | ------- |
 | Expand   | Nullable columns, constraints and immutability trigger on every table                   | Shipped |
-| Record   | Every writer records its channel and OAuth client; seeds and jobs record `system`       | Planned |
+| Record   | Every writer records its channel and OAuth client; seeds and jobs record `system`       | Shipped |
 | Expose   | Public "via API" and "via MCP" labels; staff see every channel                          | Planned |
 | Contract | A validated `CHECK` requires provenance on rows created after each table's writer ships | Planned |
 

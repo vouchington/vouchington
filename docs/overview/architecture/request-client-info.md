@@ -27,7 +27,9 @@ The shared parser mechanics come from `@vouchington/utils/request-client-info`; 
 header vocabulary and compatibility catalog through its stable local adapter.
 
 The `request-client-info` Dynamic Config namespace starts with `enforcement_enabled: false`.
-Observe mode logs sanitized validation failures and continues without request client context.
+Observe mode logs sanitized validation failures and continues with a session origin but no client
+information; content-creating routes still reject such a request with the same `400` (see
+[content provenance](../../requirements/content/content-provenance.md#unclassified-session-writes-fail-closed)).
 Enforce mode returns HTTP 400 with `code: INVALID_CLIENT_INFO` and includes `request_id` when the
 request supplied one. Enable enforcement only after all producers have deployed and production
 observe logs are clean.
@@ -81,6 +83,31 @@ presence is the bootstrap invariant, so clearing authentication cookies causes t
 bootstrap again. Fresh installs can therefore browse anonymous public APIs with a stable trusted
 device ID. An explicit session request satisfies the bootstrap without issuing a duplicate request;
 external upload origins never trigger bootstrap or receive client metadata.
+
+## Request Origin
+
+The request context holds a `RequestOrigin` beside the client information. It records how the
+request arrived:
+
+| Axis            | Values                              | Source                                           |
+| --------------- | ----------------------------------- | ------------------------------------------------ |
+| `interface`     | `rest`, `mcp`                       | The route family                                 |
+| `credential`    | `session`, `api_key`, `oauth`       | What authenticated the request                   |
+| `client`        | `web`, `swift`, `dotnet`, or `null` | Validated `x-voucha-client`; session origin only |
+| `oauthClientId` | `oauth_clients.id`, or `null`       | The client an OAuth access token was issued to   |
+
+- The listener sets a `rest`/`session` origin on every request it validates. Its client comes from
+  the validated client information, and is `null` when observe mode lets an invalid request through.
+- MCP routes are exempt from the listener. `dispatchMcpRequest`
+  ([`mcp-helpers.mts`](../../../backend/api/mcp-helpers.mts)) authenticates the bearer, then runs
+  the rest of the request, including tool handlers, in an `mcp` origin with the `oauth` or
+  `api_key` credential.
+- No REST route accepts an API key or OAuth token for writes yet, so a `rest` origin with either
+  credential has no producer.
+
+[Content provenance](../../requirements/content/content-provenance.md#recording) maps the origin to
+the channel that new content records. Inside a request, `onError` tags Sentry events with
+`request_interface`, `request_credential` and, for OAuth, `oauth_client_id`, beside the client tags.
 
 ## Local validation
 

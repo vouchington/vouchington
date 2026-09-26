@@ -8,8 +8,8 @@ The posts service is the core content creation system. It handles multiple post 
 
 ## Key Files
 
-- `create.mts` — Transactional post creation: validates inputs, inserts post + slug + images + review ratings + community review row, enqueues post-created events
-- `create-story-post.mts` — `insertStoryPostRecord()`: INSERT INTO posts for story posts, called from the stories service; accepts `QueryOptions` to participate in transactions
+- `create.mts` — Transactional post creation: validates inputs, inserts post + slug + images + review ratings + community review row, enqueues post-created events. Callers pass the required `ContentProvenance` the post records
+- `create-story-post.mts` — `insertStoryPostRecord()`: INSERT INTO posts for story posts, called from the stories service; accepts `QueryOptions` to participate in transactions. Story posts record `system` provenance
 - `get.mts` / `get-batch.mts` — Single and batch post lookups
 - `update.mts` — Post updates (title, markdown, broadcast, privacy, images)
 - `delete.mts` — Soft deletion

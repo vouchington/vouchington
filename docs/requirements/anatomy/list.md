@@ -13,16 +13,16 @@
 
 ### `lists`
 
-| Field           | Notes                                                                 |
-| --------------- | --------------------------------------------------------------------- |
-| `id`            | UUIDv7 PK; `created_at` derived from `uuid_extract_timestamp`         |
-| `owner_user_id` | FK → `users.id`; cascades on delete                                   |
-| `name`          | Text, 1–255 chars                                                     |
-| `description`   | Optional text                                                         |
-| `visibility`    | `'private' \| 'unlisted' \| 'public'`; default `'private'`            |
-| `updated_at`    | Trigger-maintained                                                    |
-| `removed_at`    | Soft-delete; non-null = deleted                                       |
-| `created_via`   | Immutable channel; see [provenance](../content/content-provenance.md) |
+| Field           | Notes                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| `id`            | UUIDv7 PK; `created_at` derived from `uuid_extract_timestamp`                                |
+| `owner_user_id` | FK → `users.id`; cascades on delete                                                          |
+| `name`          | Text, 1–255 chars                                                                            |
+| `description`   | Optional text                                                                                |
+| `visibility`    | `'private' \| 'unlisted' \| 'public'`; default `'private'`                                   |
+| `updated_at`    | Trigger-maintained                                                                           |
+| `removed_at`    | Soft-delete; non-null = deleted                                                              |
+| `created_via`   | Immutable channel of the writing request; see [provenance](../content/content-provenance.md) |
 
 ### `list_items__rss_feed_items` / `list_items__posts`
 

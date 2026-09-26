@@ -53,8 +53,10 @@ prunable.
 
 Clients are retired through `revoked_at` and never deleted, because
 [content provenance](../content/content-provenance.md) references the client that created each
-row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
-name the client; they stay `NULL` until Client ID Metadata Documents and staff verification ship.
+row. An access token's principal carries the `oauth_clients.id` it was issued to, so an MCP write
+records that client. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public
+provenance label may name the client; they stay `NULL` until Client ID Metadata Documents and staff
+verification ship.
 
 ## Protected resources and discovery
 
