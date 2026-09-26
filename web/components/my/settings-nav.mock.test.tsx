@@ -232,13 +232,14 @@ describe('SettingsNav', () => {
     expect(hrefs).not.toContain('/my/import-export')
   })
 
-  it('Advanced dropdown contains API Keys, Your Data', () => {
+  it('Advanced dropdown contains API Keys, Connected Apps, Your Data', () => {
     mockPathname = '/my/api-keys'
     render(<SettingsNav />)
     const advancedGroup = screen.getByRole('menubar').querySelector('[data-key="advanced"]')
     const links = advancedGroup?.querySelectorAll('a')
     const hrefs = [...(links ?? [])].map(a => a.getAttribute('href'))
     expect(hrefs).toContain('/my/api-keys')
+    expect(hrefs).toContain('/my/connected-apps')
     expect(hrefs).not.toContain('/my/friend-recommendations')
     expect(hrefs).toContain('/my/data')
   })
@@ -268,6 +269,7 @@ describe('SettingsNav', () => {
     expect(container.querySelector('[data-pw="settings-nav-dropdown-notifications"]')).toBeTruthy()
     expect(container.querySelector('[data-pw="settings-nav-dropdown-import-export"]')).toBeNull()
     expect(container.querySelector('[data-pw="settings-nav-dropdown-api-keys"]')).toBeTruthy()
+    expect(container.querySelector('[data-pw="settings-nav-dropdown-connected-apps"]')).toBeTruthy()
     expect(container.querySelector('[data-pw="settings-nav-dropdown-find-friends"]')).toBeNull()
   })
 

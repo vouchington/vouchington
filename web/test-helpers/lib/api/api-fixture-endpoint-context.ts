@@ -1,5 +1,6 @@
 import { serverApi } from '../../../lib/api/server/instance'
 import * as clientAdmin from '../../../lib/api/client/admin'
+import * as clientAdminOAuthClients from '../../../lib/api/client/admin-oauth-clients'
 import * as clientApiKeys from '../../../lib/api/client/api-keys'
 import * as clientAuth from '../../../lib/api/client/auth'
 import * as clientCaptchaConfig from '../../../lib/api/client/captcha-config'
@@ -28,6 +29,8 @@ import * as clientModeratorVacation from '../../../lib/api/client/moderator-vaca
 import * as clientMq from '../../../lib/api/client/mq'
 import * as clientMy from '../../../lib/api/client/my'
 import * as clientMyNotifications from '../../../lib/api/client/my-notifications'
+import * as clientOAuthApps from '../../../lib/api/client/oauth-apps'
+import * as clientOAuthGrants from '../../../lib/api/client/oauth-grants'
 import * as clientPodcastEpisodeChapters from '../../../lib/api/client/podcast-episode-chapters'
 import * as clientPsql from '../../../lib/api/client/psql'
 import * as clientReferralClicks from '../../../lib/api/client/referral-clicks'
@@ -37,6 +40,7 @@ import * as clientTopics from '../../../lib/api/client/topics'
 import * as clientValkey from '../../../lib/api/client/valkey'
 import * as clientUsers from '../../../lib/api/client/users'
 import * as clientWarnings from '../../../lib/api/client/warnings'
+import * as serverAdminOAuthClients from '../../../lib/api/server/admin-oauth-clients'
 import * as serverApiKeys from '../../../lib/api/server/api-keys'
 import * as serverCommunities from '../../../lib/api/server/communities'
 import * as serverCopyrightNotices from '../../../lib/api/server/copyright-notices'
@@ -57,6 +61,9 @@ import * as serverPsql from '../../../lib/api/server/psql'
 import * as serverReferralLinks from '../../../lib/api/server/referral-links'
 import * as serverReports from '../../../lib/api/server/reports'
 import * as serverRssFeedItems from '../../../lib/api/server/rss-feed-items'
+import * as serverOAuthApps from '../../../lib/api/server/oauth-apps'
+import * as serverOAuthGrants from '../../../lib/api/server/oauth-grants'
+import * as serverScopes from '../../../lib/api/server/scopes'
 import * as serverTopicRecommendations from '../../../lib/api/server/topic-recommendations'
 import * as serverTopics from '../../../lib/api/server/topics'
 import * as serverTrendingCommunities from '../../../lib/api/server/trending-communities'
@@ -67,6 +74,7 @@ import type { WebFixtureEndpointContext } from '@/test-helpers/api-responses/dec
 export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
   client: {
     admin: clientAdmin,
+    adminOAuthClients: clientAdminOAuthClients,
     apiKeys: clientApiKeys,
     auth: clientAuth,
     captchaConfig: clientCaptchaConfig,
@@ -95,6 +103,8 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     mq: clientMq,
     my: clientMy,
     myNotifications: clientMyNotifications,
+    oauthApps: clientOAuthApps,
+    oauthGrants: clientOAuthGrants,
     podcastEpisodeChapters: clientPodcastEpisodeChapters,
     psql: clientPsql,
     referralClicks: clientReferralClicks,
@@ -106,6 +116,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     warnings: clientWarnings,
   },
   server: {
+    adminOAuthClients: serverAdminOAuthClients,
     apiKeys: serverApiKeys,
     communities: serverCommunities,
     copyrightNotices: serverCopyrightNotices,
@@ -122,10 +133,13 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     moderationAnalytics: serverModerationAnalytics,
     modmail: serverModmail,
     my: serverMy,
+    oauthApps: serverOAuthApps,
+    oauthGrants: serverOAuthGrants,
     psql: serverPsql,
     referralLinks: serverReferralLinks,
     reports: serverReports,
     rssFeedItems: serverRssFeedItems,
+    scopes: serverScopes,
     topicRecommendations: serverTopicRecommendations,
     topics: serverTopics,
     trendingCommunities: serverTrendingCommunities,

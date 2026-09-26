@@ -132,6 +132,22 @@ describe('request', () => {
       })
     })
 
+    it('sends a cookie-free global flag read with its scoped kind', async () => {
+      const request = new ServerRequest()
+
+      await request.get('/api/v1/feature-flags', {
+        headers: { Cookie: '', 'x-voucha-request-kind': 'global-feature-flags' },
+      })
+
+      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+      expect(init.headers).toMatchObject({
+        Cookie: '',
+        'x-voucha-request-kind': 'global-feature-flags',
+        'x-cf-worker-secret': 'test-worker-secret',
+        'x-voucha-client': 'web',
+      })
+    })
+
     it('drops unsafe feature flag cookies', async () => {
       mockCookies.mockResolvedValue({
         get: (name: string) => {

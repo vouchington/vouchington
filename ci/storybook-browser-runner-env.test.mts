@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os'
+
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -27,7 +29,7 @@ describe('makeAttemptEnv', () => {
     expect(env.VITEST_PW_DEBUG).toBe('1')
     expect(env.VITEST_STORYBOOK_BROWSER).toBe('1')
     expect(env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
     expect(env.VITEST_STORYBOOK_BROWSER_API_PORT).toMatch(/^\d+$/)
   })
@@ -55,7 +57,7 @@ describe('makeAttemptEnv', () => {
     )
 
     expect(env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/system-temp/vite-storybook-browser-27519989871-1-storybook-attempt-1',
+      '/system-temp/vite-storybook-browser-attempt-1',
     )
   })
 
@@ -65,6 +67,33 @@ describe('makeAttemptEnv', () => {
 
     expect(firstAttempt.VITEST_STORYBOOK_BROWSER_API_PORT).toBe('49231')
     expect(secondAttempt.VITEST_STORYBOOK_BROWSER_API_PORT).toBe('49368')
+  })
+
+  it.each([1, 2, 3])('keeps attempt %i isolation independent of GitHub metadata', attempt => {
+    const base = { CI: 'true', RUNNER_TEMP: '/runner-temp' }
+    for (const explicitPort of [undefined, '49231']) {
+      const env = { ...base, VITEST_STORYBOOK_BROWSER_API_PORT: explicitPort }
+      const expected = makeAttemptEnv(env, attempt, '/repo')
+      for (const run of ['1', '987654321']) {
+        const actual = makeAttemptEnv(
+          { ...env, GITHUB_RUN_ID: run, GITHUB_RUN_ATTEMPT: run, GITHUB_JOB: `job-${run}` },
+          attempt,
+          '/repo',
+        )
+        expect(actual.VITEST_STORYBOOK_BROWSER_API_PORT).toBe(
+          expected.VITEST_STORYBOOK_BROWSER_API_PORT,
+        )
+        expect(actual.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
+          `/runner-temp/vite-storybook-browser-attempt-${attempt}`,
+        )
+      }
+    }
+  })
+
+  it('uses OS temp when neither CI temp override is supplied', () => {
+    expect(storybookBrowserAttemptCacheDir({ CI: 'true' }, 3, '/repo')).toBe(
+      `${tmpdir()}/vite-storybook-browser-attempt-3`,
+    )
   })
 
   it('adds bounded Playwright browser lifecycle debug after a startup hang', () => {
@@ -123,7 +152,7 @@ describe('makeAttemptEnv', () => {
       '/repo',
     )
 
-    expect(cacheDir).toBe('/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-2')
+    expect(cacheDir).toBe('/runner-temp/vite-storybook-browser-attempt-2')
   })
 })
 

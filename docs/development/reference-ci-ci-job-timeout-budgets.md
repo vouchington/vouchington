@@ -49,6 +49,14 @@ For the Docker image jobs, workflow tests should assert the exact job and critic
 and that the job timeout remains below the sum of declared step timeouts. Other jobs retain their
 existing budget model unless they explicitly adopt and test this fail-fast relationship.
 
+Lambda tests retain an additive budget that covers every declared step ceiling, including artifact
+fallbacks, with provisioning and drain headroom. The workflow test verifies this relationship and
+bounds remote checkout/fetch operations; only the local LCOV copy has no separate step timeout.
+The current budget is supported by a [48-second main job](https://github.com/vouchington/vouchington/actions/runs/36228728207/job/108367812863)
+(36-second setup, 5-second Vitest) and a [75-second coverage PR job](https://github.com/vouchington/vouchington/actions/runs/36229036801/job/108369324502)
+(34-second setup, 21-second Vitest). Artifact upload retries and outcome guards remain intact;
+neither the observed runtime nor the timeout change justifies splitting this already short job.
+
 Install timeout budgets distinguish root-only installs from relink-heavy installs. A root-only
 `pnpm install --frozen-lockfile --prefer-offline --filter .` can keep the 2-minute fail-fast budget,
 but static analysis first forces a full-workspace metadata reconciliation with

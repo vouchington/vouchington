@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
@@ -24,7 +25,7 @@ describe('late legal-hold and restoration concurrency', () => {
 
     const [restoreOutcome, holdOutcome] = await Promise.all([
       processCopyrightActionIntent(restore.id, restorationAt, {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
       appendCopyrightLegalHoldAssessment({
         currentUser: moderator,

@@ -6,7 +6,7 @@ Each deployable workflow validates and publishes on its own. When one succeeds f
 `dispatch-completed-deploy` sends its event to the private infrastructure receiver, which owns
 deploy ordering; the event names are in the
 [deployment CI/CD flow](../../docs/overview/infrastructure/reference-deployment-ci-cd-flow.md).
-`fix-main` subscribes to every workflow that runs on `main`, including the
+`fix-main` subscribes to every workflow that runs on a push to `main`, including the
 [Always run](reference-workflow-automation-always-run.md) checks, and hands failures to Auto
 Harness.
 
@@ -54,14 +54,14 @@ flowchart TD
             mc-select --> mc-tests["tooling, ts-shared,<br/>explain-analyze"]
             mc-tests --> mc-cleanup["cleanup-artifacts<br/>(no failures)"]
         end
-        static-code-analysis["static-code-analysis<br/>(also a CI job)"]
-        tests-portability["tests-portability<br/>(also a CI job)"]
     end
 
     always-checks["gitleaks, actionlint, lint-links<br/>(see Always run)"]
+    plan-completion["plan-completion<br/>(advisory only)"]
 
     main-push --> deployables
     main-push --> check-only
+    main-push --> plan-completion
     deployables -. "workflow_run success from push" .-> dispatch-completed-deploy["dispatch-completed-deploy"]
     dispatch-completed-deploy --> infra-receiver["private infrastructure receiver<br/>(one event per deployable)"]
 

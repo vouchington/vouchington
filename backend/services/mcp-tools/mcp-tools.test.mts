@@ -102,6 +102,12 @@ describe('callMcpTool', () => {
     ).toThrow('MCP response limit')
   })
 
+  it('rejects tool results whose values fit but whose total exceeds the MCP response limit', () => {
+    const half = 'x'.repeat(MAX_MCP_TOOL_RESULT_BYTES / 2)
+
+    expect(() => serializeMcpToolResult([half, half])).toThrow('MCP response limit')
+  })
+
   it('bounds traversal when object properties serialize to no output', () => {
     const value = Object.fromEntries(
       Array.from({ length: MAX_MCP_TOOL_RESULT_VISITS }, (_, index) => [index, undefined]),
@@ -229,16 +235,28 @@ describe('callMcpTool', () => {
     ).toContain('must NOT have additional properties')
   })
 
+  it('requires exactly one get_domain_ratings lookup key', () => {
+    const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'get_domain_ratings')
+    if (!tool) throw new Error('Expected get_domain_ratings tool')
+    const validate = (args: object) => validateToolArguments(tool.schema.parameters, args)
+
+    expect(validate({ hostname: 'example.com' })).toBeNull()
+    expect(validate({})).toContain('must NOT have fewer than 1 properties')
+    expect(validate({ url: 'https://example.com/a', hostname: 'example.com' })).toContain(
+      'must NOT have more than 1 properties',
+    )
+  })
+
   it('returns CallToolResult on successful tool call', async () => {
     // search_topics_text is a read-only MCP tool
     const result = await callMcpTool(
       'search_topics_text',
-      { query: 'test' },
+      { text_search_query: 'test' },
       user,
       ['mcp.user:read'],
       USER_MCP_SERVER_CONFIG,
     )
-    expect(result.content).toBeDefined()
+    expect(result.isError).not.toBe(true)
     expect(Array.isArray(result.content)).toBe(true)
   }, 15_000)
 })

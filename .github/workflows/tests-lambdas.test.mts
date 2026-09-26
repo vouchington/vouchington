@@ -7,12 +7,19 @@ const workflow = readFileSync('.github/workflows/tests-lambdas.yml', 'utf8')
 const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
 const mainWorkflow = readFileSync('.github/workflows/main-lambdas.yml', 'utf8')
 
-type Step = { name?: string; run?: string; uses?: string; with?: Record<string, unknown> }
+type Step = {
+  name?: string
+  run?: string
+  'timeout-minutes'?: number
+  uses?: string
+  with?: Record<string, unknown>
+}
 type Job = {
   if?: string
   needs?: string[]
   permissions?: Record<string, string>
   steps?: Step[]
+  'timeout-minutes'?: number
 }
 type MainWorkflow = { jobs?: Record<string, Job> }
 
@@ -23,6 +30,19 @@ function workflowFiles(): Array<{ contents: string; path: string }> {
 }
 
 describe('Lambda Tests workflow', () => {
+  it('bounds remote work and reserves provisioning headroom after all step budgets', () => {
+    const parsed = load(workflow) as MainWorkflow
+    const job = parsed.jobs?.['lambdas-tests']
+    const steps = job?.steps ?? []
+    const unbounded = steps.filter(step => step['timeout-minutes'] === undefined)
+
+    expect(unbounded.map(step => step.name ?? step.uses)).toEqual(['Preserve full lambdas LCOV'])
+
+    const stepBudget = steps.reduce((sum, step) => sum + (step['timeout-minutes'] ?? 0), 0)
+    expect(stepBudget).toBeGreaterThan(0)
+    expect((job?.['timeout-minutes'] ?? 0) - stepBudget).toBeGreaterThanOrEqual(2)
+  })
+
   it('leaves dependency and TypeScript checks with checks-static.yml', () => {
     const install = workflow.indexOf('uses: ./.github/actions/setup-node-pnpm')
     const tests = workflow.indexOf('vitest run --bail=3 --project lambdas')

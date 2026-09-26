@@ -17,7 +17,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     name: 'get_domain_ratings',
     type: 'function',
     description:
-      'Look up trust signals for a linked source. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.',
+      'Look up trust signals for a linked source. Provide exactly one of url or hostname. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.',
     parameters: {
       type: 'object',
       properties: {
@@ -30,12 +30,15 @@ const tool: Tool<ToolArgs, ToolResult> = {
           description: 'A bare hostname/domain to inspect, such as example.com',
         },
       },
+      minProperties: 1,
+      maxProperties: 1,
       additionalProperties: false,
     },
     strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Get Domain Ratings',
     requiredScopes: { mcp: ['domain-ratings:read'] },
     annotations: { readOnlyHint: true },
     api: null,

@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
@@ -18,7 +19,7 @@ describe('copyright notice restoration holds', () => {
       await openHeldCounterNoticeRestore(publish)
     await expect(
       processCopyrightActionIntent(restore.id, restorationAt, {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     const holdSubmission = await appendCopyrightNoticeSubmission({
@@ -65,7 +66,7 @@ describe('copyright notice restoration holds', () => {
     if (!holdWithhold) throw new Error('hold withhold intent disappeared')
     await expect(
       processCopyrightActionIntent(holdWithhold.id, new Date(restorationAt.getTime() + 120_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     await resolveCopyrightLegalHold({
@@ -82,7 +83,7 @@ describe('copyright notice restoration holds', () => {
     if (!holdRestore) throw new Error('hold restore intent disappeared')
     await expect(
       processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 240_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     expect(publish).toHaveBeenLastCalledWith(expect.objectContaining({ state: 'allow' }))

@@ -97,4 +97,40 @@ test.describe('My API Keys Page', () => {
     await keyRow.getByTestId('api-key-revoke-confirm').click()
     await expect(page.getByTestId('api-key-revoked-row').filter({ hasText: label })).toBeVisible()
   })
+
+  test('creates an MCP key with scopes picked from the catalogue', async ({ page }) => {
+    const label = `Playwright MCP ${randomUUID()}`
+
+    await page.getByTestId('api-keys-create-button').click()
+    await page.getByTestId('api-keys-create-type-mcp').click()
+    const picker = page.getByTestId('api-key-scope-picker')
+    await expect(picker).toBeVisible()
+
+    await page.getByTestId('api-keys-create-audience-admin').click()
+    await expect(picker.getByTestId('scope-checkbox-mcp.admin:read')).toBeVisible()
+    await page.getByTestId('api-keys-create-audience-user').click()
+    await expect(picker.getByTestId('scope-checkbox-mcp.admin:read')).toHaveCount(0)
+
+    await picker.getByTestId('scope-checkbox-cards:write').click()
+    await expect(picker.getByTestId('scope-checkbox-cards:read')).toBeChecked()
+    await page.getByTestId('api-keys-create-label-input').pressSequentially(label)
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/v1/my/api-keys') && response.request().method() === 'POST',
+    )
+    await page.getByTestId('api-keys-create-confirm-button').click()
+    const createResponse = await createResponsePromise
+    expect(createResponse.status(), await createResponse.text()).toBe(201)
+
+    const rawKey = await page.getByTestId('api-keys-created-raw-key-input').inputValue()
+    expect(rawKey).toMatch(/^voucha_mcp_/)
+    await page.getByTestId('api-keys-dismiss-raw-key-button').click()
+    const keyRow = page.getByTestId('api-key-active-row').filter({ hasText: label })
+    await expect(keyRow).toContainText('cards:read')
+    await expect(keyRow).toContainText('cards:write')
+
+    await keyRow.getByTestId('api-key-revoke-start').click()
+    await keyRow.getByTestId('api-key-revoke-confirm').click()
+    await expect(page.getByTestId('api-key-revoked-row').filter({ hasText: label })).toBeVisible()
+  })
 })

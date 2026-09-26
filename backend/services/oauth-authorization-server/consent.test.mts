@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { setTestOAuthArtifactExpiry } from '@voucha/test-helpers/entities/oauth-authorization-server'
+import { assignTestOAuthClientOwner } from '@voucha/test-helpers/entities/oauth-client-management'
 import {
   getTestOAuthConsentDecisions,
   mutateTestOAuthLifecycleEvent,
@@ -9,6 +10,7 @@ import {
 import {
   createTestApprovedOAuthAuthorization,
   createTestPendingOAuthAuthorization,
+  randomTestOAuthRedirectUri,
   TEST_OAUTH_RESOURCE,
 } from './test-support.mts'
 import {
@@ -17,9 +19,17 @@ import {
   exchangeOAuthAuthorizationCode,
   getOAuthAuthorizationRequestForUser,
   OAuthProtocolError,
+  updateOwnedOAuthApp,
 } from './index.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
+
+/** Has a fresh owner replace the client's only redirect URI, as the owner's settings page would. */
+async function replaceTestRedirectUri(clientId: string): Promise<void> {
+  const appOwner = await createTestUserDirect()
+  const appId = await assignTestOAuthClientOwner(clientId, appOwner.id)
+  await updateOwnedOAuthApp(appOwner.id, appId, { redirect_uris: [randomTestOAuthRedirectUri()] })
+}
 
 describe('OAuth consent', () => {
   let owner: TestUser
@@ -81,6 +91,34 @@ describe('OAuth consent', () => {
     await expect(
       decideOAuthAuthorizationRequest(owner.id, pending.requestId, 'approve', pending.bindingHash),
     ).rejects.toMatchObject({ code: 'access_denied' })
+  })
+
+  it('refuses a pending request whose redirect URI the owner has since removed', async () => {
+    const pending = await createTestPendingOAuthAuthorization(owner)
+    await replaceTestRedirectUri(pending.client.client_id)
+
+    await expect(
+      getOAuthAuthorizationRequestForUser(owner.id, pending.requestId, pending.bindingHash),
+    ).resolves.toBeNull()
+    for (const decision of ['approve', 'deny'] as const) {
+      await expect(
+        decideOAuthAuthorizationRequest(owner.id, pending.requestId, decision, pending.bindingHash),
+      ).rejects.toMatchObject({ code: 'access_denied' })
+    }
+  })
+
+  it('refuses to exchange a code issued to a redirect URI the owner has since removed', async () => {
+    const flow = await createTestApprovedOAuthAuthorization(owner)
+    await replaceTestRedirectUri(flow.client.client_id)
+
+    await expect(
+      exchangeOAuthAuthorizationCode({
+        clientId: flow.client.client_id,
+        code: flow.code,
+        codeVerifier: flow.verifier,
+        redirectUri: flow.redirectUri,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_grant' })
   })
 
   it('records each consent outcome in durable append-only evidence', async () => {

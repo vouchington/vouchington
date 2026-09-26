@@ -3,6 +3,10 @@ export interface WebFixtureServerEndpointContext {
     typeof import('@/lib/api/server/copyright-notices'),
     'getCopyrightEmailIntakeReviewQueue' | 'getCopyrightNotices' | 'getCopyrightReviewQueue'
   >
+  readonly adminOAuthClients: Pick<
+    typeof import('@/lib/api/server/admin-oauth-clients'),
+    'getAdminOAuthClients'
+  >
   readonly apiKeys: Pick<typeof import('@/lib/api/server/api-keys'), 'getMyApiKeys'>
   readonly communities: Pick<
     typeof import('@/lib/api/server/communities'),
@@ -80,6 +84,8 @@ export interface WebFixtureServerEndpointContext {
     | 'getMySpendingCategories'
     | 'getMyWebPushSubscriptions'
   >
+  readonly oauthApps: Pick<typeof import('@/lib/api/server/oauth-apps'), 'getMyOAuthApps'>
+  readonly oauthGrants: Pick<typeof import('@/lib/api/server/oauth-grants'), 'getMyOAuthGrants'>
   readonly psql: Pick<
     typeof import('@/lib/api/server/psql'),
     'getMigrationStatus' | 'getPartitionStatus'
@@ -92,6 +98,7 @@ export interface WebFixtureServerEndpointContext {
     typeof import('@/lib/api/server/reports'),
     'getCommunityPendingModerationReports'
   >
+  readonly scopes: Pick<typeof import('@/lib/api/server/scopes'), 'getScopeCatalog'>
   readonly rssFeedItems: Pick<
     typeof import('@/lib/api/server/rss-feed-items'),
     'getRssFeedItem' | 'getUserRssFeedItemBookmarkReferences'

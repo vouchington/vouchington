@@ -71,6 +71,7 @@ describe('search_data_points tool — real DB', () => {
     const result = await execute({ topic_id: topicId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.results.length).toBeGreaterThanOrEqual(2)
     expect(result.results[0]).toHaveProperty('id')
     expect(result.results[0]).toHaveProperty('title')
@@ -82,16 +83,35 @@ describe('search_data_points tool — real DB', () => {
     const result = await execute({ topic_id: topicId, result: 'approved' })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.results.length).toBeGreaterThanOrEqual(1)
     expect(result.results.every(r => r.structured_data?.result === 'approved')).toBe(true)
   })
 
-  it('returns empty results for non-existent topic', async () => {
+  it('accepts a topic slug', async () => {
+    const execute = searchDataPointsTool.function(user)
+    const result = await execute({ topic_id: `tool-search-dp-topic-${suffix}`, result: 'denied' })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.results.map(r => r.title)).toContain(`Tool Denied ${suffix}`)
+  })
+
+  it('searches every topic when none is given', async () => {
+    const execute = searchDataPointsTool.function(user)
+    const result = await execute({ result: 'denied' })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.results.length).toBeGreaterThan(0)
+    expect(result.results.every(r => r.structured_data?.result === 'denied')).toBe(true)
+  })
+
+  it('reports an unknown topic', async () => {
     const execute = searchDataPointsTool.function(user)
     const result = await execute({ topic_id: '00000000-0000-7000-8000-000000000001' })
 
-    expect(result.success).toBe(true)
-    expect(result.results).toEqual([])
+    expect(result).toEqual({ success: false, error: 'Topic not found' })
   })
 
   it('works for unauthenticated (null) user', async () => {
@@ -99,6 +119,7 @@ describe('search_data_points tool — real DB', () => {
     const result = await execute({ topic_id: topicId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(Array.isArray(result.results)).toBe(true)
   })
 })

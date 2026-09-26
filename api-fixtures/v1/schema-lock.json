@@ -1,5 +1,9 @@
 {
   "backendResponseContracts": {
+    "DELETE:/api/v1/admin/oauth-clients/:id/verification": {
+      "fixtureIds": ["web.admin.oauth-clients.unverify"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
     "DELETE:/api/v1/auth/bluesky/link": {
       "fixtureIds": ["native.auth.bluesky.unlink.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -22,6 +26,10 @@
     },
     "DELETE:/api/v1/my/messages/:conversationId/participants/:userId": {
       "fixtureIds": ["native.messages.participant-remove.default"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
+    "DELETE:/api/v1/my/oauth-apps/:id": {
+      "fixtureIds": ["web.my.oauth-apps.revoke"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
     "DELETE:/api/v1/my/oauth-grants/:id": {
@@ -71,6 +79,10 @@
     "GET:/api/v1/admin/modlog": {
       "fixtureIds": ["native.moderation.modlog.default"],
       "hash": "0fd39306d16ab2c451fcb06b94ce541bae1823792a5699844617ea5c0b7309e7"
+    },
+    "GET:/api/v1/admin/oauth-clients": {
+      "fixtureIds": ["web.admin.oauth-clients.list"],
+      "hash": "c73761c7afab09c546c566182eb721e09f8942d3f76bcdbd0c1fbdb27e860eb6"
     },
     "GET:/api/v1/admin/users/:userId/landing-pages": {
       "fixtureIds": ["native.admin-user-landing-pages.default"],
@@ -498,6 +510,10 @@
       "fixtureIds": ["native.my.push-subscriptions.paginated"],
       "hash": "92d8ef479a566a03f959f26efba9cc03d7233a11e6dee6c2cd4a86d88a26dd62"
     },
+    "GET:/api/v1/my/oauth-apps": {
+      "fixtureIds": ["web.my.oauth-apps.paginated"],
+      "hash": "a82697d0c3e3f47822fc8d9c601e29bfee0ed1e0ce9563cfd50908948f5fe2ca"
+    },
     "GET:/api/v1/my/oauth-grants": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
       "hash": "7cf36211537e0ca3b3ef9816cf8794d744bad1d36944896030ac9c0f0565592b"
@@ -854,6 +870,10 @@
       "fixtureIds": ["native.messages.policy.default"],
       "hash": "8583c029321cf9c1cedc2ed17f11af0724461ed87a3ccff42f8159a8f34ffe18"
     },
+    "PATCH:/api/v1/my/oauth-apps/:id": {
+      "fixtureIds": ["web.my.oauth-apps.update"],
+      "hash": "50e0253c2d7257db75f95da8c4a8dfe1203eddba85e7c706401beba8319d4c8b"
+    },
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
       "fixtureIds": [
         "native.point-valuations.update.clear-note",
@@ -1096,6 +1116,14 @@
       "fixtureIds": ["native.messages.participant-add.default"],
       "hash": "d5c551d7c0536efe0be009101addf7f2edd265b28c2c9021022ade15bc6ba35e"
     },
+    "POST:/api/v1/my/oauth-apps": {
+      "fixtureIds": ["web.my.oauth-apps.create"],
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27"
+    },
+    "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
+      "fixtureIds": ["web.my.oauth-apps.rotate-secret"],
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27"
+    },
     "POST:/api/v1/my/rewards-program-point-valuations": {
       "fixtureIds": ["native.point-valuations.create.default"],
       "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d"
@@ -1171,6 +1199,10 @@
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
       "fixtureIds": ["native.moderation.vote-integrity.penalty"],
       "hash": "bda7233f875cee571d2ec5ff966ce2c9c31c5e4859c34acb4da2e0028a5188d5"
+    },
+    "PUT:/api/v1/admin/oauth-clients/:id/verification": {
+      "fixtureIds": ["web.admin.oauth-clients.verify"],
+      "hash": "4b65e296e5e87306946d95d22be5a3863f64b9d6dcda79676bd0a3aaff744b50"
     },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "fixtureIds": ["web.communities.ai-agent.default"],
@@ -2342,6 +2374,18 @@
       "fixtureIds": ["web.admin.mq.stats.default"],
       "hash": "bace65bcc8c2ffd88be160044b9c2948dcea767b29917454fec0585c972d010f"
     },
+    "web.admin.oauth-clients.list": {
+      "fixtureIds": ["web.admin.oauth-clients.list"],
+      "hash": "c0c3b9604cd340b524ec0aae8e4f55bd333cec338c6ce73816e18dac4f971c13"
+    },
+    "web.admin.oauth-clients.unverify": {
+      "fixtureIds": ["web.admin.oauth-clients.unverify"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.admin.oauth-clients.verify": {
+      "fixtureIds": ["web.admin.oauth-clients.verify"],
+      "hash": "9eb6a4cb3a4a5d79a64a0f478f54f6d118d8bbac2f124ee809d67fd3fa17651f"
+    },
     "web.admin.psql.jobs.default": {
       "fixtureIds": ["web.admin.psql.jobs.default"],
       "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
@@ -2557,6 +2601,26 @@
     "web.memberships.refund.reconciling": {
       "fixtureIds": ["web.memberships.refund.reconciling"],
       "hash": "ae5a6ec7c34dd480b8c56080de416580de44e1d3d642d5568093e5f3641a2c56"
+    },
+    "web.my.oauth-apps.create": {
+      "fixtureIds": ["web.my.oauth-apps.create"],
+      "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde"
+    },
+    "web.my.oauth-apps.paginated": {
+      "fixtureIds": ["web.my.oauth-apps.paginated"],
+      "hash": "eda61d16f94600bcff083e0f316f268fc201c858534426e8bda27de9c47f932c"
+    },
+    "web.my.oauth-apps.revoke": {
+      "fixtureIds": ["web.my.oauth-apps.revoke"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.my.oauth-apps.rotate-secret": {
+      "fixtureIds": ["web.my.oauth-apps.rotate-secret"],
+      "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde"
+    },
+    "web.my.oauth-apps.update": {
+      "fixtureIds": ["web.my.oauth-apps.update"],
+      "hash": "b6bccea3c4fd8ca77a3559d73fb83347bec348e446d8fe256d693c895826f0b8"
     },
     "web.oauth.authorization.complete.acknowledged": {
       "fixtureIds": ["web.oauth.authorization.complete.acknowledged"],

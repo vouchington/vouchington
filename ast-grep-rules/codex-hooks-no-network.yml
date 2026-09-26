@@ -1,138 +1,58 @@
 id: codex-hooks-no-network
 language: Tsx
 severity: error
-message: 'Hook policy is local: no gh, no git network subcommands, and no HTTP. Network-backed checks belong in the validators (dev/pr-description.mts, dev/plan-issue.mts) or CI.'
+message: 'Hook subprocesses must use the typed local-process boundary; HTTP and direct child_process access are forbidden.'
 files:
   - 'dev/codex-hooks/**/*.mts'
 ignores:
   - 'dev/codex-hooks/**/*.test.mts'
-# Self-contained `all` branches instead of top-level `constraints`: constraints filter after `any`
-# has already picked its first structurally matching branch, so `execFileSync('git', …)` would be
-# claimed by the gh branch, fail its constraint, and never reach the git branches.
+  - 'dev/codex-hooks/local-process.mts'
 utils:
-  child-process-call:
-    all:
-      - kind: call_expression
-      - has:
-          field: function
-          regex: ^(\w+\.)?(execFile|execFileSync|spawn|spawnSync|exec|execSync)$
-  network-module:
-    regex: ^['"](node:)?(http|https|net)['"]$
+  forbidden-module:
+    regex: ^['"`](?:node:)?(?:child_process|http|http2|https|net)['"`]$
 rule:
   any:
     - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]gh(-stack)?(['"`]|\s)
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`](curl|wget)(['"`]|\s)
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]git['"`]$
-        - has:
-            field: arguments
-            has:
-              kind: string
-              regex: ^['"](fetch|ls-remote|pull|push|clone)['"]$
-              stopBy: end
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]git\s.*\b(fetch|ls-remote|pull|push|clone)\b
-    - pattern: fetch($$$ARGS)
-    - pattern: globalThis.fetch
-    - pattern: global.fetch
+        - kind: identifier
+        - regex: ^getBuiltinModule$
     - all:
         - any:
             - kind: import_statement
             - kind: export_statement
         - has:
             field: source
-            matches: network-module
+            matches: forbidden-module
     - all:
         - kind: call_expression
         - has:
             field: function
-            regex: ^(import|require)$
+            regex: ^(?:import|require|process\.getBuiltinModule)$
         - has:
             field: arguments
             has:
               nthChild: 1
-              matches: network-module
+              matches: forbidden-module
+    - pattern: fetch($$$ARGS)
+    - pattern: globalThis.fetch
+    - pattern: global.fetch
 examples:
   - code: |
       import { execFileSync } from 'node:child_process'
-      const body = execFileSync('gh', ['issue', 'view', '1'], { encoding: 'utf8' })
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { spawnSync } from 'node:child_process'
-      spawnSync('gh-stack', ['view', '--json'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-stack-workflow.mts'
-  - code: |
-      import * as childProcess from 'node:child_process'
-      childProcess.execSync('gh api repos/o/r/pulls')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['fetch', 'origin', 'main'], { cwd })
+      execFileSync('git', ['remote', 'update'])
     isValid: false
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['-C', dir, 'ls-remote', 'origin'], { encoding: 'utf8' })
+      import cp, { spawnSync } from 'node:child_process'
+      cp.execSync('git fetch')
     isValid: false
-    file: 'dev/codex-hooks/policy/github-checkout-owners.mts'
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
-      import { execSync } from 'node:child_process'
-      execSync('git -C dir push origin HEAD')
+      const cp = require('child_process')
+      cp.execFileSync('gh', ['api', 'repos/o/r'])
     isValid: false
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
-  - code: |
-      import { spawnSync } from 'node:child_process'
-      spawnSync('curl', ['-fsSL', 'https://api.github.com/repos/o/r'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { execSync } from 'node:child_process'
-      execSync('wget -qO- https://example.com')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      const response = await fetch('https://api.github.com/repos/o/r')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      const response = await globalThis.fetch(url)
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
       import http from 'node:http'
-    isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
-  - code: |
-      import { request } from 'https'
-    isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
-  - code: |
-      export { connect } from 'node:net'
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
@@ -140,34 +60,29 @@ examples:
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
-      const https = require('https')
+      const childProcess = await import(`node:child_process`)
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
-      import { spawnSync } from 'node:child_process'
-      spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], { encoding: 'utf8' })
-      const fs = await import('node:fs')
-    isValid: true
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
+      const childProcess = process.getBuiltinModule('node:child_process')
+    isValid: false
+    file: 'dev/codex-hooks/policy/core.mts'
   - code: |
-      import { spawnSync } from 'node:child_process'
-      const { status } = spawnSync('git', ['show', `HEAD:${rel}`], { cwd: worktreeRoot })
-    isValid: true
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
+      import { getBuiltinModule as loadBuiltin } from 'node:process'
+      const childProcess = loadBuiltin('node:child_process')
+    isValid: false
+    file: 'dev/codex-hooks/policy/core.mts'
   - code: |
-      import { execFileSync } from 'node:child_process'
-      const text = execFileSync('git', args, { cwd, encoding: 'utf8' })
-      execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], { cwd })
+      import http2 from 'node:http2'
+    isValid: false
+    file: 'dev/codex-hooks/policy/core.mts'
+  - code: |
+      const response = await fetch('https://api.github.com/repos/o/r')
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
+  - code: |
+      const execSync = (command: string) => command
+      execSync('local calculation')
+      const metadata = { shell: true }
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      const STACK_AGENT_ACTIONS = new Set(['add', 'push', 'rebase', 'sync'])
-      const isPush = match[2] === 'push'
-      const remote = REMOTE_LINE.exec(line)
-    isValid: true
-    file: 'dev/codex-hooks/policy/github-stack-workflow.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('gh', ['pr', 'view', '1'])
-    isValid: true
-    file: 'dev/pr-description/github.mts'

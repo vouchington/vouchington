@@ -24,7 +24,10 @@ tier is honored" section for why that distinction matters.
 ledger row. It remains non-partitioned because the UUIDv7-range-partitioned ledger cannot enforce
 global uniqueness for a key that does not include its partition key. A response ID is reserved and
 its ledger row inserted in one SQL statement; a replay returns `already-recorded` without adding a
-second row.
+second row. The shared agent recorder reports any supplied unusable ID, or the absence of both IDs,
+without including ID values. It records known billed usage without a response key when no storable
+ID is available. A successful keyless ledger write does not set the accounting-uncertainty latch;
+an actual ledger failure still requires the record-or-latch settlement barrier.
 
 **Not covered:** the moderations endpoint (`moderate.mts`) returns no `usage`/`service_tier` and
 stays on the existing `trackAIModerationCall` analytics path — by design, not a gap.

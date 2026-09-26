@@ -6,7 +6,7 @@ Settings sidebar groups items with section headers:
 
 - **Account**: Identity, Profile, Landing Pages, Preferences, Privacy
 - **Financial**: Cards, Household, Spending, Point Values, Statuses, Membership
-- **Advanced**: API Keys, Notifications, Find Friends, Your Data
+- **Advanced**: API Keys, Connected Apps, Notifications, Find Friends, Your Data
 
 Headers use `text-xs font-medium uppercase tracking-wide text-muted-foreground`. Active page is highlighted. Desktop shows grouped vertical nav; mobile uses flat horizontal scroll.
 

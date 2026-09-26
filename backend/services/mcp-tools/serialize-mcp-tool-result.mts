@@ -1,6 +1,11 @@
 export const MAX_MCP_TOOL_RESULT_BYTES = 1024 * 1024
 export const MAX_MCP_TOOL_RESULT_VISITS = 100_000
 
+// The result is too big for one MCP response; the caller can fix it by asking for less.
+export class McpToolResultTooLargeError extends RangeError {
+  override readonly name = 'McpToolResultTooLargeError'
+}
+
 class BoundedJsonSerializer {
   private readonly chunks: string[] = []
   private readonly ancestors = new Set<object>()
@@ -103,21 +108,21 @@ class BoundedJsonSerializer {
 
   private assertInputFits(value: string) {
     if (Buffer.byteLength(value, 'utf8') > this.maxBytes) {
-      throw new RangeError('Tool result exceeds the MCP response limit')
+      throw new McpToolResultTooLargeError('Tool result exceeds the MCP response limit')
     }
   }
 
   private countTraversalStep() {
     this.traversalSteps += 1
     if (this.traversalSteps > MAX_MCP_TOOL_RESULT_VISITS) {
-      throw new RangeError('Tool result exceeds the MCP response traversal limit')
+      throw new McpToolResultTooLargeError('Tool result exceeds the MCP response traversal limit')
     }
   }
 
   private append(value: string) {
     const nextLength = this.byteLength + Buffer.byteLength(value, 'utf8')
     if (nextLength > this.maxBytes) {
-      throw new RangeError('Tool result exceeds the MCP response limit')
+      throw new McpToolResultTooLargeError('Tool result exceeds the MCP response limit')
     }
     this.chunks.push(value)
     this.byteLength = nextLength

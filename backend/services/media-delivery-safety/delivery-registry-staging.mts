@@ -39,8 +39,6 @@ export async function stagePostImagePlacementDeliveryRecords(
           THEN NULL ELSE media_delivery_registry_records.projected_at END,
         invalidated_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
           THEN NULL ELSE media_delivery_registry_records.invalidated_at END,
-        generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END,
         next_attempt_at = NULL, failure_message = NULL
   `)
 }
@@ -48,23 +46,26 @@ export async function stagePostImagePlacementDeliveryRecords(
 export async function stageLegacyImageDeliveryRecord(
   imageId: string,
   state: MediaDeliveryRegistryState,
-  options: QueryOptions = {},
-): Promise<{ deliveryKey: string; generation: number }> {
+  options: QueryOptions & { forceGeneration?: boolean } = {},
+): Promise<{ deliveryKey: string; generation: string }> {
   const query = options.query ?? write
+  const forceGeneration = options.forceGeneration ?? false
   const deliveryKey = getLegacyImageDeliveryKey(imageId)
-  const { rows } = await query<{ generation: number }>(sql`/* stageLegacyImageDeliveryRecord */
+  const { rows } = await query<{ generation: string }>(sql`/* stageLegacyImageDeliveryRecord */
     INSERT INTO media_delivery_registry_records (delivery_key, media_kind, route_kind, asset_id, desired_state)
     VALUES (${deliveryKey}, 'image', 'legacy-image', ${imageId}, ${state})
     ON CONFLICT (delivery_key) DO UPDATE
     SET desired_state = EXCLUDED.desired_state, state = 'pending', claimed_at = NULL,
       completed_at = NULL, projected_at = NULL, invalidated_at = NULL, next_attempt_at = NULL,
       failure_message = NULL, delivery_attempt_count = 0,
-      generation = media_delivery_registry_records.generation + 1
+      generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
+        ELSE media_delivery_registry_records.generation END
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+      OR ${forceGeneration}
     RETURNING generation
   `)
   if (rows[0]) return { deliveryKey, generation: rows[0].generation }
-  const { rows: currentRows } = await query<{ generation: number }>(sql`
+  const { rows: currentRows } = await query<{ generation: string }>(sql`
     /* stageLegacyImageDeliveryRecord:current */
     SELECT generation FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
   `)
@@ -78,11 +79,12 @@ export async function stageImagePlacementDeliveryRecord(
     imageId: string
     state: MediaDeliveryRegistryState
   },
-  options: QueryOptions = {},
-): Promise<{ deliveryKey: string; generation: number }> {
+  options: QueryOptions & { forceGeneration?: boolean } = {},
+): Promise<{ deliveryKey: string; generation: string }> {
   const deliveryKey = getImagePlacementDeliveryKey(input)
   const query = options.query ?? write
-  const { rows } = await query<{ generation: number }>(sql`/* stageImagePlacementDeliveryRecord */
+  const forceGeneration = options.forceGeneration ?? false
+  const { rows } = await query<{ generation: string }>(sql`/* stageImagePlacementDeliveryRecord */
     INSERT INTO media_delivery_registry_records (
       delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
     ) VALUES (${deliveryKey}, 'image', 'placement', ${input.placementId}, ${input.revision},
@@ -90,19 +92,25 @@ export async function stageImagePlacementDeliveryRecord(
     ON CONFLICT (delivery_key) DO UPDATE
     SET desired_state = EXCLUDED.desired_state,
       state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+        OR ${forceGeneration}
         THEN 'pending' ELSE media_delivery_registry_records.state END,
       claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+        OR ${forceGeneration}
         THEN NULL ELSE media_delivery_registry_records.claimed_at END,
       completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+        OR ${forceGeneration}
         THEN NULL ELSE media_delivery_registry_records.completed_at END,
       projected_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+        OR ${forceGeneration}
         THEN NULL ELSE media_delivery_registry_records.projected_at END,
       invalidated_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+        OR ${forceGeneration}
         THEN NULL ELSE media_delivery_registry_records.invalidated_at END,
       delivery_attempt_count = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+        OR ${forceGeneration}
         THEN 0 ELSE media_delivery_registry_records.delivery_attempt_count END,
-      generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-        THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END,
+      generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
+        ELSE media_delivery_registry_records.generation END,
       next_attempt_at = NULL, failure_message = NULL
     RETURNING generation
   `)

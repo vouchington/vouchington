@@ -114,10 +114,17 @@ describe('detect-changes path filters', () => {
     }
   })
 
-  it('declares a dedicated portability output', () => {
+  it('declares a dedicated portability output that selects the portability suites', () => {
+    const portability = loadDetectChangesFilters().portability
     expect(detectChangesWorkflow.jobs?.['detect-changes']?.outputs?.portability).toBe(
       '${{ steps.filter.outputs.portability }}',
     )
+    const portabilityTests = [
+      'lambdas/dev-server.test.mts',
+      'cloudflare-worker/scripts/wrangler/runtime.test.mts',
+    ]
+    expect(portabilityTests.filter(path => !filterMatches(portability, path))).toEqual([])
+    expect(portability).not.toContain('ci/**')
   })
 
   it('does not treat every ci/ or dev/ file as an initialize-smoke change', () => {

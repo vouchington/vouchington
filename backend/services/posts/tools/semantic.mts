@@ -9,11 +9,12 @@ import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
+import type { PostType } from '../types.mts'
 
 type SearchPostsSemanticOptions = {
   query: string
   limit?: number
-  postType?: 'discussion' | 'review' | 'data_point' | 'comment' | 'link'
+  postType?: PostType
   currentUserId?: string
   isAdministrator?: boolean
 }

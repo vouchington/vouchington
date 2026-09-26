@@ -1,5 +1,12 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { imageDeliveryAuthorityProof, imageDeliveryIsAuthorized } from './delivery-authority.mts'
+import { lockImageDeliveryMutation } from './delivery-lock.mts'
+import {
+  stageImagePlacementDeliveryRecord,
+  stageLegacyImageDeliveryRecord,
+} from './delivery-registry-staging.mts'
+import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
@@ -12,12 +19,11 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     UPDATE media_delivery_registry_records
     SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL, completed_at = NULL,
       next_attempt_at = NULL, failure_message = 'Reopened by media delivery reconciliation.'
-    WHERE state = 'failed'
-    RETURNING delivery_key, placement_id
+    WHERE state = 'failed' RETURNING delivery_key, placement_id
   `)
   if (input?.actorUserId) {
     for (const record of rows) {
-      // oxlint-disable-next-line no-await-in-loop -- each affected case receives immutable operator evidence.
+      // oxlint-disable-next-line no-await-in-loop -- each case receives immutable operator evidence.
       await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
         INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
         SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
@@ -47,135 +53,62 @@ export async function listRecoverableMediaDeliveryRegistryKeys(
   return rows.map(row => row.delivery_key)
 }
 
+/** Snapshot staging is advisory; the publisher repeats this same proof under retained locks. */
 export async function stageAllCurrentImagePlacementDeliveryRecords(): Promise<number> {
-  await using transaction = await beginTransaction()
-  const withheldUnsafeCount = await withholdUnsafeMediaDeliveryRegistryRecords(transaction)
-  const { rows } = await transaction<{ count: string }>(sql`
-    /* stageAllCurrentImagePlacementDeliveryRecords */
-    WITH staged_placements AS (
-      INSERT INTO media_delivery_registry_records (
-        delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
-      )
+  const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
+    WITH candidates AS (
+      SELECT delivery_key, route_kind, placement_id, placement_revision, asset_id
+      FROM media_delivery_registry_records
+      UNION
       SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-        'image', 'placement', placement.id, placement.revision, binding.image_id,
-        CASE WHEN placement.copyright_withheld_at IS NULL AND NOT EXISTS (
-          SELECT 1 FROM copyright_restrictions restriction
-          JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-          WHERE target.placement_key = concat('image-placement:', placement.id)
-            AND restriction.lifted_at IS NULL
-        ) THEN 'allow' ELSE 'withheld' END
+        'placement', placement.id, placement.revision, binding.image_id
       FROM media_placements placement
-      JOIN (
-        SELECT placement_id, image_id FROM image_placements
-        UNION ALL SELECT placement_id, image_id FROM image_surface_placements
-      ) binding ON binding.placement_id = placement.id
-      JOIN images image ON image.id = binding.image_id
-      WHERE placement.retired_at IS NULL AND placement.copyright_withheld_at IS NULL
-        AND image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
-        AND image.quarantine_pending_at IS NULL
-        AND image.openai_omni_moderation_flagged = FALSE
-        AND image.openai_omni_moderation_results IS NOT NULL
-        AND image.openai_omni_moderation_created_at IS NOT NULL
-      ON CONFLICT (delivery_key) DO UPDATE
-      SET desired_state = EXCLUDED.desired_state,
-        state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN 'pending' ELSE media_delivery_registry_records.state END,
-        claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.claimed_at END,
-        completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.completed_at END,
-        delivery_attempt_count = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN 0 ELSE media_delivery_registry_records.delivery_attempt_count END,
-        next_attempt_at = NULL, failure_message = NULL,
-        generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END
-      RETURNING 1
-    ), staged_legacy AS (
-      INSERT INTO media_delivery_registry_records (
-        delivery_key, media_kind, route_kind, asset_id, desired_state
-      )
-      SELECT concat('legacy-image:', image.id), 'image', 'legacy-image', image.id,
-        CASE WHEN EXISTS (SELECT 1 FROM post_images attachment WHERE attachment.image_id = image.id)
-          OR EXISTS (
-            SELECT 1 FROM image_surface_placements surface
-            JOIN media_placements placement ON placement.id = surface.placement_id
-            WHERE surface.image_id = image.id AND placement.retired_at IS NULL
-          ) THEN 'withheld' ELSE 'allow' END
+      JOIN (SELECT placement_id, image_id FROM image_placements
+        UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
+        ON binding.placement_id = placement.id
+      WHERE placement.retired_at IS NULL
+      UNION
+      SELECT concat('legacy-image:', image.id), 'legacy-image', NULL::uuid, NULL::integer, image.id
       FROM images image
-      WHERE image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
-        AND image.quarantine_pending_at IS NULL AND image.openai_omni_moderation_flagged = FALSE
-        AND image.openai_omni_moderation_results IS NOT NULL
-        AND image.openai_omni_moderation_created_at IS NOT NULL
-      ON CONFLICT (delivery_key) DO UPDATE
-      SET desired_state = EXCLUDED.desired_state,
-        state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN 'pending' ELSE media_delivery_registry_records.state END,
-        claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.claimed_at END,
-        completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN NULL ELSE media_delivery_registry_records.completed_at END,
-        delivery_attempt_count = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN 0 ELSE media_delivery_registry_records.delivery_attempt_count END,
-        next_attempt_at = NULL, failure_message = NULL,
-        generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-          THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END
-      RETURNING 1
-    ) SELECT ((SELECT count(*) FROM staged_placements) + (SELECT count(*) FROM staged_legacy))::text AS count
+    ), intended AS (
+      SELECT authority.*, CASE WHEN `
+  statement.append(imageDeliveryAuthorityProof())
+  statement.append(sql` THEN 'allow' ELSE 'withheld' END AS desired_state
+      FROM candidates authority
+    ) SELECT intended.* FROM intended
+      LEFT JOIN media_delivery_registry_records existing USING (delivery_key)
+      WHERE existing.delivery_key IS NULL OR existing.desired_state IS DISTINCT FROM intended.desired_state
+      ORDER BY intended.delivery_key LIMIT 1000
   `)
-  await transaction.commit()
-  return withheldUnsafeCount + Number(rows[0]?.count ?? 0)
+  const { rows } = await read<Omit<ImageDeliveryRecord, 'generation'>>(statement)
+  for (const record of rows) {
+    // oxlint-disable-next-line no-await-in-loop -- one retained authority/registry domain per transaction.
+    await stageCurrentDeliveryRecord(record)
+  }
+  return rows.length
 }
 
-async function withholdUnsafeMediaDeliveryRegistryRecords(
-  transaction: Awaited<ReturnType<typeof beginTransaction>>,
-): Promise<number> {
-  const { rowCount } = await transaction(sql`
-    /* withholdUnsafeMediaDeliveryRegistryRecords */
-    UPDATE media_delivery_registry_records record
-    SET desired_state = 'withheld', state = 'pending', claimed_at = NULL, completed_at = NULL,
-      projected_at = NULL, invalidated_at = NULL, next_attempt_at = NULL, failure_message = NULL,
-      delivery_attempt_count = 0, generation = record.generation + 1
-    WHERE record.desired_state = 'allow'
-      AND (
-        (record.route_kind = 'placement' AND NOT EXISTS (
-          SELECT 1
-          FROM media_placements placement
-          JOIN (
-            SELECT placement_id, image_id FROM image_placements
-            UNION ALL SELECT placement_id, image_id FROM image_surface_placements
-          ) binding ON binding.placement_id = placement.id
-          JOIN images image ON image.id = binding.image_id
-          WHERE placement.id = record.placement_id
-            AND placement.revision = record.placement_revision
-            AND binding.image_id = record.asset_id
-            AND placement.retired_at IS NULL
-            AND placement.copyright_withheld_at IS NULL
-            AND image.deleted_at IS NULL
-            AND image.upload_completed_at IS NOT NULL
-            AND image.quarantine_pending_at IS NULL
-            AND image.openai_omni_moderation_flagged = FALSE
-            AND image.openai_omni_moderation_results IS NOT NULL
-            AND image.openai_omni_moderation_created_at IS NOT NULL
-        ))
-        OR (record.route_kind = 'legacy-image' AND NOT EXISTS (
-          SELECT 1
-          FROM images image
-          WHERE image.id = record.asset_id
-            AND image.deleted_at IS NULL
-            AND image.upload_completed_at IS NOT NULL
-            AND image.quarantine_pending_at IS NULL
-            AND image.openai_omni_moderation_flagged = FALSE
-            AND image.openai_omni_moderation_results IS NOT NULL
-            AND image.openai_omni_moderation_created_at IS NOT NULL
-            AND NOT EXISTS (SELECT 1 FROM post_images attachment WHERE attachment.image_id = image.id)
-            AND NOT EXISTS (
-              SELECT 1
-              FROM image_surface_placements surface
-              JOIN media_placements placement ON placement.id = surface.placement_id
-              WHERE surface.image_id = image.id AND placement.retired_at IS NULL
-            )
-        ))
-      )
-  `)
-  return rowCount ?? 0
+async function stageCurrentDeliveryRecord(
+  record: Omit<ImageDeliveryRecord, 'generation'>,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await lockImageDeliveryMutation(transaction, {
+    placementIds: record.placement_id ? [record.placement_id] : [],
+    placementOnly: record.route_kind === 'placement',
+    imageIds: record.route_kind === 'legacy-image' ? [record.asset_id] : [],
+  })
+  const state = (await imageDeliveryIsAuthorized(transaction, record)) ? 'allow' : 'withheld'
+  if (record.route_kind === 'legacy-image')
+    await stageLegacyImageDeliveryRecord(record.asset_id, state, { query: transaction })
+  else
+    await stageImagePlacementDeliveryRecord(
+      {
+        placementId: record.placement_id!,
+        revision: record.placement_revision!,
+        imageId: record.asset_id,
+        state,
+      },
+      { query: transaction },
+    )
+  await transaction.commit()
 }

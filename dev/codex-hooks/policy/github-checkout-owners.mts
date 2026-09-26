@@ -1,8 +1,7 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { gitEnvForCwd } from './github-configured-base.mts'
+import { gitConfiguredRemoteDefaults, gitRemoteVerbose } from '../local-process.mts'
 
 // GitHub's owner-name characters. A shell expansion (`$OWNER`, a glob, `~`) never matches, so an
 // owner the hook can't read literally is never mistaken for a different one.
@@ -20,8 +19,8 @@ const REMOTE_LINE = /^[^\t]+\t(.+) \((fetch|push)\)(?: \[[^\]]*\])?$/
  * OWNER/REPO.
  */
 export function checkoutOwners(cwd: string): ReadonlySet<string> | undefined {
-  const remotes = gitOutput(cwd, ['remote', '-v'])
-  const defaults = gitOutput(cwd, ['config', '--get-regexp', '^remote\\..+\\.gh-resolved$'])
+  const remotes = gitRemoteVerbose(cwd)
+  const defaults = gitConfiguredRemoteDefaults(cwd)
   if (remotes === undefined || defaults === undefined) {
     return undefined
   }
@@ -130,20 +129,4 @@ function ownerOfRemoteUrl(url: string): string | null | undefined {
 function ownerOfRemotePath(path: string): string | undefined {
   const segments = path.replace(/^\/+|\/+$/g, '').split('/')
   return segments.length === 2 && segments[1] !== '' ? githubOwner(segments[0]) : undefined
-}
-
-// `git config --get-regexp` exits 1 when nothing matches, which is an empty answer, not a failure.
-function gitOutput(cwd: string, args: string[]): string | undefined {
-  try {
-    return execFileSync('git', args, {
-      cwd,
-      encoding: 'utf8',
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    })
-  } catch (error) {
-    const noMatch = args[0] === 'config' && (error as { status?: number | null }).status === 1
-    return noMatch ? '' : undefined
-  }
 }

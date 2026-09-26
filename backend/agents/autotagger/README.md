@@ -71,3 +71,14 @@ helpers) exist solely to support this residual path; C6 never calls them.
 - Search topics by semantic text search
 - Search topics by full text search
 - Automatically add a related topic by post/rss-feed-item id and topic id
+
+### Test boundaries
+
+`__tests__/openai-autotagger.integration.test.mts` covers the dormant C7 reasoning path with
+real tools, PostgreSQL relations and votes, and persisted conversation runs/events. It replaces
+only the external OpenRouter response with a typed deterministic response: one test requires an
+exact topic relation and actor vote, while a no-tool response must leave the post untagged.
+The two credentialed provider contracts remain in
+`backend/modules/openrouter-utils/create-response.openrouter.test.mts` (OpenResponses envelope)
+and `backend/modules/structured-decisions/structured-decisions.openrouter.test.mts` (structured
+decision primitives). The agent integration test does not require provider credentials.

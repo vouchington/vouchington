@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import getTrendingPostsTool from './get-trending-posts.mts'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestTopic, createTestUser } from '@voucha/test-helpers'
+import { insertEntityRelation } from '@voucha/test-helpers/entities/entity-relations'
 import { createTrendingPostData } from '@voucha/test-helpers/entities/trending-posts'
+import { updateEntityRelationElection } from '@voucha/test-helpers/entities/user-profile-fixture-mutations'
 import type { PrivateUser } from '@services/users/types'
 import { VALID_TRENDING_POST_TYPES, VALID_TRENDING_TIME_RANGES } from '@ts-shared/feed-capabilities'
 
@@ -25,6 +27,7 @@ describe('get_trending_posts tool — real DB', () => {
     const result = await execute({})
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.time_range).toBe('week')
     expect(Array.isArray(result.results)).toBe(true)
     for (const r of result.results) {
@@ -48,6 +51,7 @@ describe('get_trending_posts tool — real DB', () => {
     const result = await execute({ time_range: 'week', limit: 10 })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     const found = result.results.find(r => r.id === trendingPostId)
     expect(found).toBeDefined()
     expect(found!.trending_score).toBeGreaterThan(0)
@@ -58,6 +62,7 @@ describe('get_trending_posts tool — real DB', () => {
     const result = await execute({ post_type: 'discussion', limit: 5 })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.results.length).toBeLessThanOrEqual(5)
   })
 
@@ -66,6 +71,31 @@ describe('get_trending_posts tool — real DB', () => {
     const result = await execute({ time_range: 'month' })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.time_range).toBe('month')
+  })
+
+  it('filters to a topic given by slug', async () => {
+    const topic = await createTestTopic({ user })
+    const relation = 'relation__post__category__topic'
+    await insertEntityRelation(relation, trendingPostId, topic.id)
+    await updateEntityRelationElection(relation, trendingPostId, topic.id, {
+      votes_score_up: 1,
+      votes_count_up: 1,
+    })
+
+    const execute = getTrendingPostsTool.function(user)
+    const result = await execute({ topic_id: topic.slug })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.results.map(r => r.id)).toEqual([trendingPostId])
+  })
+
+  it('reports an unknown topic', async () => {
+    const execute = getTrendingPostsTool.function(user)
+    const result = await execute({ topic_id: `missing-topic-${crypto.randomUUID()}` })
+
+    expect(result).toEqual({ success: false, error: 'Topic not found' })
   })
 })

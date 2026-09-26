@@ -2,6 +2,24 @@ const jobs = (keys: string): readonly string[] => keys.split(' ')
 
 export const jobInventory = {
   '.github/workflows/actionlint.yml': jobs('actionlint'),
+  '.github/workflows/backend.yml': jobs(
+    'backend backend-smoke build-backend changes codecov coverage static-backend test-backend-credentialed test-backend-modules test-backend-unit test-explain-analyze test-postgres-schema',
+  ),
+  '.github/workflows/ci-area-coverage.yml': jobs('coverage'),
+  '.github/workflows/cloudflare-worker.yml': jobs(
+    'changes cloudflare-worker codecov coverage static-cloudflare-worker test-cloudflare-worker',
+  ),
+  '.github/workflows/lambdas.yml': jobs(
+    'changes codecov coverage lambdas static-lambdas test-lambdas',
+  ),
+  '.github/workflows/nightly.yml': jobs('backend cloudflare-worker lambdas static tooling web'),
+  '.github/workflows/static.yml': jobs('static static-code-analysis'),
+  '.github/workflows/tooling.yml': jobs(
+    'changes codecov coverage initialize-smoke-test test-portability test-tooling test-ts-shared tooling',
+  ),
+  '.github/workflows/web.yml': jobs(
+    'build-web changes codecov coverage static-web storybook test-playwright test-playwright-credentialed test-web test-web-api test-web-integration web',
+  ),
   '.github/workflows/build-backend.yml': jobs('build'),
   '.github/workflows/publish-backend-images.yml': jobs('build'),
   '.github/workflows/build-web.yml': jobs('build'),
@@ -11,7 +29,7 @@ export const jobInventory = {
   ),
   '.github/workflows/checks-backend-smoke.yml': jobs('smoke'),
   '.github/workflows/ci.yml': jobs(
-    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing upload-codecov',
+    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing',
   ),
   '.github/workflows/ci-detect-changes.yml': jobs('detect-changes'),
   '.github/workflows/ci-test-coverage.yml': jobs('test-coverage'),
@@ -29,6 +47,7 @@ export const jobInventory = {
   ),
   '.github/workflows/merge-queue-ejection.yml': jobs('dispatch escalate render-prompt'),
   '.github/workflows/plan.yml': jobs('dispatch escalate gate render-prompt'),
+  '.github/workflows/plan-completion.yml': jobs('audit'),
   '.github/workflows/shepherd.yml': jobs(
     'checkpoint-dispatch dispatch escalate gate render-prompt',
   ),
@@ -76,6 +95,13 @@ export const jobInventory = {
 } satisfies Record<string, readonly string[]>
 
 export const unlockedWorkflowReasons = {
+  '.github/workflows/build-backend.yml': "runs under its caller's concurrency",
+  '.github/workflows/build-web.yml': "runs under its caller's concurrency",
+  '.github/workflows/ci-area-coverage.yml': 'short-lived read-only area coverage check',
+  '.github/workflows/static-code-analysis.yml': "runs under its caller's concurrency",
+  '.github/workflows/tests-playwright-credentialed.yml': "runs under its caller's concurrency",
+  '.github/workflows/tests-playwright.yml': "runs under its caller's concurrency",
+  '.github/workflows/tests-portability.yml': "runs under its caller's concurrency",
   '.github/workflows/ci-detect-changes.yml': 'short-lived read-only CI classification',
   '.github/workflows/ci-test-coverage.yml': 'short-lived coverage report evaluation',
   '.github/workflows/ci-upload-codecov.yml': 'independent informational coverage upload',

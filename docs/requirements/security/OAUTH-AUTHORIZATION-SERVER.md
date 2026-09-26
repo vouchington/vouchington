@@ -17,7 +17,14 @@ OpenID Connect, ID-token, or UserInfo flows.
 ## Security invariants
 
 - Redirect URIs must be registered exactly. HTTPS is required except for HTTP loopback clients.
+  The match is rechecked when the user decides on consent and when the code is exchanged, under a
+  share lock on the client row, so a URI the owner has removed, even concurrently, receives neither
+  a code nor tokens.
 - Authorization errors redirect only after the client and redirect URI have both been verified.
+- Code exchange, refresh and revocation authenticate the client against its row under a share lock
+  held until their transaction commits. A secret rotation or client revocation waits for in-flight
+  token requests, and later requests see the new state, so a replaced secret obtains no tokens once
+  rotation returns.
 - Codes, access tokens, refresh tokens, and client secrets are stored only as purpose-bound hashes.
   Plaintext credentials are returned once.
 - Authorization codes are single-use. Their exchange and token issuance share one PostgreSQL
@@ -40,11 +47,33 @@ OpenID Connect, ID-token, or UserInfo flows.
 Public clients authenticate with their `client_id` and mandatory PKCE. Confidential clients also
 authenticate with HTTP Basic and a generated client secret. B1 implements RFC 7591 registration,
 not the RFC 7592 registration-management protocol, so it does not mint an unused registration
-management credential. Authenticated client and grant management is owned by the API-key and
-OAuth-app management milestone.
+management credential. Signed-in owners and administrators manage clients and grants through the
+first-party routes below instead.
+
+Signed-in users register and manage their own clients through `/api/v1/my/oauth-apps`
+([OAuth apps](../users/oauth-apps.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
+and records `owner_user_id`; rotation replaces the stored client-secret hash and returns the new
+secret once, and renaming a client or replacing its redirect URIs clears `verified_at` and
+`verified_by_id` in the same update. Every owner mutation first takes the account-deletion lock
+(`fn_lock_active_user_for_mutation`), so a request that authenticated just before the owner's
+deletion committed cannot change the app or mint a secret afterwards. Account deletion does not yet
+revoke the apps the account owns; [#710](https://github.com/vouchington/vouchington/issues/710)
+tracks it.
+
+Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
+([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
+`verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
+redirect URIs the administrator reviewed, so an owner's rename or re-pointing between review and
+approval returns 409 instead of verifying what staff never saw.
+Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
+sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
+verification. Staff review the queue at `/admin/oauth-clients`, which defaults to unverified
+clients, filters to verified or all clients, shows each client's owner (or none for an anonymous
+registration), redirect URIs and scopes, and verifies the displayed name and redirect URIs or
+removes verification from the row.
 
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
-([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
+([connected apps](../users/oauth-apps.md#connected-apps)). A revoked grant fails the bearer, refresh
 and code paths on their next use because each requires an unrevoked grant. The listed `verified`
 flag reflects the client's `verified_at`, and `last_used_at` is the later of the grant's own
 timestamp and its newest access-token use.
@@ -60,7 +89,7 @@ prunable.
 Clients are retired through `revoked_at` and never deleted, because
 [content provenance](../content/content-provenance.md) references the client that created each
 row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
-name the client; they stay `NULL` until Client ID Metadata Documents and staff verification ship.
+name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents ship.
 
 ## Protected resources and discovery
 

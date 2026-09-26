@@ -3,11 +3,6 @@ name: Playwright Tests
 on:
   workflow_call:
     inputs:
-      event-name:
-        description: Triggering workflow event name (pull_request cancels superseded runs)
-        type: string
-        required: false
-        default: ''
       otel_enabled:
         description: 'Whether Playwright web servers should export OTel traces/logs for main CI observability'
         type: boolean
@@ -27,11 +22,6 @@ on:
 
 permissions:
   contents: read
-
-concurrency:
-  # Serialize Playwright workflow runs for the same PR/ref without serializing shards.
-  group: playwright-tests-${{ github.event.pull_request.number || github.ref || github.sha }}
-  cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}
 
 jobs:
   shards:

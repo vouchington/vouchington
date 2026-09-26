@@ -17,6 +17,7 @@ import {
   findMissingApiOperations,
   type OpenApiPaths,
 } from './build-mcp-catalog.mts'
+import { findApiHintConflicts } from './find-api-hint-conflicts.mts'
 
 const repoPath = (path: string): string =>
   fileURLToPath(new URL(`../../../../${path}`, import.meta.url))
@@ -84,5 +85,18 @@ describe('generated MCP catalog artifacts', () => {
     const openapi = JSON.parse(await readFile(OPENAPI_PATH, 'utf8')) as OpenApiPaths
 
     expect(findMissingApiOperations(ALL_TOOLS, openapi)).toEqual([])
+  })
+
+  it('declares hints that agree with each tool REST equivalents', () => {
+    expect(findApiHintConflicts(ALL_TOOLS)).toEqual([])
+  })
+
+  it('gives every listed tool a display title', () => {
+    const untitled = catalog.servers
+      .flatMap(server => server.tools)
+      .filter(({ tool }) => !tool.title?.trim())
+      .map(({ tool }) => tool.name)
+
+    expect(untitled).toEqual([])
   })
 })

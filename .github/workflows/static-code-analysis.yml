@@ -1,20 +1,8 @@
 name: Static Code Analysis
 
 on:
-  push:
-    branches: [main]
   workflow_call:
-    inputs:
-      docs_only:
-        description: Skip TypeScript, lint, and graph checks on docs-only pull requests.
-        type: boolean
-        required: false
-        default: false
   workflow_dispatch:
-
-concurrency:
-  group: static-code-analysis-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -29,27 +17,22 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Typecheck scripts
-        if: ${{ inputs.docs_only != true }}
         shell: bash
         run: pnpm exec tsc --noEmit --project tsconfig.json
         timeout-minutes: 2
       - name: Typecheck ts-shared
-        if: ${{ inputs.docs_only != true }}
         shell: bash
         run: pnpm exec tsc --noEmit --project ts-shared/tsconfig.json
         timeout-minutes: 2
       - name: Typecheck playwright
-        if: ${{ inputs.docs_only != true }}
         shell: bash
         run: pnpm exec tsc --noEmit --project playwright/tsconfig.json
         timeout-minutes: 2
       - name: Typecheck test-helpers
-        if: ${{ inputs.docs_only != true }}
         shell: bash
         run: pnpm exec tsc --noEmit --project test-helpers/tsconfig.json
         timeout-minutes: 2
       - name: Typecheck integration-tests
-        if: ${{ inputs.docs_only != true }}
         shell: bash
         run: pnpm exec tsc --noEmit --project integration-tests/tsconfig.json
         timeout-minutes: 3
@@ -60,48 +43,34 @@ jobs:
           cache: false
         timeout-minutes: 3
       - run: pnpm exec oxlint --type-aware --deny-warnings
-        if: ${{ inputs.docs_only != true }}
         timeout-minutes: 5
       - name: ast-grep
-        if: ${{ inputs.docs_only != true }}
         run: pnpm run ast-grep
         timeout-minutes: 3
       - name: jscpd clone-size threshold
-        if: ${{ inputs.docs_only != true }}
         run: pnpm exec jscpd .
         timeout-minutes: 3
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
-        if: ${{ inputs.docs_only != true }}
         timeout-minutes: 2
       - name: Repo Node static checks
-        if: ${{ inputs.docs_only != true }}
         run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
         timeout-minutes: 5
-      - name: Docs-only repo file policy
-        if: ${{ inputs.docs_only == true }}
-        run: node static-code-analysis/run-node-checks.mts --checks repo-file-policy,targeted-guardrails,config-inventory-policy
-        timeout-minutes: 5
       - name: Check native localization resources
-        if: ${{ inputs.docs_only != true }}
         run: node dev/native-localization.mts --validate
         timeout-minutes: 2
       - name: Check localization catalog format
-        if: ${{ inputs.docs_only != true }}
         run: pnpm exec vouchington-localization format --check --source localization/catalog
         timeout-minutes: 2
       - name: Check Vitest ownership table
-        if: ${{ inputs.docs_only != true }}
         run: node ci/vitest/generate-ownership-table.mts --check
         timeout-minutes: 2
       - name: dependency-cruiser
-        if: ${{ inputs.docs_only != true }}
         timeout-minutes: 5
         run: |
           set -euo pipefail
           node static-code-analysis/run-tooling-dependency-cruiser.mts --cache
           pnpm exec depcruise --config .dependency-cruiser.cjs --output-type err --cache --cache-strategy content --do-not-follow "^(?!playwright/tests/)" playwright/tests
       - name: Build backend email templates
-        if: ${{ inputs.docs_only != true }}
         # Required by knip below, which resolves the `@email-templates/core`
         # package export target (`./dist/index.mjs`). The backend
         # `postinstall` script builds this workspace package. Build it
@@ -113,15 +82,12 @@ jobs:
         # No --cache: each CI job starts from a fresh workspace and the uncached run
         # remains well under this step's timeout.
       - run: pnpm exec knip --treat-config-hints-as-errors
-        if: ${{ inputs.docs_only != true }}
         timeout-minutes: 5
       - run: pnpm run knip:production-exports
-        if: ${{ inputs.docs_only != true }}
         timeout-minutes: 5
       - run: pnpm exec oxfmt --check
         timeout-minutes: 2
       - run: selene --config selene.toml backend/services/jwt-session/scripts
-        if: ${{ inputs.docs_only != true }}
         timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1
@@ -150,11 +116,9 @@ jobs:
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check --tsconfig tsconfig.json
         timeout-minutes: 10
       - name: Check live workflow topology
-        if: ${{ inputs.docs_only != true }}
         run: node ci/check-live-workflow-topology.mts
         timeout-minutes: 5
       - name: Check web route localization selector map
-        if: ${{ inputs.docs_only != true }}
         run: node static-code-analysis/i18n-extract/route-selector-map.mts --check --diagnostics
         timeout-minutes: 5
       - name: Verify no dependency changes needed

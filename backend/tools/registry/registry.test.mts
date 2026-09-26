@@ -15,6 +15,7 @@ const NON_TOOL_FILES = new Set([
   'get-domain-ratings-helpers.mts',
   'index.mts',
   'private-user.mts',
+  'resolve-topic.mts',
   'search-crawl-tool.mts',
   'search-system.mts',
   'types.mts',
@@ -57,18 +58,6 @@ describe('tool registry', () => {
       )
     })
     expect(nonEligible.map(t => t.schema.name)).toEqual([])
-  })
-
-  it('every mcp/admin_mcp/client tool has explicit readOnlyHint or destructiveHint', () => {
-    const missing = ALL_TOOLS.filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      if (!surfaces.has('mcp') && !surfaces.has('admin_mcp') && !surfaces.has('client')) {
-        return false
-      }
-      const annotations = tool.meta?.annotations
-      return annotations?.readOnlyHint === undefined && annotations?.destructiveHint === undefined
-    })
-    expect(missing.map(t => t.schema.name)).toEqual([])
   })
 
   it('every mcp/admin_mcp/client tool has explicit api field', () => {
@@ -173,7 +162,9 @@ describe('tool registry', () => {
       function: () => () => Promise.resolve({}),
       meta: {
         surfaces: ['mcp'],
+        title: 'Admin Scope on User Surface',
         requiredScopes: { mcp: ['mcp.admin:read'] },
+        annotations: { readOnlyHint: true },
         api: null,
       },
     }

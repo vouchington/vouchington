@@ -19,6 +19,7 @@ export function renderCatalogTable(tools: readonly Tool[]): string {
     const surfaces = tool.meta?.surfaces ?? ['internal']
     const cells = [
       `\`${tool.schema.name}\``,
+      tool.meta?.title ?? '—',
       tableCell(tool.schema.description ?? '—'),
       surfaces.join(', '),
       // Plan gating applies only at the user `mcp` dispatch boundary (see ToolMeta.plan).
@@ -30,8 +31,8 @@ export function renderCatalogTable(tools: readonly Tool[]): string {
     return `| ${cells.join(' | ')} |`
   })
   return [
-    '| Tool | Description | Surfaces | Plan | Required scopes | Hint | REST Equivalent |',
-    '| ---- | ----------- | -------- | ---- | --------------- | ---- | --------------- |',
+    '| Tool | Title | Description | Surfaces | Plan | Required scopes | Hints | REST Equivalent |',
+    '| ---- | ----- | ----------- | -------- | ---- | --------------- | ----- | --------------- |',
     ...rows,
   ].join('\n')
 }
@@ -63,9 +64,13 @@ function declaredScopes(tool: Tool): string[] {
 }
 
 function hintLabel(tool: Tool): string {
-  if (tool.meta?.annotations?.readOnlyHint === true) return 'read-only'
-  if (tool.meta?.annotations?.destructiveHint === true) return 'mutating'
-  return '—'
+  const annotations = tool.meta?.annotations
+  if (annotations === undefined) return '—'
+  if (annotations.readOnlyHint) return 'read-only'
+  const { destructiveHint, idempotentHint } = annotations
+  return ['write', destructiveHint && 'destructive', idempotentHint && 'idempotent']
+    .filter(Boolean)
+    .join(', ')
 }
 
 function tableCell(value: string): string {

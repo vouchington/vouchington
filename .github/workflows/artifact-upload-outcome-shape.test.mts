@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 const EXPECTED_RUN =
   'node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"'
-const FAMILIES = new Set(['coverage-pair', 'vitest-blob', 'vitest-report-attempt'])
+const FAMILIES = new Set(['coverage-pair', 'full-lcov', 'vitest-blob', 'vitest-report-attempt'])
 const workflowsDir = '.github/workflows'
 
 type OutcomeStep = {
@@ -36,10 +36,11 @@ describe('artifact-upload-outcome.mts call sites', () => {
   it('all use the identical run string and a well-formed env block', () => {
     const steps = outcomeSteps()
 
-    // 15 vitest-blob + 14 coverage-pair + 14 vitest-report-attempt triads across the 13 producers.
+    // 15 vitest-blob + 14 coverage-pair + 14 full-lcov + 14 vitest-report-attempt triads across the
+    // 13 producers.
     // A correctly-shaped new producer legitimately bumps these counts — update them deliberately
     // rather than treating the failure as a defect.
-    expect(steps).toHaveLength(43)
+    expect(steps).toHaveLength(57)
 
     for (const step of steps) {
       expect(step.run).toBe(EXPECTED_RUN)
@@ -65,6 +66,7 @@ describe('artifact-upload-outcome.mts call sites', () => {
     }
     expect(familyCounts.get('vitest-blob')).toBe(15)
     expect(familyCounts.get('coverage-pair')).toBe(14)
+    expect(familyCounts.get('full-lcov')).toBe(14)
     expect(familyCounts.get('vitest-report-attempt')).toBe(14)
   })
 })

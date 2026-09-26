@@ -50,8 +50,20 @@ unrepresentable. Suspended grant owners cannot exchange, refresh, or authenticat
 ## Management
 
 `grant-management.mts` lists a user's unrevoked grants on live clients (newest first, keyset paged
-by grant id) and revokes one owner-scoped grant with a single conditional update. Management views
-live in `management-types.mts`.
+by grant id) and revokes one owner-scoped grant with a single conditional update.
+`app-management.mts` registers, renames, re-points, rotates and revokes owner apps with
+owner-scoped statements inside the owner's active-user lock; a changed name or redirect-URI set
+clears staff verification. Consent decisions and code exchange recheck, in the same statement that
+share-locks the client row, that the client is live and the request's redirect URI is still
+registered, so re-pointing an app retires the removed URI even for requests already in flight.
+Code exchange, refresh and revocation authenticate the client with `authenticateLockedOAuthClient`,
+which checks the secret against the share-locked row, so rotating a secret or revoking an app
+serializes with in-flight token requests and the replaced secret stops working once rotation
+returns.
+`client-metadata-validation.mts` holds the RFC 7591 metadata validators that dynamic registration
+and owner apps share. `client-verification.mts` lists active dynamically registered clients for
+administrators and verifies the exact reviewed `client_name` and `redirect_uris` with one
+conditional update, or clears verification. Management views live in `management-types.mts`.
 
 ## Boundaries
 

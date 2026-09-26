@@ -50,16 +50,13 @@ describe('tests-playwright.yml', () => {
     expect(workflow).toContain('needs.shards.outputs.shard-matrix')
   })
 
-  it('serializes Playwright workflow runs without serializing matrix shards', () => {
+  it('leaves run serialization to its caller and never serializes matrix shards', () => {
     const shardJobMatch = workflow.match(
       /\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/,
     )
 
     expect(shardJobMatch).not.toBeNull()
-    expect(workflow).toContain(
-      'group: playwright-tests-${{ github.event.pull_request.number || github.ref || github.sha }}',
-    )
-    expect(workflow).toContain("cancel-in-progress: ${{ inputs.event-name == 'pull_request' }}")
+    expect(workflow).not.toMatch(/^concurrency:/m)
     expect(shardJobMatch![0]).not.toContain('\n    concurrency:')
   })
 

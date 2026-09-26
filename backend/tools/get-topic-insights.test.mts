@@ -45,6 +45,7 @@ describe('get_topic_insights tool — real DB', () => {
     const result = await execute({ topic_id: topicId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.topic_id).toBe(topicId)
   })
 
@@ -53,6 +54,7 @@ describe('get_topic_insights tool — real DB', () => {
     const result = await execute({ topic_id: topicId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.total_count).toBeGreaterThanOrEqual(2)
     expect(result.approved_count).toBeGreaterThanOrEqual(1)
     expect(result.denied_count).toBeGreaterThanOrEqual(1)
@@ -71,6 +73,7 @@ describe('get_topic_insights tool — real DB', () => {
     const result = await execute({ topic_id: emptyTopicId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.topic_id).toBe(emptyTopicId)
     expect(result.total_count).toBe(0)
     expect(result.approved_count).toBe(0)
@@ -83,6 +86,8 @@ describe('get_topic_insights tool — real DB', () => {
     const execute = getTopicInsightsTool.function(user)
     const result = await execute({ topic_id: topicId })
 
+    expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.median_credit_limits).toContainEqual({
       amount: 1_000_000,
       currency: 'usd',
@@ -93,7 +98,26 @@ describe('get_topic_insights tool — real DB', () => {
     const execute = getTopicInsightsTool.function(user)
     const result = await execute({ topic_id: topicId })
 
+    expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.credit_score_distribution).toBeTypeOf('object')
     expect(Object.keys(result.credit_score_distribution).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('accepts a topic slug and returns the resolved id', async () => {
+    const execute = getTopicInsightsTool.function(user)
+    const result = await execute({ topic_id: `insights-tool-topic-${suffix}` })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.topic_id).toBe(topicId)
+    expect(result.total_count).toBeGreaterThanOrEqual(2)
+  })
+
+  it('reports an unknown topic', async () => {
+    const execute = getTopicInsightsTool.function(user)
+    const result = await execute({ topic_id: `missing-topic-${suffix}` })
+
+    expect(result).toEqual({ success: false, error: 'Topic not found' })
   })
 })

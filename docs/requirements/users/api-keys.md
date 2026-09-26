@@ -45,6 +45,8 @@ accept scopes for exactly one user or admin audience, never both, and admin scop
 OAuth access tokens are the alternative MCP credential. Each grant binds to one protected resource,
 so its scopes also belong to that resource's audience; see the
 [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery).
+Only user- and admin-audience scopes accept the `oauth` surface. `rss:read` is API-key only, because
+no OAuth protected resource serves the RSS feeds.
 
 ### Scope catalogue
 
@@ -65,20 +67,10 @@ MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can on
 | `POST`   | `/api/v1/my/api-keys`     | Create a new API key |
 | `DELETE` | `/api/v1/my/api-keys/:id` | Revoke an API key    |
 
-### Connected apps
+### OAuth apps and connected apps
 
-Agents that connect through OAuth rather than a pasted key appear on the user's connected-apps list,
-so AI-agent access stays visible to the user.
-
-| Method   | Path                          | Description                         |
-| -------- | ----------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/my/oauth-grants`     | List the OAuth apps you approved    |
-| `DELETE` | `/api/v1/my/oauth-grants/:id` | Revoke an app's access to your data |
-
-Each grant shows the client name, whether staff verified that name, the protected resource, the
-granted scopes, when consent was given and when the app last used its access. Revoking a grant stops
-its access and refresh tokens on their next use; consenting again creates a new grant. Suspended
-users cannot revoke grants, matching API-key management.
+Owned OAuth apps and the grants users approved are documented in
+[OAuth Apps and Connected Apps](oauth-apps.md).
 
 ### RSS Feeds (API key optional)
 
@@ -106,10 +98,16 @@ RSS feed endpoints are rate-limited to **3 requests per minute** per identity pe
 
 1. Go to Settings > API Keys (`/my/api-keys`)
 2. Click "Create API Key"
-3. Select RSS, user MCP, or admin MCP access, then enter a label
+3. Choose an RSS feed or MCP server key, pick the MCP key's scopes, then enter a label
 4. Copy the raw key immediately (it won't be shown again)
 
-The settings UI offers these presets: RSS read-only, user MCP read-only, user MCP read/write, admin MCP read-only, and admin MCP read/write. Admin MCP presets are visible only to administrators.
+An RSS key always carries `rss:read`. An MCP key's scope picker renders the
+[scope catalogue](#scope-catalogue) entries that accept the `api-key` surface, one row per resource
+with read and write checkboxes and the `mcp.<audience>` umbrella row first. Checking a scope also
+checks its `requires` prerequisite, and unchecking a prerequisite drops the scopes that need it, so
+the picker never sends a set the API rejects. Administrators also choose the key's audience ("Your
+account" or "Administrator"); switching audience clears the selection because a key holds one
+audience. Create stays disabled until the label and at least one scope are set.
 
 ### Using with RSS Feeds
 

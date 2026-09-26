@@ -8,6 +8,14 @@ import { MEDIA_PLACEMENT_UUID_COLUMNS_WITHOUT_KEYS } from './media-placement-all
 export const ALLOWED_UNCOMMENTED_RELATIONS = new Map<string, string>([])
 export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  [
+    'media_delivery_repair_markers.placement_id',
+    'Pre-commit denial snapshot must survive never-committed placement rollback; an FK would wait on the owner transaction.',
+  ],
+  [
+    'media_delivery_repair_markers.asset_id',
+    'Pre-commit denial snapshot must survive never-committed image rollback; an FK would wait on the owner transaction.',
+  ],
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,

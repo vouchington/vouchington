@@ -1,0 +1,116 @@
+name: Tooling
+
+# Area workflow: when `changes` selects the tooling area (ts-shared, CI/dev tooling, host
+# portability and shell scripts), every tooling suite runs in full. The `tooling` job is the
+# required check; it passes when the area is skipped. nightly.yml calls this workflow for the full
+# run. See docs/development/ci.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_call:
+  workflow_dispatch:
+
+# A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
+# area calls nightly.yml makes.
+concurrency:
+  group: tooling-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  changes:
+    uses: ./.github/workflows/ci-detect-changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  test-ts-shared:
+    needs: [changes]
+    if: needs.changes.outputs.area-tooling == 'true'
+    uses: ./.github/workflows/tests-ts-shared.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-tooling:
+    needs: [changes]
+    if: needs.changes.outputs.area-tooling == 'true'
+    uses: ./.github/workflows/tests-tooling.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  # Minimal host-sensitive canaries on both supported CI operating systems.
+  test-portability:
+    needs: [changes]
+    if: needs.changes.outputs.area-tooling == 'true'
+    uses: ./.github/workflows/tests-portability.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  initialize-smoke-test:
+    needs: [changes]
+    if: needs.changes.outputs.area-tooling == 'true'
+    uses: ./.github/workflows/initialize-smoke-test.yml
+    permissions:
+      contents: read
+
+  coverage:
+    needs: [changes, test-ts-shared, test-tooling, test-portability]
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      needs.changes.outputs.area-tooling == 'true' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-area-coverage.yml
+    with:
+      area: tooling
+    permissions:
+      actions: read
+      contents: read
+
+  # Informational; the `tooling` gate does not wait on it.
+  codecov:
+    needs: [test-ts-shared, test-tooling, test-portability]
+    if: >-
+      !cancelled() &&
+      contains(needs.*.result, 'success') &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-upload-codecov.yml
+    with:
+      uploads: >-
+        [{"flag":"ts-shared","pattern":"lcov-full-ts-shared*"},{"flag":"tooling","pattern":"lcov-full-tooling*"},{"flag":"portability-macos","pattern":"lcov-full-portability-macos*"},{"flag":"portability-linux","pattern":"lcov-full-portability-linux*"}]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  tooling:
+    name: tooling
+    if: ${{ !cancelled() }}
+    needs:
+      [changes, test-ts-shared, test-tooling, test-portability, initialize-smoke-test, coverage]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASH_ENV: /dev/null
+    permissions:
+      contents: read
+    steps:
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@facde3ea4773a9477411b67574de56f679f984fa # v0.19.2
+        timeout-minutes: 1
+        with:
+          results: >-
+            {"changes":{"result":"${{ needs.changes.result }}"},"test-ts-shared":{"result":"${{ needs.test-ts-shared.result }}"},"test-tooling":{"result":"${{ needs.test-tooling.result }}"},"test-portability":{"result":"${{ needs.test-portability.result }}"},"initialize-smoke-test":{"result":"${{ needs.initialize-smoke-test.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

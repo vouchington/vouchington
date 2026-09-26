@@ -188,7 +188,7 @@ describe('Storybook browser startup progress detection', () => {
     await expect(result).resolves.toBe(0)
     expect(spawnCalls).toHaveLength(2)
     expect(spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-28703003816-2-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
     expect(removed).toContain('/repo/.cache/vite/storybook-browser')
     expect(stderr.join('')).toContain('retryable=true; stall=false; hang=false; runnerMissing=true')
@@ -232,7 +232,7 @@ describe('Storybook browser startup progress detection', () => {
     await expect(result).resolves.toBe(0)
     expect(spawnCalls).toHaveLength(2)
     expect(spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-28703003816-2-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
     expect(removed).toContain('/repo/.cache/vite/storybook-browser')
     expect(stderr.join('')).toContain('retryable=true')

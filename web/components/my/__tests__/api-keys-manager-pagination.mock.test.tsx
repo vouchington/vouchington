@@ -77,7 +77,12 @@ describe('ApiKeysManager pagination revocation', () => {
       results: [continuationKey],
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     })
-    const { rerender } = render(<ApiKeysManager initialData={makeFirstPage([firstPageKey])} />)
+    const { rerender } = render(
+      <ApiKeysManager
+        initialData={makeFirstPage([firstPageKey])}
+        scopeCatalog={[]}
+      />,
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     const continuationRow = (await screen.findByText('Continuation Reader')).closest('li')!
@@ -97,6 +102,7 @@ describe('ApiKeysManager pagination revocation', () => {
     rerender(
       <ApiKeysManager
         initialData={makeFirstPage([firstPageKey, { ...continuationKey, revoked_at: null }])}
+        scopeCatalog={[]}
       />,
     )
 

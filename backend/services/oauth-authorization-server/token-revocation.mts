@@ -1,8 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { assertOAuthClientAuthentication, getOAuthClient } from './clients.mts'
+import { authenticateLockedOAuthClient } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { OAuthProtocolError } from './errors.mts'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 
 export async function revokeOAuthToken(input: {
@@ -11,11 +10,7 @@ export async function revokeOAuthToken(input: {
   token: string
 }): Promise<void> {
   await using query = await beginTransaction()
-  const client = await getOAuthClient(input.clientId, query)
-  if (!client) {
-    throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
-  }
-  assertOAuthClientAuthentication(client, input.clientSecret)
+  const client = await authenticateLockedOAuthClient(input.clientId, input.clientSecret, query)
   const accessHash = hashToken(OAUTH_SECRET_PURPOSES.accessToken, input.token)
   const refreshHash = hashToken(OAUTH_SECRET_PURPOSES.refreshToken, input.token)
 

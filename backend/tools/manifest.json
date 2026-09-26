@@ -43,7 +43,19 @@
       "api": [
         {
           "method": "GET",
-          "path": "/api/v1/my/profile"
+          "path": "/api/v1/my/cards"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/my/rewards-program-point-valuations"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/my/rewards-program-statuses"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/my/financial-profile"
         }
       ],
       "requiredScopes": ["profile:read"]
@@ -153,7 +165,7 @@
     },
     {
       "name": "manage_my_cards",
-      "description": "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+      "description": "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
       "parameters": null,
       "api": [
         {
@@ -267,10 +279,6 @@
       "description": "Update the current user's financial profile used for personalized data point comparisons. Only provide fields you want to update — omitted fields are unchanged.",
       "parameters": null,
       "api": [
-        {
-          "method": "GET",
-          "path": "/api/v1/my/financial-profile"
-        },
         {
           "method": "PUT",
           "path": "/api/v1/my/financial-profile"

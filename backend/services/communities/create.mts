@@ -20,6 +20,10 @@ import { validateCreateCommunityInput } from './create-validation.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import {
+  lockImageAssetAdmission,
+  assertImagesReadyForSurface,
+} from '@services/media-delivery-safety'
 
 export type CreateCommunityInput = {
   name: string
@@ -51,6 +55,9 @@ export async function createCommunity(
   let community: CommunityWithOwner | null
   try {
     await using query = await beginTransaction()
+    const imageIds = [input.profile_image_id, input.banner_image_id].flatMap(id => (id ? [id] : []))
+    await lockImageAssetAdmission(imageIds, query)
+    await assertImagesReadyForSurface(imageIds, query)
     const options = { query }
 
     const { rows } = await write(

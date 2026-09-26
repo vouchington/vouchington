@@ -7,14 +7,14 @@ export type ImageDeliveryRecord = {
   placement_id: string | null
   placement_revision: number | null
   asset_id: string
-  generation: number
+  generation: string
 }
 
 export type MediaDeliveryDependencies = {
   putMediaDeliveryRegistryRecord: (input: {
     deliveryKey: string
     state: MediaDeliveryRegistryState
-    generation: number
+    generation: string
   }) => Promise<void>
   invalidateMediaDeliveryPath: (path: string) => Promise<void>
 }

@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import {
@@ -108,7 +109,7 @@ describe('unassessed court or CCB filings', () => {
     const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
     await expect(
       processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     const restore = await createEligibleCopyrightRestoreIntent({
@@ -122,7 +123,7 @@ describe('unassessed court or CCB filings', () => {
     const filing = await recordCourtFiling(notice.id)
     await expect(
       processCopyrightActionIntent(restore.id, now, {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('blocked')
     await appendCopyrightLegalHoldAssessment({
@@ -140,7 +141,7 @@ describe('unassessed court or CCB filings', () => {
     })
     await expect(
       processCopyrightActionIntent(restore.id, new Date(now.getTime() + 120_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
   })

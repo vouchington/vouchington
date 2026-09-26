@@ -1,5 +1,9 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
+    'media_delivery_repair_markers',
+    'One coalesced marker per immutable delivery key; successful exact-token reconciliation deletes it, bounding cardinality to outstanding repair work.',
+  ],
+  [
     'oauth_access_tokens',
     'Access tokens expire after one hour and bounded data-retention batches delete expired rows.',
   ],

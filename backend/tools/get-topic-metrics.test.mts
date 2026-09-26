@@ -39,6 +39,15 @@ describe('get_topic_metrics tool — real DB', () => {
     })
   })
 
+  it('accepts a topic slug and returns the resolved id', async () => {
+    const execute = getTopicMetricsTool.function(user)
+    const result = await execute({ topic_id: `metrics-tool-topic-${suffix}` })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.topic_id).toBe(topicId)
+  })
+
   it('returns success: false for unknown topic', async () => {
     const execute = getTopicMetricsTool.function(user)
     const result = await execute({ topic_id: crypto.randomUUID() })

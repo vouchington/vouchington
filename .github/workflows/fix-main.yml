@@ -6,14 +6,13 @@ on:
       - GitHub Actions Static Analysis
       - Gitleaks
       - Lint Links
-      - Portability Tests
       - 'Main CI (backend)'
       - 'Main CI (checks)'
       - 'Main CI (cloudflare-worker)'
       - 'Main CI (lambdas)'
       - 'Main CI (storybook)'
       - 'Main CI (web)'
-      - Static Code Analysis
+      - Plan completion advisory
       - 'Sync Articles'
       - 'Docs Publish'
       - 'Dispatch completed deploy'
@@ -120,7 +119,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         with:
           install-scripts: 'false'
-      - uses: jonathanong/auto-harness/actions/harness-prompt-context@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+      - uses: jonathanong/auto-harness/actions/harness-prompt-context@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         id: prompt-context
         with:
           check-issues: 'true'

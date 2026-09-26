@@ -1,5 +1,21 @@
 {
   "backendResponseContracts": {
+    "DELETE:/api/v1/admin/oauth-clients/:id/verification": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/admin/oauth-clients/:id/verification",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/admin/oauth-clients.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
+    },
     "DELETE:/api/v1/auth/bluesky/link": {
       "bodyKind": "none",
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
@@ -93,6 +109,22 @@
         }
       },
       "source": "backend/api/v1/my/messages-participants.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
+    },
+    "DELETE:/api/v1/my/oauth-apps/:id": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/my/oauth-apps/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
@@ -2124,6 +2156,504 @@
         }
       },
       "source": "backend/api/v1/admin/modlog.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/admin/oauth-clients": {
+      "bodyKind": "content",
+      "hash": "c73761c7afab09c546c566182eb721e09f8942d3f76bcdbd0c1fbdb27e860eb6",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/admin/oauth-clients",
+      "schema": {
+        "definitions": {
+          "ImagePlacementTuple": {
+            "additionalProperties": false,
+            "properties": {
+              "image_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "placement_revision": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          },
+          "Omit<BasicUser,\"individual_id\" | \"is_agent\">": {
+            "additionalProperties": false,
+            "properties": {
+              "__entity_type": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "user"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "markdown": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_id": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "profile_image_placement": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "name": "ImagePlacementTuple",
+                      "type": "ref"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "roles": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "use_display_name_from": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "apple"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "facebook"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "github"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "google"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "linkedin"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "microsoft"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "username"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "x"
+                    }
+                  ]
+                }
+              },
+              "username": {
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verification_status": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "duplicate_id"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "failed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "identity_pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "payment_pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "unverified"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "verified"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "verified_badge_visible": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": false
+                    },
+                    {
+                      "type": "literal",
+                      "value": true
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "verified_display_name": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PublicDisplayAccount": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "name": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "client_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "client_name": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "client_type": {
+                      "required": true,
+                      "schema": {
+                        "name": "OAuthClientType",
+                        "type": "ref"
+                      }
+                    },
+                    "created_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "owner": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "intersection",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "display_account": {
+                                    "required": false,
+                                    "schema": {
+                                      "name": "PublicDisplayAccount",
+                                      "type": "ref"
+                                    }
+                                  },
+                                  "is_official_account": {
+                                    "required": false,
+                                    "schema": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "lingua_rs_detected_language": {
+                                    "required": false,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "public_verified_name_display": {
+                                    "required": false,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "literal",
+                                          "value": "first_name_last_initial"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "first_name"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "full_name"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "hidden"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "name": "Omit<BasicUser,\"individual_id\" | \"is_agent\">",
+                                "type": "ref"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "owner_user_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "redirect_uris": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "scopes": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "verified_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "verified_by_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/admin/oauth-clients.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/admin/users/:userId/landing-pages": {
@@ -26433,6 +26963,191 @@
         }
       },
       "source": "backend/api/v1/my/notifications.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/my/oauth-apps": {
+      "bodyKind": "content",
+      "hash": "a82697d0c3e3f47822fc8d9c601e29bfee0ed1e0ce9563cfd50908948f5fe2ca",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/oauth-apps",
+      "schema": {
+        "definitions": {
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "OAuthAppView",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/oauth-grants": {
@@ -54994,6 +55709,141 @@
       "source": "backend/api/v1/my/messages-participants.mts",
       "statusKnowledge": "default"
     },
+    "PATCH:/api/v1/my/oauth-apps/:id": {
+      "bodyKind": "content",
+      "hash": "50e0253c2d7257db75f95da8c4a8dfe1203eddba85e7c706401beba8319d4c8b",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PATCH",
+      "routeTemplate": "/api/v1/my/oauth-apps/:id",
+      "schema": {
+        "definitions": {
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "oauth_app": {
+              "required": true,
+              "schema": {
+                "name": "OAuthAppView",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusKnowledge": "default"
+    },
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
       "bodyKind": "content",
       "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d",
@@ -62963,6 +63813,314 @@
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/my/oauth-apps": {
+      "bodyKind": "content",
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/oauth-apps",
+      "schema": {
+        "definitions": {
+          "IssuedOAuthApp": {
+            "additionalProperties": false,
+            "properties": {
+              "client_secret": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "oauth_app": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthAppView",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "name": "IssuedOAuthApp",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
+      "bodyKind": "content",
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/oauth-apps/:id/client-secrets",
+      "schema": {
+        "definitions": {
+          "IssuedOAuthApp": {
+            "additionalProperties": false,
+            "properties": {
+              "client_secret": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "oauth_app": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthAppView",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "name": "IssuedOAuthApp",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/my/rewards-program-point-valuations": {
       "bodyKind": "content",
       "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d",
@@ -64751,6 +65909,143 @@
       "source": "backend/api/v1/vote-integrity/flags.mts",
       "statusKnowledge": "default"
     },
+    "PUT:/api/v1/admin/oauth-clients/:id/verification": {
+      "bodyKind": "content",
+      "hash": "4b65e296e5e87306946d95d22be5a3863f64b9d6dcda79676bd0a3aaff744b50",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PUT",
+      "routeTemplate": "/api/v1/admin/oauth-clients/:id/verification",
+      "schema": {
+        "definitions": {
+          "AdminOAuthClientView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "owner_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "oauth_client": {
+              "required": true,
+              "schema": {
+                "name": "AdminOAuthClientView",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/admin/oauth-clients.mts",
+      "statusKnowledge": "default"
+    },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "bodyKind": "content",
       "hash": "508e0dc9da176d75b71aebcf12dd0ae2285beeede8f42145ef6ad01a139af6b4",
@@ -65979,7 +67274,7 @@
       "auth": "none",
       "backendResponseContractKey": "GET:/api/v1/scopes",
       "bodyFile": "responses/shared.scopes.catalog.json",
-      "consumers": ["swift-core", "dotnet-core"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "shared.scopes.catalog",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/scopes/scopes.test.mts"],
@@ -66000,7 +67295,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "POST:/api/v1/my/api-keys",
       "bodyFile": "responses/native.my.api-keys.create.json",
-      "consumers": ["swift-core", "dotnet-core"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "native.my.api-keys.create",
       "method": "POST",
       "migratedFrom": ["backend/api/v1/my/api-keys.test.mts"],
@@ -66026,7 +67321,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/my/oauth-grants",
       "bodyFile": "responses/native.my.oauth-grants.paginated.json",
-      "consumers": ["swift-core", "dotnet-core"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "native.my.oauth-grants.paginated",
       "method": "GET",
       "migratedFrom": ["backend/api/v1/my/oauth-grants.test.mts"],
@@ -66051,7 +67346,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "DELETE:/api/v1/my/oauth-grants/:id",
       "bodyFile": "responses/native.my.oauth-grants.revoke.json",
-      "consumers": ["swift-core", "dotnet-core"],
+      "consumers": ["web", "swift-core", "dotnet-core"],
       "id": "native.my.oauth-grants.revoke",
       "method": "DELETE",
       "migratedFrom": ["backend/api/v1/my/oauth-grants.test.mts"],
@@ -66068,6 +67363,209 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
+      },
+      "status": 204
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/oauth-apps",
+      "bodyFile": "responses/web.my.oauth-apps.paginated.json",
+      "consumers": ["web"],
+      "id": "web.my.oauth-apps.paginated",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps",
+      "query": {
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "eda61d16f94600bcff083e0f316f268fc201c858534426e8bda27de9c47f932c",
+        "key": "web.my.oauth-apps.paginated"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/oauth-apps"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/oauth-apps",
+      "bodyFile": "responses/web.my.oauth-apps.create.json",
+      "consumers": ["web"],
+      "id": "web.my.oauth-apps.create",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps",
+      "requestBody": {
+        "client_name": "Fixture Agent",
+        "redirect_uris": ["https://agent.example.com/oauth/callback"],
+        "scopes": ["mcp.user:read", "mcp.user:write"],
+        "token_endpoint_auth_method": "client_secret_basic"
+      },
+      "responseSchema": {
+        "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde",
+        "key": "web.my.oauth-apps.create"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/oauth-apps"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "PATCH:/api/v1/my/oauth-apps/:id",
+      "bodyFile": "responses/web.my.oauth-apps.update.json",
+      "consumers": ["web"],
+      "id": "web.my.oauth-apps.update",
+      "method": "PATCH",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721",
+      "requestBody": {
+        "client_name": "Renamed Agent"
+      },
+      "responseSchema": {
+        "hash": "b6bccea3c4fd8ca77a3559d73fb83347bec348e446d8fe256d693c895826f0b8",
+        "key": "web.my.oauth-apps.update"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/my/oauth-apps/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "DELETE:/api/v1/my/oauth-apps/:id",
+      "bodyFile": "responses/web.my.oauth-apps.revoke.json",
+      "consumers": ["web"],
+      "id": "web.my.oauth-apps.revoke",
+      "method": "DELETE",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721",
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "web.my.oauth-apps.revoke"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/my/oauth-apps/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 204
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/oauth-apps/:id/client-secrets",
+      "bodyFile": "responses/web.my.oauth-apps.rotate-secret.json",
+      "consumers": ["web"],
+      "id": "web.my.oauth-apps.rotate-secret",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721/client-secrets",
+      "responseSchema": {
+        "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde",
+        "key": "web.my.oauth-apps.rotate-secret"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/my/oauth-apps/:id/client-secrets"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/admin/oauth-clients",
+      "bodyFile": "responses/web.admin.oauth-clients.list.json",
+      "consumers": ["web"],
+      "id": "web.admin.oauth-clients.list",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/admin/oauth-clients.test.mts"],
+      "path": "/api/v1/admin/oauth-clients",
+      "query": {
+        "limit": "1",
+        "verification": "unverified"
+      },
+      "responseSchema": {
+        "hash": "c0c3b9604cd340b524ec0aae8e4f55bd333cec338c6ce73816e18dac4f971c13",
+        "key": "web.admin.oauth-clients.list"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/admin/oauth-clients"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-client-verification-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "PUT:/api/v1/admin/oauth-clients/:id/verification",
+      "bodyFile": "responses/web.admin.oauth-clients.verify.json",
+      "consumers": ["web"],
+      "id": "web.admin.oauth-clients.verify",
+      "method": "PUT",
+      "migratedFrom": ["backend/api/v1/admin/oauth-clients.test.mts"],
+      "path": "/api/v1/admin/oauth-clients/00000000-0000-7000-8000-000000000721/verification",
+      "requestBody": {
+        "client_name": "Fixture Agent",
+        "redirect_uris": ["https://agent.example.com/oauth/callback"]
+      },
+      "responseSchema": {
+        "hash": "9eb6a4cb3a4a5d79a64a0f478f54f6d118d8bbac2f124ee809d67fd3fa17651f",
+        "key": "web.admin.oauth-clients.verify"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/admin/oauth-clients/:id/verification"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-client-verification-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "DELETE:/api/v1/admin/oauth-clients/:id/verification",
+      "bodyFile": "responses/web.admin.oauth-clients.unverify.json",
+      "consumers": ["web"],
+      "id": "web.admin.oauth-clients.unverify",
+      "method": "DELETE",
+      "migratedFrom": ["backend/api/v1/admin/oauth-clients.test.mts"],
+      "path": "/api/v1/admin/oauth-clients/00000000-0000-7000-8000-000000000721/verification",
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "web.admin.oauth-clients.unverify"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/admin/oauth-clients/:id/verification"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-client-verification-cases.mts"
       },
       "status": 204
     },

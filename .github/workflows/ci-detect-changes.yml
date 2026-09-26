@@ -49,6 +49,16 @@ on:
         value: ${{ jobs.detect-changes.outputs.trusted-secret-context }}
       dependency-bot-test-context:
         value: ${{ jobs.detect-changes.outputs.dependency-bot-test-context }}
+      area-backend:
+        value: ${{ jobs.detect-changes.outputs.area-backend }}
+      area-web:
+        value: ${{ jobs.detect-changes.outputs.area-web }}
+      area-cloudflare-worker:
+        value: ${{ jobs.detect-changes.outputs.area-cloudflare-worker }}
+      area-lambdas:
+        value: ${{ jobs.detect-changes.outputs.area-lambdas }}
+      area-tooling:
+        value: ${{ jobs.detect-changes.outputs.area-tooling }}
 
 permissions: {}
 
@@ -83,22 +93,27 @@ jobs:
       docs-only: ${{ steps.docs-check.outputs.docs-only }}
       trusted-secret-context: ${{ steps.trusted-context.outputs.trusted }}
       dependency-bot-test-context: ${{ steps.trusted-context.outputs.dependency-bot-test }}
+      area-backend: ${{ steps.areas.outputs.backend }}
+      area-web: ${{ steps.areas.outputs.web }}
+      area-cloudflare-worker: ${{ steps.areas.outputs.cloudflare-worker }}
+      area-lambdas: ${{ steps.areas.outputs.lambdas }}
+      area-tooling: ${{ steps.areas.outputs.tooling }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - uses: ./.github/actions/fetch-base-ref
+      # Full runs have no change set, so they are never docs-only.
       - name: Check for docs-only changes
         id: docs-check
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         run: |
           # Pair 2: origin/<base_ref>...HEAD after the merge checkout. Do not mix
           # the recorded PR base SHA with the merge commit (#11711).
           if [ "$EVENT_NAME" = "merge_group" ]; then
             CHANGED=$(git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA")
-          elif [ -n "$PR_BASE_REF" ]; then
-            CHANGED=$(git diff --name-only "origin/${PR_BASE_REF}...HEAD")
           else
-            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-tree -r --name-only HEAD)
+            CHANGED=$(git diff --name-only "origin/${PR_BASE_REF}...HEAD")
           fi
           NON_DOCS=$(echo "$CHANGED" | grep -vE '\.mdx?$' || true)
           TEST_FIXTURE_DOCS=$(echo "$CHANGED" | grep -E '^(\.github/workflows/(README|VITEST|CLAUDE|WORKFLOWS|AUTHORING|JOBS|reference-step-timeouts|reference-artifact-rerun-safety|reference-github-actions-concurrency-locks|reference-harness-automation-accepted-risk|reference-fixed-branch-automation-prs|reference-fix-main-dependency-policy|reference-workflow-automation-(map|always-run|pull-requests|main)|reference-core-ci|reference-vitest|reference-playwright-and-storybook|reference-deploy-and-release|reference-harness-automation|reference-workflow-change-preflight|reference-maintenance-security-and-utilities)\.md|\.agents/skills/.+\.mdx?|CLAUDE\.md|docs/development/(ci|reference-ci-classifying-transient-infrastructure-failures|reference-ci-ci-job-conditions|reference-ci-ci-job-timeout-budgets|reference-ci-test-workflows|reference-ci-standalone-workflow-checks|dependency-updates|first-party-dependencies|reference-dependency-updates-(first-party-release-gate-exemptions|frozen-install-policy|supply-chain-policy))\.md|docs/checklists/github-actions\.md|docs/prompts/.+\.mdx?|dev/(README|reference-bedrock-embeddings-local|reference-command-catalog)\.md|backend/README\.md|backend/agents/(CLAUDE|README|reference-tests)\.md|backend/data-stores/psql/(reference-migrations-views-and-config-driven|schema-snapshot/README)\.md|docs/overview/architecture/agent-tools/.+|docs/overview/infrastructure/reference-deployment-ci-cd-flow\.md)$' || true)
@@ -143,12 +158,44 @@ jobs:
           ACTOR: ${{ github.event.pull_request.user.login || github.actor }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           BASE_REPO: ${{ github.repository }}
+      # Full runs (nightly schedule, manual dispatch) select every area without a diff; a schedule
+      # payload carries no base for paths-filter to compare against.
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           filters: .github/ci-path-filters.yml
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: refine-runtime-web
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           predicate-quantifier: every
           filters: .github/ci-runtime-path-filters.yml
+      # One boolean per area workflow: the union of its suites' filters. A touched area runs its
+      # whole suite; docs-only changes select nothing; workflow/action changes select everything.
+      - name: Resolve area selection
+        id: areas
+        run: |
+          area() {
+            if [ "$FULL" = true ] || { [ "$DOCS_ONLY" != true ] && { [ "$WORKFLOW_ACTION_CHANGES" = true ] || [ "$1" = true ]; }; }; then
+              echo true
+            else
+              echo false
+            fi
+          }
+          {
+            echo "backend=$(area "$BACKEND")"
+            echo "web=$(area "$WEB")"
+            echo "cloudflare-worker=$(area "$CLOUDFLARE_WORKER")"
+            echo "lambdas=$(area "$LAMBDAS")"
+            echo "tooling=$(area "$TOOLING")"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          FULL: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+          DOCS_ONLY: ${{ steps.docs-check.outputs.docs-only }}
+          WORKFLOW_ACTION_CHANGES: ${{ steps.filter.outputs.workflow-action-changes }}
+          BACKEND: ${{ steps.filter.outputs.backend == 'true' || steps.filter.outputs.backend-credentialed == 'true' || steps.filter.outputs.postgres-schema == 'true' || steps.filter.outputs.explain-analyze == 'true' || steps.refine-runtime-web.outputs.build-backend == 'true' || steps.filter.outputs.build-backend-infra == 'true' }}
+          WEB: ${{ steps.refine-runtime-web.outputs.web == 'true' || steps.refine-runtime-web.outputs.storybook == 'true' || steps.refine-runtime-web.outputs.playwright == 'true' || steps.refine-runtime-web.outputs.web-integration == 'true' || steps.filter.outputs.playwright-credentialed == 'true' || steps.refine-runtime-web.outputs.build-web == 'true' || steps.filter.outputs.build-web-infra == 'true' }}
+          CLOUDFLARE_WORKER: ${{ steps.filter.outputs.cloudflare-worker }}
+          LAMBDAS: ${{ steps.filter.outputs.lambdas }}
+          TOOLING: ${{ steps.filter.outputs.ts-shared == 'true' || steps.filter.outputs.tooling == 'true' || steps.filter.outputs.portability == 'true' || steps.filter.outputs.shell-scripts == 'true' }}

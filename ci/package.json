@@ -18,7 +18,7 @@
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^0.19.2"
+    "vouchington-tooling": "^0.20.0"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
@@ -26,6 +26,6 @@
     "oxfmt": "^0.70.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.1",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.1"
   }
 }

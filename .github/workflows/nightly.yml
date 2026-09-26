@@ -1,0 +1,70 @@
+name: Nightly
+
+# The safety net for main now that the merge queue is the only gate: runs every area workflow in
+# full at the main tip. Area `changes` jobs select every area on schedule and workflow_dispatch.
+# See docs/development/ci.md.
+on:
+  schedule:
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  static:
+    uses: ./.github/workflows/static.yml
+    permissions:
+      contents: read
+
+  backend:
+    uses: ./.github/workflows/backend.yml
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      pull-requests: read
+
+  web:
+    uses: ./.github/workflows/web.yml
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+      S3_BUCKET_IMAGES: ${{ secrets.S3_BUCKET_IMAGES }}
+      S3_BUCKET_IMAGE_UPLOADS: ${{ secrets.S3_BUCKET_IMAGE_UPLOADS }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      pull-requests: read
+
+  cloudflare-worker:
+    uses: ./.github/workflows/cloudflare-worker.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      pull-requests: read
+
+  lambdas:
+    uses: ./.github/workflows/lambdas.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      pull-requests: read
+
+  tooling:
+    uses: ./.github/workflows/tooling.yml
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      pull-requests: read

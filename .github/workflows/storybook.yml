@@ -27,7 +27,12 @@ on:
         type: string
         default: ''
       publish_coverage:
-        description: 'Whether to publish LCOV for a same-run PR coverage consumer'
+        description: 'Whether to collect coverage and publish the full LCOV for the area coverage gate and Codecov'
+        required: false
+        type: boolean
+        default: false
+      publish_coverage_pair:
+        description: 'Whether to also publish the sparse coverage pair for the ci.yml Patch Coverage consumer'
         required: false
         type: boolean
         default: false
@@ -102,7 +107,7 @@ jobs:
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-storybook --project web-storybook-component-coverage
         timeout-minutes: 3
-      - name: Preserve full web-storybook LCOV for Codecov
+      - name: Preserve full web-storybook LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
@@ -113,7 +118,7 @@ jobs:
       - name: Stamp web-storybook coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -174,7 +179,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload web-storybook coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -182,7 +187,7 @@ jobs:
           suite: web-storybook
       - name: Upload web-storybook coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -191,7 +196,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted web-storybook coverage pair
         id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -199,13 +204,33 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload full web-storybook LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+      - name: Upload full web-storybook LCOV to GitHub (attempt 1)
+        id: full-lcov-1
+        if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: web-storybook
+      - name: Upload full web-storybook LCOV to GitHub (attempt 2)
+        id: full-lcov-1-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: web-storybook
+          name-suffix: -retry
+      - name: Require a persisted full web-storybook LCOV
+        id: full-lcov-outcome-1
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: web-storybook
+          FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Install Playwright Chromium
         uses: ./.github/actions/setup-playwright
         timeout-minutes: 5
@@ -221,7 +246,10 @@ jobs:
           STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}
           # Browser mode remains serial despite the two-worker CI fallback.
           VITEST_MAX_WORKERS: '1'
-        run: pnpm exec ./ci/run-storybook-browser-tests.mts
+        run: |
+          VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 ci/allocate-browser-safe-ports.py 1)
+          export VITEST_STORYBOOK_BROWSER_API_PORT
+          pnpm exec ./ci/run-storybook-browser-tests.mts
         # The runner owns one monotonic 300-second session budget across at most three startup
         # attempts. Semantic module progress disables retry and distinguishes active browser work
         # from a pre-test startup failure. Leave one workflow minute for process-group cleanup.
@@ -236,7 +264,7 @@ jobs:
           path: storybook-browser-diagnostics.log
           retention-days: 1
           if-no-files-found: ignore
-      - name: Preserve full web-storybook-browser LCOV for Codecov
+      - name: Preserve full web-storybook-browser LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
@@ -247,7 +275,7 @@ jobs:
       - name: Stamp web-storybook-browser coverage provenance
         id: coverage-stamp-2
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -308,7 +336,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload web-storybook-browser coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-2
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -316,7 +344,7 @@ jobs:
           suite: web-storybook-browser
       - name: Upload web-storybook-browser coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-2
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -325,7 +353,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted web-storybook-browser coverage pair
         id: coverage-outcome-2
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -333,10 +361,30 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-2.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload full web-storybook-browser LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+      - name: Upload full web-storybook-browser LCOV to GitHub (attempt 1)
+        id: full-lcov-2
+        if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: web-storybook-browser
+      - name: Upload full web-storybook-browser LCOV to GitHub (attempt 2)
+        id: full-lcov-2-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-2.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: web-storybook-browser
+          name-suffix: -retry
+      - name: Require a persisted full web-storybook-browser LCOV
+        id: full-lcov-outcome-2
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: web-storybook-browser
+          FIRST_OUTCOME: ${{ steps.full-lcov-2.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-2-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

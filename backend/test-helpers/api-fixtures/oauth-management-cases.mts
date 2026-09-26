@@ -7,7 +7,7 @@ const userId = '00000000-0000-7000-8000-000000000001'
 const apiKeyId = '00000000-0000-7000-8000-000000000701'
 const grantId = '00000000-0000-7000-8000-000000000711'
 const clientRowId = '00000000-0000-7000-8000-000000000712'
-const clientConsumers = ['swift-core', 'dotnet-core'] as const
+const clientConsumers = ['web', 'swift-core', 'dotnet-core'] as const
 
 export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
   {

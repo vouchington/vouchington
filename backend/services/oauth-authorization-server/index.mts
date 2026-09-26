@@ -1,5 +1,7 @@
+export * from './app-management.mts'
 export * from './authorization.mts'
 export * from './browser-binding.mts'
+export * from './client-verification.mts'
 export * from './consent.mts'
 export * from './clients.mts'
 export * from './errors.mts'

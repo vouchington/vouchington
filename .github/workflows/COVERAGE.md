@@ -11,7 +11,8 @@ The built-in Actions summary reports coverage for the code exercised in the curr
 patch-threshold table. It is not a full-repository or historical comparison when path filters skip
 suites. Patch failures also update the sticky PR comment with uncovered files and line ranges.
 
-There is no main-branch coverage baseline or coverage history. Main workflows do not persist LCOV.
+Neither patch gate reads a main-branch coverage baseline or coverage history. Codecov's per-suite
+carryforward flags are the only coverage history, and they are informational.
 
 ## Provenance and transport
 
@@ -35,18 +36,25 @@ requires that at least one attempt persisted. Each consumer makes one bounded, n
 attempt per artifact family (coverage pairs, Vitest blobs) and treats "nothing published" as an
 explicit, diagnosable state rather than a job failure.
 
-Full LCOV reports also travel through GitHub artifacts to a separate informational Codecov workflow.
-That job uses Codecov OIDC for same-repository pull requests and the pinned Codecov action's public
-fork fallback. It has `id-token: write`, but only runs SHA-pinned external checkout, artifact
-download, and Codecov actions: it never executes repository scripts, dependency lifecycle hooks, or
-local composite actions. It is not a prerequisite for `tests` or Patch Coverage, so upload failures
-and timeouts cannot gate a PR. The Patch Coverage job remains the sole coverage gate and has no OIDC
-permission.
+Every producer also publishes its full LCOV as the `lcov-full-<suite>` GitHub artifact, with the
+same two-attempt retry and a `FULL_LCOV_EXHAUSTED` outcome step, on every event its area workflow
+runs. Two consumers read it in the same run:
+
+- The area workflow's blocking
+  [area patch-coverage gate](../../docs/development/reference-ci-coverage-gates.md#area-patch-coverage)
+  (`ci-area-coverage.yml`) merges its suites' full LCOV and checks only the rules that area owns.
+- The informational Codecov upload (`ci-upload-codecov.yml`) sends each suite under its own flag.
+  It uses Codecov OIDC for same-repository pull requests and the pinned Codecov action's public
+  fork fallback. It has `id-token: write`, but only runs SHA-pinned external checkout, artifact
+  download, and Codecov actions: it never executes repository scripts, dependency lifecycle hooks,
+  or local composite actions. No gate waits on it, so upload failures and timeouts cannot block a
+  PR or merge group. Neither coverage gate has OIDC permission.
 
 ```mermaid
 flowchart TD
   Full["Producer-local full report"] --> Project["coverage-check patch projection"]
   Full --> FullArtifact["Full LCOV GitHub artifact"]
+  FullArtifact --> AreaGate["Area patch coverage gate"]
   FullArtifact --> Codecov["Isolated informational Codecov uploader"]
   Project --> Pair["Sparse LCOV + manifest v2"]
   Pair --> Stamp["Stamp coverage provenance"]
@@ -90,10 +98,13 @@ into `coverage-artifacts/` or merged. See
 [CI reference](../../docs/development/ci.md#coverage-provenance-and-transport) for the script
 boundaries and [workflow authoring](AUTHORING.md#artifact-rerun-safety) for artifact rules.
 
-Reusable test workflows default `publish_coverage` to `false`; `ci.yml` enables it only for pull
-requests, so workflows with no Patch Coverage consumer do not pay Vitest instrumentation cost or
-leave orphaned LCOV artifacts. This does not disable diagnostics: JUnit, blob, and report-attempt
-artifacts remain enabled whenever the workflow runs tests, including main and no-coverage runs.
+Reusable test workflows default two inputs to `false`. `publish_coverage` collects coverage and
+publishes the full LCOV; area workflows always enable it, and `ci.yml` enables it only for pull
+requests. `publish_coverage_pair` additionally stamps and publishes the sparse pair; only `ci.yml`
+enables it, only for pull requests. Callers with no coverage consumer, such as the `main-*.yml`
+workflows, therefore pay no Vitest instrumentation cost and leave no orphaned LCOV. This does not
+disable diagnostics: JUnit, blob, and report-attempt artifacts remain enabled whenever the workflow
+runs tests.
 
 ## Rules
 

@@ -11,14 +11,6 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
 type PathFilters = Record<string, string[]>
 
-type Workflow = {
-  on?: { push?: { paths?: string[] } }
-  jobs?: Record<string, { steps?: Array<{ id?: string; with?: { filters?: string } }> }>
-}
-
-const portabilityWorkflow = load(
-  readFileSync(join(repoRoot, '.github/workflows/tests-portability.yml'), 'utf8'),
-) as Workflow
 function detectChangesFilters(): PathFilters {
   return load(readFileSync(join(repoRoot, '.github/ci-path-filters.yml'), 'utf8')) as PathFilters
 }
@@ -93,41 +85,35 @@ function firstPartyImports(entry: string): string[] {
 }
 
 describe('portability path filters', () => {
+  const portability = (): string[] => detectChangesFilters().portability ?? []
+
   it('does not use directory-wide ci/ or dev/ globs', () => {
-    const paths = portabilityWorkflow.on?.push?.paths ?? []
-    expect(paths).not.toContain('ci/**')
-    expect(paths).not.toContain('dev/**')
-    expect(paths).not.toContain('.agents/skills/retrospective/SKILL.md')
-    expect(paths).toEqual(
-      expect.arrayContaining([
-        'ts-shared/utils/ephemeral-ports.mts',
-        'lambdas/dev-server.mts',
-        'lambdas/dev-server.test.mts',
-        'lambdas/image-resize/**',
-        'cloudflare-worker/scripts/wrangler/runtime.test.mts',
-      ]),
-    )
+    expect(portability()).not.toContain('ci/**')
+    expect(portability()).not.toContain('dev/**')
+    expect(portability()).not.toContain('.agents/skills/retrospective/SKILL.md')
   })
 
   it('does not start on the #9389 ci-tools contract test', () => {
-    const paths = portabilityWorkflow.on?.push?.paths ?? []
-    expect(filterMatches(paths, 'ci/agent-workflow-docs.test.mts')).toBe(false)
-    expect(filterMatches(paths, 'dev/pr-description.mts')).toBe(false)
-    expect(
-      filterMatches(detectChangesFilters().portability, 'ci/agent-workflow-docs.test.mts'),
-    ).toBe(false)
+    expect(filterMatches(portability(), 'ci/agent-workflow-docs.test.mts')).toBe(false)
+    expect(filterMatches(portability(), 'dev/pr-description.mts')).toBe(false)
   })
 
-  it('covers first-party imports of the three portability includes', () => {
-    const pushPaths = portabilityWorkflow.on?.push?.paths ?? []
-    const prPaths = detectChangesFilters().portability
+  it('covers first-party imports of the portability includes', () => {
     const missing: string[] = []
     for (const entry of portabilityEntries) {
       for (const imported of firstPartyImports(entry)) {
-        if (!filterMatches(pushPaths, imported)) missing.push(`push:${imported}`)
-        if (!filterMatches(prPaths, imported)) missing.push(`pr:${imported}`)
+        if (!filterMatches(portability(), imported)) missing.push(imported)
       }
     }
     assertNoWorkflowViolations(missing, 'portability filter missing first-party imports:')
+  })
+
+  it("runs only when called or dispatched, under its caller's concurrency", () => {
+    const workflow = load(
+      readFileSync(join(repoRoot, '.github/workflows/tests-portability.yml'), 'utf8'),
+    ) as { on: Record<string, unknown>; concurrency?: unknown }
+
+    expect(Object.keys(workflow.on).sort()).toEqual(['workflow_call', 'workflow_dispatch'])
+    expect(workflow.concurrency).toBeUndefined()
   })
 })

@@ -16,6 +16,7 @@ type TestUser = Pick<Awaited<ReturnType<typeof createTestUserDirect>>, 'id'>
 type TestOAuthAuthorizationOptions = {
   audience?: OAuthResourceAudience
   scope?: string
+  tokenEndpointAuthMethod?: 'none' | 'client_secret_basic'
 }
 
 export const TEST_OAUTH_RESOURCE = getOAuthResourceUrl('user')
@@ -29,6 +30,7 @@ export async function issueTestOAuthTokens(
   const approved = await createTestApprovedOAuthAuthorization(user, options)
   return exchangeOAuthAuthorizationCode({
     clientId: approved.client.client_id,
+    clientSecret: approved.client.client_secret,
     code: approved.code,
     codeVerifier: approved.verifier,
     redirectUri: approved.redirectUri,
@@ -53,13 +55,18 @@ export async function createTestApprovedOAuthAuthorization(
 
 export async function createTestPendingOAuthAuthorization(
   user: TestUser,
-  { audience = 'user', scope = TEST_OAUTH_SCOPE }: TestOAuthAuthorizationOptions = {},
+  {
+    audience = 'user',
+    scope = TEST_OAUTH_SCOPE,
+    tokenEndpointAuthMethod = 'none',
+  }: TestOAuthAuthorizationOptions = {},
 ) {
   const redirectUri = randomTestOAuthRedirectUri()
   const client = await registerOAuthClient({
-    client_name: `Test public ${randomBytes(6).toString('hex')}`,
+    client_name: `Test ${tokenEndpointAuthMethod} ${randomBytes(6).toString('hex')}`,
     redirect_uris: [redirectUri],
     scope,
+    token_endpoint_auth_method: tokenEndpointAuthMethod,
   })
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()

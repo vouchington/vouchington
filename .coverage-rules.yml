@@ -3,6 +3,10 @@
 # Files not matched by any rule are informational only and never fail the build.
 # Order matters: place more-specific globs above broader ones.
 #
+# Every positive-threshold rule names its owning `area`: the area workflow whose suites produce the
+# rule's LCOV. Each area's coverage gate enforces only its own rules and zeroes the rest
+# (ci/coverage-area-rules.mts), so a file shared by several areas blocks exactly once.
+#
 # `scope` activates coverage-check's missing-coverage detection: a changed file under a
 # positive-threshold rule that has no LCOV record at all (not merely low coverage) is reported as
 # missing rather than silently skipped. `include` matches the same file extensions the default
@@ -40,22 +44,33 @@ scope:
     - '**/*.d.ts'
     - '**/*.{test,spec}.{mts,ts,tsx}'
 rules:
+  - paths: 'cloudflare-worker/scripts/wrangler/runtime.mts'
+    patch_coverage_min: 100
+    area: tooling
+  - paths: 'lambdas/dev-server.mts'
+    patch_coverage_min: 100
+    area: tooling
   - paths: 'cloudflare-worker/**'
     patch_coverage_min: 100
+    area: cloudflare-worker
   - paths: 'lambdas/**'
     patch_coverage_min: 100
+    area: lambdas
   - paths: 'email-templates/**'
     patch_coverage_min: 100
+    area: backend
   - paths: 'static-code-analysis/**'
     patch_coverage_min: 0
   - paths: 'ts-shared/**'
     patch_coverage_min: 100
+    area: tooling
   - paths: 'web/test-helpers/lib/api/client/**'
     patch_coverage_min: 0
   - paths: 'web/test-helpers/lib/api/**'
     patch_coverage_min: 0
   - paths: 'web/lib/api/**'
     patch_coverage_min: 100
+    area: web
   - paths: 'backend/scripts/**'
     patch_coverage_min: 0
   - paths: 'backend/test-helpers/**'
@@ -64,6 +79,7 @@ rules:
     patch_coverage_min: 0
   - paths: 'backend/**'
     patch_coverage_min: 95
+    area: backend
   - paths: 'web/test-helpers/components/**/*test-helpers.tsx'
     patch_coverage_min: 0
   - paths: 'web/test-helpers/storybook/**'
@@ -78,3 +94,4 @@ rules:
     patch_coverage_min: 0
   - paths: 'web/**'
     patch_coverage_min: 80
+    area: web

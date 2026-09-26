@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import * as path from 'node:path'
-import { spawnSync } from 'node:child_process'
+
+import { gitHeadPathExists, oxfmtFailure, playwrightSpecsContain } from './local-process.mts'
 export type PostToolUseWarning = { level: 'warn' | 'error'; message: string }
 
 export type Checker = {
@@ -15,18 +16,14 @@ export const autoFormatChecker: Checker = {
   check: (filePath, worktreeRoot) => {
     const fullPath = path.isAbsolute(filePath) ? filePath : path.resolve(worktreeRoot, filePath)
     if (!existsSync(fullPath)) return []
-    const localBin = path.join(worktreeRoot, 'node_modules', '.bin', 'oxfmt')
-    const result = spawnSync(existsSync(localBin) ? localBin : 'oxfmt', [fullPath], {
-      cwd: worktreeRoot,
-      encoding: 'utf8',
-    })
-    if (result.error != null || result.status === 0) {
+    const failure = oxfmtFailure(worktreeRoot, fullPath)
+    if (failure === undefined) {
       return []
     }
     return [
       {
         level: 'warn' as const,
-        message: `oxfmt failed on ${path.basename(filePath)}: ${(result.stderr ?? '').trim()}`,
+        message: `oxfmt failed on ${path.basename(filePath)}: ${failure}`,
       },
     ]
   },
@@ -85,11 +82,7 @@ export const dataPwSpecChecker: Checker = {
       const value = match[1]!
       if (seen.has(value)) continue
       seen.add(value)
-      const result = spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], {
-        cwd: worktreeRoot,
-        encoding: 'utf8',
-      })
-      if (!result.stdout || result.stdout.trim() === '') {
+      if (!playwrightSpecsContain(worktreeRoot, value)) {
         warnings.push({
           level: 'warn',
           message: `data-pw="${value}" has no Playwright spec in playwright/tests/ — Storybook stories don't count`,
@@ -105,9 +98,8 @@ export const servicePackageChecker: Checker = {
     /^backend\/services\/[^/]+\/package\.json$/.test(path.relative(worktreeRoot, filePath)),
   check: (filePath, worktreeRoot) => {
     const rel = path.relative(worktreeRoot, filePath)
-    const { status } = spawnSync('git', ['show', `HEAD:${rel}`], { cwd: worktreeRoot })
     const msg =
       'New backend service — add to backend/entrypoints/api, worker-io, worker-cpu package.json; the runtime audit enforces this in CI.'
-    return status !== 0 ? [{ level: 'warn' as const, message: msg }] : []
+    return gitHeadPathExists(worktreeRoot, rel) ? [] : [{ level: 'warn' as const, message: msg }]
   },
 }

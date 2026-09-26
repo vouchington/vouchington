@@ -126,36 +126,22 @@ export const parseStorybookBrowserConnectTimeout = (): number => {
   return 120_000
 }
 export const storybookBrowserConnectionTimeoutMs = parseStorybookBrowserConnectTimeout()
-const storybookBrowserRunKey = [
-  process.env.GITHUB_RUN_ID,
-  process.env.GITHUB_RUN_ATTEMPT,
-  process.env.GITHUB_JOB,
-]
-  .filter(Boolean)
-  .join('-')
 export const parseStorybookBrowserApiPort = (): number | undefined => {
   if (process.env.VITEST_STORYBOOK_BROWSER_API_PORT) {
     const configuredPort = Number(process.env.VITEST_STORYBOOK_BROWSER_API_PORT)
     if (Number.isSafeInteger(configuredPort) && configuredPort > 0) return configuredPort
     process.stderr.write(
-      `Invalid VITEST_STORYBOOK_BROWSER_API_PORT value "${process.env.VITEST_STORYBOOK_BROWSER_API_PORT}". Falling back to derived browser API port.\n`,
+      `Invalid VITEST_STORYBOOK_BROWSER_API_PORT value "${process.env.VITEST_STORYBOOK_BROWSER_API_PORT}". Leaving browser API port unset.\n`,
     )
   }
-  if (!process.env.CI || !process.env.GITHUB_RUN_ID) return undefined
-  const runNumber = Number(process.env.GITHUB_RUN_ID.slice(-6))
-  if (!Number.isSafeInteger(runNumber)) return undefined
-  const attemptOffset = (Number(process.env.GITHUB_RUN_ATTEMPT || 1) - 1) * 1_000
-  return 45_000 + ((runNumber + attemptOffset) % 10_000)
+  return undefined
 }
 export const vitestViteCacheDir = resolve(process.cwd(), '.cache/vite/vitest')
 export const vitestFsModuleCachePath = resolve(process.cwd(), '.cache/vite/fs-module')
 export const storybookBrowserCacheDir =
   process.env.VITEST_STORYBOOK_BROWSER_CACHE_DIR ??
   (process.env.CI
-    ? resolve(
-        process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
-        `vite-storybook-browser-${storybookBrowserRunKey || process.pid}`,
-      )
+    ? resolve(process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(), 'vite-storybook-browser')
     : resolve(process.cwd(), 'node_modules/.vite/storybook-browser'))
 
 export const storybookPreviewApiPath = isStorybookBrowserEnabled

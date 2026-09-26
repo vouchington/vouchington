@@ -37,7 +37,7 @@ describe('media delivery surface safety', () => {
     expect(put).toHaveBeenCalledWith({
       deliveryKey,
       state: 'withheld',
-      generation: expect.any(Number),
+      generation: expect.any(String),
     })
     expect(invalidate).toHaveBeenCalledWith(
       `/images/placements/${placement.placement_id}/${placement.placement_revision}/${imageId}`,

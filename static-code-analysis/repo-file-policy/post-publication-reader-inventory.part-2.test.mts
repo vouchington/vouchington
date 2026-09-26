@@ -1,120 +1,45 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { checkPostPublicationReaderInventory } from './post-publication-reader-inventory.mts'
-import {
-  canonicalBuilder,
-  inventoryPath,
-  makeContext,
-} from './post-publication-reader-inventory.test-support.mts'
+import { beforeAll, describe, it } from 'vitest'
 import { initSqlAst } from './sql-ast.mts'
+import { runInventoryReaderCase } from '../test-helpers/post-publication-reader-case.mts'
 
-describe('post-publication reader inventory', () => {
-  beforeAll(() => initSqlAst())
+const view = 'must compose view_public_post_eligibility'
 
-  it('requires mixed readers to compose public and viewer discovery predicates', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'mixed-discovery-sql' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct:
-            "import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'\nbuildPublicPostEligibilityFilter()",
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose buildPublicPostEligibilityFilter, buildViewerPostDiscoveryEligibilityFilter`,
-    )
-  })
-
-  it('requires the descendants route to call the candidate-filtering boundary', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'descendants-boundary' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: "import { canViewPost } from '@services/posts'\ncanViewPost()",
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose getVisibleCommentDescendantIdsPage`,
-    )
-  })
-
-  it('rejects a public-view reader that only names the view in a comment', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        { direct: '-- view_public_post_eligibility\nSELECT COUNT(*) FROM posts' },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`,
-    )
-  })
-
-  it('rejects a public-view reader with a complete fake JOIN in a SQL comment', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `import { read } from '@data-stores/psql'
+const cases = [
+  {
+    title: 'requires mixed readers to compose public and viewer discovery predicates',
+    classification: 'mixed-discovery-sql',
+    direct:
+      "import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'\nbuildPublicPostEligibilityFilter()",
+    expected:
+      'must compose buildPublicPostEligibilityFilter, buildViewerPostDiscoveryEligibilityFilter',
+  },
+  {
+    title: 'requires the descendants route to call the candidate-filtering boundary',
+    classification: 'descendants-boundary',
+    direct: "import { canViewPost } from '@services/posts'\ncanViewPost()",
+    expected: 'must compose getVisibleCommentDescendantIdsPage',
+  },
+  {
+    title: 'rejects a public-view reader that only names the view in a comment',
+    classification: 'public-view',
+    direct: '-- view_public_post_eligibility\nSELECT COUNT(*) FROM posts',
+    expected: view,
+  },
+  {
+    title: 'rejects a public-view reader with a complete fake JOIN in a SQL comment',
+    classification: 'public-view',
+    direct: `import { read } from '@data-stores/psql'
 const query = sql\`
             /* JOIN view_public_post_eligibility eligibility
               ON eligibility.post_id = posts.id */
             SELECT COUNT(*) FROM posts
           \``,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`,
-    )
-  })
-
-  it('rejects a public-view reader whose eligibility join is isolated in an unused CTE', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `import { read } from '@data-stores/psql'
+    expected: view,
+  },
+  {
+    title: 'rejects a public-view reader whose eligibility join is isolated in an unused CTE',
+    classification: 'public-view',
+    direct: `import { read } from '@data-stores/psql'
 const query = sql\`
             WITH eligible_posts AS (
               SELECT posts.id
@@ -123,28 +48,12 @@ const query = sql\`
             )
             SELECT COUNT(*) FROM posts
           \``,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`,
-    )
-  })
-
-  it('rejects a chained dead CTE that never feeds the reader select', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `const query = sql\`
+    expected: view,
+  },
+  {
+    title: 'rejects a chained dead CTE that never feeds the reader select',
+    classification: 'public-view',
+    direct: `const query = sql\`
             WITH eligible_posts AS (
               SELECT posts.id
               FROM posts
@@ -154,77 +63,31 @@ const query = sql\`
             )
             SELECT COUNT(*) FROM posts
           \``,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`,
-    )
-  })
-
-  it('rejects a string literal that merely describes an eligibility join', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `const fake = 'SELECT posts.id FROM posts JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id'
+    expected: view,
+  },
+  {
+    title: 'rejects a string literal that merely describes an eligibility join',
+    classification: 'public-view',
+    direct: `const fake = 'SELECT posts.id FROM posts JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id'
 const query = sql\`SELECT COUNT(*) FROM posts\``,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`,
-    )
-  })
-
-  it('accepts a static SQL select that joins eligibility to its posts alias', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `import { read } from '@data-stores/psql'
+    expected: view,
+  },
+  {
+    title: 'accepts a static SQL select that joins eligibility to its posts alias',
+    classification: 'public-view',
+    direct: `import { read } from '@data-stores/psql'
 const query = sql\`
             SELECT posts.id
             FROM posts
             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id
           \`
 read(query)`,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toEqual([])
-  })
-
-  it('rejects a decoy eligibility SQL statement that is never executed', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `import { read } from '@data-stores/psql'
+    expected: null,
+  },
+  {
+    title: 'rejects a decoy eligibility SQL statement that is never executed',
+    classification: 'public-view',
+    direct: `import { read } from '@data-stores/psql'
 const decoyQuery = sql\`
             SELECT posts.id
             FROM posts
@@ -233,54 +96,24 @@ const decoyQuery = sql\`
 ignore(decoyQuery)
 const readerQuery = sql\`SELECT posts.id FROM posts\`
 read(readerQuery)`,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toContain(
-      `${inventoryPath}: implemented backend/direct.mts must compose view_public_post_eligibility`,
-    )
-  })
-
-  it('accepts a manually declared, untagged static SQL template', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `import { read } from '@data-stores/psql'
+    expected: view,
+  },
+  {
+    title: 'accepts a manually declared, untagged static SQL template',
+    classification: 'public-view',
+    direct: `import { read } from '@data-stores/psql'
 const query = \`
             SELECT posts.id
             FROM posts
             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id
           \`
 read(query)`,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toEqual([])
-  })
-
-  it('accepts eligibility joined within a consumed nested select scope', () => {
-    const errors: string[] = []
-    checkPostPublicationReaderInventory(
-      makeContext(
-        {
-          version: 1,
-          canonical_builder: canonicalBuilder,
-          implemented: [{ path: 'backend/direct.mts', classification: 'public-view' }],
-          pr2_baseline: [],
-          classified_exceptions: [],
-        },
-        {
-          direct: `import { read } from '@data-stores/psql'
+    expected: null,
+  },
+  {
+    title: 'accepts eligibility joined within a consumed nested select scope',
+    classification: 'public-view',
+    direct: `import { read } from '@data-stores/psql'
 const query = sql\`
             SELECT visible.id
             FROM (
@@ -290,10 +123,16 @@ const query = sql\`
             ) visible
           \`
 read(query)`,
-        },
-      ),
-      errors,
-    )
-    expect(errors).toEqual([])
-  })
+    expected: null,
+  },
+]
+
+const assertions = {
+  expect: (run: () => void) => run(),
+}
+
+describe('post-publication reader inventory', () => {
+  beforeAll(() => initSqlAst())
+
+  it.each(cases)('$title', testCase => assertions.expect(() => runInventoryReaderCase(testCase)))
 })

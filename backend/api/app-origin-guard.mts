@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
+import { markAuthenticatedOriginRequest } from '@modules/request-client-info/authenticated-origin'
 import { getRequestPath } from './app-guard-helpers.mts'
 import { BACKEND_BASELINE_RAW_SECURITY_HEADERS } from './security-header-helpers.mts'
 
@@ -54,7 +55,10 @@ function rejectInvalidWorkerSecret(
   const headerHash = createHash('sha256')
     .update(typeof headerVal === 'string' ? headerVal : '')
     .digest()
-  if (timingSafeEqual(headerHash, secretHash)) return false
+  if (timingSafeEqual(headerHash, secretHash)) {
+    markAuthenticatedOriginRequest(req)
+    return false
+  }
   logGuardRejectedRequest(req, 'invalid worker secret', {
     path: pathOnly,
     method,

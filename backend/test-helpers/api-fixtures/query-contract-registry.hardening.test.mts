@@ -6,6 +6,7 @@ import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './back
 
 const expectedParameters = {
   'GET:/api/v1/admin/ai-costs': ['after', 'limit'],
+  'GET:/api/v1/admin/oauth-clients': ['after', 'limit', 'verification'],
   'GET:/api/v1/agent-moderations/:id/votes': ['after', 'limit'],
   'GET:/api/v1/auth/passkeys': ['after', 'limit'],
   'GET:/api/v1/auth/sessions': ['after', 'limit'],
@@ -48,6 +49,7 @@ const expectedParameters = {
   'GET:/api/v1/my/email-addresses': ['after', 'limit'],
   'GET:/api/v1/my/friend-recommendations': ['after', 'limit'],
   'GET:/api/v1/my/notifications/push-subscriptions': ['after', 'limit'],
+  'GET:/api/v1/my/oauth-apps': ['after', 'limit'],
   'GET:/api/v1/my/oauth-grants': ['after', 'limit'],
   'GET:/api/v1/my/rewards-program-point-valuations': ['after', 'limit'],
   'GET:/api/v1/my/rewards-program-statuses': ['after', 'limit'],

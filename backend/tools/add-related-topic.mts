@@ -34,14 +34,19 @@ const tool: Tool<ToolArgs, ToolResult, [EntityType, string]> = {
       properties: {
         topic_id: {
           type: 'string',
-          description: 'Topic UUID to relate',
+          description: 'Topic UUID or slug to relate',
         },
       },
       required: ['topic_id'],
     },
     strict: null,
   },
-  meta: { surfaces: ['internal'], annotations: { destructiveHint: true }, api: null },
+  meta: {
+    surfaces: ['internal'],
+    title: 'Add Related Topic',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    api: null,
+  },
   function:
     (currentUser: BasicUser, entityType: EntityType, entityId: string) =>
     async (args: ToolArgs): Promise<ToolResult> => {
@@ -65,7 +70,7 @@ const tool: Tool<ToolArgs, ToolResult, [EntityType, string]> = {
 
       return {
         success: true,
-        topic_id: topic_id,
+        topic_id: topic.id,
         topic_name: topic.name,
       }
     },

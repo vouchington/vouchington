@@ -1,0 +1,91 @@
+name: Cloudflare Worker
+
+# Area workflow: when `changes` selects the Cloudflare Worker area, its static checks gate the full
+# worker suite. The `cloudflare-worker` job is the required check; it passes when the area is
+# skipped. nightly.yml calls this workflow for the full run. See docs/development/ci.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_call:
+  workflow_dispatch:
+
+# A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
+# area calls nightly.yml makes.
+concurrency:
+  group: cloudflare-worker-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  changes:
+    uses: ./.github/workflows/ci-detect-changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  static-cloudflare-worker:
+    needs: [changes]
+    if: needs.changes.outputs.area-cloudflare-worker == 'true'
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      cloudflare-worker: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-cloudflare-worker:
+    needs: [static-cloudflare-worker]
+    uses: ./.github/workflows/tests-cloudflare-worker.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  coverage:
+    needs: [static-cloudflare-worker, test-cloudflare-worker]
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      needs.static-cloudflare-worker.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-area-coverage.yml
+    with:
+      area: cloudflare-worker
+    permissions:
+      actions: read
+      contents: read
+
+  # Informational; the `cloudflare-worker` gate does not wait on it.
+  codecov:
+    needs: [test-cloudflare-worker]
+    if: ${{ !cancelled() && needs.test-cloudflare-worker.result == 'success' }}
+    uses: ./.github/workflows/ci-upload-codecov.yml
+    with:
+      uploads: >-
+        [{"flag":"cloudflare-worker","pattern":"lcov-full-cloudflare-worker*"}]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  cloudflare-worker:
+    name: cloudflare-worker
+    if: ${{ !cancelled() }}
+    needs: [changes, static-cloudflare-worker, test-cloudflare-worker, coverage]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASH_ENV: /dev/null
+    permissions:
+      contents: read
+    steps:
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@facde3ea4773a9477411b67574de56f679f984fa # v0.19.2
+        timeout-minutes: 1
+        with:
+          results: >-
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-cloudflare-worker":{"result":"${{ needs.static-cloudflare-worker.result }}"},"test-cloudflare-worker":{"result":"${{ needs.test-cloudflare-worker.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

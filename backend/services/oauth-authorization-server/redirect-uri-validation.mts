@@ -2,10 +2,13 @@ import { invalidRedirectUri } from './errors.mts'
 
 const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1'])
 const MAX_URI_LENGTH = 2048
+export const MAX_REDIRECT_URIS = 10
 
 export function validateRedirectUris(values: unknown): string[] {
-  if (!Array.isArray(values) || values.length === 0 || values.length > 10) {
-    throw invalidRedirectUri('redirect_uris must contain between 1 and 10 entries')
+  if (!Array.isArray(values) || values.length === 0 || values.length > MAX_REDIRECT_URIS) {
+    throw invalidRedirectUri(
+      `redirect_uris must contain between 1 and ${MAX_REDIRECT_URIS} entries`,
+    )
   }
   const redirectUris = values.map(value => {
     if (typeof value !== 'string' || value.length > MAX_URI_LENGTH) {

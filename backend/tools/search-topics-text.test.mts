@@ -10,7 +10,7 @@ describe('search-topics-text tool', () => {
   it('returns success with matching topics', async () => {
     const topic = await createTestTopic({ name: `Agent Search Text Topic ${crypto.randomUUID()}` })
     const executor = searchTopicsTextTool.function(null as never)
-    const result = await executor({ query: 'Agent Search Text Topic' })
+    const result = await executor({ text_search_query: 'Agent Search Text Topic' })
 
     expect(result.success).toBe(true)
     expect(result.topics).toContainEqual(
@@ -26,7 +26,7 @@ describe('search-topics-text tool', () => {
       await createTestTopic({ user, name: `${marker} ${index.toString().padStart(2, '0')}` })
     }
     const executor = searchTopicsTextTool.function(null as never)
-    const result = await executor({ query: marker, limit: 100 })
+    const result = await executor({ text_search_query: marker, limit: 100 })
 
     expect(result.topics).toHaveLength(25)
   })
@@ -39,7 +39,7 @@ describe('search-topics-text tool', () => {
       await createTestTopic({ user, name: `${marker} ${index.toString().padStart(2, '0')}` })
     }
     const executor = searchTopicsTextTool.function(null as never)
-    const result = await executor({ query: marker })
+    const result = await executor({ text_search_query: marker })
 
     expect(result.topics).toHaveLength(10)
   })

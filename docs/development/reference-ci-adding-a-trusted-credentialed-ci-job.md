@@ -9,9 +9,9 @@ Before renaming a repo variable, secret, workflow input, or package-boundary tok
 Vouchington app code, dev scripts, `.env.example`, and CI/deploy workflows. Search the separate
 `vouchington-infra` checkout independently when the rename crosses its private deployment contract.
 
-### 1. Unique concurrency group
+### 1. Concurrency belongs to the caller
 
-Every reusable workflow must declare its own `concurrency.group`. The group name must be unique across all workflows — include the workflow name and `github.event.pull_request.number || github.sha`. See the [GitHub Actions checklist](../checklists/github-actions.md) and [runner concurrency topology](../../.github/workflows/reference-github-actions-concurrency-locks.md).
+A reusable test workflow declares no top-level `concurrency`: its caller, an area workflow or `ci.yml`, owns the group. A reusable's own group would be shared by every caller running it for the same revision, so one call would cancel or queue behind another. An area workflow's group starts with a literal area prefix, because under `workflow_call` `github.workflow` names the caller (`nightly.yml`) and would collide the area calls. See the [GitHub Actions checklist](../checklists/github-actions.md) and [runner concurrency topology](../../.github/workflows/reference-github-actions-concurrency-locks.md).
 
 ### 2. Path filters in both places
 
@@ -19,7 +19,7 @@ There are two distinct filter locations, both must be updated:
 
 **Primary filter** (`ci.yml` → `detect-changes` job → `dorny/paths-filter` step `id: filter`): add a named entry listing source paths that should trigger the job. Example: `playwright-credentialed` lists its config and the web/backend source paths that exercise the credentialed features. Do not add workflow or local-action paths: the `workflow-action-changes` filter already starts every area job for those edits.
 
-**Fan-in `if:` condition** (`ci.yml` → the new job): gate the job on `needs.detect-changes.outputs.<filter-name> == 'true'`. A filter that exists in the `filter` step but is **not** referenced in the job's `if:` means the job never runs on path-matched PRs. The `tests-playwright-credentialed.test.mts` workflow consistency test (`github-actions` Vitest project) catches this: it asserts that every credentialed job's `if:` references a filter name that exists in the `detect-changes` step.
+**Fan-in `if:` condition** (`ci.yml` → the new job): gate the job on `needs.detect-changes.outputs.<filter-name> == 'true'`. Add the job to its area workflow too, where it needs `static-<area>` and runs whenever the area is selected. A filter that exists in the `filter` step but is **not** referenced in the job's `if:` means the job never runs on path-matched PRs. The `tests-playwright-credentialed.test.mts` workflow consistency test (`github-actions` Vitest project) catches this: it asserts that every credentialed job's `if:` references a filter name that exists in the `detect-changes` step.
 
 The `refine-runtime-web` step (`id: refine-runtime-web`) applies additional negated globs to strip Markdown/test/Storybook-only changes from expensive runtime jobs. Positive-only filters such as the PR-only `build-backend-infra` and `build-web-infra` filters remain in the primary filter step (`id: filter`) and are exported directly from it.
 
@@ -29,7 +29,7 @@ The `refine-runtime-web` step (`id: refine-runtime-web`) applies additional nega
 
 ### 3. Role-assumption env and secrets at job level
 
-AWS OIDC role assumption and external API key secrets must be declared at **job level** (not step level), and gated on `trusted-secret-context`. Model: the `test-playwright-credentialed` job in `ci.yml` uses:
+AWS OIDC role assumption and external API key secrets must be declared at **job level** (not step level), and gated on `trusted-secret-context`. Model: the `test-playwright-credentialed` job in `ci.yml` uses the following (`web.yml` reads the same output from `needs.changes`):
 
 ```yaml
 needs.detect-changes.outputs.trusted-secret-context == 'true'
