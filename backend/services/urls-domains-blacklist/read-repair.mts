@@ -48,6 +48,41 @@ export async function repairBloomFilterUnavailableRead({
   }
 }
 
+type CheckBloomFiltersReadOptions = {
+  readyKey: string
+  liveKey: string
+  values: string[]
+  mexistsIfReady: (readyKey: string, values: string[]) => Promise<Array<boolean | null>>
+  repairUnavailableRead: () => Promise<void>
+}
+
+export async function checkBloomFiltersRead({
+  readyKey,
+  liveKey,
+  values,
+  mexistsIfReady,
+  repairUnavailableRead,
+}: CheckBloomFiltersReadOptions): Promise<Array<boolean | null>> {
+  if (values.length === 0) return []
+
+  try {
+    const results = await mexistsIfReady(readyKey, values)
+    if (results.length !== values.length || results.some(result => result === null)) {
+      await repairUnavailableRead()
+      return values.map(() => null)
+    }
+    if (results.some(result => result === false) && (await isUnavailableLiveFilterKey(liveKey))) {
+      await repairUnavailableRead()
+      return values.map(() => null)
+    }
+    return results
+  } catch (error) {
+    onError(error instanceof Error ? error : new Error(String(error)))
+    await repairUnavailableRead()
+    return values.map(() => null)
+  }
+}
+
 export async function checkBloomFilterRead({
   readyKey,
   liveKey,

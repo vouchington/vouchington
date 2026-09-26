@@ -1,12 +1,17 @@
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
-import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { normalizeDomain } from './domains.mts'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
 import { newBloomReadyMarkerValue, unlinkReadyMarkerIfValue } from './ready-marker.mts'
 import {
+  URL_BLOCKLIST_BLOOM_BATCH_SIZE,
+  urlBlocklistBatchesFromDb,
+} from './bloom-filter-batches.mts'
+import {
   checkBloomFilterRead,
+  checkBloomFiltersRead,
   isUnavailableLiveFilterKey,
   repairBloomFilterUnavailableRead,
 } from './read-repair.mts'
@@ -14,13 +19,11 @@ import onError from '@modules/on-error'
 import { warmUpBlocklistBloomFilter } from './warmup-orchestration.mts'
 import { withBlocklistBloomFilterLock } from './bloom-filter-lock.mts'
 
-const BATCH_SIZE = 10_000
-
 const bloomFilter = new ValkeyBloomFilter({
   name: 'url-blocklist',
   capacity: 5_000_000,
   errorRate: 0.01,
-  batchSize: BATCH_SIZE,
+  batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE,
   // ~5M domains rebuilt in the bloom-filters worker: cap in-flight chunks to limit Valkey pressure
   concurrencyLimit: 8,
   client: bloomValkeyClient,
@@ -99,6 +102,16 @@ export async function checkBloomFilter(hostname: string): Promise<boolean | null
   })
 }
 
+export async function checkBloomFilters(hostnames: string[]): Promise<Array<boolean | null>> {
+  return checkBloomFiltersRead({
+    readyKey: BLOOM_READY_KEY,
+    liveKey: bloomFilter.getConfig().liveKey,
+    values: hostnames,
+    mexistsIfReady: (readyKey, values) => bloomFilter.mexistsIfReady(readyKey, values),
+    repairUnavailableRead: repairUrlBlocklistUnavailableRead,
+  })
+}
+
 export async function addDomainsToBloomFilter(domains: string[]): Promise<void> {
   const validDomains = domains.flatMap(d => {
     const n = normalizeDomain(d)
@@ -110,44 +123,6 @@ export async function addDomainsToBloomFilter(domains: string[]): Promise<void> 
   } catch (error) {
     onError(error instanceof Error ? error : new Error(String(error)))
     await enqueueRebuildAndInvalidateReadyMarker()
-  }
-}
-
-async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
-  let batch: string[] = []
-
-  for await (const row of createAsyncGeneratorFromCursor<{ domain: string }>(
-    sql`/* urlBlocklistBatchesFromDb */
-      SELECT db.domain
-      FROM domain_blacklists db
-      INNER JOIN domain_blacklist_sources dbs ON dbs.id = db.source_id
-      WHERE dbs.type = 'url'::domain_blacklist_types
-    `,
-    { batchSize: BATCH_SIZE },
-  )) {
-    batch.push(row.domain)
-    if (batch.length >= BATCH_SIZE) {
-      yield batch.splice(0, BATCH_SIZE)
-    }
-  }
-
-  if (batch.length > 0) {
-    yield batch
-    batch = []
-  }
-
-  for await (const row of createAsyncGeneratorFromCursor<{ hostname: string }>(
-    sql`/* urlBlocklistBatchesFromDb */ SELECT hostname FROM url_hostnames WHERE blocked = TRUE OR crawlable = FALSE`,
-    { batchSize: BATCH_SIZE },
-  )) {
-    batch.push(row.hostname)
-    if (batch.length >= BATCH_SIZE) {
-      yield batch.splice(0, BATCH_SIZE)
-    }
-  }
-
-  if (batch.length > 0) {
-    yield batch
   }
 }
 
