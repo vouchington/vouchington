@@ -50,6 +50,24 @@ export const accountAndFeedsEndpointRegistry = {
     path: '/api/v1/my/email-addresses/tests%2Bnative-user%40voucha.ai/verifications',
     requestBody: { token: 'ABCD1234' },
   },
+  'native.my.api-keys.create': {
+    method: 'POST',
+    path: '/api/v1/my/api-keys',
+    requestBody: {
+      label: 'Coding agent',
+      permissions: ['mcp.user:read', 'mcp.user:write'],
+      type: 'mcp',
+    },
+  },
+  'native.my.oauth-grants.paginated': {
+    method: 'GET',
+    path: '/api/v1/my/oauth-grants',
+    query: { after: 'fixture-owner-scoped-oauth-grant-cursor', limit: '1' },
+  },
+  'native.my.oauth-grants.revoke': {
+    method: 'DELETE',
+    path: '/api/v1/my/oauth-grants/00000000-0000-7000-8000-000000000711',
+  },
   'swift.my.profile.default': { method: 'GET', path: '/api/v1/my/profile' },
   'swift.rss-feeds.default': endpoint('/api/v1/rss-feeds', { limit: '25' }),
   'swift.rss-feed-items.feed.default': {
