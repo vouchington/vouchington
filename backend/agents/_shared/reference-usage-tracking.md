@@ -31,8 +31,12 @@ summed internally and reported once at settlement rather than per OpenAI call.
 Awaited `ai_usage_records` settlement for a single completed OpenAI call, shared by
 `callRecordingAgentResponseUsage` (below) and the tool loop's usage recording. No-ops when
 `params.response.usage` is absent (e.g. a test double that doesn't model the real API shape). A
-ledger failure must durably set the request-day accounting-uncertainty latch before control can
-advance; if both writes fail, the caller fails closed.
+storable completed-response ID is used first, followed by a storable registration ID. Any supplied
+unusable ID is reported without echoing its value, as is a response with both IDs absent. When
+neither is storable, known billed usage is recorded without an idempotency key. A successful keyless
+write does not set the request-day accounting-uncertainty latch. A real ledger failure must durably
+set that latch before control can advance; if both writes fail, the caller fails closed. A live
+background lease still settles under its registration ID and fencing token.
 
 ### `callRecordingAgentResponseUsage(fn, params)`
 
