@@ -1,5 +1,6 @@
 -- Breaking offline contraction: deploy placement-only edge rejection with all image-mutating
 -- backends. No mixed-version compatibility. Preserve the sequence and exact placement work.
+-- Ordered after the retained post-publication identity/source migrations.
 DELETE FROM media_delivery_registry_records WHERE route_kind <> 'placement';
 DELETE FROM media_delivery_repair_markers WHERE route_kind <> 'placement';
 

@@ -59,7 +59,8 @@ unchanged route. Disabled registry publication retains repair markers without pr
 
 Registry rows require typed image and placement foreign keys and an exact immutable revision.
 There is no generic public-image route, media discriminator, or image-wide allow fallback.
-The forward contraction migration preserves existing placement data and the generation sequence;
+The [forward contraction migration](../../data-stores/psql/migrations/0735-00-00-image-placement-delivery.sql)
+runs after the retained publication identity/source migrations and preserves existing placement data and the generation sequence;
 it requires a coordinated offline cutover of every image-mutating backend and the edge route gate,
 not mixed-version operation.
 
