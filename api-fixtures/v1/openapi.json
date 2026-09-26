@@ -57304,7 +57304,7 @@
             "name": "min_score",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "number"
             }
           },
           {

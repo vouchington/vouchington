@@ -9,6 +9,23 @@ import {
 import { parseRssFeedItemsSearchParams } from '../parse-rss-feed-items.mts'
 
 describe('parse-rss-feed-items', () => {
+  it('parses every generated boolean spelling for read and has_related_posts', async () => {
+    for (const [value, expected] of [
+      ['1', true],
+      ['0', false],
+      ['TRUE', true],
+      ['FALSE', false],
+    ] as const) {
+      const { searchOptions } = await parseRssFeedItemsSearchParams({
+        has_related_posts: value,
+        read: value,
+      })
+
+      expect(searchOptions.has_related_posts).toBe(expected)
+      expect(searchOptions.read).toBe(expected)
+    }
+  })
+
   it('parseRssFeedItemsSearchParams returns defaults for empty query', async () => {
     const { shouldReturnEmpty, searchOptions } = await parseRssFeedItemsSearchParams({})
     expect(shouldReturnEmpty).toBe(false)

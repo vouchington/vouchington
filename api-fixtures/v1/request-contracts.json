@@ -23973,7 +23973,7 @@
             "type": "integer"
           },
           "min_score": {
-            "type": "string"
+            "type": "number"
           },
           "time_range": {
             "type": "string"

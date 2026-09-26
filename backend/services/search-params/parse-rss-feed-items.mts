@@ -75,8 +75,8 @@ export function prepareRssFeedItemsSearchParams(query: Record<string, unknown>) 
     rssFeedIds: resolveRssFeedIds(extractIdentifiers(query, ['rss_feed', 'rss_feeds'], 10)),
     storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
     similarWindowDays: rawSimilarWindowDays,
-    hasRelatedPosts: query.has_related_posts,
-    read: query.read,
+    hasRelatedPosts: validationQuery.has_related_posts,
+    read: validationQuery.read,
   }
 }
 
@@ -138,10 +138,9 @@ export async function resolveRssFeedItemsSearchParams(
       ? rawDays
       : undefined
 
-  const has_related_posts =
-    hasRelatedPosts === 'true' ? true : hasRelatedPosts === 'false' ? false : undefined
+  const has_related_posts = typeof hasRelatedPosts === 'boolean' ? hasRelatedPosts : undefined
 
-  const read = rawRead === 'true' ? true : rawRead === 'false' ? false : undefined
+  const read = typeof rawRead === 'boolean' ? rawRead : undefined
 
   const searchOptions = {
     ...paginationOptions,

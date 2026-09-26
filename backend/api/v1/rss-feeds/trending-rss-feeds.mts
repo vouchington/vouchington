@@ -5,7 +5,12 @@ import { getTrendingRssFeeds } from '@services/trending-rss-feeds/get-trending-r
 import { getTrendingRssFeedsCached } from '@services/entity-fetch/search-caches'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
-import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
+import {
+  createPaginationParser,
+  defineQueryContract,
+  queryNumber,
+  queryString,
+} from '@modules/pagination'
 import { indexById } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -20,7 +25,7 @@ const trendingRssFeedsParser = createPaginationParser({
 })
 const trendingRssFeedsQueryContract = defineQueryContract({
   time_range: queryString(),
-  min_score: queryString(),
+  min_score: queryNumber(),
 })
 
 app.route('/api/v1/rss-feeds/trending').get(async ctx => {
