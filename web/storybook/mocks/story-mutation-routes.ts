@@ -37,6 +37,7 @@ export function storyMutationDelete(endpoint: string): unknown | undefined {
   if (endpoint.endsWith('/lock') || endpoint.includes('/items/posts/')) return {}
   if (endpoint.includes('/agent-prompts/') || endpoint.includes('/participants/')) return {}
   if (endpoint.endsWith('/escalation') || endpoint.endsWith('/claim')) return {}
+  if (endpoint.startsWith('/api/v1/official-referral-links/')) return {}
   if (endpoint.includes('/ratings/')) return {}
   if (endpoint.endsWith('/vote') || endpoint.includes('/bookmarks/')) return {}
   return undefined

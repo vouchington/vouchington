@@ -98,6 +98,9 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/images/upload-url') return imageUploadUrl(body)
   if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint))
     return imageUploadCompletion(endpoint)
+  if (endpoint.endsWith('/official-referral-links')) {
+    return { official_referral_link: { id: 'official-link-story' } }
+  }
   if (endpoint.endsWith('/agent-prompts')) return communityAgentPrompt(body)
   if (endpoint.endsWith('/invites')) return communityInvite(body)
   if (endpoint.endsWith('/members')) return {}

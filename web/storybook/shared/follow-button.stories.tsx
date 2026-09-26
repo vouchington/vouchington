@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { FollowButton } from '@/components/shared/follow-button'
+import { FollowButton } from '../../components/shared/follow-button'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
