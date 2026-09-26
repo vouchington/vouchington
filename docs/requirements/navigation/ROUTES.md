@@ -256,7 +256,7 @@ Admin-only routes for URLs.
 
 Admin-only route for reviewing self-registered OAuth apps.
 
-- `/admin/oauth-clients` - list apps by verification status (unverified by default), verify an app under the name the administrator reviewed, or remove its verification; see [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md)
+- `/admin/oauth-clients` - list apps by verification status (unverified by default), verify an app under the name and redirect URIs the administrator reviewed, or remove its verification; see [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md)
 
 ## Queues
 

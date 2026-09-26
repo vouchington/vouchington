@@ -91,11 +91,14 @@ describe('OAuthClientVerificationRow', () => {
     expect(screen.getByText('No owner')).toBeInTheDocument()
   })
 
-  it('verifies an app under the name the administrator reviewed', async () => {
+  it('verifies an app under the name and redirect URIs the administrator reviewed', async () => {
     renderRow()
     await click('Verify')
 
-    expect(mockVerify).toHaveBeenCalledWith(fixtureClient.id, 'Fixture Agent')
+    expect(mockVerify).toHaveBeenCalledWith(fixtureClient.id, {
+      client_name: 'Fixture Agent',
+      redirect_uris: ['https://agent.example.com/oauth/callback'],
+    })
     expect(toast.success).toHaveBeenCalledWith('App verified')
     expect(screen.getByText(/^Verified /)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Remove verification' })).toBeEnabled()

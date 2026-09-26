@@ -28,7 +28,10 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
           t('extracted.oauthClients.oauthClientVerificationRow.verificationRemoved_116996a2'),
         )
       } else {
-        const { oauth_client } = await verifyOAuthClient(client.id, client.client_name)
+        const { oauth_client } = await verifyOAuthClient(client.id, {
+          client_name: client.client_name,
+          redirect_uris: client.redirect_uris,
+        })
         setVerifiedAt(oauth_client.verified_at)
         onSuccess(t('extracted.oauthClients.oauthClientVerificationRow.appVerified_ced56e60'))
       }
