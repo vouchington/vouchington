@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
+import { ClassifierDecisionReuseError } from './types.mts'
 
 describe('persistClassifierDecision', () => {
   it('persists stored snapshots and runtime results atomically in their topic result family', async () => {
@@ -204,17 +205,20 @@ describe('persistClassifierDecision', () => {
     }
     await persistClassifierDecision(baseInput)
 
-    await expect(
-      persistClassifierDecision({
-        ...baseInput,
-        calls: [
-          {
-            shardOrdinal: 0,
-            results: [{ ...baseInput.calls[0]!.results[0]!, probability: 0.6 }],
-          },
-        ],
-      }),
-    ).rejects.toThrow('Classifier decision batch ID was reused with different results')
+    const conflict = persistClassifierDecision({
+      ...baseInput,
+      calls: [
+        {
+          shardOrdinal: 0,
+          results: [{ ...baseInput.calls[0]!.results[0]!, probability: 0.6 }],
+        },
+      ],
+    })
+    await expect(conflict).rejects.toThrow(
+      'Classifier decision batch ID was reused with different results',
+    )
+    await expect(conflict).rejects.toBeInstanceOf(ClassifierDecisionReuseError)
+    await expect(conflict).rejects.toMatchObject({ code: 'results' })
     await expect(fixture.getDecisionPersistenceFacts(batchId)).resolves.toMatchObject({
       topic_results: 1,
     })

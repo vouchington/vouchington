@@ -7,12 +7,13 @@ import {
   serializeClassifierRawResponse,
 } from './decision-input.mts'
 import { readCompleteClassifierDecision } from './read-complete-decision.mts'
-import type {
-  ClassifierDecisionInputResult,
-  PersistClassifierDecisionInput,
-  PersistClassifierDecisionResult,
-  PersistedClassifierDecision,
-  PersistedClassifierDecisionResult,
+import {
+  ClassifierDecisionReuseError,
+  type ClassifierDecisionInputResult,
+  type PersistClassifierDecisionInput,
+  type PersistClassifierDecisionResult,
+  type PersistedClassifierDecision,
+  type PersistedClassifierDecisionResult,
 } from './types.mts'
 import {
   captureClassifierDecisionStoredCandidateSnapshots,
@@ -43,10 +44,7 @@ export async function persistClassifierDecision(
   if (configuration.candidateKind !== candidateKind) {
     throw new Error('Classifier candidate kind does not match its decision subject and results')
   }
-  if (
-    (candidateKind === 'topic' && normalizedInput.subject.postId === null) ||
-    (candidateKind === 'story' && normalizedInput.subject.rssFeedItemId === null)
-  ) {
+  if (candidateKind === 'story' && normalizedInput.subject.rssFeedItemId === null) {
     throw new Error('Classifier candidate kind does not match its decision subject')
   }
   const [snapshots, calls] = await Promise.all([
@@ -92,11 +90,17 @@ function assertExistingDecisionMatchesInput(
   input: ReturnType<typeof normalizeClassifierDecisionInput>,
 ): void {
   if (!sameDecisionIdentity(existing, input)) {
-    throw new Error('Classifier decision batch ID was reused with different input')
+    throw new ClassifierDecisionReuseError(
+      'input',
+      'Classifier decision batch ID was reused with different input',
+    )
   }
   for (const [index, call] of input.calls.entries()) {
     if (existing.calls[index]?.shardOrdinal !== call.shardOrdinal) {
-      throw new Error('Classifier decision batch ID was reused with different shard ordinals')
+      throw new ClassifierDecisionReuseError(
+        'shard-ordinals',
+        'Classifier decision batch ID was reused with different shard ordinals',
+      )
     }
   }
   const existingByResultKey = new Map(
@@ -111,7 +115,10 @@ function assertExistingDecisionMatchesInput(
         existingCallOrdinals.get(persisted.decisionCallId) !== call.shardOrdinal ||
         !samePersistedResult(persisted, result)
       ) {
-        throw new Error('Classifier decision batch ID was reused with different results')
+        throw new ClassifierDecisionReuseError(
+          'results',
+          'Classifier decision batch ID was reused with different results',
+        )
       }
     }
   }

@@ -123,11 +123,9 @@ describe('processAutotaggerPost', () => {
       markdown: 'Plus tier content.',
     })
     await runAutotaggerPost(mockPostJob({ id: postId }))
-    expect(mockRunAutotaggerOnPost).toHaveBeenCalledWith(
-      expect.objectContaining({ id: postId }),
-      undefined,
-      { max_topics: 5 },
-    )
+    expect(mockRunAutotaggerOnPost).toHaveBeenCalledWith(expect.objectContaining({ id: postId }), {
+      max_topics: 5,
+    })
   })
 
   it('passes max_topics: 10 for a pro-tier author', async () => {
@@ -140,11 +138,9 @@ describe('processAutotaggerPost', () => {
       markdown: 'Pro tier content.',
     })
     await runAutotaggerPost(mockPostJob({ id: postId }))
-    expect(mockRunAutotaggerOnPost).toHaveBeenCalledWith(
-      expect.objectContaining({ id: postId }),
-      undefined,
-      { max_topics: 10 },
-    )
+    expect(mockRunAutotaggerOnPost).toHaveBeenCalledWith(expect.objectContaining({ id: postId }), {
+      max_topics: 10,
+    })
   })
 
   it('passes max_topics: 10 for an administrator author with no paid membership', async () => {
@@ -157,11 +153,9 @@ describe('processAutotaggerPost', () => {
       markdown: 'Admin content.',
     })
     await runAutotaggerPost(mockPostJob({ id: postId }))
-    expect(mockRunAutotaggerOnPost).toHaveBeenCalledWith(
-      expect.objectContaining({ id: postId }),
-      undefined,
-      { max_topics: 10 },
-    )
+    expect(mockRunAutotaggerOnPost).toHaveBeenCalledWith(expect.objectContaining({ id: postId }), {
+      max_topics: 10,
+    })
   })
 
   it('returns null and skips runAutotaggerOnPost when the enabled kill-switch is off, regardless of tier', async () => {

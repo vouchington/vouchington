@@ -22,12 +22,12 @@
   "scripts": {},
   "dependencies": {
     "@agents/_shared": "workspace:^",
+    "@agents/classifiers": "workspace:^",
     "@jongleberry/vurst-prompt": "^0.4.3",
-    "@modules/on-error": "workspace:^",
-    "@modules/openai-utils": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",
+    "@services/classifiers": "workspace:^",
     "@services/conversations-messages": "workspace:^",
     "@services/openai-agents": "workspace:^",
     "@services/posts": "workspace:^",
@@ -35,10 +35,10 @@
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/tools": "workspace:^",
-    "openai": "^7.15.0"
+    "@voucha/types": "workspace:^"
   },
   "devDependencies": {
-    "@modules/openrouter-utils": "workspace:^",
+    "@services/elections-votes": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

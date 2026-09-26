@@ -33,10 +33,11 @@ export async function processAutotaggerPost(
 
   const maxTopics = await resolvePostAutotaggerMaxTopics(post, limits)
   // Free-tier authors (including authorless posts) get zero autotagger topics -- skip before any
-  // content is built or OpenAI is called, since there is nothing further to do at max_topics: 0.
+  // content is built or the classifier is dispatched, since there is nothing further to do at
+  // max_topics: 0.
   if (maxTopics === 0) return null
 
-  return runOnPost(post, undefined, { max_topics: maxTopics })
+  return runOnPost(post, { max_topics: maxTopics })
 }
 
 export async function processAutotaggerRssFeedItem(
@@ -60,11 +61,11 @@ export async function processAutotaggerRssFeedItem(
     return null
   }
 
-  // Kill-switch, discoverability gating, tiered max_topics, and the collaborative-follower
-  // enrichment pass all live inside runAutotaggerOnRssFeedItem (@agents/autotagger/run.mts) rather
-  // than here: the collaborative pass must run (and its topics be visible) before the
-  // rss_feed_item_autotagger_results idempotency marker is written, so that ordering constraint
-  // requires it to sit inside the same generic run/insert flow, not be layered on afterward here.
+  // Kill-switch, discoverability gating, tiered max_topics, and the collaborative-follower pass
+  // all live inside runAutotaggerOnRssFeedItem (@agents/autotagger/run-rss-feed-item.mts) rather
+  // than here: the collaborative pass is idempotent and unconditional (gated only on the
+  // kill-switch) and must run before -- and independently of -- the classifier dispatch, so both
+  // orderings have to live together inside that one function, not be split across this processor.
   return runOnRssFeedItem(rssFeedItem)
 }
 

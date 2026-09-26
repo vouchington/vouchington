@@ -68,7 +68,7 @@ export type ClassifierContextPolicy =
   | TypesafeClassifierContextPolicy
   | OpenRouterClassifierContextPolicy
 
-export type ExecuteClassifierDecisionInput = {
+export type ClassifierDecisionRequestInput = {
   batchId: string
   classifierId: string
   promptVersionId: string
@@ -76,10 +76,25 @@ export type ExecuteClassifierDecisionInput = {
   scope: ClassifierDecisionScope
   state: ClassifierSafeText
   bindings: readonly ClassifierQuestionBinding[]
-  contextPolicy: ClassifierContextPolicy
+  contextPolicy?: ClassifierContextPolicy
   client: StructuredDecisionClient
   signal?: AbortSignal
 }
+
+export type ExecuteClassifierDecisionInput = ClassifierDecisionRequestInput & {
+  contextPolicy: ClassifierContextPolicy
+}
+
+/**
+ * Input for `executeSingleCallClassifierDecision`, the sharding-free twin of
+ * `executeClassifierDecision` for classifier families with no exact context
+ * measurer. It omits `contextPolicy` entirely rather than accepting one that
+ * would never be consulted; see `docs/overview/architecture/structured-decisions.md`.
+ */
+export type ExecuteSingleCallClassifierDecisionInput = Omit<
+  ClassifierDecisionRequestInput,
+  'contextPolicy'
+>
 
 export type ExecuteClassifierDecisionDependencies = {
   getActiveClassifierConfiguration?: (

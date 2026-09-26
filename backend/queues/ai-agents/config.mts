@@ -78,18 +78,25 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // (`job.data.modelProvider === 'anthropic'`), which never call OpenAI at all -- and
 // `moderation-prompt` is likewise necessary but not sufficient: `core.mts`'s gate also excludes
 // `moderatorSlug === AI_GENERATED_MODERATOR_SLUG` prompt jobs for the reason above.
-// `autotagger-rss-feed-item` is necessary but not sufficient too: not every item that reaches this
-// job type calls OpenAI (already-tagged, non-discoverable, or over-LLM-budget items only run the
-// spend-free collaborative-topic pass), but that is per-item, DB-backed eligibility, not something
-// derivable from `job.data` alone like the two cases above -- `core.mts`'s gate defers to
-// `wouldAutotagRssFeedItemCallOpenAI` (`@agents/autotagger`) for it, and only once a breach is
-// already active. `story-post` is the same shape: a non-force retry against a post that already
-// has `ai_summary_markdown` set only re-persists the existing summary to re-trigger the downstream
-// moderation/spam/embedding jobs (`updateStoryPostAgentResult`) -- it never calls
+// `autotagger-post` and `autotagger-rss-feed-item` (C6) dispatch through the classifier path
+// (`@agents/autotagger/dispatch-classifier.mts`), which calls the seeded `tagging` classifier over
+// OpenRouter/Noul via `createStructuredDecisionClient`, never through the shared `runToolLoop`
+// harness (`backend/agents/_shared/run-tool-loop.mts`) the pre-C6 autotagger used
+// (`openai-autotagger.mts`, no longer wired into dispatch). That harness is what records usage to
+// `ai_usage_records` and enforces the OpenAI daily spend cap on every iteration, regardless of
+// provider -- C6's direct dispatch calls neither `recordAgentResponseUsage`/`recordAiUsage` nor
+// `assertOpenAiSpendCapNotBreached`, so its OpenRouter/Noul spend is unrecorded and uncapped today;
+// it is not "tracked and capped separately" anywhere in this codebase. Plan #317
+// (vouchington#317) explicitly scopes this as "remove C6 from OpenAI-only spend gate", with no
+// replacement gate described -- this gap matches that stated scope, though it is a real reduction
+// in spend-cap coverage versus the pre-C6 tool loop. Whether C6 needs its own Noul/OpenRouter
+// spend cap is a follow-up decision, not one #219/#317 make. `story-post` is necessary but not
+// sufficient, the same shape as `chat`/`moderation-prompt` above: a non-force retry against a post
+// that already has `ai_summary_markdown` set only re-persists the existing summary to re-trigger
+// the downstream moderation/spam/embedding jobs (`updateStoryPostAgentResult`) -- it never calls
 // `callStoryPostAgent`. Blocking that recovery path on the cap would delay it until midnight even
 // though it cannot itself add to the day's spend. `core.mts`'s gate defers to
-// `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for
-// it, same as the autotagger case.
+// `wouldStoryPostCallOpenAI` (`backend/workers/ai-agents/processors/process-story-post.mts`) for it.
 export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   chat: true,
   'moderation-prompt': true,
@@ -105,8 +112,8 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'copyright-appeal-recommendation': true,
   'story-post': true,
   'story-clustering': true,
-  'autotagger-post': true,
-  'autotagger-rss-feed-item': true,
+  'autotagger-post': false,
+  'autotagger-rss-feed-item': false,
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,

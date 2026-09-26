@@ -185,6 +185,10 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'Claim lifecycle uses claimed_at / released_at; the only mutation is releasing a claim (writing released_at), so a generic updated_at is redundant.',
   ],
   [
+    'autotagger_receipt_attempts',
+    'Append-only attempt ledger: the only mutation writes exactly one of completed_at/failed_at, enforced by chk_autotagger_receipt_attempts__terminal_exclusive, so a generic updated_at is redundant.',
+  ],
+  [
     'ap_inbox_activities',
     'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
   ],

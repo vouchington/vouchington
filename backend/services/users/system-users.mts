@@ -4,7 +4,11 @@ import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { addUserRole } from './roles-permissions.mts'
-import { MODERATION_SYSTEM_USERNAME, RSS_FEED_AUTO_UPDATER_USERNAME } from './constants.mts'
+import {
+  AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
+  MODERATION_SYSTEM_USERNAME,
+  RSS_FEED_AUTO_UPDATER_USERNAME,
+} from './constants.mts'
 
 const systemUsers = new Map<string, BasicUser>()
 
@@ -121,5 +125,14 @@ export async function getRssFeedAutoUpdaterUserId(): Promise<string> {
 export async function getModerationSystemUserId(): Promise<string> {
   const user = await getSystemUserByUsername(MODERATION_SYSTEM_USERNAME)
   if (!user) throw new Error(`System user ${MODERATION_SYSTEM_USERNAME} not found`)
+  return user.id
+}
+
+// C6's shared actor for classifier-derived topic votes (backend/services/classifiers) -- a
+// dedicated system user distinct from the legacy 'autotagger' username, which keeps its own
+// agents row for C7's tool-loop residual path.
+export async function getAutotaggerClassifierSystemUserId(): Promise<string> {
+  const user = await getSystemUserByUsername(AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME)
+  if (!user) throw new Error(`System user ${AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME} not found`)
   return user.id
 }

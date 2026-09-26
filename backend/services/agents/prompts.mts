@@ -1,33 +1,6 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentPrompt, AgentModel, AgentModelProvider } from './types.mts'
-
-export async function getActiveAgentPromptByAgentId(agent_id: string): Promise<AgentPrompt | null> {
-  const { rows } = await read(sql`/* getActiveAgentPromptByAgentId */
-    SELECT
-      id,
-      prompt,
-      agent_id,
-      model_name,
-      model_provider,
-      created_at,
-      updated_at,
-      activated_at,
-      deactivated_at,
-      deleted_at
-    FROM agent_prompts
-    WHERE agent_id = ${agent_id}
-      AND activated_at IS NOT NULL
-      AND deactivated_at IS NULL
-      AND deleted_at IS NULL
-    ORDER BY activated_at DESC
-    LIMIT 1
-  `)
-
-  if (rows.length === 0) return null
-
-  return rows[0]
-}
 
 export async function createAgentPrompt(
   agent_id: string,

@@ -1,140 +1,83 @@
-import { it, expect, vi, beforeAll, beforeEach, describe } from 'vitest'
-import { runAutotaggerOnPost } from './run.mts'
-import type { Post } from '@services/posts/types'
-import { insertPostAutotaggingResult } from '@services/autotagger'
+import { createHash } from 'node:crypto'
+import { describe, expect, it } from 'vitest'
 import {
-  createTestUserDirect,
-  insertTestPost,
-  createRandomString,
-  setupTestAutotaggerAgent,
+  addDummyEmbeddingToPost,
+  createTestPost,
+  createTestTopic,
+  createTestUser,
+  makeNearbyEmbedding,
+  makeRandomEmbedding,
 } from '@voucha/test-helpers'
+import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
+import { createFakeStructuredDecisionClient } from '@voucha/test-helpers/agents/autotagger/fake-structured-decision-client'
+import { runAutotaggerOnPost } from './run.mts'
 
-// RSS feed item tests live in run-rss-feed-item.test.mts (split to stay under the per-file line
-// cap, and to mirror the run.mts / run-rss-feed-item.mts source split).
+// Eligibility gating (enabled, tier-zero max_topics) lives in the caller (processAutotaggerPost,
+// covered by process-autotagger.test.mts); this file only exercises runAutotaggerOnPost's own
+// candidate-search-then-dispatch logic.
 
-let testUserId: string
-let activePromptId: string
+async function addMatchingTopicEmbedding(topicId: string, embedding: number[]) {
+  const inputSha256 = createHash('sha256').update(topicId).digest()
+  await updateTopicEmbeddingData({ topicId, inputSha256, embedding, tokens: 10 })
+}
 
-describe('run', () => {
-  beforeAll(async () => {
-    const activePrompt = await setupTestAutotaggerAgent()
-    activePromptId = activePrompt.id
+describe('runAutotaggerOnPost', () => {
+  it('returns null without dispatching when max_topics is 0, even with a matching candidate available', async () => {
+    const user = await createTestUser()
+    const post = await createTestPost({ user })
+    const topic = await createTestTopic({ user })
+    const embedding = makeRandomEmbedding()
+    await addDummyEmbeddingToPost(post.id, { embedding })
+    await addMatchingTopicEmbedding(topic.id, makeNearbyEmbedding(embedding, 0.01))
+    const fake = createFakeStructuredDecisionClient()
 
-    const testUser = await createTestUserDirect()
-    testUserId = testUser!.id
-  }, 30_000)
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('runAutotaggerOnPost returns null if existing result found', async () => {
-    const random = createRandomString(12)
-    const postId = await insertTestPost({
-      title: 'Post with existing result',
-      slug: `test-post-existing-${random}`,
-      createdById: testUserId,
-      markdown: 'Some content',
-    })
-    await insertPostAutotaggingResult(postId, Buffer.alloc(32), activePromptId, [])
-
-    const post: Partial<Post> = {
-      id: postId,
-      title: 'Post with existing result',
-      markdown: 'Some content',
-    }
-    const result = await runAutotaggerOnPost(post as Post)
+    // searchTopicsByPostEmbedding clamps its limit up to 1 internally (by-post-embedding.mts's
+    // safeLimit), so without runAutotaggerOnPost's own `maxCandidates === 0` early return, this
+    // real, embedding-matching candidate would still be found and dispatched.
+    const result = await runAutotaggerOnPost(
+      post,
+      { max_topics: 0 },
+      { createClient: fake.createClient },
+    )
 
     expect(result).toBeNull()
+    expect(fake.decide).not.toHaveBeenCalled()
   })
 
-  it('runAutotaggerOnPost calls OpenAI when no existing result', async () => {
-    const callOpenAIAutotagger = vi.fn<VitestLooseMock>().mockResolvedValue({ topics_added: [] })
+  it('returns null when the post has no embedding to search candidates against', async () => {
+    const user = await createTestUser()
+    const post = await createTestPost({ user })
+    const fake = createFakeStructuredDecisionClient()
 
-    const random = createRandomString(12)
-    const postId = await insertTestPost({
-      title: 'Test Post',
-      slug: `test-post-openai-${random}`,
-      createdById: testUserId,
-      markdown: 'Content about something interesting',
-    })
+    const result = await runAutotaggerOnPost(
+      post,
+      { max_topics: 5 },
+      { createClient: fake.createClient },
+    )
 
-    const post: Partial<Post> = {
-      id: postId,
-      title: 'Test Post',
-      markdown: 'Content about something interesting',
-    }
-
-    const result = await runAutotaggerOnPost(post as Post, { callOpenAIAutotagger })
-
-    expect(result).not.toBeNull()
-    expect(result!.skipped).toBe(false)
-    expect(callOpenAIAutotagger).toHaveBeenCalled()
+    expect(result).toBeNull()
+    expect(fake.decide).not.toHaveBeenCalled()
   })
 
-  it('runAutotaggerOnPost handles errors gracefully', async () => {
-    const callOpenAIAutotagger = vi
-      .fn<VitestLooseMock>()
-      .mockRejectedValue(new Error('OpenAI API error'))
+  it('dispatches against embedding-similar topic candidates and returns the applied topic ids', async () => {
+    const user = await createTestUser()
+    const post = await createTestPost({ user })
+    const topic = await createTestTopic({ user })
 
-    const random = createRandomString(12)
-    const postId = await insertTestPost({
-      title: 'Test',
-      slug: `test-post-graceful-${random}`,
-      createdById: testUserId,
-      markdown: 'Content',
-    })
+    const embedding = makeRandomEmbedding()
+    await addDummyEmbeddingToPost(post.id, { embedding })
+    await addMatchingTopicEmbedding(topic.id, makeNearbyEmbedding(embedding, 0.01))
 
-    const post: Partial<Post> = { id: postId, title: 'Test', markdown: 'Content' }
+    const fake = createFakeStructuredDecisionClient({ [topic.id]: 0.95 })
+    const result = await runAutotaggerOnPost(
+      post,
+      { max_topics: 10 },
+      { createClient: fake.createClient },
+    )
 
-    const result = await runAutotaggerOnPost(post as Post, { callOpenAIAutotagger })
-
-    expect(result).not.toBeNull()
-    expect(result!.error).toBeDefined()
-    expect(result!.error).toContain('OpenAI API error')
-  })
-
-  it('runAutotaggerOnPost surfaces an error when the autotagger system user is missing', async () => {
-    const getSystemUserByUsername = vi.fn<VitestLooseMock>().mockResolvedValue(null)
-
-    const random = createRandomString(12)
-    const postId = await insertTestPost({
-      title: 'Test',
-      slug: `test-post-missing-system-user-${random}`,
-      createdById: testUserId,
-      markdown: 'Content',
-    })
-
-    const post: Partial<Post> = { id: postId, title: 'Test', markdown: 'Content' }
-
-    const result = await runAutotaggerOnPost(post as Post, { getSystemUserByUsername })
-
-    expect(getSystemUserByUsername).toHaveBeenCalledWith('autotagger')
-    expect(result).not.toBeNull()
-    expect(result!.error).toContain('Autotagger system user not found')
-  })
-
-  it('runAutotaggerOnPost rethrows OpenAI rate limit errors', async () => {
-    const callOpenAIAutotagger = vi
-      .fn<VitestLooseMock>()
-      .mockRejectedValue(new Error('Rate limit exceeded'))
-    const isOpenAIRateLimitError = vi.fn<VitestLooseMock>().mockReturnValue(true)
-
-    const random = createRandomString(12)
-    const postId = await insertTestPost({
-      title: 'Test',
-      slug: `test-post-ratelimit-${random}`,
-      createdById: testUserId,
-      markdown: 'Content',
-    })
-
-    const post: Partial<Post> = { id: postId, title: 'Test', markdown: 'Content' }
-
-    await expect(
-      runAutotaggerOnPost(post as Post, {
-        callOpenAIAutotagger,
-        isOpenAIRateLimitError,
-      }),
-    ).rejects.toThrow('Rate limit exceeded')
+    // .toContain, not exact equality: the shared, parallel-running test database can surface other
+    // concurrently seeded topics within embedding-similarity range of this post.
+    expect(fake.decide).toHaveBeenCalledTimes(1)
+    expect(result?.topics_added).toContain(topic.id)
   })
 })

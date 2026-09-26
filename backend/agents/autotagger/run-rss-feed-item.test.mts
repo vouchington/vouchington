@@ -1,284 +1,245 @@
-import { it, expect, vi, beforeAll, beforeEach, describe } from 'vitest'
-import { runAutotaggerOnRssFeedItem } from './run-rss-feed-item.mts'
-import type { ViewRssFeedItem } from '@services/rss-feed-items/types'
-import { insertRssFeedItemAutotaggingResult } from '@services/autotagger'
+import { createHash, randomUUID } from 'node:crypto'
+import { describe, expect, it, vi } from 'vitest'
 import {
-  insertTestRssFeedItem,
-  createRandomString,
-  setupTestAutotaggerAgent,
+  addCategoryToRssFeedItem,
+  addDummyEmbeddingToRssFeedItem,
+  createTestMembership,
   createTestTopic,
+  createTestUser,
+  followTopicById,
+  getRssFeedItemCategoryTopicRelationDeletedAt,
+  insertEntityRelation,
+  insertTestRssFeedItem,
+  makeNearbyEmbedding,
+  makeRandomEmbedding,
+  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
+import { setTestRssFeedDiscoverable } from '@voucha/test-helpers/entities/rss-feeds-discovery'
+import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
+import { createFakeStructuredDecisionClient } from '@voucha/test-helpers/agents/autotagger/fake-structured-decision-client'
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { addUrl } from '@services/urls/upsert'
-import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
-import { createTopicAliases } from '@services/topics/aliases'
+import { getRssFeedItemById } from '@services/rss-feed-items/get'
+import { isRssFeedItemFromDiscoverableSource } from '@services/rss-feed-items/discoverability'
+import { autotaggerPaidLimitsConfig } from '@services/autotagger'
+import {
+  StructuredDecisionError,
+  type createStructuredDecisionClient,
+  type StructuredDecisionClient,
+} from '@modules/structured-decisions'
+import { runAutotaggerOnRssFeedItem } from './run-rss-feed-item.mts'
 
-// Kill-switch / discoverability / collaborative-topic tests live in
-// run-rss-feed-item.part-2.test.mts (split to stay under the per-file line cap).
+// Kill-switch, discoverability gating, tiered max_topics, and the collaborative-topic pass are
+// this file's whole job -- see process-autotagger.part-2.test.mts's header, which mocks
+// runAutotaggerOnRssFeedItem entirely and defers this behavior here. The collaborative pass's own
+// selection/ranking logic (plus/pro pools, aliasing, soft-delete exclusion) is owned by
+// collaborative-topic-relations.test.mts; this file only proves gating and pass ordering, reusing
+// that file's fixture shape (a single paid follower following a single topic is enough signal).
+//
+// Every "classifier skipped" case also feed-maps a real candidate topic first: without that,
+// dispatch would never be attempted anyway (zero candidates), and the gate under test would not
+// be exercised at all.
 
-let activePromptId: string
-let testRssFeedId: string
+async function setupItem(discoverable: boolean): Promise<{ feedId: string; itemId: string }> {
+  // createTestRssFeed's real create path seeds both enablement and discoverability to TRUE
+  // synchronously (createInitialRssFeedStateChanges) -- insertTestRssFeedDirect does too (its
+  // underlying insertTestRssFeedWithUrlId inserts the same "initial state" rows), so there is no
+  // raw-insert fixture that starts non-discoverable. Flip it off explicitly instead.
+  const feed = await createTestRssFeed({})
+  if (!discoverable) await setTestRssFeedDiscoverable(feed.id, false)
+  const urlEntry = await addUrl(null, `https://run-rss-item-${randomUUID()}.example.com/item`)
+  const guid = `run-rss-item-${randomUUID()}`
+  const itemId = await insertTestRssFeedItem({
+    rssFeedId: feed.id,
+    urlId: urlEntry!.id,
+    guid,
+    itemData: { link: 'https://example.com', guid, title: `Run RSS item ${randomUUID()}` },
+    contentSha256: Buffer.alloc(32),
+  })
+  return { feedId: feed.id, itemId }
+}
+
+async function addPaidFollowerFollowingTopic(feedId: string, topicId: string): Promise<void> {
+  const user = await createTestUser()
+  await createTestMembership({ user_id: user.id, plan: 'plus' })
+  await insertEntityRelation('relation__user__follow__rss_feed', user.id, feedId)
+  await followTopicById(user.id, topicId)
+}
+
+// The item<->topic relation write inside applyCollaborativeTopicRelations is awaited directly
+// (only its vote-stats recompute is fire-and-forget), so this is deterministic: undefined means no
+// relation row exists at all (the pass never ran), null means one exists and is not soft-deleted.
+async function expectCollaborativeRelationApplied(
+  itemId: string,
+  topicId: string,
+  applied: boolean,
+): Promise<void> {
+  const deletedAt = await getRssFeedItemCategoryTopicRelationDeletedAt(itemId, topicId)
+  expect(deletedAt).toBe(applied ? null : undefined)
+}
+
+async function addMatchingTopicEmbedding(topicId: string, embedding: number[]): Promise<void> {
+  const inputSha256 = createHash('sha256').update(topicId).digest()
+  await updateTopicEmbeddingData({ topicId, inputSha256, embedding, tokens: 10 })
+}
 
 describe('runAutotaggerOnRssFeedItem', () => {
-  beforeAll(async () => {
-    const activePrompt = await setupTestAutotaggerAgent()
-    activePromptId = activePrompt.id
+  it('returns null and skips both passes when the enabled kill switch is off', async () => {
+    const { feedId, itemId } = await setupItem(true)
+    const collaborativeTopic = await createTestTopic({})
+    await addPaidFollowerFollowingTopic(feedId, collaborativeTopic.id)
+    const candidateTopic = await createTestTopic({})
+    await addCategoryToRssFeedItem(itemId, candidateTopic.id)
+    const item = (await getRssFeedItemById(itemId))!
+    const fake = createFakeStructuredDecisionClient()
 
-    const feed = await createTestRssFeed({})
-    testRssFeedId = feed.id
-  }, 30_000)
-
-  beforeEach(() => {
-    vi.clearAllMocks()
+    const restore = overrideDynamicConfigFieldsForTest(autotaggerPaidLimitsConfig, {
+      enabled: false,
+    })
+    try {
+      const result = await runAutotaggerOnRssFeedItem(item, { createClient: fake.createClient })
+      expect(result).toBeNull()
+      expect(fake.decide).not.toHaveBeenCalled()
+      await expectCollaborativeRelationApplied(itemId, collaborativeTopic.id, false)
+    } finally {
+      restore()
+    }
   })
 
-  it('works with RSS feed items', async () => {
-    const callOpenAIAutotagger = vi.fn<VitestLooseMock>().mockResolvedValue({ topics_added: [] })
+  it('applies the collaborative pass but skips the classifier for a non-discoverable item', async () => {
+    const { feedId, itemId } = await setupItem(false)
+    expect(await isRssFeedItemFromDiscoverableSource(itemId)).toBe(false)
+    const collaborativeTopic = await createTestTopic({})
+    await addPaidFollowerFollowingTopic(feedId, collaborativeTopic.id)
+    const candidateTopic = await createTestTopic({})
+    await addCategoryToRssFeedItem(itemId, candidateTopic.id)
+    const item = (await getRssFeedItemById(itemId))!
+    const fake = createFakeStructuredDecisionClient()
 
-    const itemGuid = `test-item-${createRandomString(12)}`
-    const urlEntry = await addUrl(
-      null,
-      `https://autotag-test-${createRandomString(8)}.example.com/item`,
-    )
-    const insertedItemId = await insertTestRssFeedItem({
-      rssFeedId: testRssFeedId,
-      urlId: urlEntry!.id,
-      guid: itemGuid,
-      itemData: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
-      contentSha256: Buffer.alloc(32),
-    })
-    const item: Partial<ViewRssFeedItem> = {
-      id: insertedItemId,
-      guid: itemGuid,
-      data: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
-    }
-
-    const result = await runAutotaggerOnRssFeedItem(item as ViewRssFeedItem, {
-      callOpenAIAutotagger,
-      searchSeededTopics: vi.fn<VitestLooseMock>().mockResolvedValue([]),
-    })
-
-    expect(result).not.toBeNull()
-    expect(result!.skipped).toBe(false)
-    expect(callOpenAIAutotagger).toHaveBeenCalledWith(
-      expect.any(Object),
-      'rss_feed_item',
-      insertedItemId,
-      expect.stringContaining('RSS Item Title'),
-      expect.objectContaining({
-        conversationId: expect.any(String),
-        conversationMessageId: expect.any(String),
-        instructions: 'Test prompt',
-        seeded_topics: [],
-      }),
-    )
-  })
-
-  it('returns null if existing result found', async () => {
-    const itemGuid = `test-item-existing-${createRandomString(12)}`
-    const urlEntry = await addUrl(
-      null,
-      `https://autotag-test-${createRandomString(8)}.example.com/item`,
-    )
-    const itemId = await insertTestRssFeedItem({
-      rssFeedId: testRssFeedId,
-      urlId: urlEntry!.id,
-      guid: itemGuid,
-      itemData: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'Same Title',
-        content: 'Same content',
-      },
-      contentSha256: Buffer.alloc(32),
-    })
-    await insertRssFeedItemAutotaggingResult(itemId, Buffer.alloc(32), activePromptId, [])
-
-    const item: Partial<ViewRssFeedItem> = {
-      id: itemId,
-      guid: itemGuid,
-      data: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'Same Title',
-        content: 'Same content',
-      },
-    }
-
-    const result = await runAutotaggerOnRssFeedItem(item as ViewRssFeedItem)
+    const result = await runAutotaggerOnRssFeedItem(item, { createClient: fake.createClient })
 
     expect(result).toBeNull()
+    expect(fake.decide).not.toHaveBeenCalled()
+    await expectCollaborativeRelationApplied(itemId, collaborativeTopic.id, true)
   })
 
-  it('merges feed-mapped and embedding-search topics into seeded_topics via the real search', async () => {
-    const callOpenAIAutotagger = vi.fn<VitestLooseMock>().mockResolvedValue({ topics_added: [] })
+  it('skips the classifier but still applies the collaborative pass when the discoverable tier budget is zero', async () => {
+    const { feedId, itemId } = await setupItem(true)
+    const collaborativeTopic = await createTestTopic({})
+    await addPaidFollowerFollowingTopic(feedId, collaborativeTopic.id)
+    const candidateTopic = await createTestTopic({})
+    await addCategoryToRssFeedItem(itemId, candidateTopic.id)
 
-    const topic = await createTestTopic({
-      name: `Real Search Topic ${createRandomString(8)}`,
-      slug: `real-search-topic-${createRandomString(8)}`,
+    // searchTopicsByRssFeedItemEmbedding clamps its limit up to 1 internally
+    // (by-rss-feed-item-embedding.mts's safeLimit), so without this file's own
+    // `rss_discoverable_llm_max_topics === 0` early return, this real, embedding-matching candidate
+    // would still be found and dispatched even though the feed-mapped search (a plain SQL LIMIT 0)
+    // legitimately returns nothing on its own.
+    const embedding = makeRandomEmbedding()
+    await addDummyEmbeddingToRssFeedItem(itemId, { embedding })
+    const embeddingMatchTopic = await createTestTopic({})
+    await addMatchingTopicEmbedding(embeddingMatchTopic.id, makeNearbyEmbedding(embedding, 0.01))
+
+    const item = (await getRssFeedItemById(itemId))!
+    const fake = createFakeStructuredDecisionClient()
+
+    const restore = overrideDynamicConfigFieldsForTest(autotaggerPaidLimitsConfig, {
+      rss_discoverable_llm_max_topics: 0,
     })
-    const categoryText = `real-search-cat-${createRandomString(8)}`
-    await createTopicAliases(topic.id, [categoryText])
-
-    const itemGuid = `real-search-item-${createRandomString(12)}`
-    const urlEntry = await addUrl(
-      null,
-      `https://real-search-test-${createRandomString(8)}.example.com/item`,
-    )
-    const insertedItemId = await insertTestRssFeedItem({
-      rssFeedId: testRssFeedId,
-      urlId: urlEntry!.id,
-      guid: itemGuid,
-      itemData: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
-      contentSha256: Buffer.alloc(32),
-    })
-    await upsertRssFeedItemCategories([
-      { rss_feed_item_id: insertedItemId, categories: [categoryText] },
-    ])
-
-    const item: Partial<ViewRssFeedItem> = {
-      id: insertedItemId,
-      guid: itemGuid,
-      data: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
+    try {
+      const result = await runAutotaggerOnRssFeedItem(item, { createClient: fake.createClient })
+      expect(result).toBeNull()
+      expect(fake.decide).not.toHaveBeenCalled()
+      await expectCollaborativeRelationApplied(itemId, collaborativeTopic.id, true)
+    } finally {
+      restore()
     }
-
-    // No searchSeededTopics override -- exercises the real dispatch.searchSeededTopics closure
-    // (feed-mapped + embedding-search merge/dedup/cap), not a test double.
-    await runAutotaggerOnRssFeedItem(item as ViewRssFeedItem, { callOpenAIAutotagger })
-
-    expect(callOpenAIAutotagger).toHaveBeenCalledWith(
-      expect.any(Object),
-      'rss_feed_item',
-      insertedItemId,
-      expect.any(String),
-      expect.objectContaining({
-        seeded_topics: expect.arrayContaining([expect.objectContaining({ id: topic.id })]),
-      }),
-    )
   })
 
-  it('returns an error result when the LLM call fails', async () => {
-    const callOpenAIAutotagger = vi
-      .fn<VitestLooseMock>()
-      .mockRejectedValue(new Error('OpenAI API error'))
+  it('still applies the collaborative pass when classifier dispatch rejects', async () => {
+    const { feedId, itemId } = await setupItem(true)
+    const collaborativeTopic = await createTestTopic({})
+    await addPaidFollowerFollowingTopic(feedId, collaborativeTopic.id)
+    const candidateTopic = await createTestTopic({})
+    await addCategoryToRssFeedItem(itemId, candidateTopic.id)
+    const item = (await getRssFeedItemById(itemId))!
 
-    const itemGuid = `error-item-${createRandomString(12)}`
-    const urlEntry = await addUrl(
-      null,
-      `https://error-test-${createRandomString(8)}.example.com/item`,
-    )
-    const insertedItemId = await insertTestRssFeedItem({
-      rssFeedId: testRssFeedId,
-      urlId: urlEntry!.id,
-      guid: itemGuid,
-      itemData: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
-      contentSha256: Buffer.alloc(32),
+    const throwingDecide = vi.fn<StructuredDecisionClient['decide']>(async () => {
+      throw new StructuredDecisionError('provider-error', 'simulated provider outage')
     })
+    const throwingCreateClient = vi.fn<typeof createStructuredDecisionClient>(() => ({
+      decide: throwingDecide,
+    }))
 
-    const item: Partial<ViewRssFeedItem> = {
-      id: insertedItemId,
-      guid: itemGuid,
-      data: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
-    }
-
-    const result = await runAutotaggerOnRssFeedItem(item as ViewRssFeedItem, {
-      callOpenAIAutotagger,
-      searchSeededTopics: vi.fn<VitestLooseMock>().mockResolvedValue([]),
-    })
-
-    expect(result).not.toBeNull()
-    expect(result!.error).toContain('OpenAI API error')
-    expect(result!.rss_feed_item_id).toBe(insertedItemId)
-    expect(result!.topics_added).toEqual([])
+    await expect(
+      runAutotaggerOnRssFeedItem(item, { createClient: throwingCreateClient }),
+    ).rejects.toThrow(StructuredDecisionError)
+    // The collaborative pass runs first and unconditionally, independent of the classifier's own
+    // outcome -- this is the invariant run-rss-feed-item.mts's docstring gives for pass ordering.
+    await expectCollaborativeRelationApplied(itemId, collaborativeTopic.id, true)
   })
 
-  it('passes feed-mapped topics as seeded_topics', async () => {
-    const callOpenAIAutotagger = vi.fn<VitestLooseMock>().mockResolvedValue({ topics_added: [] })
+  it('dispatches only the feed-mapped topics first when they already fill the tier cap', async () => {
+    const { itemId } = await setupItem(true)
+    const mappedFirst = await createTestTopic({})
+    const mappedSecond = await createTestTopic({})
+    // Distinct category texts: rss_feed_item_categories' primary key is
+    // (rss_feed_item_id, category_text), so reusing the helper's default text for a second
+    // category on the same item would silently no-op the second insert (ON CONFLICT DO NOTHING).
+    await addCategoryToRssFeedItem(itemId, mappedFirst.id, 'mapped-first')
+    await addCategoryToRssFeedItem(itemId, mappedSecond.id, 'mapped-second')
 
-    const topic = await createTestTopic({
-      name: `Dedup Test Topic ${createRandomString(8)}`,
-      slug: `dedup-topic-${createRandomString(8)}`,
+    const embedding = makeRandomEmbedding()
+    await addDummyEmbeddingToRssFeedItem(itemId, { embedding })
+    const embeddingOnly = await createTestTopic({})
+    await addMatchingTopicEmbedding(embeddingOnly.id, makeNearbyEmbedding(embedding, 0.01))
+
+    const item = (await getRssFeedItemById(itemId))!
+    const fake = createFakeStructuredDecisionClient()
+
+    const restore = overrideDynamicConfigFieldsForTest(autotaggerPaidLimitsConfig, {
+      rss_discoverable_llm_max_topics: 2,
     })
-    const categoryText = `dedup-cat-${createRandomString(8)}`
-    await createTopicAliases(topic.id, [categoryText])
+    try {
+      await runAutotaggerOnRssFeedItem(item, { createClient: fake.createClient })
 
-    const itemGuid = `dedup-item-${createRandomString(12)}`
-    const urlEntry = await addUrl(
-      null,
-      `https://dedup-test-${createRandomString(8)}.example.com/item`,
-    )
-    const insertedItemId = await insertTestRssFeedItem({
-      rssFeedId: testRssFeedId,
-      urlId: urlEntry!.id,
-      guid: itemGuid,
-      itemData: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
-      contentSha256: Buffer.alloc(32),
-    })
-    await upsertRssFeedItemCategories([
-      { rss_feed_item_id: insertedItemId, categories: [categoryText] },
-    ])
-
-    const item: Partial<ViewRssFeedItem> = {
-      id: insertedItemId,
-      guid: itemGuid,
-      data: {
-        link: 'https://example.com',
-        guid: itemGuid,
-        title: 'RSS Item Title',
-        content: 'RSS item content',
-      },
+      expect(fake.decide).toHaveBeenCalledTimes(1)
+      const request = fake.decide.mock.calls[0]![0]
+      const dispatchedIds = request.questions.map(question => question.id)
+      expect(new Set(dispatchedIds)).toEqual(new Set([mappedFirst.id, mappedSecond.id]))
+      expect(dispatchedIds).not.toContain(embeddingOnly.id)
+    } finally {
+      restore()
     }
+  })
 
-    await runAutotaggerOnRssFeedItem(item as ViewRssFeedItem, {
-      callOpenAIAutotagger,
-      searchSeededTopics: vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue([{ id: topic.id, name: topic.name }]),
+  it('deduplicates a topic that is both feed-mapped and embedding-similar', async () => {
+    const { itemId } = await setupItem(true)
+    const both = await createTestTopic({})
+    await addCategoryToRssFeedItem(itemId, both.id)
+
+    const embedding = makeRandomEmbedding()
+    await addDummyEmbeddingToRssFeedItem(itemId, { embedding })
+    await addMatchingTopicEmbedding(both.id, makeNearbyEmbedding(embedding, 0.01))
+    const embeddingOnly = await createTestTopic({})
+    await addMatchingTopicEmbedding(embeddingOnly.id, makeNearbyEmbedding(embedding, 0.01))
+
+    const item = (await getRssFeedItemById(itemId))!
+    const fake = createFakeStructuredDecisionClient()
+
+    const restore = overrideDynamicConfigFieldsForTest(autotaggerPaidLimitsConfig, {
+      rss_discoverable_llm_max_topics: 3,
     })
+    try {
+      await runAutotaggerOnRssFeedItem(item, { createClient: fake.createClient })
 
-    expect(callOpenAIAutotagger).toHaveBeenCalledWith(
-      expect.any(Object),
-      'rss_feed_item',
-      insertedItemId,
-      expect.any(String),
-      expect.objectContaining({
-        seeded_topics: expect.arrayContaining([expect.objectContaining({ id: topic.id })]),
-      }),
-    )
+      expect(fake.decide).toHaveBeenCalledTimes(1)
+      const request = fake.decide.mock.calls[0]![0]
+      const dispatchedIds = request.questions.map(question => question.id)
+      expect(dispatchedIds).toHaveLength(2)
+      expect(new Set(dispatchedIds)).toEqual(new Set([both.id, embeddingOnly.id]))
+    } finally {
+      restore()
+    }
   })
 })

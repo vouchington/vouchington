@@ -20,9 +20,8 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@services/agents": "workspace:^",
-    "@services/users": "workspace:^",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "uuid": "^14.0.2"
   },
   "devDependencies": {}
 }

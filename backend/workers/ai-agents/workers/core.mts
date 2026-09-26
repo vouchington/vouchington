@@ -4,7 +4,6 @@ import onError, { recordOpenAiSpendCapBreach } from '@modules/on-error'
 import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
-import { wouldAutotagRssFeedItemCallOpenAI } from '@agents/autotagger'
 import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
 import { delayForOpenAiSpendCap } from '../processors/spend-cap-delay.mts'
 import {
@@ -135,12 +134,12 @@ function jobProducesOpenAiSpend(job: Job<AIAgentJobData>): boolean {
 }
 
 // DB predicates run only after the cheap static filter and an active breach, so spend-free
-// autotagger/story-post retries do not pay a round trip on every dispatch.
+// story-post retries do not pay a round trip on every dispatch. Autotagger jobs (post and RSS feed
+// item) no longer reach this function at all: they dispatch through the C6 classifier path
+// (OpenRouter/Noul, `@agents/autotagger/dispatch-classifier.mts`), never OpenAI, so
+// `AI_AGENT_JOB_PRODUCES_SPEND` marks both `false` and `jobProducesOpenAiSpend` short-circuits
+// before this is ever called for them.
 async function jobWouldIncurOpenAiSpend(job: Job<AIAgentJobData>): Promise<boolean> {
-  if (job.name === 'autotagger-rss-feed-item') {
-    const rssData = job.data as import('@queues/ai-agents/types').AutotaggerRssFeedItemJobData
-    return wouldAutotagRssFeedItemCallOpenAI(rssData.rss_feed_item_id)
-  }
   if (job.name === 'story-post') {
     const storyPostData = job.data as import('@queues/ai-agents/types').StoryPostJobData
     return wouldStoryPostCallOpenAI(storyPostData.post_id, storyPostData.force ?? false)

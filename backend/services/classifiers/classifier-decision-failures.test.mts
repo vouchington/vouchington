@@ -40,7 +40,7 @@ describe('persistClassifierDecision failures', () => {
     })
   })
 
-  it('rejects a classifier candidate kind that does not match the subject family', async () => {
+  it('rejects a story classifier candidate kind on a post subject', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
     const batchId = uuidv7()
@@ -48,20 +48,20 @@ describe('persistClassifierDecision failures', () => {
     await expect(
       persistClassifierDecision({
         batchId,
-        classifierId: fixture.classifierId,
-        promptVersionId: fixture.promptVersionId,
-        subject: { postId: null, rssFeedItemId: fixture.rssFeedItemId },
+        classifierId: fixture.storyClassifierId,
+        promptVersionId: fixture.storyPromptVersionId,
+        subject: { postId: fixture.postId, rssFeedItemId: null },
         scope: { scopeCategory: 'global', scopeCommunityId: null },
         calls: [
           {
             shardOrdinal: 0,
             results: [
               {
-                candidateKind: 'topic',
-                topicId: fixture.topicId,
+                candidateKind: 'story',
+                storyId: fixture.storyId,
                 storedCandidateId: null,
                 probability: 0.5,
-                rawResponse: { type: 'noul', probability: 0.5 },
+                rawResponse: { type: 'choice', probabilities: { story: 0.5 } },
               },
             ],
           },
@@ -71,7 +71,7 @@ describe('persistClassifierDecision failures', () => {
     await expect(fixture.getDecisionPersistenceFacts(batchId)).resolves.toMatchObject({
       batches: 0,
       calls: 0,
-      topic_results: 0,
+      story_results: 0,
     })
   })
 })
