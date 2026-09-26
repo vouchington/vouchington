@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { vi } from 'vitest'
 
+import { Button } from '@/components/ui/button'
 import {
   adminCreateCuratedAside,
   adminDeleteCuratedAside,
@@ -71,7 +72,7 @@ vi.mock(
         disabled?: boolean
         onSelect: (item: { id: string; label: string }) => void
       }) => (
-        <button
+        <Button
           type='button'
           disabled={disabled}
           onClick={() =>
@@ -82,7 +83,7 @@ vi.mock(
           }
         >
           Select {asideType}
-        </button>
+        </Button>
       ),
     }) as unknown as typeof import('@/components/admin/curated-asides/curated-aside-entity-autocomplete'),
 )
@@ -117,14 +118,14 @@ vi.mock(import('@/components/ui/tabs'), () => {
       value: string
       asChild?: boolean
     }) => (
-      <button
+      <Button
         aria-selected={selectedValue === value}
         onClick={() => selectValue(value)}
         role='tab'
         type='button'
       >
         {children}
-      </button>
+      </Button>
     ),
   } as unknown as typeof import('@/components/ui/tabs')
 })
