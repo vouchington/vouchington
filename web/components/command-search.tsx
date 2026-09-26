@@ -6,7 +6,7 @@
  * page shortcut autocomplete, and admin page shortcuts.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CommandDialog, CommandInput, CommandList } from '@/components/ui/command'
 import {
@@ -45,6 +45,13 @@ export function CommandSearch({
   const featureFlags = useFeatureFlags()
   const tabsRef = useRef<HTMLFieldSetElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const setInputNode = useCallback(
+    (node: HTMLInputElement | null) => {
+      inputRef.current = node
+      if (node && open) node.focus()
+    },
+    [open],
+  )
 
   const searchTabs = getSearchTabs(featureFlags)
 
@@ -68,6 +75,7 @@ export function CommandSearch({
   }, [open])
 
   const matchedShortcuts = getMatchingShortcuts(t, query, isAdmin, isAuthenticated, featureFlags)
+  const showResults = hasVisibleSearchResults(activeTab, results, matchedShortcuts.length)
 
   useEffect(() => {
     if (!searchTabs.some(tab => tab.value === activeTab)) {
@@ -144,7 +152,8 @@ export function CommandSearch({
     >
       <div>
         <CommandInput
-          ref={inputRef}
+          key={showResults ? 'results' : 'empty'}
+          ref={setInputNode}
           placeholder={t('extracted.components.commandSearch.search_7f553822')}
           data-pw='search-input'
           value={query}
@@ -157,7 +166,7 @@ export function CommandSearch({
           tabsRef={tabsRef}
           tabs={searchTabs}
         />
-        {hasVisibleSearchResults(activeTab, results, matchedShortcuts.length) ? (
+        {showResults ? (
           <CommandList>
             <ResultGroups
               activeTab={activeTab}

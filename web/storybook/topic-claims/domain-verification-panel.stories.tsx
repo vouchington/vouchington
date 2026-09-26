@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DomainVerificationPanel } from '@/components/topic-claims/domain-verification-panel'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { now } from '@/storybook/entities/fixtures/shared'
 import { topics } from '@/storybook/entities/fixtures/topics'
@@ -34,6 +38,10 @@ const claim = {
 
 const meta = {
   title: 'Topic Claims/Domain Verification Panel',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
