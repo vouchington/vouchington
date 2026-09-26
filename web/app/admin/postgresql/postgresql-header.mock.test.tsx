@@ -32,20 +32,20 @@ vi.mock(
 
 vi.mock(import('lucide-react'), () => mockLucideReact({ Loader2: () => <span>loading</span> }))
 
-import { ValkeyHeader } from './valkey-header'
+import { PostgreSQLHeader } from './postgresql-header'
 
-describe('ValkeyHeader', () => {
-  it('renders the valkey heading through the shared admin page header', () => {
+describe('PostgreSQLHeader', () => {
+  it('renders the postgresql heading through the shared admin page header', () => {
     render(
-      <ValkeyHeader
+      <PostgreSQLHeader
         loadData={vi.fn<() => void>()}
         loading={false}
       />,
     )
-    const heading = screen.getByRole('heading', { level: 1, name: 'Valkey' })
+    const heading = screen.getByRole('heading', { level: 1, name: 'PostgreSQL' })
     expect(heading).toHaveClass('text-xl', 'font-semibold', 'sm:text-2xl')
     expect(heading).not.toHaveClass('font-bold')
-    expect(screen.getByText('Bloom filter rebuilds and cache management')).toHaveClass(
+    expect(screen.getByText('Database migrations and management')).toHaveClass(
       'mt-1',
       'text-sm',
       'text-muted-foreground',
@@ -55,7 +55,7 @@ describe('ValkeyHeader', () => {
 
   it('renders the refresh button in loading state', () => {
     render(
-      <ValkeyHeader
+      <PostgreSQLHeader
         loadData={vi.fn<() => void>()}
         loading
       />,

@@ -1,9 +1,9 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
-import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@/components/ui/button'
+import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 const POSTGRESQL_BREADCRUMBS = buildBreadcrumbsForPath('/admin/postgresql', {
@@ -21,34 +21,26 @@ export function PostgreSQLHeader({
 }) {
   const t = useTranslations()
   return (
-    <>
+    <div className='mb-8 space-y-4'>
       <Breadcrumbs items={POSTGRESQL_BREADCRUMBS} />
-      <div className='flex justify-between items-center mb-8'>
-        <div>
-          <h1
-            data-pw='postgresql-heading'
-            className='text-2xl font-bold text-foreground'
-          >
-            {t('extracted.postgresql.postgresqlHeader.postgresql_cc52d032')}
-          </h1>
-          <p className='text-muted-foreground mt-2'>
-            {t('extracted.postgresql.postgresqlHeader.databaseMigrationsAndManagement_61e05d66')}
-          </p>
-        </div>
+      <AdminPageHeader
+        dataPw='postgresql-heading'
+        description={t(
+          'extracted.postgresql.postgresqlHeader.databaseMigrationsAndManagement_61e05d66',
+        )}
+        title={t('extracted.postgresql.postgresqlHeader.postgresql_cc52d032')}
+      >
         <Button
-          onClick={() => loadData()}
           disabled={loading}
+          loading={loading}
+          onClick={loadData}
+          size='touch'
         >
-          {loading ? (
-            <span className='flex items-center gap-2'>
-              <Loader2 className='w-4 h-4 animate-spin' />
-              {t('extracted.postgresql.postgresqlHeader.refreshing_69d2daed')}
-            </span>
-          ) : (
-            t('extracted.postgresql.postgresqlHeader.refresh_0e916101')
-          )}
+          {loading
+            ? t('extracted.postgresql.postgresqlHeader.refreshing_69d2daed')
+            : t('extracted.postgresql.postgresqlHeader.refresh_0e916101')}
         </Button>
-      </div>
-    </>
+      </AdminPageHeader>
+    </div>
   )
 }

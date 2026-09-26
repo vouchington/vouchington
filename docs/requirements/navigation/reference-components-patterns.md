@@ -225,7 +225,7 @@ Use the shared admin layout primitives for admin list pages:
 - `AdminTableShell` for the card/table frame and horizontal overflow wrapper.
 - `AdminPagination` for Previous/Next controls.
 
-These primitives keep admin pages visually consistent and preserve mobile touch targets while allowing compact desktop density.
+These primitives keep admin pages visually consistent and preserve mobile touch targets while allowing compact desktop density. Operational admin pages (`/admin/valkey`, `/admin/postgresql`, and `/admin/queues`) compose `AdminPageHeader` for the same title, description, and action row. Do not recreate that cluster with a local `text-2xl font-bold` heading.
 
 Use `Table` components for admin data displays (hostnames, URLs, crawlers) when a page is already on the shadcn table path; otherwise keep legacy tables inside `AdminTableShell` until migrated.
 
