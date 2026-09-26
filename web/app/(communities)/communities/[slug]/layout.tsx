@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getCommunity, getCommunityListItemCounts, getCommunityMembers } from '@/lib/api/server'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
+import { CommunityAboutCopy } from '@/components/communities/community-about-copy'
 import { CommunityHeader } from '@/components/communities/community-header'
 import { CommunityModeratorsAside } from '@/components/communities/community-moderators-aside'
 import { CommunityNav } from '@/components/communities/community-nav'
@@ -22,7 +23,11 @@ interface LayoutProps {
 }
 
 interface AsideProps {
-  community: { markdown?: string | null }
+  community: {
+    markdown?: string | null
+    default_language?: string | null
+    lingua_rs_detected_language?: string | null
+  }
   community_metrics?: { member_count: number; post_count: number } | null
   owners: Awaited<ReturnType<typeof getCommunityMembers>> | null
   moderators: Awaited<ReturnType<typeof getCommunityMembers>> | null
@@ -46,13 +51,14 @@ async function CommunityAside({
         <h2 className='mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground'>
           {t('extracted.slug.layout.about_4efca0d1')}
         </h2>
-        {community.markdown ? (
-          <p className='text-sm'>{community.markdown}</p>
-        ) : (
-          <p className='text-sm text-muted-foreground'>
-            {t('extracted.slug.layout.noDescriptionYet_6d962a3d')}
-          </p>
-        )}
+        <CommunityAboutCopy
+          markdown={community.markdown}
+          defaultLanguage={community.default_language}
+          detectedLanguage={community.lingua_rs_detected_language}
+          className='text-sm'
+          emptyClassName='text-sm text-muted-foreground'
+          emptyLabel={t('extracted.slug.layout.noDescriptionYet_6d962a3d')}
+        />
         {community_metrics && (
           <div className='mt-4 space-y-1 text-sm'>
             <div className='flex justify-between'>

@@ -320,6 +320,9 @@ key) across every consumer at once, not just the catalogs.
 - Plain post titles and reduced post projections use `PostContentText`; it resolves declared
   language before detection and leaves blank-content UI fallbacks unmarked. Rich post content uses
   `MarkdownContent` with the same resolved language.
+- Community about text uses `CommunityAboutCopy` on the community card and the community about
+  aside. It resolves `default_language` before `lingua_rs_detected_language` and sets `lang`/`dir`
+  on that paragraph. The aside's empty-description label is UI copy and stays unmarked.
 - APIs that project post titles or markdown retain nullable `declared_language` and
   `lingua_rs_detected_language`; shared API fixtures stage that contract before the linked native
   client change. Swift and .NET apply language and direction at the content leaf.

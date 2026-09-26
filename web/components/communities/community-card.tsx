@@ -9,6 +9,7 @@ import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import { communityHref } from '@/lib/links/entity-href'
 import type { Community, CommunityMember, CommunityMetrics } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { CommunityAboutCopy } from './community-about-copy'
 import type JoinButtonComponent from './join-button'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
@@ -17,7 +18,14 @@ const JoinButton = dynamic<Parameters<typeof JoinButtonComponent>[0]>(() => impo
 interface CommunityCardProps {
   community: Pick<
     Community,
-    'slug' | 'name' | 'visibility' | 'markdown' | 'profile_image_id' | 'profile_image_placement'
+    | 'slug'
+    | 'name'
+    | 'visibility'
+    | 'markdown'
+    | 'default_language'
+    | 'lingua_rs_detected_language'
+    | 'profile_image_id'
+    | 'profile_image_placement'
   >
   metrics?: Pick<CommunityMetrics, 'member_count' | 'post_count' | 'list_item_count'>
   membership?: CommunityMember | null
@@ -76,9 +84,12 @@ export function CommunityCard({
               </Badge>
             )}
           </div>
-          {community.markdown && (
-            <p className='mt-1 line-clamp-2 text-sm text-muted-foreground'>{community.markdown}</p>
-          )}
+          <CommunityAboutCopy
+            markdown={community.markdown}
+            defaultLanguage={community.default_language}
+            detectedLanguage={community.lingua_rs_detected_language}
+            className='mt-1 line-clamp-2 text-sm text-muted-foreground'
+          />
           {metricsParts.length > 0 && (
             <p className='mt-1 text-sm text-muted-foreground'>{metricsParts.join(' · ')}</p>
           )}

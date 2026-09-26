@@ -210,4 +210,55 @@ describe('CommunityCard', () => {
     )
     expect(screen.queryByTestId('mock-join-button')).toBeNull()
   })
+
+  it('marks the description with the declared community language before detection', () => {
+    render(
+      <CommunityCard
+        community={{
+          ...baseCommunity,
+          markdown: 'وصف المجتمع',
+          default_language: 'ar',
+          lingua_rs_detected_language: 'en',
+        }}
+      />,
+    )
+
+    const description = screen.getByText('وصف المجتمع')
+    expect(description).toHaveAttribute('lang', 'ar')
+    expect(description).toHaveAttribute('dir', 'rtl')
+  })
+
+  it('marks the description with the detected language when no default is set', () => {
+    render(
+      <CommunityCard
+        community={{
+          ...baseCommunity,
+          markdown: 'Description en francais',
+          default_language: null,
+          lingua_rs_detected_language: 'fr',
+        }}
+      />,
+    )
+
+    const description = screen.getByText('Description en francais')
+    expect(description).toHaveAttribute('lang', 'fr')
+    expect(description).toHaveAttribute('dir', 'ltr')
+  })
+
+  it('keeps an unknown-language description outside the UI locale', () => {
+    render(
+      <CommunityCard
+        community={{
+          ...baseCommunity,
+          markdown: 'Unknown language description',
+          default_language: 'und',
+          lingua_rs_detected_language: null,
+        }}
+      />,
+    )
+
+    const description = screen.getByText('Unknown language description')
+    expect(description).not.toHaveAttribute('lang')
+    expect(description).toHaveAttribute('dir', 'auto')
+  })
 })
