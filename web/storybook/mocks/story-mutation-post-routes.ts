@@ -8,6 +8,7 @@ import {
   modNote,
   communityAgentPrompt,
   purchaseIntent,
+  storyClaimMutation,
   storyMutationAt,
   storyText,
 } from './story-mutation-bodies'
@@ -114,7 +115,7 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint.endsWith('/members')) return {}
   if (endpoint.endsWith('/modmail')) return { thread: { id: 'modmail-thread-story' } }
   if (endpoint.endsWith('/mod-notes')) return modNote(body)
-  return undefined
+  return storyClaimMutation(endpoint, body)
 }
 
 function followerActionPost(endpoint: string): unknown | undefined {
