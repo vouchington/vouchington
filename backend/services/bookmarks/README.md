@@ -13,6 +13,13 @@ User bookmark management with upsert/get operations, count aggregations, and blo
 - `addBookmarkBloomEntries(userId, relationTableName, objectIds)` — adds bookmark entries to the bloom filter
 - `deleteUserBookmarkBloomFilter(userId)` — removes all bloom filter entries for a user
 
+## Query invariant
+
+Single-relation and multi-relation reads share one root-annotated SQL statement, including the
+bloom-filter narrowed path. Only validated relation metadata supplies table/predicate names; user
+and object IDs remain parameters. The annotation belongs before the assembled `UNION ALL`, so
+development runtime enforcement and query telemetry identify the complete statement.
+
 ## Related
 
 - Parent: [../CLAUDE.md](../CLAUDE.md)
