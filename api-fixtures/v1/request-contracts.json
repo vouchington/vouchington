@@ -5210,10 +5210,24 @@
           "type": "string"
         },
         "uiLocale": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "ui_locale": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "type": "object"
@@ -8155,6 +8169,152 @@
     "MessageDirection": {
       "enum": ["inbound", "outbound"],
       "type": "string"
+    },
+    "MfaVerificationResponseBody": {
+      "additionalProperties": false,
+      "properties": {
+        "dt": {
+          "additionalProperties": false,
+          "properties": {
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "dc": {
+                  "const": "attested"
+                },
+                "did": {
+                  "type": "string"
+                }
+              },
+              "required": ["did"],
+              "type": "object"
+            },
+            "token": {
+              "type": "string"
+            }
+          },
+          "required": ["payload", "token"],
+          "type": "object"
+        },
+        "session": {
+          "additionalProperties": false,
+          "properties": {
+            "did": {
+              "type": "string"
+            },
+            "mpl": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "rca": {
+              "type": "number"
+            },
+            "rol": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "sca": {
+              "type": "number"
+            },
+            "sid": {
+              "type": "string"
+            },
+            "tt": {
+              "type": "number"
+            },
+            "uid": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["did", "sid", "uid"],
+          "type": "object"
+        },
+        "st": {
+          "additionalProperties": false,
+          "properties": {
+            "payload": {
+              "additionalProperties": false,
+              "properties": {
+                "did": {
+                  "type": "string"
+                },
+                "mpl": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "rca": {
+                  "type": "number"
+                },
+                "rol": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "sca": {
+                  "type": "number"
+                },
+                "sid": {
+                  "type": "string"
+                },
+                "tt": {
+                  "type": "number"
+                },
+                "uid": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": ["did", "sid", "uid"],
+              "type": "object"
+            },
+            "token": {
+              "type": "string"
+            }
+          },
+          "required": ["payload", "token"],
+          "type": "object"
+        },
+        "user": {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": ["id"],
+          "type": "object"
+        }
+      },
+      "required": ["dt", "session", "st", "user"],
+      "type": "object"
     },
     "MicrosoftStoreServiceTickets": {
       "additionalProperties": false,
@@ -16178,6 +16338,18 @@
       "required": ["dte", "secure", "ste"],
       "type": "object"
     },
+    "SessionTokenBody": {
+      "additionalProperties": false,
+      "properties": {
+        "dt": {
+          "type": "string"
+        },
+        "st": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "SessionTokenPayload": {
       "additionalProperties": {},
       "properties": {
@@ -21226,6 +21398,11 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/session": {
+      "body": {
+        "$ref": "#/components/schemas/SessionTokenBody"
+      }
+    },
     "DELETE:/api/v1/stories/:storyId/items/:itemId": {
       "path": {
         "properties": {
@@ -24898,6 +25075,11 @@
         },
         "required": ["id"],
         "type": "object"
+      }
+    },
+    "PATCH:/api/v1/session": {
+      "body": {
+        "$ref": "#/components/schemas/SessionTokenBody"
       }
     },
     "PATCH:/api/v1/stories/:id": {

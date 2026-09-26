@@ -47,6 +47,17 @@ both directions:
   promises, and `toJSON()` serialization are preserved;
 - `unknown` remains an intentionally open boundary, while `any` fails generation.
 
+A `ctx.json(...)` call is attributed to exactly one route by static resolution. When two or more
+routes share a helper function that would otherwise contain the discovery-relevant call, keep the
+`ctx.json(...)` call at each route's own call site instead, and have the shared helper return the
+response body for the route to emit. See `completeMfaVerification` in
+`backend/api/v1/sessions-authentication/auth-mfa-routes/complete-mfa-verification.mts` for the
+pattern (used because `auth-mfa-totp-verification-post.mts` and
+`auth-mfa-passkeys-authentication-verification-post.mts` share it). A call the extractor cannot
+attribute to exactly one route is currently skipped rather than rejected (#629); until that
+lands, this convention is the only way to keep a shared helper's routes covered by the generated
+corpus.
+
 Response metadata belongs to each concrete emission, not to the route as a whole. The extractor
 uses the nearest preceding `ctx.setStatus(...)` in the emission's active lexical branch; a dynamic
 nearest status makes that operation unavailable. JSON, XML, literal `text/csv` pipelines, and

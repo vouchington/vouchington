@@ -9,8 +9,13 @@ import onError from '@modules/on-error'
 import { deleteExactWebPushSubscription } from '@services/notifications'
 import type { Context } from '@jongleberry/api-server'
 import { apiRequestContract } from '../../response-contract.mts'
+import { validateRequestContract } from '../../response-helpers.mts'
 import { readOptionalJsonBody } from './optional-json-body.mts'
 
+// Both fields are required together in the generated schema: a body carrying neither (or no
+// JSON body at all) is the normal no-push-cleanup logout and never reaches the schema check
+// below (see the `!hasEndpoint` early return) -- only a body that supplies at least one of the
+// two fields is validated against this all-or-nothing shape.
 type LogoutRequest = {
   web_push_endpoint: string
   web_push_subscription_id: string
@@ -79,6 +84,10 @@ async function parseLogoutPushBinding(ctx: Context) {
     'web push binding must include endpoint and subscription id',
   )
   if (!hasEndpoint) return undefined
+  // Both fields are present at this point, so the schema's `required` pair is satisfiable; this
+  // runs before the URL/UUID-specific 400 checks below so a wrong-typed field or an unrecognized
+  // top-level field gets the schema's 422, not one of those checks' 400.
+  validateRequestContract(ctx, 'POST:/api/v1/auth/logout', { body })
   const endpointUrl = typeof endpoint === 'string' ? parseHttpsEndpoint(endpoint) : undefined
   ctx.assert(endpointUrl, 400, 'web_push_endpoint must be a valid HTTPS URL')
   ctx.assert(

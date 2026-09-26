@@ -15,6 +15,15 @@ Unknown generated operation names fail closed. Known operations without a schema
 request carrier accept that carrier unchanged, while invalid values return one redacted,
 carrier-specific error suitable for a `422` response.
 
+Public and optional-auth routes have no prior authorization boundary to validate after; instead,
+they validate after their existing transport/origin/rate-limit/anti-enumeration safeguards (route
+rate limiting, honeypot checks, attempt-limit counters) and before any service call. Some public or
+protected routes also accept a field group that is legitimately absent as a whole (an all-or-nothing
+pair); for these, the route's own presence/pairing check runs first and pins its status code for the
+absent or partial case, and the generated schema only runs once that precondition holds. See
+[`backend/api/v1/sessions-authentication/reference-request-validation.md`](../../api/v1/sessions-authentication/reference-request-validation.md)
+for named examples of both patterns.
+
 ## Generated contracts
 
 The registry consumes `@voucha/api-fixtures/v1/request-contracts.json`. Do not hand-edit that

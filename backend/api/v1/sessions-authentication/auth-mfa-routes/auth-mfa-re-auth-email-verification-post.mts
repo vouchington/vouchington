@@ -5,13 +5,14 @@ import { getPrimaryEmailAddress } from '@services/my/email-addresses'
 import { verifyEmailAddressLoginToken } from '@services/users/authentication'
 import { assertNotSuspended } from '@services/users/suspension'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 app.route('/api/v1/auth/mfa/re-auth/email/verification').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/auth/mfa/re-auth/email/verification')
   assertNotSuspended(currentUser)
 
   const body = (await ctx.request.json('100kb')) as { code?: string }
+  validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/re-auth/email/verification', { body })
   ctx.assert(body.code, 422, 'code is required')
 
   // Verify against the user's own primary email — never a caller-supplied address.

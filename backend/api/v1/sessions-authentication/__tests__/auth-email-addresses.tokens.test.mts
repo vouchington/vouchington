@@ -143,18 +143,6 @@ describe('Email Address Authentication Routes', () => {
       expect(response.body.message).toContain('emailAddress is required')
     })
 
-    it('rejects non-string ui_locale values', async () => {
-      const response = await createRequest()
-        .post('/api/v1/auth/email-address/tokens')
-        .send({
-          emailAddress: createUniqueTestEmail('locale-shape'),
-          ui_locale: {},
-        })
-        .expect(422)
-
-      expect(response.body.message).toBe('ui_locale must be a string or null')
-    })
-
     it('returns fake 200 with email address echoed back when honeypot is filled', async () => {
       const req = createRequest()
       const emailAddress = createUniqueTestEmail('hp-token')

@@ -1,7 +1,4 @@
-import {
-  overrideDynamicConfigFieldsForTest,
-  deleteDynamicConfigFieldsForTest,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
@@ -9,13 +6,11 @@ import {
   createUniqueTestEmail,
   invalidateEmailDomainCaches,
   createAppAttestAssertionHeaders,
-  TEST_APP_ATTEST_BUNDLE_ID,
-  TEST_APP_ATTEST_TEAM_ID,
+  useAppAttestBypassConfig,
 } from '@voucha/test-helpers'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
-import { appAttestationConfig } from '@services/app-attestation'
 import { v7 } from 'uuid'
 
 const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
@@ -70,22 +65,36 @@ describe('Email Address Authentication Routes', () => {
         .expect(200)
     })
 
-    describe('App Attest bypass', () => {
-      beforeEach(() => {
-        vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEST_APP_ATTEST_TEAM_ID)
-        vi.stubEnv('APPLE_APP_ATTEST_BUNDLE_ID', TEST_APP_ATTEST_BUNDLE_ID)
-        overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })
-        overrideDynamicConfigFieldsForTest(appAttestationConfig, {
-          require_attestation_for_bypass: true,
+    it('rejects non-string, non-null ui_locale values', async () => {
+      const response = await createRequest()
+        .post('/api/v1/auth/email-address/tokens')
+        .send({
+          emailAddress: createUniqueTestEmail('locale-shape'),
+          ui_locale: {},
         })
-      })
+        .expect(422)
 
-      afterEach(() => {
-        deleteDynamicConfigFieldsForTest(
-          appAttestationConfig,
-          Object.keys(appAttestationConfig.fieldTypes),
-        )
-      })
+      expect(response.body.message).toContain('Invalid request body')
+    })
+
+    it('accepts a null ui_locale', async () => {
+      const emailAddress = createUniqueTestEmail('locale-null')
+      const tokens = await createDeviceAndSessionTokens({ did: v7(), sid: v7() })
+      const response = await createRequest()
+        .post('/api/v1/auth/email-address/tokens')
+        .send({
+          emailAddress,
+          ui_locale: null,
+          dt: tokens.deviceToken.token,
+          st: tokens.sessionToken.token,
+        })
+        .expect(200)
+
+      expect(response.body.email_address).toBe(emailAddress)
+    })
+
+    describe('App Attest bypass', () => {
+      useAppAttestBypassConfig()
 
       it('creates a login token via a valid App Attest assertion without any Turnstile token', async () => {
         const req = createRequest()

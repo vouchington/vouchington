@@ -10464,6 +10464,9 @@ importers:
       supertest:
         specifier: ^7.3.0
         version: 7.3.0
+      undici:
+        specifier: ^8.11.0
+        version: 8.11.0
       uuid:
         specifier: ^14.0.2
         version: 14.0.2

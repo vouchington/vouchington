@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import {
   getOptionalAuthAndRateLimit,
   parseJsonBody,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { apiNoContent, apiRequest, apiResponse } from '../../response-contract.mts'
@@ -31,6 +32,7 @@ app.route('/api/v1/auth/oauth/authorizations/:flowId/complete').post(async (ctx:
     'POST:/api/v1/auth/oauth/authorizations/:flowId/complete',
     await parseJsonBody<CompleteOAuthAuthorizationBody>(ctx),
   )
+  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/authorizations/:flowId/complete', { body })
   const cookieCredential = parseOAuthCompletionCookie(ctx.cookies.get('oauth_completion'), flowId)
   const bodyCredential =
     typeof body.completion_token === 'string' ? body.completion_token : undefined

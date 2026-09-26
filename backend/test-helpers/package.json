@@ -54,6 +54,7 @@
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
     "supertest": "^7.3.0",
+    "undici": "^8.11.0",
     "uuid": "^14.0.2",
     "vouchington-tooling": "^0.19.2"
   },
