@@ -22,7 +22,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@atproto-labs/fetch-node": "^0.3.7",
+    "@atproto-labs/fetch-node": "^0.4.0",
     "@atproto-labs/handle-resolver-node": "^0.2.8",
     "@atproto/jwk": "^0.7.4",
     "@atproto/jwk-jose": "^0.2.4",
