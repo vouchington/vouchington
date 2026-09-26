@@ -58,14 +58,14 @@ rule:
             field: arguments
             has:
               nthChild: 2
-              regex: ^\[\s*(?:(?:['"`](?:-C|-c)['"`]\s*,\s*[^,\]]+|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])\s*,\s*)*['"`](remote|submodule)['"`]\s*,\s*(?:['"`](?:-v|--verbose|--quiet)['"`]\s*,\s*)*['"`]update['"`](?:\s*,|\s*\])
+              regex: ^\[\s*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`]\s*,\s*[^,\]]+|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])\s*,\s*)*['"`](remote|submodule)['"`]\s*,\s*(?:['"`](?:-v|--verbose|--quiet)['"`]\s*,\s*)*['"`]update['"`](?:\s*,|\s*\])
     - all:
         - matches: child-process-call
         - has:
             field: arguments
             has:
               nthChild: 1
-              regex: ^['"`]git\s+(?:(?:(?:-C|-c)\s+\S+|(?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=\S+|--git-dir=\S+|--work-tree=\S+|--namespace=\S+|--config-env=\S+))\s+)*(?:(?:fetch|ls-remote|pull|push|clone)(?:['"`]|\s|$)|(remote|submodule)\s+(?:(?:-v|--verbose|--quiet)\s+)*update(?:['"`]|\s|$))
+              regex: ^['"`]git\s+(?:(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)\s+\S+|(?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=\S+|--git-dir=\S+|--work-tree=\S+|--namespace=\S+|--config-env=\S+))\s+)*(?:(?:fetch|ls-remote|pull|push|clone)(?:['"`]|\s|$)|(remote|submodule)\s+(?:(?:-v|--verbose|--quiet)\s+)*update(?:['"`]|\s|$))
     - pattern: fetch($$$ARGS)
     - pattern: globalThis.fetch
     - pattern: global.fetch
@@ -144,6 +144,26 @@ examples:
   - code: |
       import { execSync } from 'node:child_process'
       execSync('git -C dir remote update', { cwd })
+    isValid: false
+    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['--git-dir', dir, 'remote', 'update'])
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['--work-tree', dir, 'submodule', 'update'])
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['--config-env', 'http.proxy=GIT_PROXY', 'remote', 'update'])
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { execSync } from 'node:child_process'
+      execSync('git --git-dir /tmp/repo remote update')
     isValid: false
     file: 'dev/codex-hooks/post-tool-use-checkers.mts'
   - code: |
