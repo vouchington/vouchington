@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { overrideDynamicConfigFieldsForTest, createTestUser } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
+import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
+import { postLogoutExpectingRejection } from '@voucha/test-helpers/api/v1/auth/logout-rejection'
 import { getTestUserSessionById } from '../../../test-helpers/entities/user-sessions.mts'
 import {
   createDeviceAndSessionTokens,
@@ -12,24 +14,6 @@ import { v7 } from 'uuid'
 import { listWebPushSubscriptionsPage, upsertWebPushSubscription } from '@services/notifications'
 
 let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
-
-async function createTestCookies(): Promise<{
-  dtCookie: string
-  stCookie: string
-  userId: string
-}> {
-  const user = await createTestUser()
-  const tokens = await createDeviceAndSessionTokens({
-    did: v7(),
-    sid: v7(),
-    uid: user.id,
-  })
-  return {
-    dtCookie: `dt=${tokens.deviceToken.token}`,
-    stCookie: `st=${tokens.sessionToken.token}`,
-    userId: user.id,
-  }
-}
 
 describe('POST /api/v1/auth/logout', () => {
   beforeEach(async () => {
@@ -50,56 +34,37 @@ describe('POST /api/v1/auth/logout', () => {
   })
 
   it('rejects malformed JSON before clearing cookies', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
-    const response = await createRequest()
-      .post('/api/v1/auth/logout')
-      .set('Cookie', [dtCookie, stCookie])
-      .set('Sec-Fetch-Site', 'same-origin')
-      .set('Content-Type', 'application/json')
-      .send('{')
-      .expect(400)
-
-    expect(response.headers['set-cookie']).toBeUndefined()
+    await postLogoutExpectingRejection({
+      body: '{',
+      contentType: 'application/json',
+      expectedStatus: 400,
+    })
   })
 
   it('rejects a partial web push binding before clearing cookies', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
-    const response = await createRequest()
-      .post('/api/v1/auth/logout')
-      .set('Cookie', [dtCookie, stCookie])
-      .set('Sec-Fetch-Site', 'same-origin')
-      .send({ web_push_endpoint: 'https://push.example.test/subscription' })
-      .expect(400)
-
-    expect(response.headers['set-cookie']).toBeUndefined()
+    await postLogoutExpectingRejection({
+      body: { web_push_endpoint: 'https://push.example.test/subscription' },
+      expectedStatus: 400,
+    })
   })
 
   it('rejects an endpoint URL that cannot be parsed', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
-    const response = await createRequest()
-      .post('/api/v1/auth/logout')
-      .set('Cookie', [dtCookie, stCookie])
-      .set('Sec-Fetch-Site', 'same-origin')
-      .send({
+    await postLogoutExpectingRejection({
+      body: {
         web_push_endpoint: 'https://[',
         web_push_subscription_id: crypto.randomUUID(),
-      })
-      .expect(400)
-
-    expect(response.headers['set-cookie']).toBeUndefined()
+      },
+      expectedStatus: 400,
+    })
   })
 
   it('rejects JSON null before revoking the session or clearing cookies', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
-    const response = await createRequest()
-      .post('/api/v1/auth/logout')
-      .set('Cookie', [dtCookie, stCookie])
-      .set('Sec-Fetch-Site', 'same-origin')
-      .set('Content-Type', 'application/json')
-      .send('null')
-      .expect(400)
+    const { dtCookie, stCookie } = await postLogoutExpectingRejection({
+      body: 'null',
+      contentType: 'application/json',
+      expectedStatus: 400,
+    })
 
-    expect(response.headers['set-cookie']).toBeUndefined()
     const verified = await verifyDeviceAndSessionTokens({
       deviceToken: dtCookie.slice(3),
       sessionToken: stCookie.slice(3),
@@ -111,7 +76,7 @@ describe('POST /api/v1/auth/logout', () => {
   })
 
   it('canonicalizes and deactivates only the submitted current push generation', async () => {
-    const { dtCookie, stCookie, userId } = await createTestCookies()
+    const { dtCookie, stCookie, userId } = await createTestSessionCookies()
     const endpointPath = crypto.randomUUID()
     const endpoint = `https://push.example.test/${endpointPath}`
     const subscription = await upsertWebPushSubscription({
@@ -136,7 +101,7 @@ describe('POST /api/v1/auth/logout', () => {
   })
 
   it('treats a stale generation binding as a no-op', async () => {
-    const { dtCookie, stCookie, userId } = await createTestCookies()
+    const { dtCookie, stCookie, userId } = await createTestSessionCookies()
     const endpoint = `https://push.example.test/${crypto.randomUUID()}`
     const stale = await upsertWebPushSubscription({
       userId,
@@ -166,7 +131,7 @@ describe('POST /api/v1/auth/logout', () => {
   })
 
   it('does not let a replayed revoked session delete a push generation', async () => {
-    const { dtCookie, stCookie, userId } = await createTestCookies()
+    const { dtCookie, stCookie, userId } = await createTestSessionCookies()
     const endpoint = `https://push.example.test/${crypto.randomUUID()}`
     const subscription = await upsertWebPushSubscription({
       userId,
@@ -193,7 +158,7 @@ describe('POST /api/v1/auth/logout', () => {
   })
 
   it('should clear authentication cookies', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
+    const { dtCookie, stCookie } = await createTestSessionCookies()
 
     // Now logout
     const logoutResponse = await createRequest()
@@ -261,7 +226,7 @@ describe('POST /api/v1/auth/logout', () => {
   })
 
   it('should not revoke the session when only the session cookie is present', async () => {
-    const { dtCookie, stCookie } = await createTestCookies()
+    const { dtCookie, stCookie } = await createTestSessionCookies()
 
     await createRequest()
       .post('/api/v1/auth/logout')

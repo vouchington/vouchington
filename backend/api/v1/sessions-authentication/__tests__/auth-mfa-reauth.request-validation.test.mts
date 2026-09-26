@@ -16,53 +16,25 @@ describe('MFA re-auth routes - request contract validation', () => {
     user = await createTestUser()
   }, 15_000)
 
-  describe('POST /api/v1/auth/mfa/re-auth/email/verification', () => {
+  describe.each([
+    { route: '/api/v1/auth/mfa/re-auth/email/verification', field: 'code' as const },
+    { route: '/api/v1/auth/mfa/re-auth/totp/verification', field: 'code' as const },
+    { route: '/api/v1/auth/mfa/re-auth/tokens/verification', field: 're_auth_token' as const },
+  ])('POST $route', ({ route, field }) => {
     it('returns 401, not 422, for a malformed body without auth', async () => {
       await createRequest()
-        .post('/api/v1/auth/mfa/re-auth/email/verification')
-        .send({ code: 123, extra: 'unexpected' })
+        .post(route)
+        .send({ [field]: 123, extra: 'unexpected' })
         .expect(401)
     })
 
-    it('returns 422 for a non-string code once authenticated', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req.post('/api/v1/auth/mfa/re-auth/email/verification').send({ code: 123 }).expect(422)
-    })
-  })
-
-  describe('POST /api/v1/auth/mfa/re-auth/totp/verification', () => {
-    it('returns 401, not 422, for a malformed body without auth', async () => {
-      await createRequest()
-        .post('/api/v1/auth/mfa/re-auth/totp/verification')
-        .send({ code: 123, extra: 'unexpected' })
-        .expect(401)
-    })
-
-    it('returns 422 for a non-string code once authenticated', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req.post('/api/v1/auth/mfa/re-auth/totp/verification').send({ code: 123 }).expect(422)
-    })
-  })
-
-  describe('POST /api/v1/auth/mfa/re-auth/tokens/verification', () => {
-    it('returns 401, not 422, for a malformed body without auth', async () => {
-      await createRequest()
-        .post('/api/v1/auth/mfa/re-auth/tokens/verification')
-        .send({ re_auth_token: 123, extra: 'unexpected' })
-        .expect(401)
-    })
-
-    it('returns 422 for a non-string re_auth_token once authenticated', async () => {
+    it(`returns 422 for a non-string ${field} once authenticated`, async () => {
       const req = createRequest()
       await req.authenticateAs(user)
 
       await req
-        .post('/api/v1/auth/mfa/re-auth/tokens/verification')
-        .send({ re_auth_token: 123 })
+        .post(route)
+        .send({ [field]: 123 })
         .expect(422)
     })
   })

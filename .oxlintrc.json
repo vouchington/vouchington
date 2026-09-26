@@ -628,7 +628,8 @@
           "expectApiKeyPagination",
           "expectPendingReportsPagination",
           "assertReason",
-          "assertScoresAllowed"
+          "assertScoresAllowed",
+          "postLogoutExpectingRejection"
         ]
       }
     ],
@@ -718,7 +719,8 @@
           "expectApiKeyPagination",
           "expectPendingReportsPagination",
           "assertReason",
-          "assertScoresAllowed"
+          "assertScoresAllowed",
+          "postLogoutExpectingRejection"
         ]
       }
     ],

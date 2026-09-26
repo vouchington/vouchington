@@ -1,4 +1,5 @@
 import { createHash, createSign, generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { write } from '@data-stores/psql'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { TimeUnit } from '@valkey/valkey-glide'
@@ -7,9 +8,37 @@ import type {
   AppAttestChallengeType,
   AppAttestEnvironment,
 } from '@voucha/types/entities/app-attestation'
+import { appAttestationConfig } from '../services/app-attestation/index.mts'
+import {
+  deleteDynamicConfigFieldsForTest,
+  overrideDynamicConfigFieldsForTest,
+} from './dynamic-config.mts'
 
 export const TEST_APP_ATTEST_TEAM_ID = 'TESTTEAM1X'
 export const TEST_APP_ATTEST_BUNDLE_ID = 'io.voucha.test-fixture'
+
+// Stubs the App Attest team/bundle env vars and enables `require_attestation_for_bypass` before
+// each test in the describe block, and restores appAttestationConfig's dynamic fields after each
+// one. Shared by every route's "App Attest bypass" test group (post creation, email-address
+// tokens, ...): a route accepts a valid App Attest assertion in place of a CAPTCHA token only
+// when this bypass is configured on.
+export function useAppAttestBypassConfig(): void {
+  beforeEach(() => {
+    vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEST_APP_ATTEST_TEAM_ID)
+    vi.stubEnv('APPLE_APP_ATTEST_BUNDLE_ID', TEST_APP_ATTEST_BUNDLE_ID)
+    overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })
+    overrideDynamicConfigFieldsForTest(appAttestationConfig, {
+      require_attestation_for_bypass: true,
+    })
+  })
+
+  afterEach(() => {
+    deleteDynamicConfigFieldsForTest(
+      appAttestationConfig,
+      Object.keys(appAttestationConfig.fieldTypes),
+    )
+  })
+}
 
 // Must stay in sync with backend/services/app-attestation/challenges.mts (key prefix and TTL
 // are runtime configuration, not types, so they aren't relocatable to @voucha/types).

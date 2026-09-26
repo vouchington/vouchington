@@ -1,7 +1,4 @@
-import {
-  overrideDynamicConfigFieldsForTest,
-  deleteDynamicConfigFieldsForTest,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
@@ -9,13 +6,11 @@ import {
   createUniqueTestEmail,
   invalidateEmailDomainCaches,
   createAppAttestAssertionHeaders,
-  TEST_APP_ATTEST_BUNDLE_ID,
-  TEST_APP_ATTEST_TEAM_ID,
+  useAppAttestBypassConfig,
 } from '@voucha/test-helpers'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
-import { appAttestationConfig } from '@services/app-attestation'
 import { v7 } from 'uuid'
 
 const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
@@ -99,21 +94,7 @@ describe('Email Address Authentication Routes', () => {
     })
 
     describe('App Attest bypass', () => {
-      beforeEach(() => {
-        vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEST_APP_ATTEST_TEAM_ID)
-        vi.stubEnv('APPLE_APP_ATTEST_BUNDLE_ID', TEST_APP_ATTEST_BUNDLE_ID)
-        overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })
-        overrideDynamicConfigFieldsForTest(appAttestationConfig, {
-          require_attestation_for_bypass: true,
-        })
-      })
-
-      afterEach(() => {
-        deleteDynamicConfigFieldsForTest(
-          appAttestationConfig,
-          Object.keys(appAttestationConfig.fieldTypes),
-        )
-      })
+      useAppAttestBypassConfig()
 
       it('creates a login token via a valid App Attest assertion without any Turnstile token', async () => {
         const req = createRequest()

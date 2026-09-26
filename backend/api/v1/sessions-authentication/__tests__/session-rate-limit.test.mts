@@ -1,33 +1,16 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 
 import { createDeviceAndSessionTokens, revokeSession } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
-import {
-  closeScopedDynamicConfigContext,
-  overrideDynamicConfigFieldsForTest,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { useRouteRateLimitConfigSnapshot } from '@voucha/test-helpers/api/route-rate-limit-config-snapshot'
 
 import { v7 } from 'uuid'
 
 describe('Session route rate-limit identity', () => {
-  let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
-
-  beforeAll(async () => {
-    await routeRateLimitConfig.waitForInitialization()
-    routeRateLimitConfig.unsubscribe()
-    originalRouteRateLimitConfig = routeRateLimitConfig.getFields()
-  }, 30_000)
-
-  afterEach(async () => {
-    overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
-  })
-
-  afterAll(async () => {
-    overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
-    await closeScopedDynamicConfigContext([routeRateLimitConfig])
-  })
+  useRouteRateLimitConfigSnapshot()
 
   it('does not combine partial body token overrides with cookies', async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {

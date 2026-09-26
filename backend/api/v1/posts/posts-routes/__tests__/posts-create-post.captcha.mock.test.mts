@@ -1,7 +1,3 @@
-import {
-  overrideDynamicConfigFieldsForTest,
-  deleteDynamicConfigFieldsForTest,
-} from '@voucha/test-helpers/dynamic-config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -9,15 +5,13 @@ import {
   createTestUrlWithHostname,
   CONTRIBUTING_USER_AGE_MS,
   createAppAttestAssertionHeaders,
-  TEST_APP_ATTEST_BUNDLE_ID,
-  TEST_APP_ATTEST_TEAM_ID,
+  useAppAttestBypassConfig,
   getContributionAdmissionConsumptionCountForTest,
 } from '@voucha/test-helpers'
 import { insertTestImage } from '@voucha/test-helpers/entities/images'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from '@services/contribution-gating/config'
-import { appAttestationConfig } from '@services/app-attestation'
 import { Response as UndiciResponse } from 'undici'
 import type * as Undici from 'undici'
 
@@ -225,21 +219,7 @@ describe('POST /api/v1/posts CAPTCHA', () => {
   })
 
   describe('App Attest bypass', () => {
-    beforeEach(() => {
-      vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEST_APP_ATTEST_TEAM_ID)
-      vi.stubEnv('APPLE_APP_ATTEST_BUNDLE_ID', TEST_APP_ATTEST_BUNDLE_ID)
-      overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })
-      overrideDynamicConfigFieldsForTest(appAttestationConfig, {
-        require_attestation_for_bypass: true,
-      })
-    })
-
-    afterEach(() => {
-      deleteDynamicConfigFieldsForTest(
-        appAttestationConfig,
-        Object.keys(appAttestationConfig.fieldTypes),
-      )
-    })
+    useAppAttestBypassConfig()
 
     it('creates the post via a valid App Attest assertion without any Turnstile token', async () => {
       const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)

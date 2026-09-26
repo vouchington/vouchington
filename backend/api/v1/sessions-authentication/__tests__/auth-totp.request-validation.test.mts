@@ -45,27 +45,26 @@ describe('TOTP routes - request contract validation', () => {
     })
   })
 
-  describe('PATCH /api/v1/auth/totp/:id', () => {
-    it('returns 422 for an unknown top-level field once authenticated', async () => {
+  describe.each([
+    {
+      method: 'patch' as const,
+      body: { name: 'New Name', extra: 'unexpected' },
+      // PATCH has no re-auth/MFA step, so the title doesn't claim one.
+      titleSuffix: '',
+    },
+    {
+      method: 'delete' as const,
+      body: { re_auth_token: 'fake-token', extra: 'unexpected' },
+      // DELETE runs deleteTotpAuthenticatorWithMfaProtection after the contract check, so this
+      // also proves the schema error wins the race against the MFA-protection lookup.
+      titleSuffix: ', before the MFA check',
+    },
+  ])('$method /api/v1/auth/totp/:id', ({ method, body, titleSuffix }) => {
+    it(`returns 422 for an unknown top-level field once authenticated${titleSuffix}`, async () => {
       const req = createRequest()
       await req.authenticateAs(user)
 
-      await req
-        .patch(`/api/v1/auth/totp/${v7()}`)
-        .send({ name: 'New Name', extra: 'unexpected' })
-        .expect(422)
-    })
-  })
-
-  describe('DELETE /api/v1/auth/totp/:id', () => {
-    it('returns 422 for an unknown top-level field once authenticated, before the MFA check', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req
-        .delete(`/api/v1/auth/totp/${v7()}`)
-        .send({ re_auth_token: 'fake-token', extra: 'unexpected' })
-        .expect(422)
+      await req[method](`/api/v1/auth/totp/${v7()}`).send(body).expect(422)
     })
   })
 })
