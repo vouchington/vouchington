@@ -19,7 +19,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 /**
  * Toggle button that opens the aside as a right-side drawer on mobile.
- * Positioned with zero height so it doesn't push page content down.
+ * The row keeps the button's hit target clear of the page content.
  * Visible at all viewports; on desktop, Cmd/Ctrl+\ toggles the AsideColumn instead.
  */
 export function AsideDrawer({
@@ -55,7 +55,7 @@ export function AsideDrawer({
           When the aside column is open on desktop, offset left by the aside width (334px)
           so the button sits at the right edge of the content column, not inside the aside.
           px-4 matches the main content gutter; ContentContainer centres to 1200px. */}
-      <div className='pointer-events-none sticky top-14 z-20 h-0'>
+      <div className='pointer-events-none sticky top-14 z-20'>
         <ContentContainer>
           <div
             className={cn(

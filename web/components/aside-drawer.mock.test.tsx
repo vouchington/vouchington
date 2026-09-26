@@ -94,9 +94,9 @@ describe('AsideDrawer', () => {
       </Wrapper>,
     )
 
-    // Positioned as h-0 sticky wrapper so it doesn't push content down
-    const wrapper = container.querySelector('.h-0.sticky')
+    const wrapper = container.querySelector('.sticky.top-14')
     expect(wrapper).not.toBeNull()
+    expect(wrapper?.className).not.toContain('h-0')
   })
 
   it('toggle button sticky offset is top-14 to match aside column offset', () => {
@@ -109,7 +109,7 @@ describe('AsideDrawer', () => {
     )
 
     // top-14 (56px) aligns with the aside column's lg:top-14 offset
-    const wrapper = container.querySelector('.h-0.sticky')
+    const wrapper = container.querySelector('.sticky.top-14')
     expect(wrapper?.className).toContain('top-14')
     expect(wrapper?.className).not.toContain('top-12')
   })
@@ -124,7 +124,7 @@ describe('AsideDrawer', () => {
     )
 
     // The sticky bar now uses mx-auto max-w-[1200px] to align with the content column
-    const inner = container.querySelector('.h-0.sticky > div')
+    const inner = container.querySelector('.sticky.top-14 > div')
     expect(inner?.className).toContain('max-w-[1200px]')
     expect(inner?.className).toContain('mx-auto')
   })
@@ -139,7 +139,7 @@ describe('AsideDrawer', () => {
     )
 
     // desktopAsideOpen defaults to true, so lg:mr-[334px] class should be on the inner flex div
-    const toggleRow = container.querySelector('.h-0.sticky > div > div')
+    const toggleRow = container.querySelector('.sticky.top-14 > div > div')
     expect(toggleRow?.className).toContain('lg:mr-[334px]')
     // Margin-right transition animates the offset when aside opens/closes
     expect(toggleRow?.className).toContain('transition-[margin-right]')
@@ -169,7 +169,7 @@ describe('AsideDrawer', () => {
     )
 
     // Default: aside is open, lg:mr-[334px] offsets the button
-    const toggleRow = container.querySelector('.h-0.sticky > div > div')
+    const toggleRow = container.querySelector('.sticky.top-14 > div > div')
     expect(toggleRow?.className).toContain('lg:mr-[334px]')
     expect(toggleRow?.className).not.toContain('lg:mr-0')
 
