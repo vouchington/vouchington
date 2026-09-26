@@ -1,9 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import MfaStep from '@/components/auth/mfa-step'
+import { clearMfaStepFixture, setMfaStepFixture } from '@/storybook/mocks/mfa-step-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Auth/MFA Step',
+  beforeEach() {
+    setMfaStepFixture()
+    return () => clearMfaStepFixture()
+  },
 } satisfies Meta
 
 export default meta

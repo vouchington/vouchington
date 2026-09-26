@@ -82,7 +82,7 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
     return Promise.resolve(inboxFixture as T)
   }
   if (endpoint === '/api/v1/topics' && topicSearchFixture) {
-    return Promise.resolve(storybookAutocompleteResponse(endpoint) as T)
+    return Promise.resolve(storybookAutocompleteResponse(endpoint, options?.searchParams) as T)
   }
 
   // Function.call does not preserve the generic return type of a method, although this is the
