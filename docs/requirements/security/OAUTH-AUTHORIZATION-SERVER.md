@@ -43,6 +43,12 @@ not the RFC 7592 registration-management protocol, so it does not mint an unused
 management credential. Authenticated client and grant management is owned by the API-key and
 OAuth-app management milestone.
 
+Signed-in users register and manage their own clients through `/api/v1/my/oauth-apps`
+([OAuth apps](../users/api-keys.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
+and records `owner_user_id`; rotation replaces the stored client-secret hash and returns the new
+secret once, and renaming a client or replacing its redirect URIs clears `verified_at` and
+`verified_by_id` in the same update.
+
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
 and code paths on their next use because each requires an unrevoked grant. The listed `verified`

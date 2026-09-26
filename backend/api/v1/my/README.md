@@ -19,6 +19,7 @@ Endpoints for managing the current user's personal data: identity, profile, noti
 - <a id="get-apiv1mynotifications"></a>[GET /api/v1/my/notifications](reference-get-api-v1-my-notifications.md)
 - <a id="get-apiv1myreferral-clicks"></a>[GET /api/v1/my/referral-clicks](reference-get-api-v1-my-referral-clicks.md)
 - <a id="notification-notes"></a>[Notification Notes](reference-notification-notes.md)
+- <a id="oauth-apps"></a>[OAuth Apps and Connected Apps](reference-oauth-apps.md)
 - <a id="get-apiv1myexportrss-feeds"></a>[GET /api/v1/my/export/rss-feeds](reference-get-api-v1-my-export-rss-feeds.md)
 - <a id="post-apiv1myimportrss-feeds"></a>[POST /api/v1/my/import/rss-feeds](reference-post-api-v1-my-import-rss-feeds.md)
 - <a id="post-apiv1myimporttopics"></a>[POST /api/v1/my/import/topics](reference-post-api-v1-my-import-topics.md)

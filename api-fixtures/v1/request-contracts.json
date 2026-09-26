@@ -3960,6 +3960,38 @@
       },
       "type": "object"
     },
+    "CreateOAuthAppRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "client_name": {
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "token_endpoint_auth_method": {
+          "enum": ["client_secret_basic", "none"],
+          "type": "string"
+        }
+      },
+      "required": ["client_name", "redirect_uris", "scopes"],
+      "type": "object"
+    },
     "CreatePostUpdates": {
       "additionalProperties": false,
       "properties": {
@@ -6751,6 +6783,26 @@
         }
       },
       "required": ["ai_token_usage", "cache_hit_rate", "crawler_success_rate", "queue_throughput"],
+      "type": "object"
+    },
+    "IssuedOAuthApp": {
+      "additionalProperties": false,
+      "properties": {
+        "client_secret": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "oauth_app": {
+          "$ref": "#/components/schemas/OAuthAppView"
+        }
+      },
+      "required": ["client_secret", "oauth_app"],
       "type": "object"
     },
     "LandingPage": {
@@ -9833,6 +9885,75 @@
       },
       "required": ["email_address", "id", "name"],
       "type": "object"
+    },
+    "OAuthAppView": {
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_name": {
+          "type": "string"
+        },
+        "client_type": {
+          "$ref": "#/components/schemas/OAuthClientType"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "token_endpoint_auth_method": {
+          "$ref": "#/components/schemas/OAuthClientAuthMethod"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "client_id",
+        "client_name",
+        "client_type",
+        "created_at",
+        "id",
+        "redirect_uris",
+        "scopes",
+        "token_endpoint_auth_method",
+        "updated_at",
+        "verified_at"
+      ],
+      "type": "object"
+    },
+    "OAuthClientAuthMethod": {
+      "enum": ["client_secret_basic", "none"],
+      "type": "string"
+    },
+    "OAuthClientType": {
+      "enum": ["confidential", "public"],
+      "type": "string"
     },
     "OAuthGrantClientView": {
       "additionalProperties": false,
@@ -17460,6 +17581,24 @@
       },
       "type": "object"
     },
+    "UpdateOAuthAppRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "client_name": {
+          "type": "string"
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
     "UpdateUserOptions": {
       "additionalProperties": false,
       "properties": {
@@ -20834,6 +20973,17 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/my/oauth-apps/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "DELETE:/api/v1/my/oauth-grants/:id": {
       "path": {
         "properties": {
@@ -22537,6 +22687,22 @@
       }
     },
     "GET:/api/v1/my/notifications/push-subscriptions": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/oauth-apps": {
       "query": {
         "properties": {
           "after": {
@@ -24382,6 +24548,20 @@
       }
     },
     "PATCH:/api/v1/my/notifications/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "PATCH:/api/v1/my/oauth-apps/:id": {
+      "body": {
+        "$ref": "#/components/schemas/UpdateOAuthAppRequest"
+      },
       "path": {
         "properties": {
           "id": {
@@ -26509,6 +26689,22 @@
     "POST:/api/v1/my/notifications/push-subscriptions": {
       "body": {
         "$ref": "#/components/schemas/Record_string_unknown"
+      }
+    },
+    "POST:/api/v1/my/oauth-apps": {
+      "body": {
+        "$ref": "#/components/schemas/CreateOAuthAppRequest"
+      }
+    },
+    "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
       }
     },
     "POST:/api/v1/my/profile/links": {

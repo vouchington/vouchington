@@ -16,6 +16,7 @@ import type {
 export async function registerOAuthClient(
   input: unknown,
   ownerUserId: string | null = null,
+  query: QueryExecutor = write,
 ): Promise<RegisteredOAuthClient> {
   const metadata = validateRegistrationObject(input)
   const clientName = validateClientName(metadata.client_name)
@@ -32,11 +33,9 @@ export async function registerOAuthClient(
   }
   const clientId = `voucha_${randomBytes(24).toString('base64url')}`
   const clientSecret =
-    tokenEndpointAuthMethod === 'client_secret_basic'
-      ? `voucha_secret_${randomBytes(32).toString('base64url')}`
-      : undefined
+    tokenEndpointAuthMethod === 'client_secret_basic' ? generateOAuthClientSecret() : undefined
 
-  const result = await write<OAuthClient>(
+  const result = await query<OAuthClient>(
     `/* registerOAuthClient */ INSERT INTO oauth_clients (
        client_id,
        owner_user_id,
@@ -139,7 +138,7 @@ export function assertClientAuthorizationRequest(
   }
 }
 
-function validateClientName(value: unknown): string {
+export function validateClientName(value: unknown): string {
   if (
     typeof value !== 'string' ||
     value.trim().length === 0 ||
@@ -187,4 +186,8 @@ function validateRegistrationObject(input: unknown): RegisterOAuthClientInput {
     throw invalidClientMetadata('registration metadata must be a JSON object')
   }
   return input as RegisterOAuthClientInput
+}
+
+export function generateOAuthClientSecret(): string {
+  return `voucha_secret_${randomBytes(32).toString('base64url')}`
 }

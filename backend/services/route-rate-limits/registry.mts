@@ -87,6 +87,10 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'DELETE:/api/v1/my/email-addresses/:email': { category: 'sensitive' },
   'POST:/api/v1/my/api-keys': { category: 'sensitive' },
   'DELETE:/api/v1/my/api-keys/:id': { category: 'sensitive' },
+  'POST:/api/v1/my/oauth-apps': { category: 'sensitive' },
+  'PATCH:/api/v1/my/oauth-apps/:id': { category: 'sensitive' },
+  'DELETE:/api/v1/my/oauth-apps/:id': { category: 'sensitive' },
+  'POST:/api/v1/my/oauth-apps/:id/client-secrets': { category: 'sensitive' },
   'DELETE:/api/v1/my/oauth-grants/:id': { category: 'sensitive' },
   'POST:/api/v1/email-unsubscribe': { category: 'write', multiplier: 1000 },
 

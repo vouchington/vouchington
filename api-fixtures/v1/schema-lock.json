@@ -24,6 +24,10 @@
       "fixtureIds": ["native.messages.participant-remove.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "DELETE:/api/v1/my/oauth-apps/:id": {
+      "fixtureIds": ["web.my.oauth-apps.revoke"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
     "DELETE:/api/v1/my/oauth-grants/:id": {
       "fixtureIds": ["native.my.oauth-grants.revoke"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -498,6 +502,10 @@
       "fixtureIds": ["native.my.push-subscriptions.paginated"],
       "hash": "92d8ef479a566a03f959f26efba9cc03d7233a11e6dee6c2cd4a86d88a26dd62"
     },
+    "GET:/api/v1/my/oauth-apps": {
+      "fixtureIds": ["web.my.oauth-apps.paginated"],
+      "hash": "a82697d0c3e3f47822fc8d9c601e29bfee0ed1e0ce9563cfd50908948f5fe2ca"
+    },
     "GET:/api/v1/my/oauth-grants": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
       "hash": "7cf36211537e0ca3b3ef9816cf8794d744bad1d36944896030ac9c0f0565592b"
@@ -854,6 +862,10 @@
       "fixtureIds": ["native.messages.policy.default"],
       "hash": "8583c029321cf9c1cedc2ed17f11af0724461ed87a3ccff42f8159a8f34ffe18"
     },
+    "PATCH:/api/v1/my/oauth-apps/:id": {
+      "fixtureIds": ["web.my.oauth-apps.update"],
+      "hash": "50e0253c2d7257db75f95da8c4a8dfe1203eddba85e7c706401beba8319d4c8b"
+    },
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
       "fixtureIds": [
         "native.point-valuations.update.clear-note",
@@ -1095,6 +1107,14 @@
     "POST:/api/v1/my/messages/:conversationId/participants": {
       "fixtureIds": ["native.messages.participant-add.default"],
       "hash": "d5c551d7c0536efe0be009101addf7f2edd265b28c2c9021022ade15bc6ba35e"
+    },
+    "POST:/api/v1/my/oauth-apps": {
+      "fixtureIds": ["web.my.oauth-apps.create"],
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27"
+    },
+    "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
+      "fixtureIds": ["web.my.oauth-apps.rotate-secret"],
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27"
     },
     "POST:/api/v1/my/rewards-program-point-valuations": {
       "fixtureIds": ["native.point-valuations.create.default"],
@@ -2557,6 +2577,26 @@
     "web.memberships.refund.reconciling": {
       "fixtureIds": ["web.memberships.refund.reconciling"],
       "hash": "ae5a6ec7c34dd480b8c56080de416580de44e1d3d642d5568093e5f3641a2c56"
+    },
+    "web.my.oauth-apps.create": {
+      "fixtureIds": ["web.my.oauth-apps.create"],
+      "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde"
+    },
+    "web.my.oauth-apps.paginated": {
+      "fixtureIds": ["web.my.oauth-apps.paginated"],
+      "hash": "eda61d16f94600bcff083e0f316f268fc201c858534426e8bda27de9c47f932c"
+    },
+    "web.my.oauth-apps.revoke": {
+      "fixtureIds": ["web.my.oauth-apps.revoke"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.my.oauth-apps.rotate-secret": {
+      "fixtureIds": ["web.my.oauth-apps.rotate-secret"],
+      "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde"
+    },
+    "web.my.oauth-apps.update": {
+      "fixtureIds": ["web.my.oauth-apps.update"],
+      "hash": "b6bccea3c4fd8ca77a3559d73fb83347bec348e446d8fe256d693c895826f0b8"
     },
     "web.oauth.authorization.complete.acknowledged": {
       "fixtureIds": ["web.oauth.authorization.complete.acknowledged"],

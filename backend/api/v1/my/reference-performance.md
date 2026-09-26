@@ -74,6 +74,11 @@ Most `/my/*` endpoints follow the same pattern: 2 round trips (auth + single ser
 | GET /api/v1/my/api-keys                                | 2           | None             |                                                                                           |
 | POST /api/v1/my/api-keys                               | 2           | None             |                                                                                           |
 | DELETE /api/v1/my/api-keys/:id                         | 2           | None             |                                                                                           |
+| GET /api/v1/my/oauth-apps                              | 2           | None             | Auth + one owner-scoped keyset query                                                      |
+| POST /api/v1/my/oauth-apps                             | 6           | None             | Auth + transaction: begin, active-user lock, insert, read-back, commit                    |
+| PATCH /api/v1/my/oauth-apps/:id                        | 2           | None             | Auth + one owner-scoped conditional update                                                |
+| DELETE /api/v1/my/oauth-apps/:id                       | 2           | None             | Auth + one owner-scoped conditional update                                                |
+| POST /api/v1/my/oauth-apps/:id/client-secrets          | 2-3         | None             | Auth + conditional update; an ownership probe only when the update matches nothing        |
 | GET /api/v1/my/oauth-grants                            | 2           | None             | Auth + one grant query with a lateral newest-access-token lookup                          |
 | DELETE /api/v1/my/oauth-grants/:id                     | 2           | None             | Auth + one owner-scoped conditional update                                                |
 | GET /api/v1/my/bans                                    | 2           | None             | Auth + paginated community_bans query                                                     |

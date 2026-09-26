@@ -9,3 +9,16 @@ export async function setTestOAuthClientVerified(id: string, verifiedById: strin
     [id, verifiedById],
   )
 }
+
+/** Gives an anonymously registered client an owner, as a signed-in registration would. */
+export async function assignTestOAuthClientOwner(
+  clientId: string,
+  ownerUserId: string,
+): Promise<void> {
+  await write(
+    `/* assignTestOAuthClientOwner */ UPDATE oauth_clients
+     SET owner_user_id = $2
+     WHERE client_id = $1`,
+    [clientId, ownerUserId],
+  )
+}

@@ -96,6 +96,22 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "DELETE:/api/v1/my/oauth-apps/:id": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/my/oauth-apps/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
+    },
     "DELETE:/api/v1/my/oauth-grants/:id": {
       "bodyKind": "none",
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
@@ -26433,6 +26449,191 @@
         }
       },
       "source": "backend/api/v1/my/notifications.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/my/oauth-apps": {
+      "bodyKind": "content",
+      "hash": "a82697d0c3e3f47822fc8d9c601e29bfee0ed1e0ce9563cfd50908948f5fe2ca",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/oauth-apps",
+      "schema": {
+        "definitions": {
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "OAuthAppView",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/my/oauth-grants": {
@@ -54994,6 +55195,141 @@
       "source": "backend/api/v1/my/messages-participants.mts",
       "statusKnowledge": "default"
     },
+    "PATCH:/api/v1/my/oauth-apps/:id": {
+      "bodyKind": "content",
+      "hash": "50e0253c2d7257db75f95da8c4a8dfe1203eddba85e7c706401beba8319d4c8b",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PATCH",
+      "routeTemplate": "/api/v1/my/oauth-apps/:id",
+      "schema": {
+        "definitions": {
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "oauth_app": {
+              "required": true,
+              "schema": {
+                "name": "OAuthAppView",
+                "type": "ref"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusKnowledge": "default"
+    },
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": {
       "bodyKind": "content",
       "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d",
@@ -62963,6 +63299,314 @@
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/my/oauth-apps": {
+      "bodyKind": "content",
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/oauth-apps",
+      "schema": {
+        "definitions": {
+          "IssuedOAuthApp": {
+            "additionalProperties": false,
+            "properties": {
+              "client_secret": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "oauth_app": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthAppView",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "name": "IssuedOAuthApp",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/my/oauth-apps/:id/client-secrets": {
+      "bodyKind": "content",
+      "hash": "7e93cf62abb2dc89fed276c98d4366a2d29865062e18ee74326733695e78fd27",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/oauth-apps/:id/client-secrets",
+      "schema": {
+        "definitions": {
+          "IssuedOAuthApp": {
+            "additionalProperties": false,
+            "properties": {
+              "client_secret": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "oauth_app": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthAppView",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthAppView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_type": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientType",
+                  "type": "ref"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "redirect_uris": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "token_endpoint_auth_method": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthClientAuthMethod",
+                  "type": "ref"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthClientAuthMethod": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "client_secret_basic"
+              },
+              {
+                "type": "literal",
+                "value": "none"
+              }
+            ]
+          },
+          "OAuthClientType": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "confidential"
+              },
+              {
+                "type": "literal",
+                "value": "public"
+              }
+            ]
+          }
+        },
+        "root": {
+          "name": "IssuedOAuthApp",
+          "type": "ref"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-apps.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/my/rewards-program-point-valuations": {
       "bodyKind": "content",
       "hash": "51af8d6f60f96b58765c99434ea609bbf530eb47597e048d37b492cebb81131d",
@@ -66070,6 +66714,132 @@
         "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
       },
       "status": 204
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/oauth-apps",
+      "bodyFile": "responses/web.my.oauth-apps.paginated.json",
+      "consumers": [],
+      "id": "web.my.oauth-apps.paginated",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps",
+      "query": {
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "eda61d16f94600bcff083e0f316f268fc201c858534426e8bda27de9c47f932c",
+        "key": "web.my.oauth-apps.paginated"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/oauth-apps"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/oauth-apps",
+      "bodyFile": "responses/web.my.oauth-apps.create.json",
+      "consumers": [],
+      "id": "web.my.oauth-apps.create",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps",
+      "requestBody": {
+        "client_name": "Fixture Agent",
+        "redirect_uris": ["https://agent.example.com/oauth/callback"],
+        "scopes": ["mcp.user:read", "mcp.user:write"],
+        "token_endpoint_auth_method": "client_secret_basic"
+      },
+      "responseSchema": {
+        "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde",
+        "key": "web.my.oauth-apps.create"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/oauth-apps"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "PATCH:/api/v1/my/oauth-apps/:id",
+      "bodyFile": "responses/web.my.oauth-apps.update.json",
+      "consumers": [],
+      "id": "web.my.oauth-apps.update",
+      "method": "PATCH",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721",
+      "requestBody": {
+        "client_name": "Renamed Agent"
+      },
+      "responseSchema": {
+        "hash": "b6bccea3c4fd8ca77a3559d73fb83347bec348e446d8fe256d693c895826f0b8",
+        "key": "web.my.oauth-apps.update"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/my/oauth-apps/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "DELETE:/api/v1/my/oauth-apps/:id",
+      "bodyFile": "responses/web.my.oauth-apps.revoke.json",
+      "consumers": [],
+      "id": "web.my.oauth-apps.revoke",
+      "method": "DELETE",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721",
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "web.my.oauth-apps.revoke"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/my/oauth-apps/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 204
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/oauth-apps/:id/client-secrets",
+      "bodyFile": "responses/web.my.oauth-apps.rotate-secret.json",
+      "consumers": [],
+      "id": "web.my.oauth-apps.rotate-secret",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/my/oauth-apps.test.mts"],
+      "path": "/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721/client-secrets",
+      "responseSchema": {
+        "hash": "24f25262d1cf3cad83e6aa0418f58ae39425abcf30dcf52cf25b4f45e3e4fbde",
+        "key": "web.my.oauth-apps.rotate-secret"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000721"
+        },
+        "routeTemplate": "/api/v1/my/oauth-apps/:id/client-secrets"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-app-cases.mts"
+      },
+      "status": 201
     },
     {
       "auth": "fixture-user",
