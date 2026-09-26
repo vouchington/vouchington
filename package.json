@@ -73,7 +73,7 @@
     "squawk": "squawk 'backend/data-stores/psql/migrations/*.sql' 'backend/data-stores/psql/config-driven/*.sql' 'backend/data-stores/psql/views/*.sql'",
     "lint": "pnpm run oxlint && pnpm run ast-grep && pnpm run jscpd && pnpm run oxfmt && pnpm run selene && pnpm run no-mistakes && pnpm run repo-file-policy && pnpm run typecheck",
     "ast-grep": "node static-code-analysis/run-ast-grep.mts",
-    "jscpd": "node static-code-analysis/run-jscpd.mts",
+    "jscpd": "jscpd .",
     "selene": "bash -c 'git ls-files \"*.lua\" | xargs selene --config selene.toml'",
     "typecheck": "pnpm run typecheck:scripts && pnpm run typecheck:ts-shared && pnpm run typecheck:backend && pnpm run typecheck:web && pnpm run typecheck:lambdas && pnpm run typecheck:cloudflare-worker && pnpm run typecheck:playwright && pnpm run typecheck:test-helpers && pnpm run typecheck:integration-tests",
     "typecheck:scripts": "tsc --noEmit --incremental --project tsconfig.json",

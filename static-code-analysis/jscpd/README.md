@@ -1,94 +1,59 @@
-# jscpd Duplication Ratchet
+# jscpd Clone-Size Threshold
 
 [Back to Static Code Analysis](../README.md)
 
-`pnpm run jscpd` runs [`run-jscpd.mts`](../run-jscpd.mts), a repository policy wrapper around
-[jscpd](https://github.com/kucherenko/jscpd). It fails only when a branch adds duplicated code that
-its base lacks. Clones that already exist on the base are counted in the summary and never
-fail the gate, so the repository gets less duplicated one change at a time without a big-bang
-cleanup. CI runs it in [`static-code-analysis.yml`](../../.github/workflows/static-code-analysis.yml),
-and `pnpm run lint` runs it locally.
+The gate is the plain [jscpd](https://github.com/kucherenko/jscpd) CLI, `jscpd .`, configured by
+[`.jscpd.json`](../../.jscpd.json); no wrapper sits in between. CI runs `pnpm exec jscpd .` in
+[`static-code-analysis.yml`](../../.github/workflows/static-code-analysis.yml), and `pnpm run lint`
+runs the same command through the `jscpd` package script.
 
-## How the Ratchet Works
+## How the Threshold Works
 
-1. Validate [`.jscpd.json`](../../.jscpd.json) ignore globs and reject inline ignore markers (see
-   [Scope](#scope) and [Exceptions](#exceptions)).
-2. Resolve the baseline commit (see [Choosing the Base](#choosing-the-base)).
-3. Scan the working tree's tracked files with `jscpd --baseline-from-ref <baseline>`. jscpd
-   rescans the baseline tree **with `HEAD`'s `.jscpd.json`** and marks each clone `isNew` when the
-   base tree lacks it.
-4. Print only the new clones, one per line, then the remediation hint:
+The configured `"minLines": 200` and `"exitCode": 1` make jscpd fail when it finds any clone that
+spans roughly 200 lines or more. A clone is one duplicated block shared by two files, so the unit
+that fails is the pair of copies, not one file. jscpd's console reporter lists each clone
+(`Clone found (<format>): <file> [start:end] ... <file> [start:end]`) above a per-format summary
+table. There is no baseline and no base-branch comparison: every run judges the whole tree the same
+way, so a pull request, a merge group, and a `main` push agree.
 
-   ```text
-   jscpd: 2 new clone(s) against merge-base 0123456789ab (origin/main):
-     exact web/a.ts:10-30 ~ web/b.ts:4-24 (21 lines)
-     similar web/c.ts:1-20 ~ web/d.ts:3-22 (20 lines)
-   ```
-
-With no new clones it prints `jscpd: no new clones against <baseline>; N files scanned, M existing
-clones.` and exits 0. The baseline reads `merge-base <sha> (<ref>)`, or
-`pull request merge parent <sha> (HEAD^1)` on a `pull_request` run.
-
-Both sides are scanned with the same configuration, so a config-only change (a new format, a
-narrower ignore glob, a stricter threshold) re-evaluates base and `HEAD` alike and reports no new
-clones by itself. A jscpd failure, a `git` failure, a missing report, or a report whose shape
-changed (for example a jscpd upgrade that drops `isNew`) fails the run; the gate never passes
-silently on a tool error.
+Blocks shorter than the threshold are not reported and never fail the gate. jscpd also skips files
+shorter than `minLines`, so the threshold bounds the scan as well as the report.
 
 ### Near-Miss Clones
 
-`.jscpd.json` sets `similarity: 0.9`. Besides exact token matches (`exact`), jscpd compares
-JavaScript and TypeScript function pairs by AST similarity and reports a pair that reaches 90% as
-`similar`. The comparison ignores identifier names and literal values, so a copied function that
-renames its variables, changes its literals, or adds or drops a line still counts as a clone. Code
-outside a function, and SQL, Bash, and CSS, stay exact-only: there, a copy that renames its
-variables is not matched. The ratchet treats both kinds the same way: only new ones fail.
-[`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts) proves the configured threshold
-catches a near-miss copy that exact matching misses.
+`.jscpd.json` sets `similarity: 0.9`. Besides exact token matches, jscpd compares JavaScript and
+TypeScript function pairs by AST similarity and reports a pair that reaches 90% as a `similar`
+clone. The comparison ignores identifier names and literal values, so a copied function that renames
+its variables, changes its literals, or adds or drops a line still counts. `minLines` applies to
+both kinds. Code outside a function, and SQL, Bash, and CSS, stay exact-only.
 
-### Touch It, Dedupe It
+## Lowering the Threshold
 
-jscpd fingerprints clone content. Editing a line inside an existing clone changes its fingerprint,
-so the edited clone counts as new even though the duplication predates the branch. The fix is to
-extract the shared code into one helper and call it from both places, not to revert the edit. If
-that dedupe is genuinely out of scope, add a reviewed [exception](#exceptions).
+The threshold only moves down. To tighten it:
 
-The same holds for a clone family: code copied into three or more files. Editing one copy can make
-jscpd pair the untouched copies with each other over different line ranges, so a pair between two
-files the branch never changed can also count as new. Dedupe the family, not only the edited copy.
+1. Preview what a lower value flags with `pnpm exec jscpd . --min-lines <N>`; the CLI flag overrides
+   the configured value.
+2. Deduplicate those clones by extracting the shared code, or add a reviewed
+   [exception](#exceptions) when the dedupe is out of scope.
+3. Lower `minLines` in `.jscpd.json` and the value quoted in this README in the same change, once
+   the preview reports no clones.
 
-## Choosing the Base
-
-The baseline is the first of:
-
-- The merge-base with `--base <ref>` (`pnpm run jscpd --base <parent-branch>`).
-- On a `pull_request` run, `HEAD^1`: the first parent of the merge commit GitHub checks out. That
-  parent is the tree the pull request merges into: the base branch tip, or, for a layer of a
-  native GitHub stack, `main` plus every lower layer. A stack layer's run reports `main` as its base
-  branch (`GITHUB_BASE_REF`), so a merge-base with `origin/$GITHUB_BASE_REF` would count the lower
-  layers' clones against the layer. A `HEAD` without exactly two parents fails the run.
-- The merge-base with `origin/main`: merge groups, manual workflow runs, and local runs.
-
-In CI, the [`fetch-base-ref`](../../.github/actions/fetch-base-ref/action.yml) action unshallows the
-checkout, so `HEAD^1` resolves, and fetches `origin/main` for merge groups and manual runs,
-immediately before the jscpd step. Both steps skip on a `main` push, which has no base branch to
-ratchet against, and on docs-only runs. See the
-[static-code-analysis.yml reference](../../docs/development/reference-ci-static-analysis-static-code-analysis-yml.md).
-
-Locally, run `git fetch origin main` first when `origin/main` is stale or missing. On a stacked
-branch, run `pnpm run jscpd --base <parent-branch>` so the ratchet compares against the parent;
-`pnpm run lint` uses the `origin/main` default. An unresolvable base fails with both hints.
+Web `*.part-N` test splits are the largest remaining clones: each part copies the same `vi.mock`
+prelude. Move the prelude into a shared mock-support module under `web/test-helpers/`, as
+[`post-card-images.mock-support.tsx`](../../web/test-helpers/components/posts/post-card-images.mock-support.tsx)
+does.
 
 ## Scope
 
 `.jscpd.json` scans TypeScript, TSX, JavaScript, SQL, Bash, and CSS; `crossFormats` also matches
 clones between TypeScript and TSX. `failOnEmpty` fails a run that analyzes no files, which catches
-an ignore list that swallows the whole tree.
+an ignore list that swallows the whole tree. jscpd respects `.gitignore`.
 
-Only tracked files are scanned. The wrapper adds every untracked, non-ignored path to `--ignore`,
-anchored to the repository root with glob metacharacters escaped; an untracked nested repository or
-worktree (`dir/`) becomes `./dir/**`. jscpd splits `--ignore` on commas, so an untracked path or
-config glob that contains a comma fails the run with a rename hint.
+jscpd scans the working tree, not `git ls-files`. CI checks out a clean tree, so it scans exactly
+the tracked files. Locally, an untracked file that `.gitignore` does not cover is scanned too; this
+is the one documented exception to the tracked-state invariant in
+[`static-code-analysis/CLAUDE.md`](../CLAUDE.md). Delete or ignore the stray file if it reports a
+clone.
 
 These scope globs exclude whole categories where repetition is not hand-maintained duplication:
 
@@ -100,20 +65,10 @@ These scope globs exclude whole categories where repetition is not hand-maintain
 - `**/route-selectors.generated.mts`: generated by
   [`route-selector-map.mts`](../i18n-extract/route-selector-map.mts).
 
-The wrapper enforces three rules on every configured glob before scanning:
-
-- **`**/`-anchored.** jscpd matches a bare glob at any depth, and it drops `./` globs on the
-  merge-base rescan, which would make every clone in an ignored path look new.
-- **Fresh.** A glob that matches no tracked file fails with "matches no tracked file; delete it
-  and its README row". Freshness is checked against all tracked files, not only scanned formats.
-- **Documented.** [`wiring.test.mts`](wiring.test.mts) fails when a configured glob is missing from
-  this README or when the exceptions table lists a glob that `.jscpd.json` does not configure.
+[`wiring.test.mts`](wiring.test.mts) fails when a configured glob is missing from this README or
+when the exceptions table lists a glob that `.jscpd.json` does not configure.
 
 ## Exceptions
-
-Inline `jscpd:ignore-start` / `jscpd:ignore-end` markers are banned in every tracked non-Markdown
-file; the wrapper fails and lists each `file:line`. Markers hide duplication from review, while an
-exception is a visible, owned, reviewable entry.
 
 To add an exception when dedupe is out of scope:
 
@@ -130,15 +85,7 @@ No exceptions are configured.
 
 ## Files
 
-- [`run-jscpd.mts`](../run-jscpd.mts): entry point; validates, scans, and reports.
-- [`cli.mts`](cli.mts): `--base` parsing and baseline selection.
-- [`git.mts`](git.mts): tracked and untracked paths, baseline resolution, and the marker scan.
-- [`ignore-globs.mts`](ignore-globs.mts): config glob validation, freshness, and `--ignore` building.
-- [`process.mts`](process.mts): the injectable process runner.
-- [`report.mts`](report.mts): the strict `jscpd-report.json` parser and clone formatting.
-- Tests: [`run-jscpd.test.mts`](run-jscpd.test.mts) (fake repository scenarios),
-  [`parsers.test.mts`](parsers.test.mts),
-  [`run-jscpd-real-binary.test.mts`](run-jscpd-real-binary.test.mts) (the real jscpd binary on
-  temporary git repositories, for exact and near-miss clones), and [`wiring.test.mts`](wiring.test.mts), with the
-  [`jscpd-fake-repo.mts`](../test-helpers/jscpd-fake-repo.mts) helper. Run them with
+- [`.jscpd.json`](../../.jscpd.json): the threshold, formats, and ignore globs.
+- [`wiring.test.mts`](wiring.test.mts): keeps the package script, `lint`, CI, and `ci-local`
+  on the same command, and this README in sync with the config. Run it with
   `pnpm exec vitest run --project static-analysis-tools static-code-analysis/jscpd`.
