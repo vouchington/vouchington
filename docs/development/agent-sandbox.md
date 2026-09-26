@@ -1,12 +1,14 @@
 # Agent Sandbox: OS-Level Containment For Claude And Codex
 
-**The rule:** `git *`, `gh *`, `docker *`, `pnpm exec *`, `pnpm run *`, `pnpm --dir *`, `pnpm install`,
+**The rule:** `git *`, `gh *`, `docker *`, `pnpm exec *`, `pnpm run *`, `pnpm install`,
 `pnpm test`, `pr-shepherd *`, `no-mistakes *`, `ps aux`, and a narrow set of specific
 `npx <tool> *` / `node dev/*.mts` invocations (`pr-shepherd`, `vitest`, `oxlint`, `oxfmt`,
 `no-mistakes`, `pr-description.mts`, `plan-issue.mts`) bypass Claude's
-OS-level sandbox through `.claude/settings.json`. Codex always
-stays in `workspace-write`; prefixes in `.codex/rules/default.rules` are
-pre-approved but still sandboxed, and every other command goes through on-request auto-review.
+OS-level sandbox through `.claude/settings.json`. Codex defaults to `workspace-write`, but
+`decision="allow"` prefixes in `.codex/rules/default.rules` run outside that sandbox without a
+confirmation prompt. Every Codex allow must be covered by Claude `sandbox.excludedCommands`;
+ordinary commands without a matching allow remain sandboxed and can run without a prompt.
+Requests to leave the sandbox use on-request auto-review.
 `git rebase`, `git stash`, `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are not
 Codex-pre-approved: they skip Claude `permissions.allow` after
 jonathanong/filaments PR #9574 and skip Codex `prefix_rule` after a
@@ -28,7 +30,7 @@ Every agent tool call in this repo passes through two layers that don't overlap:
 2. **The OS sandbox** (Landlock/seccomp on Linux, the App Sandbox on macOS) — filesystem
    read/write scoping and network allowlisting at the kernel/OS level. This is what
    `sandbox.excludedCommands` bypasses. An excluded command still goes through the hook above; it
-   just isn't also confined by the OS.
+   just isn't also confined by the OS. Codex allow prefix rules also bypass this layer.
 
 Narrowing `excludedCommands` only affects layer 2. It does not add or remove any semantic gate.
 
@@ -58,15 +60,15 @@ forms it never reads. The one allow is a single plain merge in an attended Claud
   auto-approved (no confirmation prompt). These are **independent** — a command can be allowed
   (no prompt) and still fully OS-sandboxed, or excluded (unsandboxed) and still require a prompt.
 - **Codex:** `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/*.rules` = auto-approved
-  **but still OS-sandboxed** (`workspace-write` stays in effect). That is the review-skip analogue
-  of Claude `permissions.allow`, not the OS-sandbox analogue of `excludedCommands`. Full bypass
-  requires the separate `--dangerously-bypass-approvals-and-sandbox` flag, which CI Codex no longer
-  uses as of jonathanong/filaments PR #7871.
+  **and outside the OS sandbox** for the matched command. It combines review-skip with the
+  per-command OS bypass Claude configures separately. `workspace-write` governs commands without
+  a matching allow; removing an allow does not itself require a prompt for a sandboxed command.
+  `--dangerously-bypass-approvals-and-sandbox` bypasses both controls for the entire session.
 
-A Claude `excludedCommands` entry and a Codex `prefix_rule` are **not equivalent**. The former
-removes OS containment; the latter only skips a confirmation for a narrow prefix while
-`workspace-write` remains active. Review-skip breadth need not match `excludedCommands`: Claude
-still unsandboxes `git *` / `gh *`, while Codex no longer pre-approves `git rebase` / `stash` /
+A Claude `excludedCommands` entry and a Codex allow `prefix_rule` both remove OS containment for
+matched commands. Codex additionally skips approval, so every Codex allow must fit within a Claude
+exclusion, but the lists need not have equal breadth. Claude still unsandboxes `git *` / `gh *`,
+while Codex no longer pre-approves `git rebase` / `stash` /
 `cherry-pick` or `gh run` / `api` / `workflow`. Grok has no command-prefix file; it reuses
 `.claude/settings.json` allow/deny via Claude-compat (see
 [Agent Harness Parity](agent-harness-parity.md)). Two-token Codex `["gh","pr"]` remains
@@ -74,17 +76,22 @@ pre-approved (`close` / `lock` / `create` without `--draft` included); merge sta
 Two-token `["git","branch"]` also remains, including local create and `git branch -D`. Those
 leftovers are intentional, not Claude allow parity.
 
+Verified with `codex-cli 0.157.1`: after removing the `["pnpm","--filter"]` allow, a fresh
+`codex exec` session in `workspace-write` ran `pnpm --filter web list --depth -1` successfully,
+without an approval prompt or hook block. The command therefore continues through Codex's ordinary
+sandboxed auto-review path instead of requiring an unsandboxed allow.
+
 ## Why each excluded family is load-bearing
 
-| Command                                                                                                                                         | Why it needs the OS-sandbox bypass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `gh *`                                                                                                                                          | `gh`'s auth token lives in `~/.config/gh/hosts.yml`, which is outside the sandbox's filesystem read scope, and no `GH_TOKEN`/`GITHUB_TOKEN` env var is set locally as a fallback. A sandboxed `gh` call cannot authenticate at all — not even `gh pr view`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `docker *`                                                                                                                                      | Needs the Docker daemon socket and container-volume writes for local services (`valkey`, `otel`) launched by `./dev/*` scripts — both outside what the OS sandbox's write-allow list covers.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `pnpm exec *` / `pnpm run *` / `pnpm --dir *` / `pnpm install` / `pnpm test`                                                                    | The local dev loop (unit/integration tests against local Postgres/Valkey, `next build`, Playwright) needs broad filesystem writes and network reach. Sandboxing it would break the day-to-day dev loop for marginal benefit — see the CI-containment argument below for why the actual risk this issue names is handled elsewhere. `pnpm install`/`pnpm test` are pre-approved on the Codex side too (`.codex/rules/default.rules`); this closes the corresponding Claude gap so both agents get the same coverage for the same family. `pnpm --filter *` and `pnpm dlx *` are deliberately **not** in this list: `excludedCommands` only supports a trailing wildcard, so a `pnpm --filter <pkg>` entry can't stop at a safe subcommand — it would also unsandbox `pnpm --filter <pkg> dlx <bin>` and `pnpm --filter <pkg> add <dep>`, the same arbitrary-registry-execution risk the `npx` row below explains for `dlx`. Both stay pre-approved-but-sandboxed on Codex only. |
-| `npx pr-shepherd *` / `pr-shepherd *` / `npx vitest *` / `npx oxlint *` / `npx oxfmt *` / `npx no-mistakes *` / `no-mistakes` / `no-mistakes *` | Same tools and same needs as `pnpm exec *` above, just invoked via `npx` (or, for `pr-shepherd`, sometimes the bare binary once it's on `PATH`) instead — `pr-shepherd` in particular is driven this way (not `pnpm exec`) per its own skill convention. Unlike `pnpm exec`, a stale or missing local install lets `npx <tool>` silently fetch and run that package name from the registry instead of failing; listing exact tool names (not a blanket `npx *`) bounds which package that fallback can ever resolve to. The same reasoning excludes `pnpm dlx *` from the pnpm row above: like a blanket `npx *`, it lets an arbitrary registry package execute, so it stays OS-sandboxed even where Codex pre-approves it.                                                                                                                                                                                                                                                    |
-| `node dev/pr-description.mts *` / `node dev/plan-issue.mts *`                                                                                   | Both scripts `execFile('gh', …)`/`execFile('git', …)` directly to open/update PRs and validate issues, which needs the same `~/.config/gh/hosts.yml` credential read as the `gh *` row above — a sandboxed child process can't inherit that read scope.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `ps aux` / `ps aux *`                                                                                                                           | Process-table introspection (used to check for stray dev-server/background processes) reads `/proc`-equivalent OS state outside the sandbox's filesystem-scoped read allowlist; a sandboxed `ps aux` fails with a genuine `operation not permitted: ps`, confirmed in `dev/sandbox-command-audit/__tests__/claude-extract-failures.part-2.test.mts` (the sampled invocation was `ps aux` piped into `grep`). Both the bare and wildcard forms are listed so a plain `ps aux` and an argument-bearing `ps aux --sort=-%mem` are each covered.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Mutating/network `git`                                                                                                                          | In a worktree, `commit`/`rebase`/`push`/`stash` write to the **shared** `.git/objects`/`.git/worktrees` store outside the worktree root — not in `filesystem.allowWrite`. `fetch`/`push`/`clone` also need the same credentials as `gh`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Command                                                                                                                                         | Why it needs the OS-sandbox bypass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gh *`                                                                                                                                          | `gh`'s auth token lives in `~/.config/gh/hosts.yml`, which is outside the sandbox's filesystem read scope, and no `GH_TOKEN`/`GITHUB_TOKEN` env var is set locally as a fallback. A sandboxed `gh` call cannot authenticate at all — not even `gh pr view`.                                                                                                                                                                                                                                                                                                                                                                         |
+| `docker *`                                                                                                                                      | Needs the Docker daemon socket and container-volume writes for local services (`valkey`, `otel`) launched by `./dev/*` scripts — both outside what the OS sandbox's write-allow list covers.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `pnpm exec *` / `pnpm run *` / `pnpm install` / `pnpm test`                                                                                     | The local dev loop (unit/integration tests against local Postgres/Valkey, `next build`, Playwright) needs broad filesystem writes and network reach. The matching Claude exclusions and Codex allows bypass the OS sandbox for these families. `pnpm --filter *`, `pnpm --dir *`, `pnpm dlx *`, and `corepack pnpm *` have neither a Claude exclusion nor a Codex allow: a variable filter or directory comes before the subcommand, so either broad prefix can also unsandbox `dlx`/`add`; `dlx` can execute an arbitrary registry package, and `corepack pnpm` covers all pnpm subcommands. They use the ordinary sandboxed path. |
+| `npx pr-shepherd *` / `pr-shepherd *` / `npx vitest *` / `npx oxlint *` / `npx oxfmt *` / `npx no-mistakes *` / `no-mistakes` / `no-mistakes *` | Same tools and same needs as `pnpm exec *` above, invoked via `npx` or a bare binary. Unlike `pnpm exec`, a stale or missing local install lets `npx <tool>` fetch and run that package name from the registry; listing exact tool names bounds which package that fallback can resolve to. A blanket `npx *` or `pnpm dlx *` would allow an arbitrary registry package to execute outside the sandbox, so neither has a Claude exclusion or Codex allow.                                                                                                                                                                           |
+| `node dev/pr-description.mts *` / `node dev/plan-issue.mts *`                                                                                   | Both scripts `execFile('gh', …)`/`execFile('git', …)` directly to open/update PRs and validate issues, which needs the same `~/.config/gh/hosts.yml` credential read as the `gh *` row above — a sandboxed child process can't inherit that read scope.                                                                                                                                                                                                                                                                                                                                                                             |
+| `ps aux` / `ps aux *`                                                                                                                           | Process-table introspection (used to check for stray dev-server/background processes) reads `/proc`-equivalent OS state outside the sandbox's filesystem-scoped read allowlist; a sandboxed `ps aux` fails with a genuine `operation not permitted: ps`, confirmed in `dev/sandbox-command-audit/__tests__/claude-extract-failures.part-2.test.mts` (the sampled invocation was `ps aux` piped into `grep`). Both the bare and wildcard forms are listed so a plain `ps aux` and an argument-bearing `ps aux --sort=-%mem` are each covered.                                                                                        |
+| Mutating/network `git`                                                                                                                          | In a worktree, `commit`/`rebase`/`push`/`stash` write to the **shared** `.git/objects`/`.git/worktrees` store outside the worktree root — not in `filesystem.allowWrite`. `fetch`/`push`/`clone` also need the same credentials as `gh`.                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Why read-only git is deliberately left excluded too
 
@@ -113,9 +120,10 @@ Net: narrower git benefits almost nothing here and costs real reliability. `git 
 
 ## Additional workspace-write cache and state roots (Grok, Codex, Cursor)
 
-Claude unsandboxes `pnpm exec *` and bare `no-mistakes`. Grok, Codex, and Cursor cannot unsandbox
-one command: the sandbox is process-wide `workspace-write`. Their extra writable roots therefore
-include the directories those tools actually write, matching across `.codex/config.toml`,
+Claude excludes `pnpm exec *` and bare `no-mistakes`; Codex allow rules bypass its sandbox for
+those same commands. Grok and Cursor keep their process-wide workspace sandbox, and Codex still
+needs writable roots for commands without a matching allow, including compound commands. The
+extra writable roots include the directories those tools actually write, matching across `.codex/config.toml`,
 `.grok/sandbox.toml`, `.cursor/sandbox.json`, and Claude `sandbox.filesystem.allowWrite`:
 
 Claude's OS sandbox already writes the project root. `filesystem.allowWrite` is only needed for
@@ -142,7 +150,7 @@ shares that WAL database, so the supported contract is serial `pnpm exec`, or `n
 for parallelism. Do not grant all of `~/Library/Caches`. Linux `$XDG_RUNTIME_DIR/no-mistakes` is a
 residual if that env is set; do not grant `/run/user` (formerly filed as jonathanong/filaments#9814).
 
-[`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) requires the three
+[`dev/agent-workspace-sandbox-config.test.mts`](../../dev/agent-workspace-sandbox-config.test.mts) requires the three
 workspace-write lists to stay equal and every Codex writable root to appear in Claude `allowWrite`.
 
 ## Claude review-skip for dev/ commands
@@ -178,7 +186,7 @@ narrow entries, which the docs say auto mode keeps.
 This is review-skip only. OS escalation stays per-script: a `dev/` command that must leave the OS
 sandbox still needs its own `sandbox.excludedCommands` pair, the matching narrow allow pair, and a
 Codex `prefix_rule` (next section). A `dev/` script without those entries runs pre-approved but
-OS-sandboxed.
+OS-sandboxed on Claude; on Codex it follows the ordinary sandboxed execution path.
 
 Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, refuse the plain spelling of a path
 that climbs out of `dev/`, such as `./dev/../bin/sh`. They are a guardrail, not a boundary: they
@@ -222,8 +230,10 @@ lists.
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) enforces
 narrowness (it fails on a bare `git`/`gh`/`rtk`/`npx` prefix), requires the remaining
 git/gh prefixes, forbids the six review-bypass families in `.codex/rules/default.rules`,
-requires Codex `writable_roots` to be a subset of Claude `sandbox.filesystem.allowWrite`, and
-requires every Claude `/tmp` or `/var` write root to be granted under its `/private` spelling too. See
+parses every Codex allow prefix and requires a trailing-wildcard Claude exclusion match,
+and requires every Claude `/tmp` or `/var` write root to be granted under its `/private` spelling too.
+The [workspace sandbox guard](../../dev/agent-workspace-sandbox-config.test.mts) requires Codex
+`writable_roots` to be a subset of Claude `sandbox.filesystem.allowWrite`. See
 [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#decision-criteria) for the
 full decision criteria on when an escalation is a genuine bypass candidate worth adding.
 
@@ -235,6 +245,8 @@ full decision criteria on when an escalation is a genuine bypass candidate worth
   hook's semantic gating, unaffected by sandbox exclusion.
 - [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) — the three-surface
   consistency and narrowness guard.
+- [`dev/agent-workspace-sandbox-config.test.mts`](../../dev/agent-workspace-sandbox-config.test.mts) —
+  workspace writable-root parity and shared hook-source guard.
 - [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts) — the
   `dev/` allow (blanket plus narrow unsandboxed) and `/../` deny guard.
 - [Agent Harness Parity](agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor sandbox and hook reuse.
