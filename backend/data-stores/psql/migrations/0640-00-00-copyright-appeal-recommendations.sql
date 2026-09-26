@@ -1,5 +1,3 @@
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'copyright_notice';
-
 CREATE TABLE copyright_notice_appeal_recommendations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,

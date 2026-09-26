@@ -9,6 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
 | ---------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
 | `id`                               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
+| `copyright_notice_email_intake_id` | `uuid`                     | yes      |                              |          |           |           | Immutable original email intake containing the raw MIME evidence for an inbound correspondence. |
 | `copyright_notice_id`              | `uuid`                     | no       |                              |          |           |           | Legal case to which this correspondence belongs.                                                |
 | `copyright_notice_submission_id`   | `uuid`                     | yes      |                              |          |           |           | Inbound submission represented by this message; NULL for outbound correspondence.               |
 | `direction`                        | `text`                     | no       |                              |          |           |           | Inbound receipt or outbound legal communication.                                                |
@@ -21,7 +22,6 @@ Not partitioned — growth: unbounded.
 | `sent_at`                          | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp set after durable delivery intent is recorded.                                |
 | `created_at`                       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
 | `updated_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
-| `copyright_notice_email_intake_id` | `uuid`                     | yes      |                              |          |           |           | Immutable original email intake containing the raw MIME evidence for an inbound correspondence. |
 
 **Primary key:** `PRIMARY KEY (id)`
 

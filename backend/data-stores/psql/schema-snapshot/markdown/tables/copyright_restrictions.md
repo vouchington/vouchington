@@ -9,6 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                           |
 | ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------- |
 | `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                   |
+| `authorizing_assessment_id`  | `uuid`                     | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                            |
 | `copyright_notice_target_id` | `uuid`                     | no       |                              |          |           |           | Exact allegation target governed by this independent restriction.                                 |
 | `imposed_at`                 | `timestamp with time zone` | no       |                              |          |           |           | When the independent restriction became active.                                                   |
 | `lifted_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | One-way timestamp recording when this restriction was lifted.                                     |
@@ -19,7 +20,6 @@ Not partitioned — growth: unbounded.
 | `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                         |
 | `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
 | `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                   |
-| `authorizing_assessment_id`  | `uuid`                     | no       |                              |          |           |           | Immutable exact compliant assessment that authorized this restriction.                            |
 
 **Primary key:** `PRIMARY KEY (id)`
 

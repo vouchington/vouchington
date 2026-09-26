@@ -59,9 +59,9 @@ and `postgres-require-fk-on-delete` requires explicit deletion behavior. no-mist
 so they pair with top-level `VALIDATE CONSTRAINT`.
 
 `postgres-no-add-column` requires new columns to be folded into the original prelaunch
-`CREATE TABLE`. Existing exact path/table/column/type/nullability/default exceptions in
-[`.no-mistakes.yml`](../../.no-mistakes.yml) are cleanup debt from earlier staging repairs;
-do not add new ones. The rule rejects mismatched operations and stale exceptions.
+`CREATE TABLE`. Its exception list in [`.no-mistakes.yml`](../../.no-mistakes.yml) is empty;
+do not add upgrade-only column migrations. The rule rejects mismatched operations and stale
+exceptions.
 
 ## No strict-prefix-redundant indexes
 

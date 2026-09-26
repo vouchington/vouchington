@@ -106,14 +106,6 @@ CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()
  LANGUAGE plpgsql
 ```
 
-## `fn_deduplicate_user_import_topic_recommendation`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_deduplicate_user_import_topic_recommendation()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_enforce_membership_provider_evidence_immutability`
 
 ```sql

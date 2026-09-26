@@ -70,6 +70,7 @@ CREATE TRIGGER trigger_membership_provider_lineages_immutable BEFORE UPDATE OR D
 -- The account reference is nullable on final purge; binding history remains durable after SET NULL.
 CREATE TABLE IF NOT EXISTS membership_lineage_bindings (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_lineage_id UUID NOT NULL REFERENCES membership_provider_lineages(id) ON DELETE RESTRICT,
+  originating_invoice_id TEXT CONSTRAINT membership_lineage_bindings_originating_invoice_id_valid CHECK (originating_invoice_id IS NULL OR (char_length(originating_invoice_id) BETWEEN 1 AND 255 AND originating_invoice_id = TRIM(originating_invoice_id))),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL, source_kind membership_source_kinds NOT NULL DEFAULT 'direct', bound_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, released_at TIMESTAMPTZ, release_reason TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (source_kind <> 'admin_grant'),
@@ -81,6 +82,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__current_direc
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__current_family_lineage_user ON membership_lineage_bindings (membership_provider_lineage_id, user_id) WHERE released_at IS NULL AND source_kind = 'family';
 CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__lineage_id ON membership_lineage_bindings (membership_provider_lineage_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_lineage_bindings__user_id ON membership_lineage_bindings (user_id, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_lineage_bindings__id_lineage_id ON membership_lineage_bindings (id, membership_provider_lineage_id);
+COMMENT ON COLUMN membership_lineage_bindings.originating_invoice_id IS 'Stripe invoice that established the bound provider lineage for deterministic reversal targeting.';
 
 CREATE TABLE IF NOT EXISTS membership_provider_evidence_records (
   id UUID PRIMARY KEY DEFAULT uuidv7(), provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
@@ -368,6 +371,11 @@ CREATE INDEX IF NOT EXISTS idx_membership_entitlement_effects__pending ON member
 CREATE TABLE IF NOT EXISTS membership_operations (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
   membership_provider_lineage_id UUID NOT NULL,
+  membership_lineage_binding_id UUID NOT NULL,
+  provider_refund_id TEXT CONSTRAINT membership_operations__provider_refund_id_valid CHECK (provider_refund_id IS NULL OR (char_length(provider_refund_id) BETWEEN 1 AND 255 AND provider_refund_id = TRIM(provider_refund_id))),
+  execution_claim_token TEXT CONSTRAINT membership_operations_execution_claim_token_valid CHECK (execution_claim_token IS NULL OR char_length(execution_claim_token) = 36),
+  execution_claimed_at TIMESTAMPTZ,
+  CONSTRAINT membership_operations_execution_claim_pair_valid CHECK ((execution_claim_token IS NULL) = (execution_claimed_at IS NULL)),
   provider membership_provider_kinds NOT NULL, environment membership_provider_environments NOT NULL, application_id TEXT NOT NULL,
   operation_kind membership_operation_kinds NOT NULL, idempotency_key TEXT NOT NULL,
   qualifying_allocation_minor_units BIGINT CHECK (qualifying_allocation_minor_units BETWEEN 0 AND 9007199254740991),
@@ -408,13 +416,21 @@ CREATE TABLE IF NOT EXISTS membership_operations (
   ) REFERENCES membership_sources (id, membership_provider_lineage_id) ON DELETE RESTRICT,
   CONSTRAINT fk_membership_operations__lineage_context FOREIGN KEY (
     membership_provider_lineage_id, provider, environment, application_id
-  ) REFERENCES membership_provider_lineages (id, provider, environment, application_id) ON DELETE RESTRICT
+  ) REFERENCES membership_provider_lineages (id, provider, environment, application_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_operations__binding_lineage FOREIGN KEY (membership_lineage_binding_id, membership_provider_lineage_id)
+    REFERENCES membership_lineage_bindings (id, membership_provider_lineage_id) ON DELETE RESTRICT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_idempotency ON membership_operations (provider, environment, application_id, idempotency_key);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__receipt_snapshot ON membership_operations (id, provider, environment, application_id, operation_kind, remaining_refundable_minor_units, currency_code) NULLS NOT DISTINCT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__id_source ON membership_operations (id, membership_source_id);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__source_id ON membership_operations (membership_source_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__lineage_id ON membership_operations (membership_provider_lineage_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_membership_operations__binding_id ON membership_operations (membership_lineage_binding_id, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_operations__provider_refund ON membership_operations (provider, environment, application_id, provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+COMMENT ON COLUMN membership_operations.provider_refund_id IS 'Latest Stripe refund identity, retained to reconcile non-terminal refund outcomes before retrying.';
+COMMENT ON COLUMN membership_operations.execution_claim_token IS 'Opaque lease token held by the current provider-operation attempt.';
+COMMENT ON COLUMN membership_operations.execution_claimed_at IS 'When the current provider-operation execution lease was acquired.';
+COMMENT ON COLUMN membership_operations.membership_lineage_binding_id IS 'Binding and owner captured when the provider operation was requested.';
 CREATE INDEX IF NOT EXISTS idx_membership_operations__currency_code ON membership_operations (currency_code);
 CREATE INDEX IF NOT EXISTS idx_membership_operations__reconciliation_due ON membership_operations (reconciliation_due_at, id) WHERE completed_at IS NULL AND reconciliation_due_at IS NOT NULL;
 CREATE TABLE IF NOT EXISTS membership_automatic_refund_receipts (

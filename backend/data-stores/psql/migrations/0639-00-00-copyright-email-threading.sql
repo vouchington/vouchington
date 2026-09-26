@@ -2,25 +2,11 @@
 -- immutable MIME parse and are never used as a public lookup key.
 
 ALTER TABLE copyright_notice_correspondence_messages
-  ADD COLUMN copyright_notice_email_intake_id uuid;
-ALTER TABLE copyright_notice_correspondence_messages
   ADD CONSTRAINT fk_copyright_correspondence__email_intake
   FOREIGN KEY (copyright_notice_email_intake_id)
   REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE copyright_notice_correspondence_messages
   VALIDATE CONSTRAINT fk_copyright_correspondence__email_intake;
-
-ALTER TABLE copyright_notice_correspondence_messages
-  DROP CONSTRAINT copyright_notice_correspondence_messa_correspondence_kind_check;
-ALTER TABLE copyright_notice_correspondence_messages
-  ADD CONSTRAINT copyright_correspondence_kind_check
-  CHECK (correspondence_kind IN (
-    'receipt', 'request_information', 'restriction_notice',
-    'counter_notice_forwarding', 'restoration_notice', 'status_update',
-    'inbound_message'
-  )) NOT VALID;
-ALTER TABLE copyright_notice_correspondence_messages
-  VALIDATE CONSTRAINT copyright_correspondence_kind_check;
 
 CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),

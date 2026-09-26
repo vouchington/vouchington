@@ -5,7 +5,10 @@ CREATE TABLE IF NOT EXISTS membership_ineligible_purchase_reversal_refund_scans 
   currency_code TEXT NOT NULL,
   charge_id TEXT,
   payment_intent_id TEXT,
-  generation BIGINT NOT NULL DEFAULT 1 CHECK (generation >= 1),
+  generation BIGINT NOT NULL DEFAULT 1 CONSTRAINT ck_mipr_refund_scans__generation_safe CHECK (generation BETWEEN 1 AND 9007199254740991),
+  registered_cycle_generation BIGINT NOT NULL DEFAULT 1 CONSTRAINT ck_mipr_refund_scans__registered_cycle_generation_safe CHECK (registered_cycle_generation BETWEEN 1 AND 9007199254740991),
+  verified_cycle_generation BIGINT CONSTRAINT ck_mipr_refund_scans__verified_cycle_generation_safe CHECK (verified_cycle_generation BETWEEN 1 AND 9007199254740991),
+  CONSTRAINT ck_mipr_refund_scans__verified_cycle_registered CHECK (verified_cycle_generation IS NULL OR verified_cycle_generation <= registered_cycle_generation),
   head_stripe_refund_id TEXT,
   cursor_stripe_refund_id TEXT,
   first_page_seen_at TIMESTAMPTZ,
@@ -124,6 +127,10 @@ COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_scans.payment_i
   'Stripe payment-intent selector when the target has no charge selector.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_scans.generation IS
   'Compare-and-set fence incremented whenever a scan restarts from its first page.';
+COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_scans.registered_cycle_generation IS
+  'Latest case-level verification pass that lazily registered this stable payment-target scan.';
+COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_scans.verified_cycle_generation IS
+  'Latest registered verification pass whose current Stripe head was observed for this target.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_scans.head_stripe_refund_id IS
   'First refund ID seen in the current generation, or null for an empty first page.';
 COMMENT ON COLUMN membership_ineligible_purchase_reversal_refund_scans.cursor_stripe_refund_id IS

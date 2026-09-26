@@ -30,6 +30,9 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS posts (
   id UUID NOT NULL DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT posts_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   post_type post_types NOT NULL,
 
   title TEXT NOT NULL DEFAULT '',
@@ -90,6 +93,8 @@ CREATE TABLE IF NOT EXISTS posts (
   -- link post: single external URL (FK to urls created in 0050; ON DELETE RESTRICT because the
   -- biconditional CHECK below forbids a NULL url_id on link posts, so SET NULL would violate it)
   url_id UUID REFERENCES urls ON DELETE RESTRICT,
+  creation_source_url_id UUID REFERENCES urls(id) ON DELETE RESTRICT,
+  CONSTRAINT posts_creation_source_url_id_check CHECK (creation_source_url_id IS NULL OR post_type = 'link'),
   -- biconditional: exactly link posts have a url_id and only link posts have one
   CONSTRAINT posts_link_url_id CHECK ((post_type = 'link') = (url_id IS NOT NULL)),
 
@@ -126,6 +131,25 @@ CREATE TABLE IF NOT EXISTS posts (
 
   PRIMARY KEY (id)
 ) PARTITION BY RANGE (id);
+
+CREATE INDEX IF NOT EXISTS idx_posts__creation_source_url_id
+  ON posts (creation_source_url_id)
+  WHERE creation_source_url_id IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION fn_prevent_post_creation_source_url_update()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.creation_source_url_id IS DISTINCT FROM OLD.creation_source_url_id THEN
+    RAISE EXCEPTION 'post creation source URL is immutable';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER posts_creation_source_url_id_immutable
+  BEFORE UPDATE OF creation_source_url_id ON posts
+  FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update();
+
+COMMENT ON COLUMN posts.creation_source_url_id IS 'Immutable raw URL submitted when creating a link post.';
 
 -- Exact hashtag occurrences are independent from the election-backed category
 -- relation so display casing is preserved without duplicating category votes.
@@ -467,22 +491,33 @@ DO $$ BEGIN
   CREATE TYPE agent_types AS ENUM (
   'moderator',
   'autotagger',
-  'storyteller',
-  'recommender'
+  'storyteller'
 );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE TYPE agent_models AS ENUM (
-  'gpt-5.4-nano'
+  'gpt-5.4-nano',
+  'apple-foundation-system',
+  'claude-sonnet-5',
+  'phi-silica',
+  'windows-system-language-model',
+  'android-aicore-system',
+  'openai/gpt-5.4-nano'
 );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
   CREATE TYPE agent_model_providers AS ENUM (
-  'openai'
+  'openai',
+  'apple_foundation',
+  'anthropic',
+  'windows_foundry',
+  'openai_compatible',
+  'android_aicore',
+  'openrouter'
 );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -760,3 +795,7 @@ COMMENT ON COLUMN post_images.post_id IS 'The post this image is attached to.';
 COMMENT ON COLUMN post_images.image_id IS 'The image entity.';
 COMMENT ON COLUMN post_images.order_index IS 'Zero-based display order of the image within the post.';
 COMMENT ON COLUMN post_images.caption IS 'Optional caption text for the image.';
+
+CREATE INDEX IF NOT EXISTS idx_posts__created_via_oauth_client_id
+  ON posts (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;

@@ -39,6 +39,7 @@ CREATE TABLE copyright_notice_target_images (
 
 CREATE TABLE copyright_restrictions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  authorizing_assessment_id uuid NOT NULL,
   copyright_notice_target_id uuid NOT NULL REFERENCES copyright_notice_targets(id) ON DELETE CASCADE,
   imposed_at timestamptz NOT NULL,
   lifted_at timestamptz,
@@ -85,6 +86,7 @@ CREATE TABLE copyright_notice_evidence_artifacts (
 
 CREATE TABLE copyright_notice_submission_assessments (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_form_screening_id uuid,
   copyright_notice_submission_id uuid NOT NULL REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
   supersedes_assessment_id uuid UNIQUE REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
   assessed_at timestamptz NOT NULL,
@@ -163,17 +165,19 @@ CREATE TABLE copyright_notice_deadlines (
 
 CREATE TABLE copyright_notice_correspondence_messages (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  copyright_notice_email_intake_id uuid,
   copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_notice_submission_id uuid REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
   direction text NOT NULL CHECK (direction IN ('inbound', 'outbound')),
   composition_kind text NOT NULL CHECK (composition_kind IN ('inbound', 'deterministic_template', 'staff', 'agent')),
-  correspondence_kind text NOT NULL CHECK (correspondence_kind IN (
+  correspondence_kind text NOT NULL CONSTRAINT copyright_correspondence_kind_check CHECK (correspondence_kind IN (
     'receipt',
     'request_information',
     'restriction_notice',
     'counter_notice_forwarding',
     'restoration_notice',
-    'status_update'
+    'status_update',
+    'inbound_message'
   )),
   body_ciphertext text NOT NULL CHECK (char_length(body_ciphertext) BETWEEN 1 AND 1048576),
   drafted_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -206,6 +210,12 @@ CREATE TABLE copyright_notice_lifecycle_events (
 
 CREATE TABLE copyright_notice_action_intents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
+  delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
+  claimed_at timestamptz,
+  completed_at_reason text CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
+  failure_message text CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
+  next_attempt_at timestamptz,
   copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE CASCADE,
   copyright_notice_deadline_id uuid REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
   expected_placement_revision integer NOT NULL CHECK (expected_placement_revision >= 0),
@@ -214,7 +224,17 @@ CREATE TABLE copyright_notice_action_intents (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (copyright_restriction_id, expected_placement_revision, action),
-  CHECK (copyright_notice_deadline_id IS NULL OR action = 'restore')
+  CHECK (copyright_notice_deadline_id IS NULL OR action = 'restore'),
+  CONSTRAINT copyright_action_intents_delivery_state CHECK (
+    (state = 'pending' AND completed_at IS NULL AND completed_at_reason IS NULL AND claimed_at IS NULL)
+    OR (state = 'claimed' AND completed_at IS NULL AND completed_at_reason IS NULL AND claimed_at IS NOT NULL)
+    OR (state IN ('completed', 'stale', 'blocked', 'failed')
+      AND completed_at IS NOT NULL AND completed_at_reason = state AND next_attempt_at IS NULL)
+  ),
+  CONSTRAINT copyright_action_intents_retry_schedule CHECK (
+    ((state = 'pending' AND (delivery_attempt_count = 0 OR next_attempt_at IS NOT NULL)) OR state <> 'pending')
+    AND (state <> 'claimed' OR next_attempt_at IS NULL)
+  )
 );
 
 CREATE INDEX idx_copyright_notice_targets__placement ON copyright_notice_targets(placement_key, placement_revision);

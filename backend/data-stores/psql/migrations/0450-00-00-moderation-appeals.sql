@@ -36,6 +36,9 @@ $$;
 
 CREATE TABLE IF NOT EXISTS moderation_appeals (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT moderation_appeals_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   appellant_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
 
   -- Exactly one of these must be non-null (the thing being appealed)
@@ -103,34 +106,6 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
 );
 
 
-UPDATE moderation_appeals
-SET post_removal_kind = 'platform'
-WHERE post_id IS NOT NULL
-  AND post_removal_kind IS NULL;
-
-ALTER TABLE moderation_appeals
-  DROP CONSTRAINT IF EXISTS chk_moderation_appeals__post_removal_kind_scope;
-
-ALTER TABLE moderation_appeals
-  ADD CONSTRAINT chk_moderation_appeals__post_removal_kind_scope CHECK (
-    (post_id IS NOT NULL AND post_removal_kind IS NOT NULL)
-    OR (post_id IS NULL AND post_removal_kind IS NULL)
-  ) NOT VALID;
-
-ALTER TABLE moderation_appeals
-  VALIDATE CONSTRAINT chk_moderation_appeals__post_removal_kind_scope;
-
-ALTER TABLE moderation_appeals
-  DROP CONSTRAINT IF EXISTS chk_moderation_appeals__resolution_pairing;
-
-ALTER TABLE moderation_appeals
-  ADD CONSTRAINT chk_moderation_appeals__resolution_pairing CHECK (
-    (resolved_at IS NULL AND resolution_action IS NULL)
-    OR (resolved_at IS NOT NULL AND resolution_action IS NOT NULL)
-  ) NOT VALID;
-
-ALTER TABLE moderation_appeals
-  VALIDATE CONSTRAINT chk_moderation_appeals__resolution_pairing;
 
 -- Queue pagination
 CREATE INDEX IF NOT EXISTS idx_moderation_appeals__status_created
@@ -358,3 +333,7 @@ COMMENT ON COLUMN notifications.community_ban_id IS 'The community ban this noti
 
 COMMENT ON COLUMN user_warnings.revoked_at IS 'When this warning was revoked (e.g. via appeal acceptance). NULL means the warning is still active.';
 COMMENT ON COLUMN user_warnings.revoked_by_id IS 'The staff user who revoked this warning.';
+
+CREATE INDEX IF NOT EXISTS idx_moderation_appeals__created_via_oauth_client_id
+  ON moderation_appeals (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;
