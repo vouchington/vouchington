@@ -116,6 +116,7 @@ function assertCodeExchange(
     code.grant_revoked_at ||
     code.expires_at <= new Date() ||
     code.redirect_uri !== input.redirectUri ||
+    !client.redirect_uris.includes(code.redirect_uri) ||
     !pkceMatches(code.code_challenge, verifier)
   ) {
     throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')

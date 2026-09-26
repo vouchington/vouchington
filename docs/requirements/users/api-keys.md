@@ -77,6 +77,8 @@ registration, and `scopes` is a list of catalogue scopes (at most 32). A confide
 secret is returned only by registration and rotation, is stored as a hash and is never readable
 afterwards; public apps have no secret, so rotation returns 409. Renaming an app or changing its
 redirect URIs clears staff verification, because staff verified the old name and destinations.
+Removing a redirect URI also cancels sign-ins still waiting on it: a pending consent request or an
+unexchanged authorization code for that URI is refused.
 Revoking an app stops its access tokens, refresh tokens and authorization codes on their next use and
 removes its grants from every user's connected apps. Other users' apps return 404, and suspended
 users cannot change apps.

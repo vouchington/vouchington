@@ -153,6 +153,7 @@ async function lockAuthorizationRequest(
        AND request.denied_at IS NULL
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
+       AND request.redirect_uri = ANY(client.redirect_uris)
      FOR UPDATE OF request`,
     [requestId, userId, browserBindingHash],
   )

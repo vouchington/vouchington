@@ -17,6 +17,8 @@ OpenID Connect, ID-token, or UserInfo flows.
 ## Security invariants
 
 - Redirect URIs must be registered exactly. HTTPS is required except for HTTP loopback clients.
+  The match is rechecked when the user decides on consent and when the code is exchanged, so a URI
+  the owner has since removed receives neither a code nor tokens.
 - Authorization errors redirect only after the client and redirect URI have both been verified.
 - Codes, access tokens, refresh tokens, and client secrets are stored only as purpose-bound hashes.
   Plaintext credentials are returned once.
@@ -47,7 +49,11 @@ Signed-in users register and manage their own clients through `/api/v1/my/oauth-
 ([OAuth apps](../users/api-keys.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
 and records `owner_user_id`; rotation replaces the stored client-secret hash and returns the new
 secret once, and renaming a client or replacing its redirect URIs clears `verified_at` and
-`verified_by_id` in the same update.
+`verified_by_id` in the same update. Every owner mutation first takes the account-deletion lock
+(`fn_lock_active_user_for_mutation`), so a request that authenticated just before the owner's
+deletion committed cannot change the app or mint a secret afterwards. Account deletion does not yet
+revoke the apps the account owns; [#710](https://github.com/vouchington/vouchington/issues/710)
+tracks it.
 
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
