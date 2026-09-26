@@ -6,9 +6,10 @@ import { describe, expect, it } from 'vitest'
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
 // blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command
-// that leaves the OS sandbox also keeps a narrow allow rule, because auto mode keeps narrow rules
-// and may drop the blanket ones. The `/../` deny rules refuse the plain spelling of a path that
-// escapes dev/. Rationale: docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
+// that leaves the OS sandbox also keeps a narrow allow rule, because auto mode may drop the blanket
+// ones and Claude Code documents that it keeps narrow rules. The `/../` deny rules refuse the plain
+// spelling of a path that escapes dev/. Rationale:
+// docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {
   permissions: { allow: string[]; deny: string[] }

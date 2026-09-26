@@ -150,9 +150,9 @@ without a settings change. Grok reuses these allow/deny strings through Claude-c
 
 Every `dev/` command in `sandbox.excludedCommands` also keeps a narrow allow entry with the same
 text, such as `Bash(./dev/reset-worktree)` and `Bash(./dev/reset-worktree *)`. Those scripts run
-outside the OS sandbox, and auto mode keeps narrow rules but may drop the blanket ones (below).
-Without the narrow entries, dropping the blanket rules would send them to the classifier in auto
-mode, which they skipped before the blanket rules existed.
+outside the OS sandbox, and auto mode may drop the blanket rules (below). Claude Code documents
+that auto mode keeps narrow rules, so these entries keep the scripts out of the classifier either
+way, as their per-script entries did before the blanket rules existed.
 
 Auto-mode behavior is unverified. On entering auto mode, Claude Code drops "broad allow rules that
 grant arbitrary code execution" and gives examples: blanket `Bash(*)`, wildcarded interpreters like
@@ -164,11 +164,12 @@ Code drops blanket script-path rules like these. A live auto-mode session ran sa
 unsandboxed `dev/` commands without a prompt but could not tell what approved them: Claude Code
 reports classifier denials, not what approved a command. That session's user settings also had
 `sandbox.autoAllowBashIfSandboxed` on and listed `./dev/` tooling as routine in
-`autoMode.environment`, so every run would look the same whichever path approved it. Settling it
-takes someone watching the UI during an unsandboxed `dev/` command outside the narrow entries, or
-Claude Code's decision logs. If Claude Code keeps the blanket rules, `dev/` commands skip the
-classifier as well as the prompt; if it drops them, the narrow entries still skip it for the
-unsandboxed scripts, and other `dev/` commands go to the classifier.
+`autoMode.environment`, so every run would look the same whichever path approved it. Since approvals
+are not reported, neither the session UI nor its transcript can settle it; that takes a Claude Code
+source that records which path approved a command, or docs that say which rules auto mode keeps. If
+Claude Code keeps the blanket rules, `dev/` commands skip the classifier as well as the prompt. If
+it drops them, other `dev/` commands go to the classifier, and the unsandboxed scripts rely on their
+narrow entries, which the docs say auto mode keeps.
 
 This is review-skip only. OS escalation stays per-script: a `dev/` command that must leave the OS
 sandbox still needs its own `sandbox.excludedCommands` pair, the matching narrow allow pair, and a
