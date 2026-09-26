@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CommandDialog, CommandEmpty, CommandInput, CommandList } from '@/components/ui/command'
+import { CommandDialog, CommandInput, CommandList } from '@/components/ui/command'
 import {
   type SearchTab,
   type SearchResults,
@@ -156,23 +156,31 @@ export function CommandSearch({
           tabsRef={tabsRef}
           tabs={searchTabs}
         />
-        <CommandList>
-          <CommandEmpty>
+        {matchedShortcuts.length > 0 ||
+        results.topics.length > 0 ||
+        results.posts.length > 0 ||
+        results.news.length > 0 ||
+        results.domains.length > 0 ||
+        results.communities.length > 0 ||
+        results.fediverse.length > 0 ? (
+          <CommandList>
+            <ResultGroups
+              activeTab={activeTab}
+              matchedShortcuts={matchedShortcuts}
+              results={results}
+              onOpenChange={onOpenChange}
+              pushRoute={href => push(href)}
+            />
+          </CommandList>
+        ) : (
+          <output className='block py-6 text-center text-sm'>
             {loading
               ? t('extracted.components.commandSearch.searching_78c9d9f6')
               : query.trim()
                 ? t('extracted.components.commandSearch.noResultsFound_7ecdbfee')
                 : t('extracted.components.commandSearch.typeToSearch_6552c370')}
-          </CommandEmpty>
-
-          <ResultGroups
-            activeTab={activeTab}
-            matchedShortcuts={matchedShortcuts}
-            results={results}
-            onOpenChange={onOpenChange}
-            pushRoute={href => push(href)}
-          />
-        </CommandList>
+          </output>
+        )}
       </div>
     </CommandDialog>
   )

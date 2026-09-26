@@ -59,7 +59,7 @@ describe('vitest environment coverage config', () => {
     expect(coverageConfig().include).toEqual(['**/*.{mts,ts,tsx}'])
   })
 
-  it('includes Storybook ratchet helpers in the web-storybook coverage scope', async () => {
+  it('includes Storybook helper modules in the web-storybook coverage scope', async () => {
     process.env.VITEST_COVERAGE_SCOPE = 'web-storybook'
     process.argv = ['node', 'vitest', 'run', '--project', 'web-storybook', '--coverage']
 
@@ -67,8 +67,6 @@ describe('vitest environment coverage config', () => {
 
     expect(coverageFlags.isWebStorybookCoverage).toBe(true)
     expect(coverageConfig().include).toEqual([
-      'web/storybook/component-story-ratchet-parameters.ts',
-      'web/storybook/component-story-ratchet-renderer.tsx',
       'web/storybook/entities/entity-fixtures.ts',
       'web/storybook/entities/topics-story-recommendations.ts',
       'web/test-helpers/storybook/component-story-coverage/message.ts',

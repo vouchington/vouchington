@@ -50,19 +50,19 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       ),
     },
     {
-      // CommunitiesSidebarGroup loads client API data on mount; keep ratchet stories deterministic.
+      // CommunitiesSidebarGroup loads client API data on mount; keep browser stories deterministic.
       find: '@/components/communities/communities-sidebar-group',
       replacement: fileURLToPath(
         new URL('../storybook/mocks/communities-sidebar-group.tsx', import.meta.url),
       ),
     },
     {
-      // InboxButton opens live client state and notifications APIs; keep ratchet stories inert.
+      // InboxButton opens live client state and notifications APIs; keep browser stories inert.
       find: '@/components/notifications/inbox-button',
       replacement: fileURLToPath(new URL('../storybook/mocks/inbox-button.tsx', import.meta.url)),
     },
     {
-      // ModmailInbox reaches client APIs on mount; keep ratchet stories inert.
+      // ModmailInbox reaches client APIs on mount; keep browser stories inert.
       find: '@/components/communities/modmail-inbox',
       replacement: fileURLToPath(new URL('../storybook/mocks/modmail-inbox.tsx', import.meta.url)),
     },
