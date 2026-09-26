@@ -1,5 +1,5 @@
 import { mkdtempSync, writeFileSync } from 'node:fs'
-import { access, rm } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
