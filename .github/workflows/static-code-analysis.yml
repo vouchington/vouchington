@@ -87,7 +87,7 @@ jobs:
         timeout-minutes: 5
       - run: pnpm exec oxfmt --check
         timeout-minutes: 2
-      - run: selene --config selene.toml backend/services/jwt-session/scripts
+      - run: pnpm run selene
         timeout-minutes: 2
       - name: Verify no dependency changes needed
         timeout-minutes: 1

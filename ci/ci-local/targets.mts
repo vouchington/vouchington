@@ -90,11 +90,7 @@ export const targets = {
         'static-code-analysis.yml',
       ),
       workflowCommand('oxfmt', 'pnpm exec oxfmt --check', 'static-code-analysis.yml'),
-      workflowCommand(
-        'selene',
-        'selene --config selene.toml backend/services/jwt-session/scripts',
-        'static-code-analysis.yml',
-      ),
+      workflowCommand('selene', 'pnpm run selene', 'static-code-analysis.yml'),
       workflowCommand(
         'backend typecheck',
         'pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json',
