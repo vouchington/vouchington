@@ -14,7 +14,7 @@ Public discovery documents such as `/llms.txt` advertise this endpoint so that a
 
 ## Authentication
 
-The bearer credential is an OAuth access token bound to this resource, or an API key of type `mcp`. Session cookies are never read. Each tool declares the scopes it needs; `mcp.user:read` and `mcp.user:write` cover every user read and write scope.
+The bearer credential is an OAuth access token bound to this resource, or an API key of type `mcp`. Session cookies are never read. Each tool requires its own resource scopes, such as `topics:read` or `cards:write` (see the Scopes column of the [tool catalog](../../../../docs/overview/architecture/agent-tools/catalog.md)); the `mcp.user:read` and `mcp.user:write` compatibility grants cover every user read and write scope. See [API key permissions](../../../../docs/requirements/users/api-keys.md#permissions). Write tools also require a paid plan; see [Plan Gating](../../../../docs/overview/architecture/agent-tools/README.md#plan-gating).
 
 MCP clients that support OAuth need only the endpoint URL. A request without a credential gets `401` with a `WWW-Authenticate` challenge that names the [protected-resource metadata](../../oauth/README.md#routes), and a single `tools/call` that lacks a scope gets `403` with `error="insufficient_scope"` and the scopes to re-authorize with. See [MCP challenges](../../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md#mcp-challenges).
 
@@ -40,6 +40,7 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 
 | Operation    | Description                                             |
 | ------------ | ------------------------------------------------------- |
+| `initialize` | Returns capabilities and server `instructions`          |
 | `tools/list` | Lists tools filtered by role, plan, and key permissions |
 | `tools/call` | Executes a tool; enforces same checks as list           |
 

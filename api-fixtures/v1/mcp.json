@@ -8,17 +8,18 @@
         {
           "tool": {
             "name": "compare_topics",
+            "title": "Compare Topics",
             "description": "Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "topic_id_a": {
                   "type": "string",
-                  "description": "UUID of the first topic to compare"
+                  "description": "UUID or slug of the first topic to compare"
                 },
                 "topic_id_b": {
                   "type": "string",
-                  "description": "UUID of the second topic to compare"
+                  "description": "UUID or slug of the second topic to compare"
                 },
                 "vertical": {
                   "type": "string",
@@ -29,7 +30,8 @@
               "required": ["topic_id_a", "topic_id_b"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -47,7 +49,8 @@
         {
           "tool": {
             "name": "get_domain_ratings",
-            "description": "Look up trust signals for a linked source. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.",
+            "title": "Get Domain Ratings",
+            "description": "Look up trust signals for a linked source. Provide exactly one of url or hostname. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -60,10 +63,13 @@
                   "description": "A bare hostname/domain to inspect, such as example.com"
                 }
               },
+              "minProperties": 1,
+              "maxProperties": 1,
               "additionalProperties": false
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["domain-ratings:read"]
@@ -76,6 +82,7 @@
         {
           "tool": {
             "name": "get_my_cards",
+            "title": "Get My Cards",
             "description": "List the current user's wallet cards.",
             "inputSchema": {
               "type": "object",
@@ -91,7 +98,8 @@
               }
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["cards:read"]
@@ -109,6 +117,7 @@
         {
           "tool": {
             "name": "get_my_point_valuations",
+            "title": "Get My Point Valuations",
             "description": "List the current user's rewards program point valuations.",
             "inputSchema": {
               "type": "object",
@@ -124,7 +133,8 @@
               }
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["point-valuations:read"]
@@ -142,6 +152,7 @@
         {
           "tool": {
             "name": "get_my_profile",
+            "title": "Get My Profile",
             "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
             "inputSchema": {
               "type": "object",
@@ -174,7 +185,8 @@
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["profile:read"]
@@ -185,13 +197,26 @@
           "api": [
             {
               "method": "GET",
-              "path": "/api/v1/my/profile"
+              "path": "/api/v1/my/cards"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/rewards-program-point-valuations"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/rewards-program-statuses"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/financial-profile"
             }
           ]
         },
         {
           "tool": {
             "name": "get_my_rewards_statuses",
+            "title": "Get My Rewards Statuses",
             "description": "List the current user's rewards program statuses.",
             "inputSchema": {
               "type": "object",
@@ -207,7 +232,8 @@
               }
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["rewards-statuses:read"]
@@ -225,6 +251,7 @@
         {
           "tool": {
             "name": "get_my_spending",
+            "title": "Get My Spending",
             "description": "List the current user's spending categories.",
             "inputSchema": {
               "type": "object",
@@ -242,7 +269,8 @@
               }
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["spending:read"]
@@ -260,6 +288,7 @@
         {
           "tool": {
             "name": "get_recommended_topics",
+            "title": "Get Recommended Topics",
             "description": "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use get_topic_details for full card information.",
             "inputSchema": {
               "type": "object",
@@ -272,7 +301,8 @@
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["recommendations:read"]
@@ -290,6 +320,7 @@
         {
           "tool": {
             "name": "get_referral_links",
+            "title": "Get Referral Links",
             "description": "Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then everyone else.",
             "inputSchema": {
               "type": "object",
@@ -302,7 +333,8 @@
               "required": ["topic_id"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["referral-links:read"]
@@ -320,6 +352,7 @@
         {
           "tool": {
             "name": "get_topic_details",
+            "title": "Get Topic Details",
             "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases.",
             "inputSchema": {
               "type": "object",
@@ -332,7 +365,8 @@
               "required": ["topic_id"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -350,13 +384,14 @@
         {
           "tool": {
             "name": "get_topic_hierarchy",
+            "title": "Get Topic Hierarchy",
             "description": "Get the parent and/or child topics for a given topic. Useful for finding all cards issued by a bank (children of the bank topic), all tiers in a rewards program (children of the program topic), or discovering what organization issues a card (parents of the card topic).",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic UUID to look up hierarchy for"
+                  "description": "The topic UUID or slug to look up hierarchy for"
                 },
                 "direction": {
                   "type": "string",
@@ -367,7 +402,8 @@
               "required": ["topic_id"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -385,13 +421,14 @@
         {
           "tool": {
             "name": "get_topic_insights",
+            "title": "Get Topic Insights",
             "description": "Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic UUID to aggregate data points for"
+                  "description": "The topic UUID or slug to aggregate data points for"
                 },
                 "vertical": {
                   "type": "string",
@@ -402,7 +439,8 @@
               "required": ["topic_id"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["data-points:read"]
@@ -415,19 +453,21 @@
         {
           "tool": {
             "name": "get_topic_metrics",
+            "title": "Get Topic Metrics",
             "description": "Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic UUID to retrieve metrics for"
+                  "description": "The topic UUID or slug to retrieve metrics for"
                 }
               },
               "required": ["topic_id"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -440,6 +480,7 @@
         {
           "tool": {
             "name": "get_trending_posts",
+            "title": "Get Trending Posts",
             "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.",
             "inputSchema": {
               "type": "object",
@@ -456,7 +497,7 @@
                 },
                 "topic_id": {
                   "type": "string",
-                  "description": "Optionally filter to posts tagged with a specific topic."
+                  "description": "Optionally filter to posts tagged with a specific topic, by UUID or slug."
                 },
                 "limit": {
                   "type": "number",
@@ -466,7 +507,8 @@
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["posts:read"]
@@ -484,6 +526,7 @@
         {
           "tool": {
             "name": "get_trending_topics",
+            "title": "Get Trending Topics",
             "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information.",
             "inputSchema": {
               "type": "object",
@@ -501,7 +544,8 @@
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -519,6 +563,7 @@
         {
           "tool": {
             "name": "get_wikipedia_summary",
+            "title": "Get Wikipedia Summary",
             "description": "Gets detailed summary information for a Wikipedia article by title. Returns the full Wikipedia page data including description, extract, URL, and thumbnail. Use this after searching to get complete details about a specific article.",
             "inputSchema": {
               "type": "object",
@@ -532,7 +577,8 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": true
+              "openWorldHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["wikipedia:read"]
@@ -545,7 +591,8 @@
         {
           "tool": {
             "name": "manage_my_cards",
-            "description": "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+            "title": "Manage My Cards",
+            "description": "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -649,7 +696,9 @@
               "required": ["action"]
             },
             "annotations": {
-              "destructiveHint": true
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["cards:read", "cards:write"]
@@ -675,6 +724,7 @@
         {
           "tool": {
             "name": "manage_my_point_valuations",
+            "title": "Manage My Point Valuations",
             "description": "Manage the current user's rewards program point valuations — how much the user values each rewards program's points.",
             "inputSchema": {
               "type": "object",
@@ -721,7 +771,9 @@
               "required": ["action"]
             },
             "annotations": {
-              "destructiveHint": true
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["point-valuations:read", "point-valuations:write"]
@@ -747,6 +799,7 @@
         {
           "tool": {
             "name": "manage_my_rewards_statuses",
+            "title": "Manage My Rewards Statuses",
             "description": "Manage the current user's loyalty tier / rewards program statuses (e.g. Gold, Platinum).",
             "inputSchema": {
               "type": "object",
@@ -776,7 +829,9 @@
               "required": ["action"]
             },
             "annotations": {
-              "destructiveHint": true
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["rewards-statuses:read", "rewards-statuses:write"]
@@ -802,6 +857,7 @@
         {
           "tool": {
             "name": "manage_my_spending",
+            "title": "Manage My Spending",
             "description": "Manage the current user's spending by category.",
             "inputSchema": {
               "type": "object",
@@ -849,7 +905,9 @@
               "required": ["action"]
             },
             "annotations": {
-              "destructiveHint": true
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["spending:read", "spending:write"]
@@ -875,13 +933,14 @@
         {
           "tool": {
             "name": "search_data_points",
+            "title": "Search Data Points",
             "description": "Search for data point posts with optional JSONB filters. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.",
             "inputSchema": {
               "type": "object",
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "Filter by topic UUID (e.g. a specific credit card or bank account topic)"
+                  "description": "Filter by topic UUID or slug (e.g. a specific credit card or bank account topic)"
                 },
                 "vertical": {
                   "type": "string",
@@ -914,7 +973,8 @@
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["data-points:read"]
@@ -927,11 +987,12 @@
         {
           "tool": {
             "name": "search_posts_semantic",
+            "title": "Search Posts by Meaning",
             "description": "Search for posts using semantic similarity (vector embeddings). Best for finding conceptually related posts.",
             "inputSchema": {
               "type": "object",
               "properties": {
-                "query": {
+                "semantic_search_query": {
                   "type": "string",
                   "description": "Natural language search query"
                 },
@@ -941,14 +1002,24 @@
                 },
                 "post_type": {
                   "type": "string",
-                  "enum": ["discussion", "review", "data_point", "comment", "link"],
+                  "enum": [
+                    "discussion",
+                    "review",
+                    "data_point",
+                    "comment",
+                    "link",
+                    "article",
+                    "blog_post",
+                    "story"
+                  ],
                   "description": "Filter by post type"
                 }
               },
-              "required": ["query"]
+              "required": ["semantic_search_query"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["posts:read"]
@@ -966,6 +1037,7 @@
         {
           "tool": {
             "name": "search_posts",
+            "title": "Search Posts",
             "description": "Search for posts using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
             "inputSchema": {
               "type": "object",
@@ -1005,14 +1077,24 @@
                 },
                 "post_type": {
                   "type": "string",
-                  "enum": ["discussion", "review", "data_point", "comment"],
+                  "enum": [
+                    "discussion",
+                    "review",
+                    "data_point",
+                    "comment",
+                    "link",
+                    "article",
+                    "blog_post",
+                    "story"
+                  ],
                   "description": "Filter by post type"
                 }
               },
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["posts:read"]
@@ -1030,11 +1112,12 @@
         {
           "tool": {
             "name": "search_topics_semantic",
+            "title": "Search Topics by Meaning",
             "description": "Search topics using semantic similarity (vector embeddings). Best for finding conceptually related topics.",
             "inputSchema": {
               "type": "object",
               "properties": {
-                "query": {
+                "semantic_search_query": {
                   "type": "string",
                   "description": "Natural language search query"
                 },
@@ -1043,10 +1126,11 @@
                   "description": "Max results (default: 10, max: 25)"
                 }
               },
-              "required": ["query"]
+              "required": ["semantic_search_query"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -1064,11 +1148,12 @@
         {
           "tool": {
             "name": "search_topics_text",
+            "title": "Search Topics by Text",
             "description": "Search topics using text matching. Best for finding topics by name or slug.",
             "inputSchema": {
               "type": "object",
               "properties": {
-                "query": {
+                "text_search_query": {
                   "type": "string",
                   "description": "Text query to match against topic names and slugs"
                 },
@@ -1077,10 +1162,11 @@
                   "description": "Max results (default: 10, max: 25)"
                 }
               },
-              "required": ["query"]
+              "required": ["text_search_query"]
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -1098,6 +1184,7 @@
         {
           "tool": {
             "name": "search_topics",
+            "title": "Search Topics",
             "description": "Search topics using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
             "inputSchema": {
               "type": "object",
@@ -1134,7 +1221,8 @@
               "required": []
             },
             "annotations": {
-              "readOnlyHint": true
+              "readOnlyHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["topics:read"]
@@ -1152,6 +1240,7 @@
         {
           "tool": {
             "name": "search_wikipedia",
+            "title": "Search Wikipedia",
             "description": "Searches Wikipedia for articles by title. Returns a list of matching Wikipedia pages with their titles and page IDs. Use this to find relevant Wikipedia articles based on keywords or topics mentioned in the content.",
             "inputSchema": {
               "type": "object",
@@ -1171,7 +1260,8 @@
             },
             "annotations": {
               "readOnlyHint": true,
-              "openWorldHint": true
+              "openWorldHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["wikipedia:read"]
@@ -1184,6 +1274,7 @@
         {
           "tool": {
             "name": "update_my_financial_profile",
+            "title": "Update My Financial Profile",
             "description": "Update the current user's financial profile used for personalized data point comparisons. Only provide fields you want to update — omitted fields are unchanged.",
             "inputSchema": {
               "type": "object",
@@ -1300,7 +1391,9 @@
               "required": []
             },
             "annotations": {
-              "destructiveHint": true
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": true
             },
             "_meta": {
               "voucha/requiredScopes": ["financial-profile:read", "financial-profile:write"]
@@ -1309,10 +1402,6 @@
           "plan": "plus",
           "roles": null,
           "api": [
-            {
-              "method": "GET",
-              "path": "/api/v1/my/financial-profile"
-            },
             {
               "method": "PUT",
               "path": "/api/v1/my/financial-profile"

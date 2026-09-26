@@ -4,8 +4,8 @@ import {
   getTopicDataPointInsights,
   type TopicDataPointInsights,
 } from '@services/data-points/insights'
-import { getTopicByAnyCachedBatch } from '@services/entity-fetch'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
+import { resolveTopics } from './resolve-topic.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 
@@ -17,14 +17,19 @@ type ToolArgs = {
 
 type TopicComparison = TopicDataPointInsights & {
   topic_id: string
-  topic_name: string | null
+  topic_name: string
 }
 
-type ToolResult = {
-  success: true
-  topic_a: TopicComparison
-  topic_b: TopicComparison
-}
+type ToolResult =
+  | {
+      success: true
+      topic_a: TopicComparison
+      topic_b: TopicComparison
+    }
+  | {
+      success: false
+      error: string
+    }
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -37,11 +42,11 @@ const tool: Tool<ToolArgs, ToolResult> = {
       properties: {
         topic_id_a: {
           type: 'string',
-          description: 'UUID of the first topic to compare',
+          description: 'UUID or slug of the first topic to compare',
         },
         topic_id_b: {
           type: 'string',
-          description: 'UUID of the second topic to compare',
+          description: 'UUID or slug of the second topic to compare',
         },
         vertical: {
           type: 'string',
@@ -55,6 +60,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Compare Topics',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/compare' }],
@@ -62,28 +68,21 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const [topicA, topicB] = await resolveTopics([args.topic_id_a, args.topic_id_b])
+      if (!topicA || !topicB) {
+        return { success: false, error: 'Topic not found' }
+      }
+
       const options = { vertical: args.vertical }
-
-      const [insightsA, insightsB, topics] = await Promise.all([
-        getTopicDataPointInsights(args.topic_id_a, options),
-        getTopicDataPointInsights(args.topic_id_b, options),
-        getTopicByAnyCachedBatch([args.topic_id_a, args.topic_id_b]),
+      const [insightsA, insightsB] = await Promise.all([
+        getTopicDataPointInsights(topicA.id, options),
+        getTopicDataPointInsights(topicB.id, options),
       ])
-
-      const topicMap = new Map(topics.flatMap(t => (t != null ? [[t.id, t] as const] : [])))
 
       return {
         success: true,
-        topic_a: {
-          topic_id: args.topic_id_a,
-          topic_name: topicMap.get(args.topic_id_a)?.name ?? null,
-          ...insightsA,
-        },
-        topic_b: {
-          topic_id: args.topic_id_b,
-          topic_name: topicMap.get(args.topic_id_b)?.name ?? null,
-          ...insightsB,
-        },
+        topic_a: { topic_id: topicA.id, topic_name: topicA.name, ...insightsA },
+        topic_b: { topic_id: topicB.id, topic_name: topicB.name, ...insightsB },
       }
     },
 }

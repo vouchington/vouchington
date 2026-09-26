@@ -74,9 +74,15 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get My Profile',
     requiredScopes: { mcp: ['profile:read'] },
     annotations: { readOnlyHint: true },
-    api: [{ method: 'GET', path: '/api/v1/my/profile' }],
+    api: [
+      { method: 'GET', path: '/api/v1/my/cards' },
+      { method: 'GET', path: '/api/v1/my/rewards-program-point-valuations' },
+      { method: 'GET', path: '/api/v1/my/rewards-program-statuses' },
+      { method: 'GET', path: '/api/v1/my/financial-profile' },
+    ],
   },
   function:
     (currentUser: BasicUser) =>

@@ -67,6 +67,17 @@ describe('add-related-topic', () => {
     expect(rows[0].deleted_at).toBeNull()
   })
 
+  it('relates a topic given by slug and returns its id', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic({ user: user })
+    const post = await createTestPost({ user: user })
+    const execute = addRelatedTopicTool.function(user, 'post', post.id)
+
+    const result = await execute({ topic_id: topic.slug })
+
+    expect(result).toEqual({ success: true, topic_id: topic.id, topic_name: topic.name })
+  })
+
   it('rejects post-topic relation for unrelated users', async () => {
     const creator = await createTestUser()
     const unrelatedUser = await createTestUser()

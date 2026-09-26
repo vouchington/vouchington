@@ -2,6 +2,7 @@ import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
 import { getTrendingPosts } from '@services/trending-posts/get-trending-posts'
 import { clampToolLimit } from './search-system.mts'
+import { resolveTopic } from './resolve-topic.mts'
 import {
   VALID_TRENDING_POST_TYPES,
   VALID_TRENDING_TIME_RANGES,
@@ -24,11 +25,16 @@ type TrendingPostEntry = {
   trending_score: number
 }
 
-type ToolResult = {
-  success: true
-  time_range: string
-  results: TrendingPostEntry[]
-}
+type ToolResult =
+  | {
+      success: true
+      time_range: string
+      results: TrendingPostEntry[]
+    }
+  | {
+      success: false
+      error: string
+    }
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -51,7 +57,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         },
         topic_id: {
           type: 'string',
-          description: 'Optionally filter to posts tagged with a specific topic.',
+          description: 'Optionally filter to posts tagged with a specific topic, by UUID or slug.',
         },
         limit: {
           type: 'number',
@@ -64,6 +70,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get Trending Posts',
     requiredScopes: { mcp: ['posts:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/trending-posts' }],
@@ -71,13 +78,18 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const topic = args.topic_id === undefined ? undefined : await resolveTopic(args.topic_id)
+      if (topic === null) {
+        return { success: false, error: 'Topic not found' }
+      }
+
       const timeRange = args.time_range ?? 'week'
       const limit = clampToolLimit(args.limit, DEFAULT_LIMIT, MAX_LIMIT)
 
       const { results } = await getTrendingPosts({
         timeRange,
         postType: args.post_type,
-        topicId: args.topic_id,
+        topicId: topic?.id,
         limit,
       })
 

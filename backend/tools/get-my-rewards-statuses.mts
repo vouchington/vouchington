@@ -11,6 +11,7 @@ export default createGetMyEntityListTool<{ after?: string; limit?: number }>({
   listFn: (user, args) => getIndividualRewardsProgramStatuses(user, user, args),
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get My Rewards Statuses',
     requiredScopes: { mcp: ['rewards-statuses:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/rewards-program-statuses' }],

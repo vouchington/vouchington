@@ -1,15 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { toolToMcpTool } from './adapters.mts'
-import type { Tool } from '../types.mts'
+import type { Tool, ToolAnnotations } from '../types.mts'
 
-function makeToolWithAnnotations(
-  annotations?: Partial<{
-    readOnlyHint: boolean
-    destructiveHint: boolean
-    idempotentHint: boolean
-    openWorldHint: boolean
-  }>,
-): Tool {
+function makeToolWithAnnotations(annotations: ToolAnnotations): Tool {
   return {
     schema: {
       name: 'test_tool',
@@ -21,8 +14,9 @@ function makeToolWithAnnotations(
     function: (_user: unknown) => () => Promise.resolve({}),
     meta: {
       surfaces: ['mcp'],
+      title: 'Test Tool',
       requiredScopes: { mcp: ['topics:read'] },
-      annotations: annotations as NonNullable<Tool['meta']>['annotations'],
+      annotations,
       api: null,
     },
   } as unknown as Tool
@@ -36,19 +30,29 @@ describe('toolToMcpTool', () => {
     expect(result.description).toBe('A test tool')
   })
 
-  it('includes annotations when present', () => {
-    const tool = makeToolWithAnnotations({
+  it('maps the display title from meta', () => {
+    expect(toolToMcpTool(makeToolWithAnnotations({ readOnlyHint: true })).title).toBe('Test Tool')
+  })
+
+  it('marks read-only tools idempotent', () => {
+    const tool = makeToolWithAnnotations({ readOnlyHint: true, openWorldHint: true })
+    expect(toolToMcpTool(tool).annotations).toEqual({
       readOnlyHint: true,
-      destructiveHint: false,
       idempotentHint: true,
-      openWorldHint: false,
+      openWorldHint: true,
     })
-    const result = toolToMcpTool(tool)
-    expect(result.annotations).toEqual({
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
+  })
+
+  it('keeps the declared hints of write tools', () => {
+    const tool = makeToolWithAnnotations({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+    })
+    expect(toolToMcpTool(tool).annotations).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
     })
   })
 
@@ -57,7 +61,7 @@ describe('toolToMcpTool', () => {
     expect(result['_meta']).toEqual({ 'voucha/requiredScopes': ['topics:read'] })
   })
 
-  it('omits annotations key when meta has no annotations', () => {
+  it('omits annotations and title when the tool has no meta', () => {
     const tool: Tool = {
       schema: {
         name: 'bare_tool',
@@ -69,6 +73,7 @@ describe('toolToMcpTool', () => {
     } as unknown as Tool
     const result = toolToMcpTool(tool)
     expect('annotations' in result).toBe(false)
+    expect('title' in result).toBe(false)
   })
 
   it('uses empty object schema when parameters is null', () => {

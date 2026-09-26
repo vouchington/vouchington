@@ -3,11 +3,12 @@ import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
 import { toolsSearchPostsSemantic } from '@services/posts/tools/semantic'
 import { clampToolLimit } from './search-system.mts'
+import { VALID_FILTERABLE_POST_TYPES, type FilterablePostType } from '@ts-shared/feed-capabilities'
 
 type ToolArgs = {
-  query: string
+  semantic_search_query: string
   limit?: number
-  post_type?: 'discussion' | 'review' | 'data_point' | 'comment' | 'link'
+  post_type?: FilterablePostType
 }
 
 type ToolResult = {
@@ -39,7 +40,7 @@ export function createSearchPostsSemanticTool(
       parameters: {
         type: 'object',
         properties: {
-          query: {
+          semantic_search_query: {
             type: 'string',
             description: 'Natural language search query',
           },
@@ -49,16 +50,17 @@ export function createSearchPostsSemanticTool(
           },
           post_type: {
             type: 'string',
-            enum: ['discussion', 'review', 'data_point', 'comment', 'link'],
+            enum: [...VALID_FILTERABLE_POST_TYPES],
             description: 'Filter by post type',
           },
         },
-        required: ['query'],
+        required: ['semantic_search_query'],
       },
       strict: null,
     },
     meta: {
       surfaces: ['internal', 'mcp'],
+      title: 'Search Posts by Meaning',
       requiredScopes: { mcp: ['posts:read'] },
       annotations: { readOnlyHint: true },
       api: [{ method: 'GET', path: '/api/v1/posts' }],
@@ -68,7 +70,7 @@ export function createSearchPostsSemanticTool(
       async (args: ToolArgs): Promise<ToolResult> => {
         const limit = clampToolLimit(args.limit, 5, 10)
         const results = await searchPostsSemantic({
-          query: args.query,
+          query: args.semantic_search_query,
           limit,
           postType: args.post_type,
           currentUserId: currentUser.id,

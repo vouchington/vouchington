@@ -44,7 +44,12 @@ const tool: Tool<ToolArgs, ToolResult> = {
     },
     strict: null,
   },
-  meta: { surfaces: ['internal'], annotations: { readOnlyHint: true }, api: null },
+  meta: {
+    surfaces: ['internal'],
+    title: 'Search RSS Feed Items',
+    annotations: { readOnlyHint: true },
+    api: null,
+  },
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {

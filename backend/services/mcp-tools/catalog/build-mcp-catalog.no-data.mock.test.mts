@@ -31,11 +31,13 @@ function fixtureTool({
 }
 
 const TOPICS_SCHEMA = { type: 'object', properties: { query: { type: 'string' } } }
+const WRITE_HINTS = { readOnlyHint: false, destructiveHint: true, idempotentHint: false } as const
 const userRead = fixtureTool({
   name: 'user_read',
   parameters: TOPICS_SCHEMA,
   meta: {
     surfaces: ['mcp', 'client'],
+    title: 'User Read',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
@@ -44,12 +46,23 @@ const userRead = fixtureTool({
 const userWrite = fixtureTool({
   name: 'user_write',
   roles: { user: true },
-  meta: { surfaces: ['mcp'], plan: 'plus', requiredScopes: { mcp: ['spending:write'] } },
+  meta: {
+    surfaces: ['mcp'],
+    title: 'User Write',
+    plan: 'plus',
+    requiredScopes: { mcp: ['spending:write'] },
+    annotations: WRITE_HINTS,
+  },
 })
 const staffRead = fixtureTool({
   name: 'staff_read',
   roles: { moderator: true, administrator: true, user: false },
-  meta: { surfaces: ['internal', 'admin_mcp'], requiredScopes: { admin_mcp: ['mcp.admin:read'] } },
+  meta: {
+    surfaces: ['internal', 'admin_mcp'],
+    title: 'Staff Read',
+    requiredScopes: { admin_mcp: ['mcp.admin:read'] },
+    annotations: { readOnlyHint: true, openWorldHint: true },
+  },
 })
 const ineligible = [
   fixtureTool({ name: 'no_meta' }),
@@ -80,9 +93,10 @@ describe('buildMcpCatalog', () => {
             {
               tool: {
                 name: 'user_read',
+                title: 'User Read',
                 description: 'user_read description',
                 inputSchema: TOPICS_SCHEMA,
-                annotations: { readOnlyHint: true },
+                annotations: { readOnlyHint: true, idempotentHint: true },
                 _meta: { 'voucha/requiredScopes': ['topics:read'] },
               },
               plan: 'free',
@@ -92,8 +106,10 @@ describe('buildMcpCatalog', () => {
             {
               tool: {
                 name: 'user_write',
+                title: 'User Write',
                 description: 'user_write description',
                 inputSchema: { type: 'object', properties: {} },
+                annotations: WRITE_HINTS,
                 _meta: { 'voucha/requiredScopes': ['spending:write'] },
               },
               plan: 'plus',
@@ -110,8 +126,10 @@ describe('buildMcpCatalog', () => {
             {
               tool: {
                 name: 'staff_read',
+                title: 'Staff Read',
                 description: 'staff_read description',
                 inputSchema: { type: 'object', properties: {} },
+                annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
                 _meta: { 'voucha/requiredScopes': ['mcp.admin:read'] },
               },
               roles: ['administrator', 'moderator'],

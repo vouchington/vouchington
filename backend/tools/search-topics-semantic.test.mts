@@ -40,11 +40,11 @@ describe('search-topics-semantic tool', () => {
 
     const executor = searchTopicsSemanticTool.function(user)
 
-    const defaultLimitResult = await executor({ query })
+    const defaultLimitResult = await executor({ semantic_search_query: query })
     expect(defaultLimitResult.success).toBe(true)
     expect(defaultLimitResult.topics).toHaveLength(10)
 
-    const clampedResult = await executor({ query, limit: 100 })
+    const clampedResult = await executor({ semantic_search_query: query, limit: 100 })
     expect(clampedResult.success).toBe(true)
     expect(clampedResult.topics).toHaveLength(25)
   })

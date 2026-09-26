@@ -39,7 +39,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       properties: {
         topic_id: {
           type: 'string',
-          description: 'The topic UUID to retrieve metrics for',
+          description: 'The topic UUID or slug to retrieve metrics for',
         },
       },
       required: ['topic_id'],
@@ -48,6 +48,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Get Topic Metrics',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: null,

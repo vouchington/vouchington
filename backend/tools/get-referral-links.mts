@@ -49,6 +49,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get Referral Links',
     requiredScopes: { mcp: ['referral-links:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/:id/prioritized-referral-links' }],

@@ -16,32 +16,39 @@ function fixtureTool(name: string, description: string | null, meta?: Partial<To
 }
 
 describe('renderCatalogTable', () => {
-  it('renders every tool with escaped descriptions, plans, deduplicated scopes and hints', () => {
+  it('renders every tool with titles, escaped descriptions, plans, deduplicated scopes and hints', () => {
     const table = renderCatalogTable([
       fixtureTool('piped', 'Compare a | b\n  side by side', {
         surfaces: ['internal', 'mcp'],
+        title: 'Piped',
         requiredScopes: { mcp: ['topics:read', 'posts:read'], admin_mcp: ['topics:read'] },
         annotations: { readOnlyHint: true },
       }),
       fixtureTool('mutating', 'mutating description', {
         surfaces: ['client'],
+        title: 'Mutating',
         requiredScopes: { mcp: undefined },
-        annotations: { destructiveHint: true },
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
         api: [
           { method: 'POST', path: '/api/v1/cards' },
           { method: 'DELETE', path: '/api/v1/cards/:id' },
         ],
+      }),
+      fixtureTool('upsert', 'upsert description', {
+        title: 'Upsert',
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       }),
       fixtureTool('bare', null),
     ])
 
     expect(table).toBe(
       [
-        '| Tool | Description | Surfaces | Plan | Required scopes | Hint | REST Equivalent |',
-        '| ---- | ----------- | -------- | ---- | --------------- | ---- | --------------- |',
-        '| `piped` | Compare a \\| b side by side | internal, mcp | free | topics:read, posts:read | read-only | — |',
-        '| `mutating` | mutating description | client | — | — | mutating | `POST /api/v1/cards`, `DELETE /api/v1/cards/:id` |',
-        '| `bare` | — | internal | — | — | — | — |',
+        '| Tool | Title | Description | Surfaces | Plan | Required scopes | Hints | REST Equivalent |',
+        '| ---- | ----- | ----------- | -------- | ---- | --------------- | ----- | --------------- |',
+        '| `piped` | Piped | Compare a \\| b side by side | internal, mcp | free | topics:read, posts:read | read-only | — |',
+        '| `mutating` | Mutating | mutating description | client | — | — | write, destructive | `POST /api/v1/cards`, `DELETE /api/v1/cards/:id` |',
+        '| `upsert` | Upsert | upsert description | internal | — | — | write, idempotent | — |',
+        '| `bare` | — | — | internal | — | — | — | — |',
       ].join('\n'),
     )
   })

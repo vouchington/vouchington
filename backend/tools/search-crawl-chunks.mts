@@ -8,7 +8,12 @@ const tool = createCrawlSearchTool({
     'Search crawled web content chunks using full-text search. Returns matching markdown chunks from crawled pages.',
   queryDescription: 'Search query to match against crawled content chunks',
   searchFn: ({ query, limit = 5 }) => searchCrawlChunks(query, Math.max(1, limit)),
-  meta: { surfaces: ['internal'], annotations: { readOnlyHint: true }, api: null },
+  meta: {
+    surfaces: ['internal'],
+    title: 'Search Crawled Page Chunks',
+    annotations: { readOnlyHint: true },
+    api: null,
+  },
 })
 
 export default tool

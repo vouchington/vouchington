@@ -5,6 +5,7 @@ import { getCardAttributes } from '@services/topics/cards'
 import { getRewardsProgramAttributes } from '@services/topics/rewards-programs'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import type { Money } from '@ts-shared/money'
+import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 
 type ToolArgs = {
   topic_id: string
@@ -49,6 +50,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   },
   meta: {
     surfaces: ['internal', 'mcp', 'client'],
+    title: 'Get Topic Details',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/:idOrSlug' }],
@@ -68,7 +70,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
         name: topic.name,
         slug: topic.slug,
         topic_type: topic.topic_type,
-        markdown: topic.markdown,
+        markdown: wrapExternalContent(await sanitizePromptInjection(topic.markdown), {
+          source: 'user_content',
+          contentType: 'topic',
+        }),
         aliases: topic.aliases,
       }
 

@@ -4,7 +4,7 @@ import { toolsSearchTopicsText } from '@services/topics/tools/text'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
-  query: string
+  text_search_query: string
   limit?: number
 }
 
@@ -25,7 +25,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        query: {
+        text_search_query: {
           type: 'string',
           description: 'Text query to match against topic names and slugs',
         },
@@ -34,12 +34,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
           description: 'Max results (default: 10, max: 25)',
         },
       },
-      required: ['query'],
+      required: ['text_search_query'],
     },
     strict: null,
   },
   meta: {
     surfaces: ['internal', 'mcp'],
+    title: 'Search Topics by Text',
     requiredScopes: { mcp: ['topics:read'] },
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics' }],
@@ -48,7 +49,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const limit = clampToolLimit(args.limit, 10, 25)
-      const results = await toolsSearchTopicsText(args.query, limit)
+      const results = await toolsSearchTopicsText(args.text_search_query, limit)
       return { success: true, topics: results }
     },
 }

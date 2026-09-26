@@ -5,13 +5,16 @@ import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
 import { resolveMcpToolCall, type McpToolCallResolution } from './resolve-tool-call.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
-import { serializeMcpToolResult } from './serialize-mcp-tool-result.mts'
+import { McpToolResultTooLargeError, serializeMcpToolResult } from './serialize-mcp-tool-result.mts'
 
 export {
   MAX_MCP_TOOL_RESULT_BYTES,
   MAX_MCP_TOOL_RESULT_VISITS,
   serializeMcpToolResult,
 } from './serialize-mcp-tool-result.mts'
+
+export const MCP_TOOL_RESULT_TOO_LARGE_TEXT =
+  'The tool result is too large to return. Narrow the query or lower the limit, then try again.'
 
 type UserForCall = BasicUser & {
   membership_plan: 'plus' | 'pro' | null
@@ -39,6 +42,10 @@ export async function callMcpTool(
       content: [{ type: 'text', text: serializeMcpToolResult(result) }],
     }
   } catch (err) {
+    // An oversized result is fixed by asking for less, so it goes back to the caller unreported.
+    if (err instanceof McpToolResultTooLargeError) {
+      return { isError: true, content: [{ type: 'text', text: MCP_TOOL_RESULT_TOO_LARGE_TEXT }] }
+    }
     onError(err instanceof Error ? err : new Error(String(err)))
     return {
       isError: true,
