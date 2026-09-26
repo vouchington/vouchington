@@ -3,6 +3,10 @@ import { UserModNotesCell } from '@/components/moderation/user-mod-notes-cell'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
+import {
+  clearModerationContextFixture,
+  setModerationContextFixture,
+} from '@/storybook/mocks/client-api-instance'
 
 const meta = {
   title: 'Moderation/User Mod Notes Cell',
@@ -34,6 +38,10 @@ function NotesTable({ targetUserId }: { targetUserId: string | null }) {
 }
 
 export const WithMember: Story = {
+  beforeEach: () => {
+    setModerationContextFixture()
+    return () => clearModerationContextFixture()
+  },
   render: () => (
     <StoryFrame>
       <NotesTable targetUserId={publicUsers[0]!.id} />

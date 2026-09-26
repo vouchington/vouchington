@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Button } from '@/components/ui/button'
 import { NewsItemStoryCard } from '@/components/news/news-item-cluster-story-card'
+import { getCanonicalPostPath } from '@/lib/post-helpers'
 import { StoryFrame } from '@/storybook/story-frame'
 import { newsItems, newsResponse } from '@/storybook/entities/fixtures/feeds'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
@@ -20,7 +21,15 @@ function StoryCard({ signedIn }: { signedIn: boolean }) {
   return (
     <NewsItemStoryCard
       story={transferBonus}
-      storyPostHref={signedIn ? null : '/stories/fixture-story'}
+      storyPostHref={
+        signedIn
+          ? null
+          : getCanonicalPostPath({
+              id: 'fixture-story',
+              post_type: 'story',
+              slug: 'fixture-story',
+            })
+      }
       storyItems={related}
       primary={primary}
       view='compact'

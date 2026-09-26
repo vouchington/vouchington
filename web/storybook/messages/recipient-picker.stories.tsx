@@ -4,9 +4,14 @@ import { RecipientPicker } from '@/components/messages/recipient-picker'
 import type { UserSearchResult } from '@/types/user'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
+import { clearUserSearchFixture, setUserSearchFixture } from '@/storybook/mocks/client-api-instance'
 
 const meta = {
   title: 'Messages/Recipient Picker',
+  beforeEach: () => {
+    setUserSearchFixture()
+    return () => clearUserSearchFixture()
+  },
 } satisfies Meta
 
 export default meta

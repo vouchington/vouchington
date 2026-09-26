@@ -24,6 +24,7 @@ let myCommunitiesFixture: CommunitiesSearchResponseBody | undefined
 let myListsFixture: ListsSearchResponseBody | undefined
 let moderationContextFixture: UserModerationContextResponse | undefined
 let topicSearchFixture = false
+let userSearchFixture = false
 const clientRequestGet = ClientRequest.prototype.get
 
 export function setNotificationSettingsFixture(preferences: EmailPreferences): void {
@@ -107,6 +108,18 @@ export function setMyListsFixture(): void {
   }
 }
 
+export function clearModerationContextFixture(): void {
+  moderationContextFixture = undefined
+}
+
+export function setUserSearchFixture(): void {
+  userSearchFixture = true
+}
+
+export function clearUserSearchFixture(): void {
+  userSearchFixture = false
+}
+
 export function setModerationContextFixture(): void {
   moderationContextFixture = {
     context: {
@@ -171,6 +184,9 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   }
   if (endpoint.endsWith('/moderation-context') && moderationContextFixture !== undefined) {
     return Promise.resolve(moderationContextFixture as T)
+  }
+  if (endpoint === '/api/v1/users' && userSearchFixture) {
+    return Promise.resolve(storybookAutocompleteResponse(endpoint) as T)
   }
 
   // Function.call does not preserve the generic return type of a method, although this is the

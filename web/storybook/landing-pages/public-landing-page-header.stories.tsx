@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PublicLandingPageHeader } from '@/components/landing-pages/public-landing-page-header'
 import { publicLandingPage } from '@/storybook/entities/fixtures/landing'
+import { landingPageNamedHref } from '@/lib/links/entity-href'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
@@ -16,7 +17,7 @@ const user = publicLandingPage.user
 
 export const RewardsSetup: Story = {
   args: {
-    canonicalHref: `/u/${user.username}/${page.slug}`,
+    canonicalHref: landingPageNamedHref(user.username, page.slug),
     displayName: user.display_name,
     profileImagePath: null,
     subtitle: page.subtitle,
