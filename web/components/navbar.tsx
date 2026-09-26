@@ -54,8 +54,12 @@ export function Navbar({
   const pathname = usePathname()
 
   async function handleLogout() {
+    if (onLoggedOut) {
+      onLoggedOut()
+      return
+    }
     try {
-      await logout(onLoggedOut)
+      await logout()
     } catch (error) {
       toast.error(
         getApiErrorMessage(error, t('extracted.components.navbar.failedToLogOut_c746b6a2')),

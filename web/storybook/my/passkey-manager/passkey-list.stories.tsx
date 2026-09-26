@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PasskeyList } from '@/components/my/passkey-manager/passkey-list'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -29,20 +30,30 @@ const passkeys: Passkey[] = [
   },
 ]
 
-function PasskeyRows({ confirmingDeleteId }: { confirmingDeleteId: string | null }) {
+function PasskeyRows() {
+  const [rows, setRows] = useState(passkeys)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameName, setRenameName] = useState('')
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   return (
     <PasskeyList
       confirmingDeleteId={confirmingDeleteId}
       loading={false}
-      passkeys={passkeys}
-      renameName=''
-      renamingId={null}
-      onConfirmRemove={() => {}}
-      onRemoveClick={() => {}}
-      onRename={() => {}}
-      setConfirmingDeleteId={() => {}}
-      setRenameName={() => {}}
-      setRenamingId={() => {}}
+      passkeys={rows}
+      renameName={renameName}
+      renamingId={renamingId}
+      onConfirmRemove={id => {
+        setRows(current => current.filter(row => row.id !== id))
+        setConfirmingDeleteId(null)
+      }}
+      onRemoveClick={setConfirmingDeleteId}
+      onRename={id => {
+        setRows(current => current.map(row => (row.id === id ? { ...row, name: renameName } : row)))
+        setRenamingId(null)
+      }}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      setRenameName={setRenameName}
+      setRenamingId={setRenamingId}
     />
   )
 }
@@ -50,7 +61,7 @@ function PasskeyRows({ confirmingDeleteId }: { confirmingDeleteId: string | null
 export const WithPasskeys: Story = {
   render: () => (
     <StoryFrame width='max-w-xl'>
-      <PasskeyRows confirmingDeleteId={null} />
+      <PasskeyRows />
     </StoryFrame>
   ),
 }

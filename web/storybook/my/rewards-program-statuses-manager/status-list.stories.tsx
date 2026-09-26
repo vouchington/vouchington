@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { StatusList } from '@/components/my/rewards-program-statuses-manager/status-list'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -23,24 +24,44 @@ const statuses: RewardsProgramStatus[] = [
   },
 ]
 
-const editForm = { since: '2024-03-01', until: '' }
+const emptyEditForm = { since: '2024-03-01', until: '' }
+
+function StatusRows() {
+  const [rows, setRows] = useState(statuses)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState(emptyEditForm)
+  return (
+    <StatusList
+      confirmingDeleteId={confirmingDeleteId}
+      editForm={editForm}
+      editingId={editingId}
+      loadingIds={new Set()}
+      statuses={rows}
+      onDelete={id => setRows(current => current.filter(row => row.id !== id))}
+      onSave={id => {
+        setRows(current =>
+          current.map(row =>
+            row.id === id ? { ...row, since: editForm.since, until: editForm.until || null } : row,
+          ),
+        )
+        setEditingId(null)
+      }}
+      onStartEdit={status => {
+        setEditingId(status.id)
+        setEditForm({ since: status.since ?? '', until: status.until ?? '' })
+      }}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      setEditForm={setEditForm}
+      setEditingId={setEditingId}
+    />
+  )
+}
 
 export const PlatinumElite: Story = {
   render: () => (
     <StoryFrame>
-      <StatusList
-        confirmingDeleteId={null}
-        editForm={editForm}
-        editingId={null}
-        loadingIds={new Set()}
-        statuses={statuses}
-        onDelete={() => {}}
-        onSave={() => {}}
-        onStartEdit={() => {}}
-        setConfirmingDeleteId={() => {}}
-        setEditForm={() => {}}
-        setEditingId={() => {}}
-      />
+      <StatusRows />
     </StoryFrame>
   ),
 }
@@ -50,7 +71,7 @@ export const Empty: Story = {
     <StoryFrame>
       <StatusList
         confirmingDeleteId={null}
-        editForm={editForm}
+        editForm={emptyEditForm}
         editingId={null}
         loadingIds={new Set()}
         statuses={[]}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AuthenticatorList } from '@/components/my/totp-manager/authenticator-list'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -23,22 +24,38 @@ const authenticators: TotpAuthenticator[] = [
   },
 ]
 
+function AuthenticatorRows() {
+  const [rows, setRows] = useState(authenticators)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameName, setRenameName] = useState('')
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  return (
+    <AuthenticatorList
+      authenticators={rows}
+      confirmingDeleteId={confirmingDeleteId}
+      loading={false}
+      renameName={renameName}
+      renamingId={renamingId}
+      onConfirmRemove={id => {
+        setRows(current => current.filter(row => row.id !== id))
+        setConfirmingDeleteId(null)
+      }}
+      onRemoveClick={setConfirmingDeleteId}
+      onRename={id => {
+        setRows(current => current.map(row => (row.id === id ? { ...row, name: renameName } : row)))
+        setRenamingId(null)
+      }}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      setRenameName={setRenameName}
+      setRenamingId={setRenamingId}
+    />
+  )
+}
+
 export const WithAuthenticators: Story = {
   render: () => (
     <StoryFrame width='max-w-xl'>
-      <AuthenticatorList
-        authenticators={authenticators}
-        confirmingDeleteId={null}
-        loading={false}
-        renameName=''
-        renamingId={null}
-        onConfirmRemove={() => {}}
-        onRemoveClick={() => {}}
-        onRename={() => {}}
-        setConfirmingDeleteId={() => {}}
-        setRenameName={() => {}}
-        setRenamingId={() => {}}
-      />
+      <AuthenticatorRows />
     </StoryFrame>
   ),
 }

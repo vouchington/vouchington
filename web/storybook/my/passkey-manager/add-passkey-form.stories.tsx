@@ -12,13 +12,18 @@ type Story = StoryObj<typeof meta>
 
 function PasskeyName({ initialName }: { initialName: string }) {
   const [name, setName] = useState(initialName)
+  const [result, setResult] = useState<string | null>(null)
+  if (result) return <p>{result}</p>
   return (
     <AddPasskeyForm
       loading={false}
       newName={name}
-      onAddPasskey={event => event.preventDefault()}
+      onAddPasskey={event => {
+        event.preventDefault()
+        setResult(`Added ${name || 'passkey'}`)
+      }}
       setNewName={setName}
-      setStep={() => {}}
+      setStep={() => setResult('Back to passkeys')}
     />
   )
 }

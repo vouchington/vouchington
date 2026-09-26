@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AddReferralLink } from '@/components/my/referral-links-manager/add-referral-link'
 import {
@@ -17,10 +18,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+function ProgramSearch() {
+  const [programId, setProgramId] = useState<string | null>(null)
+  if (programId) return <p>Selected program {programId}</p>
+  return <AddReferralLink onSelectProgram={setProgramId} />
+}
+
 export const SearchPrograms: Story = {
   render: () => (
     <StoryFrame width='max-w-xl'>
-      <AddReferralLink onSelectProgram={() => {}} />
+      <ProgramSearch />
     </StoryFrame>
   ),
 }

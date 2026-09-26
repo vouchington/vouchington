@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { CategoryList } from '@/components/my/spending-categories-manager/category-list'
+import {
+  CategoryList,
+  type EditForm,
+} from '@/components/my/spending-categories-manager/category-list'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { SpendingCategory } from '@/types/my'
 
@@ -29,29 +33,52 @@ const categories: SpendingCategory[] = [
   },
 ]
 
-const editForm = {
+const emptyEditForm: EditForm = {
   amount: '600.00',
-  currency: 'usd' as const,
-  spending_frequency: 'monthly' as const,
+  currency: 'usd',
+  spending_frequency: 'monthly',
   note: '',
+}
+
+function CategoryRows() {
+  const [rows, setRows] = useState(categories)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<EditForm>(emptyEditForm)
+  return (
+    <CategoryList
+      categories={rows}
+      confirmingDeleteId={confirmingDeleteId}
+      editForm={editForm}
+      editingId={editingId}
+      loadingIds={new Set()}
+      onDelete={id => setRows(current => current.filter(row => row.id !== id))}
+      onSave={id => {
+        setRows(current =>
+          current.map(row => (row.id === id ? { ...row, note: editForm.note || null } : row)),
+        )
+        setEditingId(null)
+      }}
+      onStartEdit={category => {
+        setEditingId(category.id)
+        setEditForm({
+          amount: '600.00',
+          currency: 'usd',
+          spending_frequency: category.spending_frequency,
+          note: category.note ?? '',
+        })
+      }}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      setEditForm={setEditForm}
+      setEditingId={setEditingId}
+    />
+  )
 }
 
 export const WithCategories: Story = {
   render: () => (
     <StoryFrame>
-      <CategoryList
-        categories={categories}
-        confirmingDeleteId={null}
-        editForm={editForm}
-        editingId={null}
-        loadingIds={new Set()}
-        onDelete={() => {}}
-        onSave={() => {}}
-        onStartEdit={() => {}}
-        setConfirmingDeleteId={() => {}}
-        setEditForm={() => {}}
-        setEditingId={() => {}}
-      />
+      <CategoryRows />
     </StoryFrame>
   ),
 }
@@ -62,7 +89,7 @@ export const Empty: Story = {
       <CategoryList
         categories={[]}
         confirmingDeleteId={null}
-        editForm={editForm}
+        editForm={emptyEditForm}
         editingId={null}
         loadingIds={new Set()}
         onDelete={() => {}}

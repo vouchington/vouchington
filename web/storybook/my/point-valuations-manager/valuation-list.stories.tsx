@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ValuationList } from '@/components/my/point-valuations-manager/valuation-list'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
 import type { PointValuation } from '@/types/my'
+import type { CurrencyCode } from '@ts-shared/money'
 
 const meta = {
   title: 'My/Valuation List',
@@ -38,24 +40,54 @@ const valuations: PointValuation[] = [
   },
 ]
 
-const editForm = { value_per_point: '0.015', currency: 'usd' as const, note: '' }
+const emptyEditForm = { value_per_point: '0.015', currency: 'usd' as const, note: '' }
+
+function ValuationRows() {
+  const [rows, setRows] = useState(valuations)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<{
+    value_per_point: string
+    currency: CurrencyCode
+    note: string
+  }>({
+    value_per_point: '0.015',
+    currency: 'usd',
+    note: '',
+  })
+  return (
+    <ValuationList
+      confirmingDeleteId={confirmingDeleteId}
+      editForm={editForm}
+      editingId={editingId}
+      loadingIds={new Set()}
+      valuations={rows}
+      onDelete={id => setRows(current => current.filter(row => row.id !== id))}
+      onSave={id => {
+        setRows(current =>
+          current.map(row => (row.id === id ? { ...row, note: editForm.note || null } : row)),
+        )
+        setEditingId(null)
+      }}
+      onStartEdit={valuation => {
+        setEditingId(valuation.id)
+        setEditForm({
+          value_per_point: '0.015',
+          currency: 'usd',
+          note: valuation.note ?? '',
+        })
+      }}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      setEditForm={setEditForm}
+      setEditingId={setEditingId}
+    />
+  )
+}
 
 export const WithValuations: Story = {
   render: () => (
     <StoryFrame>
-      <ValuationList
-        confirmingDeleteId={null}
-        editForm={editForm}
-        editingId={null}
-        loadingIds={new Set()}
-        valuations={valuations}
-        onDelete={() => {}}
-        onSave={() => {}}
-        onStartEdit={() => {}}
-        setConfirmingDeleteId={() => {}}
-        setEditForm={() => {}}
-        setEditingId={() => {}}
-      />
+      <ValuationRows />
     </StoryFrame>
   ),
 }
@@ -65,7 +97,7 @@ export const Empty: Story = {
     <StoryFrame>
       <ValuationList
         confirmingDeleteId={null}
-        editForm={editForm}
+        editForm={emptyEditForm}
         editingId={null}
         loadingIds={new Set()}
         valuations={[]}
