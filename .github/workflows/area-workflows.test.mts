@@ -54,21 +54,24 @@ describe('area workflows', () => {
   })
 
   // A reusable workflow's secrets and permissions are capped by its caller, so a gap here fails
-  // only the nightly run.
-  it.each(areas)('passes $area every secret and permission it needs', ({ caller, workflow }) => {
-    const secrets = Object.keys(workflow.on?.workflow_call?.secrets ?? {})
-    const permissionGaps = Object.values(workflow.jobs ?? {})
-      .flatMap(job => Object.entries(job.permissions ?? {}))
-      .filter(([scope, level]) => {
-        const granted = caller.permissions?.[scope]
-        return granted === undefined || (level === 'write' && granted !== 'write')
-      })
+  // only the nightly run; the live topology check also rejects any grant beyond what it needs.
+  it.each(areas)(
+    'passes $area exactly the secrets and permissions it needs',
+    ({ caller, workflow }) => {
+      const secrets = Object.keys(workflow.on?.workflow_call?.secrets ?? {})
+      const required: Record<string, string> = {}
+      for (const job of Object.values(workflow.jobs ?? {})) {
+        for (const [scope, level] of Object.entries(job.permissions ?? {})) {
+          if (required[scope] !== 'write') required[scope] = level
+        }
+      }
 
-    expect(caller.secrets ?? {}).toEqual(
-      Object.fromEntries(secrets.map(secret => [secret, `\${{ secrets.${secret} }}`])),
-    )
-    expect(permissionGaps).toEqual([])
-  })
+      expect(caller.secrets ?? {}).toEqual(
+        Object.fromEntries(secrets.map(secret => [secret, `\${{ secrets.${secret} }}`])),
+      )
+      expect(caller.permissions ?? {}).toEqual(required)
+    },
+  )
 
   // A trigger-level `paths:` filter would leave a skipped area's required check pending forever,
   // and draft transitions must not start runs.
