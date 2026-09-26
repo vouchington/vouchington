@@ -14,7 +14,7 @@ import {
 } from './compute-shared.mts'
 import { FileBackedSet } from './file-backed-set.mts'
 
-export function tokenTotals(record: ParsedLine): TokenTotals | undefined {
+function tokenTotals(record: ParsedLine): TokenTotals | undefined {
   const payload = asRecord(record.payload)
   const usage =
     record.type === 'event_msg' && payload?.type === 'token_count'
@@ -30,7 +30,7 @@ export function tokenTotals(record: ParsedLine): TokenTotals | undefined {
     : undefined
 }
 
-export async function uniqueFailure(
+async function uniqueFailure(
   payload: Record<string, unknown>,
   failedIds: FileBackedSet,
 ): Promise<boolean> {

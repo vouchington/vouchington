@@ -1,11 +1,6 @@
-import {
-  hasTableHeaders,
-  inlineEvidenceText,
-  labeledListFields,
-  tableColumnValues,
-} from './markdown-tables.mts'
+import { hasTableHeaders, labeledListFields, tableColumnValues } from './markdown-tables.mts'
 
-export { hasTableHeaders, inlineEvidenceText, labeledListFields, tableColumnValues }
+export { hasTableHeaders, labeledListFields, tableColumnValues }
 import { isMeaningfulEvidence } from './evidence-values.mts'
 
 export type MarkdownNode = {

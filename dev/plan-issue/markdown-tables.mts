@@ -65,7 +65,7 @@ export function tableColumnValues(nodes: MarkdownNode[], header: string): string
   return values
 }
 
-export function inlineEvidenceText(node: MarkdownNode): string {
+function inlineEvidenceText(node: MarkdownNode): string {
   if (node.type === 'html' || node.type === 'code') return ''
   return [node.value, node.alt, ...(node.children ?? []).map(inlineEvidenceText)]
     .filter((value): value is string => typeof value === 'string')

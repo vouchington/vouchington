@@ -1,4 +1,4 @@
-export { applyCodex, tokenTotals, uniqueFailure } from './compute-stream-codex.mts'
+export { applyCodex } from './compute-stream-codex.mts'
 import {
   applyCommand,
   asArray,
