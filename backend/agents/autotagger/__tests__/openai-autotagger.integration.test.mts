@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { callOpenAIAutotagger } from '../openai-autotagger.mts'
-import { runToolLoop } from '@agents/_shared'
-import type { createOpenRouterResponse as CreateOpenRouterResponse } from '@modules/openrouter-utils'
+import {
+  runToolLoop,
+  type createOpenRouterResponse as CreateOpenRouterResponse,
+} from '@agents/_shared'
 import {
   createTestPost,
   createTestTopic,
