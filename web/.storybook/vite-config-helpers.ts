@@ -162,6 +162,11 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         new URL('../storybook/mocks/oauth-provider-auth.ts', import.meta.url),
       ),
     },
+    {
+      // Placement delivery URLs have no Storybook image host, so avatars would stay on initials.
+      find: '@/lib/utils/image-url',
+      replacement: fileURLToPath(new URL('../storybook/mocks/image-url.ts', import.meta.url)),
+    },
     ...(
       [
         ['@/lib/i18n/get-translations', 'get-translations.ts'],

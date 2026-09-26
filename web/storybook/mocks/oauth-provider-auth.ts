@@ -1,3 +1,5 @@
+import { useRuntimePublicConfig } from '@/lib/runtime-public-config-context'
+
 const readyAuth = {
   isAvailable: true,
   isLoaded: true,
@@ -9,7 +11,9 @@ export function useAppleAuth() {
 }
 
 export function useFacebookSDK() {
-  return readyAuth
+  const { facebookAppId } = useRuntimePublicConfig()
+  const isAvailable = Boolean(facebookAppId)
+  return { ...readyAuth, isAvailable, isLoaded: isAvailable }
 }
 
 export function useGithubAuth() {

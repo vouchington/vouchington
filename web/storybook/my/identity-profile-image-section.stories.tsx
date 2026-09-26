@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, within } from 'storybook/test'
 import { IdentityProfileImageSection } from '@/components/my/identity-profile-image-section'
 import { StoryFrame } from '@/storybook/story-frame'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
@@ -31,6 +32,9 @@ export const WithImage: Story = {
       />
     </StoryFrame>
   ),
+  play: async ({ canvasElement }) => {
+    await expect(await within(canvasElement).findByRole('img', { name: username })).toBeVisible()
+  },
 }
 
 export const NoImage: Story = {

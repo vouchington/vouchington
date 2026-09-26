@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { ApiKeysManager } from '@/components/my/api-keys-manager'
+import { expect, within } from 'storybook/test'
+import { ApiKeysManager } from '../../components/my/api-keys-manager'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { ApiKey } from '@/types/api-keys'
 
@@ -37,12 +38,22 @@ const keys: ApiKey[] = [
   },
 ]
 
+async function expectRealManager({ canvasElement }: { canvasElement: HTMLElement }) {
+  const canvas = within(canvasElement)
+  await expect(await canvas.findByText('Example RSS URL with API key:')).toBeVisible()
+  await expect(canvas.queryByText('Storybook-safe API key manager placeholder')).toBeNull()
+}
+
 export const WithKeys: Story = {
   render: () => (
     <StoryFrame>
       <ApiKeysManager initialData={{ results: keys, page_info: pageInfo }} />
     </StoryFrame>
   ),
+  play: async context => {
+    await expectRealManager(context)
+    await expect(within(context.canvasElement).getByText('Fintech Daily reader')).toBeVisible()
+  },
 }
 
 export const Empty: Story = {
@@ -51,4 +62,5 @@ export const Empty: Story = {
       <ApiKeysManager initialData={{ results: [], page_info: pageInfo }} />
     </StoryFrame>
   ),
+  play: expectRealManager,
 }

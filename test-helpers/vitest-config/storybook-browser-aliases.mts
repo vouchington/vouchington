@@ -41,6 +41,14 @@ export const storybookMockResolveAliases: Array<{ find: string | RegExp; replace
     find: /^@\/components\/my\/api-keys-manager$/,
     replacement: storybookMock('api-keys-manager.tsx'),
   },
+  {
+    find: /^@\/hooks\/use-(apple|github|google|linkedin|microsoft|x)-auth$|^@\/hooks\/use-facebook-sdk$/,
+    replacement: storybookMock('oauth-provider-auth.ts'),
+  },
+  {
+    find: '@/lib/utils/image-url',
+    replacement: storybookMock('image-url.ts'),
+  },
   { find: 'next/image', replacement: storybookMock('next-image.tsx') },
   { find: 'next/headers', replacement: storybookMock('next-headers.ts') },
 ]

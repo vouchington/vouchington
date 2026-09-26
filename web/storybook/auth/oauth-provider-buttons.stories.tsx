@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, within } from 'storybook/test'
 import {
   AppleLoginButton,
   FacebookLoginButton,
@@ -51,8 +52,21 @@ function ProviderButtons({ config }: { config: RuntimePublicConfig }) {
 
 export const Available: Story = {
   render: () => <ProviderButtons config={configuredProviders} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(
+      await canvas.findByRole('button', { name: 'Continue with Facebook' }),
+    ).toBeEnabled()
+  },
 }
 
 export const FacebookUnavailable: Story = {
   render: () => <ProviderButtons config={{ ...configuredProviders, facebookAppId: undefined }} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const facebook = await canvas.findByRole('button', {
+      name: 'Continue with Facebook (unavailable)',
+    })
+    await expect(facebook).toHaveAttribute('aria-disabled', 'true')
+  },
 }
