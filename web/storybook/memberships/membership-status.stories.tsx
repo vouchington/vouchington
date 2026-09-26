@@ -28,7 +28,7 @@ const plusMembership: SubscriptionMembership = {
   plan: 'plus',
   status: 'active',
   started_at: '2026-01-15T00:00:00.000Z',
-  expires_at: '2026-07-15T00:00:00.000Z',
+  expires_at: '2099-07-15T00:00:00.000Z',
   has_stripe_subscription: true,
   granted_by_id: null,
   cancelled_at: null,

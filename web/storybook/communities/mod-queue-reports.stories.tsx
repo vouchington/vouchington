@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ModQueueReports } from '@/components/communities/mod-queue-reports'
 import type { CommunityModerationReport } from '@/types/api-responses'
@@ -8,8 +9,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Communities/Mod Queue Reports',
-  component: ModQueueReports,
-} satisfies Meta<typeof ModQueueReports>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -49,30 +49,41 @@ const report: CommunityModerationReport = {
   escalated_at: null,
 }
 
-const shared = {
-  communitySlug: communities[0]!.slug,
-  currentUserId: storyCurrentUser.id,
-  isStaff: true,
-  loading: null,
-  onResolve: () => {},
-  onSelectionToggle: () => {},
-  selectedIds: new Set<string>(),
+function Reports({ reports }: { reports: CommunityModerationReport[] }) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  return (
+    <ModQueueReports
+      communitySlug={communities[0]!.slug}
+      currentUserId={storyCurrentUser.id}
+      isStaff
+      loading={null}
+      onResolve={() => {}}
+      onSelectionToggle={reportId => {
+        setSelectedIds(current => {
+          const next = new Set(current)
+          if (next.has(reportId)) next.delete(reportId)
+          else next.add(reportId)
+          return next
+        })
+      }}
+      reports={reports}
+      selectedIds={selectedIds}
+    />
+  )
 }
 
 export const ReferralReport: Story = {
-  args: { ...shared, reports: [report] },
-  render: args => (
+  render: () => (
     <StoryFrame>
-      <ModQueueReports {...args} />
+      <Reports reports={[report]} />
     </StoryFrame>
   ),
 }
 
 export const Empty: Story = {
-  args: { ...shared, reports: [] },
-  render: args => (
+  render: () => (
     <StoryFrame>
-      <ModQueueReports {...args} />
+      <Reports reports={[]} />
     </StoryFrame>
   ),
 }

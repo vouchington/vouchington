@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Button } from '@/components/ui/button'
 import { NewsItemStoryCard } from '@/components/news/news-item-cluster-story-card'
@@ -5,9 +6,17 @@ import { getCanonicalPostPath } from '@/lib/post-helpers'
 import { StoryFrame } from '@/storybook/story-frame'
 import { newsItems, newsResponse } from '@/storybook/entities/fixtures/feeds'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
+import {
+  clearStoryDiscussionFixture,
+  setStoryDiscussionFixture,
+} from '@/storybook/mocks/story-discussion-fixture'
 
 const meta = {
   title: 'News/News Item Story Card',
+  beforeEach() {
+    setStoryDiscussionFixture()
+    return () => clearStoryDiscussionFixture()
+  },
 } satisfies Meta
 
 export default meta
@@ -18,6 +27,7 @@ const primary = newsItems[0]!
 const related = [newsItems[3]!]
 
 function StoryCard({ signedIn }: { signedIn: boolean }) {
+  const [isExpanded, setIsExpanded] = useState(false)
   return (
     <NewsItemStoryCard
       story={transferBonus}
@@ -35,8 +45,8 @@ function StoryCard({ signedIn }: { signedIn: boolean }) {
       view='compact'
       sharedByUser={publicUsers[0]}
       sharedAt='2026-09-18T11:00:00.000Z'
-      isExpanded={false}
-      setExpanded={() => {}}
+      isExpanded={isExpanded}
+      setExpanded={setIsExpanded}
       storyItemsId='transfer-bonus-related'
       renderOfficialBadge={() => null}
       renderPrimaryActions={() => (

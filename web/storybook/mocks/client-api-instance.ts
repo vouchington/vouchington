@@ -15,6 +15,7 @@ import {
   enableInboxMutations,
 } from '@/storybook/mocks/inbox-mutation-fixture'
 import { inboxUnreadFixture } from '@/storybook/mocks/inbox-unread-fixture'
+import { availabilityFixtureBody } from '@/storybook/mocks/slug-availability-fixture'
 import {
   pinnedPostsFixtureEnabled,
   pinnedPostsResponse,
@@ -196,8 +197,8 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   if (endpoint === '/api/v1/users' && userSearchFixture) {
     return Promise.resolve(storybookAutocompleteResponse(endpoint) as T)
   }
+  const availability = availabilityFixtureBody(endpoint)
+  if (availability !== undefined) return Promise.resolve(availability as T)
 
-  // Function.call does not preserve the generic return type of a method, although this is the
-  // original ClientRequest.get implementation invoked with its original receiver.
   return clientRequestGet.call(this, endpoint, options) as Promise<T>
 }
