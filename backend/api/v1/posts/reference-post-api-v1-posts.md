@@ -17,6 +17,11 @@ The server accepts callers without the header during migration by assigning a no
 New clients must send the header; once the clients #92 handoff is adopted, the compatibility fallback
 will be removed.
 
+Authentication and replay/admission remain ahead of detailed body diagnostics. A newly admitted
+malformed create returns 422 without retaining an admission or consuming capacity; a replay keeps
+its original result. Honeypot handling likewise preserves its fake-success behavior without a real
+write. See [Route Helpers](../../README.md#route-helpers) for the shared validation order.
+
 Admin-created posts are trusted on create: the response post is returned with
 derived `clearance_status='approved'`, and the create path skips automated moderation, moderator-agent
 dispatch, community moderation, and spam detection. Non-admin posts still start as `pending` and

@@ -68,15 +68,8 @@ Use `response-helpers.mts` for standard route preambles:
   pass through without a `Content-Type` header.
 - `validateRequestContract(ctx, operation, input)` checks a route's path/body/query carriers
   against the generated contract for `operation` (`'METHOD:/path'`) and throws 422 with the
-  registry's redacted message. Callers own ordering: call it after auth and
-  ownership/suspension checks, before any service call or semantic check, so unauthenticated or
-  unauthorized callers never see a schema diagnostic.
-
-`validateRequestContract` is backed by `@services/runtime-request-validation`; use the adapter, not
-the registry, from routes. Routes with signature-verified or raw bodies keep their specialized
-parsers. Caveats: `ctx.query` is raw strings with no type coercion, so skip `query` carriers with
-`integer`/`number` fields; generated path schemas lack `format: uuid` today, so keep
-`validateUUIDParam` for UUID shape.
+  registry's redacted message. Read [Request validation](reference-request-validation.md) for the
+  required ordering, pure query projection, meaningful-schema, and compiler/HTTP coverage rules.
 
 Route modification invariants live in [CLAUDE.md](CLAUDE.md).
 

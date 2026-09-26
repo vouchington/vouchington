@@ -11,11 +11,20 @@ import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { indexById } from '@modules/utils'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { entityRelationViewerFor } from '@services/users'
+import { defineQueryContract, queryCsvArray, queryString } from '@modules/pagination'
+import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+
+const compareTopicsQueryContract = defineQueryContract({ slugs: queryCsvArray(queryString()) })
 
 app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/topics/compare', compareTopicsQueryContract)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/topics/compare')
+  validateRequestContract(ctx, 'GET:/api/v1/topics/compare', {
+    query: prepareQueryForValidation(ctx.query, compareTopicsQueryContract.queryContract),
+  })
 
   const rawSlugs = ctx.query.slugs ? String(ctx.query.slugs) : ''
   if (!rawSlugs) {

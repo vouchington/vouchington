@@ -33,10 +33,13 @@ import {
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
   requireAuth,
+  validateRequestContract,
 } from '../../response-helpers.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 app.route('/api/v1/rss-feed-items/:id').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feed-items/:id')
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items/:id', { path: ctx.params })
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid RSS feed item ID')
   const item = await getRssFeedItemById(ctx.params.id!)
   ctx.assert(item, 404, 'RSS feed item not found')
@@ -72,6 +75,9 @@ app.route('/api/v1/rss-feed-items/:id').get(async (ctx: Context) => {
 
 app.route('/api/v1/rss-feed-items/:id/follow-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/rss-feed-items/:id/follow-context')
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items/:id/follow-context', {
+    path: ctx.params,
+  })
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid RSS feed item ID')
 
   const item = await getRssFeedItemById(ctx.params.id!)
@@ -92,6 +98,7 @@ app.route('/api/v1/rss-feed-items/:id/follow-context').get(async (ctx: Context) 
 const rssFeedItemVoteHandler = createVoteHandler({
   rateLimitPrefix: 'rss-feed-item-election-vote',
   routeKey: 'PUT:/api/v1/rss-feed-items/:id/vote',
+  requestContractOperation: 'PUT:/api/v1/rss-feed-items/:id/vote',
   entityType: 'rss_feed_item',
   getEntity: getRssFeedItemById,
   entityNotFoundMessage: 'RSS feed item not found',
@@ -104,6 +111,7 @@ const rssFeedItemVoteHandler = createVoteHandler({
 const clearRssFeedItemVoteHandler = createVoteClearHandler({
   rateLimitPrefix: 'rss-feed-item-election-vote',
   routeKey: 'DELETE:/api/v1/rss-feed-items/:id/vote',
+  requestContractOperation: 'DELETE:/api/v1/rss-feed-items/:id/vote',
   entityType: 'rss_feed_item',
   getEntity: getRssFeedItemById,
   entityNotFoundMessage: 'RSS feed item not found',
@@ -135,14 +143,18 @@ const rssFeedItemVotesParser = createPaginationParser({
 // GET /api/v1/rss-feed-items/:id/votes
 app.route('/api/v1/rss-feed-items/:id/votes').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/rss-feed-items/:id/votes', rssFeedItemVotesParser)
-  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
-
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/rss-feed-items/:id/votes')
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items/:id/votes', { path: ctx.params })
+  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
 
   const item = await getRssFeedItemById(ctx.params.id!)
   ctx.assert(item, 404, 'RSS feed item not found')
 
   const { limit, after } = rssFeedItemVotesParser.parse(ctx.query)
+  const query = prepareQueryForValidation(ctx.query, rssFeedItemVotesParser.queryContract)
+  if (after !== undefined) query.after = after
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items/:id/votes', { query })
   const collection = isAdminUser(currentUser)
     ? await getRssFeedItemElectionVotesByElectionId(ctx.params.id!, { limit, after })
     : await getRssFeedItemElectionVotesByUserForEntity(currentUser.id, ctx.params.id!, {

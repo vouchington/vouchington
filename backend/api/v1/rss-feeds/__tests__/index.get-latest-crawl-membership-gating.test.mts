@@ -167,7 +167,7 @@ describe('index', () => {
         await request
           .patch(`/api/v1/rss-feeds/${feedId}`)
           .send({ home_page_url: `https://example.com/patch-${random}` })
-          .expect(400)
+          .expect(422)
       })
 
       it('should reject reason-only state patch payloads', async () => {

@@ -21,6 +21,7 @@ import { openApiPaths, writeOpenApi } from './write-openapi.mts'
 import { loadRegisteredRouteCatalog, routeShape } from '../registered-route-catalog.mts'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
 import { getBackendProgramBuildCount, getBackendProgramEntryCount } from '../backend-program.mts'
+import { assertContentRequestContractCoverage } from './content-request-contract-coverage.mts'
 
 const run = promisify(execFile)
 const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url))
@@ -133,6 +134,10 @@ describe('openapi document generation', () => {
       integration_status: { enum: ['approved', 'blocked', 'pending'], type: 'string' },
       reason: { anyOf: [{ type: 'null' }, { type: 'string' }] },
     })
+  })
+
+  it('retains executable content request carriers and concrete body schemas', () => {
+    expect(() => assertContentRequestContractCoverage(doc)).not.toThrow()
   })
 
   it('marks membership-grant request fields required in OpenAPI', () => {

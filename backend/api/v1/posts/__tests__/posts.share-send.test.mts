@@ -67,7 +67,38 @@ describe('post follower distribution routes', () => {
     await request
       .post(`/api/v1/posts/${post.id}/sends`)
       .send({ audience: 'selected_followers', recipient_user_ids: [] })
+      .expect(422)
+
+    await expect(countFollowerDistributionsForSenderForTest(sender.id)).resolves.toBe(before)
+  })
+
+  it('applies post target policy before malformed send body diagnostics', async () => {
+    const sender = await createTestUser()
+    const post = await createTestPost({ user: sender, privacy: 'public' })
+    const request = createRequest()
+    await request.authenticateAs(sender)
+    const before = await countFollowerDistributionsForSenderForTest(sender.id)
+
+    await request
+      .post(`/api/v1/posts/${post.id}/sends`)
+      .send({ audience: 'selected_followers', recipient_user_ids: [] })
       .expect(400)
+
+    await expect(countFollowerDistributionsForSenderForTest(sender.id)).resolves.toBe(before)
+  })
+
+  it('rejects extra send fields before distribution creation', async () => {
+    const sender = await createTestUser()
+    const creator = await createTestUser()
+    const post = await createTestPost({ user: creator, privacy: 'public' })
+    const request = createRequest()
+    await request.authenticateAs(sender)
+    const before = await countFollowerDistributionsForSenderForTest(sender.id)
+
+    await request
+      .post(`/api/v1/posts/${post.id}/sends`)
+      .send({ audience: 'all_followers', unexpected: true })
+      .expect(422)
 
     await expect(countFollowerDistributionsForSenderForTest(sender.id)).resolves.toBe(before)
   })

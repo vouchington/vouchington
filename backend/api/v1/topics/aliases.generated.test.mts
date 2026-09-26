@@ -173,20 +173,20 @@ describe('POST /api/v1/topics/:idOrSlug/aliases', () => {
       .expect(404)
   })
 
-  it('should return 400 when aliases is missing', async () => {
+  it('should return 422 when aliases is missing', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user: admin! })
     const request = createRequest()
     await request.authenticateAs(admin!)
-    await request.post(`/api/v1/topics/${topic.id}/aliases`).send({}).expect(400)
+    await request.post(`/api/v1/topics/${topic.id}/aliases`).send({}).expect(422)
   })
 
-  it('should return 400 when aliases is not a string or array', async () => {
+  it('should return 422 when aliases is not a string or array', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user: admin! })
     const request = createRequest()
     await request.authenticateAs(admin!)
-    await request.post(`/api/v1/topics/${topic.id}/aliases`).send({ aliases: 123 }).expect(400)
+    await request.post(`/api/v1/topics/${topic.id}/aliases`).send({ aliases: 123 }).expect(422)
   })
 
   it('should create aliases successfully', async () => {

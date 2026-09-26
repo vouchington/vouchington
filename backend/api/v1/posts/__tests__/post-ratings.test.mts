@@ -34,4 +34,26 @@ describe('post ratings', () => {
       .send({ rating: 5, order_index: 1 })
       .expect(204)
   })
+
+  it('checks rating deletion ownership before an invalid topic ID', async () => {
+    const owner = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const otherUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const topic = await createTestTopic({ user: owner })
+    const review = await createPost(owner, {
+      title: 'Review rating deletion authorization',
+      markdown:
+        'This review has enough detail to pass the minimum review content validation. It explains the item clearly, identifies material strengths and weaknesses, and gives readers enough context for a useful rating assessment. The examples are concrete and the conclusion is clear.',
+      post_type: 'review',
+      review_topic_ratings: [{ topic_id: topic.id, rating: 3 }],
+    })
+    await approveTestPost(review.id)
+    const otherRequest = createRequest()
+    await otherRequest.authenticateAs(otherUser)
+
+    await otherRequest.delete(`/api/v1/posts/${review.id}/ratings/not-a-uuid`).expect(403)
+
+    const ownerRequest = createRequest()
+    await ownerRequest.authenticateAs(owner)
+    await ownerRequest.delete(`/api/v1/posts/${review.id}/ratings/not-a-uuid`).expect(422)
+  })
 })

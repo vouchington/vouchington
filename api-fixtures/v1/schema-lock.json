@@ -1142,7 +1142,7 @@
         "native.moderation.clearance.in-review",
         "native.moderation.clearance.rejected"
       ],
-      "hash": "79f81039e91739dc83819cf9551cc8f6018c2a2fa0e441cf4661a3444e655774"
+      "hash": "c50267d3c1ab98efdbc5f0b0e3aae1932a6103e88f005e1ef0de96715b31fda4"
     },
     "POST:/api/v1/posts/:idOrSlug/sends": {
       "fixtureIds": ["native.posts.followers.send-selected"],

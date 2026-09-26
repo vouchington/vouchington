@@ -4,11 +4,9 @@ import {
   type CommentNode,
 } from '@services/comments'
 import {
-  COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
   getCommentAncestorPage,
   getCommentAncestorTargetByAny,
 } from '@services/comments/ancestor-page'
-import { parseBoundedIntegerLimit } from '@modules/pagination'
 
 interface ResolvedCommentAncestorPage {
   ancestors: CommentNode[]
@@ -23,20 +21,15 @@ interface ResolvedCommentAncestorPage {
 export async function resolveCommentAncestorPage({
   after,
   idOrSlug,
-  limit: rawLimit,
+  limit,
 }: {
   after?: unknown
   idOrSlug: string
-  limit?: unknown
+  limit: number
 }): Promise<ResolvedCommentAncestorPage | null> {
   const target = await getCommentAncestorTargetByAny(idOrSlug)
   if (!target) return null
   const rootId = target.root_id ?? target.id
-  const limit = parseBoundedIntegerLimit(rawLimit, {
-    default: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
-    max: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
-    min: 1,
-  })
   const cursor =
     after === undefined
       ? undefined

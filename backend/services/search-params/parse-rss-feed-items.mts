@@ -3,15 +3,18 @@ import {
   defineQueryContract,
   queryBoolean,
   queryCsvArray,
+  queryEnum,
   queryInteger,
   queryString,
   queryUuid,
   withQueryContract,
 } from '@modules/pagination'
+import { VALID_MEDIA_TYPES } from '@modules/pagination/filters'
 import { isUUID } from '@modules/utils'
 import { getTopicIdsByAnyCachedBatch, resolveRssFeedIds } from '@services/entity-cache'
 import { extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
 import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
+import { prepareQueryForValidation } from './prepare-query.mts'
 
 const rssFeedItemsParser = createPaginationParser({
   cursor: { type: 'timestamp' as const },
@@ -36,8 +39,61 @@ const rssFeedItemsQueryContract = defineQueryContract({
   read: queryBoolean(),
 })
 
-async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>) {
-  const paginationOptions = rssFeedItemsParser.parse(query)
+const rssFeedItemsValidationQueryContract = defineQueryContract({
+  ...rssFeedItemsParser.queryContract,
+  ...rssFeedItemsQueryContract.queryContract,
+  media_type: queryCsvArray(queryEnum(VALID_MEDIA_TYPES)),
+})
+
+export function prepareRssFeedItemsSearchParams(query: Record<string, unknown>) {
+  const validationQuery = prepareQueryForValidation(
+    query,
+    rssFeedItemsValidationQueryContract.queryContract,
+    ['similar_window_days'],
+  )
+  const rawSimilarWindowDays = query.similar_window_days
+  if (rawSimilarWindowDays !== undefined) {
+    const similarWindowDays = Number(rawSimilarWindowDays)
+    if (!Number.isInteger(similarWindowDays)) {
+      validationQuery.similar_window_days = rawSimilarWindowDays
+    } else if (similarWindowDays >= 0 && similarWindowDays <= 365) {
+      validationQuery.similar_window_days = similarWindowDays
+    }
+  }
+  const pagination = rssFeedItemsParser.parse(query)
+  if (query.limit !== undefined) validationQuery.limit = pagination.limit
+  return {
+    validationQuery,
+    paginationOptions: pagination,
+    q: query.q,
+    uniqueTopicIdentifiers: extractIdentifiers(query, ['topic', 'topics'], 10),
+    uniqueCategoryTopicIdentifiers: extractIdentifiers(
+      query,
+      ['category_topic', 'category_topics'],
+      10,
+    ),
+    rssFeedIds: resolveRssFeedIds(extractIdentifiers(query, ['rss_feed', 'rss_feeds'], 10)),
+    storyIdRaw: typeof query.story_id === 'string' ? query.story_id : undefined,
+    similarWindowDays: rawSimilarWindowDays,
+    hasRelatedPosts: validationQuery.has_related_posts,
+    read: validationQuery.read,
+  }
+}
+
+export async function resolveRssFeedItemsSearchParams(
+  prepared: ReturnType<typeof prepareRssFeedItemsSearchParams>,
+) {
+  const {
+    paginationOptions,
+    q,
+    uniqueTopicIdentifiers,
+    uniqueCategoryTopicIdentifiers,
+    rssFeedIds: rss_feed_ids,
+    storyIdRaw,
+    similarWindowDays,
+    hasRelatedPosts,
+    read: rawRead,
+  } = prepared
 
   // When semantic_search_query is present, skip q hashtag resolution entirely:
   // - unresolved hashtags in q must not 400 (semantic wins)
@@ -50,25 +106,13 @@ async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>)
         textSearchQuery: undefined as string | undefined,
         topicIds: [] as string[],
       }
-    : await resolveHashtagTopicSearch(query.q)
-
-  const uniqueTopicIdentifiers = extractIdentifiers(query, ['topic', 'topics'], 10)
-  const uniqueCategoryTopicIdentifiers = extractIdentifiers(
-    query,
-    ['category_topic', 'category_topics'],
-    10,
-  )
-  const uniqueRssFeedIdentifiers = extractIdentifiers(query, ['rss_feed', 'rss_feeds'], 10)
-
-  // resolveRssFeedIds throws 422 for non-UUID identifiers (sync)
-  const rss_feed_ids = resolveRssFeedIds(uniqueRssFeedIdentifiers)
+    : await resolveHashtagTopicSearch(q)
 
   const [topicIdsByIdentifier, categoryTopicIdsByIdentifier] = await Promise.all([
     getTopicIdsByAnyCachedBatch(uniqueTopicIdentifiers),
     getTopicIdsByAnyCachedBatch(uniqueCategoryTopicIdentifiers),
   ])
 
-  const storyIdRaw = typeof query.story_id === 'string' ? query.story_id : undefined
   const storyId = storyIdRaw !== undefined && isUUID(storyIdRaw) ? storyIdRaw : undefined
 
   const shouldReturnEmpty =
@@ -88,27 +132,21 @@ async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>)
     ...new Set(categoryTopicIdsByIdentifier.filter((id): id is string => Boolean(id))),
   ]
 
-  const rawDays =
-    query.similar_window_days !== undefined ? Number(query.similar_window_days) : undefined
+  const rawDays = similarWindowDays !== undefined ? Number(similarWindowDays) : undefined
   const similar_window_days =
     rawDays !== undefined && Number.isInteger(rawDays) && rawDays >= 0 && rawDays <= 365
       ? rawDays
       : undefined
 
-  const has_related_posts =
-    query.has_related_posts === 'true'
-      ? true
-      : query.has_related_posts === 'false'
-        ? false
-        : undefined
+  const has_related_posts = typeof hasRelatedPosts === 'boolean' ? hasRelatedPosts : undefined
 
-  const read = query.read === 'true' ? true : query.read === 'false' ? false : undefined
+  const read = typeof rawRead === 'boolean' ? rawRead : undefined
 
   const searchOptions = {
     ...paginationOptions,
     // When semantic_search_query is present it wins over the text-derived query so
     // that the embedding-ranked path does not mix with tsvector ranking.
-    ...(query.q &&
+    ...(q &&
     !paginationOptions.text_search_query &&
     !paginationOptions.semantic_search_query &&
     hashtagSearch.textSearchQuery
@@ -132,8 +170,11 @@ async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>)
   return { shouldReturnEmpty, searchOptions }
 }
 
+async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>) {
+  return await resolveRssFeedItemsSearchParams(prepareRssFeedItemsSearchParams(query))
+}
+
 export const parseRssFeedItemsSearchParams = withQueryContract(
   parseRssFeedItemsSearchParamsImpl,
-  rssFeedItemsParser,
-  rssFeedItemsQueryContract,
+  rssFeedItemsValidationQueryContract,
 )

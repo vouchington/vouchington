@@ -3,39 +3,52 @@ import { getCommunityMember } from '@services/communities/members/get'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { updateClearanceStatus, type ClearanceStatus } from '@services/post-clearance'
 import {
   canViewPost,
+  currentUserCanUpdatePost,
   currentUserCanLockPost,
   deletePost,
   lockPost,
   unlockPost,
   updatePost,
-  type CreatePostUpdates,
+  type UpdatePostChanges,
 } from '@services/posts'
-import { assertNotSuspended, isAdminUser, isModerationStaff } from '@services/users'
+import { assertNotSuspended, isAdminUser } from '@services/users'
+import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import { getUserActivePlan } from '@services/memberships'
 import app from '../../../app.mts'
-import { requireAuth, requireAuthAndRateLimit } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { apiRequestContract } from '../../../response-contract.mts'
 import { getRouteAccessPost, getRouteRootAccessPost } from '../get-route-access-post.mts'
 
 app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
+  apiRequestContract<'PATCH:/api/v1/posts/:idOrSlug', UpdatePostChanges>(
+    'PATCH:/api/v1/posts/:idOrSlug',
+  )
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/posts/:idOrSlug')
   assertNotSuspended(currentUser)
-
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
   const privacyPost = await getRouteAccessPost(post)
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
+  ctx.assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
 
-  const changes = (await ctx.request.json('1mb')) as CreatePostUpdates
+  const parsedChanges = await ctx.request.json('1mb')
+  ctx.assert(
+    parsedChanges !== null && typeof parsedChanges === 'object' && !Array.isArray(parsedChanges),
+    422,
+    'Invalid request body',
+  )
+  const changes = parsedChanges as UpdatePostChanges
   ctx.assert(
     changes.slug === undefined || isAdminUser(currentUser),
     403,
     'Only admins can set a post slug',
   )
+  assertPostUpdatePreflight(currentUser, post, changes)
+  validateRequestContract(ctx, 'PATCH:/api/v1/posts/:idOrSlug', { body: changes, path: ctx.params })
   const membershipPlan =
     changes.structured_data !== undefined ||
     changes.categories !== undefined ||
@@ -51,6 +64,7 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
 app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/posts/:idOrSlug')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'DELETE:/api/v1/posts/:idOrSlug', { path: ctx.params })
 
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
@@ -75,54 +89,10 @@ app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {
   ctx.setStatus(204)
 })
 
-app.route('/api/v1/posts/:idOrSlug/clearances').post(async (ctx: Context) => {
-  const currentUser = await requireAuthAndRateLimit(
-    ctx,
-    isModerationStaff,
-    'POST:/api/v1/posts/:idOrSlug/clearances',
-  )
-
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
-  ctx.assert(post, 404, 'Post not found')
-  ctx.assert(!post.deleted_at, 404, 'Post not found')
-
-  const body = (await ctx.request.json('8kb')) as {
-    status?: unknown
-    reason_code?: unknown
-    private_note?: unknown
-  }
-  const validStatuses: ClearanceStatus[] = ['approved', 'rejected', 'in_review', 'pending']
-  ctx.assert(
-    typeof body.status === 'string' && validStatuses.includes(body.status as ClearanceStatus),
-    422,
-    'Invalid status',
-  )
-  ctx.assert(
-    typeof body.reason_code === 'string' && /^[a-z][a-z0-9_]{0,99}$/.test(body.reason_code),
-    422,
-    'reason_code must be a stable identifier',
-  )
-  ctx.assert(
-    body.private_note === undefined ||
-      (typeof body.private_note === 'string' &&
-        body.private_note.trim() === body.private_note &&
-        body.private_note.length <= 4000),
-    422,
-    'private_note must be trimmed and at most 4000 characters',
-  )
-
-  await updateClearanceStatus(post.id, body.status as ClearanceStatus, currentUser.id, {
-    reasonCode: body.reason_code,
-    privateNote: body.private_note,
-    platformOverride: true,
-  })
-
-  ctx.json({ clearance_status: body.status })
-})
-
 app.route('/api/v1/posts/:idOrSlug/lock').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/lock')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/lock', { path: ctx.params })
 
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
@@ -144,6 +114,7 @@ app.route('/api/v1/posts/:idOrSlug/lock').post(async (ctx: Context) => {
 app.route('/api/v1/posts/:idOrSlug/lock').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/posts/:idOrSlug/lock')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'DELETE:/api/v1/posts/:idOrSlug/lock', { path: ctx.params })
 
   const post = await getPostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')

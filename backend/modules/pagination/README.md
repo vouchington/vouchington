@@ -17,6 +17,8 @@ The module is a compatibility adapter over [`@vouchington/pagination`](https://w
 - **Response format**: Always return `{ results: T[], page_info: PageInfo }`
 - **Bounded public requests**: every public collection composes a configured limit parser.
   `omitLimit` is an internal service option and is never parsed from a public query string.
+- **Topic types**: `VALID_TOPIC_TYPES` is the full public filter catalog and stays aligned with
+  [`topicTypes`](../../types/entities/topic.mts), the canonical topic-type owner.
 
 ## Published Query Metadata
 

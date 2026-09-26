@@ -86,6 +86,24 @@ describe('index', () => {
         expect(jobs).toHaveLength(1)
         expect(jobs[0]?.data).toMatchObject({ rssFeedId: feedId, ttl: 0 })
       })
+
+      it('validates force query values before refreshing', async () => {
+        const admin = await createTestUser({ administrator: true })
+        const random = Math.random().toString(36).slice(2, 8)
+        const topicId = await insertTestTopic({
+          name: `Invalid Force Refresh Topic ${random}`,
+          slug: `invalid-force-refresh-${random}`,
+          createdById: admin.id,
+        })
+        const feedId = await insertTestRssFeed({
+          topicId,
+          title: `Invalid Force Refresh Feed ${random}`,
+        })
+        const request = createRequest()
+        await request.authenticateAs(admin)
+
+        await request.post(`/api/v1/rss-feeds/${feedId}/refreshes?force=not-a-boolean`).expect(422)
+      })
     })
 
     describe('GET /api/v1/rss-feeds/:id/crawls/:crawlId', () => {

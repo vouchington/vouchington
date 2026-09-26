@@ -13,8 +13,12 @@ import app from '../../../app.mts'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
+  validateRequestContract,
   validateUUIDParam,
 } from '../../../response-helpers.mts'
+
+type LinkReferralProgramValidationBody = { validation_id: string }
+type CreateReferralProgramValidationBody = { slug: string; user_help_text?: string | null }
 
 // POST /api/v1/topics/:referralProgramId/referral-program/link-validations
 app
@@ -26,10 +30,13 @@ app
       'POST:/api/v1/topics/:referralProgramId/referral-program/link-validations',
     )
 
-    const body = await parseJsonBody<Record<string, unknown>>(ctx)
-    ctx.assert(body.validation_id, 422, 'validation_id is required')
-    ctx.assert(typeof body.validation_id === 'string', 422, 'validation_id must be a string')
-    const validationId = body.validation_id as string
+    const body = await parseJsonBody<LinkReferralProgramValidationBody>(ctx)
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/topics/:referralProgramId/referral-program/link-validations',
+      { body, path: ctx.params },
+    )
+    const validationId = body.validation_id
     validateUUID(validationId)
 
     const referralProgramId = validateUUIDParam(ctx, 'referralProgramId')
@@ -46,6 +53,11 @@ app
       ctx,
       currentUserCanUpdateTopic,
       'DELETE:/api/v1/topics/:referralProgramId/referral-program/link-validations/:validationId',
+    )
+    validateRequestContract(
+      ctx,
+      'DELETE:/api/v1/topics/:referralProgramId/referral-program/link-validations/:validationId',
+      { path: ctx.params },
     )
 
     const referralProgramId = validateUUIDParam(ctx, 'referralProgramId')
@@ -65,6 +77,13 @@ app
       currentUserCanUpdateTopic,
       'GET:/api/v1/topics/:referralProgramId/referral-program/validations',
     )
+    validateRequestContract(
+      ctx,
+      'GET:/api/v1/topics/:referralProgramId/referral-program/validations',
+      {
+        path: ctx.params,
+      },
+    )
 
     const referralProgramId = validateUUIDParam(ctx, 'referralProgramId')
     const results = await listReferralLinkValidationsForProgram(referralProgramId)
@@ -79,13 +98,16 @@ app
     )
 
     const referralProgramId = validateUUIDParam(ctx, 'referralProgramId')
-    const body = await parseJsonBody<{ slug: string; user_help_text?: string }>(ctx)
-    ctx.assert(body.slug && typeof body.slug === 'string', 422, 'slug is required')
-    ctx.assert(
-      body.user_help_text === undefined || typeof body.user_help_text === 'string',
-      422,
-      'user_help_text must be a string',
+    const body = await parseJsonBody<CreateReferralProgramValidationBody>(ctx)
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/topics/:referralProgramId/referral-program/validations',
+      {
+        body,
+        path: ctx.params,
+      },
     )
+    ctx.assert(body.slug, 422, 'slug is required')
 
     const validation = await createAndLinkValidationToReferralProgram(
       currentUser,

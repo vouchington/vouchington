@@ -6,10 +6,11 @@ import {
   parseSendFollowersInput,
   sendRssFeedItemToFollowers,
   shareRssFeedItemWithFollowers,
+  preflightRssFeedItemDistributionTarget,
 } from '@services/follower-distributions'
 import { assertNotSuspended } from '@services/users'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
   apiNoRequestBody,
   apiRequestContract,
@@ -35,8 +36,12 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/shares').post(async (ctx: Conte
 
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/shares')
   assertNotSuspended(currentUser)
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/shares', {
+    path: ctx.params,
+  })
+  const rssFeedItemId = validateUUIDParam(ctx, 'rssFeedItemId')
 
-  const result = await shareRssFeedItemWithFollowers(currentUser, ctx.params.rssFeedItemId!)
+  const result = await shareRssFeedItemWithFollowers(currentUser, rssFeedItemId)
   await enqueueDistributionOrMarkFailed(result.distribution_id)
   ctx.setStatus(202)
   ctx.json(apiResponse('POST:/api/v1/rss-feed-items/:rssFeedItemId/shares', result))
@@ -50,8 +55,15 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/sends').post(async (ctx: Contex
     'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends',
     SendFollowersRequestContract
   >('POST:/api/v1/rss-feed-items/:rssFeedItemId/sends')
-  const input = parseSendFollowersInput(await ctx.request.json('128kb'))
-  const result = await sendRssFeedItemToFollowers(currentUser, ctx.params.rssFeedItemId!, input)
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends', {
+    path: ctx.params,
+  })
+  const rssFeedItemId = validateUUIDParam(ctx, 'rssFeedItemId')
+  await preflightRssFeedItemDistributionTarget(rssFeedItemId)
+  const body = await ctx.request.json('128kb')
+  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends', { body })
+  const input = parseSendFollowersInput(body)
+  const result = await sendRssFeedItemToFollowers(currentUser, rssFeedItemId, input)
 
   await enqueueDistributionOrMarkFailed(result.distribution_id)
   ctx.setStatus(202)

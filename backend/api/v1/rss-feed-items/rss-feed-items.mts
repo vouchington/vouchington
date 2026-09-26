@@ -1,7 +1,7 @@
 import { isAdminUser } from '@services/users'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import {
   searchRssFeedItems,
   proxyThumbnailUrls,
@@ -21,7 +21,11 @@ import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { parseRssFeedItemsSearchParams } from '@services/search-params'
+import {
+  parseRssFeedItemsSearchParams,
+  prepareRssFeedItemsSearchParams,
+  resolveRssFeedItemsSearchParams,
+} from '@services/search-params'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import { clampAnonLimit } from '@modules/search-utils'
 import {
@@ -35,8 +39,12 @@ import { apiQuery } from '../../response-contract.mts'
 app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/rss-feed-items', parseRssFeedItemsSearchParams)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/rss-feed-items')
-  const parsedSearchParams = await parseRssFeedItemsSearchParams(ctx.query).catch(error =>
-    sendHashtagTopicSearchErrorResponse(ctx, error),
+  const preparedSearchParams = prepareRssFeedItemsSearchParams(ctx.query)
+  validateRequestContract(ctx, 'GET:/api/v1/rss-feed-items', {
+    query: preparedSearchParams.validationQuery,
+  })
+  const parsedSearchParams = await resolveRssFeedItemsSearchParams(preparedSearchParams).catch(
+    error => sendHashtagTopicSearchErrorResponse(ctx, error),
   )
   if (!parsedSearchParams) return
   const { shouldReturnEmpty, searchOptions } = parsedSearchParams

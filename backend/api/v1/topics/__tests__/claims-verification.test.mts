@@ -114,4 +114,14 @@ describe('POST /api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission
     expect(response.body.claim).toBeDefined()
     expect(response.body.claim.submitted_at).not.toBeNull()
   })
+
+  it('rejects a non-string evidence body for the claimant', async () => {
+    const request = createRequest()
+    await request.authenticateAs(claimant)
+    await request
+      .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/manual-review-submission`)
+      .set('Content-Type', 'application/json')
+      .send({ evidence: 42 })
+      .expect(422)
+  })
 })

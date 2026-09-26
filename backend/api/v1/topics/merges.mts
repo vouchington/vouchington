@@ -5,7 +5,9 @@ import {
   mergeTopicAliases,
 } from '@services/topics'
 import app from '../../app.mts'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+
+type MergeTopicBody = { destination_id_or_slug: string }
 
 app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(
@@ -13,10 +15,12 @@ app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => 
     currentUserCanMergeTopic,
     'POST:/api/v1/topics/:sourceIdOrSlug/merges',
   )
+  validateRequestContract(ctx, 'POST:/api/v1/topics/:sourceIdOrSlug/merges', { path: ctx.params })
 
-  const body = (await ctx.request.json('1mb')) as {
-    destination_id_or_slug?: unknown
-  }
+  const body = (await ctx.request.json('1mb')) as MergeTopicBody
+  validateRequestContract(ctx, 'POST:/api/v1/topics/:sourceIdOrSlug/merges', {
+    body,
+  })
   const destinationIdOrSlug = body.destination_id_or_slug
   ctx.assert(
     typeof destinationIdOrSlug === 'string' && destinationIdOrSlug.trim(),

@@ -67,7 +67,7 @@ describe('POST /api/v1/rss-feeds', () => {
     expect(response.body.status).toBe('upvoted')
   })
 
-  it('should reject unknown create fields', async () => {
+  it('should reject unknown create fields with generated-schema 422', async () => {
     const random = Math.random().toString(36).slice(2, 8)
     const request = createRequest()
     await request.authenticateAs(user)
@@ -78,7 +78,7 @@ describe('POST /api/v1/rss-feeds', () => {
         rss_feed_url: `https://post-strict-${random}.example.com/feed.xml`,
         title: 'Extra field',
       })
-      .expect(400)
+      .expect(422)
   })
 
   it('should return 422 for invalid URL', async () => {

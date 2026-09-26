@@ -50,7 +50,7 @@ export async function createReferralLinkValidation(
   currentUser: PrivateUser | null,
   data: {
     slug: string
-    user_help_text?: string
+    user_help_text?: string | null
   },
   options?: QueryOptions,
 ): Promise<ReferralLinkValidation> {
@@ -86,7 +86,7 @@ export async function updateReferralLinkValidation(
   idOrSlug: string,
   data: {
     slug?: string
-    user_help_text?: string
+    user_help_text?: string | null
   },
 ): Promise<ReferralLinkValidation | null> {
   assert(currentUser, 401, 'User not logged in')

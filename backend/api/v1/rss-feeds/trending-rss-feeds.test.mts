@@ -62,6 +62,14 @@ describe('trending-rss-feeds', () => {
   }
 
   describe('GET /api/v1/rss-feeds/trending', () => {
+    it.each([
+      ['nonnumeric', 'abc'],
+      ['repeated', '1&min_score=2'],
+    ])('rejects a %s min_score', async (_kind, minScore) => {
+      const request = createRequest()
+      await request.get(`/api/v1/rss-feeds/trending?min_score=${minScore}`).expect(422)
+    })
+
     it('returns 200 with results and page_info', async () => {
       const request = createRequest()
       const response = await request.get('/api/v1/rss-feeds/trending').expect(200)

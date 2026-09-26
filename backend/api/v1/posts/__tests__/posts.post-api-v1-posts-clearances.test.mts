@@ -49,13 +49,13 @@ describe('POST /api/v1/posts/:idOrSlug/clearances', () => {
     expect(response.body).toEqual({ clearance_status: 'approved' })
   })
 
-  it('returns 403 when called by a non-staff user', async () => {
+  it('returns 403 for a non-staff user before malformed body diagnostics', async () => {
     const request = createRequest()
     await request.authenticateAs(nonAdmin)
 
     await request
       .post(`/api/v1/posts/${postId}/clearances`)
-      .send({ status: 'in_review', reason_code: 'staff_reviewed' })
+      .send({ status: null, reason_code: 'staff_reviewed' })
       .expect(403)
   })
 
@@ -97,5 +97,64 @@ describe('POST /api/v1/posts/:idOrSlug/clearances', () => {
       .set('Content-Type', 'text/plain')
       .send('status=in_review&reason_code=staff_reviewed')
       .expect(415)
+  })
+
+  it('rejects malformed clearance bodies without changing the clearance', async () => {
+    const unchangedPostId = await insertTestPost({
+      title: `Invalid clearance ${crypto.randomUUID()}`,
+      slug: `invalid-clearance-${crypto.randomUUID()}`,
+      createdById: nonAdmin.id,
+      markdown: 'Invalid clearance test content.',
+      clearanceStatus: 'pending',
+    })
+    const request = createRequest()
+    await request.authenticateAs(admin)
+
+    await request
+      .post(`/api/v1/posts/${unchangedPostId}/clearances`)
+      .set('Content-Type', 'application/json')
+      .send('null')
+      .expect(422)
+    await request
+      .post(`/api/v1/posts/${unchangedPostId}/clearances`)
+      .send({ status: null, reason_code: 'staff_reviewed' })
+      .expect(422)
+    await request
+      .post(`/api/v1/posts/${unchangedPostId}/clearances`)
+      .send({ status: 'approved', reason_code: 'staff_approved', unexpected: true })
+      .expect(422)
+    await request
+      .post(`/api/v1/posts/${unchangedPostId}/clearances`)
+      .send({ status: 'approved', reason_code: 42 })
+      .expect(422)
+
+    expect(
+      (await request.get(`/api/v1/posts/${unchangedPostId}`).expect(200)).body.post
+        .clearance_status,
+    ).toBe('pending')
+  })
+
+  it('returns 404 for a missing post before malformed clearance diagnostics', async () => {
+    const request = createRequest()
+    await request.authenticateAs(admin)
+
+    await request
+      .post('/api/v1/posts/00000000-0000-0000-0000-000000000000/clearances')
+      .send({ status: null, reason_code: 'staff_reviewed' })
+      .expect(404)
+  })
+
+  it('returns 413 for a clearance body over 8kb', async () => {
+    const request = createRequest()
+    await request.authenticateAs(admin)
+
+    await request
+      .post(`/api/v1/posts/${postId}/clearances`)
+      .send({
+        status: 'approved',
+        reason_code: 'staff_approved',
+        private_note: 'a'.repeat(8 * 1024),
+      })
+      .expect(413)
   })
 })

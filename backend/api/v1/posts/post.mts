@@ -1,6 +1,7 @@
 import './post-routes/post-detail-route.mts'
 import './post-routes/follow-context-route.mts'
 import './post-routes/post-mutation-routes.mts'
+import './post-routes/post-clearance-mutation-route.mts'
 import './post-routes/clearance-route.mts'
 import './post-routes/comment-descendants-route.mts'
 import './post-routes/comment-ancestors-route.mts'

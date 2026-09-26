@@ -7912,6 +7912,9 @@ importers:
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
+      '@services/memberships':
+        specifier: workspace:^
+        version: link:../memberships
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../moderation-reports
@@ -8810,6 +8813,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/comments':
+        specifier: workspace:^
+        version: link:../comments
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache

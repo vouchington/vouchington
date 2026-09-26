@@ -83,6 +83,26 @@ describe('POST /api/v1/topics/:idOrSlug/claims', () => {
 
     expect(second.body.isDuplicate).toBe(true)
   })
+
+  it('masks foreign and absent manual-review claims before malformed body details', async () => {
+    const claimant = await createTestUser()
+    const { claim: foreignClaim } = await createTopicClaim(claimant.id, {
+      topicId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    const request = createRequest()
+    await request.authenticateAs(regularUser)
+
+    await request
+      .post(`/api/v1/topics/${topicSlug}/claims/${foreignClaim.id}/manual-review-submission`)
+      .send({ evidence: 42 })
+      .expect(404)
+    await request
+      .post(`/api/v1/topics/${topicSlug}/claims/${crypto.randomUUID()}/manual-review-submission`)
+      .send({ evidence: 42 })
+      .expect(404)
+  })
 })
 
 describe('GET /api/v1/topics/:idOrSlug/claims', () => {

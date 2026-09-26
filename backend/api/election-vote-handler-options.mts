@@ -17,6 +17,8 @@ export type CreateVoteHandlerOptions<
   entityType: string
   /** Route key for `ctx.applyRouteRateLimit()`; every vote endpoint participates in it. */
   routeKey: string
+  /** Optional generated contract key for this route's path and vote body. */
+  requestContractOperation?: string
   upsertVotes: (
     userId: string,
     votes: Array<{ entityId: string; score: ElectionVoteScore }>,

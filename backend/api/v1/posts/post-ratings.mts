@@ -9,7 +9,18 @@ import { getUserActivePlan } from '@services/memberships'
 import { assertCanContribute } from '@services/contribution-gating/assert'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getRouteAccessPost } from './get-route-access-post.mts'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+
+type CreatePostRatingBody = {
+  topic_id: string
+  rating: number
+  order_index: number
+}
+
+type UpdatePostRatingBody = {
+  rating?: number
+  order_index?: number
+}
 
 app.route('/api/v1/posts/:idOrSlug/ratings').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/posts/:idOrSlug/ratings')
@@ -25,7 +36,11 @@ app.route('/api/v1/posts/:idOrSlug/ratings').post(async (ctx: Context) => {
   ctx.assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
   ctx.assert(post.post_type === 'review', 422, 'Post is not a review')
 
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const body = (await ctx.request.json('1mb')) as CreatePostRatingBody
+  validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/ratings', {
+    body,
+    path: ctx.params,
+  })
   const { topic_id, rating, order_index } = body
   ctx.assert(typeof topic_id === 'string', 422, 'topic_id must be a string')
   ctx.assert(isUUID(topic_id), 422, 'Invalid topic_id')
@@ -60,7 +75,11 @@ app.route('/api/v1/posts/:idOrSlug/ratings/:topicId').patch(async (ctx: Context)
   ctx.assert(post.post_type === 'review', 422, 'Post is not a review')
   ctx.assert(isUUID(ctx.params.topicId!), 422, 'Invalid topic_id')
 
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const body = (await ctx.request.json('1mb')) as UpdatePostRatingBody
+  validateRequestContract(ctx, 'PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId', {
+    body,
+    path: ctx.params,
+  })
   const { rating, order_index } = body
   ctx.assert(
     rating !== undefined || order_index !== undefined,
@@ -98,7 +117,13 @@ app.route('/api/v1/posts/:idOrSlug/ratings/:topicId').delete(async (ctx: Context
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
   ctx.assert(await getRouteAccessPost(post), 404, 'Post not found')
+  ctx.assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
+  ctx.assert(post.post_type === 'review', 422, 'Post is not a review')
+  validateRequestContract(ctx, 'DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId', {
+    path: ctx.params,
+  })
+  const topicId = validateUUIDParam(ctx, 'topicId')
 
-  await deletePostRating(currentUser, post, ctx.params.topicId!)
+  await deletePostRating(currentUser, post, topicId)
   ctx.setStatus(204)
 })

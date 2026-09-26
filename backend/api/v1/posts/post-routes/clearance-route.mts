@@ -26,8 +26,9 @@ import type { CommunityMemberRole } from '@services/communities/types'
 import { isAdminUser } from '@services/users'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
-import { getOptionalAuthAndRateLimit } from '../../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   getAgentModerationElectionsRecord,
   indexPostModerationsByPostId,
@@ -61,6 +62,18 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
 
   const actualRootId = post.root_id ?? post.id
   const pagination = descendantsParser.parse(ctx.query)
+  const { after: _rawAfter, ...queryWithoutAfter } = ctx.query
+  const validationQuery = prepareQueryForValidation(
+    pagination.after === undefined
+      ? queryWithoutAfter
+      : { ...queryWithoutAfter, after: pagination.after },
+    descendantsParser.queryContract,
+  )
+  if (ctx.query.limit !== undefined) validationQuery.limit = pagination.limit
+  validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug/descendants', {
+    path: ctx.params,
+    query: validationQuery,
+  })
   const cursorScope = `comment-descendants:${actualRootId}:${post.id}`
   const afterId = pagination.after
     ? decodeScopedUuidCursor(pagination.after, cursorScope, 'Invalid cursor format').id

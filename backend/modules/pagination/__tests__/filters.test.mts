@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  VALID_TOPIC_TYPES,
   validateMediaTypes,
   validatePostTypes,
   validateTopicTypes,
@@ -7,6 +8,7 @@ import {
   validateSort,
 } from '../filters.mts'
 import { VALID_FEED_TIME_RANGES, VALID_FILTERABLE_POST_TYPES } from '@ts-shared/feed-capabilities'
+import { topicTypes } from '@voucha/types/entities/topic'
 
 describe('validatePostTypes', () => {
   it('should parse valid post types from comma-separated string', () => {
@@ -52,6 +54,13 @@ describe('validatePostTypes', () => {
 })
 
 describe('validateTopicTypes', () => {
+  it('keeps the public filter catalog aligned with canonical topic types', () => {
+    const canonicalTopicTypes = Object.keys(topicTypes)
+
+    expect([...VALID_TOPIC_TYPES].sort()).toEqual([...canonicalTopicTypes].sort())
+    expect(validateTopicTypes(canonicalTopicTypes.join(','))).toEqual(canonicalTopicTypes)
+  })
+
   it('should parse valid topic types from comma-separated string', () => {
     const result = validateTopicTypes('topic,rewards_program,card')
     expect(result).toEqual(['topic', 'rewards_program', 'card'])

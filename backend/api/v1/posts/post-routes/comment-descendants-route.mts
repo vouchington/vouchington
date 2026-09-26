@@ -2,7 +2,6 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { type CommentNode, getCommentAncestorsByAny } from '@services/comments'
-import { COMMENT_ANCESTOR_PAGE_MAX_LIMIT } from '@services/comments/ancestor-page'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import {
   getPostByAnyCached,
@@ -23,30 +22,27 @@ import {
 import { canViewPostsBatch, maskAnonymousPosts } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
-import { getOptionalAuthAndRateLimit } from '../../../response-helpers.mts'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
 import { apiQuery, apiResponse } from '../../../response-contract.mts'
-import { defineQueryContract, queryInteger, queryString } from '@modules/pagination'
+import {
+  commentAncestorPaginationQuery,
+  prepareCommentAncestorPagination,
+} from '@services/search-params/comment-ancestor-pagination'
 import { resolveCommentAncestorPage } from './comment-ancestor-pagination.mts'
 
-const ancestorPaginationQuery = defineQueryContract({
-  after: queryString({
-    description: 'Opaque cursor that reveals the next rootward ancestor window.',
-  }),
-  limit: queryInteger({
-    maximum: COMMENT_ANCESTOR_PAGE_MAX_LIMIT,
-    minimum: 1,
-  }),
-})
-
 app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
-  apiQuery('GET:/api/v1/posts/:idOrSlug/ancestors', ancestorPaginationQuery)
+  apiQuery('GET:/api/v1/posts/:idOrSlug/ancestors', commentAncestorPaginationQuery)
   const currentUser = await getOptionalAuthAndRateLimit(
     ctx,
     'GET:/api/v1/posts/:idOrSlug/ancestors',
   )
+  const preparedPagination = prepareCommentAncestorPagination(ctx.query)
+  validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug/ancestors', {
+    path: ctx.params,
+    query: preparedPagination.validationQuery,
+  })
 
-  const hasBoundedQuery = ctx.query.after !== undefined || ctx.query.limit !== undefined
   let ancestors: CommentNode[]
   let targetId: string | undefined
   let pageInfo = {
@@ -55,11 +51,11 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
     start_cursor: null as string | null,
   }
 
-  if (hasBoundedQuery) {
+  if (preparedPagination.hasBoundedQuery) {
+    if (!preparedPagination.pageQuery) throw new Error('Missing bounded ancestor pagination query')
     const page = await resolveCommentAncestorPage({
-      after: ctx.query.after,
       idOrSlug: ctx.params.idOrSlug!,
-      limit: ctx.query.limit,
+      ...preparedPagination.pageQuery,
     })
     ctx.assert(page, 404, 'Post not found')
     ancestors = page.ancestors

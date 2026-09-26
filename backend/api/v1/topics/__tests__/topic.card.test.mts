@@ -141,6 +141,38 @@ describe('topic.card', () => {
         })
       })
 
+      it('rejects extra or wrongly typed fields without changing card attributes', async () => {
+        const admin = await createTestUser({ administrator: true })
+        const suffix = Math.random().toString(36).slice(2, 8)
+        const cardTopicId = await insertTestTopic({
+          name: `Card ${suffix}`,
+          slug: `card-${suffix}`,
+          createdById: admin.id,
+          topicType: 'card',
+        })
+        const request = createRequest()
+        await request.authenticateAs(admin)
+        await request
+          .patch(`/api/v1/topics/${cardTopicId}/card`)
+          .send({ annual_fee: { amount: 9500, currency: 'usd' } })
+          .expect(200)
+
+        await request
+          .patch(`/api/v1/topics/${cardTopicId}/card`)
+          .send({ annual_fee: 42 })
+          .expect(422)
+        await request
+          .patch(`/api/v1/topics/${cardTopicId}/card`)
+          .send({ unexpected: true })
+          .expect(422)
+
+        const response = await request.get(`/api/v1/topics/${cardTopicId}/card`).expect(200)
+        expect(response.body.card_attributes.annual_fee).toEqual({
+          amount: 9500,
+          currency: 'usd',
+        })
+      })
+
       it('should return 401 when not authenticated', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)
@@ -157,7 +189,7 @@ describe('topic.card', () => {
           .expect(401)
       })
 
-      it('should return 403 when user is not admin', async () => {
+      it('returns 403 for a non-admin before malformed card-body diagnostics', async () => {
         const user = await createTestUser()
         const random = Math.random().toString(36).slice(2, 8)
         const cardTopicId = await insertTestTopic({
@@ -171,7 +203,7 @@ describe('topic.card', () => {
 
         await request
           .patch(`/api/v1/topics/${cardTopicId}/card`)
-          .send({ annual_fee: { amount: 100, currency: 'jpy' } })
+          .send({ annual_fee: 42 })
           .expect(403)
       })
 

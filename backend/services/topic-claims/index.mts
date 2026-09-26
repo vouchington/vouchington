@@ -3,6 +3,7 @@ export { TOPIC_CLAIM_VERIFICATION_METHODS, getTopicClaimState } from './config.m
 export { createTopicClaim } from './create.mts'
 export {
   getTopicClaimById,
+  getUnresolvedTopicClaimForClaimant,
   getVerifiedTopicClaim,
   listTopicClaimsForTopic,
   listTopicClaimsForUser,

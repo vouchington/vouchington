@@ -8,8 +8,9 @@ import {
   removeAdditionalHostname,
 } from '@services/topics/additional-hostnames'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
-import { requireAuthAndRateLimit } from '../../response-helpers.mts'
+import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,
   decodeScopedUuidCursor,
@@ -21,6 +22,7 @@ const additionalHostnamesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 100 },
 })
+type CreateAdditionalHostnameBody = { hostname: string }
 
 app
   .route('/api/v1/topics/:idOrSlug/additional-hostnames')
@@ -31,11 +33,17 @@ app
       currentUserCanUpdateTopic,
       'GET:/api/v1/topics/:idOrSlug/additional-hostnames',
     )
+    const options = additionalHostnamesParser.parse(ctx.query)
+    const query = prepareQueryForValidation(ctx.query, additionalHostnamesParser.queryContract)
+    if (ctx.query.limit !== undefined) query.limit = options.limit
+    validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/additional-hostnames', {
+      path: ctx.params,
+      query,
+    })
 
     const topic = await getTopicByAnyCached(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 
-    const options = additionalHostnamesParser.parse(ctx.query)
     const scope = `additional-hostnames:${topic.id}:id-asc`
     const afterId = options.after
       ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id
@@ -62,11 +70,17 @@ app
       currentUserCanUpdateTopic,
       'POST:/api/v1/topics/:idOrSlug/additional-hostnames',
     )
+    validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/additional-hostnames', {
+      path: ctx.params,
+    })
 
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 
-    const body = (await ctx.request.json('1mb')) as { hostname?: unknown }
+    const body = (await ctx.request.json('1mb')) as CreateAdditionalHostnameBody
+    validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/additional-hostnames', {
+      body,
+    })
     ctx.assert(
       typeof body.hostname === 'string' && body.hostname.trim(),
       400,
@@ -85,6 +99,13 @@ app
       ctx,
       currentUserCanUpdateTopic,
       'DELETE:/api/v1/topics/:idOrSlug/additional-hostnames/:hostnameId',
+    )
+    validateRequestContract(
+      ctx,
+      'DELETE:/api/v1/topics/:idOrSlug/additional-hostnames/:hostnameId',
+      {
+        path: ctx.params,
+      },
     )
 
     ctx.assert(isUUID(ctx.params.hostnameId!), 422, 'hostnameId must be a valid UUID')

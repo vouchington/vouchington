@@ -40,6 +40,35 @@ describe('RSS feed item follower distribution routes', () => {
     expect(response.body.distribution_id).toEqual(expect.any(String))
   })
 
+  it('rejects a malformed send body without creating a distribution', async () => {
+    const { itemId } = await createRssFeedItemFixture()
+    const sender = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(sender)
+    const before = await countFollowerDistributionsForSenderForTest(sender.id)
+
+    await request
+      .post(`/api/v1/rss-feed-items/${itemId}/sends`)
+      .send({ audience: 'selected_followers', recipient_user_ids: [], unexpected: true })
+      .expect(422)
+
+    await expect(countFollowerDistributionsForSenderForTest(sender.id)).resolves.toBe(before)
+  })
+
+  it('masks a missing item before malformed send body diagnostics', async () => {
+    const sender = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(sender)
+    const before = await countFollowerDistributionsForSenderForTest(sender.id)
+
+    await request
+      .post(`/api/v1/rss-feed-items/${crypto.randomUUID()}/sends`)
+      .send({ audience: 'selected_followers', recipient_user_ids: [] })
+      .expect(404)
+
+    await expect(countFollowerDistributionsForSenderForTest(sender.id)).resolves.toBe(before)
+  })
+
   it.each(['shares', 'sends'])('rejects suspended users from RSS feed item %s', async action => {
     const { itemId } = await createRssFeedItemFixture()
     const sender = await createTestUser()

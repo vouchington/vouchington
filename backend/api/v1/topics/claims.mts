@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  requireAuth,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   createTopicClaim,
   issueDomainVerificationToken,
@@ -8,10 +13,20 @@ import {
   submitTopicClaimForManualReview,
   listTopicClaimsForTopic,
   getTopicClaimById,
+  getUnresolvedTopicClaimForClaimant,
   currentUserCanClaimTopic,
   getTopicClaimState,
 } from '@services/topic-claims'
 import { parseCreateTopicClaimInput } from '@services/topic-claims/parse'
+
+type CreateTopicClaimBody = {
+  claimed_role: string
+  evidence?: string
+}
+
+type SubmitTopicClaimManualReviewBody = {
+  evidence: string
+}
 
 // POST /api/v1/topics/:idOrSlug/claims — submit a claim on a topic
 app.route('/api/v1/topics/:idOrSlug/claims').post(async (ctx: Context) => {
@@ -20,10 +35,14 @@ app.route('/api/v1/topics/:idOrSlug/claims').post(async (ctx: Context) => {
     currentUserCanClaimTopic,
     'POST:/api/v1/topics/:idOrSlug/claims',
   )
+  validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/claims', { path: ctx.params })
   const idOrSlug = ctx.params.idOrSlug ?? ''
   ctx.assert(idOrSlug.length > 0, 422, 'idOrSlug is required')
 
-  const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+  const body = (await ctx.request.json('1mb')) as CreateTopicClaimBody
+  validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/claims', {
+    body,
+  })
   const input = parseCreateTopicClaimInput({ ...body, topic_id: idOrSlug })
 
   const { claim, isDuplicate } = await createTopicClaim(currentUser.id, input)
@@ -39,6 +58,13 @@ app
     const currentUser = await requireAuth(
       ctx,
       'POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token',
+    )
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token',
+      {
+        path: ctx.params,
+      },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
 
@@ -57,6 +83,13 @@ app
       user => user !== null,
       'POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification',
     )
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification',
+      {
+        path: ctx.params,
+      },
+    )
     const claimId = validateUUIDParam(ctx, 'claimId')
 
     const claim = await verifyTopicClaimDomain(currentUser.id, claimId)
@@ -73,11 +106,25 @@ app
       ctx,
       'POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission',
     )
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission',
+      { path: ctx.params },
+    )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
-    const evidence = typeof body.evidence === 'string' ? body.evidence : ''
+    const existingClaim = await getUnresolvedTopicClaimForClaimant(claimId, currentUser.id)
+    ctx.assert(existingClaim, 404, 'Claim not found or already resolved')
 
-    const claim = await submitTopicClaimForManualReview(currentUser.id, claimId, evidence)
+    const body = (await ctx.request.json('1mb')) as SubmitTopicClaimManualReviewBody
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission',
+      {
+        body,
+      },
+    )
+
+    const claim = await submitTopicClaimForManualReview(currentUser.id, claimId, body.evidence)
 
     ctx.setStatus(200)
     ctx.json({ claim })
@@ -86,6 +133,7 @@ app
 // GET /api/v1/topics/:idOrSlug/claims — list claims for a topic (staff or claimant)
 app.route('/api/v1/topics/:idOrSlug/claims').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topics/:idOrSlug/claims')
+  validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/claims', { path: ctx.params })
 
   const idOrSlug = ctx.params.idOrSlug ?? ''
   ctx.assert(idOrSlug.length > 0, 422, 'idOrSlug is required')
@@ -110,6 +158,7 @@ app.route('/api/v1/topics/:idOrSlug/claims').get(async (ctx: Context) => {
 // GET /api/v1/topics/:idOrSlug/claims/:claimId — get a single claim
 app.route('/api/v1/topics/:idOrSlug/claims/:claimId').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topics/:idOrSlug/claims/:claimId')
+  validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/claims/:claimId', { path: ctx.params })
   const claimId = validateUUIDParam(ctx, 'claimId')
 
   const claim = await getTopicClaimById(claimId)

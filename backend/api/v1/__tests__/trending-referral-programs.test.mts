@@ -32,4 +32,10 @@ describe('GET /api/v1/trending-referral-programs', () => {
     const response = await request.get('/api/v1/trending-referral-programs?limit=1').expect(200)
     expect(response.body.referral_programs.length).toBeLessThanOrEqual(1)
   })
+
+  it('keeps pagination parser failures before execution', async () => {
+    const request = createRequest()
+    await request.get('/api/v1/trending-referral-programs?limit=100').expect(200)
+    await request.get('/api/v1/trending-referral-programs?limit=0').expect(400)
+  })
 })

@@ -95,7 +95,7 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
     await request.patch(`/api/v1/rss-feeds/${feedId}`).send({ ignore_robots_txt: true }).expect(403)
   })
 
-  it('admin gets 400 when ignore_robots_txt is not a boolean or null', async () => {
+  it('admin gets 422 when ignore_robots_txt is not a boolean or null', async () => {
     const admin = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)
     const topicId = await insertTestTopic({
@@ -113,7 +113,7 @@ describe('PATCH /api/v1/rss-feeds/:id — ignore_robots_txt admin field', () => 
     await request
       .patch(`/api/v1/rss-feeds/${feedId}`)
       .send({ ignore_robots_txt: 'yes' })
-      .expect(400)
+      .expect(422)
   })
 
   it('admin can set unreliable_status_codes to sorted unique 4xx values', async () => {

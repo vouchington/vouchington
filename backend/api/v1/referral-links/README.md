@@ -45,9 +45,13 @@ Manage referral links and their validation rules.
   "referral_program_id": "<uuid>",
   "url": "https://example.com/ref/abc123",
   "user_id": "<uuid>",
-  "label": "Optional label"
+  "label": "Optional label or null"
 }
 ```
+
+`user_id` is optional: omitted, `null`, and an empty string select the authenticated caller.
+`label` and validation `user_help_text` accept `null` to clear their values. Authorization and
+resource preflights occur before detailed request validation; see [Route Helpers](../../README.md#route-helpers).
 
 ## POST /api/v1/referral-link-validations/:validationId/rules
 
