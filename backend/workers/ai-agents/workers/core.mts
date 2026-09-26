@@ -135,10 +135,15 @@ function jobProducesOpenAiSpend(job: Job<AIAgentJobData>): boolean {
 
 // DB predicates run only after the cheap static filter and an active breach, so spend-free
 // story-post retries do not pay a round trip on every dispatch. Autotagger jobs (post and RSS feed
-// item) no longer reach this function at all: they dispatch through the C6 classifier path
-// (OpenRouter/Noul, `@agents/autotagger/dispatch-classifier.mts`), never OpenAI, so
-// `AI_AGENT_JOB_PRODUCES_SPEND` marks both `false` and `jobProducesOpenAiSpend` short-circuits
-// before this is ever called for them.
+// item) have no equivalent cheap-skip -- every dispatch runs the C6 classifier over OpenRouter/Jev
+// (`@agents/autotagger/dispatch-classifier.mts`), never OpenAI directly, but its spend still lands
+// in the same `ai_usage_records` ledger and is subject to the same cap (issue #616) despite this
+// gate's "OpenAi"-branded naming, so both job names fall to the unconditional `return true` below
+// like every other spend-producing job without a `case` here. Parking them at this queue-level
+// gate on a breach is a cheap, DB-free complement to the client's own pre-request recheck
+// (`createAutotaggerStructuredDecisionHooks`'s `beforeAttempt` hook,
+// `@agents/autotagger/structured-decision-attempt-hooks.mts`) -- that hook guards a job already
+// in flight when a breach starts, not a substitute for parking it here first.
 async function jobWouldIncurOpenAiSpend(job: Job<AIAgentJobData>): Promise<boolean> {
   if (job.name === 'story-post') {
     const storyPostData = job.data as import('@queues/ai-agents/types').StoryPostJobData
