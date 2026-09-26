@@ -8,6 +8,8 @@
 
 ### Reviewer Responsibilities
 
+- For schema or persisted-contract changes, check the [prelaunch relational storage policy](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage): no upgrade-only deploy path for this unlaunched app; business facts are typed, internal references have target FKs, and JSON exceptions are exact opaque/provider/protocol/replay documents. Check retained identities for deletion and rollback safety.
+
 - Review the PR diff and all issues or PRs linked from the PR body, including `Closes #N`, `Fixes #N`, `Resolves #N`, and `Refs #N` entries.
 - Treat timestamps as part of the context. The source issue usually predates the accepted plan issue, and the plan issue usually predates the PR implementation.
 - Verify that the implementation satisfies linked requirements according to the feedback hierarchy: human intervention, accepted plan, GitHub issues, then AI reviewers. If a linked requirement is intentionally deferred, require the PR body to explain the deferral and link a follow-up issue.

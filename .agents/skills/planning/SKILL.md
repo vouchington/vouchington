@@ -26,6 +26,11 @@ schema rules even when they resemble existing code or have TypeScript unions and
 If historical identity retention conflicts with foreign-key deletion semantics, resolve that
 choice with the human before implementing an exception; do not silently reinterpret the rule.
 
+Voucha is unlaunched: plan one canonical fresh-bootstrap schema and current producer/consumer
+contract. Classify every JSON field and reference by ownership; plan concrete live or
+entity-specific retained identity FKs for internal relations. See
+[prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
+
 Read [impact discovery](references/impact-discovery.md) and [live-browser preflight](references/live-browser-preflight.md).
 Use the exact local [Plan template](references/plan-template.md), then run
 `node dev/plan-issue.mts validate --title "Plan: …" --body-file <file>` so every

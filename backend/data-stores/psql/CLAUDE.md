@@ -6,8 +6,8 @@ See [README.md](./README.md) for schema reference and the generated [schema snap
 
 - Write migrations to be as idempotent as possible (`CREATE OR REPLACE`, `CREATE IF NOT EXISTS`). Keep new SQL lintable under `pnpm run squawk`.
 - **All hardcoded UUID literals must be UUIDv7** (version nibble `7`).
-- Edit migration files in place only for schema objects not yet applied anywhere, including staging. Marker, checksum, and recovery procedure: [Staging Schema Drift](reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only). Already-deployed objects get a new migration.
-- Migration files must not contain `ALTER TABLE ADD COLUMN` or `DROP TABLE`. Fold new columns into the original `CREATE TABLE`, or register an exact forward action in the `postgres-no-add-column` rule in [`.no-mistakes.yml`](../../../.no-mistakes.yml). Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
+- The app is unlaunched: fold schema changes into canonical creators and rebuild disposable databases. Do not add upgrade-only repair migrations, backfills, or mixed-schema deployment paths. Keep fresh-bootstrap ledger/checksum integrity and transaction safety. Follow [Staging Schema Drift](reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only) for existing staging state.
+- Migration files must not add `ALTER TABLE ADD COLUMN` or `DROP TABLE`. Fold new columns into the original `CREATE TABLE`; the existing `postgres-no-add-column` exceptions in [`.no-mistakes.yml`](../../../.no-mistakes.yml) are cleanup debt, not a route for new forward actions. Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
 - Every foreign key declares `ON DELETE`. Cross-file FK and check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`.
 - Fixed migrations run transactionally with their ledger insert. Do not add manual `BEGIN`/`COMMIT`. Concurrent indexes use `-- migration-mode: online`. See [README.md](./README.md#migrations-views-and-config-driven).
 - Vote schema changes are config-driven via [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
@@ -26,7 +26,7 @@ Choose among fixed migrations, config-driven objects, and managed views using [S
 - Every SQL query must start with a `/* functionName */` comment.
 - No `OFFSET` — use cursor-based pagination (`@modules/pagination`).
 - Use `pgvector.toSql()` for PostgreSQL vectors. Query parent tables, not partitions.
-- **No polymorphic relationships** — per-entity FK columns plus `CHECK (num_nonnulls(...) = 1)`, never `entity_id` + `entity_type`. Canonical examples: `vote_integrity_flags`, `report_integrity_flags`.
+- **Concrete relationships only** — use typed child rows or per-entity FK columns and an exact-one-target check where appropriate. Primary/unique keys do not replace target FKs. Historical references that must survive deletion use entity-specific retained identity tables with FKs; live references use live tables. No type/id pairs, JSON business relationships, UUID arrays, generic attributes, or encoded keys. See [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
 - **Elections are not first-class entities.** They are vote tallies identified by their parent (`election.id === parent.id`). Reference the parent.
 - Numeric filters on aggregates or `GENERATED … STORED` columns must match the SQL type; reuse [buildVoteScoreFilters](../../services/entity-relations/vote-score-filters.mts).
 - Prefer timestamps over booleans. Avoid `status` columns — derive state from lifecycle timestamps.

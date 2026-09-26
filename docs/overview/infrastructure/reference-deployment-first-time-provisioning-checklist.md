@@ -42,12 +42,12 @@ coupling is api↔workers: they share DB schema and application code, so they de
 `SITEMAPS_ORIGIN`, `BACKEND_ORIGIN`, `WEB_ORIGIN`, and `SITE_ORIGIN` are private-infrastructure-owned
 Worker deployment values. Vouchington contains only identifier-free local defaults.
 
-The burden this places on every change: a deploy must be forward/backward-compatible with whatever
-is currently live, in either deploy order. Concretely, this repo follows **expand/contract**: expand
-the reader to accept both the old and new shape, ship that expanded reader everywhere it needs to
-run, then — once nothing depends on the old shape — drop the old shape in a later change. This is
-the same discipline already used for database migrations (add-nullable-then-backfill-then-enforce),
-applied here to cross-service deploy ordering instead of schema ordering.
+Voucha has not launched. Schema and application changes use one canonical fresh-bootstrap contract,
+with disposable staging databases rebuilt when necessary. Do not introduce migration-deployment
+stages, backfills, or old/new readers merely for prior application versions. The deployment receiver
+still orders independently built artifacts when a current interface spans them. Preserve external
+protocol compatibility and security key rotation where those have independent consumers. See the
+[prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
 
 The repo's concrete precedent is HMAC key rotation for signed sideload image URLs
 (`ts-shared/url-signing/`, `VOUCHA_SIDELOAD_SIGNING_KEYS`): keys are a comma-separated list, newest
@@ -56,14 +56,13 @@ a signature produced by **any** key in the list. Rotating a key is expand (add t
 front, keep the old key verifying) then contract (remove the old key once nothing still needs it) —
 with no requirement that every service instance pick up the new key list at the same instant.
 
-The absolute-sideload-URL migration (formerly gated by a cross-workflow wait between the Cloudflare
+The absolute-sideload-URL change (formerly gated by a cross-workflow wait between the Cloudflare
 Worker, backend, and image Lambda deploys) is complete, and that wait has been removed — see
 [Static-asset deployment](reference-deployment-s3-static-assets.md). The capability header the wait used to poll for is now
 unconditionally present; there is nothing left to coordinate for the current URL _format_. A
-**future change to the signing scheme itself** (as opposed to a key rotation) does not get an
-automated cross-workflow wait to fall back on — it must use the same expand/contract discipline
-directly: ship readers that accept both the old and new scheme, roll out the new scheme, then remove
-support for the old one once every reader has the expanded version deployed.
+**future change to the signing scheme itself** (as opposed to a key rotation) must account for
+already-issued signed URLs and independent current consumers. That protocol lifetime, rather than
+historical application schema deployment, determines whether dual verification is required.
 
 A second precedent is the Cloudflare Worker's RSS discovery `Link` header
 (`cloudflare-worker/src/discovery.mts`): it does not enumerate `VALID_RSS_POST_TYPES` and advertise
@@ -73,8 +72,7 @@ deploy that adds a new value to `@ts-shared/feed-capabilities` therefore cannot 
 advertise that value on its own — nothing emits it until some upstream caller (the web app) starts
 sending requests that carry it, which is itself gated on that caller's own deploy. The coupling to
 watch for a new post type is web-backend deploying the same commit out of order, not worker-backend;
-follow the same expand/contract discipline there (ship backend acceptance of the new value at or
-before the web change that starts requesting it).
+deploy backend acceptance of the new value at or before the web starts requesting it.
 
 ## Related
 
