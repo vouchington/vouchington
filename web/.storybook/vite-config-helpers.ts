@@ -117,10 +117,15 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       replacement: fileURLToPath(new URL('../storybook/mocks/edit-post-page.tsx', import.meta.url)),
     },
     {
-      // ManagePostTags imports async tag management internals that reach server API helpers.
-      find: '@/components/tags/manage-post-tags',
+      // PostDetail awaits auth and translations. The fixture renders the same view synchronously.
+      find: '@/components/posts/post-detail',
+      replacement: fileURLToPath(new URL('../storybook/mocks/post-detail.tsx', import.meta.url)),
+    },
+    {
+      // ManageTagsTabs awaits server relations. The fixture renders the same card with empty rows.
+      find: '@/components/tags/manage-tags-tabs',
       replacement: fileURLToPath(
-        new URL('../storybook/mocks/manage-post-tags.tsx', import.meta.url),
+        new URL('../storybook/mocks/manage-tags-tabs.tsx', import.meta.url),
       ),
     },
     {

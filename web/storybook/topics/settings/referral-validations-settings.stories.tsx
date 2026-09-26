@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ReferralValidationsSettings } from '@/components/topics/settings/referral-validations-settings'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { now } from '@/storybook/entities/fixtures/shared'
 import { topics } from '@/storybook/entities/fixtures/topics'
@@ -8,6 +12,10 @@ const program = topics.find(topic => topic.topic_type === 'referral_program')!
 
 const meta = {
   title: 'Topics/Referral Validations',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

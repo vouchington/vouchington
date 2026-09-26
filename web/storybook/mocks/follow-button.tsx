@@ -1,14 +1,26 @@
 import { Button } from '@/components/ui/button'
 
-export function FollowButton() {
+interface FollowButtonProps {
+  isFollowing?: boolean
+  inactiveLabel?: string
+  activeLabel?: string
+  'data-pw'?: string
+}
+
+export function FollowButton({
+  isFollowing = false,
+  inactiveLabel = 'Follow',
+  activeLabel = 'Following',
+  'data-pw': dataPw = 'follow-button',
+}: FollowButtonProps) {
   return (
     <Button
       type='button'
       size='sm'
-      data-pw='follow-button'
-      disabled
+      data-pw={dataPw}
+      aria-pressed={isFollowing}
     >
-      Follow
+      {isFollowing ? activeLabel : inactiveLabel}
     </Button>
   )
 }
