@@ -1,5 +1,5 @@
 /**
- * Request-origin tests for POST /api/v1/mcp: tool handlers run in the MCP origin of the bearer
+ * Request-origin tests for both MCP routes: tool handlers run in the MCP origin of the bearer
  * credential, so the content they write records `mcp` and, for OAuth, the issuing client.
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -31,12 +31,21 @@ const fixture = {
       origin: getOptionalRequestOrigin(),
       provenance: getRequestContentProvenance(),
     }),
-  meta: { surfaces: ['mcp'], requiredScopes: { mcp: ['topics:read'] }, api: null },
+  meta: {
+    surfaces: ['mcp', 'admin_mcp'],
+    requiredScopes: { mcp: ['topics:read'], admin_mcp: ['mcp.admin:read'] },
+    api: null,
+  },
 } as unknown as Tool
 
-async function callFixture(token: string) {
+const ROUTES = [
+  { path: '/api/v1/mcp', audience: 'user', scope: 'topics:read' },
+  { path: '/api/v1/admin/mcp', audience: 'admin', scope: 'mcp.admin:read' },
+] as const
+
+async function callFixture(path: string, token: string) {
   const response = await createRequest()
-    .post('/api/v1/mcp')
+    .post(path)
     .set('Content-Type', 'application/json')
     .set('Authorization', `Bearer ${token}`)
     .send({
@@ -50,12 +59,12 @@ async function callFixture(token: string) {
   return JSON.parse(body.result?.content?.[0]?.text ?? '{}') as Record<string, unknown>
 }
 
-describe('POST /api/v1/mcp request origin', () => {
-  let user: PrivateUser
+describe.each(ROUTES)('POST $path request origin', ({ path, audience, scope }) => {
+  let admin: PrivateUser
   const mutableTools = ALL_TOOLS as Tool[]
 
   beforeAll(async () => {
-    user = await createTestUser()
+    admin = await createTestUser({ administrator: true })
   })
 
   beforeEach(() => {
@@ -67,7 +76,7 @@ describe('POST /api/v1/mcp request origin', () => {
   })
 
   it('records the OAuth client that the access token was issued to', async () => {
-    const approved = await createTestApprovedOAuthAuthorization(user, { scope: 'topics:read' })
+    const approved = await createTestApprovedOAuthAuthorization(admin, { audience, scope })
     const tokens = await exchangeOAuthAuthorizationCode({
       clientId: approved.client.client_id,
       code: approved.code,
@@ -76,16 +85,16 @@ describe('POST /api/v1/mcp request origin', () => {
     })
     const client = await getOAuthClient(approved.client.client_id)
 
-    await expect(callFixture(tokens.access_token)).resolves.toEqual({
+    await expect(callFixture(path, tokens.access_token)).resolves.toEqual({
       origin: { interface: 'mcp', credential: 'oauth', client: null, oauthClientId: client!.id },
       provenance: { createdVia: 'mcp', oauthClientId: client!.id },
     })
   })
 
   it('records an MCP API key without an OAuth client', async () => {
-    const { rawKey } = await createApiKey(user.id, 'mcp', 'Origin MCP Key', ['topics:read'])
+    const { rawKey } = await createApiKey(admin.id, 'mcp', 'Origin MCP Key', [scope])
 
-    await expect(callFixture(rawKey)).resolves.toEqual({
+    await expect(callFixture(path, rawKey)).resolves.toEqual({
       origin: { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
       provenance: { createdVia: 'mcp', oauthClientId: null },
     })
