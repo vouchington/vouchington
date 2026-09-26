@@ -11,22 +11,71 @@ ignores:
 # claimed by the gh branch, fail its constraint, and never reach the git branches.
 utils:
   child-process-call:
+    any:
+      - all:
+          - kind: call_expression
+          - has:
+              field: function
+              regex: ^(execFile|execFileSync|spawn|spawnSync|exec|execSync)$
+      - matches: namespace-child-process-call
+  namespace-child-process-call:
     all:
       - kind: call_expression
-      - has:
-          field: function
-          regex: ^(\w+\.)?(execFile|execFileSync|spawn|spawnSync|exec|execSync)$
+      - any:
+          - pattern: $CHILD_PROCESS.execFile($$$ARGS)
+          - pattern: $CHILD_PROCESS.execFileSync($$$ARGS)
+          - pattern: $CHILD_PROCESS.spawn($$$ARGS)
+          - pattern: $CHILD_PROCESS.spawnSync($$$ARGS)
+          - pattern: $CHILD_PROCESS.exec($$$ARGS)
+          - pattern: $CHILD_PROCESS.execSync($$$ARGS)
+      - matches: imports-child-process-namespace
+  imports-child-process-namespace:
+    inside:
+      kind: program
+      stopBy: end
+      has:
+        stopBy: end
+        all:
+          - kind: import_statement
+          - regex: \bfrom\s*['"](?:node:)?child_process['"]
+          - pattern: import * as $CHILD_PROCESS from '$SOURCE'
   shell-child-process-call:
+    any:
+      - all:
+          - kind: call_expression
+          - has:
+              field: function
+              regex: ^(exec|execSync)$
+      - all:
+          - matches: namespace-child-process-call
+          - any:
+              - pattern: $CHILD_PROCESS.exec($$$ARGS)
+              - pattern: $CHILD_PROCESS.execSync($$$ARGS)
+  child-process-shell-option:
     all:
-      - kind: call_expression
+      - kind: object
       - has:
-          field: function
-          regex: ^(exec|execSync|childProcess\.(exec|execSync))$
+          stopBy: end
+          all:
+            - kind: pair
+            - has:
+                field: key
+                regex: ^(?:shell|['"]shell['"])$
+            - has:
+                field: value
+                regex: ^true$
   network-module:
     regex: ^['"](node:)?(http|https|net)['"]$
 rule:
   any:
     - matches: shell-child-process-call
+    - all:
+        - matches: child-process-call
+        - has:
+            field: arguments
+            has:
+              stopBy: end
+              matches: child-process-shell-option
     - all:
         - matches: child-process-call
         - has:
@@ -65,7 +114,7 @@ rule:
             field: arguments
             has:
               nthChild: 2
-              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`][^'"`]*['"`]|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*|[^,\]]+)|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
+              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`][^'"`]*['"`]|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*|[^,\]]+)|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-q|-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
     - pattern: fetch($$$ARGS)
     - pattern: globalThis.fetch
     - pattern: global.fetch
@@ -103,6 +152,19 @@ examples:
     isValid: false
     file: 'dev/codex-hooks/policy/github-workflow.mts'
   - code: |
+      import * as cp from 'node:child_process'
+      cp.execSync('git status')
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
+  - code: |
+      import { execFile, execFileSync, spawn, spawnSync } from 'node:child_process'
+      spawn('git status', { shell: true })
+      spawnSync('git status', { shell: true })
+      execFile('git status', { 'shell': true })
+      execFileSync('git status', { shell: true })
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
+  - code: |
       import { execFileSync } from 'node:child_process'
       execFileSync('git', ['fetch', 'origin', 'main'], { cwd })
     isValid: false
@@ -130,6 +192,7 @@ examples:
       execFileSync('git', ['--git-dir', dir, 'submodule', 'update', '--remote'])
       execFileSync('git', ['remote', '-v', 'update'])
       execFileSync('git', ['submodule', '--quiet', 'update'])
+      execFileSync('git', ['submodule', '-q', 'update'])
       execFileSync('git', [`remote`, `update`])
       execFileSync('git', ['--no-pager', 'remote', 'update'])
       execFileSync('git', ['--paginate', 'remote', 'update'])
@@ -249,6 +312,15 @@ examples:
       execFileSync('git', ['show', 'remote', 'update'])
       execFileSync('node', ['remote', 'update'])
       spawnSync('grep', ['submodule', 'update'])
+    isValid: true
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      const runner = {
+        execSync(command: string) {
+          return command
+        },
+      }
+      runner.execSync('git status')
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
