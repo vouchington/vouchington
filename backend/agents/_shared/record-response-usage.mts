@@ -18,6 +18,7 @@ import {
   claimRegisteredResponseUsage,
   type BackgroundResponseRegistration,
 } from './record-response-usage-ledger.mts'
+import { isStorableResponseId } from './response-id-storage-key.mts'
 
 interface RecordAgentResponseUsageParams {
   // Pick, not the full OpenAIResponse: this also accepts an OpenAIResponseNotCompletedError
@@ -77,8 +78,18 @@ export async function recordAgentResponseUsage(
   const latchUncertainty = deps.latchAccountingUncertainty ?? latchAccountingUncertainty
 
   addAccumulatedTokens((response.usage.input_tokens ?? 0) + (response.usage.output_tokens ?? 0))
-  const responseId = response.id ?? registration?.responseId
-  if (responseId === undefined) {
+  const registrationId = registration?.responseId
+  const responseId = isStorableResponseId(response.id)
+    ? response.id
+    : isStorableResponseId(registrationId)
+      ? registrationId
+      : undefined
+  const hasInvalidId =
+    (response.id !== undefined && !isStorableResponseId(response.id)) ||
+    (registrationId !== undefined && !isStorableResponseId(registrationId))
+  if (hasInvalidId) {
+    onError(new Error(`OpenAI usage has an unusable response id: ${agentSlug}`))
+  } else if (responseId === undefined) {
     onError(new Error(`OpenAI usage cannot be made idempotent without a response id: ${agentSlug}`))
   }
 
