@@ -1,9 +1,11 @@
 import { ClientRequest } from '@/lib/api/client/request'
 import type { EmailPreferences } from '@/lib/api/client/email-preferences'
 import type { NotificationsUnreadSummaryResponseBody } from '@/types/api-responses'
+import { storybookAutocompleteResponse } from '@/storybook/design-system/autocomplete-fixtures'
 
 let notificationSettingsFixture: EmailPreferences | undefined
 let inboxFixture: NotificationsUnreadSummaryResponseBody | undefined
+let topicSearchFixture = false
 const clientRequestGet = ClientRequest.prototype.get
 
 export function setNotificationSettingsFixture(preferences: EmailPreferences): void {
@@ -54,6 +56,14 @@ export function clearInboxFixture(): void {
   inboxFixture = undefined
 }
 
+export function setTopicSearchFixture(): void {
+  topicSearchFixture = true
+}
+
+export function clearTopicSearchFixture(): void {
+  topicSearchFixture = false
+}
+
 ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   endpoint: string,
   options?: {
@@ -70,6 +80,9 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   }
   if (endpoint === '/api/v1/my/notifications/unread' && inboxFixture !== undefined) {
     return Promise.resolve(inboxFixture as T)
+  }
+  if (endpoint === '/api/v1/topics' && topicSearchFixture) {
+    return Promise.resolve(storybookAutocompleteResponse(endpoint) as T)
   }
 
   // Function.call does not preserve the generic return type of a method, although this is the
