@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { BadgeCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { OAuthGrant } from '@/types/oauth-apps'
@@ -15,6 +16,7 @@ interface ConnectedAppRowProps {
 
 export function ConnectedAppRow({ grant, onRevoke }: ConnectedAppRowProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const [confirming, setConfirming] = useState(false)
   const [revoking, setRevoking] = useState(false)
 
@@ -63,8 +65,8 @@ export function ConnectedAppRow({ grant, onRevoke }: ConnectedAppRowProps) {
           {t(
             'extracted.connectedAppsManager.connectedAppRow.authorizedConsentedatLastUsedLastusedat_45a0956c',
             {
-              consentedAt: formatUtcDate(grant.consented_at),
-              lastUsedAt: formatUtcDate(grant.last_used_at),
+              consentedAt: formatUtcDate(grant.consented_at, uiLocale),
+              lastUsedAt: formatUtcDate(grant.last_used_at, uiLocale),
             },
           )}
         </p>

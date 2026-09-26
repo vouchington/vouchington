@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import type { ListResponse } from '@/types/api-responses'
 import type { AdminOAuthClientListItem } from '@/types/oauth-apps'
 import { OAuthClientVerificationRow } from '../oauth-client-verification-row'
@@ -47,13 +49,15 @@ const mockVerify = vi.mocked(verifyOAuthClient)
 const mockUnverify = vi.mocked(unverifyOAuthClient)
 const fixtureClient = (listFixture as ListResponse<AdminOAuthClientListItem>).results[0]!
 
-function renderRow(overrides: Partial<AdminOAuthClientListItem> = {}) {
+function renderRow(overrides: Partial<AdminOAuthClientListItem> = {}, uiLocale = 'en-US') {
   render(
-    <table>
-      <tbody>
-        <OAuthClientVerificationRow client={{ ...fixtureClient, ...overrides }} />
-      </tbody>
-    </table>,
+    <UiLocaleContext.Provider value={uiLocale}>
+      <table>
+        <tbody>
+          <OAuthClientVerificationRow client={{ ...fixtureClient, ...overrides }} />
+        </tbody>
+      </table>
+    </UiLocaleContext.Provider>,
   )
 }
 
@@ -83,6 +87,16 @@ describe('OAuthClientVerificationRow', () => {
     expect(screen.getByText('https://agent.example.com/oauth/callback')).toBeInTheDocument()
     expect(screen.getByText('mcp.user:write')).toBeInTheDocument()
     expect(screen.getByText('Unverified')).toBeInTheDocument()
+  })
+
+  it('formats the registration and verification dates in the selected UI locale', () => {
+    const verifiedAt = '2026-09-02T12:00:00.000Z'
+    renderRow({ verified_at: verifiedAt }, 'fr')
+
+    const createdAt = formatUtcDate(fixtureClient.created_at, 'fr')
+    expect(createdAt).not.toBe(formatUtcDate(fixtureClient.created_at))
+    expect(screen.getByText(`Registered ${createdAt}`)).toBeInTheDocument()
+    expect(screen.getByText(`Verified ${formatUtcDate(verifiedAt, 'fr')}`)).toBeInTheDocument()
   })
 
   it('says when an app has no owner', () => {

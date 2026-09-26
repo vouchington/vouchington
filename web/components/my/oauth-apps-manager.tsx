@@ -40,14 +40,14 @@ export function OAuthAppsManager({ initialData, scopeCatalog }: OAuthAppsManager
           {t('extracted.my.oauthAppsManager.registerAnAppToLetPeople_37b438b2')}
         </p>
       </div>
-      {manager.issuedSecret && (
+      {manager.issuedSecrets.map(secret => (
         <ClientSecretAlert
-          key={manager.issuedSecret.clientSecret}
-          clientId={manager.issuedSecret.clientId}
-          clientSecret={manager.issuedSecret.clientSecret}
-          onDismiss={manager.handleDismissIssuedSecret}
+          key={secret.clientSecret}
+          clientId={secret.clientId}
+          clientSecret={secret.clientSecret}
+          onDismiss={() => manager.handleDismissIssuedSecret(secret.appId)}
         />
-      )}
+      ))}
       <InfiniteScroll
         hasNextPage={pagination.hasNextPage}
         endCursor={pagination.endCursor}

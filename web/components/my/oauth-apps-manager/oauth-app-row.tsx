@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { BadgeCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { OAuthApp, UpdateOAuthAppInput } from '@/types/oauth-apps'
@@ -20,6 +21,7 @@ interface OAuthAppRowProps {
 
 export function OAuthAppRow({ app, onRevoke, onRotate, onUpdate }: OAuthAppRowProps) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState<PendingAction | null>(null)
   const [busy, setBusy] = useState(false)
@@ -82,7 +84,7 @@ export function OAuthAppRow({ app, onRevoke, onRotate, onUpdate }: OAuthAppRowPr
         </div>
         <p className='text-xs text-muted-foreground'>
           {t('extracted.oauthAppsManager.oauthAppRow.registeredCreatedat_e720b512', {
-            createdAt: formatUtcDate(app.created_at),
+            createdAt: formatUtcDate(app.created_at, uiLocale),
           })}
         </p>
       </div>

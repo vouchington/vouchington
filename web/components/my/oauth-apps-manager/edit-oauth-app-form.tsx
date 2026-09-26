@@ -68,6 +68,7 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
           type='button'
           size='sm'
           variant='outline'
+          disabled={saving}
           onClick={onCancel}
         >
           {t('extracted.oauthAppsManager.editOauthAppForm.cancel_19766ed6')}

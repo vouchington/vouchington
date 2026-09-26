@@ -172,6 +172,28 @@ describe('OAuthAppsManager', () => {
     expect(screen.queryByLabelText('Client secret')).not.toBeInTheDocument()
   })
 
+  it('keeps an outstanding client secret when a public app is registered next', async () => {
+    renderManager()
+    fillRegisterForm()
+    await submitRegisterForm()
+    mockCreate.mockResolvedValueOnce({
+      client_secret: null,
+      oauth_app: {
+        ...issued.oauth_app,
+        id: 'public-app',
+        client_id: 'voucha_public-app',
+        client_name: 'Public Agent',
+        client_type: 'public',
+        token_endpoint_auth_method: 'none',
+      },
+    })
+    fillRegisterForm({ name: 'Public Agent', publicClient: true })
+    await submitRegisterForm()
+
+    expect(screen.getByText('Public Agent')).toBeInTheDocument()
+    expect(screen.getByLabelText('Client secret')).toHaveValue('fixture-client-secret')
+  })
+
   it('keeps the form filled in when registration fails', async () => {
     mockCreate.mockRejectedValueOnce(new Error('boom'))
     renderManager()

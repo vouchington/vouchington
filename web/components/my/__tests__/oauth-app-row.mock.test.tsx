@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import type { ListResponse } from '@/types/api-responses'
 import type { OAuthApp } from '@/types/oauth-apps'
 import { OAuthAppsManager } from '../oauth-apps-manager'
@@ -41,17 +43,38 @@ const mockUpdate = vi.mocked(updateOAuthApp)
 const fixtureApp = (listFixture as ListResponse<OAuthApp>).results[0]!
 const appId = fixtureApp.id
 
-function renderApp(overrides: Partial<OAuthApp> = {}) {
+const secondApp: OAuthApp = {
+  ...fixtureApp,
+  id: 'second-app',
+  client_id: 'voucha_second-app',
+  client_name: 'Second Agent',
+}
+
+function renderApps(results: OAuthApp[], uiLocale = 'en-US') {
   render(
-    <OAuthAppsManager
-      initialData={{
-        results: [{ ...fixtureApp, ...overrides }],
-        page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      }}
-      scopeCatalog={[]}
-    />,
+    <UiLocaleContext.Provider value={uiLocale}>
+      <OAuthAppsManager
+        initialData={{
+          results,
+          page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+        }}
+        scopeCatalog={[]}
+      />
+    </UiLocaleContext.Provider>,
   )
-  return screen.getByText('Fixture Agent').closest('li')!
+}
+
+function renderApp(overrides: Partial<OAuthApp> = {}) {
+  renderApps([{ ...fixtureApp, ...overrides }])
+  return rowFor('Fixture Agent')
+}
+
+function rowFor(name: string) {
+  return screen.getByText(name).closest('li')!
+}
+
+function shownSecrets() {
+  return screen.queryAllByLabelText('Client secret').map(input => (input as HTMLInputElement).value)
 }
 
 async function click(name: string | RegExp, container: HTMLElement = document.body) {
@@ -79,6 +102,14 @@ describe('OAuthAppRow', () => {
     expect(within(row).getByText('mcp.user:write')).toBeInTheDocument()
     expect(within(row).getByText(/^Registered /)).toBeInTheDocument()
     expect(within(row).queryByText('Verified')).not.toBeInTheDocument()
+  })
+
+  it('formats the registration date in the selected UI locale', () => {
+    renderApps([fixtureApp], 'fr')
+
+    const createdAt = formatUtcDate(fixtureApp.created_at, 'fr')
+    expect(createdAt).not.toBe(formatUtcDate(fixtureApp.created_at))
+    expect(within(rowFor('Fixture Agent')).getByText(`Registered ${createdAt}`)).toBeInTheDocument()
   })
 
   it('saves only the changed fields and shows the server response', async () => {
@@ -120,6 +151,27 @@ describe('OAuthAppRow', () => {
     expect(within(row).getByRole('button', { name: 'Edit' })).toBeInTheDocument()
   })
 
+  it('keeps Cancel disabled until a pending save settles', async () => {
+    let settleSave!: (saved: { oauth_app: OAuthApp }) => void
+    mockUpdate.mockReturnValueOnce(
+      new Promise(resolve => {
+        settleSave = resolve
+      }),
+    )
+    const row = renderApp()
+    await click('Edit', row)
+    fireEvent.change(within(row).getByLabelText('App name'), {
+      target: { value: 'Renamed Agent' },
+    })
+    await click('Save', row)
+
+    expect(within(row).getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    await act(async () => {
+      settleSave({ oauth_app: { ...fixtureApp, client_name: 'Renamed Agent' } })
+    })
+    expect(screen.getByText('Renamed Agent')).toBeInTheDocument()
+  })
+
   it('warns that editing a verified app changes what users see', async () => {
     const row = renderApp({ verified_at: '2026-09-02T12:00:00.000Z' })
 
@@ -139,6 +191,27 @@ describe('OAuthAppRow', () => {
     expect(mockRotate).toHaveBeenCalledWith(appId)
     expect(screen.getByLabelText('Client secret')).toHaveValue('rotated-secret')
     expect(within(row).getByRole('button', { name: 'Rotate secret' })).toBeInTheDocument()
+  })
+
+  it('keeps the newest secret per app until it is dismissed or the app is revoked', async () => {
+    mockRotate
+      .mockResolvedValueOnce({ oauth_app: fixtureApp, client_secret: 'first-secret' })
+      .mockResolvedValueOnce({ oauth_app: secondApp, client_secret: 'second-secret' })
+      .mockResolvedValueOnce({ oauth_app: fixtureApp, client_secret: 'first-secret-rotated' })
+    renderApps([fixtureApp, secondApp])
+
+    for (const name of ['Fixture Agent', 'Second Agent', 'Fixture Agent']) {
+      await click('Rotate secret', rowFor(name))
+      await click('Confirm', rowFor(name))
+    }
+    expect(shownSecrets()).toEqual(['first-secret-rotated', 'second-secret'])
+
+    await click('Revoke', rowFor('Second Agent'))
+    await click('Confirm', rowFor('Second Agent'))
+    expect(shownSecrets()).toEqual(['first-secret-rotated'])
+
+    await click('Dismiss')
+    expect(shownSecrets()).toEqual([])
   })
 
   it('reports a failed secret rotation', async () => {

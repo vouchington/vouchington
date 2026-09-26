@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { UserLink } from '@/components/users/user-link'
 import { unverifyOAuthClient, verifyOAuthClient } from '@/lib/api/client'
 import onError, { onSuccess } from '@/lib/on-error'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { AdminOAuthClientListItem } from '@/types/oauth-apps'
@@ -15,6 +16,7 @@ const CELL_CLASS = 'px-4 py-3 align-top text-sm'
 
 export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClientListItem }) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   const [verifiedAt, setVerifiedAt] = useState(client.verified_at)
   const [busy, setBusy] = useState(false)
 
@@ -53,7 +55,7 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
         <div className='font-mono text-xs text-muted-foreground'>{client.client_id}</div>
         <div className='text-xs text-muted-foreground'>
           {t('extracted.oauthClients.oauthClientVerificationRow.registeredCreatedat_e720b512', {
-            createdAt: formatUtcDate(client.created_at),
+            createdAt: formatUtcDate(client.created_at, uiLocale),
           })}
         </div>
       </td>
@@ -97,7 +99,7 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
               className='mr-1 h-3 w-3'
             />
             {t('extracted.oauthClients.oauthClientVerificationRow.verifiedVerifiedat_796ea805', {
-              verifiedAt: formatUtcDate(verifiedAt),
+              verifiedAt: formatUtcDate(verifiedAt, uiLocale),
             })}
           </Badge>
         ) : (

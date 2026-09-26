@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import type { ListResponse } from '@/types/api-responses'
 import type { OAuthGrant } from '@/types/oauth-apps'
 import { ConnectedAppsManager } from '../connected-apps-manager'
@@ -70,6 +72,21 @@ describe('ConnectedAppsManager', () => {
     expect(within(row).getByText('https://voucha.ai/api/v1/mcp')).toBeInTheDocument()
     expect(within(row).getByText('mcp.user:read')).toBeInTheDocument()
     expect(within(row).getByText(/^Authorized .+ · Last used /)).toBeInTheDocument()
+  })
+
+  it('formats the dates in the selected UI locale', () => {
+    render(
+      <UiLocaleContext.Provider value='fr'>
+        <ConnectedAppsManager initialData={{ results: [fixtureGrant], page_info: lastPage }} />
+      </UiLocaleContext.Provider>,
+    )
+
+    const consentedAt = formatUtcDate(fixtureGrant.consented_at, 'fr')
+    const lastUsedAt = formatUtcDate(fixtureGrant.last_used_at, 'fr')
+    expect(consentedAt).not.toBe(formatUtcDate(fixtureGrant.consented_at))
+    expect(
+      screen.getByText(`Authorized ${consentedAt} · Last used ${lastUsedAt}`),
+    ).toBeInTheDocument()
   })
 
   it('marks apps that staff have not verified', () => {

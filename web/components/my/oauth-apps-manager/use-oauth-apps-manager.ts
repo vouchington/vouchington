@@ -18,6 +18,7 @@ import type {
 } from '@/types/oauth-apps'
 
 export interface IssuedClientSecret {
+  appId: string
   clientId: string
   clientSecret: string
 }
@@ -36,7 +37,8 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
     () => new Map(),
   )
   const [revokedIds, setRevokedIds] = useState<ReadonlySet<string>>(() => new Set())
-  const [issuedSecret, setIssuedSecret] = useState<IssuedClientSecret | null>(null)
+  // Secrets can't be fetched again, so each stays until the owner dismisses it.
+  const [issuedSecrets, setIssuedSecrets] = useState<readonly IssuedClientSecret[]>([])
 
   const appsById = new Map<string, OAuthApp>()
   for (const app of [...createdApps, ...pagination.pages.flatMap(page => page.results)]) {
@@ -44,13 +46,14 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
     appsById.set(app.id, serverAppsById.get(app.id) ?? app)
   }
 
-  function acceptIssued(issued: IssuedOAuthApp) {
-    setServerAppsById(prev => new Map(prev).set(issued.oauth_app.id, issued.oauth_app))
-    setIssuedSecret(
-      issued.client_secret
-        ? { clientId: issued.oauth_app.client_id, clientSecret: issued.client_secret }
-        : null,
-    )
+  function acceptIssued({ oauth_app: app, client_secret: clientSecret }: IssuedOAuthApp) {
+    setServerAppsById(prev => new Map(prev).set(app.id, app))
+    if (!clientSecret) return
+    // Rotation invalidates the app's previous secret, so the new one replaces its alert.
+    setIssuedSecrets(prev => [
+      { appId: app.id, clientId: app.client_id, clientSecret },
+      ...withoutSecretFor(prev, app.id),
+    ])
   }
 
   async function handleRegister(input: CreateOAuthAppInput): Promise<boolean> {
@@ -96,6 +99,7 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
     try {
       await revokeOAuthApp(id)
       setRevokedIds(prev => new Set(prev).add(id))
+      setIssuedSecrets(prev => withoutSecretFor(prev, id))
       onSuccess(t('extracted.my.oauthAppsManager.oauthAppRevoked_3b7394c5'))
     } catch (error) {
       onError(error, {
@@ -106,13 +110,18 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
 
   return {
     apps: [...appsById.values()],
-    issuedSecret,
+    issuedSecrets,
     pagination,
-    handleDismissIssuedSecret: () => setIssuedSecret(null),
+    handleDismissIssuedSecret: (appId: string) =>
+      setIssuedSecrets(prev => withoutSecretFor(prev, appId)),
     handleLoadMore: pagination.loadMore,
     handleRegister,
     handleRevoke,
     handleRotate,
     handleUpdate,
   }
+}
+
+function withoutSecretFor(secrets: readonly IssuedClientSecret[], appId: string) {
+  return secrets.filter(secret => secret.appId !== appId)
 }
