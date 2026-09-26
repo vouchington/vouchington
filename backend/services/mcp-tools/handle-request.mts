@@ -4,6 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
 import { validateRegisteredMcpRequest } from './validate-registered-request.mts'
+import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
 import type { BasicUser } from '@services/users/types'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
@@ -24,7 +25,7 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<Resp
 
   const server = new Server(
     { name: ctx.config.serverName, version: '1.0.0' },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {} }, instructions: MCP_SERVER_INSTRUCTIONS[ctx.config.surface] },
   )
 
   server.setRequestHandler(ListToolsRequestSchema, () => {

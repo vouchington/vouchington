@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { ErrorCode } from '@modelcontextprotocol/sdk/types.js'
+import { ErrorCode, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
 import type { PrivateUser } from '@services/users/types'
-import { USER_MCP_SERVER_CONFIG } from './config.mts'
+import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG, type McpServerConfig } from './config.mts'
 import { handleMcpHttpRequest } from './handle-request.mts'
+import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
 
 type McpUser = PrivateUser & { membership_plan: 'plus' | 'pro' | null }
 
@@ -15,12 +16,11 @@ describe('handleMcpHttpRequest', () => {
     user = { ...(await createTestUser()), membership_plan: null }
   })
 
-  it('returns a Response for tools/list request', async () => {
-    const body = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
-    const response = await handleMcpHttpRequest({
+  const post = (body: Record<string, unknown>, config: McpServerConfig = USER_MCP_SERVER_CONFIG) =>
+    handleMcpHttpRequest({
       user,
       permissions: ['mcp.user:read'],
-      request: new Request('http://localhost/api/v1/mcp', {
+      request: new Request(`http://localhost${config.routePath}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,8 +29,34 @@ describe('handleMcpHttpRequest', () => {
         body: JSON.stringify(body),
       }),
       parsedBody: body,
-      config: USER_MCP_SERVER_CONFIG,
+      config,
     })
+
+  it.each([USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG])(
+    'returns the $serverName instructions from initialize',
+    async config => {
+      const response = await post(
+        {
+          jsonrpc: '2.0',
+          id: 0,
+          method: 'initialize',
+          params: {
+            protocolVersion: LATEST_PROTOCOL_VERSION,
+            capabilities: {},
+            clientInfo: { name: 'handle-request-test', version: '1.0.0' },
+          },
+        },
+        config,
+      )
+
+      expect(response.status).toBe(200)
+      const json = (await response.json()) as { result?: { instructions?: string } }
+      expect(json.result?.instructions).toBe(MCP_SERVER_INSTRUCTIONS[config.surface])
+    },
+  )
+
+  it('returns a Response for tools/list request', async () => {
+    const response = await post({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })
 
     expect(response.status).toBe(200)
     const json = (await response.json()) as { result?: { tools?: unknown[] } }
@@ -41,22 +67,13 @@ describe('handleMcpHttpRequest', () => {
     const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'search_topics_text')
     if (!tool) throw new Error('Expected search_topics_text tool')
     const invoke = vi.spyOn(tool, 'function')
-    const body = { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { arguments: {} } }
 
     try {
-      const response = await handleMcpHttpRequest({
-        user,
-        permissions: ['mcp.user:read'],
-        request: new Request('http://localhost/api/v1/mcp', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json, text/event-stream',
-          },
-          body: JSON.stringify(body),
-        }),
-        parsedBody: body,
-        config: USER_MCP_SERVER_CONFIG,
+      const response = await post({
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { arguments: {} },
       })
 
       expect(response.status).toBe(200)
@@ -69,25 +86,11 @@ describe('handleMcpHttpRequest', () => {
   })
 
   it('returns a Response for tools/call request', async () => {
-    const body = {
+    const response = await post({
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
       params: { name: 'search_topics_text', arguments: { query: 'hello' } },
-    }
-    const response = await handleMcpHttpRequest({
-      user,
-      permissions: ['mcp.user:read'],
-      request: new Request('http://localhost/api/v1/mcp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-        },
-        body: JSON.stringify(body),
-      }),
-      parsedBody: body,
-      config: USER_MCP_SERVER_CONFIG,
     })
 
     expect(response.status).toBe(200)
