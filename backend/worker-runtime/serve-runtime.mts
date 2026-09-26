@@ -25,7 +25,7 @@ export function registerWorkerServe(dependencies: WorkerServeDependencies): read
     // `.then(exit).catch(exit)`: the chained form adds a second link, which adds a microtask tick
     // before `exit` fires on rejection. That delay is observable in this uncaughtException/fatal-
     // crash path (proven empirically: it broke
-    // backend/entrypoints/worker-{cpu,io}/__tests__/serve.test.mts's "exits nonzero when Sentry
+    // backend/test-helpers/entrypoints/worker-serve-cases.mts's "exits nonzero when Sentry
     // flush rejects" assertions). Both branches call the same `exit` function, so
     // fulfillment/rejection semantics are otherwise identical. promise/no-promise-in-callback
     // flags the same line because it calls a promise-returning function from inside a
