@@ -6,8 +6,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Memberships/Plan Comparison Table',
-  component: PlanComparisonTable,
-} satisfies Meta<typeof PlanComparisonTable>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>

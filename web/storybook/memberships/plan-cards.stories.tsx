@@ -11,8 +11,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Memberships/Plan Cards',
-  component: PlanCards,
-} satisfies Meta<typeof PlanCards>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>

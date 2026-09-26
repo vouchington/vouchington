@@ -6,8 +6,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Landing Pages/Public Landing Page Items',
-  component: PublicLandingPageItems,
-} satisfies Meta<typeof PublicLandingPageItems>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>

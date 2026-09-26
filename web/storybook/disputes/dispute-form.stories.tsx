@@ -5,8 +5,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Disputes/Dispute Form',
-  component: DisputeForm,
-} satisfies Meta<typeof DisputeForm>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>

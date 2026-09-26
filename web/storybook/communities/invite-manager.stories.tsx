@@ -15,16 +15,18 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const pendingInvite: CommunityInvite = {
+  __entity_type: 'community_invite',
   id: 'invite-alex',
   code: 'CARD42',
   community_id: communities[0]!.id,
-  created_at: '2026-05-24T00:00:00.000Z',
-  created_by_id: storyCurrentUser.id,
-  invited_email: 'alex@example.com',
   invited_user_id: publicUsers[0]!.id,
+  invited_email: 'alex@example.com',
+  invited_by_id: storyCurrentUser.id,
   accepted_at: null,
+  accepted_by_user_id: null,
   declined_at: null,
   revoked_at: null,
+  created_at: '2026-05-24T00:00:00.000Z',
 }
 
 const withInvite: CommunityInvitesResponseBody = {

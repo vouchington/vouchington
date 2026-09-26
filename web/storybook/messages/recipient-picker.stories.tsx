@@ -7,8 +7,7 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Messages/Recipient Picker',
-  component: RecipientPicker,
-} satisfies Meta<typeof RecipientPicker>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>
