@@ -55,7 +55,7 @@ const dataWithActions: ModlogResponseBody = {
     '019000000000000000000000021': {
       id: '019000000000000000000000021',
       username: 'moderator_jane',
-    } as any,
+    },
   },
 }
 

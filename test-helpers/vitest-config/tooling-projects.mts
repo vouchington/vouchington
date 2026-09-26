@@ -61,6 +61,7 @@ export const toolingProjects = [
         'static-code-analysis/__tests__/backend-contract-program-construction-location-parity.test.mts',
         'static-code-analysis/__tests__/ast-grep-tsx-parity.test.mts',
         'static-code-analysis/__tests__/no-inline-noop-promise-catch-oxlint.test.mts',
+        'static-code-analysis/__tests__/no-explicit-any-oxlint.test.mts',
         'static-code-analysis/__tests__/ssrf-guard-import-options-oxlint.test.mts',
       ],
       exclude: defaultExcludes,

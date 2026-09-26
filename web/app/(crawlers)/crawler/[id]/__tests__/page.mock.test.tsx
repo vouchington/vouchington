@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CrawlerResponse } from '@/types/api-responses'
 
 const { mockGetCrawler, mockNotFound } = vi.hoisted(() => ({
   mockGetCrawler: vi.fn<VitestLooseMock>(),
@@ -29,7 +30,8 @@ vi.mock(import('@/components/ui/breadcrumb'), () => ({
 
 import Page from '../page'
 
-const baseCrawler = {
+const baseCrawler: CrawlerResponse = {
+  id: 'crawler-1',
   crawler_type: 'firecrawl',
   priority: 5,
   description: 'A crawler',

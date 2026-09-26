@@ -22,6 +22,7 @@
       }
     ],
     "no-mistakes/postgres-no-unbounded-query-fanout": "error",
+    "typescript/no-explicit-any": "off",
     "no-void": "off",
     "no-await-in-loop": "off",
     "react/jsx-no-target-blank": "off",

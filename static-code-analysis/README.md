@@ -537,6 +537,13 @@ sets the rule to `"error"` and a full `pnpm exec oxlint --type-aware --deny-warn
 confirms the count. Always verify a jsPlugin enable with that config change before treating the
 rule as clean.
 
+`typescript/no-explicit-any` is enforced at error level for production TypeScript in the root
+[`../.oxlintrc.json`](../.oxlintrc.json). Tests, specs, `__tests__` trees, and `test-helpers`
+remain exempt; [`../web/.oxlintrc.json`](../web/.oxlintrc.json) repeats that narrow override
+because nested Oxlint configs do not inherit ancestor overrides. The
+[`no-explicit-any-oxlint` fixture](__tests__/no-explicit-any-oxlint.test.mts) checks both the root
+policy and the effective web behavior.
+
 `no-mistakes/no-inline-noop-promise-catch` is enforced for production `backend/**` and `web/**`
 under [`../.oxlintrc.json`](../.oxlintrc.json). Its four test-helper/test-file exclusions keep
 test-only rejection swallowing out of the production inventory. The authoritative 2026-09-10 scan

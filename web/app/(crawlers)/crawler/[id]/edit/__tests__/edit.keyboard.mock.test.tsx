@@ -6,6 +6,7 @@ import {
   expectTextareaCmdEnterSubmits,
 } from '@/test-helpers/form-keyboard'
 import EditCrawlerPage from '../page'
+import type { CrawlerResponse } from '@/types/api-responses'
 
 const mockRouterPush = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const mockGetCrawler = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -104,7 +105,7 @@ function makeCrawler({
   linkHrefsToRemove?: string[]
   linkTextContentToRemove?: string[]
   priority?: number
-}) {
+}): CrawlerResponse {
   return {
     id,
     description,

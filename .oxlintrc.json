@@ -439,7 +439,7 @@
     "typescript/no-dynamic-delete": "error",
     "typescript/no-empty-interface": "off",
     "typescript/no-empty-object-type": "off",
-    "typescript/no-explicit-any": "off",
+    "typescript/no-explicit-any": "error",
     "typescript/no-extraneous-class": "error",
     "typescript/no-floating-promises": "error",
     "typescript/no-for-in-array": "error",
@@ -1215,6 +1215,17 @@
       "rules": {
         "typescript/no-dynamic-delete": "off",
         "no-mistakes/no-delete-property": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.test.{mts,ts,tsx}",
+        "**/*.spec.{mts,ts,tsx}",
+        "**/__tests__/**/*.{mts,ts,tsx}",
+        "**/test-helpers/**"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off"
       }
     },
     {
