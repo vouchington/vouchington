@@ -29,6 +29,11 @@ The staff review queue uses the same bounded `after` and `limit` contract. Its c
 the actionable queue and orders by immutable `(received_at, id)`, so every actionable case,
 including pending statutory deadlines, remains reachable after the first page.
 
+The staff email intake queue, `GET /api/v1/copyright-email-intakes/review-queue`, uses the same
+bounded `after` and `limit` contract with its own cursor scope. It orders unreviewed intakes by
+immutable `(received_at, id)`, oldest first, so every parsed email awaiting staff review remains
+reachable after the first page. A reviewer's decision refreshes the queue from its first page.
+
 Staff repeat-infringer actions are separate from that queue payload.
 `GET /api/v1/copyright-notices/:id/repeat-infringer-accounts` lists incidents for one case.
 Reviewers record incident dispositions and warning or no-action review outcomes. Administrators
@@ -37,8 +42,9 @@ Reinstatement does not unsuspend it.
 
 ## Performance
 
-Mutation routes are uncached. Notice creation resolves at most 20 image placements before one legal
-aggregate transaction. Appeals and counter-notices use one bounded ownership query and one
+Mutation routes are uncached. The staff email intake queue is private and uncached; each page is
+one read transaction walking the `(received_at, id)` index. Notice creation resolves at most 20
+image placements before one legal aggregate transaction. Appeals and counter-notices use one bounded ownership query and one
 transaction. Email approval resolves at most 20 placements, admits one aggregate, then imposes
 target-scoped restrictions. A repeat-infringer account read is one query. A review outcome,
 disposition, or reinstatement is one transaction. Restrict and terminate then call account

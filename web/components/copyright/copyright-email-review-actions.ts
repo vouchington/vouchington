@@ -18,12 +18,7 @@ import {
   toCopyrightEmailCorrespondenceInput,
   type CopyrightEmailCorrespondenceDraft,
 } from './copyright-email-correspondence-model'
-
-type QueueItem = {
-  id: string
-  received_at: string
-  review_path?: 'initial' | 'unresolved_thread' | 'matched_thread'
-}
+import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
 
 export function useCopyrightEmailReviewActions({
   correspondenceDraft,
@@ -35,7 +30,7 @@ export function useCopyrightEmailReviewActions({
   setDetail,
   setDraft,
   setError,
-  setItems,
+  resetQueue,
   setLoading,
   setManualFallbackReason,
   setRationale,
@@ -50,7 +45,7 @@ export function useCopyrightEmailReviewActions({
   setDetail: (detail: CopyrightEmailIntake | null) => void
   setDraft: (draft: CopyrightEmailApprovalDraft | null) => void
   setError: (value: string | null) => void
-  setItems: (items: QueueItem[]) => void
+  resetQueue: (page: CopyrightEmailIntakeQueuePage) => void
   setLoading: (value: boolean) => void
   setManualFallbackReason: (value: string) => void
   setRationale: (value: string) => void
@@ -59,7 +54,7 @@ export function useCopyrightEmailReviewActions({
   const selectedIntakeRequest = useRef(0)
 
   async function loadQueue() {
-    setItems((await listCopyrightEmailIntakes()).copyright_email_intakes)
+    resetQueue(await listCopyrightEmailIntakes())
   }
   async function selectIntake(intakeId: string) {
     const request = ++selectedIntakeRequest.current

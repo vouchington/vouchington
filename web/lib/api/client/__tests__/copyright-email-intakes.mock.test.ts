@@ -18,6 +18,7 @@ import {
   rejectCopyrightEmailIntake,
 } from '../copyright-email-intakes'
 import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
+import { makeCopyrightEmailQueuePage } from '@/test-helpers/components/copyright/copyright-email-review'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockPost = vi.mocked(clientApi.post)
@@ -29,9 +30,22 @@ describe('copyright email intake client', () => {
     mockGet.mockClear()
     await expectApiWrapperCall({
       mock: mockGet,
-      response: { copyright_email_intakes: [] },
+      response: makeCopyrightEmailQueuePage(),
       call: () => listCopyrightEmailIntakes(),
-      expectedArgs: ['/api/v1/copyright-email-intakes/review-queue'],
+      expectedArgs: [
+        '/api/v1/copyright-email-intakes/review-queue',
+        { searchParams: { after: undefined, limit: undefined } },
+      ],
+    })
+    mockGet.mockClear()
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: makeCopyrightEmailQueuePage([], { has_next_page: false }),
+      call: () => listCopyrightEmailIntakes({ after: 'next', limit: 25 }),
+      expectedArgs: [
+        '/api/v1/copyright-email-intakes/review-queue',
+        { searchParams: { after: 'next', limit: 25 } },
+      ],
     })
     mockGet.mockClear()
     await expectApiWrapperCall({

@@ -23392,6 +23392,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "idx_copyright_notice_email_intakes__received_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_email_intakes__received_id ON public.copyright_notice_email_intakes USING btree (received_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "received_at",
+              "descending": false,
+              "expression": "received_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,

@@ -2633,6 +2633,49 @@
       ],
       "type": "object"
     },
+    "CopyrightEmailIntakeQueueResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "copyright_email_intakes": {
+          "items": {
+            "$ref": "#/components/schemas/CopyrightStaffEmailIntakeQueueItem"
+          },
+          "type": "array"
+        },
+        "page_info": {
+          "additionalProperties": false,
+          "properties": {
+            "end_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "has_next_page": {
+              "type": "boolean"
+            },
+            "start_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["end_cursor", "has_next_page", "start_cursor"],
+          "type": "object"
+        }
+      },
+      "required": ["copyright_email_intakes", "page_info"],
+      "type": "object"
+    },
     "CopyrightHoldResolutionKind": {
       "enum": ["dismissed", "proceeding_ended", "superseded"],
       "type": "string"
@@ -3518,6 +3561,54 @@
         "raw_email",
         "received_at",
         "recommendation",
+        "review_path"
+      ],
+      "type": "object"
+    },
+    "CopyrightStaffEmailIntakeQueueItem": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "linked_notice_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "parse_status": {
+          "enum": ["failed", "succeeded"],
+          "type": "string"
+        },
+        "received_at": {
+          "type": "string"
+        },
+        "recommendation_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "review_path": {
+          "enum": ["initial", "matched_thread", "unresolved_thread"],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "linked_notice_id",
+        "parse_status",
+        "received_at",
+        "recommendation_id",
         "review_path"
       ],
       "type": "object"
@@ -21934,6 +22025,22 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/copyright-email-intakes/review-queue": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
         "type": "object"
       }
     },

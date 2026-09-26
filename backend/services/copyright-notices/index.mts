@@ -27,13 +27,17 @@ export {
 export { getCopyrightNoticePrivateAggregate } from './get.mts'
 export {
   getCopyrightStaffEmailIntake,
-  listCopyrightStaffEmailIntakes,
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
 } from './read-models.mts'
 export { copyrightStaffQueueCursorScope, listCopyrightStaffQueue } from './read-models-staff.mts'
 export type { CopyrightStaffCase } from './read-models-staff.mts'
+export {
+  copyrightStaffEmailIntakeQueueCursorScope,
+  searchCopyrightStaffEmailIntakes,
+} from './read-models-staff-email-intakes.mts'
+export type { CopyrightStaffEmailIntakeQueueItem } from './read-models-staff-email-intakes.mts'
 export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { appendCopyrightSubmissionAssessment } from './compliance.mts'
 export { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'

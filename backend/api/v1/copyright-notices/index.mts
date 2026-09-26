@@ -32,6 +32,9 @@ import {
   decodeScopedPreciseTimestampCursor,
   encodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
+// Registers `/api/v1/copyright-email-intakes/review-queue` before moderator-routes registers the
+// `/api/v1/copyright-email-intakes/:id` route that would otherwise capture it.
+import './email-intake-queue-route.mts'
 import './moderator-routes.mts'
 import './repeat-infringer-routes.mts'
 import './staff-queue-route.mts'

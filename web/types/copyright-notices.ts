@@ -122,3 +122,17 @@ export type CopyrightStaffQueuePage = {
   copyright_notices: CopyrightStaffQueueItem[]
   page_info: CopyrightNoticesPage['page_info']
 }
+
+export type CopyrightEmailIntakeQueueItem = {
+  id: string
+  received_at: string
+  parse_status: 'succeeded' | 'failed'
+  recommendation_id: string | null
+  review_path: 'initial' | 'unresolved_thread' | 'matched_thread'
+  linked_notice_id: string | null
+}
+
+export type CopyrightEmailIntakeQueuePage = {
+  copyright_email_intakes: CopyrightEmailIntakeQueueItem[]
+  page_info: CopyrightNoticesPage['page_info']
+}

@@ -1,5 +1,10 @@
 'use client'
 import { clientApi } from './instance'
+import {
+  normalizeCopyrightEmailIntakeQueuePage,
+  type CopyrightEmailIntakeQueueResponse,
+} from '../copyright-email-intake-queue-page'
+import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
 export type CopyrightEmailIntake = {
   id: string
   received_at: string
@@ -32,17 +37,16 @@ export type CopyrightEmailCorrespondenceInput = Record<string, unknown> & {
   recommendation_id: string | null
   manual_fallback_reason: string | null
 }
-export function listCopyrightEmailIntakes() {
-  return clientApi.get<{
-    copyright_email_intakes: Array<
-      Pick<CopyrightEmailIntake, 'id' | 'received_at'> & {
-        parse_status: string
-        recommendation_id: string | null
-        review_path: CopyrightEmailIntake['review_path']
-        linked_notice_id: string | null
-      }
-    >
-  }>('/api/v1/copyright-email-intakes/review-queue')
+export async function listCopyrightEmailIntakes(options?: {
+  after?: string
+  limit?: number
+}): Promise<CopyrightEmailIntakeQueuePage> {
+  return normalizeCopyrightEmailIntakeQueuePage(
+    await clientApi.get<CopyrightEmailIntakeQueueResponse>(
+      '/api/v1/copyright-email-intakes/review-queue',
+      { searchParams: { after: options?.after, limit: options?.limit } },
+    ),
+  )
 }
 export function getCopyrightEmailIntake(id: string) {
   return clientApi.get<{ copyright_email_intake: CopyrightEmailIntake }>(

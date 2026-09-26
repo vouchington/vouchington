@@ -39,6 +39,7 @@ _none_
 
 - `copyright_notice_email_intakes_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intakes_pkey ON public.copyright_notice_email_intakes USING btree (id)`
 - `copyright_notice_email_intakes_ses_message_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_intakes_ses_message_id_key ON public.copyright_notice_email_intakes USING btree (ses_message_id)`
+- `idx_copyright_notice_email_intakes__received_id`: `CREATE INDEX idx_copyright_notice_email_intakes__received_id ON public.copyright_notice_email_intakes USING btree (received_at, id)`
 
 **Triggers:**
 
