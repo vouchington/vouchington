@@ -50,10 +50,11 @@ clones between TypeScript and TSX. `failOnEmpty` fails a run that analyzes no fi
 an ignore list that swallows the whole tree. jscpd respects `.gitignore`.
 
 jscpd scans the working tree, not `git ls-files`. CI checks out a clean tree, so it scans exactly
-the tracked files. Locally, an untracked file that `.gitignore` does not cover is scanned too; this
-is the one documented exception to the tracked-state invariant in
-[`static-code-analysis/CLAUDE.md`](../CLAUDE.md). Delete or ignore the stray file if it reports a
-clone.
+the tracked files. Locally, an untracked file that `.gitignore` does not cover is scanned too. This
+is the sole exception recorded beside the tracked-state invariant in
+[`static-code-analysis/CLAUDE.md`](../CLAUDE.md). An untracked file can only add clones, never hide
+one, so it can fail a local run but never make a bad tree pass. Delete or ignore the stray file if
+it reports a clone.
 
 These scope globs exclude whole categories where repetition is not hand-maintained duplication:
 
