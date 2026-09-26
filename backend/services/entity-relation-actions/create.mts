@@ -67,8 +67,8 @@ export async function createEntityRelationAction(
   const viewer = entityRelationViewerFor(currentUser)
   const postIds = postParticipantIds(parsed.metadata, parsed.subjectId.id, parsed.objectIds)
   // Ordinary visibility/existence comes first so private authorization never discloses a hidden post.
+  // ast-grep-ignore: no-three-sequential-awaits -- preserve visibility, user-tag/community admission, relation quota, then delegated-private authorization error order.
   await assertRelatablePostAccess(viewer, postIds)
-
   const resolvedUserTagTargetId = await resolveUserTagTarget(currentUser, parsed)
   await assertCommunityAuthorization(currentUser, parsed)
   await assertRelationLimit(currentUser, parsed)

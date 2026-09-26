@@ -33,6 +33,7 @@ export async function addPostHashtag(
   assertPostUpdatePreflight(currentUser, post, {}, true)
   const viewer = entityRelationViewerFor(currentUser)
   const postIds = { subjectIds: [post.id], objectIds: [] }
+  // ast-grep-ignore: no-three-sequential-awaits -- private authorization must precede plan resolution and the mutation it constrains.
   const rootIds = await assertPostMutationAccess(viewer, authority, postIds)
   const membershipPlan = await getUserActivePlan(currentUser.id)
   await updatePost(currentUser, post, {}, membershipPlan, {
