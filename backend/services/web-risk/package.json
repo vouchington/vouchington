@@ -29,7 +29,7 @@
     "@services/urls-domains-blacklist": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "http-errors": "^2.0.1",
     "tldts": "^7.4.15",
     "undici": "^8.11.0"

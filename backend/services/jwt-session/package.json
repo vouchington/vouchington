@@ -29,7 +29,7 @@
     "@services/user-rate-limits": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
     "jose": "^6.2.12",
     "sql-template-strings": "^2.2.2",

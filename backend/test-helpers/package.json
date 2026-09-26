@@ -45,7 +45,7 @@
     "@modules/utils": "workspace:^",
     "@sentry/node": "11.0.0",
     "@ts-shared/money": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
     "jose": "^6.2.12",

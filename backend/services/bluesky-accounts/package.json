@@ -27,7 +27,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.2"
