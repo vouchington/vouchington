@@ -16,6 +16,7 @@ export async function publishPersistedDeliveryRecord(
   overrides: Partial<MediaDeliveryDependencies> = {},
 ): Promise<void> {
   const dependencies = { invalidateMediaDeliveryPath, putMediaDeliveryRegistryRecord, ...overrides }
+  // ast-grep-ignore: no-three-sequential-awaits -- invalidate only after edge publication succeeds, then acknowledge only after invalidation succeeds
   await dependencies.putMediaDeliveryRegistryRecord({
     deliveryKey: record.delivery_key,
     state: record.desired_state,

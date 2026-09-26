@@ -1,7 +1,7 @@
-import { beginTransaction } from '@data-stores/psql'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as mediaDeliveryRegistryProvider from '@modules/aws/media-delivery-registry'
 import {
+  beginTransaction,
   createTestUserDirect,
   getTestImageSurfacePlacements,
   getTestMediaDeliveryRecord,

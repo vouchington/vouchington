@@ -1,4 +1,3 @@
-import { beginTransaction } from '@data-stores/psql'
 import {
   getImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
@@ -14,7 +13,11 @@ import {
   processMediaDeliveryRegistryRecord,
 } from '@services/media-delivery-safety'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { getTestMediaDeliveryRecord, markTestMediaDeliveryRecordFailed } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  getTestMediaDeliveryRecord,
+  markTestMediaDeliveryRecordFailed,
+} from '@voucha/test-helpers'
 import {
   lockTestDeliveryNoticeNowait,
   reconcileTestDeliveryRepairMarker,

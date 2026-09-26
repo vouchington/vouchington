@@ -39,6 +39,7 @@ export async function processReconcileMediaDeliveryRegistry(
     stageAllCurrentImagePlacementDeliveryRecords
   const repair =
     dependencies.reconcileMediaDeliveryRepairMarkers ?? reconcileMediaDeliveryRepairMarkers
+  // ast-grep-ignore: no-three-sequential-awaits -- repair may mint newer authority; stage current records before listing the generations to enqueue
   await repair(100)
   await stage()
   const deliveryKeys = await list(100, now())

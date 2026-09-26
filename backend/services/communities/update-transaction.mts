@@ -29,6 +29,7 @@ export async function updateCommunityInTransaction(input: {
 async function applyLockedCommunityUpdate(
   input: Parameters<typeof updateCommunityInTransaction>[0],
 ) {
+  // ast-grep-ignore: no-three-sequential-awaits -- retain surface owner fences before the physical community row lock and its dependent update
   await prepublishChangedCommunitySurfaces(input)
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
   const rowCount = await prepublishAndUpdateCommunity(input)

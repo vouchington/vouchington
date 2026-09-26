@@ -1,6 +1,6 @@
-import { beginTransaction } from '@data-stores/psql'
 import * as provider from '@modules/aws/media-delivery-registry'
 import {
+  beginTransaction,
   getTestMediaDeliveryRecord,
   insertTestImage,
   markImageModerationFlagged,

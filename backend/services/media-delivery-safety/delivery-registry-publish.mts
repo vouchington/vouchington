@@ -98,6 +98,7 @@ export async function publishStagedMediaDeliveryRecord(
     (!record.placement_id || record.placement_revision === null)
   )
     throw new Error(`Placement delivery record ${deliveryKey} is missing its exact tuple`)
+  // ast-grep-ignore: no-three-sequential-awaits -- placement authority precedes legal notice locks, which must precede the locked registry reread
   await lockImageDeliveryMutation(query, {
     placementIds: record.placement_id ? [record.placement_id] : [],
     imageIds: record.route_kind === 'legacy-image' ? [record.asset_id] : [],

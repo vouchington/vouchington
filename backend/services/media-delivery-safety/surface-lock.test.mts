@@ -1,5 +1,5 @@
-import { beginTransaction } from '@data-stores/psql'
 import {
+  beginTransaction,
   createTestUserDirect,
   getTestImageSurfacePlacements,
   insertTestImage,
