@@ -25,6 +25,7 @@
         "valkey-cli", // Valkey system CLI probed by local DB-backed test setup checks
         "wrangler", // GitHub Actions invokes the Cloudflare Worker workspace's pinned binary
         "gitleaks", // GitHub Actions runs the real scanner in gitleaks-scanner.test.mts
+        "lychee", // Real Lychee matcher exercised by the CI tooling test suite
       ],
       "ignoreExportsUsedInFile": true,
     },

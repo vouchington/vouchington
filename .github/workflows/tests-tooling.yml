@@ -45,14 +45,14 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 10
-      - name: Install Gitleaks for scanner fixtures
+      - name: Install Gitleaks and Lychee for tooling tests
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           cache: false
-          install_args: aqua:gitleaks/gitleaks
+          install_args: aqua:gitleaks/gitleaks aqua:lycheeverse/lychee
         timeout-minutes: 3
-      - name: Verify Gitleaks is active for scanner fixtures
-        run: gitleaks version
+      - name: Verify Gitleaks and Lychee are active for tooling tests
+        run: gitleaks version && lychee --version
         timeout-minutes: 1
       - name: Run tooling tests
         env:
