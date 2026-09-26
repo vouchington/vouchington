@@ -5,7 +5,7 @@ import {
   type TopicDataPointInsights,
 } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
-import { resolveTopic } from './resolve-topic.mts'
+import { resolveTopics } from './resolve-topic.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 
@@ -68,10 +68,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const [topicA, topicB] = await Promise.all([
-        resolveTopic(args.topic_id_a),
-        resolveTopic(args.topic_id_b),
-      ])
+      const [topicA, topicB] = await resolveTopics([args.topic_id_a, args.topic_id_b])
       if (!topicA || !topicB) {
         return { success: false, error: 'Topic not found' }
       }
