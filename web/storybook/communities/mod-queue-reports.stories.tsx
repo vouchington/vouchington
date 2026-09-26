@@ -5,10 +5,18 @@ import type { CommunityModerationReport } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { posts } from '@/storybook/entities/fixtures/posts'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Communities/Mod Queue Reports',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
@@ -49,7 +57,8 @@ const report: CommunityModerationReport = {
   escalated_at: null,
 }
 
-function Reports({ reports }: { reports: CommunityModerationReport[] }) {
+function Reports({ reports: initialReports }: { reports: CommunityModerationReport[] }) {
+  const [reports, setReports] = useState(initialReports)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   return (
     <ModQueueReports
@@ -57,7 +66,40 @@ function Reports({ reports }: { reports: CommunityModerationReport[] }) {
       currentUserId={storyCurrentUser.id}
       isStaff
       loading={null}
-      onResolve={() => {}}
+      onClaimToggle={reportId => {
+        setReports(current =>
+          current.map(item =>
+            item.id === reportId
+              ? {
+                  ...item,
+                  claim: item.claim
+                    ? null
+                    : {
+                        id: 'claim-story',
+                        community_id: communities[0]!.id,
+                        report_id: item.id,
+                        post_id: null,
+                        claimed_by_id: storyCurrentUser.id,
+                        claimed_at: '2026-09-26T00:00:00.000Z',
+                        released_at: null,
+                      },
+                }
+              : item,
+          ),
+        )
+      }}
+      onEscalateToggle={(reportId, escalated) => {
+        setReports(current =>
+          current.map(item =>
+            item.id === reportId
+              ? { ...item, escalated_at: escalated ? '2026-09-26T00:00:00.000Z' : null }
+              : item,
+          ),
+        )
+      }}
+      onResolve={report => {
+        setReports(current => current.filter(item => item.id !== report.id))
+      }}
       onSelectionToggle={reportId => {
         setSelectedIds(current => {
           const next = new Set(current)
@@ -65,6 +107,9 @@ function Reports({ reports }: { reports: CommunityModerationReport[] }) {
           else next.add(reportId)
           return next
         })
+      }}
+      onWarn={reportId => {
+        setReports(current => current.filter(item => item.id !== reportId))
       }}
       reports={reports}
       selectedIds={selectedIds}

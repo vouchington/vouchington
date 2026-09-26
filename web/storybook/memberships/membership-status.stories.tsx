@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MembershipStatus } from '@/components/memberships/membership-status'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import type { MembershipSku, SubscriptionMembership } from '@/types/api-responses'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -7,6 +11,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Memberships/Membership Status',
   component: MembershipStatus,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof MembershipStatus>
 
 export default meta

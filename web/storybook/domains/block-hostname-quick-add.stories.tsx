@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { BlockHostnameQuickAdd } from '@/components/domains/block-hostname-quick-add'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Domains/Block Hostname Quick Add',
   component: BlockHostnameQuickAdd,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof BlockHostnameQuickAdd>
 
 export default meta
