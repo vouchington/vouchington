@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { CheckoutButton } from '@/components/memberships/checkout-button'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Memberships/Checkout Button',
   component: CheckoutButton,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof CheckoutButton>
 
 export default meta

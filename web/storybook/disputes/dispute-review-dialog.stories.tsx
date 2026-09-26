@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DisputeReviewDialog } from '@/components/disputes/dispute-review-dialog'
 import { posts } from '@/storybook/entities/fixtures/posts'
@@ -12,6 +13,18 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+function OpenDisputeDialog({ postId, topicId }: { postId: string; topicId: string }) {
+  const [open, setOpen] = useState(true)
+  return (
+    <DisputeReviewDialog
+      open={open}
+      onOpenChange={setOpen}
+      postId={postId}
+      topicId={topicId}
+    />
+  )
+}
+
 export const Open: Story = {
   args: {
     open: true,
@@ -21,7 +34,10 @@ export const Open: Story = {
   },
   render: args => (
     <StoryFrame>
-      <DisputeReviewDialog {...args} />
+      <OpenDisputeDialog
+        postId={args.postId}
+        topicId={args.topicId}
+      />
     </StoryFrame>
   ),
 }

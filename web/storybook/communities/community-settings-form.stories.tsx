@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { CommunitySettingsForm } from '@/components/communities/community-settings-form'
 import type { Community } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
@@ -8,6 +12,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Communities/Community Settings Form',
   component: CommunitySettingsForm,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof CommunitySettingsForm>
 
 export default meta

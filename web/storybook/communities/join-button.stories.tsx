@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import JoinButton from '@/components/communities/join-button'
 import type { CommunityMember } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
@@ -8,6 +12,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Communities/Join Button',
   component: JoinButton,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof JoinButton>
 
 export default meta

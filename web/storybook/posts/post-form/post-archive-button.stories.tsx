@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { PostArchiveButton } from '@/components/posts/post-form/post-archive-button'
 import { StoryFrame } from '@/storybook/story-frame'
 import { reviewPost } from '../fixtures'
@@ -6,6 +10,10 @@ import { reviewPost } from '../fixtures'
 const meta = {
   title: 'Posts/Post Archive Button',
   component: PostArchiveButton,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommentNodeHeader } from '@/components/comments/comment-node-header'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -10,38 +11,57 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Author: Story = {
-  render: () => (
+function HeaderPreview({
+  initiallyCollapsed,
+  isDeleted,
+  childrenCount,
+  node,
+  username,
+}: {
+  initiallyCollapsed: boolean
+  isDeleted: boolean
+  childrenCount: number
+  node: typeof commentNode
+  username: string
+}) {
+  const [isCollapsed, setIsCollapsed] = useState(initiallyCollapsed)
+  return (
     <StoryFrame>
       <CommentNodeHeader
-        childrenCount={0}
+        childrenCount={childrenCount}
         hideDownCount={false}
         isAnonymous={false}
-        isCollapsed={false}
-        isDeleted={false}
-        node={commentNode}
-        onToggleCollapse={() => {}}
+        isCollapsed={isCollapsed}
+        isDeleted={isDeleted}
+        node={node}
+        onToggleCollapse={() => setIsCollapsed(collapsed => !collapsed)}
         permalink={commentPermalink}
-        username={commentNode.post.created_by?.username ?? 'alex'}
+        username={username}
       />
     </StoryFrame>
+  )
+}
+
+export const Author: Story = {
+  render: () => (
+    <HeaderPreview
+      initiallyCollapsed={false}
+      isDeleted={false}
+      childrenCount={0}
+      node={commentNode}
+      username={commentNode.post.created_by?.username ?? 'alex'}
+    />
   ),
 }
 
 export const Deleted: Story = {
   render: () => (
-    <StoryFrame>
-      <CommentNodeHeader
-        childrenCount={1}
-        hideDownCount={false}
-        isAnonymous={false}
-        isCollapsed
-        isDeleted
-        node={deletedCommentNode}
-        onToggleCollapse={() => {}}
-        permalink={commentPermalink}
-        username='deleted'
-      />
-    </StoryFrame>
+    <HeaderPreview
+      initiallyCollapsed
+      isDeleted
+      childrenCount={1}
+      node={deletedCommentNode}
+      username='deleted'
+    />
   ),
 }
