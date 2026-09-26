@@ -84,7 +84,7 @@ test.describe('Admin OAuth Clients', () => {
     await row.getByTestId('admin-oauth-client-verification-button').click()
     expect((await verification).status()).toBe(409)
     await expect(
-      page.locator('[data-sonner-toast]').filter({ hasText: 'name changed' }),
+      page.locator('[data-sonner-toast]').filter({ hasText: 'name or redirect URIs changed' }),
     ).toBeVisible()
     await expect(row).toContainText('Unverified')
     await expect(row.getByTestId('admin-oauth-client-verification-button')).toContainText('Verify')

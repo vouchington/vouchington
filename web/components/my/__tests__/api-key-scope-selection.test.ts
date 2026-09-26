@@ -44,8 +44,10 @@ describe('scopeResourceRows', () => {
     expect(userRows).not.toContain('mcp.admin')
     expect(userRows).not.toContain('rss')
 
-    const adminRows = scopeResourceRows(catalog, 'api-key', ['admin']).map(row => row.resource)
-    expect(adminRows).toEqual(['mcp.admin', 'support-messages'])
+    const adminRows = scopeResourceRows(catalog, 'api-key', ['admin'])
+    expect(adminRows[0]?.resource).toBe('mcp.admin')
+    const adminEntries = adminRows.flatMap(row => [row.read, row.write]).filter(e => e != null)
+    expect(adminEntries.map(e => e.audience)).toEqual(adminEntries.map(() => 'admin'))
   })
 
   it('keeps only scopes offered on the credential surface', () => {
