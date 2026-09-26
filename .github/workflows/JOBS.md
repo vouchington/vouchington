@@ -150,7 +150,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tests-backend-unit.yml`            | `backend-tests`                 | matrix | `ubuntu-latest`                       | 29            |
 | `tests-backend-unit.yml`            | `prep`                          | job    | `ubuntu-latest`                       | 8             |
 | `tests-cloudflare-worker.yml`       | `cloudflare-worker-tests`       | job    | `ubuntu-latest`                       | 17            |
-| `tests-lambdas.yml`                 | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 37            |
+| `tests-lambdas.yml`                 | `lambdas-tests`                 | job    | `ubuntu-latest`                       | 30            |
 | `tests-playwright-credentialed.yml` | `playwright-credentialed-tests` | job    | `ubuntu-latest`                       | 20            |
 | `tests-playwright.yml`              | `playwright-tests`              | matrix | `ubuntu-latest`                       | 30            |
 | `tests-playwright.yml`              | `shards`                        | job    | `ubuntu-latest`                       | 20            |

@@ -27,16 +27,18 @@ permissions:
 jobs:
   lambdas-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 37
+    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
         with:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
+        timeout-minutes: 1
         if: ${{ inputs.publish_coverage }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
@@ -47,7 +49,7 @@ jobs:
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: |
           pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project lambdas --project lambdas-mocks
-        timeout-minutes: 5
+        timeout-minutes: 2
       - name: Preserve full lambdas LCOV for Codecov
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
