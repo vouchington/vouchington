@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { parseGithubOutput } from '../../test-helpers/github-output.mts'
+import { parseGithubOutput } from './github-output.mts'
 
 const MALICIOUS_PR_TITLE = [
   'Preserve this entire title',
