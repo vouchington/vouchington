@@ -18,14 +18,17 @@ export function fetchAdminOAuthClients(options: {
   })
 }
 
-/** Verifies the client under the exact name staff reviewed; a renamed client is a conflict. */
+/**
+ * Verifies the client under the exact name and redirect URIs staff reviewed; an owner's change to
+ * either since the review is a conflict.
+ */
 export function verifyOAuthClient(
   id: string,
-  clientName: string,
+  reviewed: Pick<AdminOAuthClient, 'client_name' | 'redirect_uris'>,
 ): Promise<{ oauth_client: AdminOAuthClient }> {
   return clientApi.put<{ oauth_client: AdminOAuthClient }>(
     `/api/v1/admin/oauth-clients/${encodeURIComponent(id)}/verification`,
-    { client_name: clientName },
+    { client_name: reviewed.client_name, redirect_uris: reviewed.redirect_uris },
   )
 }
 

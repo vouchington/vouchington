@@ -102,7 +102,11 @@ export const OAUTH_MANAGEMENT_DECLARATIONS = [
   defineWebApiFixture<{ oauth_client: AdminOAuthClient }>()(
     'web.admin.oauth-clients.verify',
     webAdminOAuthClientsVerify,
-    context => context.client.adminOAuthClients.verifyOAuthClient(appId, 'Fixture Agent'),
+    context =>
+      context.client.adminOAuthClients.verifyOAuthClient(appId, {
+        client_name: 'Fixture Agent',
+        redirect_uris: ['https://agent.example.com/oauth/callback'],
+      }),
   ),
   defineWebApiFixture<null>()(
     'web.admin.oauth-clients.unverify',
