@@ -55,8 +55,7 @@ Review the latest CI runs. Pick exactly one concrete, bounded improvement that i
   cross-workflow calls, `needs`, or concurrency; keep intent in the typed policy, not a duplicate
   workflow inventory.
 - Improve fail-fast behavior, reliability, or diagnostics without hiding real failures.
-- Distinguish checks that gate merge (the `Main` ruleset's required `tests`, `build`, and
-  `gitleaks`) from report-only checks such as supply-chain and dependency scans that do
+- Distinguish checks that gate merge (the [Main ruleset's required gates](../../../.github/workflows/CLAUDE.md#scoped-invariants)) from report-only checks such as supply-chain and dependency scans that do
   not appear in that list; do not treat a report-only finding as a merge blocker, and call out
   explicitly if a change would promote a report-only check to required.
 - Validate workflow or tooling changes with the narrowest relevant local test. If a validation

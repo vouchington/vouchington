@@ -13,6 +13,5 @@ Manual `workflow_dispatch` does not change its diagram.
   `workflow_run` on `main`.
 
 Reusable workflows that CI or an area workflow calls appear as jobs in Pull requests. The area
-workflows also run in full from `nightly` (Always run). The `Main` ruleset requires `tests` and
-`build` (Pull requests) and `gitleaks` (Always run) before merge until it switches to the area gates
-`static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, and `tooling`.
+workflows also run in full from `nightly` (Always run). The [Main ruleset's required gates](CLAUDE.md#scoped-invariants)
+are defined in the workflow invariants.

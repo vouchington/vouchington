@@ -11,8 +11,10 @@ flag (informational). The job named after the area is its required check; it pas
 is skipped. [`nightly.yml`](nightly.yml) calls every area workflow for a full run (see
 [Always run](reference-workflow-automation-always-run.md)).
 
-`ci.yml` still runs in parallel until the ruleset requires the area gates instead of `tests` and
-`build`. Every gated job needs `detect-changes`, and `static-code-analysis` gates all of them plus
+`ci.yml` still runs in parallel; its `tests` and `build` fan-ins are report-only until the workflow
+is deleted. The [Main ruleset's required gates](CLAUDE.md#scoped-invariants) include the per-area
+jobs.
+Every gated job needs `detect-changes`, and `static-code-analysis` gates all of them plus
 both Docker validation builds (`backend-smoke` through `static-backend`), so those edges are drawn
 once to the group. Docs-only changes skip the gated jobs. No test or Docker build waits on another
 test: each starts once its static gates pass or intentionally skip, and both Playwright suites wait

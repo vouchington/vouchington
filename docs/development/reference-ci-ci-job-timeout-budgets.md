@@ -31,10 +31,10 @@ Where:
 A job's `timeout-minutes` clock starts when GitHub assigns the runner, before hosted-VM provisioning
 finishes and before `Set up job` begins. That wait is normally seconds but has exceeded a minute, so
 it counts against the job but never against a step. A job whose real work takes seconds, such as
-the required `tests` and `build` fan-in gates in `ci.yml`, bounds the work with a step-level
+the report-only `tests` and `build` fan-ins in `ci.yml`, bounds the work with a step-level
 `timeout-minutes` and keeps provisioning headroom in the job timeout.
 `ci-aggregate-gates.test.mts` enforces that headroom for the two gates; a job clock sized to the
-step alone lets a slow boot cancel a passing gate and eject the PR from the merge queue.
+step alone lets a slow boot cancel a passing fan-in and create a report-only false failure.
 
 Exact additive budgets remain valid only for explicitly catalogued structural chains, such as the
 Docker image jobs below, where each bounded fallback is expected to run serially after the prior

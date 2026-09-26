@@ -26,16 +26,16 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   adding or removing a focused reference leaf or group.
 - When a workflow gains, loses, or renames an unrestricted `push` trigger or a direct `push` trigger
   on `main`, update `fix-main.yml`; its subscription regression test must pass.
-- Preserve the `Main` ruleset gates: exactly `tests`, `build`, and `gitleaks` are
-  required before merge until the ruleset switches to the area gates `static`, `backend`, `web`,
-  `cloudflare-worker`, `lambdas`, `tooling`, and `gitleaks`. Keep every area gate job named after
-  its area, always running (`!cancelled()`), and passing when its area is skipped. Other scans
-  remain report-only unless they feed one of those gates.
+- Preserve the `Main` ruleset gates: exactly `static`, `backend`, `web`,
+  `cloudflare-worker`, `lambdas`, `tooling`, and `gitleaks` are required before merge. Keep every
+  area gate job named after its area, always running (`!cancelled()`), and passing when its area is
+  skipped. `ci.yml`'s `tests` and `build` fan-ins remain report-only until that workflow is deleted.
+  Other scans remain report-only unless they feed one of the required gates.
 - **Semantic CI DAG:** in PR and merge-group CI, `static-code-analysis` gates the area-static
   checks, and those gate every test, both Playwright suites, and both Docker validation builds. No
   test or build waits on another test or build, so they all run in parallel once their static gates
   succeed or intentionally skip. Only the `test-coverage`, `tests`, and `build` fan-ins wait on
-  tests, and required `tests` and `build` checks still report every failure. The shared
+  tests, and report-only `tests` and `build` fan-ins still report every failure. The shared
   `static-web` runtime build precedes its integration and Playwright consumers. Grouped-main
   workflows keep their independent fan-out and `cancel-in-progress: false` policy.
   `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
