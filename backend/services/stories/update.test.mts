@@ -1,7 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { it, expect, beforeAll, describe } from 'vitest'
-import { updateStoryTitle, setStoryOfficialItem, adminSetStoryOfficialItem } from './update.mts'
-import { getStoryById } from './get.mts'
+import { updateStoryTitle, adminSetStoryOfficialItem } from './update.mts'
 import {
   insertTestStory,
   insertTestRssFeedItem,
@@ -40,41 +39,6 @@ describe('update', () => {
   it('updateStoryTitle returns null for unknown story', async () => {
     const result = await updateStoryTitle(randomUUID(), 'Title')
     expect(result).toBeNull()
-  })
-
-  it('setStoryOfficialItem sets official item', async () => {
-    const story = await insertTestStory()
-    const result = await setStoryOfficialItem(story.id, itemId)
-    expect(result).toBeDefined()
-    expect(result!.official_rss_feed_item_id).toBe(itemId)
-    expect(result!.official_locked_at).toBeNull()
-  })
-
-  it('setStoryOfficialItem respects official_locked_at', async () => {
-    // Create a second item
-    const feed = await createTestRssFeed({})
-    const urlId = await createTestUrlWithHostname()
-    const random = Math.random().toString(36).slice(2, 10)
-    const itemData = { title: `Locked Test Item ${random}`, link: `https://example.com/${random}` }
-    const secondItemId = await insertTestRssFeedItem({
-      rssFeedId: feed.id,
-      urlId,
-      guid: `locked-test-${random}`,
-      itemData,
-      contentSha256: sha256(itemData),
-    })
-
-    // Admin sets and locks the official
-    const story = await insertTestStory()
-    await adminSetStoryOfficialItem(story.id, itemId)
-
-    // Attempt to override with setStoryOfficialItem (non-admin) — should be skipped
-    const result = await setStoryOfficialItem(story.id, secondItemId)
-    expect(result).toBeNull() // UPDATE found 0 rows because of official_locked_at
-
-    // Official item remains the original
-    const fetched = await getStoryById(story.id)
-    expect(fetched!.official_rss_feed_item_id).toBe(itemId)
   })
 
   it('adminSetStoryOfficialItem sets lock', async () => {

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { clusterRssFeedItem } from '../cluster.mts'
 import { createStoryPost } from '../story-posts.mts'
@@ -73,10 +73,16 @@ describe('story clustering retry', () => {
     }
 
     await expect(
-      clusterRssFeedItem(itemId, { refreshStoryPostForStory, completeClusteredStory }),
+      clusterRssFeedItem(itemId, randomUUID(), {
+        refreshStoryPostForStory,
+        completeClusteredStory,
+      }),
     ).rejects.toThrow('post-commit effect failed')
     await expect(
-      clusterRssFeedItem(itemId, { refreshStoryPostForStory, completeClusteredStory }),
+      clusterRssFeedItem(itemId, randomUUID(), {
+        refreshStoryPostForStory,
+        completeClusteredStory,
+      }),
     ).resolves.toEqual({ storyId: story.id, created: false })
     expect(refreshAttempts).toBe(2)
     expect(completionAttempts).toBe(2)
@@ -104,7 +110,7 @@ describe('story clustering retry', () => {
       setTestItemStoryId(priorItemId, null),
       addCategoryToRssFeedItem(currentItemId, currentTopic.id),
     ])
-    await expect(clusterRssFeedItem(currentItemId)).resolves.toEqual({
+    await expect(clusterRssFeedItem(currentItemId, randomUUID())).resolves.toEqual({
       storyId: story.id,
       created: false,
     })

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { clusterRssFeedItem } from '../cluster.mts'
 import { adminAssignItemToStory } from '../assign.mts'
 import { findClusterCandidates } from '../cluster-candidates.mts'
@@ -16,9 +16,63 @@ import {
 import { createTestRssFeed } from '@services/rss-feeds/test-fixtures'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
+import {
+  getActiveClassifierConfigurationBySlugFromPrimary,
+  persistClassifierDecision,
+} from '@services/classifiers'
+
+// Seeded by 0730-00-02-seed-story-clustering-classifier.mts; only ever SELECTed here, plus a
+// decision inserted against a fresh per-test batchId, so sharing it across concurrent test workers
+// is safe (same precedent as agents/story-clustering/choice-clustering.test.mts).
+const STORY_CLUSTERING_SLUG = 'story-clustering-classifier'
 
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
+}
+
+type SeededClusterCandidate =
+  | { kind: 'story'; storyId: string }
+  | { kind: 'rss_feed_item'; rssFeedItemId: string }
+
+/**
+ * Pre-seeds the classifier's decision under a known batchId rather than injecting a fake
+ * structured-decision client into `clusterRssFeedItem` itself: `dispatchStoryClusteringDecision`
+ * checks for an already-committed decision before ever loading candidates or dispatching, so this
+ * deterministically forces an outcome without a broader test seam (see
+ * agents/story-clustering/choice-clustering.test.mts's identical crash-recovery test).
+ */
+async function seedStoryClusteringDecision(options: {
+  batchId: string
+  incomingItemId: string
+  candidate: SeededClusterCandidate
+}): Promise<void> {
+  const configuration =
+    await getActiveClassifierConfigurationBySlugFromPrimary(STORY_CLUSTERING_SLUG)
+  if (!configuration) throw new Error('story-clustering-classifier configuration not seeded')
+  const result =
+    options.candidate.kind === 'story'
+      ? {
+          candidateKind: 'story' as const,
+          storyId: options.candidate.storyId,
+          storedCandidateId: null,
+          probability: 0.95,
+          rawResponse: { simulated: 'story test' },
+        }
+      : {
+          candidateKind: 'rss_feed_item' as const,
+          rssFeedItemId: options.candidate.rssFeedItemId,
+          storedCandidateId: null,
+          probability: 0.95,
+          rawResponse: { simulated: 'rss_feed_item test' },
+        }
+  await persistClassifierDecision({
+    batchId: options.batchId,
+    classifierId: configuration.classifierId,
+    promptVersionId: configuration.promptVersionId,
+    scope: { scopeCategory: 'global', scopeCommunityId: null },
+    subject: { postId: null, rssFeedItemId: options.incomingItemId },
+    calls: [{ shardOrdinal: 0, results: [result] }],
+  })
 }
 
 /**
@@ -88,7 +142,7 @@ describe('story clustering', () => {
 
   it('no embedding → skip clustering', async () => {
     const item = await makeItem({ feedId: sharedFeed.id })
-    const result = await clusterRssFeedItem(item.itemId)
+    const result = await clusterRssFeedItem(item.itemId, randomUUID())
     expect(result).toBeNull()
   })
 
@@ -99,17 +153,16 @@ describe('story clustering', () => {
     const existing = await makeItem({ feedId: feed.id, embedding: near })
     await setTestItemStoryId(existing.itemId, story.id)
     const pending = await makeItem({ feedId: feed.id, embedding: unit })
+
+    const batchId = randomUUID()
+    await seedStoryClusteringDecision({
+      batchId,
+      incomingItemId: pending.itemId,
+      candidate: { kind: 'story', storyId: story.id },
+    })
+
     const run = Promise.all([
-      clusterRssFeedItem(pending.itemId, {
-        runStoryClusteringAgent: async () => ({
-          should_cluster: true,
-          cluster_item_ids: [existing.itemId],
-          title: 'unused',
-          reason: 'overlap test',
-          published_at: undefined,
-          official_rss_feed_item_id: null,
-        }),
-      }),
+      clusterRssFeedItem(pending.itemId, batchId),
       adminAssignItemToStory(story.id, pending.itemId),
     ])
     await expect(
@@ -133,7 +186,7 @@ describe('story clustering', () => {
     await makeItem({ feedId: feed.id, embedding: far })
     const item = await makeItem({ feedId: feed.id, embedding: unit })
 
-    const result = await clusterRssFeedItem(item.itemId)
+    const result = await clusterRssFeedItem(item.itemId, randomUUID())
     expect(result).toBeNull()
   })
 
@@ -147,7 +200,7 @@ describe('story clustering', () => {
     // Lock a — should skip even though b is a close neighbor
     await Promise.all([setTestItemStoryLocked(a.itemId, true), Promise.resolve(b)])
 
-    const result = await clusterRssFeedItem(a.itemId)
+    const result = await clusterRssFeedItem(a.itemId, randomUUID())
     expect(result).toBeNull()
   })
 
@@ -158,7 +211,7 @@ describe('story clustering', () => {
     await makeItem({ feedId: feed.id, embedding: far })
     const item = await makeItem({ feedId: feed.id, embedding: unit })
 
-    const result = await clusterRssFeedItem(item.itemId)
+    const result = await clusterRssFeedItem(item.itemId, randomUUID())
     expect(result).toBeNull()
   })
 
@@ -172,7 +225,7 @@ describe('story clustering', () => {
     await makeItem({ feedId: feed.id, embedding: near, publishedAt: ancient })
     const item = await makeItem({ feedId: feed.id, embedding: unit, publishedAt: now })
 
-    const result = await clusterRssFeedItem(item.itemId)
+    const result = await clusterRssFeedItem(item.itemId, randomUUID())
     expect(result).toBeNull()
   })
 
@@ -188,7 +241,7 @@ describe('story clustering', () => {
     await updateRssFeedById(feed.id, { discoverable: false })
 
     // a is not cluster-eligible → early exit despite near neighbor
-    const result = await clusterRssFeedItem(a.itemId)
+    const result = await clusterRssFeedItem(a.itemId, randomUUID())
     expect(result).toBeNull()
   })
 
@@ -203,7 +256,7 @@ describe('story clustering', () => {
     await setRssFeedOwningTopicVoteScore(feed.id, 0, 6)
     await evaluateRssFeedDiscoverability(feed.id)
 
-    const result = await clusterRssFeedItem(a.itemId)
+    const result = await clusterRssFeedItem(a.itemId, randomUUID())
     expect(result).toBeNull()
   })
 

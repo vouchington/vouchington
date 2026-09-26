@@ -181,9 +181,7 @@ export function buildClassifierResultFixtureOperations(data: ClassifierFixtureDa
           ${data.standaloneRssFeedItemId}, ${batchId}, ${callId}, ${data.storyClassifierId},
           NULL, NULL, ${data.storyPromptVersionId},
           ${probability}, 0.2500, 0.7500,
-          jsonb_build_object(
-            'type', 'choice', 'choice', 'rss_feed_item', 'probability', ${probability}::numeric
-          ),
+          jsonb_build_object('type', 'choice', 'choice', 'rss_feed_item', 'probability', ${probability}::numeric),
           'global'
         ) RETURNING probability::text`),
     rejectRssFeedItemResultWithStoredCandidate: (batchId: string, callId: string) =>
