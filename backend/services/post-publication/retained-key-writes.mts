@@ -3,6 +3,8 @@ import { POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE } from './constants.mts'
 import { RETAINED_KEY_COLUMNS } from './concrete-key-columns.mts'
 import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 
+const retainedKeyConflictValuesSql = `CASE WHEN key.kind = 'impact_post' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_rss_feed_item' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_topic' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_author' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_rss_feed' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_author_username' THEN key.text_value END, CASE WHEN key.kind = 'identity_post_slug' THEN key.text_value END, CASE WHEN key.kind = 'identity_community_slug' THEN key.text_value END, CASE WHEN key.kind = 'identity_topic_alias' THEN key.text_value END, key.post_type::post_types, key.day::date`
+
 export const POST_PUBLICATION_DIRTY_WORK_KEY_KINDS = [
   'impact_post',
   'impact_topic',
@@ -66,9 +68,7 @@ export async function retainPostPublicationKeys(
       )
     }
   }
-  const ordered = keys.toSorted(
-    (a, b) => a.kind.localeCompare(b.kind) || keyValue(a).localeCompare(keyValue(b)),
-  )
+  const ordered = await orderPostPublicationKeys(query, keys)
   for (
     let offset = 0;
     offset < ordered.length;
@@ -88,22 +88,35 @@ async function insertPostPublicationKeyBatch(
   await query(
     `/* retainPostPublicationDirtyWorkKeys */
     INSERT INTO post_publication_dirty_work_keys (dirty_work_id, ${columns.join(', ')})
-    SELECT $1::uuid, CASE WHEN key.kind = 'impact_post' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_rss_feed_item' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_topic' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_author' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_rss_feed' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_author_username' THEN key.text_value END, CASE WHEN key.kind = 'identity_post_slug' THEN key.text_value END, CASE WHEN key.kind = 'identity_community_slug' THEN key.text_value END, CASE WHEN key.kind = 'identity_topic_alias' THEN key.text_value END, key.post_type::post_types, key.day::date
+    SELECT $1::uuid, ${retainedKeyConflictValuesSql}
     FROM UNNEST($2::text[], $3::text[], $4::text[], $5::text[], $6::text[]) AS key(kind, uuid_value, text_value, post_type, day)
-    ORDER BY $1::uuid, CASE WHEN key.kind = 'impact_post' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_rss_feed_item' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'impact_topic' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_author' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_rss_feed' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'identity_author_username' THEN key.text_value END, CASE WHEN key.kind = 'identity_post_slug' THEN key.text_value END, CASE WHEN key.kind = 'identity_community_slug' THEN key.text_value END, CASE WHEN key.kind = 'identity_topic_alias' THEN key.text_value END, key.post_type::post_types, key.day::date
+    ORDER BY $1::uuid, ${retainedKeyConflictValuesSql}
     ON CONFLICT (dirty_work_id, ${columns.join(', ')}) DO NOTHING`,
-    [
-      dirtyWorkId,
-      keys.map(key => key.kind),
-      keys.map(key => ('uuidValue' in key ? key.uuidValue : null)),
-      keys.map(key => ('textValue' in key ? key.textValue : null)),
-      keys.map(key => ('postType' in key ? key.postType : null)),
-      keys.map(key => ('day' in key ? key.day : null)),
-    ],
+    [dirtyWorkId, ...retainedKeyInputValues(keys)],
   )
 }
-function keyValue(key: PostPublicationRetainedKey): string {
-  if ('uuidValue' in key) return key.uuidValue.toLowerCase()
-  if ('textValue' in key) return key.textValue
-  return `${key.postType}:${key.day}`
+async function orderPostPublicationKeys(
+  query: TransactionQuery,
+  keys: readonly PostPublicationRetainedKey[],
+): Promise<PostPublicationRetainedKey[]> {
+  if (!keys.length) return []
+  const { rows } = await query<{ ordinal: string }>(
+    `/* orderPostPublicationRetainedKeyInput */
+    SELECT key.ordinal
+    FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[])
+      WITH ORDINALITY AS key(kind, uuid_value, text_value, post_type, day, ordinal)
+    ORDER BY ${retainedKeyConflictValuesSql}`,
+    retainedKeyInputValues(keys),
+  )
+  return rows.map(row => keys[Number(row.ordinal) - 1]!)
+}
+
+function retainedKeyInputValues(keys: readonly PostPublicationRetainedKey[]): unknown[] {
+  return [
+    keys.map(key => key.kind),
+    keys.map(key => ('uuidValue' in key ? key.uuidValue : null)),
+    keys.map(key => ('textValue' in key ? key.textValue : null)),
+    keys.map(key => ('postType' in key ? key.postType : null)),
+    keys.map(key => ('day' in key ? key.day : null)),
+  ]
 }

@@ -138,6 +138,8 @@ ordinary projection reconciliation.
 The package's supported surface is exported from `index.mts`; keep internal modules behind that
 barrel so new capture and reconciliation helpers do not require a duplicated file inventory here.
 
-Every retained-key writer orders concrete payloads by their complete unique conflict key before
-bounded batching, and retains caller order where it is observed.
+Retained-key writers order already-supplied input in PostgreSQL by the complete concrete unique
+conflict key before bounded batching. The input ordering and each insert share the same typed
+expressions, including native UUID, text-collation, enum, and date ordering; source reads remain
+independently bounded. Snapshot pages are persisted under their owner's work-row lease lock.
 See the [PostgreSQL ordering guard](../../../static-code-analysis/README.md#postgresql-conflict-ordering).
