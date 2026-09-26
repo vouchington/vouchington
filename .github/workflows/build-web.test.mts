@@ -102,8 +102,8 @@ describe('build-web workflow', () => {
 
   it('gates the build on CRITICAL/HIGH fixable Trivy findings', () => {
     // continue-on-error must be gone from every step in the enforcement chain
-    // (install guard, scan, SBOM) so a finding actually fails `build`, which is
-    // one of the 4 required checks on the Main ruleset. "Install Trivy" itself
+    // (install guard, scan, SBOM) so a finding actually fails the `web` gate.
+    // "Install Trivy" itself
     // keeps continue-on-error: true — the install guard step immediately after
     // it is the deliberate enforcement point for install failures.
     const steps = readBuildWebImagesSteps()

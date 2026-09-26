@@ -12,7 +12,7 @@ test-support sources; its local configuration and command inventory are in
 
 [Back to CI Reference](ci.md)
 
-[Static Code Analysis](../../.github/workflows/static-code-analysis.yml) is a reusable workflow with no inputs, also available by manual dispatch. [`static.yml`](../../.github/workflows/static.yml) calls it on every pull request and merge group, `ci.yml` calls it until the `Main` ruleset requires the area gates, and [`nightly.yml`](../../.github/workflows/nightly.yml) runs it at the `main` tip. Every call runs every check, including on docs-only changes: a docs-only input would need a `changes` job, and a `needs:` on that reusable job hides the typecheck steps from the no-mistakes `tsconfig-gate-coverage` rule. The jscpd threshold judges the whole tree without a
+[Static Code Analysis](../../.github/workflows/static-code-analysis.yml) is a reusable workflow with no inputs, also available by manual dispatch. [`static.yml`](../../.github/workflows/static.yml) calls it on every pull request and merge group, `ci.yml` calls it alongside the area workflows, and [`nightly.yml`](../../.github/workflows/nightly.yml) runs it at the `main` tip. Every call runs every check, including on docs-only changes: a docs-only input would need a `changes` job, and a `needs:` on that reusable job hides the typecheck steps from the no-mistakes `tsconfig-gate-coverage` rule. The jscpd threshold judges the whole tree without a
 base ref, so pull requests, merge groups, and nightly runs agree; see the
 [jscpd clone-size threshold](../../static-code-analysis/jscpd/README.md). Workspace-owned
 dependency, type, and SQL checks run in their reusable test workflows so they gate that unit's
