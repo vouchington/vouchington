@@ -53,7 +53,28 @@ rule:
             field: arguments
             has:
               nthChild: 1
-              regex: ^['"`]git\s.*\b(fetch|ls-remote|pull|push|clone)\b
+              regex: ^['"`]git['"`]$
+        - has:
+            field: arguments
+            has:
+              nthChild: 2
+              kind: array
+              has:
+                all:
+                  - kind: string
+                  - regex: ^['"]update['"]$
+                  - follows:
+                      regex: ^['"](remote|submodule)['"]$
+                      stopBy:
+                        kind: string
+              stopBy: end
+    - all:
+        - matches: child-process-call
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              regex: ^['"`]git\s.*\b(fetch|ls-remote|pull|push|clone|remote\s+update|submodule\s+update)(['"`]|\s|$)
     - pattern: fetch($$$ARGS)
     - pattern: globalThis.fetch
     - pattern: global.fetch
@@ -103,6 +124,24 @@ examples:
   - code: |
       import { execSync } from 'node:child_process'
       execSync('git -C dir push origin HEAD')
+    isValid: false
+    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['remote', 'update'])
+      execFileSync('git', ['remote', 'update', 'origin'])
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['submodule', 'update', '--remote'])
+      execFileSync('git', ['-C', dir, 'remote', 'update'])
+      execFileSync('git', ['--git-dir', dir, 'submodule', 'update', '--remote'])
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { execSync } from 'node:child_process'
+      execSync('git -C dir remote update', { cwd })
     isValid: false
     file: 'dev/codex-hooks/post-tool-use-checkers.mts'
   - code: |
@@ -158,6 +197,18 @@ examples:
       import { execFileSync } from 'node:child_process'
       const text = execFileSync('git', args, { cwd, encoding: 'utf8' })
       execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], { cwd })
+    isValid: true
+    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+  - code: |
+      import { execFileSync, execSync } from 'node:child_process'
+      execFileSync('git', ['remote', '-v'])
+      execFileSync('git', ['remote', 'get-url', 'origin'])
+      execFileSync('git', ['remote', 'set-url', 'update'])
+      execFileSync('git', ['submodule', 'status'])
+      execFileSync('node', ['remote', 'update'])
+      spawnSync('grep', ['submodule', 'update'])
+      execSync('git remote -v', { cwd })
+      execSync('git remote update-check', { cwd })
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
