@@ -1,4 +1,4 @@
-import { parseDuplicateSearch } from './duplicate-search.mts'
+import { parseDuplicateSearch, type DuplicateSearchConfig } from './duplicate-search.mts'
 export const CANONICAL_PRIORITIES = [
   'priority: critical',
   'priority: high',
@@ -7,12 +7,6 @@ export const CANONICAL_PRIORITIES = [
 ] as const
 
 export type CanonicalPriority = (typeof CANONICAL_PRIORITIES)[number]
-
-export type DuplicateSearchConfig = {
-  query: string
-  acknowledgedHits: number[]
-  acknowledgedSiblings: string[]
-}
 
 export type BatchEntry = {
   id: string

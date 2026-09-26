@@ -12,12 +12,14 @@ import {
   allJobs,
   appendSummary,
   formatJobSummaryRows,
-  planCommentSummary,
-  selectedShardTotal,
   vitestPlanOptions,
   writeOutput,
+} from './ci-select-catalog.mts'
+import {
+  planCommentSummary,
+  selectedShardTotal,
   writePlanArtifacts,
-} from './ci-select.mts'
+} from './ci-select-selection.mts'
 import { writeSelectedJobs } from './ci-select-jobs.mts'
 import { writeSelectionSummary } from './ci-select-summary.mts'
 

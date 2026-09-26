@@ -1,3 +1,4 @@
+import type { FiniteEnumFiles, ReadTrackedFile } from './finite-enum-ripple-model.mts'
 import {
   checkCollectionPagePathLiterals,
   checkPostCreatePageTypes,
@@ -6,7 +7,7 @@ import {
   hasAllFiles,
   routePageSlugs,
   uniqueSorted,
-} from './finite-enum-ripple-guard.mts'
+} from './finite-enum-ripple-compare.mts'
 import {
   parsePostDetailRouteFactoryArgs,
   parsePostRouteConfigEntries,
@@ -156,22 +157,4 @@ export function checkPostTypes(
       ),
     )
   }
-}
-
-export type ReadTrackedFile = (file: string) => string
-
-export interface RoutedPage {
-  file: string
-  isTopLevel: boolean
-  slug: string
-}
-
-export interface FiniteEnumFiles {
-  existingFileSet: ReadonlySet<string>
-  postCollectionPages: RoutedPage[]
-  postCreatePages: RoutedPage[]
-  postDetailPages: RoutedPage[]
-  topicCollectionPages: RoutedPage[]
-  topicComponentFiles: string[]
-  topicDetailPages: RoutedPage[]
 }

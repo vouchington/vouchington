@@ -6,16 +6,18 @@ import {
   STORYBOOK_BROWSER_PROJECT,
   STORYBOOK_JOB,
   allJobs,
-  buildFileGroupTypes,
-  isWarmJob,
   nonTopologyFullJobs,
-  resolveJobSelection,
-  resolveProjectName,
-  selectedShardTotal,
   shouldSkipJob,
   storybookBrowserSelection,
   writeOutput,
-} from './ci-select.mts'
+} from './ci-select-catalog.mts'
+import {
+  buildFileGroupTypes,
+  isWarmJob,
+  resolveJobSelection,
+  resolveProjectName,
+  selectedShardTotal,
+} from './ci-select-selection.mts'
 
 type FullOut = (
   reason: string,

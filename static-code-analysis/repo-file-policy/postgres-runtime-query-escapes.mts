@@ -1,4 +1,3 @@
-import { classifyDynamicUse } from './postgres-runtime-query-dynamic-use.mts'
 import { isNode } from '../targeted-guardrails/ast-utils.mts'
 
 import { rootBinding } from './postgres-runtime-query-binding-resolution.mts'
@@ -52,5 +51,3 @@ export function markExportedDeclaration(
   }
   markDynamic(declaration, scopes, true)
 }
-
-export { classifyDynamicUse }

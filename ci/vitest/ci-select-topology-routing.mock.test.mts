@@ -25,7 +25,7 @@ describe('non-topology forced-full routing', () => {
   })
 
   it('preserves full topology outputs after a global fallback', () => {
-    const selector = readFileSync(new URL('./ci-select.mts', import.meta.url), 'utf8')
+    const selector = readFileSync(new URL('./ci-select-run.mts', import.meta.url), 'utf8')
     expect(selector).not.toContain('labels.includes')
     expect(selector).not.toContain('PR_LABELS')
     expect(selector).toContain('fullCi: true')

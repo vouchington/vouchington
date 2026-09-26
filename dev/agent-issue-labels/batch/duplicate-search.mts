@@ -1,4 +1,8 @@
-import type { DuplicateSearchConfig } from './manifest.mts'
+export type DuplicateSearchConfig = {
+  query: string
+  acknowledgedHits: number[]
+  acknowledgedSiblings: string[]
+}
 
 export function parseDuplicateSearch(
   raw: unknown,

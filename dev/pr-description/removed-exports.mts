@@ -1,4 +1,8 @@
-import type { RemovedSurface } from './removed-surfaces.mts'
+export type RemovedSurface =
+  | { path: string; type: 'deleted-file' }
+  | { name: string; path: string; type: 'removed-export' }
+  | { path: string; route: string; type: 'removed-route' }
+  | { name: string; path: string; type: 'removed-script' }
 
 const EXPORT_STAR_RE = /^export\s+(?:type\s+)?\*\s+from\s+['"](?<spec>[^'"]+)['"]/
 const EXPORT_NAMED_RE = /^export\s+(?:type\s+)?\{\s*(?<names>[^}]+)\}/

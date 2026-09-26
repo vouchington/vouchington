@@ -1,8 +1,5 @@
-import {
-  checkPostTypes,
-  type FiniteEnumFiles,
-  type ReadTrackedFile,
-} from './finite-enum-ripple-post-types.mts'
+import { checkPostTypes } from './finite-enum-ripple-post-types.mts'
+import type { FiniteEnumFiles, ReadTrackedFile } from './finite-enum-ripple-model.mts'
 import {
   parseTopicRouteConfigEntries,
   parseTopicRouteFactoryArgs,
@@ -16,7 +13,7 @@ import {
   hasAllFiles,
   routePageSlugs,
   uniqueSorted,
-} from './finite-enum-ripple-guard.mts'
+} from './finite-enum-ripple-compare.mts'
 
 export function checkTopicTypes(
   errors: string[],

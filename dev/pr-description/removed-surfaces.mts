@@ -1,12 +1,7 @@
-import { parseRemovedExports } from './removed-exports.mts'
+import { parseRemovedExports, type RemovedSurface } from './removed-exports.mts'
+export type { RemovedSurface }
 // One parser serves both `validate <pr>` (`gh pr diff`) and `create` (`git diff origin/main...HEAD`)
 // so the supersession search vocabulary always reflects what the diff deletes, not what it adds.
-
-export type RemovedSurface =
-  | { path: string; type: 'deleted-file' }
-  | { name: string; path: string; type: 'removed-export' }
-  | { path: string; route: string; type: 'removed-route' }
-  | { name: string; path: string; type: 'removed-script' }
 
 const DIFF_GIT_OLD_PATH_RE = /^diff --git a\/(?<path>.+) b\/.+$/m
 const NEW_PATH_RE = /^\+\+\+ b\/(?<path>.+)$/m

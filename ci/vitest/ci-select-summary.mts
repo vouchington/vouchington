@@ -7,10 +7,9 @@ import {
   appendSummary,
   formatJobSummaryRows,
   groupCount,
-  planCommentSummary,
-  selectedShardTotal,
   writeOutput,
-} from './ci-select.mts'
+} from './ci-select-catalog.mts'
+import { planCommentSummary, selectedShardTotal } from './ci-select-selection.mts'
 
 export function writeSelectionSummary(input: {
   jobFiles: Map<string, Set<string>>
