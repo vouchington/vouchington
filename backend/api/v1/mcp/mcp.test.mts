@@ -134,6 +134,7 @@ describe('POST /api/v1/mcp', () => {
 
     const body = response.body as { result?: { content?: Array<{ text?: string }> } }
     expect(JSON.parse(body.result?.content?.[0]?.text ?? '{}')).toMatchObject({
+      relation_id: expect.any(String),
       subject_id: post.id,
       object_id: urlId,
       predicate: 'related',

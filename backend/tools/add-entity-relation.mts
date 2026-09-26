@@ -18,7 +18,7 @@ type AddEntityRelationArgs =
 
 type AddEntityRelationResult =
   | {
-      relation_id: string
+      relation_id?: string
       subject_type: string
       subject_id: string
       predicate: string
@@ -105,14 +105,12 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
           objectId: args.object_id,
         },
       )
-      if (!relation.id)
-        throw createHttpError(500, 'Created entity relation is missing its identifier')
       if (!relation.subject_id)
         throw createHttpError(500, 'Created entity relation is missing its subject identifier')
       if (!relation.object_id)
         throw createHttpError(500, 'Created entity relation is missing its object identifier')
       return {
-        relation_id: relation.id,
+        ...(relation.id ? { relation_id: relation.id } : {}),
         subject_type: metadata.subject_type,
         subject_id: relation.subject_id,
         predicate: metadata.predicate,

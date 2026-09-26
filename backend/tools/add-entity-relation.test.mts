@@ -32,6 +32,7 @@ describe('add_entity_relation', () => {
     )
 
     expect(result).toMatchObject({
+      relation_id: expect.any(String),
       subject_type: 'post',
       subject_id: post.id,
       predicate: 'related',

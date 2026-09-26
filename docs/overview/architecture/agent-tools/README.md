@@ -137,7 +137,9 @@ REST supplies first-party authority; MCP receives verified delegated credential 
 relations retain ordinary scope policy. Effectively private post work also requires the exact
 `post-relations.owned-private:write` grant and matching credential ownership of the candidate and
 effective root. Its `add_tag` branch adds one authored `#tag` through the locked PATCH-equivalent
-category path described in [Tags](../../../requirements/content/TAGS.md).
+category path described in [Tags](../../../requirements/content/TAGS.md). Its relation result always
+returns the canonical subject/predicate/object tuple; `relation_id` is included only for relation
+tables that persist a row identifier.
 
 ---
 
