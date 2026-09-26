@@ -56,7 +56,9 @@ function tomlQuotedArray(section: string, key: string): string[] {
 }
 
 describe('agent sandbox configuration', () => {
-  it('allows all official dev/ scripts in Claude permissions and sandbox', () => {
+  // The Claude review-skip for dev/ commands is the blanket rule pinned in
+  // claude-settings-dev-allow.test.mts; these tests cover only OS escalation and Codex.
+  it('excludes all official dev/ scripts from the Claude sandbox and pre-approves them in Codex', () => {
     const scripts = [
       './dev/initialize',
       './dev/tmux',
@@ -72,10 +74,7 @@ describe('agent sandbox configuration', () => {
       './dev/valkey-logs',
     ]
     for (const script of scripts) {
-      const allow = claudeSettings.permissions.allow
       const excludedCommands = claudeSettings.sandbox.excludedCommands
-      expect(allow).toContain(`Bash(${script})`)
-      expect(allow).toContain(`Bash(${script} *)`)
       expect(excludedCommands).toContain(script)
       expect(excludedCommands).toContain(`${script} *`)
       expect(codexRules).toContain(codexRuleFor([script]))
@@ -172,13 +171,10 @@ describe('agent sandbox configuration', () => {
     )
   })
 
-  it('allows the pr-description and plan-issue dev scripts in Claude permissions, sandbox, and Codex', () => {
+  it('excludes the pr-description and plan-issue dev scripts from the Claude sandbox and allows them in Codex', () => {
     const scripts = ['dev/pr-description.mts', 'dev/plan-issue.mts']
     for (const script of scripts) {
-      const allow = claudeSettings.permissions.allow
       const excludedCommands = claudeSettings.sandbox.excludedCommands
-      expect(allow).toContain(`Bash(node ${script})`)
-      expect(allow).toContain(`Bash(node ${script} *)`)
       expect(excludedCommands).toContain(`node ${script}`)
       expect(excludedCommands).toContain(`node ${script} *`)
       expect(codexRules).toContain(codexRuleFor(['node', script]))
