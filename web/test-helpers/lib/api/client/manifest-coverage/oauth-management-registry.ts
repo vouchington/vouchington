@@ -36,7 +36,10 @@ export const oauthManagementEndpointRegistry: Record<string, ManifestEndpoint> =
   'web.admin.oauth-clients.verify': {
     method: 'PUT',
     path: verificationPath,
-    requestBody: { client_name: 'Fixture Agent' },
+    requestBody: {
+      client_name: 'Fixture Agent',
+      redirect_uris: ['https://agent.example.com/oauth/callback'],
+    },
   },
   'web.admin.oauth-clients.unverify': { method: 'DELETE', path: verificationPath },
 }
