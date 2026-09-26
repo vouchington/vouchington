@@ -13,6 +13,7 @@ Review dimensions (call out concrete file:line in inline comments):
 - **Correctness & security** - auth/authz boundaries, injection, secret handling, race conditions.
 - **Performance & cost** - N+1 queries, accidental full-table scans, unnecessary LLM calls, oversized fan-out, hot-path allocations.
 - **Simplification** - dead code, unused exports, cruft, residue from earlier iterations.
+- **Prelaunch storage** - this app has not launched. Flag upgrade-only migration deploys and compatibility readers/writers, business state in JSON, polymorphic/encoded/array relationships, and internal UUID references without target foreign keys (even if primary or unique). Preserve external protocols, exact replay, key rotation, and fresh-bootstrap integrity.
 - **DRY & indirection** - duplication that should be extracted, and over-abstracted indirection that obscures intent.
 - **Plan adherence** - does the diff actually deliver what the Plan issue accepted?
 - **Requirement coverage & description accuracy** - walk the requirement list entry by entry. Flag any requirement the diff leaves unmet with no linked deferral, any claim in the description the diff does not support, any description text a later scope change left stale, and any substantial diff scope the description never mentions. Anchor each finding to the changed line it concerns; when a description claim has no matching diff line, raise it in the review body and quote the corrected wording.
