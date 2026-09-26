@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   assertCommentReadback,
-  candidatePullRequestNumbers,
   isCurrentOpenPlan,
   markerComment,
   pullRequest,
 } from './plan-completion-data.mts'
+import { candidatePullRequestNumbers } from './plan-completion-timeline.mts'
 
 describe('plan completion API parsing', () => {
   it('fails closed on invalid current Plan and PR fields while retaining a null PR body', () => {

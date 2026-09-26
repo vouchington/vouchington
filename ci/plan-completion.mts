@@ -5,7 +5,6 @@ import { promisify } from 'node:util'
 import { assessPlanCompletion } from '../dev/pr-description/plan-completion.mts'
 import {
   assertCommentReadback,
-  candidatePullRequestNumbers,
   commentBody,
   isCurrentOpenPlan,
   listArgs,
@@ -14,6 +13,7 @@ import {
   pullRequest,
   readArgs,
 } from './plan-completion-data.mts'
+import { candidatePullRequestNumbers } from './plan-completion-timeline.mts'
 
 const execFile = promisify(execFileCallback)
 
