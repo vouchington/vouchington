@@ -12,6 +12,8 @@ import {
 } from '@ts-shared/feature-flags'
 import { getFeatureFlags } from '@/lib/api/server/feature-flags'
 
+const GLOBAL_FEATURE_FLAGS_REQUEST_KIND = 'global-feature-flags'
+
 const featureFlagCookieCodec: FeatureFlagCookieCodec = {
   encodeBase64: value => Buffer.from(value, 'utf8').toString('base64'),
   decodeBase64: value => Buffer.from(value, 'base64').toString('utf8'),
@@ -59,7 +61,9 @@ export type GlobalFeatureFlagsFetchResult =
  */
 export async function fetchGlobalServerFeatureFlags(): Promise<GlobalFeatureFlagsFetchResult> {
   try {
-    const response = await getFeatureFlags({ headers: { Cookie: '' } })
+    const response = await getFeatureFlags({
+      headers: { Cookie: '', 'x-voucha-request-kind': GLOBAL_FEATURE_FLAGS_REQUEST_KIND },
+    })
     return { ok: true, flags: response.flags }
   } catch (error) {
     return { ok: false, error }

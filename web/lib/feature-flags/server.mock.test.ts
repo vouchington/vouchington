@@ -63,7 +63,9 @@ describe('server feature flag helpers', () => {
 
     await expect(getGlobalServerFeatureFlags()).resolves.toEqual({ fediverse: false })
 
-    expect(mockGetFeatureFlags).toHaveBeenCalledWith({ headers: { Cookie: '' } })
+    expect(mockGetFeatureFlags).toHaveBeenCalledWith({
+      headers: { Cookie: '', 'x-voucha-request-kind': 'global-feature-flags' },
+    })
   })
 
   it('reports a rejected global flag fetch as a distinct failure, not an empty flag set', async () => {

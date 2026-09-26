@@ -132,6 +132,20 @@ describe('buildWorkerOriginRequest client information', () => {
     expect(originRequest.headers.get('x-voucha-client')).toBeNull()
   })
 
+  it('strips a public global-feature-flags kind before forwarding to the backend', () => {
+    const originRequest = build(
+      new Request('https://voucha.ai/api/v1/feature-flags', {
+        headers: {
+          'sec-fetch-site': 'same-origin',
+          'x-voucha-request-kind': 'global-feature-flags',
+        },
+      }),
+    )
+
+    expect(originRequest.headers.get('x-voucha-request-kind')).toBeNull()
+    expect(originRequest.headers.get('x-voucha-client')).toBe('web')
+  })
+
   it('does not stamp requests routed to non-backend origins', () => {
     const originRequest = buildWorkerOriginRequest({
       canonicalSitemapUrl: null,

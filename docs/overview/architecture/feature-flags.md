@@ -54,6 +54,10 @@ export const featureFlagsConfig = new DynamicConfig({
   decode/parse and default to `4096`; oversized cookies parse as no overrides and are not forwarded
   by safe cookie helpers. Keep this value runtime-configured rather than baked into Docker images.
 - **API**: `GET /api/v1/feature-flags` (public, unauthenticated) returns flags with any cookie overrides applied.
+- **Global server read**: Server rendering calls the same endpoint with an empty Cookie and a
+  scoped `global-feature-flags` request kind. The backend accepts this device bootstrap only after
+  origin-secret authentication; the edge removes any public caller's copy of that kind. The empty
+  Cookie ensures the response contains global values without a user's `ff` override.
 - **Endpoint policy**: feature flags gate frontend visibility. Backend APIs stay mounted so clients
   can maintain stable contracts.
 
