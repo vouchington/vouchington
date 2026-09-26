@@ -46,5 +46,5 @@ app.route('/api/v1/auth/mfa/passkeys/authentication/verification').post(async (c
   }
   ctx.assert(verification.verified, 401, 'Passkey verification failed')
 
-  await completeMfaVerification(ctx, loginAttemptId)
+  ctx.json(await completeMfaVerification(ctx, loginAttemptId))
 })

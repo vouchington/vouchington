@@ -34,6 +34,11 @@ app
   .route('/api/v1/session')
   .patch(async (ctx: Context) => {
     const routeKey = 'PATCH:/api/v1/session'
+    // The parse-and-cast below must stay lexically inside each route's own handler: the OpenAPI
+    // request-contract harvester statically attributes a `ctx.request.json(...) as T` cast to
+    // exactly one route, so it can't live in a helper this route shares with DELETE's JSON
+    // branch. `rateLimitAndValidateSessionBody` covers everything after the cast, which has no
+    // such restriction.
     let rawBody: SessionTokenBody
     try {
       rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
@@ -41,10 +46,7 @@ app
       await ctx.applyRouteRateLimit(routeKey)
       ctx.throw(422, 'Invalid body')
     }
-    const tokenBody = toTokenBody(rawBody)
-    await applySessionBodyRateLimit(ctx, routeKey, tokenBody)
-    validateRequestContract(ctx, routeKey, { body: rawBody })
-    const { dt, st } = tokenBody
+    const { dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
 
     const sessionState = await refreshSessionState({
       deviceToken: dt,
@@ -80,6 +82,8 @@ app
     let dt, st
     if (ctx.request.is('json')) {
       const routeKey = 'DELETE:/api/v1/session'
+      // See the PATCH handler above: this cast must stay inline here, not in a shared helper —
+      // the OpenAPI request-contract harvester can't attribute a cast shared by two routes.
       let rawBody: SessionTokenBody
       try {
         rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
@@ -87,11 +91,7 @@ app
         await ctx.applyRouteRateLimit(routeKey)
         ctx.throw(422, 'Invalid body')
       }
-      const tokenBody = toTokenBody(rawBody)
-      await applySessionBodyRateLimit(ctx, routeKey, tokenBody)
-      validateRequestContract(ctx, routeKey, { body: rawBody })
-      dt = tokenBody.dt
-      st = tokenBody.st
+      ;({ dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody))
     } else {
       await ctx.applyRouteRateLimit('DELETE:/api/v1/session')
       dt = ctx.cookies.get('dt')
@@ -130,6 +130,20 @@ app
 function toTokenBody(body: SessionTokenBody): SessionTokenBody {
   const isPlainObject = body !== null && typeof body === 'object' && !Array.isArray(body)
   return isPlainObject ? body : {}
+}
+
+// Shared by the PATCH and DELETE JSON-body branches, once each has already parsed its own body
+// (see the inline comment at each call site for why the parse itself isn't shared): rate-limit on
+// the tokens the body names, then validate it against the request contract.
+async function rateLimitAndValidateSessionBody(
+  ctx: Context,
+  routeKey: string,
+  rawBody: SessionTokenBody,
+): Promise<SessionTokenBody> {
+  const tokenBody = toTokenBody(rawBody)
+  await applySessionBodyRateLimit(ctx, routeKey, tokenBody)
+  validateRequestContract(ctx, routeKey, { body: rawBody })
+  return tokenBody
 }
 
 async function applySessionBodyRateLimit(

@@ -37,5 +37,5 @@ app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
   }
   ctx.assert(valid, 401, 'Invalid verification code')
 
-  await completeMfaVerification(ctx, loginAttemptId)
+  ctx.json(await completeMfaVerification(ctx, loginAttemptId))
 })

@@ -11,12 +11,13 @@ import {
 } from '@services/passkeys'
 import { deletePasskeyWithMfaProtection } from '@services/mfa'
 import { apiQuery } from '../../response-contract.mts'
+import { createPaginationParser } from '@modules/pagination'
 import {
-  createPaginationParser,
-  decodeScopedUuidCursor,
-  encodeScopedUuidCursor,
-} from '@modules/pagination'
-import { handleRenameRoute, parseOptionalReAuthToken } from './item-management-route-helpers.mts'
+  fetchScopedIdPage,
+  requireAuthAndItemId,
+  validateReAuthToken,
+  validateRenameName,
+} from './passkey-totp-route-helpers.mts'
 
 const passkeysParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -67,37 +68,27 @@ app.route('/api/v1/auth/passkeys').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/auth/passkeys')
 
   const options = passkeysParser.parse(ctx.query)
-  const scope = `passkeys:${currentUser.id}:created-at-asc-id-asc`
-  const afterId = options.after
-    ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id
-    : undefined
-  const { results, hasNextPage } = await getPasskeysByUserId(currentUser.id, {
-    limit: options.limit,
-    after: afterId ? { id: afterId } : undefined,
-  })
-  ctx.json({
-    results,
-    page_info: {
-      has_next_page: hasNextPage,
-      start_cursor: results[0] ? encodeScopedUuidCursor(results[0].id, scope) : null,
-      end_cursor:
-        hasNextPage && results.at(-1) ? encodeScopedUuidCursor(results.at(-1)!.id, scope) : null,
-    },
-  })
+  ctx.json(await fetchScopedIdPage('passkeys', currentUser.id, options, getPasskeysByUserId))
 })
 
-app
-  .route('/api/v1/auth/passkeys/:id')
-  .patch((ctx: Context) => handleRenameRoute(ctx, 'PATCH:/api/v1/auth/passkeys/:id', renamePasskey))
+app.route('/api/v1/auth/passkeys/:id').patch(async (ctx: Context) => {
+  const operation = 'PATCH:/api/v1/auth/passkeys/:id'
+  const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
+  // Inline per-route cast — see passkey-totp-route-helpers.mts's header comment for why.
+  const body = (await ctx.request.json('100kb')) as { name?: string }
+  const name = validateRenameName(ctx, operation, body)
+  await renamePasskey(currentUser.id, id, name)
+  ctx.setStatus(204)
+})
 
 app.route('/api/v1/auth/passkeys/:id').delete(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/passkeys/:id')
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.params.id, 400, 'id required')
-  const passkeyId = ctx.params.id
-
-  const reAuthToken = await parseOptionalReAuthToken(ctx, 'DELETE:/api/v1/auth/passkeys/:id')
-
-  await deletePasskeyWithMfaProtection(currentUser.id, passkeyId, reAuthToken)
+  const operation = 'DELETE:/api/v1/auth/passkeys/:id'
+  const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
+  // Inline per-route cast — see passkey-totp-route-helpers.mts's header comment for why.
+  const body = ctx.request.is('json')
+    ? ((await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string })
+    : undefined
+  const reAuthToken = body === undefined ? undefined : validateReAuthToken(ctx, operation, body)
+  await deletePasskeyWithMfaProtection(currentUser.id, id, reAuthToken)
   ctx.setStatus(204)
 })

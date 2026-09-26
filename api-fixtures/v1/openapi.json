@@ -8107,6 +8107,152 @@
         "enum": ["inbound", "outbound"],
         "type": "string"
       },
+      "MfaVerificationResponseBody": {
+        "additionalProperties": false,
+        "properties": {
+          "dt": {
+            "additionalProperties": false,
+            "properties": {
+              "payload": {
+                "additionalProperties": false,
+                "properties": {
+                  "dc": {
+                    "const": "attested"
+                  },
+                  "did": {
+                    "type": "string"
+                  }
+                },
+                "required": ["did"],
+                "type": "object"
+              },
+              "token": {
+                "type": "string"
+              }
+            },
+            "required": ["payload", "token"],
+            "type": "object"
+          },
+          "session": {
+            "additionalProperties": false,
+            "properties": {
+              "did": {
+                "type": "string"
+              },
+              "mpl": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "rca": {
+                "type": "number"
+              },
+              "rol": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "sca": {
+                "type": "number"
+              },
+              "sid": {
+                "type": "string"
+              },
+              "tt": {
+                "type": "number"
+              },
+              "uid": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": ["did", "sid", "uid"],
+            "type": "object"
+          },
+          "st": {
+            "additionalProperties": false,
+            "properties": {
+              "payload": {
+                "additionalProperties": false,
+                "properties": {
+                  "did": {
+                    "type": "string"
+                  },
+                  "mpl": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "rca": {
+                    "type": "number"
+                  },
+                  "rol": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "sca": {
+                    "type": "number"
+                  },
+                  "sid": {
+                    "type": "string"
+                  },
+                  "tt": {
+                    "type": "number"
+                  },
+                  "uid": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "required": ["did", "sid", "uid"],
+                "type": "object"
+              },
+              "token": {
+                "type": "string"
+              }
+            },
+            "required": ["payload", "token"],
+            "type": "object"
+          },
+          "user": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["id"],
+            "type": "object"
+          }
+        },
+        "required": ["dt", "session", "st", "user"],
+        "type": "object"
+      },
       "MicrosoftStoreServiceTickets": {
         "additionalProperties": false,
         "properties": {
@@ -25528,150 +25674,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "dt": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "dc": {
-                              "const": "attested"
-                            },
-                            "did": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["did"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "session": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "did": {
-                          "type": "string"
-                        },
-                        "mpl": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "rca": {
-                          "type": "number"
-                        },
-                        "rol": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "sca": {
-                          "type": "number"
-                        },
-                        "sid": {
-                          "type": "string"
-                        },
-                        "tt": {
-                          "type": "number"
-                        },
-                        "uid": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["did", "sid", "uid"],
-                      "type": "object"
-                    },
-                    "st": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "did": {
-                              "type": "string"
-                            },
-                            "mpl": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "rca": {
-                              "type": "number"
-                            },
-                            "rol": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "sca": {
-                              "type": "number"
-                            },
-                            "sid": {
-                              "type": "string"
-                            },
-                            "tt": {
-                              "type": "number"
-                            },
-                            "uid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["did", "sid", "uid"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "user": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id"],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["dt", "session", "st", "user"],
-                  "type": "object"
+                  "$ref": "#/components/schemas/MfaVerificationResponseBody"
                 }
               }
             },
@@ -25881,150 +25884,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "dt": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "dc": {
-                              "const": "attested"
-                            },
-                            "did": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["did"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "session": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "did": {
-                          "type": "string"
-                        },
-                        "mpl": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "rca": {
-                          "type": "number"
-                        },
-                        "rol": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "sca": {
-                          "type": "number"
-                        },
-                        "sid": {
-                          "type": "string"
-                        },
-                        "tt": {
-                          "type": "number"
-                        },
-                        "uid": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["did", "sid", "uid"],
-                      "type": "object"
-                    },
-                    "st": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "did": {
-                              "type": "string"
-                            },
-                            "mpl": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "rca": {
-                              "type": "number"
-                            },
-                            "rol": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "sca": {
-                              "type": "number"
-                            },
-                            "sid": {
-                              "type": "string"
-                            },
-                            "tt": {
-                              "type": "number"
-                            },
-                            "uid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["did", "sid", "uid"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "user": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id"],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["dt", "session", "st", "user"],
-                  "type": "object"
+                  "$ref": "#/components/schemas/MfaVerificationResponseBody"
                 }
               }
             },
@@ -26496,34 +26356,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "page_info": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "end_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "has_next_page": {
-                          "type": "boolean"
-                        },
-                        "start_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["end_cursor", "has_next_page", "start_cursor"],
-                      "type": "object"
+                      "$ref": "#/components/schemas/PageInfo"
                     },
                     "results": {
                       "items": {
@@ -27089,34 +26922,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "page_info": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "end_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "has_next_page": {
-                          "type": "boolean"
-                        },
-                        "start_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["end_cursor", "has_next_page", "start_cursor"],
-                      "type": "object"
+                      "$ref": "#/components/schemas/PageInfo"
                     },
                     "results": {
                       "items": {
