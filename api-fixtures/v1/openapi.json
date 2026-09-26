@@ -17141,16 +17141,6 @@
               }
             ]
           },
-          "verification_token_hash": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
           "verification_token_issued_at": {
             "anyOf": [
               {
@@ -17200,7 +17190,6 @@
           "updated_at",
           "verification_hostname_id",
           "verification_method",
-          "verification_token_hash",
           "verification_token_issued_at",
           "verified_at",
           "verified_by_id"
@@ -61278,16 +61267,6 @@
                               }
                             ]
                           },
-                          "verification_token_hash": {
-                            "anyOf": [
-                              {
-                                "type": "null"
-                              },
-                              {
-                                "type": "string"
-                              }
-                            ]
-                          },
                           "verification_token_issued_at": {
                             "anyOf": [
                               {
@@ -61338,7 +61317,6 @@
                           "updated_at",
                           "verification_hostname_id",
                           "verification_method",
-                          "verification_token_hash",
                           "verification_token_issued_at",
                           "verified_at",
                           "verified_by_id"

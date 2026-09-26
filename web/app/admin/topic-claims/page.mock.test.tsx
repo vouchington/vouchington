@@ -43,7 +43,6 @@ function makeClaim(id: string) {
     revoked_by_id: null,
     revocation_reason: null,
     verification_hostname_id: null,
-    verification_token_hash: null,
     verification_token_issued_at: null,
     domain_verified_at: null,
     created_at: '2026-01-01T00:00:00Z',

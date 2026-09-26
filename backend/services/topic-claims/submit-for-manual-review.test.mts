@@ -36,6 +36,7 @@ describe('submitTopicClaimForManualReview', () => {
 
     expect(updated.submitted_at).not.toBeNull()
     expect(updated.evidence).toBe('Business registration doc attached.')
+    expect(updated).not.toHaveProperty('verification_token_hash')
   })
 
   it('throws 422 when evidence is empty string', async () => {

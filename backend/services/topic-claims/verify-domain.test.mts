@@ -52,6 +52,7 @@ describe('verifyTopicClaimDomain', () => {
     expect(verified.verified_at).not.toBeNull()
     expect(verified.verification_method).toBe('dns_txt')
     expect(verified.domain_verified_at).not.toBeNull()
+    expect(verified).not.toHaveProperty('verification_token_hash')
     expect(fetchWellKnownToken).not.toHaveBeenCalled()
   })
 

@@ -10,3 +10,5 @@
 | `topic_claim` | Verify-Approve  | Admin / Moderator     | `/admin/topic-claims`            | `web/components/admin/topic-claim-review.tsx`               | Admin approves pending claim → verified   |
 | `topic_claim` | Reject          | Admin / Moderator     | `/admin/topic-claims`            | `web/components/admin/topic-claim-review.tsx`               | Admin rejects pending claim with reason   |
 | `topic_claim` | Revoke          | Admin / Moderator     | `/admin/topic-claims`            | `web/components/admin/topic-claim-review.tsx`               | Admin revokes previously verified claim   |
+
+Topic-claim API responses omit `verification_token_hash`. Domain verification still reads that column on the server. The raw token is returned only by the verification-token endpoint.

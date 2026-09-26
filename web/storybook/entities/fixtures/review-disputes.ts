@@ -117,7 +117,6 @@ export const verifiedClaim: TopicClaim = {
   revoked_by_id: null,
   revocation_reason: null,
   verification_hostname_id: 'hostname-1',
-  verification_token_hash: null,
   verification_token_issued_at: null,
   domain_verified_at: null,
   created_at: '2026-05-28T06:00:00.000Z',

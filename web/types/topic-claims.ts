@@ -18,7 +18,6 @@ export interface TopicClaim {
   revoked_by_id: string | null
   revocation_reason: string | null
   verification_hostname_id: string | null
-  verification_token_hash: string | null
   verification_token_issued_at: string | null
   domain_verified_at: string | null
   created_at: string
