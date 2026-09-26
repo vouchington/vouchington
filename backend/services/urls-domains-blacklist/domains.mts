@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { checkBloomFilter } from './bloom-filter.mts'
+import { checkBloomFilters } from './bloom-filter.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import {
   getHostnamePolicyCandidates,
@@ -37,8 +37,7 @@ export async function isUrlBlocked(hostname: string, options: QueryOptions = {})
   const requiresAuthoritativeRead =
     options.client !== undefined || options.query !== undefined || options.readOnly === false
   if (enabled && !requiresAuthoritativeRead) {
-    // Fast path: bloom filter says definitely not in blocklist
-    const bloomResults = await Promise.all(candidates.map(candidate => checkBloomFilter(candidate)))
+    const bloomResults = await checkBloomFilters(candidates)
     if (bloomResults.every(result => result === false)) {
       const localPolicy = await getLocalHostnamePolicy(normalizedHostname, options)
       return localPolicy.blocked

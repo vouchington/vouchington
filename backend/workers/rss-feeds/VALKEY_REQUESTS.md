@@ -4,19 +4,21 @@ Application-level Valkey calls issued **per job** on the shared singleton
 clients. Excludes glide-mq stream ops (XADD/XREADGROUP/XACK on the worker's own
 connections). See `predecessor-issue#4717`.
 
-| Call site (service / file)                                                            | Client       | Operation          | Calls / job |
-| ------------------------------------------------------------------------------------- | ------------ | ------------------ | ----------- |
-| `services/web-risk` → `isLocallyRateLimited` (minute + month windows)                 | rate-limiter | invokeScript (Lua) | 1           |
-| `services/urls-domains-robots` → `fetchRobotsTxtCached`                               | cache        | get                | 1           |
-| `services/urls-domains-blacklist/bloom-filter` → `checkBloomFilter` / `existsIfReady` | cache        | invokeScript (Lua) | 1           |
-| `entityCacheBloomFilters.rss_feed_items.addOrThrow(items)` (per effective chunk)      | cache        | BF.MADD (Lua)      | O(items/5k) |
-| `persistRssFeedCrawlAndMetadata` / `updateRssFeedById` → `invalidate.rss_feeds`       | cache        | invokeScript (Lua) | 1           |
+| Call site (service / file)                                                                 | Client       | Operation            | Calls / job   |
+| ------------------------------------------------------------------------------------------ | ------------ | -------------------- | ------------- |
+| `assertRssFetchHostnameNotRateLimited` → `getDomainRateLimitRemainingMs`                   | rate-limiter | pttl                 | 1             |
+| `assertUrlAllowedByWebRisk` → `isUrlBlocked` → `checkBloomFilters` (every hostname suffix) | bloom        | mexistsIfReady (Lua) | 1             |
+| `checkRssFeedCrawlable` → `fetchRobotsTxtCached`                                           | cache        | get                  | 1             |
+| `upsertRssFeedItems` → `entityCacheBloomFilters.rss_feed_items.add` (per 5k chunk)         | bloom        | BF.MADD (Lua)        | O(items/5k)   |
+| `upsertRssFeedItems` → `invalidate.rss_feed_items` (per 1000 ids)                          | cache        | invokeScript (Lua)   | O(items/1000) |
+| `persistRssFeedCrawlAndMetadata` → `updateRssFeedById` → `invalidate.rss_feeds`            | cache        | invokeScript (Lua)   | 1             |
 
-**Total per job:** 1 rate-limiter + 3 cache fixed + O(items/5k) cache fan-out
+**Total per job:** 1 rate-limiter `pttl` + 1 bloom `mexistsIfReady` + 1 cache `get` + 1 cache `invalidate.rss_feeds`, plus O(items/5k) bloom adds and O(items/1000) item-cache invalidations when the fetch upserts items.
 
 ## Notes
 
-- The fixed rate-limiter op checks both minute and month Web Risk windows in one Lua call. Robots.txt + bloom-filter cache ops are incurred on every fetch job regardless of item count.
-- The `rss_feed_items` bloom filter `addOrThrow` scales with the number of new items fetched: `valkyries` clamps Lua chunks to 5k items per BF.MADD request.
-- All cache ops land on `cacheValkeyClient`; rate-limiter ops land on `rateLimiterValkeyClient`.
-- **Conditional:** When web-risk is enabled and no cached clean verdict exists, `assertUrlAllowedByWebRisk` reads the clean-verdict key, checks the provider cooldown key, and writes the clean-verdict key — up to 3 more `rateLimiterValkeyClient` ops (see `services/web-risk/state.mts`).
+- `getDomainRateLimitRemainingMs` runs on every crawlable fetch, before Web Risk. A positive TTL throws `CrawlerRateLimitError` and skips the later calls.
+- `isUrlBlocked` sends every hostname suffix (`www.example.com`, `example.com`, `com`, …) in one `mexistsIfReady` on `bloomValkeyClient`. A negative for every suffix skips the blocklist table and reads only the local hostname policy. A missing filter or any possible hit falls through to PostgreSQL.
+- Robots.txt is one cache `get` on a hit. A miss, or `ignoreRobotsRules`, also calls `checkDomainBlacklisted` → `checkBloomFilter` (one `existsIfReady` on `bloomValkeyClient`). A robots cache miss then `set`s the fetched body (1 more cache op).
+- Item bloom adds use `entityCacheBloomFilters.rss_feed_items.add`, which absorbs errors and chunks BF.MADD at 5k items on `bloomValkeyClient`. Item cache invalidation is one cache script per 1000 ids.
+- Web Risk is off unless `web-risk-config.enabled` is set. When it is on and no cached clean verdict exists, `assertUrlAllowedByWebRisk` can add a clean-verdict `get`, a cooldown `pttl`, one combined minute+month `invokeScript`, and a clean-verdict `set` on `rateLimiterValkeyClient`.
