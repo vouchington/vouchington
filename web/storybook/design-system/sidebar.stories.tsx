@@ -26,7 +26,7 @@ type Story = StoryObj<typeof meta>
 export const Expanded: Story = {
   render: () => (
     <SidebarProvider>
-      <Sidebar collapsible='none'>
+      <Sidebar collapsible='icon'>
         <SidebarHeader>
           <SidebarInput
             aria-label='Search navigation'

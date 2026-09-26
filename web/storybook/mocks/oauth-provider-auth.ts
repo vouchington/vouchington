@@ -1,37 +1,44 @@
 import { useRuntimePublicConfig } from '@/lib/runtime-public-config-context'
 
-const readyAuth = {
-  isAvailable: true,
-  isLoaded: true,
-  login: async () => 'storybook-oauth-token',
+function readyAuth(isAvailable: boolean) {
+  return {
+    isAvailable,
+    isLoaded: isAvailable,
+    login: async () => 'storybook-oauth-token',
+  }
 }
 
 export function useAppleAuth() {
-  return readyAuth
+  const { appleClientId } = useRuntimePublicConfig()
+  return readyAuth(Boolean(appleClientId))
 }
 
 export function useFacebookSDK() {
   const { facebookAppId } = useRuntimePublicConfig()
-  const isAvailable = Boolean(facebookAppId)
-  return { ...readyAuth, isAvailable, isLoaded: isAvailable }
+  return readyAuth(Boolean(facebookAppId))
 }
 
 export function useGithubAuth() {
-  return readyAuth
+  const { githubClientId } = useRuntimePublicConfig()
+  return readyAuth(Boolean(githubClientId))
 }
 
 export function useGoogleAuth() {
-  return readyAuth
+  const { googleClientId } = useRuntimePublicConfig()
+  return readyAuth(Boolean(googleClientId))
 }
 
 export function useLinkedInAuth() {
-  return readyAuth
+  const { linkedinClientId } = useRuntimePublicConfig()
+  return readyAuth(Boolean(linkedinClientId))
 }
 
 export function useMicrosoftAuth() {
-  return readyAuth
+  const { microsoftClientId } = useRuntimePublicConfig()
+  return readyAuth(Boolean(microsoftClientId))
 }
 
 export function useXAuth() {
-  return readyAuth
+  const { xClientId } = useRuntimePublicConfig()
+  return readyAuth(Boolean(xClientId))
 }
