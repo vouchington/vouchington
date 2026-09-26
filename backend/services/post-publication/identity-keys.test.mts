@@ -24,7 +24,7 @@ import {
   getTestPublicationProjectionIdentity,
 } from './test-fixtures.mts'
 import { recordPostPublicationChange } from './capture.mts'
-import { retainAppliedProjectionIdentity } from './shadow-repair.mts'
+import { retainPostPublicationKeys } from './retained-key-writes.mts'
 
 describe('post publication retained identity keys', () => {
   it('coalesces A to B to C and drains a NULL first cursor page once', async () => {
@@ -107,14 +107,14 @@ describe('post publication retained identity keys', () => {
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected high-fanout identity work lease')
     await using identityQuery = await beginTransaction()
-    await retainAppliedProjectionIdentity(identityQuery, claimed.id, {
-      topicIds: [],
-      identityKeys: Array.from({ length: 1_001 }, (_, index) => ({
-        kind: 'rss_feed',
-        value: `00000000-0000-7000-8000-${String(index).padStart(12, '0')}`,
+    await retainPostPublicationKeys(
+      identityQuery,
+      claimed.id,
+      Array.from({ length: 1_001 }, (_, index) => ({
+        kind: 'identity_rss_feed' as const,
+        uuidValue: `00000000-0000-7000-8000-${String(index).padStart(12, '0')}`,
       })),
-      sitemapTargets: [],
-    })
+    )
     await identityQuery.commit()
 
     const result = await reconcilePostPublicationDirtyWork(

@@ -6,27 +6,31 @@ Typed exact projection identities for a publication snapshot; delete explicitly 
 
 Not partitioned — growth: unbounded.
 
-| Column        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                           |
-| ------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
-| `id`          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                   |
-| `snapshot_id` | `uuid`                     | no       |                              |          |           |           | Owning snapshot; restrict deletion until bounded key reclamation. |
-| `kind`        | `text`                     | no       |                              |          |           |           | Discriminant selecting the exact typed identity representation.   |
-| `uuid_value`  | `uuid`                     | yes      |                              |          |           |           | UUID identity for topics, authors, communities or feeds.          |
-| `text_value`  | `text`                     | yes      |                              |          |           |           | Username or slug identity.                                        |
-| `post_type`   | `post_types`               | yes      |                              |          |           |           | Post type of a sitemap tuple.                                     |
-| `day`         | `date`                     | yes      |                              |          |           |           | UTC publication day of a sitemap tuple.                           |
-| `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
+| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                    |
+| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
+| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                            |
+| `snapshot_id`     | `uuid`                     | no       |                              |          |           |           | Owning snapshot; restrict deletion until bounded key reclamation.          |
+| `topic_key`       | `uuid`                     | yes      |                              |          |           |           | Immutable topic key projection value; never joined to a live entity.       |
+| `author_key`      | `uuid`                     | yes      |                              |          |           |           | Immutable author key projection value; never joined to a live entity.      |
+| `author_username` | `text`                     | yes      |                              |          |           |           | Immutable author username projection value; never joined to a live entity. |
+| `community_key`   | `uuid`                     | yes      |                              |          |           |           | Immutable community key projection value; never joined to a live entity.   |
+| `community_slug`  | `text`                     | yes      |                              |          |           |           | Immutable community slug projection value; never joined to a live entity.  |
+| `post_slug`       | `text`                     | yes      |                              |          |           |           | Immutable post slug projection value; never joined to a live entity.       |
+| `rss_feed_key`    | `uuid`                     | yes      |                              |          |           |           | Immutable rss feed key projection value; never joined to a live entity.    |
+| `post_type`       | `post_types`               | yes      |                              |          |           |           | Post type of a sitemap tuple.                                              |
+| `day`             | `date`                     | yes      |                              |          |           |           | UTC publication day of a sitemap tuple.                                    |
+| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                            |
 
-**Primary key:** `PRIMARY KEY (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day)`
+**Primary key:** `PRIMARY KEY (snapshot_id, id) INCLUDE (topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)`
 
 **Unique constraints:**
 
-- `post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key`: `UNIQUE NULLS NOT DISTINCT (snapshot_id, kind, uuid_value, text_value, post_type, day)`
+- `post_publication_identity_sna_snapshot_id_topic_key_author__key`: `UNIQUE NULLS NOT DISTINCT (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)`
 
 **Check constraints:**
 
-- `post_publication_identity_snapshot_keys_check`: `CHECK ((((kind = ANY (ARRAY['topic'::text, 'author'::text, 'community'::text, 'rss_feed'::text])) AND (uuid_value IS NOT NULL) AND (text_value IS NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = ANY (ARRAY['author_username'::text, 'community_slug'::text, 'post_slug'::text])) AND (uuid_value IS NULL) AND (text_value IS NOT NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = 'sitemap_target'::text) AND (uuid_value IS NULL) AND (text_value IS NULL) AND (post_type IS NOT NULL) AND (day IS NOT NULL))))`
-- `post_publication_identity_snapshot_keys_kind_check`: `CHECK ((kind = ANY (ARRAY['topic'::text, 'author'::text, 'author_username'::text, 'community'::text, 'community_slug'::text, 'post_slug'::text, 'rss_feed'::text, 'sitemap_target'::text])))`
+- `post_publication_identity_snapshot_keys_check`: `CHECK ((num_nonnulls(topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type) = 1))`
+- `post_publication_identity_snapshot_keys_check1`: `CHECK (((post_type IS NULL) = (day IS NULL)))`
 
 **Foreign keys:**
 
@@ -34,8 +38,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key`: `CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, kind, uuid_value, text_value, post_type, day) NULLS NOT DISTINCT`
-- `post_publication_identity_snapshot_keys_pkey`: `CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day)`
+- `post_publication_identity_sna_snapshot_id_topic_key_author__key`: `CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_topic_key_author__key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day) NULLS NOT DISTINCT`
+- `post_publication_identity_snapshot_keys_pkey`: `CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id) INCLUDE (topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)`
 
 **Triggers:**
 _none_

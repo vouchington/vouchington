@@ -6,24 +6,24 @@ Immutable-at-acceptance bounded identity materialization attempts; intentionally
 
 Not partitioned — growth: unbounded.
 
-| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
-| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
-| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                     |
-| `dirty_work_id`           | `uuid`                     | no       |                              |          |           |           | Work identifier retained after acknowledgement; not a cascading relation.           |
-| `generation`              | `bigint`                   | no       |                              |          |           |           | Captured work generation fencing this attempt.                                      |
-| `post_id`                 | `uuid`                     | no       |                              |          |           |           | Candidate identifier retained after deletion.                                       |
-| `eligibility_fingerprint` | `text`                     | no       |                              |          |           |           | Scalar candidate and root eligibility version.                                      |
-| `is_public`               | `boolean`                  | no       |                              |          |           |           | Eligibility captured for this attempt.                                              |
-| `source_cursor_kind`      | `text`                     | yes      |                              |          |           |           | Native source branch advanced by the last atomically staged physical row page.      |
-| `source_cursor_value`     | `text`                     | yes      |                              |          |           |           | Last native branch row key, independent from emitted or deduplicated identities.    |
-| `completed_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Exact source comparison and scalar validation completion time.                      |
-| `abandoned_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Source drift or supersession invalidated this attempt.                              |
-| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
-| `receipt_cursor_kind`     | `text`                     | yes      |                              |          |           |           | Typed snapshot keys or compatibility JSON array branch for prior receipt retention. |
-| `receipt_cursor_value`    | `text`                     | yes      |                              |          |           |           | Last typed key ID or compatibility array ordinal retained atomically.               |
-| `receipt_retained_at`     | `timestamp with time zone` | yes      |                              |          |           |           | EOF of prior receipt retention before current source staging.                       |
-| `receipt_source_version`  | `text`                     | yes      |                              |          |           |           | Accepted prior receipt version checked on every stage.                              |
-| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
+| Column                    | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                            |
+| ------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------- |
+| `id`                      | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                    |
+| `dirty_work_id`           | `uuid`                     | yes      |                              |          |           |           | Live owning work FK; acknowledgement clears it without deleting accepted storage.  |
+| `generation`              | `bigint`                   | no       |                              |          |           |           | Captured work generation fencing this attempt.                                     |
+| `post_identity_id`        | `uuid`                     | no       |                              |          |           |           | Concrete durable post identity FK; live post access follows the bridge post_id FK. |
+| `eligibility_fingerprint` | `text`                     | no       |                              |          |           |           | Scalar candidate and root eligibility version.                                     |
+| `is_public`               | `boolean`                  | no       |                              |          |           |           | Eligibility captured for this attempt.                                             |
+| `source_cursor_kind`      | `text`                     | yes      |                              |          |           |           | Native source branch advanced by the last atomically staged physical row page.     |
+| `source_cursor_value`     | `text`                     | yes      |                              |          |           |           | Last native branch row key, independent from emitted or deduplicated identities.   |
+| `completed_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Exact source comparison and scalar validation completion time.                     |
+| `abandoned_at`            | `timestamp with time zone` | yes      |                              |          |           |           | Source drift or supersession invalidated this attempt.                             |
+| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                    |
+| `receipt_cursor_kind`     | `text`                     | yes      |                              |          |           |           | Snapshot-key source branch for prior receipt retention.                            |
+| `receipt_cursor_value`    | `text`                     | yes      |                              |          |           |           | Last snapshot key ID retained atomically.                                          |
+| `receipt_retained_at`     | `timestamp with time zone` | yes      |                              |          |           |           | EOF of prior receipt retention before current source staging.                      |
+| `receipt_source_version`  | `text`                     | yes      |                              |          |           |           | Accepted prior receipt version checked on every stage.                             |
+| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -37,13 +37,15 @@ _none_
 - `post_publication_identity_snapshots_generation_check`: `CHECK ((generation > 0))`
 
 **Foreign keys:**
-_none_
+
+- `fk_post_publication_identity_snapshots__post_identity`: `FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT`
+- `post_publication_identity_snapshots_dirty_work_id_fkey`: `FOREIGN KEY (dirty_work_id) REFERENCES post_publication_dirty_work(id) ON DELETE SET NULL`
 
 **Indexes:**
 
-- `idx_post_publication_identity_snapshots__post_completed`: `CREATE INDEX idx_post_publication_identity_snapshots__post_completed ON public.post_publication_identity_snapshots USING btree (post_id, completed_at, id)`
+- `idx_post_publication_identity_snapshots__post_completed`: `CREATE INDEX idx_post_publication_identity_snapshots__post_completed ON public.post_publication_identity_snapshots USING btree (post_identity_id, completed_at, id)`
 - `post_publication_identity_snapshots_pkey`: `CREATE UNIQUE INDEX post_publication_identity_snapshots_pkey ON public.post_publication_identity_snapshots USING btree (id)`
-- `uq_post_publication_identity_snapshots__attempt_post`: `CREATE UNIQUE INDEX uq_post_publication_identity_snapshots__attempt_post ON public.post_publication_identity_snapshots USING btree (dirty_work_id, generation, post_id, id)`
+- `uq_post_publication_identity_snapshots__attempt_post`: `CREATE UNIQUE INDEX uq_post_publication_identity_snapshots__attempt_post ON public.post_publication_identity_snapshots USING btree (dirty_work_id, generation, post_identity_id, id)`
 
 **Triggers:**
 

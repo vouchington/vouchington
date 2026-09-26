@@ -260,7 +260,6 @@ describe('post publication reconciliation', () => {
       sitemap_day: new Date().toISOString().slice(0, 10),
       is_public: true,
       eligibility_fingerprint: 'stale-receipt',
-      projection_identity: { topicIds: [], identityKeys: [], sitemapTargets: [] },
     }
     await expect(acknowledgePostPublicationProjectionReceipts(claimed, [stalePost])).resolves.toBe(
       false,

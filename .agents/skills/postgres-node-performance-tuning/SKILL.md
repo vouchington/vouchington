@@ -15,6 +15,11 @@ Claude Code and Codex load `vouchington-database:postgres-node-performance-tunin
 Read [`backend/data-stores/psql/CLAUDE.md`](../../../backend/data-stores/psql/CLAUDE.md) and the
 nearest owning `CLAUDE.md` before changing a query, index, connection route, or migration.
 
+Before optimizing a proposed schema, check identifier/relationship shape and deletion semantics
+against those instructions. Performance evidence cannot justify a prohibited schema pattern or
+an assumed compatibility window. Use the [planning constraint checks](../planning/SKILL.md#vouchington-additions)
+to resolve historical-identity retention conflicts before choosing foreign-key behavior.
+
 - Use `read()`, `write()`, and `beginTransaction()` from `@data-stores/psql`; do not introduce raw
   `pg.Pool` ownership in service code. Own a transaction with
   `await using transaction = await beginTransaction()`, call `await transaction.commit()` only on

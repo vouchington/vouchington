@@ -115,15 +115,12 @@ describe('native publication identity page progress', () => {
       expect.arrayContaining([expect.objectContaining({ kind: 'author', uuidValue: user.id })]),
     )
   })
-  it('advances duplicate legacy receipt ordinals while retaining the exact unique union', async () => {
+  it('deduplicates receipt snapshot keys before native paging and retains the exact union', async () => {
     const { candidate, work } = await createTestPublicationSnapshotWork()
     const slug = `duplicate-${candidate.id}`
-    await seedTestPublicationReceipt(candidate.id, 'ordinal-progress', {
+    await seedTestPublicationReceipt(candidate.id, 'snapshot-progress', {
       topicIds: [],
-      identityKeys: Array.from({ length: 5 }, () => ({
-        kind: 'post_slug',
-        value: slug,
-      })),
+      identityKeys: Array.from({ length: 5 }, () => ({ kind: 'post_slug', value: slug })),
       sitemapTargets: [{ postType: 'discussion', day: '2026-01-01' }],
     })
     await using query = await beginTransaction()
@@ -133,47 +130,29 @@ describe('native publication identity page progress', () => {
       candidate.id,
       null,
       null,
-      2,
+      1,
     )
-    expect(first.keys).toHaveLength(2)
-    expect(first).toMatchObject({
-      cursorKind: 'identityKeys',
-      cursorValue: '1',
-      complete: false,
-    })
+    expect(first.keys).toHaveLength(1)
+    expect(first.cursorKind).toBe('typed')
+    expect(first.cursorValue).toEqual(expect.any(String))
+    expect(first.complete).toBe(false)
     const second = await retainStoredPublicationIdentityPage(
       query,
       work.id,
       candidate.id,
       first.cursorKind,
       first.cursorValue,
-      2,
+      1,
     )
-    expect(second).toMatchObject({
-      cursorKind: 'identityKeys',
-      cursorValue: '3',
-      complete: false,
-    })
-    const third = await retainStoredPublicationIdentityPage(
+    expect(second.keys).toHaveLength(1)
+    expect(second.cursorValue).not.toBe(first.cursorValue)
+    const eof = await retainStoredPublicationIdentityPage(
       query,
       work.id,
       candidate.id,
       second.cursorKind,
       second.cursorValue,
-      2,
-    )
-    expect(third).toMatchObject({
-      cursorKind: 'sitemapTargets',
-      cursorValue: '0',
-      complete: false,
-    })
-    const eof = await retainStoredPublicationIdentityPage(
-      query,
-      work.id,
-      candidate.id,
-      third.cursorKind,
-      third.cursorValue,
-      2,
+      1,
     )
     expect(eof.complete).toBe(true)
     await query.commit()

@@ -12,7 +12,7 @@ import {
   analyzePublicationSnapshotKeyPageForTest,
   analyzePublicationCleanupPageForTest,
   analyzePublicationFeedItemPageForTest,
-  countPublicationFeedSourcesForTest,
+  explainSparsePublicationFeedSourcesForTest,
   publicationPhysicalRowsWithinBudget as physicalRows,
   publicationMatchesRelation as matchesRelation,
   publicationScanIndexes as scanIndexes,
@@ -30,7 +30,6 @@ import { listFeedRows } from './identity-feed-paging.mts'
 import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
-import { activatePostPublicationTypedProtocol } from './identity-protocol.mts'
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { cleanupPostPublicationIdentitySnapshots } from './snapshot-cleanup.mts'
@@ -44,7 +43,6 @@ const sparseFeedPlans = new Map<string, { plan: unknown; cardinality: number }>(
 
 describe('publication identity physical page query plans', () => {
   beforeAll(async () => {
-    await activatePostPublicationTypedProtocol()
     const { work, candidate, user } = await createTestPublicationSnapshotWork()
     const fixtures = await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 1001)
     slugQuery = await captureAnnotatedQuery(
@@ -128,13 +126,10 @@ describe('publication identity physical page query plans', () => {
       await listFeedRows(query, feedFixture.candidate.id, null, 100)
     })
     for (const mode of ['force_custom_plan', 'force_generic_plan'] as const) {
-      const plan = await explainCapturedTestQuery(
-        'publication-sparse-feed-item-page',
-        feedItemQuery,
+      sparseFeedPlans.set(
         mode,
-        analyzePublicationFeedItemPageForTest,
+        await explainSparsePublicationFeedSourcesForTest(feedItemQuery, mode),
       )
-      sparseFeedPlans.set(mode, { plan, cardinality: await countPublicationFeedSourcesForTest() })
     }
     await insertTestPublicationAdditionalFeedItems(
       feedFixture.candidate.id,

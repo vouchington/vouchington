@@ -3,6 +3,7 @@ import {
   recordPostPublicationChange,
   retainPostPublicationTopicAliasIdentity,
   retainTopicAliasPublicationPostImpacts,
+  prepareTopicAliasPublicationIdentityBridges,
 } from '@services/post-publication'
 
 type TopicAliasOwnershipChange = {
@@ -33,6 +34,7 @@ export async function recordTopicAliasPublicationChanges(
 
   const aliasIds = [...changesByAliasId.keys()].toSorted()
   if (aliasIds.length === 0) return
+  await prepareTopicAliasPublicationIdentityBridges(query, aliasIds)
   for (const aliasId of aliasIds) {
     const retained = changesByAliasId.get(aliasId)!
     // oxlint-disable-next-line no-await-in-loop -- one coalesced durable alias scope per mutation.

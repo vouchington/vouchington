@@ -7,7 +7,6 @@ describe('publication cleanup schema policy', () => {
   it('declares fresh publication columns in committed snapshot ordinal order', async () => {
     const tables = await readPublicationMigrationColumnOrders()
     expect(tables.map(table => table.table)).toEqual([
-      'post_publication_identity_protocol',
       'post_publication_identity_cleanup_progress',
       'post_publication_identity_snapshots',
       'post_publication_identity_snapshot_keys',

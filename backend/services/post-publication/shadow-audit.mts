@@ -1,16 +1,6 @@
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import { recordPostPublicationChange } from './capture.mts'
 import sql from 'sql-template-strings'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
-import {
-  publicationProjectionIdentitySql,
-  type PublicationProjectionIdentity,
-} from './projection-identity.mts'
-import { retainAppliedProjectionIdentity } from './shadow-repair.mts'
-import {
-  isPostPublicationTypedProtocolActive,
-  markPostPublicationTypedProtocol,
-} from './identity-protocol.mts'
 import { publicationSnapshotMismatchSql } from './identity-source.mts'
 import {
   makeShadowAuditResult,
@@ -26,9 +16,6 @@ export type ShadowAuditCandidate = {
   has_community: boolean
   has_rss_source: boolean
   is_discrepant: boolean
-  applied_identity: PublicationProjectionIdentity | null
-  current_identity: PublicationProjectionIdentity
-  typed: boolean
 }
 /** Bounded operator audit: dry runs are read-only; repairs record post transitions before advancing the checkpoint. */
 export async function runPostPublicationShadowAudit(options: {
@@ -44,7 +31,6 @@ export async function runPostPublicationShadowAudit(options: {
   const checkpointName = options.checkpointName ?? SHADOW_AUDIT_CHECKPOINT
   if (options.dryRun) return inspectPostPublicationShadowAudit(limit, options.cursor ?? null)
   await using query = await beginTransaction()
-  await markPostPublicationTypedProtocol(query)
   const result = await repairPostPublicationShadowAudit(query, limit, checkpointName)
   await query.commit()
   return result
@@ -82,18 +68,7 @@ async function retainShadowAuditCandidate(
   query: TransactionQuery,
   candidate: ShadowAuditCandidate,
 ): Promise<void> {
-  if (candidate.typed) {
-    await recordPostPublicationShadowRepair(query, candidate.id)
-    return
-  }
-  const work = await recordPostPublicationChange(query, {
-    scope: { type: 'post', postId: candidate.id },
-    reason: 'post_updated',
-  })
-  await Promise.all([
-    retainAppliedProjectionIdentity(query, work.id, candidate.applied_identity),
-    retainAppliedProjectionIdentity(query, work.id, candidate.current_identity),
-  ])
+  await recordPostPublicationShadowRepair(query, candidate.id)
 }
 
 async function resetShadowAuditCheckpoint(
@@ -129,54 +104,44 @@ async function listShadowAuditCandidates(
   limit: number,
 ): Promise<ShadowAuditCandidate[]> {
   const executor = query ?? write
-  const typed = await isPostPublicationTypedProtocolActive(query)
   const compare = sql`/* listPostPublicationShadowAuditCandidates */
     WITH source_ids AS MATERIALIZED (
-      SELECT id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids
+      SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids
       UNION
-      SELECT post_id AS id FROM (SELECT post_id FROM post_publication_projection_receipts WHERE (${checkpoint}::uuid IS NULL OR post_id > ${checkpoint}::uuid) ORDER BY post_id LIMIT ${limit}) receipt_ids
+      SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id
     ), source_page AS MATERIALIZED (
-      SELECT id FROM source_ids
+      SELECT id, post_id FROM source_ids
       ORDER BY id LIMIT ${limit}
     )
     SELECT source_page.id, candidate.created_by_id IS NOT NULL AS has_author,
       root.community_id IS NOT NULL AS has_community,
       EXISTS (SELECT 1 FROM post__stories ps JOIN rss_feed_items item ON item.story_id = ps.story_id
         JOIN rss_feed_item_sources source ON source.rss_feed_item_id = item.id WHERE ps.post_id = root.id) AS has_rss_source,
-      ${typed}::boolean AS typed, `
-  compare.append(typed ? sql`NULL::jsonb AS applied_identity, ` : sql`receipt.applied_identity, `)
-  compare.append(sql`CASE WHEN candidate.id IS NULL THEN
-      '{"topicIds": [], "identityKeys": [], "sitemapTargets": []}'::jsonb ELSE `)
-  compare.append(
-    typed
-      ? sql`'{"topicIds":[],"identityKeys":[],"sitemapTargets":[]}'::jsonb`
-      : publicationProjectionIdentitySql(),
-  ).append(sql` END AS current_identity,
-      (candidate.id IS NULL OR receipt.post_id IS NULL OR receipt.eligibility_fingerprint IS DISTINCT FROM `)
-  compare.append(publicationEligibilityFingerprintSql(typed))
-  if (typed)
-    compare
-      .append(sql` OR receipt.applied_snapshot_id IS NULL OR `)
-      .append(publicationSnapshotMismatchSql(sql`source_page.id`, sql`receipt.applied_snapshot_id`))
-  else
-    compare
-      .append(sql` OR receipt.applied_identity IS DISTINCT FROM `)
-      .append(publicationProjectionIdentitySql())
+      (candidate.id IS NULL OR receipt.post_identity_id IS NULL OR receipt.eligibility_fingerprint IS DISTINCT FROM `
+  compare.append(publicationEligibilityFingerprintSql())
+  compare
+    .append(sql` OR `)
+    .append(
+      publicationSnapshotMismatchSql(sql`source_page.post_id`, sql`receipt.applied_snapshot_id`),
+    )
   compare.append(sql` OR EXISTS (
         SELECT 1 FROM post_publication_dirty_work work
+        LEFT JOIN post_publication_post_identities scope_post ON scope_post.id = work.post_id
+        LEFT JOIN post_publication_author_identities scope_author ON scope_author.id = work.author_user_id
+        LEFT JOIN post_publication_community_identities scope_community ON scope_community.id = work.community_id
         LEFT JOIN post_publication_dirty_work_keys retained ON retained.dirty_work_id = work.id
-          AND retained.kind IN ('impact_post', 'impact_community')
-        WHERE work.post_id = candidate.id
-          OR (retained.kind = 'impact_post'
-            AND (retained.uuid_value = candidate.id OR retained.uuid_value = root.id))
-          OR work.author_user_id = root.created_by_id
-          OR work.community_id = root.community_id
-          OR (retained.kind = 'impact_community' AND retained.uuid_value = root.community_id)
+        LEFT JOIN post_publication_post_identities retained_post ON retained_post.id = retained.impact_post_identity_id
+        LEFT JOIN post_publication_community_identities retained_community ON retained_community.id = retained.impact_community_identity_id
+        WHERE scope_post.post_id = candidate.id
+          OR (retained_post.post_id = candidate.id OR retained_post.post_id = root.id)
+          OR scope_author.user_id = root.created_by_id
+          OR scope_community.community_id = root.community_id
+          OR retained_community.community_id = root.community_id
       )) AS is_discrepant
     FROM source_page
-    LEFT JOIN posts candidate ON candidate.id = source_page.id
+    LEFT JOIN posts candidate ON candidate.id = source_page.post_id
     LEFT JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)
-    LEFT JOIN post_publication_projection_receipts receipt ON receipt.post_id = source_page.id
+    LEFT JOIN post_publication_projection_receipts receipt ON receipt.post_identity_id = source_page.id
     ORDER BY source_page.id`)
   const { rows } = await executor<ShadowAuditCandidate>(compare)
   return rows

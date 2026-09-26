@@ -78,6 +78,7 @@ export const RSS_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
  * explicit UUIDv7 ranges are added only after measured pressure.
  */
 export const POST_PUBLICATION_PARTITION_TABLES: string[] = [
+  'post_publication_post_identities',
   'post_publication_projection_receipts',
   'post_publication_dirty_work_keys',
 ]

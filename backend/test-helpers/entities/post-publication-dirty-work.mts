@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { retainedKeyPayloadSql } from '../../services/post-publication/concrete-key-columns.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PostPublicationReason } from '../../services/post-publication/types.mts'
 import sql from 'sql-template-strings'
@@ -107,7 +108,7 @@ export async function countTestPostPublicationIdentityKeysForRssFeeds(
     FROM post_publication_dirty_work_keys keys
     JOIN post_publication_dirty_work work ON work.id = keys.dirty_work_id
     WHERE work.rss_feed_id = ANY(${rssFeedIds}::uuid[])
-      AND keys.kind = 'identity_rss_feed'
+      AND keys.rss_feed_key IS NOT NULL
   `)
   return Number(rows[0]?.count ?? 0)
 }
@@ -142,10 +143,9 @@ export async function isTestAuthorPublicationLifecycleLockWaiting(
 export async function listTestPostPublicationImpactPostIds(dirtyWorkId: string): Promise<string[]> {
   const { rows } = await read<{ uuid_value: string }>(sql`
     /* listTestPostPublicationImpactPostIds */
-    SELECT uuid_value
-    FROM post_publication_dirty_work_keys
-    WHERE dirty_work_id = ${dirtyWorkId} AND kind = 'impact_post'
-    ORDER BY uuid_value
+    SELECT impact_post_identity_id AS uuid_value FROM post_publication_dirty_work_keys
+    WHERE dirty_work_id = ${dirtyWorkId} AND impact_post_identity_id IS NOT NULL
+    ORDER BY impact_post_identity_id
   `)
   return rows.map(row => row.uuid_value)
 }
@@ -155,10 +155,9 @@ export async function listTestPostPublicationImpactTopicIds(
 ): Promise<string[]> {
   const { rows } = await read<{ uuid_value: string }>(sql`
     /* listTestPostPublicationImpactTopicIds */
-    SELECT uuid_value
-    FROM post_publication_dirty_work_keys
-    WHERE dirty_work_id = ${dirtyWorkId} AND kind = 'impact_topic'
-    ORDER BY uuid_value
+    SELECT topic_key AS uuid_value FROM post_publication_dirty_work_keys
+    WHERE dirty_work_id = ${dirtyWorkId} AND topic_key IS NOT NULL
+    ORDER BY topic_key
   `)
   return rows.map(row => row.uuid_value)
 }
@@ -168,10 +167,9 @@ export async function listTestPostPublicationImpactCommunityIds(
 ): Promise<string[]> {
   const { rows } = await read<{ uuid_value: string }>(sql`
     /* listTestPostPublicationImpactCommunityIds */
-    SELECT uuid_value
-    FROM post_publication_dirty_work_keys
-    WHERE dirty_work_id = ${dirtyWorkId} AND kind = 'impact_community'
-    ORDER BY uuid_value
+    SELECT impact_community_identity_id AS uuid_value FROM post_publication_dirty_work_keys
+    WHERE dirty_work_id = ${dirtyWorkId} AND impact_community_identity_id IS NOT NULL
+    ORDER BY impact_community_identity_id
   `)
   return rows.map(row => row.uuid_value)
 }
@@ -184,12 +182,15 @@ export async function listTestPostPublicationRetainedTextKeys(
     | 'identity_community_slug'
     | 'identity_topic_alias',
 ): Promise<string[]> {
-  const { rows } = await read<{ text_value: string }>(sql`
+  const { rows } = await read<{ text_value: string }>(
+    `
     /* listTestPostPublicationRetainedTextKeys */
     SELECT text_value
-    FROM post_publication_dirty_work_keys
-    WHERE dirty_work_id = ${dirtyWorkId} AND kind = ${kind}
+    FROM (SELECT key.id, key.dirty_work_id, ${retainedKeyPayloadSql()} FROM post_publication_dirty_work_keys key) concrete_keys
+    WHERE dirty_work_id = $1 AND kind = $2
     ORDER BY text_value
-  `)
+  `,
+    [dirtyWorkId, kind],
+  )
   return rows.map(row => row.text_value)
 }

@@ -1,7 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
-import { markPostPublicationTypedProtocol } from './identity-protocol.mts'
 import { getOrCreateSnapshot, retainSnapshotReceiptPage } from './identity-snapshots.mts'
 
 /** Old receipt identities enter the effect stream before an orphan receipt can be accepted away. */
@@ -12,7 +11,6 @@ export async function retainOrphanPublicationIdentities(
 ): Promise<boolean> {
   if (!postIds.length) return true
   await using query = await beginTransaction()
-  await markPostPublicationTypedProtocol(query)
   const { rows } =
     await query(sql`/* lockOrphanPublicationIdentityLease */ SELECT id FROM post_publication_dirty_work
     WHERE id = ${work.id} AND generation = ${work.generation} AND lease_token = ${work.lease_token}

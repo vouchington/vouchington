@@ -1,4 +1,21 @@
 import type { TransactionQuery } from '@data-stores/psql'
+import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
+
+export async function getAuthorDeletionPublicationTargets(
+  query: TransactionQuery,
+  authorUserId: string,
+  afterPostId: string | null,
+  batchSize = POST_PUBLICATION_CAPTURE_BATCH_SIZE,
+): Promise<Array<{ postId: string; isAuthored: boolean }>> {
+  const { rows } = await query<{ id: string; is_authored: boolean }>(
+    `/* getAuthorDeletionPublicationTargets */ SELECT post.id, post.created_by_id = $1::uuid AS is_authored
+    FROM posts post WHERE (post.created_by_id = $1::uuid OR EXISTS (
+      SELECT 1 FROM post_topic_alias_sources source WHERE source.post_id = post.id AND source.contributor_id = $1::uuid))
+      AND ($2::uuid IS NULL OR post.id > $2::uuid) ORDER BY post.id LIMIT $3`,
+    [authorUserId, afterPostId, batchSize],
+  )
+  return rows.map(row => ({ postId: row.id, isAuthored: row.is_authored }))
+}
 
 export type SourceCandidate = { id: string; post_id: string; topic_id: string | null }
 

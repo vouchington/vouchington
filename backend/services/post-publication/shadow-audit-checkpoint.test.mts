@@ -14,10 +14,10 @@ const shadowAuditSource = readFileSync(new URL('./shadow-audit.mts', import.meta
 describe('post publication shadow audit checkpoints', () => {
   it('bounds both indexed audit sources before union materialization', () => {
     expect(shadowAuditSource).toContain(
-      'SELECT id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids',
+      'SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids',
     )
     expect(shadowAuditSource).toContain(
-      'SELECT post_id AS id FROM (SELECT post_id FROM post_publication_projection_receipts WHERE (${checkpoint}::uuid IS NULL OR post_id > ${checkpoint}::uuid) ORDER BY post_id LIMIT ${limit}) receipt_ids',
+      'SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id',
     )
   })
 

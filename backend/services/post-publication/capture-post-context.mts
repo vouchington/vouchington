@@ -25,6 +25,12 @@ async function retainPostScope(
   query: TransactionQuery,
   scope: PostPublicationPostScopeContext,
 ): Promise<void> {
+  const { rows: owners } = await query<{ post_id: string | null }>(
+    `/* resolvePublicationPostScopeLiveOwner */ SELECT post_id FROM post_publication_post_identities WHERE id = $1`,
+    [scope.postId],
+  )
+  const livePostId = owners[0]?.post_id
+  if (!livePostId) return
   let cursorKind: string | null = null
   let cursorValue: string | null = null
   const limit = POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE
@@ -32,7 +38,7 @@ async function retainPostScope(
     // oxlint-disable-next-line no-await-in-loop -- exact source keyset pages share the caller transaction.
     const page = await listPublicationIdentitySourcePage(
       query,
-      scope.postId,
+      livePostId,
       cursorKind,
       cursorValue,
       limit,
@@ -47,7 +53,7 @@ async function retainPostScope(
   while (true) {
     const statement = sql`/* listDescendantPostPublicationSitemapPage */
       WITH `
-      .append(nativeSourceBounds(scope.postId))
+      .append(nativeSourceBounds(livePostId))
       .append(
         sql`, page AS MATERIALIZED (SELECT id, post_type, created_at FROM posts CROSS JOIN native_bounds WHERE `,
       )

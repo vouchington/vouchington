@@ -50,7 +50,6 @@
     "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/platform-stats": "workspace:^",
-    "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
     "@services/queue-monitoring": "workspace:^",

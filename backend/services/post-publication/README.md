@@ -6,7 +6,7 @@ community, RSS feed, topic alias, or story dependencies that can change their pu
 Typed key rows retain affected posts, topics, communities, identities, and sitemap shards so later
 deletions or mapping changes cannot orphan an existing public projection. Topic-alias changes retain
 the exact former alias text, so deletion or reassignment still invalidates the public lookup key that
-existed before the transaction. A future queue worker
+existed before the transaction. The publication queue worker
 claims, cursors, and exactly acknowledges that bounded work; this package does not dispatch jobs or
 apply projections.
 
@@ -20,17 +20,36 @@ resume after database or queue failures without a second cursor table.
 This storage is current repair state, not a second history ledger. The existing post revision system
 remains the source of post history. Acknowledgement deletes the coalesced work and its retained keys;
 projection receipts preserve only the last applied identities needed to compensate for hard deletes.
-Retained keys and projection receipts are range-partitioned, each with a default partition.
+Retained keys, projection receipts, and durable post identity bridges are range-partitioned,
+each with a default partition. Accepted receipt references make post identity cardinality unbounded
+over the product lifetime; the other six bridge families track only active repair references.
 Receipt-only hard-delete tombstones are selected and deleted in bounded pages; successful deletion
 is the page cursor, so no additional checkpoint table or cursor column is required.
 
-When the operator activates the `typed-v1` protocol after deploying expanded workers and audit
-processes, each candidate's exact identities are materialized in bounded relational snapshot pages
-before any effect or receipt update. A receipt only points at a complete snapshot after effects
-succeed, so the prior accepted snapshot remains usable during replacement. Database guards reject
-legacy worker and audit mutations after activation; their read-only audit output is stale until
-they are upgraded. Snapshot attempts intentionally outlive dirty-work acknowledgement and their
-keys are reclaimed in bounded pages.
+Each candidate's exact identities are materialized in bounded relational snapshot pages before
+any effect or receipt update. Every receipt requires a complete snapshot pointer after effects
+succeed, so prior accepted storage remains usable during replacement. There is no activation
+switch, compatibility JSON receipt, or shared writer barrier. Snapshot attempts intentionally
+outlive dirty-work acknowledgement and their keys are reclaimed in bounded pages.
+
+Stored payloads use concrete topic, author, community, feed, slug, username, and sitemap columns.
+Immutable projection keys are never joined to live entities. Joined post/community/RSS-item impacts
+and the six dirty-work scopes instead reference concrete identity bridges. Each bridge has a nullable
+live-entity FK with `ON DELETE SET NULL`; hard deletion preserves compensation identity while
+removing the live relationship. Snapshots and receipts reference the post bridge, and snapshots'
+nullable work-owner FK clears on acknowledgement. Retained relationships restrict bridge deletion.
+
+[`prepare-identity-bridges.mts`](prepare-identity-bridges.mts) prepares the complete declared scope,
+impact, and prior-root set in canonical family/native-ID order before dirty writes. Multi-capture
+transactions declare their combined set before the first capture; scope advisory locks precede
+bridge insertion. Captures hold per-identity shared advisory ownership and FK key-share locks,
+so independent captures coexist while bounded GC's try-exclusive fence skips active owners.
+Alias batches merge raw-capped ownership pages in transaction-private `ON COMMIT DROP` staging,
+then prepare post bridges in global native-ID order before alias bridges. Staged `post_key` values
+are ephemeral input tokens, never joined to live tables; bounded token pages enter the normal
+bridge helper, whose nullable live FK preserves a preimage when deletion races preparation.
+The separate bridge sweep rotates seven families, examines at most 100 raw candidates per call,
+checks every work/key/snapshot/receipt reference, and revisits skipped identities after wrapping.
 
 The exact set is [`identity-source.mts`](identity-source.mts): authored and relation topics, positive
 relation-only alias membership, distinct author UUID/username keys, candidate and root communities,
@@ -61,8 +80,7 @@ Physical plan gates cover fresh and dirty databases, interleaved snapshot keys, 
 and unrelated feed sources in both prepared-plan modes. A source table small enough to fit the
 entire probe budget is measured by exact cardinality times loops, avoiding PostgreSQL's rounded
 per-loop filtered-row means; larger tables must use scoped indexed probes within the same cap.
-Typed prior receipts page the composite snapshot/key interval; compatibility receipts page bounded JSON array ordinals
-in PostgreSQL. Neither reader repeats a whole-set union or expands a complete array for each page.
+Prior receipts page the composite snapshot/key interval in PostgreSQL without JSON expansion.
 Every page
 locks the current dirty-work generation and lease before inserting keys and checkpoints. Effects
 wait for both stages. EOF compares exact sets in PostgreSQL and revalidates scalar eligibility;
@@ -70,26 +88,15 @@ drift abandons the attempt, while completed attempts are reused across retries a
 the same work page. The receipt writer validates the candidate's exact complete pointer again after
 the existing projection/enqueue acceptance boundary. Replacement leaves the previous receipt intact.
 
-Audit repair only records dirty work. The worker stages old receipt identities without returning
-JSON to Node, including receipts written before expansion and orphan receipts after hard deletion.
+Audit repair only records dirty work. The worker stages old receipt identities from snapshots, including orphan receipts after hard deletion.
 Current source capture still pages all disappearing identities in the caller's mutation transaction,
 including descendant sitemap shards when their root is changed or removed.
 
-Rollout is additive and starts inactive. Deploy the expanded API, worker and audit processes before
-running the operator command from the initialized worktree:
-
-```bash
-source .env
-node backend/scripts/activate-post-publication-identity-protocol.mts
-```
-
-Activation is monotonic and idempotent. The singleton's exclusive activation lock waits for prior
-writer transactions holding its shared lock; ordinary writer transactions share that lock and do
-not serialize unrelated scopes. After activation, old worker receipt/cursor/lease/acknowledgement
-and audit checkpoint writes are rejected, while API insertion and generation increments remain
-allowed. Activation cannot be reversed: typed stages or accepted receipts must never be interpreted
-as empty identities by an old process. An old fingerprint includes JSON; the typed scalar
-fingerprint intentionally causes a one-time receipt refresh during migration.
+This is a prelaunch schema change, not an operational rollout. The forward migration removes the
+old receipt payload and requires the snapshot pointer immediately. Existing incompatible data
+fails migration rather than being silently deleted or backfilled; an operator must explicitly
+recreate a disposable development or staging schema. Complete fresh migrations and the normal
+strict schema verifier establish the supported schema.
 
 Each existing scheduled reconciliation invocation reclaims an independent bounded page even when
 there is no dirty work. Cleanup advances a persisted cyclic header cursor, caps examined headers
@@ -131,6 +138,6 @@ ordinary projection reconciliation.
 The package's supported surface is exported from `index.mts`; keep internal modules behind that
 barrel so new capture and reconciliation helpers do not require a duplicated file inventory here.
 
-Every retained-key writer partitions UUID, text, and sitemap partial-index families, orders each
-family by its complete conflict key before batching, and retains caller order where it is observed.
+Every retained-key writer orders concrete payloads by their complete unique conflict key before
+bounded batching, and retains caller order where it is observed.
 See the [PostgreSQL ordering guard](../../../static-code-analysis/README.md#postgresql-conflict-ordering).

@@ -2,15 +2,10 @@ import { write } from '@data-stores/psql'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
 import { listPostPublicationIdentityKeys } from './identity-keys.mts'
-import { retainCurrentPublicationIdentityKeys } from './current-identity-keys.mts'
-import { retainCurrentPublicationTopicIds } from './topic-keys.mts'
 import { listPublicationCandidates, type ReconciliationPost } from './publication-candidates.mts'
 import { retainRssFeedNotificationImpacts } from './retain-rss-feed-notification-impacts.mts'
 import { retainOrphanPublicationIdentities } from './orphan-identities.mts'
-import {
-  isPostPublicationTypedProtocolActive,
-  materializePostPublicationIdentitySnapshot,
-} from './identity-snapshots.mts'
+import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 
 export type { ReconciliationPost } from './publication-candidates.mts'
 
@@ -49,39 +44,25 @@ export async function reconcilePostPublicationDirtyWork(
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Publication page limit must be positive')
 
-  const typedProtocol = await isPostPublicationTypedProtocolActive()
   const [posts, orphanReceiptPage] = await Promise.all([
-    listPublicationCandidates(work, limit, selectedPostIds, typedProtocol),
+    listPublicationCandidates(work, limit, selectedPostIds),
     listOrphanReceiptPostIds(work, limit),
   ])
-  const snapshots = typedProtocol
-    ? await posts.reduce(
-        async (pending, post) => {
-          const result = await pending
-          const snapshot = await materializePostPublicationIdentitySnapshot(work, post, limit)
-          if (snapshot.complete) post.identity_snapshot_id = snapshot.snapshotId
-          result.push(snapshot)
-          return result
-        },
-        Promise.resolve([] as Array<{ snapshotId: string; complete: boolean }>),
-      )
-    : []
-  const orphanIdentitiesComplete =
-    !typedProtocol || (await retainOrphanPublicationIdentities(work, orphanReceiptPage.ids, limit))
-  if (!typedProtocol)
-    await retainCurrentPublicationTopicIds(
-      work.id,
-      posts.map(post => post.id),
-      work.topic_alias_id,
-    )
-  if (selectedPostIds && !typedProtocol)
-    if (
-      !(await retainCurrentPublicationIdentityKeys(
-        work,
-        posts.map(post => post.id),
-      ))
-    )
-      throw new TypeError('Publication identity retention requires a current work lease')
+  const snapshots = await posts.reduce(
+    async (pending, post) => {
+      const result = await pending
+      const snapshot = await materializePostPublicationIdentitySnapshot(work, post, limit)
+      if (snapshot.complete) post.identity_snapshot_id = snapshot.snapshotId
+      result.push(snapshot)
+      return result
+    },
+    Promise.resolve([] as Array<{ snapshotId: string; complete: boolean }>),
+  )
+  const orphanIdentitiesComplete = await retainOrphanPublicationIdentities(
+    work,
+    orphanReceiptPage.ids,
+    limit,
+  )
   // Topic UUID order is independent of post UUID order. First retain topics from every post page;
   // only then drain the single generation-fenced topic cursor.
   const hasMorePosts = (selectedPostIds ?? posts).length === limit
@@ -146,15 +127,15 @@ async function listOrphanReceiptPostIds(
 ): Promise<{ ids: string[]; hasMore: boolean }> {
   const { rows } = await write<{ post_id: string }>(
     `/* listOrphanPostPublicationProjectionReceiptIds */
-    SELECT receipt.post_id
+    SELECT receipt.post_identity_id AS post_id
     FROM post_publication_projection_receipts receipt
-    WHERE NOT EXISTS (SELECT 1 FROM posts WHERE posts.id = receipt.post_id)
-      AND (receipt.post_id = $1::uuid OR EXISTS (
+    JOIN post_publication_post_identities identity ON identity.id = receipt.post_identity_id
+    WHERE identity.post_id IS NULL
+      AND (receipt.post_identity_id = $1::uuid OR EXISTS (
         SELECT 1 FROM post_publication_dirty_work_keys retained
-        WHERE retained.dirty_work_id = $2 AND retained.kind = 'impact_post'
-          AND retained.uuid_value = receipt.post_id
+        WHERE retained.dirty_work_id = $2 AND retained.impact_post_identity_id = receipt.post_identity_id
       ))
-    ORDER BY receipt.post_id
+    ORDER BY receipt.post_identity_id
     LIMIT $3`,
     [work.post_id, work.id, limit + 1],
   )
@@ -170,10 +151,10 @@ async function listPublicationTopicIds(
 ): Promise<{ ids: string[]; hasMore: boolean }> {
   const { rows } = await write<{ topic_id: string }>(
     `/* listPublicationTopicIds */
-    SELECT uuid_value AS topic_id FROM post_publication_dirty_work_keys
-    WHERE dirty_work_id = $1 AND kind = 'impact_topic'
-      AND uuid_value > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-    ORDER BY uuid_value LIMIT $3`,
+    SELECT topic_key AS topic_id FROM post_publication_dirty_work_keys
+    WHERE dirty_work_id = $1 AND topic_key IS NOT NULL
+      AND topic_key > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+    ORDER BY topic_key LIMIT $3`,
     [work.id, work.cursor_topic_id, limit + 1],
   )
   return { ids: rows.slice(0, limit).map(row => row.topic_id), hasMore: rows.length > limit }

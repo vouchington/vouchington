@@ -1,16 +1,12 @@
+import { retainPublicationIdentityBridges } from './identity-bridges.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
 import { publicationSnapshotMismatchSql } from './identity-source.mts'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { persistPublicationSnapshotPage } from './snapshot-key-writes.mts'
-import { markPostPublicationTypedProtocol } from './identity-protocol.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
-export {
-  isPostPublicationTypedProtocolActive,
-  activatePostPublicationTypedProtocol,
-} from './identity-protocol.mts'
 
 export const POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE = 100
 type SnapshotPost = { id: string; eligibility_fingerprint: string; is_public: boolean }
@@ -35,7 +31,6 @@ export async function materializePostPublicationIdentitySnapshot(
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Snapshot page limit must be positive')
   await using query = await beginTransaction()
-  await markPostPublicationTypedProtocol(query)
   const { rows: leases } = await query(sql`/* lockPostPublicationSnapshotLease */
     SELECT id FROM post_publication_dirty_work WHERE id = ${work.id} AND generation = ${work.generation}
       AND lease_token = ${work.lease_token} AND lease_expires_at > CURRENT_TIMESTAMP FOR UPDATE`)
@@ -68,7 +63,7 @@ export async function materializePostPublicationIdentitySnapshot(
       .append(sql` OR NOT EXISTS (
       SELECT 1 FROM posts candidate JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)
       WHERE candidate.id = ${post.id} AND `)
-      .append(publicationEligibilityFingerprintSql(true))
+      .append(publicationEligibilityFingerprintSql())
       .append(sql` = ${snapshot.eligibility_fingerprint}) AS mismatch`)
     const { rows } = await query<{ mismatch: boolean }>(comparison)
     if (rows[0]?.mismatch || snapshot.eligibility_fingerprint !== post.eligibility_fingerprint) {
@@ -92,14 +87,15 @@ export async function getOrCreateSnapshot(
   work: ClaimedPostPublicationDirtyWork,
   post: SnapshotPost,
 ): Promise<Snapshot> {
+  await retainPublicationIdentityBridges(query, 'post', [post.id])
   const { rows } = await query<Snapshot>(sql`/* getOrCreatePostPublicationIdentitySnapshot */
     WITH existing AS (
       SELECT id, source_cursor_kind AS cursor_kind, source_cursor_value AS cursor_value, completed_at, eligibility_fingerprint,
         receipt_cursor_kind, receipt_cursor_value, receipt_retained_at, receipt_source_version
       FROM post_publication_identity_snapshots WHERE dirty_work_id = ${work.id} AND generation = ${work.generation}
-        AND post_id = ${post.id} AND abandoned_at IS NULL ORDER BY id DESC LIMIT 1
+        AND post_identity_id = ${post.id} AND abandoned_at IS NULL ORDER BY id DESC LIMIT 1
     ), inserted AS (
-      INSERT INTO post_publication_identity_snapshots (dirty_work_id, generation, post_id, eligibility_fingerprint, is_public)
+      INSERT INTO post_publication_identity_snapshots (dirty_work_id, generation, post_identity_id, eligibility_fingerprint, is_public)
       SELECT ${work.id}, ${work.generation}, ${post.id}, ${post.eligibility_fingerprint}, ${post.is_public}
       WHERE NOT EXISTS (SELECT 1 FROM existing)
       RETURNING id, source_cursor_kind AS cursor_kind, source_cursor_value AS cursor_value, completed_at, eligibility_fingerprint,
@@ -120,7 +116,7 @@ export async function retainSnapshotReceiptPage(
   const { rows: receipts } = await query<{
     version: string
   }>(sql`/* getPublicationReceiptRetentionVersion */
-    SELECT COALESCE(applied_snapshot_id::text, eligibility_fingerprint) AS version FROM post_publication_projection_receipts WHERE post_id = ${postId}`)
+    SELECT applied_snapshot_id::text AS version FROM post_publication_projection_receipts WHERE post_identity_id = ${postId}`)
   const version = receipts[0]?.version ?? null
   if (version !== snapshot.receipt_source_version) {
     snapshot.receipt_cursor_kind = null

@@ -5,11 +5,14 @@ import {
   getContributedSources,
   type SourceCandidate,
 } from './capture-author-deletion-candidates.mts'
-import { retainPostPublicationImpactKeys } from './capture-keys.mts'
 import { retainPostPublicationImpacts } from './capture-impacts.mts'
-import { recordPostPublicationChange } from './capture.mts'
 import { lockPostPublicationPostScopes, recordPostPublicationChanges } from './capture-posts.mts'
 import { lockAuthorPublicationLifecycle } from './lock.mts'
+import { recordPostPublicationChange } from './capture.mts'
+import {
+  prepareAuthorDeletionPublicationIdentityBridges,
+  retainAuthorDeletionPublicationImpacts,
+} from './capture-author-deletion-work.mts'
 
 /** Removes one mutation-backed source or authored-post page per committed transaction. */
 export async function processAuthorDeletionPublicationBatch(
@@ -158,17 +161,11 @@ async function recordDeletionWork(
   priorUsername: string | null,
   postIds: string[],
 ) {
-  const { authorWork, postWork } = await recordPostPublicationWork(
-    query,
-    userId,
-    priorUsername,
-    postIds,
-  )
-  await retainPostPublicationImpactKeys(query, authorWork.id, { postIds })
-  return postWork
+  await prepareAuthorDeletionPublicationIdentityBridges(query, userId, postIds)
+  return recordPreparedDeletionWork(query, userId, priorUsername, postIds)
 }
 
-async function recordPostPublicationWork(
+async function recordPreparedDeletionWork(
   query: TransactionQuery,
   userId: string,
   priorUsername: string | null,
@@ -184,5 +181,5 @@ async function recordPostPublicationWork(
     'author_deleted',
     postIds.map(postId => ({ postId })),
   )
-  return { authorWork, postWork }
+  return retainAuthorDeletionPublicationImpacts(query, authorWork.id, postIds, postWork)
 }

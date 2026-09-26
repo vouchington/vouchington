@@ -1,7 +1,6 @@
 import { publicationPageLimit } from './page-limit.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { markPostPublicationTypedProtocol } from './identity-protocol.mts'
 import { publicationSnapshotKeyPageSql } from './snapshot-key-pages.mts'
 
 /** Reclaims only unaccepted abandoned/stale attempts, with independent row caps for both tables. */
@@ -11,7 +10,6 @@ export async function cleanupPostPublicationIdentitySnapshots(
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Snapshot cleanup limit must be positive')
   await using query = await beginTransaction()
-  await markPostPublicationTypedProtocol(query)
   const { rows: progress } = await query<{
     cursor_snapshot_id: string | null
   }>(sql`/* lockPublicationSnapshotCleanupProgress */

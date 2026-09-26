@@ -1,3 +1,4 @@
+import { SNAPSHOT_KEY_COLUMNS } from './concrete-key-columns.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { PublicationSnapshotKey } from './identity-source.mts'
 import {
@@ -22,13 +23,14 @@ export async function insertSnapshotKeys(
   keys: readonly PublicationSnapshotKey[],
 ): Promise<void> {
   if (!keys.length) return
+  const columns = [...Object.values(SNAPSHOT_KEY_COLUMNS), 'day']
   await query(
     `/* insertPostPublicationIdentitySnapshotKeys */
-    INSERT INTO post_publication_identity_snapshot_keys (snapshot_id, kind, uuid_value, text_value, post_type, day)
-    SELECT $1, key.kind, key.uuid_value::uuid, key.text_value, key.post_type::post_types, key.day::date
+    INSERT INTO post_publication_identity_snapshot_keys (snapshot_id, ${columns.join(', ')})
+    SELECT $1, CASE WHEN key.kind = 'topic' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'author' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'author_username' THEN key.text_value END, CASE WHEN key.kind = 'community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'community_slug' THEN key.text_value END, CASE WHEN key.kind = 'post_slug' THEN key.text_value END, CASE WHEN key.kind = 'rss_feed' THEN key.uuid_value::uuid END, key.post_type::post_types, key.day::date
     FROM UNNEST($2::text[], $3::text[], $4::text[], $5::text[], $6::text[]) AS key(kind, uuid_value, text_value, post_type, day)
-    ORDER BY key.kind, key.uuid_value::uuid, key.text_value COLLATE "C", key.post_type::post_types, key.day::date
-    ON CONFLICT (snapshot_id, kind, uuid_value, text_value, post_type, day) DO NOTHING`,
+    ORDER BY $1::uuid, CASE WHEN key.kind = 'topic' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'author' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'author_username' THEN key.text_value END, CASE WHEN key.kind = 'community' THEN key.uuid_value::uuid END, CASE WHEN key.kind = 'community_slug' THEN key.text_value END, CASE WHEN key.kind = 'post_slug' THEN key.text_value END, CASE WHEN key.kind = 'rss_feed' THEN key.uuid_value::uuid END, key.post_type::post_types, key.day::date
+    ON CONFLICT (snapshot_id, ${columns.join(', ')}) DO NOTHING`,
     [
       snapshotId,
       keys.map(key => key.kind),

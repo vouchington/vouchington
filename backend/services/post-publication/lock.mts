@@ -19,7 +19,7 @@ export function postPublicationScopeIdentifier(scope: PostPublicationScope): str
 }
 
 export function postPublicationScopeLockKey(scope: PostPublicationScope): string {
-  return `${scope.type}:${postPublicationScopeIdentifier(scope)}`
+  return `${scope.type}:${postPublicationScopeIdentifier(scope).toLowerCase()}`
 }
 export async function lockPostPublicationScope(
   query: TransactionQuery,

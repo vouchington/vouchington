@@ -34,6 +34,19 @@ export async function insertTestPostTopicAliasSourceBatch(options: {
   )
 }
 
+export async function insertTestPostTopicAliasRelationBatch(options: {
+  postIds: readonly string[]
+  topicAliasId: string
+  contributorId: string
+}): Promise<void> {
+  await write(
+    `/* insertTestPostTopicAliasRelationBatch */ INSERT INTO relation__post__category__topic_alias
+    (subject_id, object_id, created_by_id, votes_score_up, votes_count_up)
+    SELECT post_id, $2::uuid, $3::uuid, 1, 1 FROM unnest($1::uuid[]) source(post_id) ORDER BY post_id`,
+    [options.postIds, options.topicAliasId, options.contributorId],
+  )
+}
+
 export async function insertTestRssFeedItemSourceBatch(options: {
   count: number
   rssFeedId: string

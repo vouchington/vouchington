@@ -12,6 +12,7 @@ import { retainPostPublicationPostScopeContext } from './capture-post-context.mt
 import { POST_PUBLICATION_CAPTURE_BATCH_SIZE } from './constants.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
+import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
 
 const reasons = new Set<string>(POST_PUBLICATION_REASONS)
 
@@ -46,6 +47,14 @@ export async function recordPostPublicationChanges(
     impacts: impactsByPost.get(scopeId)!,
   }))
   const work: PostPublicationDirtyWork[] = []
+  await preparePostPublicationIdentityBridges(
+    query,
+    normalized.map(change => ({
+      scope: { type: 'post' as const, postId: change.scopeId },
+      reason,
+      impactedPostIds: [...change.impacts.postIds],
+    })),
+  )
   for (let offset = 0; offset < normalized.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = normalized.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- globally sorted, bounded batches preserve publication lock order.

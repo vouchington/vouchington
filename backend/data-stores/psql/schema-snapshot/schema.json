@@ -669,9 +669,6 @@
     "fn_guard_membership_refund_operation_attempt_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;\n  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.attempt_ordinal, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.attempt_ordinal, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';\nEND $function$\n"
     },
-    "fn_guard_post_publication_protocol_deactivation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_post_publication_protocol_deactivation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.protocol_version = 'legacy' AND OLD.protocol_version = 'typed-v1' THEN\n    RAISE EXCEPTION 'typed publication protocol activation is irreversible';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_guard_review_dispute_subject_snapshot": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -872,9 +869,6 @@
     },
     "fn_require_mipr_succeeded_refund_observation_context": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_mipr_succeeded_refund_observation_context()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency TEXT;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
-    },
-    "fn_require_post_publication_typed_protocol": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_post_publication_typed_protocol()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE protocol post_publication_identity_protocol%ROWTYPE;\nBEGIN\n  SELECT * INTO protocol FROM post_publication_identity_protocol WHERE singleton FOR SHARE;\n  IF TG_TABLE_NAME = 'post_publication_dirty_work' THEN\n    IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n    IF TG_OP = 'UPDATE' THEN\n      IF NEW.generation > OLD.generation THEN RETURN NEW; END IF;\n    END IF;\n  END IF;\n  IF protocol.protocol_version = 'typed-v1'\n    AND current_setting('voucha.post_publication_protocol', TRUE) IS DISTINCT FROM 'typed-v1' THEN\n    RAISE EXCEPTION 'post-publication typed protocol requires an expanded worker transaction';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n"
     },
     "fn_require_verified_membership_provider_observation_evidence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_provider_evidence_records evidence\n    WHERE evidence.id = NEW.membership_provider_evidence_id\n      AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL\n  ) THEN\n    RAISE EXCEPTION 'membership provider observations require verified evidence' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -61658,6 +61652,250 @@
         }
       }
     },
+    "post_publication_author_identities": {
+      "checkConstraints": {
+        "post_publication_author_identities_check": "CHECK (((user_id IS NULL) OR (user_id = id)))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
+      "foreignKeys": {
+        "post_publication_author_identities_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_author_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_author_identities_pkey ON public.post_publication_author_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_author_identities_user_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_author_identities_user_id_key ON public.post_publication_author_identities USING btree (user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_pub_author_identities_updated_at": "CREATE TRIGGER trigger_pub_author_identities_updated_at BEFORE UPDATE ON public.post_publication_author_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "post_publication_author_identities_user_id_key": {
+          "columns": ["user_id"],
+          "definition": "UNIQUE (user_id)"
+        }
+      }
+    },
+    "post_publication_community_identities": {
+      "checkConstraints": {
+        "post_publication_community_identities_check": "CHECK (((community_id IS NULL) OR (community_id = id)))"
+      },
+      "columns": {
+        "community_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
+      "foreignKeys": {
+        "post_publication_community_identities_community_id_fkey": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_community_identities_community_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_community_identities_community_id_key ON public.post_publication_community_identities USING btree (community_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_community_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_community_identities_pkey ON public.post_publication_community_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_pub_community_identities_updated_at": "CREATE TRIGGER trigger_pub_community_identities_updated_at BEFORE UPDATE ON public.post_publication_community_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "post_publication_community_identities_community_id_key": {
+          "columns": ["community_id"],
+          "definition": "UNIQUE (community_id)"
+        }
+      }
+    },
     "post_publication_dirty_work": {
       "checkConstraints": {
         "post_publication_dirty_work_check": "CHECK ((num_nonnulls(post_id, author_user_id, community_id, rss_feed_id, topic_alias_id, story_id) = 1))",
@@ -61669,7 +61907,7 @@
       "columns": {
         "author_user_id": {
           "collation": null,
-          "comment": "Author scope retained without an FK so account deletion cannot erase pending repair work.",
+          "comment": "Exact author repair scope, referencing durable author identity rather than the nullable live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61680,7 +61918,7 @@
         },
         "community_id": {
           "collation": null,
-          "comment": "Community scope retained without an FK so deletion cannot erase pending repair work.",
+          "comment": "Exact community repair scope, referencing durable community identity rather than the nullable live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61801,7 +62039,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": "Post scope retained without an FK so deletion cannot erase pending repair work.",
+          "comment": "Exact post repair scope, referencing durable post identity rather than the nullable live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61823,7 +62061,7 @@
         },
         "rss_feed_id": {
           "collation": null,
-          "comment": "RSS feed scope retained without an FK so deletion cannot erase pending repair work.",
+          "comment": "Exact rss_feed repair scope, referencing durable rss_feed identity rather than the nullable live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61834,7 +62072,7 @@
         },
         "story_id": {
           "collation": null,
-          "comment": "Story scope retained without an FK so source deletion cannot erase pending repair work.",
+          "comment": "Exact story repair scope, referencing durable story identity rather than the nullable live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61845,7 +62083,7 @@
         },
         "topic_alias_id": {
           "collation": null,
-          "comment": "Topic alias scope retained without an FK so reassignment cannot erase pending repair work.",
+          "comment": "Exact topic_alias repair scope, referencing durable topic_alias identity rather than the nullable live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61867,7 +62105,62 @@
         }
       },
       "comment": "One de-duplicated current-state publication repair scope. A generation and lease token fence stale workers; exact acknowledgement deletes completed work.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "fk_post_publication_dirty_work__author_identity": {
+          "columns": ["author_user_id"],
+          "definition": "FOREIGN KEY (author_user_id) REFERENCES post_publication_author_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_author_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__community_identity": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_community_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__post_identity": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_post_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__rss_feed_identity": {
+          "columns": ["rss_feed_id"],
+          "definition": "FOREIGN KEY (rss_feed_id) REFERENCES post_publication_rss_feed_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_rss_feed_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__story_identity": {
+          "columns": ["story_id"],
+          "definition": "FOREIGN KEY (story_id) REFERENCES post_publication_story_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_story_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__topic_alias_identity": {
+          "columns": ["topic_alias_id"],
+          "definition": "FOREIGN KEY (topic_alias_id) REFERENCES post_publication_topic_alias_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_topic_alias_identities",
+          "validated": true
+        }
+      },
       "growth": "bounded",
       "indexes": {
         "idx_post_publication_dirty_work__lease_expires_at_id": {
@@ -62046,17 +62339,59 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_post_publication_dirty_work_protocol": "CREATE TRIGGER trigger_post_publication_dirty_work_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_dirty_work FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()",
         "trigger_post_publication_dirty_work_updated_at": "CREATE TRIGGER trigger_post_publication_dirty_work_updated_at BEFORE UPDATE ON public.post_publication_dirty_work FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
     "post_publication_dirty_work_keys": {
       "checkConstraints": {
-        "post_publication_dirty_work_keys_check": "CHECK ((((kind = ANY (ARRAY['impact_post'::text, 'impact_topic'::text, 'impact_community'::text, 'impact_rss_feed_item'::text, 'identity_author'::text, 'identity_community'::text, 'identity_rss_feed'::text])) AND (uuid_value IS NOT NULL) AND (text_value IS NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = ANY (ARRAY['identity_author_username'::text, 'identity_post_slug'::text, 'identity_community_slug'::text, 'identity_topic_alias'::text])) AND (uuid_value IS NULL) AND (text_value IS NOT NULL) AND ((char_length(text_value) >= 1) AND (char_length(text_value) <= 255)) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = 'sitemap_target'::text) AND (uuid_value IS NULL) AND (text_value IS NULL) AND (post_type IS NOT NULL) AND (day IS NOT NULL))))",
-        "post_publication_dirty_work_keys_kind_check": "CHECK ((kind = ANY (ARRAY['impact_post'::text, 'impact_topic'::text, 'impact_community'::text, 'impact_rss_feed_item'::text, 'identity_author'::text, 'identity_author_username'::text, 'identity_community'::text, 'identity_rss_feed'::text, 'identity_post_slug'::text, 'identity_community_slug'::text, 'identity_topic_alias'::text, 'sitemap_target'::text])))"
+        "chk_post_publication_dirty_work_keys__concrete_payload": "CHECK (((num_nonnulls(impact_post_identity_id, impact_community_identity_id, impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key, author_username, post_slug, community_slug, topic_alias, post_type) = 1) AND ((post_type IS NULL) = (day IS NULL))))"
       },
       "columns": {
+        "author_key": {
+          "collation": null,
+          "comment": "Immutable author key projection value, never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "author_username": {
+          "collation": null,
+          "comment": "Immutable author username projection value, never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
+        "community_key": {
+          "collation": null,
+          "comment": "Immutable community key projection value, never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
+        "community_slug": {
+          "collation": null,
+          "comment": "Immutable community slug projection value, never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "text"
+        },
         "day": {
           "collation": null,
           "comment": "Exact UTC sitemap day retained for a sitemap target.",
@@ -62090,15 +62425,48 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "kind": {
+        "impact_community_identity_id": {
           "collation": null,
-          "comment": "Discriminator that determines which one of the typed key payload shapes is valid.",
+          "comment": "Concrete durable repair identity relationship.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "impact_post_identity_id": {
+          "collation": null,
+          "comment": "Concrete durable repair identity relationship.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "impact_rss_feed_item_identity_id": {
+          "collation": null,
+          "comment": "Concrete durable repair identity relationship.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "post_slug": {
+          "collation": null,
+          "comment": "Immutable post slug projection value, never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "post_type": {
@@ -62112,31 +62480,69 @@
           "ordinalPosition": 6,
           "type": "post_types"
         },
-        "text_value": {
+        "rss_feed_key": {
           "collation": null,
-          "comment": "Retained public cache identity selected by kind, including deleted slugs.",
+          "comment": "Immutable rss feed key projection value, never joined to a live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 14,
+          "type": "uuid"
+        },
+        "topic_alias": {
+          "collation": null,
+          "comment": "Immutable topic alias projection value, never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
           "type": "text"
         },
-        "uuid_value": {
+        "topic_key": {
           "collation": null,
-          "comment": "Retained impacted-entity or public-identity UUID selected by kind; no source FK preserves deletion repair.",
+          "comment": "Immutable topic key projection value, never joined to a live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 11,
           "type": "uuid"
         }
       },
       "comment": "Typed retained tombstone keys for pending publication repair. Rows cascade on exact-generation acknowledgement.",
       "foreignKeys": {
+        "fk_post_publication_dirty_work_keys__community_identity": {
+          "columns": ["impact_community_identity_id"],
+          "definition": "FOREIGN KEY (impact_community_identity_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_community_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work_keys__post_identity": {
+          "columns": ["impact_post_identity_id"],
+          "definition": "FOREIGN KEY (impact_post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_post_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work_keys__rss_feed_item_identity": {
+          "columns": ["impact_rss_feed_item_identity_id"],
+          "definition": "FOREIGN KEY (impact_rss_feed_item_identity_id) REFERENCES post_publication_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_rss_feed_item_identities",
+          "validated": true
+        },
         "post_publication_dirty_work_keys_dirty_work_id_fkey": {
           "columns": ["dirty_work_id"],
           "definition": "FOREIGN KEY (dirty_work_id) REFERENCES post_publication_dirty_work(id) ON DELETE CASCADE",
@@ -62149,6 +62555,93 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_post_publication_dirty_work_keys__impact_community_identity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_dirty_work_keys__impact_community_identity ON ONLY public.post_publication_dirty_work_keys USING btree (impact_community_identity_id) WHERE (impact_community_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "impact_community_identity_id",
+              "descending": false,
+              "expression": "impact_community_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(impact_community_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_publication_dirty_work_keys__impact_post_identity_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_dirty_work_keys__impact_post_identity_id ON ONLY public.post_publication_dirty_work_keys USING btree (impact_post_identity_id) WHERE (impact_post_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "impact_post_identity_id",
+              "descending": false,
+              "expression": "impact_post_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(impact_post_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_publication_dirty_work_keys__impact_rss_feed_item_iden": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_dirty_work_keys__impact_rss_feed_item_iden ON ONLY public.post_publication_dirty_work_keys USING btree (impact_rss_feed_item_identity_id) WHERE (impact_rss_feed_item_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "impact_rss_feed_item_identity_id",
+              "descending": false,
+              "expression": "impact_rss_feed_item_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(impact_rss_feed_item_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_publication_dirty_work_keys__topic_key": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_dirty_work_keys__topic_key ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, topic_key) WHERE (topic_key IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "dirty_work_id",
+              "descending": false,
+              "expression": "dirty_work_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_key",
+              "descending": false,
+              "expression": "topic_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(topic_key IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "post_publication_dirty_work_keys_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -62176,10 +62669,10 @@
           "unique": true,
           "valid": true
         },
-        "uq_post_publication_dirty_work_keys__sitemap_target": {
+        "uq_post_publication_dirty_work_keys__concrete_payload": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__sitemap_target ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, kind, post_type, day) WHERE (post_type IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__concrete_payload ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, impact_post_identity_id, impact_community_identity_id, impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key, author_username, post_slug, community_slug, topic_alias, post_type, day) NULLS NOT DISTINCT",
           "includedColumns": [],
           "keys": [
             {
@@ -62190,9 +62683,79 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "kind",
+              "column": "impact_post_identity_id",
               "descending": false,
-              "expression": "kind",
+              "expression": "impact_post_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "impact_community_identity_id",
+              "descending": false,
+              "expression": "impact_community_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "impact_rss_feed_item_identity_id",
+              "descending": false,
+              "expression": "impact_rss_feed_item_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_key",
+              "descending": false,
+              "expression": "topic_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "author_key",
+              "descending": false,
+              "expression": "author_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_key",
+              "descending": false,
+              "expression": "community_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_key",
+              "descending": false,
+              "expression": "rss_feed_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "author_username",
+              "descending": false,
+              "expression": "author_username",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "post_slug",
+              "descending": false,
+              "expression": "post_slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "community_slug",
+              "descending": false,
+              "expression": "community_slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "topic_alias",
+              "descending": false,
+              "expression": "topic_alias",
               "nullsFirst": false,
               "opclass": "text_ops"
             },
@@ -62211,75 +62774,7 @@
               "opclass": "date_ops"
             }
           ],
-          "predicate": "(post_type IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_post_publication_dirty_work_keys__text_value": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__text_value ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, kind, text_value) WHERE (text_value IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "dirty_work_id",
-              "descending": false,
-              "expression": "dirty_work_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "kind",
-              "descending": false,
-              "expression": "kind",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "text_value",
-              "descending": false,
-              "expression": "text_value",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(text_value IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_post_publication_dirty_work_keys__uuid_value": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_post_publication_dirty_work_keys__uuid_value ON ONLY public.post_publication_dirty_work_keys USING btree (dirty_work_id, kind, uuid_value) WHERE (uuid_value IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "dirty_work_id",
-              "descending": false,
-              "expression": "dirty_work_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "kind",
-              "descending": false,
-              "expression": "kind",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "uuid_value",
-              "descending": false,
-              "expression": "uuid_value",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(uuid_value IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": true,
@@ -62302,6 +62797,92 @@
         "definition": "PRIMARY KEY (dirty_work_id, id)"
       },
       "relationKind": "partitioned table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "post_publication_identity_bridge_cleanup_progress": {
+      "checkConstraints": {
+        "post_publication_identity_bridge_cleanup_progre_singleton_check": "CHECK (singleton)",
+        "post_publication_identity_bridge_cleanup_progress_family_check": "CHECK ((family = ANY (ARRAY['post'::text, 'community'::text, 'rss_feed_item'::text, 'author'::text, 'rss_feed'::text, 'topic_alias'::text, 'story'::text])))"
+      },
+      "columns": {
+        "cursor_identity_id": {
+          "collation": null,
+          "comment": "Deletion-stable last raw candidate key, not an entity relationship.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "family": {
+          "collation": null,
+          "comment": "Current concrete table sweep, not an entity relationship.",
+          "defaultExpression": "'post'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "singleton": {
+          "collation": null,
+          "comment": "One independent bridge cleanup cursor.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed bounded bridge sweep.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Checked singleton rotates bounded identity bridge sweeps across concrete entity tables.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_identity_bridge_cleanup_progress_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_bridge_cleanup_progress_pkey ON public.post_publication_identity_bridge_cleanup_progress USING btree (singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "singleton",
+              "descending": false,
+              "expression": "singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["singleton"],
+        "definition": "PRIMARY KEY (singleton)"
+      },
+      "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {}
     },
@@ -62344,7 +62925,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Bounded cyclic snapshot-header sweep, independent from the shared protocol writer lock.",
+      "comment": "Bounded cyclic snapshot-header sweep, independent from publication writers.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
@@ -62379,112 +62960,56 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
-    "post_publication_identity_protocol": {
+    "post_publication_identity_snapshot_keys": {
       "checkConstraints": {
-        "post_publication_identity_protocol_protocol_version_check": "CHECK ((protocol_version = ANY (ARRAY['legacy'::text, 'typed-v1'::text])))",
-        "post_publication_identity_protocol_singleton_check": "CHECK (singleton)"
+        "post_publication_identity_snapshot_keys_check": "CHECK ((num_nonnulls(topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type) = 1))",
+        "post_publication_identity_snapshot_keys_check1": "CHECK (((post_type IS NULL) = (day IS NULL)))"
       },
       "columns": {
-        "activated_at": {
+        "author_key": {
           "collation": null,
-          "comment": "Time of irreversible typed protocol activation.",
+          "comment": "Immutable author key projection value; never joined to a live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
           "ordinalPosition": 4,
-          "type": "timestamp with time zone"
+          "type": "uuid"
         },
-        "protocol_version": {
+        "author_username": {
           "collation": null,
-          "comment": "Legacy compatibility or activated typed-v1 writer contract.",
-          "defaultExpression": "'legacy'::text",
+          "comment": "Immutable author username projection value; never joined to a live entity.",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "text"
         },
-        "singleton": {
+        "community_key": {
           "collation": null,
-          "comment": "Checked true key limits this rollout barrier to one row.",
-          "defaultExpression": "true",
+          "comment": "Immutable community key projection value; never joined to a live entity.",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "boolean"
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
         },
-        "updated_at": {
+        "community_slug": {
           "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "comment": "Immutable community slug projection value; never joined to a live entity.",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Operator-controlled rollout barrier. typed-v1 blocks legacy worker and audit mutations.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "post_publication_identity_protocol_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_publication_identity_protocol_pkey ON public.post_publication_identity_protocol USING btree (singleton)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "singleton",
-              "descending": false,
-              "expression": "singleton",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["singleton"],
-        "definition": "PRIMARY KEY (singleton)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_post_publication_identity_protocol_updated_at": "CREATE TRIGGER trigger_post_publication_identity_protocol_updated_at BEFORE UPDATE ON public.post_publication_identity_protocol FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
-        "trigger_post_publication_protocol_deactivation": "CREATE TRIGGER trigger_post_publication_protocol_deactivation BEFORE UPDATE ON public.post_publication_identity_protocol FOR EACH ROW EXECUTE FUNCTION fn_guard_post_publication_protocol_deactivation()"
-      },
-      "uniqueConstraints": {}
-    },
-    "post_publication_identity_snapshot_keys": {
-      "checkConstraints": {
-        "post_publication_identity_snapshot_keys_check": "CHECK ((((kind = ANY (ARRAY['topic'::text, 'author'::text, 'community'::text, 'rss_feed'::text])) AND (uuid_value IS NOT NULL) AND (text_value IS NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = ANY (ARRAY['author_username'::text, 'community_slug'::text, 'post_slug'::text])) AND (uuid_value IS NULL) AND (text_value IS NOT NULL) AND (post_type IS NULL) AND (day IS NULL)) OR ((kind = 'sitemap_target'::text) AND (uuid_value IS NULL) AND (text_value IS NULL) AND (post_type IS NOT NULL) AND (day IS NOT NULL))))",
-        "post_publication_identity_snapshot_keys_kind_check": "CHECK ((kind = ANY (ARRAY['topic'::text, 'author'::text, 'author_username'::text, 'community'::text, 'community_slug'::text, 'post_slug'::text, 'rss_feed'::text, 'sitemap_target'::text])))"
-      },
-      "columns": {
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -62493,7 +63018,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "day": {
@@ -62504,7 +63029,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 11,
           "type": "date"
         },
         "id": {
@@ -62518,15 +63043,15 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "kind": {
+        "post_slug": {
           "collation": null,
-          "comment": "Discriminant selecting the exact typed identity representation.",
+          "comment": "Immutable post slug projection value; never joined to a live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
+          "nullable": true,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "post_type": {
@@ -62537,8 +63062,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 10,
           "type": "post_types"
+        },
+        "rss_feed_key": {
+          "collation": null,
+          "comment": "Immutable rss feed key projection value; never joined to a live entity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
         },
         "snapshot_id": {
           "collation": null,
@@ -62551,26 +63087,15 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "text_value": {
+        "topic_key": {
           "collation": null,
-          "comment": "Username or slug identity.",
+          "comment": "Immutable topic key projection value; never joined to a live entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "uuid_value": {
-          "collation": null,
-          "comment": "UUID identity for topics, authors, communities or feeds.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "uuid"
         }
       },
@@ -62588,10 +63113,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key": {
+        "post_publication_identity_sna_snapshot_id_topic_key_author__key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, kind, uuid_value, text_value, post_type, day) NULLS NOT DISTINCT",
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_topic_key_author__key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day) NULLS NOT DISTINCT",
           "includedColumns": [],
           "keys": [
             {
@@ -62602,25 +63127,53 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "kind",
+              "column": "topic_key",
               "descending": false,
-              "expression": "kind",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "uuid_value",
-              "descending": false,
-              "expression": "uuid_value",
+              "expression": "topic_key",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
             {
-              "column": "text_value",
+              "column": "author_key",
               "descending": false,
-              "expression": "text_value",
+              "expression": "author_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "author_username",
+              "descending": false,
+              "expression": "author_username",
               "nullsFirst": false,
               "opclass": "text_ops"
+            },
+            {
+              "column": "community_key",
+              "descending": false,
+              "expression": "community_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_slug",
+              "descending": false,
+              "expression": "community_slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "post_slug",
+              "descending": false,
+              "expression": "post_slug",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "rss_feed_key",
+              "descending": false,
+              "expression": "rss_feed_key",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             },
             {
               "column": "post_type",
@@ -62646,8 +63199,18 @@
         "post_publication_identity_snapshot_keys_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day)",
-          "includedColumns": ["kind", "uuid_value", "text_value", "post_type", "day"],
+          "definition": "CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id) INCLUDE (topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)",
+          "includedColumns": [
+            "topic_key",
+            "author_key",
+            "author_username",
+            "community_key",
+            "community_slug",
+            "post_slug",
+            "rss_feed_key",
+            "post_type",
+            "day"
+          ],
           "keys": [
             {
               "column": "snapshot_id",
@@ -62675,14 +63238,25 @@
       "physicalPartition": null,
       "primaryKey": {
         "columns": ["snapshot_id", "id"],
-        "definition": "PRIMARY KEY (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day)"
+        "definition": "PRIMARY KEY (snapshot_id, id) INCLUDE (topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)"
       },
       "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {
-        "post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key": {
-          "columns": ["snapshot_id", "kind", "uuid_value", "text_value", "post_type", "day"],
-          "definition": "UNIQUE NULLS NOT DISTINCT (snapshot_id, kind, uuid_value, text_value, post_type, day)"
+        "post_publication_identity_sna_snapshot_id_topic_key_author__key": {
+          "columns": [
+            "snapshot_id",
+            "topic_key",
+            "author_key",
+            "author_username",
+            "community_key",
+            "community_slug",
+            "post_slug",
+            "rss_feed_key",
+            "post_type",
+            "day"
+          ],
+          "definition": "UNIQUE NULLS NOT DISTINCT (snapshot_id, topic_key, author_key, author_username, community_key, community_slug, post_slug, rss_feed_key, post_type, day)"
         }
       }
     },
@@ -62728,12 +63302,12 @@
         },
         "dirty_work_id": {
           "collation": null,
-          "comment": "Work identifier retained after acknowledgement; not a cascading relation.",
+          "comment": "Live owning work FK; acknowledgement clears it without deleting accepted storage.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 2,
           "type": "uuid"
         },
@@ -62781,9 +63355,9 @@
           "ordinalPosition": 6,
           "type": "boolean"
         },
-        "post_id": {
+        "post_identity_id": {
           "collation": null,
-          "comment": "Candidate identifier retained after deletion.",
+          "comment": "Concrete durable post identity FK; live post access follows the bridge post_id FK.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62794,7 +63368,7 @@
         },
         "receipt_cursor_kind": {
           "collation": null,
-          "comment": "Typed snapshot keys or compatibility JSON array branch for prior receipt retention.",
+          "comment": "Snapshot-key source branch for prior receipt retention.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62805,7 +63379,7 @@
         },
         "receipt_cursor_value": {
           "collation": null,
-          "comment": "Last typed key ID or compatibility array ordinal retained atomically.",
+          "comment": "Last snapshot key ID retained atomically.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -62871,19 +63445,38 @@
         }
       },
       "comment": "Immutable-at-acceptance bounded identity materialization attempts; intentionally independent from dirty work.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "fk_post_publication_identity_snapshots__post_identity": {
+          "columns": ["post_identity_id"],
+          "definition": "FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_post_identities",
+          "validated": true
+        },
+        "post_publication_identity_snapshots_dirty_work_id_fkey": {
+          "columns": ["dirty_work_id"],
+          "definition": "FOREIGN KEY (dirty_work_id) REFERENCES post_publication_dirty_work(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_dirty_work",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
         "idx_post_publication_identity_snapshots__post_completed": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_publication_identity_snapshots__post_completed ON public.post_publication_identity_snapshots USING btree (post_id, completed_at, id)",
+          "definition": "CREATE INDEX idx_post_publication_identity_snapshots__post_completed ON public.post_publication_identity_snapshots USING btree (post_identity_id, completed_at, id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "post_id",
+              "column": "post_identity_id",
               "descending": false,
-              "expression": "post_id",
+              "expression": "post_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -62931,7 +63524,7 @@
         "uq_post_publication_identity_snapshots__attempt_post": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_post_publication_identity_snapshots__attempt_post ON public.post_publication_identity_snapshots USING btree (dirty_work_id, generation, post_id, id)",
+          "definition": "CREATE UNIQUE INDEX uq_post_publication_identity_snapshots__attempt_post ON public.post_publication_identity_snapshots USING btree (dirty_work_id, generation, post_identity_id, id)",
           "includedColumns": [],
           "keys": [
             {
@@ -62949,9 +63542,9 @@
               "opclass": "int8_ops"
             },
             {
-              "column": "post_id",
+              "column": "post_identity_id",
               "descending": false,
-              "expression": "post_id",
+              "expression": "post_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -62982,9 +63575,134 @@
       },
       "uniqueConstraints": {}
     },
+    "post_publication_post_identities": {
+      "checkConstraints": {
+        "post_publication_post_identities_check": "CHECK (((post_id IS NULL) OR (post_id = id)))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable post identity referenced by accepted receipts and snapshots; UUIDv7 range partitions bound target-scoped access and bounded sweeps reclaim unreferenced rows.",
+      "foreignKeys": {
+        "post_publication_post_identities_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_post_publication_post_identities__post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_post_identities__post_id ON ONLY public.post_publication_post_identities USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "post_publication_post_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_post_identities_pkey ON ONLY public.post_publication_post_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_pub_post_identities_updated_at": "CREATE TRIGGER trigger_pub_post_identities_updated_at BEFORE UPDATE ON public.post_publication_post_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "post_publication_projection_receipts": {
       "checkConstraints": {
-        "chk_post_publication_projection_receipts_applied_identity_objec": "CHECK ((jsonb_typeof(applied_identity) = 'object'::text))",
         "post_publication_projection_receipts_applied_generation_check": "CHECK ((applied_generation > 0))"
       },
       "columns": {
@@ -63010,25 +63728,14 @@
           "ordinalPosition": 3,
           "type": "bigint"
         },
-        "applied_identity": {
-          "collation": null,
-          "comment": "Exact projection identities last applied by reconciliation, retained for compensating shadow repair.",
-          "defaultExpression": "'{\"topicIds\": [], \"identityKeys\": [], \"sitemapTargets\": []}'::jsonb",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "jsonb"
-        },
         "applied_snapshot_id": {
           "collation": null,
-          "comment": "Complete typed snapshot accepted after projection effects; old JSON remains only for expand/contract readers.",
+          "comment": "Complete snapshot accepted after projection effects; required for every receipt.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 6,
           "type": "uuid"
         },
@@ -63043,9 +63750,9 @@
           "ordinalPosition": 2,
           "type": "text"
         },
-        "post_id": {
+        "post_identity_id": {
           "collation": null,
-          "comment": "Post identity retained without an FK so deletion remains auditable and repairable.",
+          "comment": "Concrete durable post identity FK; live post access follows the bridge post_id FK.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -63057,6 +63764,15 @@
       },
       "comment": "Durable current-state receipt for cache, rating and sitemap projections owned by post-publication reconciliation.",
       "foreignKeys": {
+        "fk_post_publication_projection_receipts__post_identity": {
+          "columns": ["post_identity_id"],
+          "definition": "FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_post_identities",
+          "validated": true
+        },
         "fk_post_publication_projection_receipts__snapshot": {
           "columns": ["applied_snapshot_id"],
           "definition": "FOREIGN KEY (applied_snapshot_id) REFERENCES post_publication_identity_snapshots(id) ON DELETE RESTRICT",
@@ -63072,7 +63788,7 @@
         "idx_post_publication_projection_receipts__applied_snapshot_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_publication_projection_receipts__applied_snapshot_id ON ONLY public.post_publication_projection_receipts USING btree (applied_snapshot_id) WHERE (applied_snapshot_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_post_publication_projection_receipts__applied_snapshot_id ON ONLY public.post_publication_projection_receipts USING btree (applied_snapshot_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -63083,7 +63799,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(applied_snapshot_id IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -63092,13 +63808,13 @@
         "post_publication_projection_receipts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_publication_projection_receipts_pkey ON ONLY public.post_publication_projection_receipts USING btree (post_id)",
+          "definition": "CREATE UNIQUE INDEX post_publication_projection_receipts_pkey ON ONLY public.post_publication_projection_receipts USING btree (post_identity_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "post_id",
+              "column": "post_identity_id",
               "descending": false,
-              "expression": "post_id",
+              "expression": "post_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -63113,22 +63829,20 @@
       "partition": {
         "accessClass": "target-scoped",
         "children": "default",
-        "key": "post_id",
+        "key": "post_identity_id",
         "retentionOwner": null,
         "strategy": "RANGE"
       },
       "physicalPartition": {
-        "key": "RANGE (post_id)",
+        "key": "RANGE (post_identity_id)",
         "strategy": "range"
       },
       "primaryKey": {
-        "columns": ["post_id"],
-        "definition": "PRIMARY KEY (post_id)"
+        "columns": ["post_identity_id"],
+        "definition": "PRIMARY KEY (post_identity_id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_post_publication_projection_receipts_protocol": "CREATE TRIGGER trigger_post_publication_projection_receipts_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_projection_receipts FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()"
-      },
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "post_publication_reconciliation_audit_checkpoints": {
@@ -63201,10 +63915,497 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_post_pub_audit_checkpoints_updated_at": "CREATE TRIGGER trigger_post_pub_audit_checkpoints_updated_at BEFORE UPDATE ON public.post_publication_reconciliation_audit_checkpoints FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
-        "trigger_post_publication_audit_checkpoints_protocol": "CREATE TRIGGER trigger_post_publication_audit_checkpoints_protocol BEFORE INSERT OR DELETE OR UPDATE ON public.post_publication_reconciliation_audit_checkpoints FOR EACH ROW EXECUTE FUNCTION fn_require_post_publication_typed_protocol()"
+        "trigger_post_pub_audit_checkpoints_updated_at": "CREATE TRIGGER trigger_post_pub_audit_checkpoints_updated_at BEFORE UPDATE ON public.post_publication_reconciliation_audit_checkpoints FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
+    },
+    "post_publication_rss_feed_identities": {
+      "checkConstraints": {
+        "post_publication_rss_feed_identities_check": "CHECK (((rss_feed_id IS NULL) OR (rss_feed_id = id)))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rss_feed_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
+      "foreignKeys": {
+        "post_publication_rss_feed_identities_rss_feed_id_fkey": {
+          "columns": ["rss_feed_id"],
+          "definition": "FOREIGN KEY (rss_feed_id) REFERENCES rss_feeds(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feeds",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_rss_feed_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_rss_feed_identities_pkey ON public.post_publication_rss_feed_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_rss_feed_identities_rss_feed_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_rss_feed_identities_rss_feed_id_key ON public.post_publication_rss_feed_identities USING btree (rss_feed_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_id",
+              "descending": false,
+              "expression": "rss_feed_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_pub_rss_feed_identities_updated_at": "CREATE TRIGGER trigger_pub_rss_feed_identities_updated_at BEFORE UPDATE ON public.post_publication_rss_feed_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "post_publication_rss_feed_identities_rss_feed_id_key": {
+          "columns": ["rss_feed_id"],
+          "definition": "UNIQUE (rss_feed_id)"
+        }
+      }
+    },
+    "post_publication_rss_feed_item_identities": {
+      "checkConstraints": {
+        "post_publication_rss_feed_item_identities_check": "CHECK (((rss_feed_item_id IS NULL) OR (rss_feed_item_id = id)))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
+      "foreignKeys": {
+        "post_publication_rss_feed_item_identities_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_rss_feed_item_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_rss_feed_item_identities_pkey ON public.post_publication_rss_feed_item_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_rss_feed_item_identities_rss_feed_item_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_rss_feed_item_identities_rss_feed_item_id_key ON public.post_publication_rss_feed_item_identities USING btree (rss_feed_item_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_pub_rss_feed_item_identities_updated_at": "CREATE TRIGGER trigger_pub_rss_feed_item_identities_updated_at BEFORE UPDATE ON public.post_publication_rss_feed_item_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "post_publication_rss_feed_item_identities_rss_feed_item_id_key": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "UNIQUE (rss_feed_item_id)"
+        }
+      }
+    },
+    "post_publication_story_identities": {
+      "checkConstraints": {
+        "post_publication_story_identities_check": "CHECK (((story_id IS NULL) OR (story_id = id)))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "story_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
+      "foreignKeys": {
+        "post_publication_story_identities_story_id_fkey": {
+          "columns": ["story_id"],
+          "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "stories",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_story_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_story_identities_pkey ON public.post_publication_story_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_story_identities_story_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_story_identities_story_id_key ON public.post_publication_story_identities USING btree (story_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "story_id",
+              "descending": false,
+              "expression": "story_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_pub_story_identities_updated_at": "CREATE TRIGGER trigger_pub_story_identities_updated_at BEFORE UPDATE ON public.post_publication_story_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "post_publication_story_identities_story_id_key": {
+          "columns": ["story_id"],
+          "definition": "UNIQUE (story_id)"
+        }
+      }
+    },
+    "post_publication_topic_alias_identities": {
+      "checkConstraints": {
+        "post_publication_topic_alias_identities_check": "CHECK (((topic_alias_id IS NULL) OR (topic_alias_id = id)))"
+      },
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "topic_alias_id": {
+          "collation": null,
+          "comment": "Live entity FK; deletion clears this link without deleting historical repair identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
+      "foreignKeys": {
+        "post_publication_topic_alias_identities_topic_alias_id_fkey": {
+          "columns": ["topic_alias_id"],
+          "definition": "FOREIGN KEY (topic_alias_id) REFERENCES topic_aliases(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topic_aliases",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "post_publication_topic_alias_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_topic_alias_identities_pkey ON public.post_publication_topic_alias_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_publication_topic_alias_identities_topic_alias_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_publication_topic_alias_identities_topic_alias_id_key ON public.post_publication_topic_alias_identities USING btree (topic_alias_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "topic_alias_id",
+              "descending": false,
+              "expression": "topic_alias_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_pub_topic_alias_identities_updated_at": "CREATE TRIGGER trigger_pub_topic_alias_identities_updated_at BEFORE UPDATE ON public.post_publication_topic_alias_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "post_publication_topic_alias_identities_topic_alias_id_key": {
+          "columns": ["topic_alias_id"],
+          "definition": "UNIQUE (topic_alias_id)"
+        }
+      }
     },
     "post_read_states": {
       "checkConstraints": {},

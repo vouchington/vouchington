@@ -30,7 +30,6 @@ describe('reconciled post invalidations', () => {
       sitemap_day: '2026-09-01',
       is_public: true,
       eligibility_fingerprint: 'comment-eligibility-change',
-      projection_identity: { topicIds: [], identityKeys: [], sitemapTargets: [] },
     }
     await Promise.all(
       [root.id, parent.id, comment.id].map(id => caches.post_metrics.set(id, { stale: true })),

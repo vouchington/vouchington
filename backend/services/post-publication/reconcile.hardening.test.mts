@@ -160,7 +160,7 @@ describe('post publication orphan-receipt reconciliation', () => {
     let insertDispatched = false
     return Object.assign(
       async (input: string, values?: unknown[]) => {
-        if (!insertDispatched && input.includes('/* retainPostPublicationDirtyWorkKeys */')) {
+        if (!insertDispatched && input.includes('/* fencePublicationIdentityBridgeCapture */')) {
           insertDispatched = true
           dispatching.resolve()
           await peerDispatching.promise

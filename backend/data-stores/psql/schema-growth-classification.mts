@@ -42,6 +42,13 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
+  ['post_publication_post_identities', sharedParentUuidv7('posts')],
+  ['post_publication_community_identities', sharedParentUuidv7('communities')],
+  ['post_publication_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],
+  ['post_publication_author_identities', sharedParentUuidv7('users')],
+  ['post_publication_rss_feed_identities', sharedParentUuidv7('rss_feeds')],
+  ['post_publication_topic_alias_identities', sharedParentUuidv7('topic_aliases')],
+  ['post_publication_story_identities', sharedParentUuidv7('stories')],
   ['membership_google_play_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['bedrock_embeddings_batches', naturalOrProviderId('Bedrock owns the batch job identifier.')],

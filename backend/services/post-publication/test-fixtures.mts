@@ -25,7 +25,7 @@ export async function reconcileTestPublicationUntilSnapshotsComplete(
 export async function getTestPublicationProjectionIdentity(
   post: ReconciliationPost,
 ): Promise<PublicationProjectionIdentity> {
-  if (!post.identity_snapshot_id) return post.projection_identity
+  if (!post.identity_snapshot_id) throw new Error('Expected completed publication snapshot')
   const snapshot = await readTestPublicationSnapshot(post.identity_snapshot_id)
   return {
     topicIds: snapshot.keys.flatMap(key => (key.kind === 'topic' ? [key.value] : [])),
@@ -59,7 +59,7 @@ export async function createTestPublicationSnapshotWork() {
   await query.commit()
   const work = await claimPostPublicationDirtyWork(pending, 120)
   if (!work) throw new Error('Expected snapshot work')
-  const [candidate] = await listPublicationCandidates(work, 1, [post.id], true)
+  const [candidate] = await listPublicationCandidates(work, 1, [post.id])
   if (!candidate) throw new Error('Expected snapshot candidate')
   return { work, candidate, user }
 }

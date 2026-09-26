@@ -59,11 +59,6 @@ export const post: ReconciliationPost = {
   sitemap_day: '2026-09-01',
   is_public: true,
   eligibility_fingerprint: 'publication-state',
-  projection_identity: {
-    topicIds: [],
-    identityKeys: [{ kind: 'author', value: 'primary-author' }],
-    sitemapTargets: [],
-  },
 }
 
 export function makeResult(

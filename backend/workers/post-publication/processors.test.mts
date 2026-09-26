@@ -109,22 +109,12 @@ describe('post publication reconciliation processor', () => {
     expect(dependencies.releasePostPublicationDirtyWorkLease).toHaveBeenCalledOnce()
   })
 
-  it('drains current high-fanout identities through the bounded retained-key page', async () => {
+  it('drains only the current bounded retained-key page', async () => {
     const pageRssFeedId = '00000000-0000-7000-8000-000000000010'
-    const highFanoutPost = {
-      ...post,
-      projection_identity: {
-        ...post.projection_identity,
-        identityKeys: Array.from({ length: 1_001 }, (_, index) => ({
-          kind: 'rss_feed',
-          value: `00000000-0000-7000-8000-${String(index).padStart(12, '0')}`,
-        })),
-      },
-    }
     const dependencies = makeDependencies(
       makeResult({
         processed: 1,
-        posts: [highFanoutPost],
+        posts: [post],
         identityKeys: [{ id: pageRssFeedId, kind: 'rss_feed', value: pageRssFeedId }],
         hasMoreIdentityKeys: true,
         cursorKeyId: pageRssFeedId,

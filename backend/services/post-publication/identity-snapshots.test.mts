@@ -15,7 +15,6 @@ import {
   seedTestPublicationReceipt,
   readTestPublicationReceipt,
   readTestPublicationRetainedKeys,
-  testPublicationProtocolBarrier,
 } from '@voucha/test-helpers/entities/post-publication-snapshots'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 import { recordPostPublicationChange } from './capture.mts'
@@ -25,21 +24,23 @@ import {
 } from './dirty-work.mts'
 import { listPublicationCandidates } from './publication-candidates.mts'
 import { retainStoredPublicationIdentities } from './retain-stored-identities.mts'
-import { activatePostPublicationTypedProtocol } from './identity-protocol.mts'
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { runPostPublicationShadowAudit } from './shadow-audit.mts'
 import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
 import { randomUUID } from 'node:crypto'
-import { testConcurrentPublicationActivationBarrier } from '@voucha/test-helpers/entities/post-publication-protocol-barriers'
 
 describe('bounded publication identity snapshots', () => {
-  it('activation waits for all concurrent shared writer transactions', async () => {
-    await testConcurrentPublicationActivationBarrier(async readBlocked => {
-      await expect.poll(readBlocked).toBe(true)
-    })
+  it('requires a completed snapshot receipt without an activation switch', async () => {
+    const { work, candidate } = await createSnapshotWork()
+    expect(await acknowledgePostPublicationProjectionReceipts(work, [candidate])).toBe(false)
+    expect(await readTestPublicationReceipt(candidate.id)).toBeUndefined()
+    const snapshot = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
+    expect(snapshot.complete).toBe(true)
+    candidate.identity_snapshot_id = snapshot.snapshotId
+    expect(await acknowledgePostPublicationProjectionReceipts(work, [candidate])).toBe(true)
+    expect((await readTestPublicationReceipt(candidate.id))?.snapshotId).toBe(snapshot.snapshotId)
   })
   it('reuses the completed first post while the second post stages without advancing effects', async () => {
-    await activatePostPublicationTypedProtocol()
     const { candidate, user } = await createSnapshotWork()
     const second = await createTestPost({ user })
     await insertTestPublicationTopicSlugFanout(second.id, user.id, 51)
@@ -79,7 +80,7 @@ describe('bounded publication identity snapshots', () => {
     await query.commit()
     const work = await claimPostPublicationDirtyWork(pending, 120)
     if (!work) throw new Error('Expected snapshot lease')
-    const [candidate] = await listPublicationCandidates(work, 1, [post.id], true)
+    const [candidate] = await listPublicationCandidates(work, 1, [post.id])
     if (!candidate) throw new Error('Expected snapshot candidate')
     let previousCount = 0
     let previousCursor: string | null = null
@@ -196,12 +197,11 @@ describe('bounded publication identity snapshots', () => {
       value: oldSlug,
     })
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
-      snapshotId: null,
+      snapshotId: expect.any(String),
       fingerprint: 'previous-receipt',
     })
   })
   it('detects and repairs exact relational audit discrepancies', async () => {
-    await activatePostPublicationTypedProtocol()
     const { work, candidate, user } = await createSnapshotWork()
     const snapshot = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
     candidate.identity_snapshot_id = snapshot.snapshotId
@@ -234,17 +234,6 @@ describe('bounded publication identity snapshots', () => {
       fingerprint: candidate.eligibility_fingerprint,
     })
   })
-  it('blocks old writers after activation while expanded writes and capture succeed', async () => {
-    expect(await testPublicationProtocolBarrier()).toEqual({
-      oldRejected: true,
-      deleteRejected: true,
-      receiptRejected: true,
-      checkpointRejected: true,
-      deactivationRejected: true,
-      expandedSucceeded: true,
-      captureSucceeded: true,
-    })
-  })
 })
 
 async function createSnapshotWork() {
@@ -259,7 +248,7 @@ async function createSnapshotWork() {
   await query.commit()
   const work = await claimPostPublicationDirtyWork(pending, 120)
   if (!work) throw new Error('Expected snapshot work')
-  const [candidate] = await listPublicationCandidates(work, 1, [post.id], true)
+  const [candidate] = await listPublicationCandidates(work, 1, [post.id])
   if (!candidate) throw new Error('Expected snapshot candidate')
   return { work, candidate, user }
 }

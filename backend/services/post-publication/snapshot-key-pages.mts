@@ -1,3 +1,4 @@
+import { snapshotKeyPayloadSql } from './concrete-key-columns.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { publicationPageLimit } from './page-limit.mts'
 const NIL_UUID = '00000000-0000-0000-0000-000000000000'
@@ -24,8 +25,10 @@ export function publicationSnapshotKeyPageSql(
 }
 
 function snapshotKeySeek(cursor: SQLStatement, inclusive: boolean): SQLStatement {
-  return sql`SELECT id, kind, uuid_value, text_value, post_type, day FROM post_publication_identity_snapshot_keys
-    WHERE snapshot_id = bounds.snapshot_id AND (snapshot_id, id) `
+  return sql`SELECT key.id, `
+    .append(snapshotKeyPayloadSql())
+    .append(sql` FROM post_publication_identity_snapshot_keys key
+    WHERE snapshot_id = bounds.snapshot_id AND (snapshot_id, id) `)
     .append(inclusive ? '>=' : '>')
     .append(sql` (bounds.snapshot_id, `)
     .append(cursor)

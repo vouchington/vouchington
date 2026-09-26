@@ -4,13 +4,14 @@ import {
   type PostPublicationChange,
   type PostPublicationDirtyWork,
 } from './types.mts'
-import { lockPostPublicationScope, postPublicationScopeIdentifier } from './lock.mts'
+import { postPublicationScopeIdentifier } from './lock.mts'
 import {
   retainCurrentPostPublicationKeys,
   retainPostPublicationFootprintKeys,
   retainPostPublicationImpactKeys,
 } from './capture-keys.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
+import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
 
 const reasons = new Set<string>(POST_PUBLICATION_REASONS)
 
@@ -19,7 +20,7 @@ export async function recordPostPublicationChange(
   change: PostPublicationChange,
 ): Promise<PostPublicationDirtyWork> {
   assertChange(change)
-  await lockPostPublicationScope(query, change.scope)
+  await preparePostPublicationIdentityBridges(query, [change])
   const [work] = await upsertPostPublicationDirtyWork(
     query,
     change.scope.type,

@@ -1,3 +1,5 @@
+import sql from 'sql-template-strings'
+import { publicationRetainedKeyPageSql } from './retained-key-pages.mts'
 import { write } from '@data-stores/psql'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
 
@@ -23,39 +25,39 @@ export async function listPostPublicationIdentityKeys(
   const { rows } = await write<{
     id: string
     kind: string
-    uuid_value: string | null
-    text_value: string | null
-    post_type: string | null
+    uuidValue: string | null
+    textValue: string | null
+    postType: string | null
     day: string | null
+    live_post_id: string | null
   }>(
-    `/* listPostPublicationIdentityKeys */
-    SELECT id, kind, uuid_value::text, text_value, post_type::text, day::text
-    FROM post_publication_dirty_work_keys
-    WHERE dirty_work_id = $1
-      AND kind IN (
-        'identity_author', 'identity_author_username', 'identity_community',
-        'identity_community_slug', 'identity_post_slug', 'identity_rss_feed',
-        'identity_topic_alias', 'impact_post', 'impact_rss_feed_item', 'sitemap_target'
-      )
-      AND (
-        kind <> 'impact_post'
-        OR NOT EXISTS (SELECT 1 FROM posts WHERE posts.id = uuid_value)
-      )
-      AND ($2::uuid IS NULL OR id > $2::uuid)
-    ORDER BY id LIMIT $3`,
-    [work.id, work.cursor_key_id, limit + 1],
+    sql`/* listPostPublicationIdentityKeys */ WITH page AS MATERIALIZED (`.append(
+      publicationRetainedKeyPageSql(work.id, work.cursor_key_id, limit),
+    ).append(sql`) SELECT page.*, identity.post_id AS live_post_id FROM page
+        LEFT JOIN post_publication_post_identities identity ON identity.id = page.impact_post_identity_id ORDER BY page.id`),
   )
   const page = rows.slice(0, limit)
   return {
-    identityKeys: page.flatMap(toIdentityKey),
+    identityKeys: page.flatMap(row =>
+      toIdentityKey({
+        id: row.id,
+        kind: row.kind,
+        uuid_value: row.uuidValue,
+        text_value: row.textValue,
+      }),
+    ),
     missingPostIds: page.flatMap(row =>
-      row.kind === 'impact_post' && row.uuid_value ? [row.uuid_value] : [],
+      row.kind === 'impact_post' && row.uuidValue && row.live_post_id === null
+        ? [row.uuidValue]
+        : [],
     ),
     rssFeedItemIds: page.flatMap(row =>
-      row.kind === 'impact_rss_feed_item' && row.uuid_value ? [row.uuid_value] : [],
+      row.kind === 'impact_rss_feed_item' && row.uuidValue ? [row.uuidValue] : [],
     ),
-    sitemapTargets: page.flatMap(toSitemapTarget),
-    hasMore: rows.length > limit,
+    sitemapTargets: page.flatMap(row =>
+      toSitemapTarget({ kind: row.kind, post_type: row.postType, day: row.day }),
+    ),
+    hasMore: rows.length === limit,
     lastKeyId: page.at(-1)?.id ?? null,
   }
 }

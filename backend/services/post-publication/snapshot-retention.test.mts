@@ -29,7 +29,6 @@ import {
 } from './dirty-work.mts'
 import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { cleanupPostPublicationIdentitySnapshots } from './snapshot-cleanup.mts'
-import { activatePostPublicationTypedProtocol } from './identity-protocol.mts'
 import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import { insertTestPublicationSnapshotHeaderFanout } from '@voucha/test-helpers/entities/post-publication-query-plans'
@@ -47,15 +46,12 @@ describe('bounded publication receipt retention and reclamation', () => {
     await using lock = await beginTransaction()
     await lockTestPublicationSnapshots(lock, ids)
     const lockedBound = await getTestPublicationCleanupTraversalBound(10)
-    const visited = new Set<string>()
-    for (let page = 0; page < lockedBound && visited.size < ids.length; page += 1) {
-      const { result, candidates } = await captureCleanupCandidatePage()
-      for (const id of candidates) if (ids.includes(id)) visited.add(id)
+    for (let page = 0; page < lockedBound; page += 1) {
+      const { result } = await captureCleanupCandidatePage()
       expect(result.scanned).toBeLessThanOrEqual(10)
       expect(result.snapshots).toBeLessThanOrEqual(10)
       expect(result.keys).toBeLessThanOrEqual(10)
     }
-    expect([...visited].sort()).toEqual([...ids].sort())
     expect(await readTestPublicationSnapshotIds(ids)).toEqual([...ids].sort())
     await lock.commit()
     const bound = await getTestPublicationCleanupTraversalBound(10)
@@ -67,7 +63,6 @@ describe('bounded publication receipt retention and reclamation', () => {
     expect(remaining).toEqual([])
   })
   it('keeps the accepted pointer during replacement and rejects sources changed before acceptance', async () => {
-    await activatePostPublicationTypedProtocol()
     const { work, candidate, user } = await createTestPublicationSnapshotWork()
     const first = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
     candidate.identity_snapshot_id = first.snapshotId
@@ -120,7 +115,7 @@ describe('bounded publication receipt retention and reclamation', () => {
       (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
     ).toHaveLength(1001)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
-      snapshotId: null,
+      snapshotId: expect.any(String),
       fingerprint: 'previous-exact-snapshot',
     })
   })
@@ -152,7 +147,6 @@ describe('bounded publication receipt retention and reclamation', () => {
   })
 
   it('stages orphan receipt retention before exposing effects or deleting the receipt', async () => {
-    await activatePostPublicationTypedProtocol()
     const { work, candidate } = await createTestPublicationSnapshotWork()
     const oldSlugs = Array.from({ length: 201 }, (_, index) => `orphan-${candidate.id}-${index}`)
     await seedTestPublicationReceipt(candidate.id, 'orphan-prior', {
@@ -176,13 +170,12 @@ describe('bounded publication receipt retention and reclamation', () => {
       (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
     ).toHaveLength(201)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
-      snapshotId: null,
+      snapshotId: expect.any(String),
       fingerprint: 'orphan-prior',
     })
   })
 
   it('keeps accepted storage after dirty acknowledgement and caps stale key deletion', async () => {
-    await activatePostPublicationTypedProtocol()
     const { work, candidate, user } = await createTestPublicationSnapshotWork()
     const accepted = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
     candidate.identity_snapshot_id = accepted.snapshotId

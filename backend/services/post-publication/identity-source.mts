@@ -1,3 +1,4 @@
+import { snapshotKeyPayloadSql } from './concrete-key-columns.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 
@@ -52,8 +53,12 @@ export function publicationSnapshotMismatchSql(
   snapshotId: SQLStatement,
 ): SQLStatement {
   const statement = sql`EXISTS (WITH source AS (`
-  statement.append(publicationIdentityRowsSql(postId)).append(sql`), stored AS (
-    SELECT kind, uuid_value, text_value, post_type, day FROM post_publication_identity_snapshot_keys WHERE snapshot_id = `)
+  statement
+    .append(publicationIdentityRowsSql(postId))
+    .append(sql`), stored AS (
+    SELECT `)
+    .append(snapshotKeyPayloadSql())
+    .append(sql` FROM post_publication_identity_snapshot_keys key WHERE snapshot_id = `)
   statement.append(snapshotId).append(sql`)
     SELECT * FROM ((SELECT * FROM source EXCEPT SELECT * FROM stored)
       UNION ALL (SELECT * FROM stored EXCEPT SELECT * FROM source)) difference)`)

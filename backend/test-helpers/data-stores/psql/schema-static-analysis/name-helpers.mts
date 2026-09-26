@@ -30,8 +30,8 @@ const NAME_INFLECTION_IGNORE_PATTERNS = [
   /.*__default$/,
   /^rss_feed_items_default$/,
   /^post_publication_dirty_work$/,
-  /^post_publication_identity_protocol$/,
   /^post_publication_identity_cleanup_progress$/,
+  /^post_publication_identity_bridge_cleanup_progress$/,
 ]
 
 const INVARIANT_PLURAL_LAST_WORDS = new Set(['news'])

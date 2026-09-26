@@ -3444,9 +3444,6 @@ importers:
       '@services/platform-stats':
         specifier: workspace:^
         version: link:../services/platform-stats
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../services/post-publication
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
