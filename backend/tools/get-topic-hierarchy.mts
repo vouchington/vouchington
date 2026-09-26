@@ -1,6 +1,7 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from './types.mts'
 import { getTopicParents, getTopicChildren } from '@services/topics/hierarchy'
+import { resolveTopic } from './resolve-topic.mts'
 
 type ToolArgs = {
   topic_id: string
@@ -14,12 +15,17 @@ type TopicSummary = {
   topic_type: string
 }
 
-type ToolResult = {
-  success: true
-  topic_id: string
-  parents: TopicSummary[]
-  children: TopicSummary[]
-}
+type ToolResult =
+  | {
+      success: true
+      topic_id: string
+      parents: TopicSummary[]
+      children: TopicSummary[]
+    }
+  | {
+      success: false
+      error: string
+    }
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -32,7 +38,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       properties: {
         topic_id: {
           type: 'string',
-          description: 'The topic UUID to look up hierarchy for',
+          description: 'The topic UUID or slug to look up hierarchy for',
         },
         direction: {
           type: 'string',
@@ -55,16 +61,21 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const topic = await resolveTopic(args.topic_id)
+      if (!topic) {
+        return { success: false, error: 'Topic not found' }
+      }
+
       const direction = args.direction ?? 'both'
 
       const [parents, children] = await Promise.all([
-        direction === 'children' ? [] : getTopicParents(args.topic_id),
-        direction === 'parents' ? [] : getTopicChildren(args.topic_id),
+        direction === 'children' ? [] : getTopicParents(topic.id),
+        direction === 'parents' ? [] : getTopicChildren(topic.id),
       ])
 
       return {
         success: true,
-        topic_id: args.topic_id,
+        topic_id: topic.id,
         parents: parents.map(t => ({
           id: t.id,
           name: t.name,

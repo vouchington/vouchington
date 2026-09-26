@@ -15,11 +15,11 @@
               "properties": {
                 "topic_id_a": {
                   "type": "string",
-                  "description": "UUID of the first topic to compare"
+                  "description": "UUID or slug of the first topic to compare"
                 },
                 "topic_id_b": {
                   "type": "string",
-                  "description": "UUID of the second topic to compare"
+                  "description": "UUID or slug of the second topic to compare"
                 },
                 "vertical": {
                   "type": "string",
@@ -50,7 +50,7 @@
           "tool": {
             "name": "get_domain_ratings",
             "title": "Get Domain Ratings",
-            "description": "Look up trust signals for a linked source. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.",
+            "description": "Look up trust signals for a linked source. Provide exactly one of url or hostname. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -63,6 +63,8 @@
                   "description": "A bare hostname/domain to inspect, such as example.com"
                 }
               },
+              "minProperties": 1,
+              "maxProperties": 1,
               "additionalProperties": false
             },
             "annotations": {
@@ -389,7 +391,7 @@
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic UUID to look up hierarchy for"
+                  "description": "The topic UUID or slug to look up hierarchy for"
                 },
                 "direction": {
                   "type": "string",
@@ -426,7 +428,7 @@
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic UUID to aggregate data points for"
+                  "description": "The topic UUID or slug to aggregate data points for"
                 },
                 "vertical": {
                   "type": "string",
@@ -458,7 +460,7 @@
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic UUID to retrieve metrics for"
+                  "description": "The topic UUID or slug to retrieve metrics for"
                 }
               },
               "required": ["topic_id"]
@@ -495,7 +497,7 @@
                 },
                 "topic_id": {
                   "type": "string",
-                  "description": "Optionally filter to posts tagged with a specific topic."
+                  "description": "Optionally filter to posts tagged with a specific topic, by UUID or slug."
                 },
                 "limit": {
                   "type": "number",
@@ -590,7 +592,7 @@
           "tool": {
             "name": "manage_my_cards",
             "title": "Manage My Cards",
-            "description": "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+            "description": "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
             "inputSchema": {
               "type": "object",
               "properties": {
@@ -938,7 +940,7 @@
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "Filter by topic UUID (e.g. a specific credit card or bank account topic)"
+                  "description": "Filter by topic UUID or slug (e.g. a specific credit card or bank account topic)"
                 },
                 "vertical": {
                   "type": "string",
@@ -990,7 +992,7 @@
             "inputSchema": {
               "type": "object",
               "properties": {
-                "query": {
+                "semantic_search_query": {
                   "type": "string",
                   "description": "Natural language search query"
                 },
@@ -1000,11 +1002,20 @@
                 },
                 "post_type": {
                   "type": "string",
-                  "enum": ["discussion", "review", "data_point", "comment", "link"],
+                  "enum": [
+                    "discussion",
+                    "review",
+                    "data_point",
+                    "comment",
+                    "link",
+                    "article",
+                    "blog_post",
+                    "story"
+                  ],
                   "description": "Filter by post type"
                 }
               },
-              "required": ["query"]
+              "required": ["semantic_search_query"]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -1066,7 +1077,16 @@
                 },
                 "post_type": {
                   "type": "string",
-                  "enum": ["discussion", "review", "data_point", "comment"],
+                  "enum": [
+                    "discussion",
+                    "review",
+                    "data_point",
+                    "comment",
+                    "link",
+                    "article",
+                    "blog_post",
+                    "story"
+                  ],
                   "description": "Filter by post type"
                 }
               },
@@ -1097,7 +1117,7 @@
             "inputSchema": {
               "type": "object",
               "properties": {
-                "query": {
+                "semantic_search_query": {
                   "type": "string",
                   "description": "Natural language search query"
                 },
@@ -1106,7 +1126,7 @@
                   "description": "Max results (default: 10, max: 25)"
                 }
               },
-              "required": ["query"]
+              "required": ["semantic_search_query"]
             },
             "annotations": {
               "readOnlyHint": true,
@@ -1133,7 +1153,7 @@
             "inputSchema": {
               "type": "object",
               "properties": {
-                "query": {
+                "text_search_query": {
                   "type": "string",
                   "description": "Text query to match against topic names and slugs"
                 },
@@ -1142,7 +1162,7 @@
                   "description": "Max results (default: 10, max: 25)"
                 }
               },
-              "required": ["query"]
+              "required": ["text_search_query"]
             },
             "annotations": {
               "readOnlyHint": true,

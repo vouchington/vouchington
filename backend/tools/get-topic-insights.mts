@@ -3,6 +3,7 @@ import type { Tool } from './types.mts'
 import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import type { Money } from '@ts-shared/money'
+import { resolveTopic } from './resolve-topic.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 
@@ -11,17 +12,22 @@ type ToolArgs = {
   vertical?: string
 }
 
-type ToolResult = {
-  success: true
-  topic_id: string
-  total_count: number
-  approved_count: number
-  denied_count: number
-  pending_count: number
-  approval_rate: number | null
-  median_credit_limits: Money[]
-  credit_score_distribution: Record<string, number>
-}
+type ToolResult =
+  | {
+      success: true
+      topic_id: string
+      total_count: number
+      approved_count: number
+      denied_count: number
+      pending_count: number
+      approval_rate: number | null
+      median_credit_limits: Money[]
+      credit_score_distribution: Record<string, number>
+    }
+  | {
+      success: false
+      error: string
+    }
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -34,7 +40,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
       properties: {
         topic_id: {
           type: 'string',
-          description: 'The topic UUID to aggregate data points for',
+          description: 'The topic UUID or slug to aggregate data points for',
         },
         vertical: {
           type: 'string',
@@ -56,13 +62,18 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const insights = await getTopicDataPointInsights(args.topic_id, {
+      const topic = await resolveTopic(args.topic_id)
+      if (!topic) {
+        return { success: false, error: 'Topic not found' }
+      }
+
+      const insights = await getTopicDataPointInsights(topic.id, {
         vertical: args.vertical,
       })
 
       return {
         success: true,
-        topic_id: args.topic_id,
+        topic_id: topic.id,
         ...insights,
       }
     },

@@ -90,9 +90,11 @@ describe('handleMcpHttpRequest', () => {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
-      params: { name: 'search_topics_text', arguments: { query: 'hello' } },
+      params: { name: 'search_topics_text', arguments: { text_search_query: 'hello' } },
     })
 
     expect(response.status).toBe(200)
+    const json = (await response.json()) as { result?: { isError?: boolean } }
+    expect(json.result?.isError).not.toBe(true)
   }, 15_000)
 })

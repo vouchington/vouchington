@@ -165,7 +165,7 @@
     },
     {
       "name": "manage_my_cards",
-      "description": "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+      "description": "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
       "parameters": null,
       "api": [
         {

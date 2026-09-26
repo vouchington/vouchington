@@ -15,6 +15,7 @@ const NON_TOOL_FILES = new Set([
   'get-domain-ratings-helpers.mts',
   'index.mts',
   'private-user.mts',
+  'resolve-topic.mts',
   'search-crawl-tool.mts',
   'search-system.mts',
   'types.mts',

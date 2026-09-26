@@ -41,6 +41,7 @@ describe('get_topic_hierarchy tool — real DB', () => {
     const result = await execute({ topic_id: childTopicId, direction: 'parents' })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.topic_id).toBe(childTopicId)
     expect(result.children).toHaveLength(0)
     const parent = result.parents.find(p => p.id === parentTopicId)
@@ -53,6 +54,7 @@ describe('get_topic_hierarchy tool — real DB', () => {
     const result = await execute({ topic_id: parentTopicId, direction: 'children' })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.topic_id).toBe(parentTopicId)
     expect(result.parents).toHaveLength(0)
     const child = result.children.find(c => c.id === childTopicId)
@@ -65,6 +67,7 @@ describe('get_topic_hierarchy tool — real DB', () => {
     const result = await execute({ topic_id: childTopicId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.parents.some(p => p.id === parentTopicId)).toBe(true)
   })
 
@@ -79,7 +82,25 @@ describe('get_topic_hierarchy tool — real DB', () => {
     const result = await execute({ topic_id: isolatedId })
 
     expect(result.success).toBe(true)
+    if (!result.success) return
     expect(result.parents).toHaveLength(0)
     expect(result.children).toHaveLength(0)
+  })
+
+  it('accepts a topic slug and returns the resolved id', async () => {
+    const execute = getTopicHierarchyTool.function(user)
+    const result = await execute({ topic_id: `hierarchy-child-${suffix}`, direction: 'parents' })
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.topic_id).toBe(childTopicId)
+    expect(result.parents.map(p => p.id)).toContain(parentTopicId)
+  })
+
+  it('reports an unknown topic', async () => {
+    const execute = getTopicHierarchyTool.function(user)
+    const result = await execute({ topic_id: `missing-topic-${suffix}` })
+
+    expect(result).toEqual({ success: false, error: 'Topic not found' })
   })
 })

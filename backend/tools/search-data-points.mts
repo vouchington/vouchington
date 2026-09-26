@@ -7,6 +7,7 @@ import {
   CREDIT_SCORE_RANGES,
   CREDIT_CARD_RESULTS,
 } from '@ts-shared/data-points'
+import { resolveTopic } from './resolve-topic.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 const SCORE_RANGES = CREDIT_SCORE_RANGES.map(o => o.value)
@@ -20,15 +21,20 @@ type ToolArgs = {
   limit?: number
 }
 
-type ToolResult = {
-  success: true
-  results: Array<{
-    id: string
-    title: string
-    data_point_vertical: string | null
-    structured_data: Record<string, unknown>
-  }>
-}
+type ToolResult =
+  | {
+      success: true
+      results: Array<{
+        id: string
+        title: string
+        data_point_vertical: string | null
+        structured_data: Record<string, unknown>
+      }>
+    }
+  | {
+      success: false
+      error: string
+    }
 
 const tool: Tool<ToolArgs, ToolResult> = {
   schema: {
@@ -41,7 +47,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
       properties: {
         topic_id: {
           type: 'string',
-          description: 'Filter by topic UUID (e.g. a specific credit card or bank account topic)',
+          description:
+            'Filter by topic UUID or slug (e.g. a specific credit card or bank account topic)',
         },
         vertical: {
           type: 'string',
@@ -77,8 +84,13 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const topic = args.topic_id === undefined ? undefined : await resolveTopic(args.topic_id)
+      if (topic === null) {
+        return { success: false, error: 'Topic not found' }
+      }
+
       const results = await searchDataPoints({
-        topic_id: args.topic_id,
+        topic_id: topic?.id,
         vertical: args.vertical,
         result: args.result,
         credit_score_range: args.credit_score_range,

@@ -4,7 +4,7 @@ import { toolsSearchTopicsSemantic } from '@services/topics/tools/semantic'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {
-  query: string
+  semantic_search_query: string
   limit?: number
 }
 
@@ -26,7 +26,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        query: {
+        semantic_search_query: {
           type: 'string',
           description: 'Natural language search query',
         },
@@ -35,7 +35,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
           description: 'Max results (default: 10, max: 25)',
         },
       },
-      required: ['query'],
+      required: ['semantic_search_query'],
     },
     strict: null,
   },
@@ -50,7 +50,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const limit = clampToolLimit(args.limit, 10, 25)
-      const results = await toolsSearchTopicsSemantic(args.query, limit)
+      const results = await toolsSearchTopicsSemantic(args.semantic_search_query, limit)
       return { success: true, topics: results }
     },
 }

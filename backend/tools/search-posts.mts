@@ -4,6 +4,7 @@ import type { Tool } from './types.mts'
 import { getPostIds } from '@services/posts/search/get-ids'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
+import { VALID_FILTERABLE_POST_TYPES, type FilterablePostType } from '@ts-shared/feed-capabilities'
 import {
   buildSearchToolSchemaProperties,
   normalizeSearchToolArgs,
@@ -13,7 +14,7 @@ import {
 type ToolArgs = SearchSystemArgs & {
   limit?: number
   sort?: PostSearchSort
-  post_type?: 'discussion' | 'review' | 'data_point' | 'comment'
+  post_type?: FilterablePostType
 }
 
 type ToolResult = {
@@ -46,7 +47,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         },
         post_type: {
           type: 'string',
-          enum: ['discussion', 'review', 'data_point', 'comment'],
+          enum: [...VALID_FILTERABLE_POST_TYPES],
           description: 'Filter by post type',
         },
       },

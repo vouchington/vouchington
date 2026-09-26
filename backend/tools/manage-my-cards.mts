@@ -10,7 +10,7 @@ import type { Money } from '@ts-shared/money'
 export default createManageEntityTool({
   toolName: 'manage_my_cards',
   description:
-    "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+    "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
   addProperties: {
     card_id: {
       type: 'string',
