@@ -37,15 +37,16 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         new URL('../storybook/mocks/trending-topics-aside.tsx', import.meta.url),
       ),
     },
-    ...[
-      ['@/components/asides/contribute-cta-aside', 'contribute-cta-aside.tsx'],
-      ['@/components/asides/upgrade-membership-aside', 'upgrade-membership-aside.tsx'],
-    ].map(([find, file]) => ({
+    ...(
+      [
+        ['@/components/asides/contribute-cta-aside', 'contribute-cta-aside.tsx'],
+        ['@/components/asides/upgrade-membership-aside', 'upgrade-membership-aside.tsx'],
+      ] as const
+    ).map(([find, file]) => ({
       find,
       replacement: fileURLToPath(new URL(`../storybook/mocks/${file}`, import.meta.url)),
     })),
     {
-      // CommunitiesSidebarGroup loads client API data on mount; keep browser stories deterministic.
       find: '@/components/communities/communities-sidebar-group',
       replacement: fileURLToPath(
         new URL('../storybook/mocks/communities-sidebar-group.tsx', import.meta.url),
@@ -191,7 +192,6 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         ['@/lib/i18n/get-resolved-ui-locale', 'get-resolved-ui-locale.ts'],
       ] as const
     ).map(([find, file]) => ({
-      // These reach next/headers / server-only. Keep them out of the Storybook browser graph.
       find,
       replacement: fileURLToPath(new URL(`../storybook/mocks/${file}`, import.meta.url)),
     })),
