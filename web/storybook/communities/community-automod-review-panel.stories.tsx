@@ -3,6 +3,7 @@ import { CommunityAutomodReviewPanel } from '@/components/communities/community-
 import type { CommunityAutomodAction } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { posts } from '@/storybook/entities/fixtures/posts'
+import { getCanonicalPostPath } from '@/lib/post-helpers'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
@@ -29,7 +30,7 @@ const action: CommunityAutomodAction = {
   markdown_preview:
     'Use my Sapphire Reserve referral before you apply. I did not include a spend category or approval data point.',
   post_type: review.post_type,
-  post_href: `/posts/${review.slug}`,
+  post_href: getCanonicalPostPath(review),
   created_at: review.created_at,
   action_at: '2026-05-11T18:05:00.000Z',
   confidence_score: 0.64,

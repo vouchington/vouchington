@@ -18,8 +18,9 @@ const item = newsItems[1]!
 
 const episode: PodcastEpisode = {
   episodeId: item.id,
-  enclosureUrl: 'https://feeds.example/points-podcast/weekly-points.mp3',
-  enclosureType: 'audio/mpeg',
+  enclosureUrl:
+    'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=',
+  enclosureType: 'audio/wav',
   durationSeconds: 1800,
   title: 'Weekly points roundup: Sapphire Reserve changes',
   showId: show.id,
