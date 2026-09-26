@@ -1,3 +1,8 @@
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { Readable } from 'node:stream'
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,7 +19,11 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
   }
 })
 
-import { getSitemapFamilyManifest, putSitemapFamilyManifest } from './storage.mts'
+import {
+  getSitemapFamilyManifest,
+  putSitemapFamilyManifest,
+  putSitemapObjectFile,
+} from './storage.mts'
 import { S3Buckets } from '@modules/aws'
 
 describe('sitemap storage', () => {
@@ -65,4 +74,61 @@ describe('sitemap storage', () => {
       ContentType: 'application/json; charset=utf-8',
     })
   })
+
+  it('destroys an unread file upload stream when send resolves without reading', async () => {
+    const file = createSitemapUploadFile()
+    const captured = captureUnreadSitemapBody(false)
+    try {
+      await putSitemapObjectFile('sitemaps/static.xml', file.filePath, {
+        contentType: 'application/xml; charset=utf-8',
+        contentEncoding: 'gzip',
+      })
+      expect(captured.errors).toEqual([])
+      expect(captured.body?.destroyed).toBe(true)
+      await rm(file.filePath)
+      expect(captured.errors).toEqual([])
+    } finally {
+      await rm(file.directory, { recursive: true, force: true })
+    }
+  })
+
+  it('destroys an unread file upload stream when send rejects without reading', async () => {
+    const file = createSitemapUploadFile()
+    const captured = captureUnreadSitemapBody(true)
+    try {
+      await expect(
+        putSitemapObjectFile('sitemaps/static.xml', file.filePath, {
+          contentType: 'application/xml; charset=utf-8',
+          contentEncoding: 'gzip',
+        }),
+      ).rejects.toThrow('upload failed')
+      expect(captured.errors).toEqual([])
+      expect(captured.body?.destroyed).toBe(true)
+      await rm(file.filePath)
+      expect(captured.errors).toEqual([])
+    } finally {
+      await rm(file.directory, { recursive: true, force: true })
+    }
+  })
 })
+
+function createSitemapUploadFile(): { directory: string; filePath: string } {
+  const directory = mkdtempSync(join(tmpdir(), 'sitemap-upload-'))
+  const filePath = join(directory, 'page.xml.gz')
+  writeFileSync(filePath, 'sitemap-bytes')
+  return { directory, filePath }
+}
+
+function captureUnreadSitemapBody(rejectSend: boolean): { errors: unknown[]; body?: Readable } {
+  const captured: { errors: unknown[]; body?: Readable } = { errors: [] }
+  mocks.mockSend.mockImplementationOnce(async command => {
+    const body = (command as { input: { Body: Readable } }).input.Body
+    captured.body = body
+    body.on('error', error => {
+      captured.errors.push(error)
+    })
+    if (rejectSend) throw new Error('upload failed')
+    return {} as never
+  })
+  return captured
+}

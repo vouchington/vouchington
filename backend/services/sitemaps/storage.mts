@@ -1,4 +1,4 @@
-import { createReadStream } from 'node:fs'
+import { open } from 'node:fs/promises'
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { S3Buckets, S3ImagesClient } from '@modules/aws'
 import type { SitemapFamilyType, SitemapPostType, TrackedDayRange } from './types.mts'
@@ -47,11 +47,12 @@ export async function putSitemapObjectFile(
     contentEncoding?: string
   },
 ): Promise<void> {
+  await using fileHandle = await open(filePath, 'r')
   await S3ImagesClient.send(
     new PutObjectCommand({
       Bucket: S3Buckets.sitemaps,
       Key: applyStoragePrefix(key),
-      Body: createReadStream(filePath),
+      Body: fileHandle.createReadStream(),
       ContentType: options.contentType,
       ...(options.contentEncoding ? { ContentEncoding: options.contentEncoding } : {}),
     }),
