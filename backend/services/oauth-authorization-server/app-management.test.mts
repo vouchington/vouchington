@@ -17,6 +17,7 @@ import {
   exchangeOAuthRefreshToken,
   listOwnedOAuthApps,
   MAX_OAUTH_APP_SCOPES,
+  MAX_REDIRECT_URIS,
   revokeOwnedOAuthApp,
   rotateOwnedOAuthAppSecret,
   updateOwnedOAuthApp,
@@ -93,6 +94,15 @@ describe('owned OAuth app management', () => {
     await expect(
       createOwnedOAuthApp(owner.id, appInput({ redirect_uris: ['http://example.com/callback'] })),
     ).rejects.toMatchObject({ code: 'invalid_redirect_uri' })
+    const tooManyRedirects = Array.from({ length: MAX_REDIRECT_URIS + 1 }, () =>
+      randomTestOAuthRedirectUri(),
+    )
+    await expect(
+      createOwnedOAuthApp(owner.id, appInput({ redirect_uris: tooManyRedirects })),
+    ).rejects.toMatchObject({
+      code: 'invalid_redirect_uri',
+      message: `redirect_uris must contain between 1 and ${MAX_REDIRECT_URIS} entries`,
+    })
     await expect(
       createOwnedOAuthApp(owner.id, appInput({ scopes: ['mcp.user:write'] })),
     ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
