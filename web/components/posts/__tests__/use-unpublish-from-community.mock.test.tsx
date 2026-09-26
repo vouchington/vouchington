@@ -9,17 +9,22 @@ const { mockRefresh, mockUnpublish, mockToastError } = vi.hoisted(() => ({
   mockToastError: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('next/navigation'), () => ({
-  useRouter: () => ({ refresh: mockRefresh }),
-}))
+vi.mock(
+  import('next/navigation'),
+  () =>
+    ({
+      useRouter: () => ({ refresh: mockRefresh }),
+    }) as unknown as typeof import('next/navigation'),
+)
 
 vi.mock(import('@/lib/api/client/communities'), () => ({
   unpublishCommunityPost: mockUnpublish,
 }))
 
-vi.mock(import('sonner'), () => ({
-  toast: { error: mockToastError },
-}))
+vi.mock(
+  import('sonner'),
+  () => ({ toast: { error: mockToastError } }) as unknown as typeof import('sonner'),
+)
 
 function Harness() {
   const { handleUnpublish } = useUnpublishFromCommunity({
