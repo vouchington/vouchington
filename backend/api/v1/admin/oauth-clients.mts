@@ -9,6 +9,7 @@ import {
   type OAuthClientVerificationFilter,
 } from '@services/oauth-authorization-server'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
+import { assertNotSuspended } from '@services/users'
 import {
   buildPageInfo,
   createPaginationParser,
@@ -78,6 +79,7 @@ app.route('/api/v1/admin/oauth-clients/:id/verification').put(async (ctx: Contex
     currentUserCanVerifyOAuthClients,
     'PUT:/api/v1/admin/oauth-clients/:id/verification',
   )
+  assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
   const body = (await ctx.request.json('10kb')) as VerifyOAuthClientRequest
@@ -102,11 +104,12 @@ app.route('/api/v1/admin/oauth-clients/:id/verification').put(async (ctx: Contex
 
 // DELETE /api/v1/admin/oauth-clients/:id/verification — clear a client's verification
 app.route('/api/v1/admin/oauth-clients/:id/verification').delete(async (ctx: Context) => {
-  await requireAuthAndRateLimit(
+  const currentUser = await requireAuthAndRateLimit(
     ctx,
     currentUserCanVerifyOAuthClients,
     'DELETE:/api/v1/admin/oauth-clients/:id/verification',
   )
+  assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'DELETE:/api/v1/admin/oauth-clients/:id/verification', {

@@ -65,7 +65,8 @@ Administrators verify dynamically registered clients through `/api/v1/admin/oaut
 `verified_by_id` only when the stored `client_name` still equals the name the administrator
 reviewed, so a rename between review and approval returns 409 instead of verifying the new name.
 Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
-sets both columns back to `NULL`.
+sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
+verification.
 
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
