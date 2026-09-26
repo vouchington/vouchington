@@ -16,14 +16,13 @@ import { prepareSnapshotRequest } from './postgresql-snapshot-prepare.mts'
 const execFile = promisify(execFileCallback)
 const snapshotPath = 'backend/data-stores/psql/schema-snapshot'
 
-function required(name: string): string {
-  const value = process.env[name]
+function required(name: string, value = process.env[name]): string {
   if (!value) throw new Error(`${name} is required`)
   return value
 }
 
-function numeric(name: string): number {
-  const value = Number(required(name))
+function numeric(name: string, raw = process.env[name]): number {
+  const value = Number(required(name, raw))
   if (!Number.isSafeInteger(value) || value < 1)
     throw new Error(`${name} must be a positive integer`)
   return value
@@ -32,12 +31,12 @@ function numeric(name: string): number {
 function identityFromEnvironment(): SnapshotIdentity {
   return {
     repository: required('GITHUB_REPOSITORY'),
-    prNumber: numeric('SNAPSHOT_PR_NUMBER'),
-    headRef: required('SNAPSHOT_HEAD_REF'),
-    headSha: required('SNAPSHOT_HEAD_SHA'),
-    baseRef: required('SNAPSHOT_BASE_REF'),
-    baseSha: required('SNAPSHOT_BASE_SHA'),
-    postgresImage: required('SNAPSHOT_POSTGRES_IMAGE'),
+    prNumber: numeric('SNAPSHOT_PR_NUMBER', process.env.SNAPSHOT_PR_NUMBER),
+    headRef: required('SNAPSHOT_HEAD_REF', process.env.SNAPSHOT_HEAD_REF),
+    headSha: required('SNAPSHOT_HEAD_SHA', process.env.SNAPSHOT_HEAD_SHA),
+    baseRef: required('SNAPSHOT_BASE_REF', process.env.SNAPSHOT_BASE_REF),
+    baseSha: required('SNAPSHOT_BASE_SHA', process.env.SNAPSHOT_BASE_SHA),
+    postgresImage: required('SNAPSHOT_POSTGRES_IMAGE', process.env.SNAPSHOT_POSTGRES_IMAGE),
     runId: numeric('GITHUB_RUN_ID'),
     runAttempt: numeric('GITHUB_RUN_ATTEMPT'),
   }
@@ -46,7 +45,7 @@ function identityFromEnvironment(): SnapshotIdentity {
 async function generateManifest(): Promise<void> {
   const identity = identityFromEnvironment()
   const source = join(required('GITHUB_WORKSPACE'), snapshotPath)
-  const target = required('SNAPSHOT_ARTIFACT_DIR')
+  const target = required('SNAPSHOT_ARTIFACT_DIR', process.env.SNAPSHOT_ARTIFACT_DIR)
   await mkdir(target, { recursive: true })
   await Promise.all([
     cp(join(source, 'schema.json'), join(target, 'schema.json'), { dereference: false }),
@@ -73,9 +72,9 @@ async function copySnapshotFile(
 
 async function publish(): Promise<void> {
   const identity = identityFromEnvironment()
-  const artifactRoot = required('SNAPSHOT_ARTIFACT_DIR')
-  const checkout = required('SNAPSHOT_CANDIDATE_DIR')
-  const defaultBranch = required('SNAPSHOT_DEFAULT_BRANCH')
+  const artifactRoot = required('SNAPSHOT_ARTIFACT_DIR', process.env.SNAPSHOT_ARTIFACT_DIR)
+  const checkout = required('SNAPSHOT_CANDIDATE_DIR', process.env.SNAPSHOT_CANDIDATE_DIR)
+  const defaultBranch = required('SNAPSHOT_DEFAULT_BRANCH', process.env.SNAPSHOT_DEFAULT_BRANCH)
   const manifest = JSON.parse(
     await readFile(join(artifactRoot, 'manifest.json'), 'utf8'),
   ) as SnapshotManifest
@@ -150,7 +149,7 @@ async function publish(): Promise<void> {
     },
   )
   await assertPublishTarget(identity, defaultBranch)
-  const token = required('SNAPSHOT_PUBLISH_TOKEN')
+  const token = required('SNAPSHOT_PUBLISH_TOKEN', process.env.SNAPSHOT_PUBLISH_TOKEN)
   const authorization = Buffer.from(`x-access-token:${token}`).toString('base64')
   await execFile(
     'git',
