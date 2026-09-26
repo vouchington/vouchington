@@ -14,6 +14,15 @@ import {
   disableInboxMutations,
   enableInboxMutations,
 } from '@/storybook/mocks/inbox-mutation-fixture'
+import {
+  pinnedPostsFixtureEnabled,
+  pinnedPostsResponse,
+} from '@/storybook/mocks/pinned-posts-fixture'
+
+export {
+  clearPinnedPostsFixture,
+  setPinnedPostsFixture,
+} from '@/storybook/mocks/pinned-posts-fixture'
 
 const emptyPage = { has_next_page: false, end_cursor: null, start_cursor: null }
 const creditCards = communities[0]!
@@ -175,6 +184,9 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
       page_info: emptyPage,
       entity_relations: {},
     } as T)
+  }
+  if (endpoint.endsWith('/pinned-posts') && pinnedPostsFixtureEnabled()) {
+    return Promise.resolve(pinnedPostsResponse() as T)
   }
   if (endpoint.endsWith('/moderation-context') && moderationContextFixture !== undefined) {
     return Promise.resolve(moderationContextFixture as T)

@@ -6,7 +6,7 @@ import {
   setMyCommunitiesFixture,
 } from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
-import { commentPost, discussionPost, electionFor, reviewPost } from './fixtures'
+import { commentPost, electionFor, reviewPost } from './fixtures'
 
 const meta = {
   title: 'Posts/Post Detail Actions',
@@ -37,8 +37,8 @@ export const Review: Story = {
           postType: 'review',
           canDiscussInCommunity: true,
           discussionSource: {
-            title: discussionPost.title,
-            canonicalPath: getCanonicalPostPath(discussionPost),
+            title: reviewPost.title,
+            canonicalPath: getCanonicalPostPath(reviewPost),
           },
         }}
       />
