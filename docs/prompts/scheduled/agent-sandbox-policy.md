@@ -3,7 +3,7 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
 - This prompt owns `.claude/settings.json` (`permissions.allow` / `deny` / `defaultMode`,
   `sandbox.excludedCommands`, `sandbox.filesystem.allowWrite`, `sandbox.credentials.envVars`),
   `.codex/rules/default.rules`, `.codex/config.toml`, `.grok/sandbox.toml`, `.cursor/sandbox.json`,
-  `.cursor/cli.json`, `.cursor/hooks.json`, `.cursor/permissions.json`, and
+  `.cursor/cli.json`, `.cursor/permissions.json`, and
   `dev/codex-hooks/policy.mts` + `dev/codex-hooks/policy/` block-list additions for audit
   purposes — staleness, breadth drift, and doc-vs-config parity across all of them are in scope to
   find and report. But `.codex/rules/`, `.codex/config.toml`, and `dev/codex-hooks/**` are

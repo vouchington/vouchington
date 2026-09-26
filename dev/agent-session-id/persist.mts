@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
-import { isGrokHookProcess } from '../codex-hooks/hook-payload.mts'
+import type { PreToolUseRuntime } from '../codex-hooks/hook-payload.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
 import { isValidSessionId } from './valid-id.mts'
 
@@ -144,26 +144,41 @@ export function resolveAndPersistRootCodexSessionId(options: {
   }
 }
 
-export function persistGrokSessionStart(
+// Claude and Codex expose their session id to every process through env, so only the
+// Claude-compat runtimes without one (Grok and Cursor) persist it for later hook-less readers.
+function hookRuntimeSessionId(
+  runtime: PreToolUseRuntime | undefined,
+  payload: HookPayload,
+  env: NodeJS.ProcessEnv,
+): { agent: 'cursor' | 'grok'; sessionId: string } | undefined {
+  if (runtime === 'grok') return { agent: 'grok', sessionId: grokHookSessionId(payload, env) }
+  if (runtime === 'cursor') return { agent: 'cursor', sessionId: cursorPayloadSessionId(payload) }
+  return undefined
+}
+
+export function persistHookSessionStart(
+  runtime: PreToolUseRuntime | undefined,
   payload: HookPayload,
   env: NodeJS.ProcessEnv,
   cwd: string,
   generateId?: () => string,
 ): { generated: boolean; sessionId: string } | undefined {
-  if (!isGrokHookProcess(env)) return undefined
+  const hook = hookRuntimeSessionId(runtime, payload, env)
+  if (hook === undefined) return undefined
   return resolveAndPersistSessionStartId({
-    agent: 'grok',
+    agent: hook.agent,
     cwd,
     generateId,
-    payloadId: grokHookSessionId(payload, env),
+    payloadId: hook.sessionId,
   })
 }
 
-export function persistGrokRealSessionId(
+export function persistHookRealSessionId(
+  runtime: PreToolUseRuntime | undefined,
   payload: HookPayload,
   env: NodeJS.ProcessEnv,
   cwd: string,
 ): void {
-  if (!isGrokHookProcess(env)) return
-  persistRealSessionId(cwd, 'grok', grokHookSessionId(payload, env))
+  const hook = hookRuntimeSessionId(runtime, payload, env)
+  if (hook !== undefined) persistRealSessionId(cwd, hook.agent, hook.sessionId)
 }

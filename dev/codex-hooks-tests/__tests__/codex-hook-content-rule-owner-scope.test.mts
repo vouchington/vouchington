@@ -266,13 +266,10 @@ describe('gh content-rule owner scope', () => {
     const payload = { tool_input: { command: nonDraftPr('--repo widgets-inc/tool') } }
 
     it('allows another owner only when session owners are injected and exclude it', () => {
-      expect(preToolUseOutput(payload, { sessionOwners: () => new Set(['acme']) })).toBe('')
+      expect(preToolUseOutput(payload, { sessionOwners: () => new Set(['acme']) }).exitCode).toBe(0)
       const home = () => new Set(['acme', 'widgets-inc'])
-      expect(JSON.parse(preToolUseOutput(payload, { sessionOwners: home }))).toEqual({
-        decision: 'block',
-        reason: expect.stringContaining(DRAFT_FIRST),
-      })
-      expect(JSON.parse(preToolUseOutput(payload)).reason).toContain(DRAFT_FIRST)
+      expect(preToolUseOutput(payload, { sessionOwners: home }).stderr).toContain(DRAFT_FIRST)
+      expect(preToolUseOutput(payload).stderr).toContain(DRAFT_FIRST)
     })
   })
 })

@@ -12,11 +12,11 @@ import { tokenizeShellWords } from './shell-tokenizer.mts'
  */
 export const PROTECTED_HOOK_DIR_PREFIXES = [
   'dev/codex-hooks/',
-  'dev/cursor-hooks/',
   'dev/agent-session-id/',
   'dev/pr-description/',
   'dev/plan-issue/',
   '.codex/rules/',
+  '.grok/hooks/',
 ]
 export const PROTECTED_HOOK_EXACT_FILES = [
   '.codex/config.toml',

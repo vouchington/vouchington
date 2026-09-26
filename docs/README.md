@@ -34,7 +34,7 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Host Locks](development/host-locks.md) — Hosted-runner retirement boundary for repository CI locking and port allocation
 - [Merge Authority](development/merge-authority.md) — Env-aware merge-policy hook (blocked in GitHub Actions, human-confirmed interactively), automation PR labeling, and the #7848 bypass-actor residual
 - [Agent Sandbox](development/agent-sandbox.md) — OS-level sandbox containment model for Claude and Codex, the [hook threat model](development/agent-sandbox.md#hook-threat-model) (a guardrail, not a security boundary), per-command bypass rationale (gh/docker/pnpm/git), and why the credentialed-CI threat is already contained
-- [Agent Harness Parity](development/agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor vs OpenCode capability map; Grok reuses Claude-compat, Cursor uses native `.cursor/` adapters, OpenCode reads `CLAUDE.md` without copied hooks
+- [Agent Harness Parity](development/agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor vs OpenCode capability map; Grok and Cursor run Claude hooks through Claude-compat, OpenCode reads `CLAUDE.md` without copied hooks
 - [First-Party Dependencies](development/first-party-dependencies.md) — Package → upstream repo map for packages authored by Jonathan Ong
 - [Documentation Moved to vouchington-docs](development/docs-moved-to-vouchington-docs.md) — Registry of paths deliberately absent from this repo, where each went, and why
 - [Finite Enum Ripple Checklist](development/finite-enum-ripple-checklist.md) — Required scan surfaces for topic type, post type, route slug, and other closed-string-set removals or renames

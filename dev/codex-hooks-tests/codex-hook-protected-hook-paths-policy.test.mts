@@ -4,15 +4,16 @@ import { findPreToolUseBlock } from '../codex-hooks/policy.mts'
 const PROTECTED_TOKENS = [
   'dev/codex-hooks/policy.mts',
   'dev/codex-hooks/pre-tool-use.mts',
-  'dev/cursor-hooks/before-shell.mts',
   'dev/agent-session-id/persist.mts',
   'dev/pr-description/closing-refs.mts',
   'dev/plan-issue/validate.mts',
   '.codex/config.toml',
   '.codex/rules/default.rules',
   '.cursor/hooks.json',
+  '.cursor/permissions.json',
   '.cursor/sandbox.json',
   '.cursor/worktrees.json',
+  '.grok/hooks/pre-tool-use.mts',
 ]
 
 describe('Codex hook protected-hook-paths policy (#8009 finding 2)', () => {

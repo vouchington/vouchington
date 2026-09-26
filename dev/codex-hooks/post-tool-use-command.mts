@@ -68,9 +68,9 @@ async function runFrictionRecorder(payload: HookPayload): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const runtime = resolvePreToolUseRuntime(process.argv[2])
   const raw = await readStdin()
   const payload = readHookPayload(raw)
+  const runtime = resolvePreToolUseRuntime(process.argv[2], process.env, payload)
 
   // Each side effect is independent (own resource, own try/catch, no shared return value), so run
   // them concurrently instead of paying their combined latency sequentially.

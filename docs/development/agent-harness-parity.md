@@ -1,10 +1,11 @@
 # Agent Harness Parity — Claude, Codex, Grok, Cursor, and OpenCode
 
 Local coding agents in this repository share one instruction source and one
-policy runner. Grok does not get a copied `.grok/hooks`, `.grok/skills`, or
-permission allowlist. It reuses Claude-compat plus the shared `dev/codex-hooks`
-adapter. Cursor uses native `.cursor/` config plus thin `dev/cursor-hooks`
-adapters over the same policy runner. See [`.grok/README.md`](../../.grok/README.md),
+policy runner. `.claude/settings.json` is the only hook source for Claude, Cursor,
+and Grok; `.codex/config.toml` is Codex's. Grok does not get a copied `.grok/hooks`,
+`.grok/skills`, or permission allowlist, and Cursor does not get a `.cursor/hooks.json`:
+both run the Claude hooks through Claude-compat. Cursor keeps native `.cursor/` config
+for its sandbox, MCP, permissions, and worktrees. See [`.grok/README.md`](../../.grok/README.md),
 [`.cursor/README.md`](../../.cursor/README.md),
 [`.opencode/README.md`](../../.opencode/README.md), and
 [agent-workflow](../../.agents/skills/agent-workflow/SKILL.md).
@@ -60,11 +61,10 @@ flowchart LR
   skills --> opencode
   claudeHooks[.claude/settings.json] --> claude
   claudeHooks --> grokCompat[Grok Claude-compat]
+  claudeHooks --> cursorCompat[Cursor Claude-compat]
   hookRunner[dev/codex-hooks] --> claudeHooks
   hookRunner --> codexConfig[.codex/config.toml]
-  hookRunner --> grokCompat
-  hookRunner --> cursorHooks[dev/cursor-hooks]
-  cursorHooks --> cursorConfig[".cursor/"]
+  cursorConfig[".cursor/ sandbox, MCP, permissions"] --> cursor
 ```
 
 ## Capability matrix
@@ -74,13 +74,14 @@ flowchart LR
 | Instructions  | Nested `CLAUDE.md`                                                                                                           | `project_doc_fallback_filenames = ["CLAUDE.md"]`                                                            | Native `CLAUDE.md` / `Claude.md`. Do not add tracked `AGENTS.md`                                                                                                                                         |
 | Skills        | Vouchington domain plugin + `.claude/skills` → `.agents/skills` overlays; blackboard also reads its installed provider skill | Vouchington domain plugin + Skill tool / local overlays; blackboard also reads its installed provider skill | `.agents/skills` overlays load installed Vouchington and agent-blackboard provider skills                                                                                                                |
 | Custom agents | `.claude/agents/github-issue-agent.md`                                                                                       | `.codex/agents/*.toml`                                                                                      | Reuses the Claude agent via compat. Codex agents are not loaded                                                                                                                                          |
-| Hooks         | `.claude/settings.json`                                                                                                      | `.codex/config.toml`                                                                                        | Reuses Claude hooks after camelCase + `deny` + 30s timeout                                                                                                                                               |
+| Hooks         | `.claude/settings.json`                                                                                                      | `.codex/config.toml`                                                                                        | Reuses Claude hooks via compat; the PreToolUse command sets `timeout: 30`                                                                                                                                |
+| Hook block    | Exit 2; stderr reason shown                                                                                                  | Exit 2; stderr reason                                                                                       | Exit 2; shows `Hook denied: <reason>`                                                                                                                                                                    |
 | Permissions   | `.claude/settings.json` allow/deny                                                                                           | `.codex/rules/default.rules`                                                                                | Reuses Claude permission strings via compat                                                                                                                                                              |
 | Sandbox       | On, with `excludedCommands`                                                                                                  | `workspace-write`; prefixes stay sandboxed; extra roots include pnpm cache/state and no-mistakes cache      | Custom `workspace-write` in [`.grok/sandbox.toml`](../../.grok/sandbox.toml). Launch `--sandbox workspace-write`. Prefixes stay sandboxed; extra roots match Codex (pnpm cache/state, no-mistakes cache) |
 | MCP           | `.mcp.json` enabled in `.claude/settings.json`                                                                               | `.codex/config.toml` `[mcp_servers]` with per-tool approvals                                                | Native `.grok/config.toml` with the exact `MCPTool(...)` allowlist                                                                                                                                       |
 | Plugins / LSP | `enabledPlugins` marketplace                                                                                                 | Codex plugins                                                                                               | Separate Grok plugin model. Claude marketplace plugins do not load                                                                                                                                       |
 | Session id    | `CLAUDE_CODE_SESSION_ID`                                                                                                     | `CODEX_THREAD_ID`                                                                                           | Hook `GROK_SESSION_ID` plus `.local/grok-session-id`. Main shell uses `GROK_AGENT` to select that persist file; pass `--session-id` for transcripts                                                      |
-| Merge confirm | Silent `permissionDecision: allow` for one plain merge when attended; empty otherwise                                        | Empty hook output (best-effort)                                                                             | Empty confirm (best-effort, not guaranteed). Hard blocks emit `{decision: deny}`                                                                                                                         |
+| Merge confirm | Silent `permissionDecision: allow` for one plain merge when attended; empty otherwise                                        | Empty hook output (best-effort)                                                                             | Empty confirm (best-effort, not guaranteed)                                                                                                                                                              |
 | Folder trust  | Always loads project settings                                                                                                | Loads project hooks                                                                                         | Project Claude hooks need `/hooks-trust`                                                                                                                                                                 |
 | CI            | Local agent only                                                                                                             | Scheduled / dispatch / shepherd                                                                             | Out of scope while CI is being redone                                                                                                                                                                    |
 
@@ -95,8 +96,8 @@ keeps its separate caller-owned order in `dev/retrospective-transcript-facts/res
 ### Cursor capability surface
 
 - Instructions: checked-in `CLAUDE.md`; do not add tracked `AGENTS.md`.
-- Hooks: native [`.cursor/hooks.json`](../../.cursor/hooks.json) calls thin `dev/cursor-hooks`
-  policy adapters.
+- Hooks: Claude-compat runs `.claude/settings.json`; see
+  [Cursor through Claude-compat](#cursor-through-claude-compat).
 - Sandbox: native [`.cursor/sandbox.json`](../../.cursor/sandbox.json), with documented
   localhost/private-network gaps.
 - CI: local agent only.
@@ -124,32 +125,59 @@ leading-glob `Bash(*git push --force)` for the no-arg form. Leave
 `--force-with-lease` itself un-denied so the PreToolUse hook can allow it.
 `dev/claude-settings-grok-bash-deny.test.mts` locks this.
 
-The shared runner still has to speak Grok's hook dialect:
+The shared runner still has to read Grok's hook dialect:
 
 - stdin uses `toolInput`, `toolName`, `sessionId`, and `toolResult`
-- only `{decision: deny}` blocks PreToolUse; `{decision: block}` fail-opens
+- PreToolUse blocks by exiting 2, and Grok shows `Hook denied: <reason>`. Its
+  stdout dialect blocks only on `{decision: deny}` (`{decision: block}` fails
+  open), so the block JSON every runtime gets says `deny`
 - default hook timeout is 5 seconds and fail-opens; the Claude PreToolUse
   command sets `timeout: 30`
-- `GROK_SESSION_ID` / `GROK_HOOK_EVENT` override argv `claude` so
-  Claude-compat still reaches the Grok deny adapter. `GROK_AGENT` is a
-  main-shell marker only and is not used to choose hook deny vs block
+- `GROK_SESSION_ID` / `GROK_HOOK_EVENT` override argv `claude`, so Grok never
+  gets the attended Claude merge allow and persists `.local/grok-session-id`.
+  `GROK_AGENT` is a main-shell marker only; hooks do not read it
 - PreToolUse matcher lists both Claude names (`Bash|Write|Edit`) and Grok
   names (`run_terminal_command|search_replace`) so the policy hook fires
   even if Claude-compat name aliases are off
 
-## Cursor native config
+The Codex gate was verified end to end with `codex-cli 0.157.1`: a fresh `codex exec` invocation
+attempting `HUSKY=0 true` reported `PreToolUse Blocked`, did not run the command, and surfaced the
+hook's HUSKY reason. This verifies Codex honors the shared exit-2 contract rather than merely
+exercising the Node entrypoint in isolation.
 
-Cursor CLI does not use Claude-compat. Native files under [`.cursor/`](../../.cursor/README.md)
-call thin adapters in `dev/cursor-hooks/` that reuse `dev/codex-hooks` policy:
+## Cursor through Claude-compat
+
+Cursor CLI runs the `.claude/settings.json` hooks through its Claude-compat loader, like Grok. Do
+not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would double-fire.
+`dev/agent-sandbox-config.test.mts` fails if it (or `.grok/hooks/`) comes back. Checked with
+`cursor-agent` `2026.09.23-86fc751`:
+
+- Tool names: Cursor's shell tool is `Shell`, and the Claude `Bash` matchers fire for it; its file
+  tools fire the `Edit|Write` PostToolUse group with `file_path`. `readHookPayload` maps `Shell` to
+  `Bash` and lifts the `tool_output` JSON string `{exitCode, output}` onto `tool_response`
+  `{exit_code, stdout}`, so the tmux reminder, journal checkpoints, and friction recorder see
+  Cursor shell calls.
+- Runtime: `CURSOR_VERSION` / `CURSOR_PROJECT_DIR`, or the payload `cursor_version`, override argv
+  `claude`. Cursor inherits `CLAUDE_CODE_SESSION_ATTENDED=1` from a Claude parent shell; resolved
+  as `cursor`, a lone merge still gets no hook opinion.
+- Blocks: exit 2. Cursor shows the stdout JSON, `Rejected: {"decision":"deny","reason":…}`.
+- Session id: Cursor injects no session-id env into the agent Shell. Claude-compat SessionStart and
+  PreToolUse persist the payload `session_id` (else `conversation_id`) to
+  `.local/cursor-session-id`, the no-flag journal path. Pass `--session-id` for transcripts.
+- Fails open on a hook crash or timeout. Claude-compat has no `failClosed`, which the old native
+  `beforeShellExecution` hook set. Accepted: the hook is a mistake guardrail, not a security
+  boundary.
+- Not run: without `.cursor/hooks.json`, Cursor never fires the Claude-compat `UserPromptSubmit`
+  hook, so it gets no tmux nudge on prompt submit. SessionStart context and the PostToolUse
+  reminders still run.
+
+Native files under [`.cursor/`](../../.cursor/README.md) own everything else:
 
 - `sandbox.json` — Codex-equivalent `workspace_readwrite` extra roots and `networkPolicy.default: allow`
-- `hooks.json` — `beforeShellExecution` emits `{permission: deny|allow|ask}`
 - `mcp.json` — Agent Blackboard local wrapper; `cli.json` / `permissions.json` own its exact tool allowlists
 - `worktrees.json` — `./dev/initialize monorepo` on Agents Window / `agent --worktree`
   via the generic `setup-worktree` command array. Do not use `setup-worktree-unix` with an
   array: Cursor CLI (`2026.08.11-e8db854`) treats that key as a script path and crashes.
-- Session id — `CURSOR_AGENT` / `CURSOR_SESSION_ID` for hooks. Shell has no sessionStart env;
-  persist `.local/cursor-session-id` is the no-flag journal path. Pass `--session-id` for transcripts.
 
 Do not add tracked `AGENTS.md` or a second `.cursor/skills/` tree. Cursor already reads
 `CLAUDE.md` and `.agents/skills`; reusable workflow overlays load their canonical skill from the

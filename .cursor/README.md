@@ -6,9 +6,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Read checked-in `CLAUDE.md` files. Do not add tracked `AGENTS.md` copies.
 - Skills load from [`.agents/skills/`](../.agents/skills) (Cursor also discovers
   `.claude/skills/`).
-- Native hooks live in [`hooks.json`](hooks.json) and call thin adapters under
-  [`dev/cursor-hooks/`](../dev/cursor-hooks). Policy stays in
-  [`dev/codex-hooks/`](../dev/codex-hooks).
+- Hooks load through Cursor's Claude-compat from [`.claude/settings.json`](../.claude/settings.json);
+  policy stays in [`dev/codex-hooks/`](../dev/codex-hooks). Do not add a `hooks.json` here: a
+  second hook source double-fires.
 - MCP uses [`mcp.json`](mcp.json)'s root-resolving Agent Blackboard wrapper. Its exact eight-tool
   allowlist is kept in both [`cli.json`](cli.json) and [`permissions.json`](permissions.json).
 - CLI allow/deny tokens: [`cli.json`](cli.json). Auto-review guidance:
@@ -26,9 +26,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   `The "path" argument must be of type string. Received an instance of Array`.
   Full `./dev/initialize web` stays agent-driven.
 - Capability map: [agent-harness-parity.md](../docs/development/agent-harness-parity.md).
-- Session id: sessionStart emits `CURSOR_SESSION_ID` for later hooks, but Cursor does not inject
-  that env into the agent Shell. Hooks persist `.local/cursor-session-id` (gitignored) so journal
-  and retro CLIs resolve without `--session-id`. Pass `--session-id` or `--jsonl` for transcript
-  facts. `./dev/reset-worktree` deletes the persist file.
+- Session id: Cursor does not inject a session-id env into the agent Shell. Claude-compat
+  SessionStart/PreToolUse persist `.local/cursor-session-id` (gitignored) so journal and retro CLIs
+  resolve without `--session-id`. Pass `--session-id` or `--jsonl` for transcript facts.
+  `./dev/reset-worktree` deletes the persist file.
 
 `worktrees/` is gitignored runtime state.

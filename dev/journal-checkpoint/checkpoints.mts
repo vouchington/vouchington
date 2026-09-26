@@ -22,8 +22,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // (context.rs:320, :369-377). A non-"Error: Exit code" string is Codex's merged
 // stdout+stderr, recorded as `{kind: 'output'}` below. Because Codex drops the exit code before
 // it ever reaches hooks, there is no way to distinguish a Codex failure from a Codex success by
-// shape alone — `isFailureCandidate` (checkpoint 2) stays Claude-only, a source-verified limit,
-// not an oversight. `isMilestoneCandidate` (checkpoint 3) can still use `output` text, since a
+// shape alone — `isFailureCandidate` (checkpoint 2) never fires for Codex, a source-verified
+// limit, not an oversight. Grok's `tool_response` and Cursor's (normalized in readHookPayload) are
+// objects carrying `exit_code`, so a nonzero one is a failure. `isMilestoneCandidate` (checkpoint 3) can still use `output` text, since a
 // milestone already requires corroborating output content (a PR URL, a non-rejected ref-update
 // line), not an exit status.
 export type ToolOutcome =
@@ -40,11 +41,12 @@ export function extractToolOutcome(payload: HookPayload): ToolOutcome {
       : { kind: 'output', text: raw }
   }
   if (isRecord(raw)) {
-    return {
-      kind: 'success',
-      stderr: typeof raw.stderr === 'string' ? raw.stderr : '',
-      stdout: typeof raw.stdout === 'string' ? raw.stdout : '',
+    const stderr = typeof raw.stderr === 'string' ? raw.stderr : ''
+    const stdout = typeof raw.stdout === 'string' ? raw.stdout : ''
+    if (typeof raw.exit_code === 'number' && raw.exit_code !== 0) {
+      return { kind: 'failure', message: `Error: Exit code ${raw.exit_code}\n${stderr || stdout}` }
     }
+    return { kind: 'success', stderr, stdout }
   }
   return { kind: 'unknown' }
 }

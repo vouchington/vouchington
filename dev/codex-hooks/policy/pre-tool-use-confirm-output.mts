@@ -25,8 +25,10 @@ export type PreToolUseOptions = {
  */
 export function renderConfirmDisposition(options: PreToolUseOptions): string {
   if (options.runtime !== 'claude' || options.attended !== true) {
-    // Codex, Grok, and an unattended Claude session (claude -p, Auto Harness) get no opinion from
-    // the hook, so the harness's own prompt, approval policy, or auto-mode classifier decides.
+    // Codex, Cursor, Grok, and an unattended Claude session (claude -p, Auto Harness) get no
+    // opinion from the hook, so the harness's own prompt, approval policy, or auto-mode classifier
+    // decides. Cursor resolves as `cursor` even when it inherits the attended env from a Claude
+    // session (see resolvePreToolUseRuntime), so it never reaches the allow below.
     // See docs/development/merge-authority.md.
     return ''
   }

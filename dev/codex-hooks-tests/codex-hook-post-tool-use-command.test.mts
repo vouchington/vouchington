@@ -152,6 +152,36 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
     expect(parsed.hookSpecificOutput.additionalContext).toContain('PR created')
   })
 
+  // Cursor runs this same Claude-compat entrypoint with its own `Shell` tool name and a JSON-string
+  // `tool_output`; readHookPayload normalizes both, so the exit-code gate still applies.
+  function runCursorPrCreate(exitCode: number) {
+    const tmuxDir = writeFakeTmux('old-task')
+    return runScript({
+      args: ['claude'],
+      env: { PATH: `${tmuxDir}:${process.env.PATH ?? ''}`, TMUX_PANE: '%1' },
+      input: JSON.stringify({
+        cursor_version: 'present',
+        tool_input: { command: 'gh pr create --title x --body y' },
+        tool_name: 'Shell',
+        tool_output: JSON.stringify({ exitCode, output: '' }),
+      }),
+    })
+  }
+
+  it('reminds after a successful Cursor Shell gh pr create', () => {
+    const result = runCursorPrCreate(0)
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout).hookSpecificOutput.additionalContext).toContain('PR created')
+  })
+
+  it('stays silent after a failed Cursor Shell gh pr create', () => {
+    const result = runCursorPrCreate(1)
+    expect(result.status).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(result.stdout).toBe('')
+  })
+
   it('stays silent for the tmux reminder outside tmux', () => {
     const result = runScript({
       args: ['claude'],

@@ -4,13 +4,9 @@
     ".": {
       "entry": [
         "dev/codex-hooks/pre-tool-use.mts",
-        "dev/codex-hooks/persist-grok-session-id.mts",
+        "dev/codex-hooks/persist-session-id.mts",
         "dev/codex-hooks/post-tool-use.mts",
         "dev/codex-hooks/post-tool-use-command.mts",
-        "dev/cursor-hooks/after-file-edit.mts",
-        "dev/cursor-hooks/before-shell.mts",
-        "dev/cursor-hooks/post-tool.mts",
-        "dev/cursor-hooks/session-start.mts",
         "dev/pr-description.mts",
         "dev/agent-issue-labels/**/*.mts",
         "dev/otel-register.mts",

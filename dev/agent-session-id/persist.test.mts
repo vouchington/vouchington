@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   cursorPayloadSessionId,
-  persistGrokRealSessionId,
-  persistGrokSessionStart,
+  persistHookRealSessionId,
+  persistHookSessionStart,
   persistRealSessionId,
   readPersistedSessionId,
   resolveAndPersistRootCodexSessionId,
@@ -156,43 +156,57 @@ describe('agent-session-id persist', () => {
     })
   })
 
-  describe('grok persist', () => {
-    it('is a no-op without GROK_SESSION_ID or GROK_HOOK_EVENT', async () => {
+  describe('hook runtime persist', () => {
+    it.each(['claude', 'codex', undefined] as const)('is a no-op for runtime %s', async runtime => {
       const cwd = await makeTempDir()
-      expect(persistGrokSessionStart({ sessionId: 'grok-payload' }, {}, cwd)).toBeUndefined()
-      persistGrokRealSessionId({ sessionId: 'grok-payload' }, {}, cwd)
+      const payload = { sessionId: 'payload-id' }
+      const env = { GROK_SESSION_ID: 'grok-env' }
+      expect(persistHookSessionStart(runtime, payload, env, cwd)).toBeUndefined()
+      persistHookRealSessionId(runtime, payload, env, cwd)
+      expect(readPersistedSessionId(cwd, 'cursor')).toBeUndefined()
       expect(readPersistedSessionId(cwd, 'grok')).toBeUndefined()
     })
 
-    it('SessionStart generates when gated and no payload id exists', async () => {
+    it.each([
+      ['grok', 'grok-generated'],
+      ['cursor', 'cursor-generated'],
+    ] as const)('%s SessionStart generates when no payload id exists', async (runtime, id) => {
       const cwd = await makeTempDir()
-      expect(
-        persistGrokSessionStart(
-          {},
-          { GROK_HOOK_EVENT: 'SessionStart' },
-          cwd,
-          () => 'grok-generated',
-        ),
-      ).toEqual({ generated: true, sessionId: 'grok-generated' })
-      expect(await readPersist(cwd, 'grok')).toBe('grok-generated')
+      expect(persistHookSessionStart(runtime, {}, {}, cwd, () => id)).toEqual({
+        generated: true,
+        sessionId: id,
+      })
+      expect(await readPersist(cwd, runtime)).toBe(id)
     })
 
-    it('SessionStart persists a real Grok id and PreToolUse does not generate', async () => {
+    it('Grok SessionStart persists a real id and PreToolUse does not generate', async () => {
       const cwd = await makeTempDir()
-      expect(
-        persistGrokSessionStart(
-          { sessionId: 'grok-real' },
-          { GROK_HOOK_EVENT: 'SessionStart' },
-          cwd,
-        ),
-      ).toEqual({ generated: false, sessionId: 'grok-real' })
+      expect(persistHookSessionStart('grok', { sessionId: 'grok-real' }, {}, cwd)).toEqual({
+        generated: false,
+        sessionId: 'grok-real',
+      })
       expect(await readPersist(cwd, 'grok')).toBe('grok-real')
 
-      persistGrokRealSessionId({}, { GROK_SESSION_ID: 'grok-env' }, cwd)
+      persistHookRealSessionId('grok', {}, { GROK_SESSION_ID: 'grok-env' }, cwd)
       expect(await readPersist(cwd, 'grok')).toBe('grok-env')
 
-      persistGrokRealSessionId({}, { GROK_HOOK_EVENT: 'PreToolUse' }, cwd)
+      persistHookRealSessionId('grok', {}, {}, cwd)
       expect(await readPersist(cwd, 'grok')).toBe('grok-env')
+    })
+
+    it('Cursor SessionStart persists session_id and PreToolUse falls back to conversation_id', async () => {
+      const cwd = await makeTempDir()
+      expect(persistHookSessionStart('cursor', { session_id: 'cursor-real' }, {}, cwd)).toEqual({
+        generated: false,
+        sessionId: 'cursor-real',
+      })
+      expect(await readPersist(cwd, 'cursor')).toBe('cursor-real')
+
+      persistHookRealSessionId('cursor', { conversation_id: 'cursor-conv' }, {}, cwd)
+      expect(await readPersist(cwd, 'cursor')).toBe('cursor-conv')
+
+      persistHookRealSessionId('cursor', {}, {}, cwd)
+      expect(await readPersist(cwd, 'cursor')).toBe('cursor-conv')
     })
 
     it('does not cross-read cursor and grok persist files', async () => {

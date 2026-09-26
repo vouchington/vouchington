@@ -48,8 +48,8 @@
       "Bash(node dev/retrospective-save.mts *)",
       "Bash(node dev/check-blackboard.mts)",
       "Bash(node dev/check-blackboard.mts *)",
-      "Bash(node dev/codex-hooks/persist-grok-session-id.mts)",
-      "Bash(node dev/codex-hooks/persist-grok-session-id.mts *)",
+      "Bash(node dev/codex-hooks/persist-session-id.mts)",
+      "Bash(node dev/codex-hooks/persist-session-id.mts *)",
       "Bash(node dev/journal-checkpoint.mts)",
       "Bash(node dev/journal-checkpoint.mts *)",
       "Bash(node dev/codex-hooks/post-tool-use-command.mts)",
@@ -316,7 +316,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/persist-grok-session-id.mts\""
+            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/persist-session-id.mts\" claude"
           },
           {
             "type": "command",
@@ -482,8 +482,8 @@
       "node dev/retrospective-save.mts *",
       "node dev/check-blackboard.mts",
       "node dev/check-blackboard.mts *",
-      "node dev/codex-hooks/persist-grok-session-id.mts",
-      "node dev/codex-hooks/persist-grok-session-id.mts *",
+      "node dev/codex-hooks/persist-session-id.mts",
+      "node dev/codex-hooks/persist-session-id.mts *",
       "node dev/journal-checkpoint.mts",
       "node dev/journal-checkpoint.mts *",
       "node dev/codex-hooks/post-tool-use-command.mts",

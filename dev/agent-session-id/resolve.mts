@@ -17,7 +17,7 @@ export { validateRootCodexOptions } from './root-codex-options.mts'
 export type BlackboardAgent = 'claude-code' | 'codex' | 'cursor' | 'grok'
 
 export type BlackboardAgentHints = {
-  runtime?: 'claude' | 'codex' | 'grok'
+  runtime?: HarnessId
   transcriptPath?: string
 }
 
@@ -43,15 +43,12 @@ function agentFor(harness: HarnessId): BlackboardAgent {
   return harness === 'claude' ? 'claude-code' : harness
 }
 
-function hintedAgent(hints: BlackboardAgentHints): BlackboardAgent | undefined {
-  if (hints.runtime === 'claude') return 'claude-code'
-  if (hints.runtime === 'codex') return 'codex'
-  if (hints.runtime === 'grok') return 'grok'
-  const path = hints.transcriptPath?.replaceAll('\\', '/')
+function transcriptHarness(transcriptPath: string | undefined): HarnessId | undefined {
+  const path = transcriptPath?.replaceAll('\\', '/')
   if (!path) return undefined
   if (path.includes('/.codex/') && path.endsWith('.jsonl')) return 'codex'
   if (path.includes('/.grok/') && path.endsWith('/updates.jsonl')) return 'grok'
-  if (path.includes('/.claude/projects/') && path.endsWith('.jsonl')) return 'claude-code'
+  if (path.includes('/.claude/projects/') && path.endsWith('.jsonl')) return 'claude'
   return undefined
 }
 
@@ -97,16 +94,12 @@ export function resolveAmbientBlackboardIdentity(
       rootCodex: false,
       sessionIdArg: undefined,
     })
-    const runtime = options.runtime ? hintedAgent({ runtime: options.runtime }) : undefined
-    const transcript = options.transcriptPath
-      ? hintedAgent({ transcriptPath: options.transcriptPath })
-      : undefined
     const harness =
       matched ??
       (environment.grok.hookEvent ? 'grok' : undefined) ??
-      (runtime === 'claude-code' ? 'claude' : runtime) ??
+      options.runtime ??
       ambient?.harness ??
-      (transcript === 'claude-code' ? 'claude' : transcript)
+      transcriptHarness(options.transcriptPath)
     return harness ? fromHarness(harness, options.sessionIdArg) : undefined
   }
   // Root-aware reads and writes both refresh persistence at the enclosing worktree root. This
@@ -129,16 +122,15 @@ export function resolveAmbientBlackboardIdentity(
   }
   if ((environment.grok.sessionId || environment.grok.hookEvent) && !environment.codex.sessionId)
     return fromHarness('grok', environment.grok.sessionId)
-  const runtime = options.runtime ? hintedAgent({ runtime: options.runtime }) : undefined
-  if (runtime) return fromHarness(runtime === 'claude-code' ? 'claude' : runtime)
+  if (options.runtime) return fromHarness(options.runtime)
   const direct = selectHarnessSession(environment, ['codex', 'grok', 'cursor'])
   if (direct) return fromHarness(direct.harness, direct.sessionId)
   const persistedHarness = environment.grok.agentMarker ? 'grok' : 'cursor'
   const sessionId = readPersistedSessionId(cwd, persistedHarness)
   if (sessionId) return fromHarness(persistedHarness, sessionId)
   if (environment.grok.hookEvent) return { agent: 'grok', harness: 'grok' }
-  const hinted = hintedAgent(options)
-  if (hinted) return fromHarness(hinted === 'claude-code' ? 'claude' : hinted)
+  const transcript = transcriptHarness(options.transcriptPath)
+  if (transcript) return fromHarness(transcript)
   if (environment.grok.agentMarker) return fromHarness('grok')
   return environment.cursor.agentMarker ? fromHarness('cursor') : undefined
 }

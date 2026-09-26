@@ -11,10 +11,10 @@ import {
 
 // Unit coverage for the runtime-facing serialization: preToolUseOutput decides HOW a 'confirm'
 // disposition is surfaced (an attended Claude session gets a silent "allow" — the human already
-// made the merge decision by asking for it in their own message; everything else gets empty,
-// relying on the harness's own approval). isAutomationContext and isAttendedClaudeSession read
-// the env. All are pure functions taking an explicit env/options bag — no process.env reads here.
-// See docs/development/merge-authority.md.
+// made the merge decision by asking for it in their own message; everything else gets no opinion,
+// relying on the harness's own approval) and how a block exits (2, reason on stderr and stdout).
+// isAutomationContext and isAttendedClaudeSession read the env. All are pure functions taking an
+// explicit env/options bag — no process.env reads here. See docs/development/merge-authority.md.
 describe('isAutomationContext', () => {
   it.each([{ GITHUB_ACTIONS: 'true' }, { CI: 'true' }, { GITHUB_ACTIONS: 'true', CI: 'true' }])(
     'is true when %o is set',
@@ -45,23 +45,39 @@ describe('isAttendedClaudeSession', () => {
 })
 
 const ATTENDED_CLAUDE = { attended: true, automationContext: false, runtime: 'claude' } as const
+const NO_OPINION = { exitCode: 0, stderr: '', stdout: '' }
+const HOOK_BYPASS_COMMAND = 'HUSKY=0 true'
 
 function output(command: string, options: Parameters<typeof preToolUseOutput>[1]) {
   return preToolUseOutput({ tool_input: { command } }, options)
 }
 
+// A block's stdout is JSON; parse it so one toEqual covers the exit code and both streams.
+function parsed(result: { exitCode: number | null; stderr: string; stdout: string }) {
+  return { ...result, stdout: JSON.parse(result.stdout) as unknown }
+}
+
+function block(reason: string) {
+  return {
+    exitCode: 2,
+    stderr: expect.stringContaining(reason),
+    stdout: { decision: 'deny', reason: expect.stringContaining(reason) },
+  }
+}
+
 describe('preToolUseOutput — merge disposition serialization', () => {
   const merge = 'gh pr merge 123 --squash'
 
-  it('blocks with {decision:"block"} in automation, regardless of runtime or attended', () => {
-    for (const runtime of ['claude', 'codex', undefined] as const) {
-      expect(
-        JSON.parse(output(merge, { attended: true, automationContext: true, runtime })),
-      ).toEqual({
-        decision: 'block',
-        reason: expect.stringContaining('never delegated to an agent'),
-      })
-    }
+  it.each<[PreToolUseRuntime | undefined]>([
+    ['claude'],
+    ['codex'],
+    ['cursor'],
+    ['grok'],
+    [undefined],
+  ])('exits 2 with the reason in automation for runtime %s, even if attended', runtime => {
+    expect(parsed(output(merge, { attended: true, automationContext: true, runtime }))).toEqual(
+      block('never delegated to an agent'),
+    )
   })
 
   it.each([
@@ -72,7 +88,10 @@ describe('preToolUseOutput — merge disposition serialization', () => {
     'GH_REPO=owner/repo gh pr merge 1',
     'env GH_REPO=owner/repo gh pr merge 1',
   ])('allows a lone merge silently in an attended Claude session: %s', command => {
-    expect(JSON.parse(output(command, ATTENDED_CLAUDE))).toEqual({
+    const result = output(command, ATTENDED_CLAUDE)
+    expect(result.exitCode).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout)).toEqual({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
         permissionDecision: 'allow',
@@ -82,16 +101,20 @@ describe('preToolUseOutput — merge disposition serialization', () => {
   })
 
   it.each([{ attended: false }, { attended: undefined }])(
-    'emits nothing for an unattended Claude session (%o)',
+    'gives no opinion for an unattended Claude session (%o)',
     ({ attended }) => {
-      expect(output(merge, { attended, automationContext: false, runtime: 'claude' })).toBe('')
+      expect(output(merge, { attended, automationContext: false, runtime: 'claude' })).toEqual(
+        NO_OPINION,
+      )
     },
   )
 
-  it.each<[PreToolUseRuntime | undefined]>([['codex'], ['grok'], [undefined]])(
-    'emits nothing when interactive and runtime is %s, even if attended is inherited',
+  it.each<[PreToolUseRuntime | undefined]>([['codex'], ['cursor'], ['grok'], [undefined]])(
+    'gives no opinion when interactive and runtime is %s, even if attended is inherited',
     runtime => {
-      expect(output(merge, { attended: true, automationContext: false, runtime })).toBe('')
+      expect(output(merge, { attended: true, automationContext: false, runtime })).toEqual(
+        NO_OPINION,
+      )
     },
   )
 
@@ -104,7 +127,7 @@ describe('preToolUseOutput — merge disposition serialization', () => {
     'gh api -X PUT repos/owner/repo/pulls/1/merge',
     'gh pr view 1',
   ])('gives no allow to anything but one plain merge: %s', command => {
-    expect(output(command, ATTENDED_CLAUDE)).not.toContain('permissionDecision')
+    expect(output(command, ATTENDED_CLAUDE).stdout).not.toContain('permissionDecision')
   })
 
   it.each([
@@ -113,55 +136,102 @@ describe('preToolUseOutput — merge disposition serialization', () => {
     ['HUSKY=0 gh pr merge 1', 'HUSKY'],
     ['gh pr merge 1; gh pr create --title t --body x', 'draft'],
   ])('lets a block anywhere in the command beat the merge allow: %s', (command, reason) => {
-    expect(JSON.parse(output(command, ATTENDED_CLAUDE))).toEqual({
-      decision: 'block',
-      reason: expect.stringContaining(reason),
-    })
+    expect(parsed(output(command, ATTENDED_CLAUDE))).toEqual(block(reason))
   })
 })
 
-// Wired-hook smoke test: pipes a real merge payload through the actual entry script (not just the
-// exported functions), with and without GITHUB_ACTIONS and CLAUDE_CODE_SESSION_ATTENDED set, for
-// both runtime args. Confirms the argv[2] runtime token and process.env are threaded correctly end
-// to end — the layer the unit tests above intentionally bypass. Every case sets the attended
-// variable explicitly, since a developer's own Claude session exports it to this test process.
+// Wired-hook smoke test: pipes a real payload through the actual entry script (not just the
+// exported functions) and asserts the exit code and both streams, since exit 2 is the block every
+// runtime honors. Confirms the argv[2] runtime token, the Cursor/Grok detection, and process.env
+// are threaded correctly end to end — the layer the unit tests above intentionally bypass. Every
+// case clears the harness markers first, since a developer's own session exports them to this test
+// process.
 describe('pre-tool-use.mts — wired smoke test', () => {
   const entry = path.join(import.meta.dirname, '..', 'codex-hooks', 'pre-tool-use.mts')
-  const payload = JSON.stringify({ tool_input: { command: 'gh pr merge 123 --squash' } })
+  const mergePayload = { tool_input: { command: 'gh pr merge 123 --squash' } }
   const interactive = { GITHUB_ACTIONS: undefined, CI: undefined }
+  const attended = { ...interactive, CLAUDE_CODE_SESSION_ATTENDED: '1' }
 
-  function run(runtime: 'claude' | 'codex', env: NodeJS.ProcessEnv) {
+  function run(
+    runtime: 'claude' | 'codex',
+    env: NodeJS.ProcessEnv,
+    payload: object = mergePayload,
+  ) {
     const result = spawnSync('node', [entry, runtime], {
-      input: payload,
+      input: JSON.stringify(payload),
       encoding: 'utf8',
-      env: { ...process.env, GROK_SESSION_ID: undefined, GROK_HOOK_EVENT: undefined, ...env },
+      env: {
+        ...process.env,
+        CURSOR_PROJECT_DIR: undefined,
+        CURSOR_VERSION: undefined,
+        GROK_HOOK_EVENT: undefined,
+        GROK_SESSION_ID: undefined,
+        ...env,
+      },
     })
     expect(result.error).toBeUndefined()
-    return result.stdout
+    return { exitCode: result.status, stderr: result.stderr, stdout: result.stdout }
   }
 
-  it.each(['claude', 'codex'] as const)('blocks in GitHub Actions for %s', runtime => {
-    const output = run(runtime, {
-      GITHUB_ACTIONS: 'true',
-      CI: undefined,
-      CLAUDE_CODE_SESSION_ATTENDED: '1',
-    })
-    expect(JSON.parse(output).decision).toBe('block')
+  it.each(['claude', 'codex'] as const)('exits 2 in GitHub Actions for %s', runtime => {
+    expect(
+      parsed(
+        run(runtime, { GITHUB_ACTIONS: 'true', CI: undefined, CLAUDE_CODE_SESSION_ATTENDED: '1' }),
+      ),
+    ).toEqual(block('never delegated to an agent'))
+  })
+
+  it.each(['claude', 'codex'] as const)('exits 2 for a hook bypass in %s', runtime => {
+    expect(
+      parsed(run(runtime, interactive, { tool_input: { command: HOOK_BYPASS_COMMAND } })),
+    ).toEqual(block('HUSKY'))
   })
 
   it('allows silently for an attended interactive claude session', () => {
-    const output = run('claude', { ...interactive, CLAUDE_CODE_SESSION_ATTENDED: '1' })
-    expect(JSON.parse(output).hookSpecificOutput.permissionDecision).toBe('allow')
+    const result = run('claude', attended)
+    expect(result.exitCode).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision).toBe('allow')
   })
 
   it.each([undefined, '0'])(
-    'emits nothing for claude when CLAUDE_CODE_SESSION_ATTENDED is %s',
-    attended => {
-      expect(run('claude', { ...interactive, CLAUDE_CODE_SESSION_ATTENDED: attended })).toBe('')
+    'gives no opinion for claude when CLAUDE_CODE_SESSION_ATTENDED is %s',
+    value => {
+      expect(run('claude', { ...interactive, CLAUDE_CODE_SESSION_ATTENDED: value })).toEqual(
+        NO_OPINION,
+      )
     },
   )
 
-  it('emits nothing interactively for codex, even with the attended variable inherited', () => {
-    expect(run('codex', { ...interactive, CLAUDE_CODE_SESSION_ATTENDED: '1' })).toBe('')
+  it('gives no opinion interactively for codex, even with the attended variable inherited', () => {
+    expect(run('codex', attended)).toEqual(NO_OPINION)
+  })
+
+  it.each([
+    ['CURSOR_VERSION env', { CURSOR_VERSION: 'present' }, mergePayload],
+    ['CURSOR_PROJECT_DIR env', { CURSOR_PROJECT_DIR: '/repo' }, mergePayload],
+    ['cursor_version payload key', {}, { ...mergePayload, cursor_version: 'present' }],
+  ])('gives Cursor no allow when it inherits the attended Claude env (%s)', (_, env, payload) => {
+    expect(run('claude', { ...attended, ...env }, payload)).toEqual(NO_OPINION)
+  })
+
+  it('blocks a Cursor Shell payload', () => {
+    expect(
+      parsed(
+        run(
+          'claude',
+          { ...attended, CURSOR_VERSION: 'present' },
+          {
+            cursor_version: 'present',
+            tool_input: { command: HOOK_BYPASS_COMMAND },
+            tool_name: 'Shell',
+          },
+        ),
+      ),
+    ).toEqual(block('HUSKY'))
+  })
+
+  it('gives no opinion for a plain command', () => {
+    expect(run('claude', attended, { tool_input: { command: 'git status' } })).toEqual(NO_OPINION)
   })
 })
