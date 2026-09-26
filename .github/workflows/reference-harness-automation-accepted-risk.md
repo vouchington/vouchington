@@ -19,7 +19,7 @@ The repository reduces the risk with layered authorization, freshness, scope, an
 
 ## Required controls
 
-1. `HARNESS_DISPATCH_ENABLED` and all six surface gates are unset by default and gate caller entry
+1. `HARNESS_DISPATCH_ENABLED` and all seven surface gates are unset by default and gate caller entry
    jobs before side effects. Fix Main publication also requires `HARNESS_AGENT_DISPATCH_ENABLED`.
 2. Only the immutable reusable dispatcher receives `HARNESS_API_KEY`, forwarded by explicit name
    from the repository secret through each caller's `workflow_call`. The receiving job still runs
@@ -42,14 +42,20 @@ The repository reduces the risk with layered authorization, freshness, scope, an
 4. Mutation-capable prompts re-fetch live authorization and exact target state immediately before
    publication. Concurrent movement stops the task; branch updates use an exact lease.
 5. Each flow has a narrow completion: one draft PR, one plan comment, one exact Dependabot branch
-   update, one existing Shepherd PR, or at most 50 idempotent issue mutations. No flow may merge or
-   arm auto-merge.
-6. Shepherd resume and immediate status updates are bound to a validated, bot-authored checkpoint
+   update, one existing Shepherd PR, one merge-queue triage result (one fix PR from `main` or one
+   issue, plus one comment on the ejected PR), or at most 50 idempotent issue mutations. No flow may
+   merge or arm auto-merge.
+6. Merge Queue Ejection is the only `pull_request_target` workflow. It runs from `main`, never
+   checks out or executes pull-request content, and passes PR fields only as prompt text. Only a
+   user with write access can enqueue a pull request, so the session may reproduce a same-repository
+   PR's failure on the trusted host, as Shepherd does; it classifies fork PRs from CI evidence
+   alone.
+7. Shepherd resume and immediate status updates are bound to a validated, bot-authored checkpoint
    containing repository, PR, trigger, run, ref, and SHA provenance.
-7. Immediate dispatch failures remain repository-owned and produce a bounded issue/PR comment after
+8. Immediate dispatch failures remain repository-owned and produce a bounded issue/PR comment after
    revalidation. Provider completion is asynchronous and is not represented as workflow success;
    each accepted session is linked to the staffed Harness UI from the Actions summary.
-8. New sessions expire from the queue after one hour. Incident-response session drain is Auto
+9. New sessions expire from the queue after one hour. Incident-response session drain is Auto
    Harness's own operator-authenticated repository-wide control
    (`POST /repositories/:id/drain`), not a Vouchington workflow — see
    [Repository admission](https://github.com/jonathanong/auto-harness/blob/main/docs/api.md#repository-admission)
@@ -69,7 +75,7 @@ repoint is a plain variable update that does neither on its own. Checkpoint comm
 independently of gate state (the routine `checkpoint-dispatch` update in `shepherd.yml` runs once the
 already-enabled Shepherd flow is admitted, not when gates are disabled); a repoint simply never
 touches them. Session draining is Auto Harness's own operator-authenticated repository-wide control
-(Required control 8), unrelated to Vouchington' `HARNESS_*_ENABLED` gates entirely. Every
+(Required control 9), unrelated to Vouchington' `HARNESS_*_ENABLED` gates entirely. Every
 already-resumable checkpoint — including one from a PR closed before the repoint, or one an
 ancestry-based reset could later reach — keeps resuming against its original pre-repoint Command:
 `selectResumeCheckpoint` only tombstones a `complete` or `unresumable` status, so neither the
@@ -79,14 +85,15 @@ tombstone, ancestry divergence, or server-side invalidation; Vouchington does no
 comments as part of a repoint. Server-side resume-time Command rebinding, which would close this gap
 without a manual sweep, is tracked upstream in
 [`jonathanong/auto-harness#402`](https://github.com/jonathanong/auto-harness/issues/402). `/plan`,
-Fix Issue, Fix Dependabot, Fix Main, and Scheduled Prompts never resume, so they carry no checkpoint
+Fix Issue, Fix Dependabot, Fix Main, Merge Queue Ejection, and Scheduled Prompts never resume, so they carry no checkpoint
 to keep stale, but they share the same deduplicated-create residual as `/shepherd`: a session
 dispatched shortly before the repoint and still queued/running can resume against the pre-repoint
 Command via its own concurrency ID's deduplicated create response
 (`vouchington:plan:<issue>`, `vouchington:fix:<issue>`,
 `vouchington:dependabot:<pr>:<sha>`, `vouchington:fix-main-review:<pr>:<sha>` for existing-PR reviews,
-`vouchington:fix-main:<workflow_id>:<sha>` otherwise, and `vouchington:scheduled:<prompt_name>`) until the
-next full-principal drain runs, and — unlike `/plan` — the other four share the repointed
+`vouchington:fix-main:<workflow_id>:<sha>` otherwise, `vouchington:mq-eject:<pr>:<head_sha>`, and
+`vouchington:scheduled:<prompt_name>`) until the next full-principal drain runs, and — unlike
+`/plan` — the other five share the repointed
 `HARNESS_TARGET`/`HARNESS_FALLBACKS` directly, with no surface-specific override.
 
 These residuals are accepted for the bounded automation flows above. Human-only merge authority,

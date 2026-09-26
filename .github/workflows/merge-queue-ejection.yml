@@ -1,0 +1,115 @@
+name: Automation Merge Queue Ejection
+
+# Triggered when the merge queue removes a pull request because its merge-group CI failed or timed
+# out. Dispatches Auto Harness to triage the failure from main: fix a flaky test in a new PR, file
+# a CI or architecture issue, or comment its analysis on the ejected PR. The session never changes
+# the ejected PR.
+#
+# pull_request_target runs this file from main with main's GITHUB_SHA. No job checks out, installs,
+# or executes pull-request content; PR fields reach the session only as prompt text.
+
+on:
+  pull_request_target:
+    types: [dequeued]
+    branches: [main]
+
+concurrency:
+  group: merge-queue-ejection-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  render-prompt:
+    name: Render automation prompt
+    if: >-
+      vars.HARNESS_DISPATCH_ENABLED == 'true' &&
+      vars.HARNESS_MERGE_QUEUE_EJECTION_ENABLED == 'true' &&
+      contains(fromJSON('["CI_FAILURE","CI_TIMEOUT"]'), github.event.reason)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      prompt: ${{ steps.render.outputs.prompt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-pnpm
+
+      - name: Render prompt
+        id: render
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
+        with:
+          template: docs/prompts/automation/merge-queue-ejection.md
+          vars: |
+            REPOSITORY=${{ github.repository }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            PR_URL=${{ github.event.pull_request.html_url }}
+            PR_HEAD_SHA=${{ github.event.pull_request.head.sha }}
+            REASON=${{ github.event.reason }}
+            MAIN_SHA=${{ github.sha }}
+
+  dispatch:
+    name: Harness dispatch
+    needs: [render-prompt]
+    uses: ./.github/workflows/harness-dispatch.yml
+    permissions:
+      contents: read
+    secrets:
+      HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
+    with:
+      surface-gate: HARNESS_MERGE_QUEUE_EJECTION_ENABLED
+      agent-ref: ${{ github.sha }}
+      expected-head-sha: ${{ github.sha }}
+      concurrency-id: vouchington:mq-eject:${{ github.event.pull_request.number }}:${{ github.event.pull_request.head.sha }}
+      completion-mode: pr-issue-or-comment
+      publish-contract: merge-queue-ejection
+      publish-base-ref: main
+      pr-label: automation:auto-fix
+      slack-source: |
+        *Source:* merge queue removed PR #${{ github.event.pull_request.number }} (`${{ github.event.reason }}`)
+        *Pull request:* ${{ github.event.pull_request.html_url }}
+        *Main tip:* `${{ github.sha }}`
+      prompt: ${{ needs.render-prompt.outputs.prompt }}
+
+  escalate:
+    name: Comment failure on pull request
+    needs: [render-prompt, dispatch]
+    if: >-
+      always() &&
+      (
+        needs.render-prompt.result == 'failure' ||
+        needs.render-prompt.result == 'cancelled' ||
+        needs.dispatch.result == 'failure' ||
+        needs.dispatch.result == 'cancelled'
+      )
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REASON: ${{ github.event.reason }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
+      THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Comment failure on the ejected pull request
+        run: |
+          set -euo pipefail
+          BODY="The merge queue removed this PR (\`$REASON\`), and automated triage could not start.
+
+          **Triage run:** $THIS_RUN_URL"
+          if [[ -n "$SESSION_ID" ]]; then
+            BODY="$BODY
+          **Harness session:** $SESSION_ID"
+          fi
+          BODY="$BODY
+
+          Inspect the failed merge-group run before re-enqueueing."
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY"

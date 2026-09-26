@@ -104,6 +104,12 @@ completion. The direct `static-checks / static-web` production-build watchdog fi
 catalogued separately as `main-web-static-build-watchdog-timeout` (`maxAttempts: 1`); its detailed
 markers and look-alikes are in [Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
 
+When the merge queue removes a pull request because its merge-group CI failed or timed out,
+[Merge Queue Ejection](../../.github/workflows/merge-queue-ejection.yml) dispatches an Auto Harness
+triage session from `main`. It fixes a flaky test in a new PR, files a CI or architecture issue, or
+comments its analysis on the ejected PR; it never changes that PR. See
+[Auto Harness automation](../../.github/workflows/reference-harness-automation.md#completion-specific-safeguards).
+
 ## CI behavior references
 
 - <a id="dependency-bot-review-and-main-push-ci"></a>[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)

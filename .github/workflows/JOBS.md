@@ -124,6 +124,9 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `main-web.yml`                      | `test-web-api`                  | job    | → `tests-web-api.yml`                 | 360           |
 | `main-web.yml`                      | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
 | `main-web.yml`                      | `web-deploy-intent`             | job    | `ubuntu-slim`                         | 2             |
+| `merge-queue-ejection.yml`          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
+| `merge-queue-ejection.yml`          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
+| `merge-queue-ejection.yml`          | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `plan.yml`                          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `plan.yml`                          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `plan.yml`                          | `gate`                          | job    | `ubuntu-slim`                         | 5             |

@@ -30,7 +30,8 @@ The repository automation entrypoints are [Fix Main](../../.github/workflows/fix
 [Fix Issue](../../.github/workflows/fix-issue.yml),
 [Plan](../../.github/workflows/plan.yml),
 [Shepherd](../../.github/workflows/shepherd.yml),
-[Fix Dependabot](../../.github/workflows/fix-dependabot.yml), and
+[Fix Dependabot](../../.github/workflows/fix-dependabot.yml),
+[Merge Queue Ejection](../../.github/workflows/merge-queue-ejection.yml), and
 [Scheduled Prompts](../../.github/workflows/scheduled-prompts.yml). Each entry job requires both
 `vars.HARNESS_DISPATCH_ENABLED == 'true'` and its exact per-surface gate before any reaction,
 comment, checkpoint, workflow rerun, prompt rendering, dispatch, or escalation. Every gate is unset

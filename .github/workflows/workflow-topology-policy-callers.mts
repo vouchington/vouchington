@@ -25,7 +25,7 @@ export const exactCallerJobs = {
     '.github/workflows/ci.yml#backend-smoke .github/workflows/main-backend.yml#backend-smoke',
   ),
   '.github/workflows/harness-dispatch.yml': splitIds(
-    '.github/workflows/fix-dependabot.yml#dispatch .github/workflows/fix-issue.yml#dispatch .github/workflows/fix-main.yml#dispatch .github/workflows/plan.yml#dispatch .github/workflows/shepherd.yml#dispatch .github/workflows/scheduled-prompts.yml#dispatch',
+    '.github/workflows/fix-dependabot.yml#dispatch .github/workflows/fix-issue.yml#dispatch .github/workflows/fix-main.yml#dispatch .github/workflows/merge-queue-ejection.yml#dispatch .github/workflows/plan.yml#dispatch .github/workflows/shepherd.yml#dispatch .github/workflows/scheduled-prompts.yml#dispatch',
   ),
   '.github/workflows/explain-analyze.yml': splitIds(
     '.github/workflows/ci.yml#test-explain-analyze .github/workflows/main-checks.yml#explain-analyze',

@@ -59,6 +59,7 @@ jobs:
       ((inputs.surface-gate == 'HARNESS_FIX_DEPENDABOT_ENABLED' && vars.HARNESS_FIX_DEPENDABOT_ENABLED == 'true') ||
       (inputs.surface-gate == 'HARNESS_FIX_ISSUE_ENABLED' && vars.HARNESS_FIX_ISSUE_ENABLED == 'true') ||
       (inputs.surface-gate == 'HARNESS_FIX_MAIN_ENABLED' && vars.HARNESS_FIX_MAIN_ENABLED == 'true' && vars.HARNESS_AGENT_DISPATCH_ENABLED == 'true') ||
+      (inputs.surface-gate == 'HARNESS_MERGE_QUEUE_EJECTION_ENABLED' && vars.HARNESS_MERGE_QUEUE_EJECTION_ENABLED == 'true') ||
       (inputs.surface-gate == 'HARNESS_PLAN_ENABLED' && vars.HARNESS_PLAN_ENABLED == 'true') ||
       (inputs.surface-gate == 'HARNESS_SCHEDULED_ENABLED' && vars.HARNESS_SCHEDULED_ENABLED == 'true') ||
       (inputs.surface-gate == 'HARNESS_SHEPHERD_ENABLED' && vars.HARNESS_SHEPHERD_ENABLED == 'true'))
