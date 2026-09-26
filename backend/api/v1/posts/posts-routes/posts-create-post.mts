@@ -5,20 +5,19 @@ import {
 } from '@modules/on-error/error-codes'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { assessRecaptchaToken } from '@services/recaptcha'
-import { assertCanContribute } from '@services/contribution-gating/assert'
 import {
   admitRouteContribution,
   contributionPolicySourceForPostType,
   executePreparedContribution,
 } from '@services/contribution-gating'
 import { isHoneypotTriggered } from '@services/honeypot'
-import { getUserActivePlan } from '@services/memberships'
 import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
 import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
   currentUserCanCreatePost,
+  getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { mintUUIDv7 } from '@ts-shared/session-jwt'
@@ -67,8 +66,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
   }
 
-  const membershipPlan = await getUserActivePlan(currentUser.id)
-  await assertCanContribute(currentUser, { membershipPlan })
+  const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
   const parsedBody = await ctx.request.json('1mb')
   ctx.assert(

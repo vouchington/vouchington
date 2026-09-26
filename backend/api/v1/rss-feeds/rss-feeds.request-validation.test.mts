@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 
 describe('RSS feed request validation', () => {

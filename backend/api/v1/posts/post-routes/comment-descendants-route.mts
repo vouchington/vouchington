@@ -28,8 +28,8 @@ import { apiQuery, apiResponse } from '../../../response-contract.mts'
 import {
   commentAncestorPaginationQuery,
   prepareCommentAncestorPagination,
-  resolveCommentAncestorPage,
-} from './comment-ancestor-pagination.mts'
+} from '@services/search-params/comment-ancestor-pagination'
+import { resolveCommentAncestorPage } from './comment-ancestor-pagination.mts'
 
 app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/posts/:idOrSlug/ancestors', commentAncestorPaginationQuery)

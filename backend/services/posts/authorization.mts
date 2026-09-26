@@ -1,5 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import { hasOAuthAccount } from '@services/user-rate-limits/trust-tier'
+import { assertCanContribute } from '@services/contribution-gating/assert'
+import { getUserActivePlan } from '@services/memberships'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import {
@@ -11,6 +13,12 @@ import type { CommunityMemberRole } from '@services/communities/types'
 import { isOfficialAccount } from '@services/users'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+export async function getAuthorizedPostContributionMembershipPlan(currentUser: PrivateUser) {
+  const membershipPlan = await getUserActivePlan(currentUser.id)
+  await assertCanContribute(currentUser, { membershipPlan })
+  return membershipPlan
+}
 
 export function isPostContentEditable(currentUser: PrivateUser, post: Post): boolean {
   if (currentUser.roles.includes('administrator')) return true

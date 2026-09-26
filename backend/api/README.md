@@ -68,35 +68,8 @@ Use `response-helpers.mts` for standard route preambles:
   pass through without a `Content-Type` header.
 - `validateRequestContract(ctx, operation, input)` checks a route's path/body/query carriers
   against the generated contract for `operation` (`'METHOD:/path'`) and throws 422 with the
-  registry's redacted message. Callers own ordering: authenticate and perform admission,
-  visibility, suspension, and non-mutating ownership preflights first; then run the generated
-  detailed schema gate before semantic resolution or writes. Services retain their authorization
-  guards and transactional rechecks. A lag-sensitive mutation preflight uses the primary read
-  path when it must immediately observe a preceding write.
-
-`validateRequestContract` is backed by `@services/runtime-request-validation`; use the adapter, not
-the registry, from routes. Routes with signature-verified or raw bodies keep their specialized
-parsers. Query routes retain their existing pure parser preparation, then validate its normalized
-wire projection before asynchronous identifier resolution. This preserves pagination clamping and
-malformed limit/cursor 400 behavior while malformed typed query values remain visible for 422;
-there is no shared Ajv coercion. Keep `validateUUIDParam` for UUID shape, including where a
-generated path carrier is present.
-
-```mermaid
-flowchart LR
-  admission[auth and admission] --> preflight[visibility or ownership preflight]
-  preflight --> prepare[pure query preparation]
-  prepare --> contract[generated path body query validation]
-  contract --> resolve[semantic resolution]
-  resolve --> recheck[service authorization and transactional recheck]
-  recheck --> write[service write]
-```
-
-A typed raw-body declaration or explicit request-contract marker must emit a meaningful body
-schema; invoking the adapter against an empty object is not coverage. The compiler-built request
-bundle assertions in [API fixtures](../test-helpers/api-fixtures/openapi/write-openapi.test.mts)
-verify selected emitted carriers and schemas, while route HTTP tests verify invocation order, status, and
-no-write behavior.
+  registry's redacted message. Read [Request validation](reference-request-validation.md) for the
+  required ordering, pure query projection, meaningful-schema, and compiler/HTTP coverage rules.
 
 Route modification invariants live in [CLAUDE.md](CLAUDE.md).
 
