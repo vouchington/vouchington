@@ -772,6 +772,9 @@ importers:
       '@agents/_shared':
         specifier: workspace:^
         version: link:../_shared
+      '@agents/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@jongleberry/vurst-prompt':
         specifier: ^0.4.3
         version: 0.4.3
@@ -784,6 +787,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../../services/classifiers
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items

@@ -113,6 +113,53 @@ export async function renderClassifierCandidateQuestion(
   return template.replace(CANDIDATE_PLACEHOLDER, () => sanitizedName) as ClassifierSafeText
 }
 
+/**
+ * Brands a classifier's DB-owned Choice question template as `ClassifierSafeText`. Unlike
+ * `renderClassifierCandidateQuestion` (rendered once per candidate via a `{{candidate}}`
+ * placeholder), a Choice question is asked once per decision: the criteria stand in for the
+ * per-candidate substitution, and the state -- not the question -- carries the actual candidate
+ * content (see backend/agents/story-clustering/choice-clustering.mts). The template itself is
+ * trusted, operator-authored instruction text (a `classifier_prompt_versions` row), not external
+ * content, so this never calls `wrapExternalContent`. Asserts the template contains no
+ * `{{candidate}}` placeholder, since a Choice question has nothing to substitute into one.
+ */
+export function renderClassifierChoiceQuestion(template: string): ClassifierSafeText {
+  if (template.includes(CANDIDATE_PLACEHOLDER)) {
+    throw new Error(
+      `Classifier Choice question template must not contain a ${CANDIDATE_PLACEHOLDER} placeholder`,
+    )
+  }
+  return template as ClassifierSafeText
+}
+
+/**
+ * Joins already-branded `ClassifierSafeText` pieces (e.g. one sanitized-and-wrapped block per
+ * candidate from `sanitizeClassifierExternalContentParts`) into a single `ClassifierSafeText`.
+ * For a runtime-length list of pieces, where `classifierPrompt`'s fixed tagged-template shape does
+ * not apply. Every piece is already sanitized, so this performs no sanitizing of its own -- only
+ * string concatenation -- and stays in this module purely so call sites never need a bare
+ * `as ClassifierSafeText` cast.
+ */
+export function joinClassifierSafeText(
+  parts: readonly ClassifierSafeText[],
+  separator: string,
+): ClassifierSafeText {
+  return parts.join(separator) as ClassifierSafeText
+}
+
+/**
+ * Brands trusted, non-attacker-influenceable structural text -- a DB-generated ID, a criterion
+ * key, an ISO timestamp -- as `ClassifierSafeText` without sanitizing or wrapping it, for
+ * composing a decision's `state` alongside sanitized content blocks via `joinClassifierSafeText`
+ * (e.g. a "Key: story:<uuid>" label placed next to that candidate's own sanitized title and
+ * description, so the model can correlate a Choice criterion key back to the content describing
+ * it). Never pass content that originated from an external feed, post, or any other
+ * attacker-influenceable source through this -- use `sanitizeClassifierExternalContent*` for that.
+ */
+export function classifierStructuralText(value: string): ClassifierSafeText {
+  return value as ClassifierSafeText
+}
+
 export function classifierPrompt(
   strings: TemplateStringsArray,
   ...externalValues: readonly ClassifierSafeText[]

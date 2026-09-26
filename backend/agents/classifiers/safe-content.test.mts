@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   classifierChoiceKey,
   classifierPrompt,
+  classifierStructuralText,
+  joinClassifierSafeText,
   renderClassifierCandidateQuestion,
+  renderClassifierChoiceQuestion,
   sanitizeClassifierExternalContent,
 } from './safe-content.mts'
 
@@ -46,4 +49,56 @@ describe('renderClassifierCandidateQuestion', () => {
       expect(rendered).toBe(expected)
     },
   )
+})
+
+describe('renderClassifierChoiceQuestion', () => {
+  it('brands a placeholder-free template verbatim', () => {
+    const rendered = renderClassifierChoiceQuestion('Pick the best-matching candidate.')
+    expect(rendered).toBe('Pick the best-matching candidate.')
+  })
+
+  it('rejects a template containing a {{candidate}} placeholder', () => {
+    expect(() => renderClassifierChoiceQuestion('Is {{candidate}} a match?')).toThrow(
+      'must not contain a {{candidate}} placeholder',
+    )
+  })
+})
+
+describe('joinClassifierSafeText', () => {
+  it('joins already-branded pieces with the given separator', async () => {
+    const first = await sanitizeClassifierExternalContent('First item.', {
+      source: 'rss_feed_item',
+      contentType: 'title',
+    })
+    const second = await sanitizeClassifierExternalContent('Second item.', {
+      source: 'rss_feed_item',
+      contentType: 'title',
+    })
+
+    const joined = joinClassifierSafeText([first, second], '\n\n')
+    expect(joined).toBe(`${first}\n\n${second}`)
+  })
+
+  it('returns an empty string for an empty list', () => {
+    expect(joinClassifierSafeText([], '\n\n')).toBe('')
+  })
+})
+
+describe('classifierStructuralText', () => {
+  it('brands trusted structural text verbatim, without sanitizing it', () => {
+    const key = 'story:018f9f8e-1234-7abc-8def-000000000000'
+    expect(classifierStructuralText(`Key: ${key}`)).toBe(`Key: ${key}`)
+  })
+
+  it('composes with joinClassifierSafeText alongside sanitized content', async () => {
+    const sanitized = await sanitizeClassifierExternalContent('A bakery review.', {
+      source: 'rss_feed_item',
+      contentType: 'title',
+    })
+    const joined = joinClassifierSafeText(
+      [classifierStructuralText('Key: story:abc\n'), sanitized],
+      '',
+    )
+    expect(joined).toBe(`Key: story:abc\n${sanitized}`)
+  })
 })
