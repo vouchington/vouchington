@@ -54,6 +54,10 @@ owns the fixture detail and future staged-rule procedure.
 
 `shellcheck` is bash-oriented and does not flag zsh reserved-variable shadowing of `status` and
 `pipestatus`; see [dev/CLAUDE.md](../../dev/CLAUDE.md).
+The `shellcheck-runner` rule in [`.no-mistakes.yml`](../../.no-mistakes.yml) scans Git-tracked
+`.sh` files and supported Bash/sh shebang scripts from the repository root. Explicitly listed
+scripts remain subject to the same tracked-only filter; visible untracked and ignored files do not
+affect the result. Findings retain warning severity.
 
 `backend/tsconfig.json` sets `"lib": ["es2025"]` — no DOM. A type-only import of anything reaching
 `vitest/config` (which re-exports `@types/jsdom`, carrying `/// <reference lib="dom" />`) pulls

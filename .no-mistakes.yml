@@ -1114,7 +1114,8 @@ rules:
         - ci/merge-vitest-reports.sh
         - ci/with-node-test-options
       shebangDirs:
-        - dev
+        - .
+      trackedOnly: true
       shellcheck:
         severity: warning
 
