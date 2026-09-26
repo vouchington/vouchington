@@ -58,14 +58,14 @@ rule:
             field: arguments
             has:
               nthChild: 2
-              regex: ^\[\s*(?:(?:['"`](?:-C|-c|--config-env|--exec-path|--git-dir|--work-tree|--namespace|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs)['"`])(?:\s*,\s*[^,\]]+)?\s*,\s*)*['"`](remote|submodule)['"`]\s*,\s*(?:['"`](?:-v|--verbose|--quiet)['"`]\s*,\s*)*['"`]update['"`](?:\s*,|\s*\])
+              regex: ^\[\s*(?:(?:['"`](?:-C|-c)['"`]\s*,\s*[^,\]]+|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])\s*,\s*)*['"`](remote|submodule)['"`]\s*,\s*(?:['"`](?:-v|--verbose|--quiet)['"`]\s*,\s*)*['"`]update['"`](?:\s*,|\s*\])
     - all:
         - matches: child-process-call
         - has:
             field: arguments
             has:
               nthChild: 1
-              regex: ^['"`]git\s+(?:(?:(?:-C|-c|--config-env|--exec-path|--git-dir|--work-tree|--namespace)\s+\S+|(?:--exec-path|--git-dir|--work-tree|--namespace)=\S+|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs)\s+)*(?:(?:fetch|ls-remote|pull|push|clone)(?:['"`]|\s|$)|(remote|submodule)\s+(?:(?:-v|--verbose|--quiet)\s+)*update(?:['"`]|\s|$))
+              regex: ^['"`]git\s+(?:(?:(?:-C|-c)\s+\S+|(?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--exec-path=\S+|--git-dir=\S+|--work-tree=\S+|--namespace=\S+|--config-env=\S+))\s+)*(?:(?:fetch|ls-remote|pull|push|clone)(?:['"`]|\s|$)|(remote|submodule)\s+(?:(?:-v|--verbose|--quiet)\s+)*update(?:['"`]|\s|$))
     - pattern: fetch($$$ARGS)
     - pattern: globalThis.fetch
     - pattern: global.fetch
@@ -131,6 +131,14 @@ examples:
       execFileSync('git', ['remote', '-v', 'update'])
       execFileSync('git', ['submodule', '--quiet', 'update'])
       execFileSync('git', [`remote`, `update`])
+      execFileSync('git', ['--no-pager', 'remote', 'update'])
+      execFileSync('git', ['--paginate', 'remote', 'update'])
+      execFileSync('git', ['-p', 'remote', 'update'])
+      execFileSync('git', ['--no-optional-locks', 'remote', 'update'])
+      execFileSync('git', ['--git-dir=/tmp/repo', 'remote', 'update'])
+      execSync('git --no-pager remote update', { cwd })
+      execSync('git -p submodule update', { cwd })
+      execSync('git --config-env=http.proxy=GIT_PROXY remote update', { cwd })
     isValid: false
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
@@ -205,6 +213,8 @@ examples:
       execSync('git remote -v', { cwd })
       execSync('git remote update-check', { cwd })
       execSync("git log --grep='submodule update'", { cwd })
+      execSync('git --no-pager show remote update', { cwd })
+      execSync('git --version remote update', { cwd })
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
