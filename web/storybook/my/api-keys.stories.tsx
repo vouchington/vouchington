@@ -6,7 +6,7 @@ import { CreateApiKeyForm } from '@/components/my/api-keys-manager/create-api-ke
 import { ScopePicker } from '@/components/my/api-keys-manager/scope-picker'
 import { scopeResourceRows } from '@/components/my/api-keys-manager/scope-selection'
 import type { ApiKeyScopeSelection } from '@/components/my/api-keys-manager/use-api-key-scope-selection'
-import { storybookScopeCatalog } from './scope-catalog-fixture'
+import { storybookScopeCatalog } from './fixtures/scope-catalog'
 
 const meta = {
   title: 'My/API Keys',

@@ -8,7 +8,7 @@ import { OAuthAppDetailsFields } from '@/components/my/oauth-apps-manager/oauth-
 import { OAuthAppRow } from '@/components/my/oauth-apps-manager/oauth-app-row'
 import { RegisterOAuthAppForm } from '@/components/my/oauth-apps-manager/register-oauth-app-form'
 import type { OAuthApp } from '@/types/oauth-apps'
-import { storybookScopeCatalog } from './scope-catalog-fixture'
+import { storybookScopeCatalog } from './fixtures/scope-catalog'
 
 const meta = {
   title: 'My/OAuth Apps',
