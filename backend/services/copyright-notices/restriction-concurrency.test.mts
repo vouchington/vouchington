@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import {
@@ -108,7 +109,7 @@ describe('copyright restriction concurrency', () => {
     const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
     await expect(
       processCopyrightActionIntent(withholdIntent.id, new Date('2026-07-01T12:01:00.000Z'), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     expect(publish).toHaveBeenCalledWith(expect.objectContaining({ state: 'withheld', imageId }))

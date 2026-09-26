@@ -58,6 +58,14 @@ CREATE OR REPLACE FUNCTION public.fn_assert_web_push_subscription_owner()
  LANGUAGE plpgsql
 ```
 
+## `fn_assign_media_delivery_registry_generation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assign_media_delivery_registry_generation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_capture_notification_push_intent`
 
 ```sql

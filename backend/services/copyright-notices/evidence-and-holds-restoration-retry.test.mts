@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import {
@@ -122,7 +123,7 @@ describe('copyright notice restoration retries', () => {
     }
     await expect(
       processCopyrightActionIntent(restore.id, restorationAt, {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).rejects.toThrow('edge allow outage')
     expect(publishedStates).toEqual(['allow', 'withheld'])
@@ -133,7 +134,7 @@ describe('copyright notice restoration retries', () => {
     ).toEqual(expect.objectContaining({ state: 'pending' }))
     await expect(
       processCopyrightActionIntent(restore.id, new Date(restorationAt.getTime() + 2 * 60_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     expect(publishedStates).toEqual(['allow', 'withheld', 'allow'])

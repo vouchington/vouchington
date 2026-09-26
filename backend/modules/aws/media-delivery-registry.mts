@@ -12,7 +12,7 @@ export type MediaDeliveryRegistryState = 'allow' | 'withheld'
 export type MediaDeliveryRegistryRecord = {
   deliveryKey: string
   state: MediaDeliveryRegistryState
-  generation: number
+  generation: string
 }
 
 let cloudFrontClient: CloudFrontClient | undefined
@@ -34,9 +34,13 @@ export async function putMediaDeliveryRegistryRecord(
         state: { S: record.state },
         generation: { N: String(record.generation) },
       },
-      ConditionExpression: 'attribute_not_exists(delivery_key) OR #generation <= :generation',
-      ExpressionAttributeNames: { '#generation': 'generation' },
-      ExpressionAttributeValues: { ':generation': { N: String(record.generation) } },
+      ConditionExpression:
+        'attribute_not_exists(delivery_key) OR #generation < :generation OR (#generation = :generation AND #state = :state)',
+      ExpressionAttributeNames: { '#generation': 'generation', '#state': 'state' },
+      ExpressionAttributeValues: {
+        ':generation': { N: String(record.generation) },
+        ':state': { S: record.state },
+      },
     }),
   )
 }

@@ -50,7 +50,7 @@ export async function compensateFailedImageDeliveryMutation(input: {
         imageId: placement.image_id,
         state: 'allow',
       },
-      { query: transaction },
+      { query: transaction, forceGeneration: true },
     )
     recoveryKeys.push(staged.deliveryKey)
   }
@@ -67,6 +67,7 @@ export async function compensateFailedImageDeliveryMutation(input: {
     // oxlint-disable-next-line no-await-in-loop -- generic aliases have separate outbox identities.
     const staged = await stageLegacyImageDeliveryRecord(image.image_id, 'allow', {
       query: transaction,
+      forceGeneration: true,
     })
     recoveryKeys.push(staged.deliveryKey)
   }

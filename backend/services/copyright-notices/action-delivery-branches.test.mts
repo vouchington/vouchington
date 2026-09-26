@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import type { CopyrightImagePlacement } from '@services/images/placements'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
@@ -25,7 +26,7 @@ describe('copyright action delivery branches', () => {
       processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
         getImagePlacementForCopyright: async () => placement,
         withholdImagePlacementForCopyright: async () => ({ status: 'stale', placement }),
-        publishImagePlacementDeliveryRecord: async () => undefined,
+        ...createTestCopyrightDeliveryDependencies(async () => undefined),
       }),
     ).resolves.toBe('stale')
   })
@@ -52,7 +53,7 @@ describe('copyright action delivery branches', () => {
       processCopyrightActionIntent(restore.id, restore.now, {
         getImagePlacementForCopyright: async () => ({ ...currentPlacement(target), deleted: true }),
         clearUnavailableImagePlacementCopyrightWithholding: async () => undefined,
-        publishImagePlacementDeliveryRecord: async () => undefined,
+        ...createTestCopyrightDeliveryDependencies(async () => undefined),
       }),
     ).resolves.toBe('applied')
   })
@@ -71,7 +72,7 @@ describe('copyright action delivery branches', () => {
     const withhold = (await getActionIntent(notice.id, 'withhold'))!
     await expect(
       processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
-        publishImagePlacementDeliveryRecord: async () => undefined,
+        ...createTestCopyrightDeliveryDependencies(async () => undefined),
       }),
     ).resolves.toBe('applied')
     const restore = await createRestoreIntent({
@@ -101,9 +102,9 @@ describe('copyright action delivery branches', () => {
             revision: target.placement_revision + 1,
           },
         }),
-        publishImagePlacementDeliveryRecord: async input => {
+        ...createTestCopyrightDeliveryDependencies(async input => {
           if (input.state === 'withheld') throw new Error('rollback outage')
-        },
+        }),
       }),
     ).rejects.toThrow('rollback outage')
   })

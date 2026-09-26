@@ -15,7 +15,7 @@ import sql from 'sql-template-strings'
 import type { ImageDeleteResult } from './delete-rollback-types.mts'
 import { deleteImageDeletionPostRevision } from './delete-revisions.mts'
 import { restoreImagePlacementsAfterImageDeletion } from './placements.mts'
-import { lockImageDeliveryMutation } from '@services/media-delivery-safety'
+import { lockImageAssetMutation } from '@services/media-delivery-safety'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
 type CompletedImageDeleteResult = Extract<ImageDeleteResult, { deletedThisImage: true }>
@@ -28,7 +28,7 @@ export async function rollbackImageDeletion(
   await using query = await beginTransaction()
   await runSequentially([
     () =>
-      lockImageDeliveryMutation(query, {
+      lockImageAssetMutation(query, {
         imageIds: [imageId],
         postIds: deleteResult.affectedPostIds,
       }),

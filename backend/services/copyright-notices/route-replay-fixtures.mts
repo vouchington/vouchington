@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 // Route replay assertions are service-owned test support, not route registration.
 import { expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -71,7 +72,7 @@ async function exhaustCopyrightActionIntent(intentId: string): Promise<void> {
   await expectCopyrightActionDeliveryFailures(intentId, startedAt, failedPublish, [0, 20, 40, 60])
   await expect(
     processCopyrightActionIntent(intentId, new Date(startedAt.getTime() + 80 * 60_000), {
-      publishImagePlacementDeliveryRecord: failedPublish,
+      ...createTestCopyrightDeliveryDependencies(failedPublish),
     }),
   ).resolves.toBe('blocked')
 }
@@ -86,7 +87,7 @@ async function expectCopyrightActionDeliveryFailures(
   if (offsetMinutes === undefined) return
   await expect(
     processCopyrightActionIntent(intentId, new Date(startedAt.getTime() + offsetMinutes * 60_000), {
-      publishImagePlacementDeliveryRecord: failedPublish,
+      ...createTestCopyrightDeliveryDependencies(failedPublish),
     }),
   ).rejects.toThrow('provider outage')
   await expectCopyrightActionDeliveryFailures(intentId, startedAt, failedPublish, remainingOffsets)

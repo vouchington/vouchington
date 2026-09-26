@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
@@ -67,7 +68,7 @@ async function restorePlacementForLateHold(): Promise<{
   const { moderator, notice, restorationAt, restore, target } =
     await openHeldCounterNoticeRestore(publish)
   await processCopyrightActionIntent(restore.id, restorationAt, {
-    publishImagePlacementDeliveryRecord: publish,
+    ...createTestCopyrightDeliveryDependencies(publish),
   })
   return {
     moderator,

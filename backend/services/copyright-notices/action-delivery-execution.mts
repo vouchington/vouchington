@@ -1,4 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import { compensateCopyrightActionFailure } from './action-delivery-compensation.mts'
 import {
@@ -36,17 +37,15 @@ export async function executeCopyrightActionIntent(
   try {
     const prepared = await prepareCopyrightAction(intent, now, dependencies)
     if (typeof prepared === 'string') return prepared
-    const { legal, placement } = prepared
+    const { legal, placement, deliveryKey } = prepared
     const tuple = {
       placementId: placement.placementId,
       revision: placement.revision,
       imageId: placement.imageId,
     }
     if (legal.action === 'restore') restorePublishedTuple = tuple
-    await dependencies.publishImagePlacementDeliveryRecord({
-      ...tuple,
-      state: legal.action === 'withhold' ? 'withheld' : 'allow',
-    })
+    if (deliveryKey) await dependencies.publishStagedMediaDeliveryRecord(deliveryKey)
+    else await dependencies.publishImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
     const finalized = await finalizeCopyrightActionAfterDelivery(
       intent.id,
       legal.action,
@@ -83,6 +82,7 @@ async function prepareCopyrightAction(
       placement: NonNullable<
         Awaited<ReturnType<CopyrightActionDeliveryDependencies['getImagePlacementForCopyright']>>
       >
+      deliveryKey: string | null
     }
 > {
   await using transaction = await beginTransaction()
@@ -124,6 +124,7 @@ async function prepareCopyrightAction(
     })
     return await commitOutcome(transaction, 'stale')
   }
+  dependencies.assertMediaDeliveryLegalEnforcementEnabled()
   if (await hasCopyrightActionBlocker(legal, now, transaction)) {
     await publishRestoreBlockerWithhold({
       legal,
@@ -163,8 +164,17 @@ async function prepareCopyrightAction(
   if (legal.action === 'restore') {
     await authorizeRestoreBeforeDelivery({ legal, intentId: intent.id, now, query: transaction })
   }
+  const staged = await stageImagePlacementDeliveryRecord(
+    {
+      placementId: mutation.placement.placementId,
+      revision: mutation.placement.revision,
+      imageId: mutation.placement.imageId,
+      state: legal.action === 'restore' ? 'allow' : 'withheld',
+    },
+    { query: transaction },
+  )
   await transaction.commit()
-  return { legal, placement: mutation.placement }
+  return { legal, placement: mutation.placement, deliveryKey: staged.deliveryKey }
 }
 
 async function commitOutcome(

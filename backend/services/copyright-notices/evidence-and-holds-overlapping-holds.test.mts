@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
@@ -18,7 +19,7 @@ describe('copyright notice overlapping legal holds', () => {
     const initialRestore = restore
     await expect(
       processCopyrightActionIntent(initialRestore.id, restorationAt, {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
 
@@ -35,7 +36,7 @@ describe('copyright notice overlapping legal holds', () => {
     if (!holdWithhold) throw new Error('hold withhold intent disappeared')
     await expect(
       processCopyrightActionIntent(holdWithhold.id, new Date(restorationAt.getTime() + 120_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
 
@@ -59,7 +60,7 @@ describe('copyright notice overlapping legal holds', () => {
     if (!holdRestore) throw new Error('hold restore intent disappeared')
     await expect(
       processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 240_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('blocked')
     await expect(getImagePlacementForCopyright(target.placement_key)).resolves.toEqual(
@@ -75,7 +76,7 @@ describe('copyright notice overlapping legal holds', () => {
     })
     await expect(
       processCopyrightActionIntent(holdRestore.id, new Date(restorationAt.getTime() + 360_000), {
-        publishImagePlacementDeliveryRecord: publish,
+        ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
     await expect(getImagePlacementForCopyright(target.placement_key)).resolves.toEqual(

@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import { assertCopyrightIntakeEnabled } from './activation.mts'
@@ -40,7 +41,7 @@ describe('copyright intake activation', () => {
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
     const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
     const dependencies = getCopyrightActionDeliveryDependencies({
-      publishImagePlacementDeliveryRecord: publish,
+      ...createTestCopyrightDeliveryDependencies(publish),
     })
     await dependencies.publishImagePlacementDeliveryRecord(
       {

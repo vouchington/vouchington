@@ -113,6 +113,12 @@ non-copyright blocker before delivery changes. If the placement revision changed
 intent through the domain recovery path and create no replacement until staff confirms the new
 placement is within the case.
 
+For an edge mismatch after a failed or rolled-back publication, use the existing media-delivery
+worker's durable repair-marker reconciliation. It rechecks current exact-tuple authority before
+publishing recovery; never manufacture an allow or manually advance a generation. See the
+[media-delivery safety protocol](../../backend/services/media-delivery-safety/README.md) for the
+publication fence, repair markers, and bounded reconciliation contract.
+
 Before enabling copyright intake, audit any historical blocked restores whose qualifying hold lacks
 restriction provenance. This read-only query identifies candidates; it cannot infer a safe binding,
 because a later restriction on the same target may be unrelated to the hold. Counsel and the

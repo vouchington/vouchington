@@ -3,7 +3,6 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import type { Post } from './types.mts'
 import { createPostModerationContent } from './content.mts'
-import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { createPostRevision } from '@services/post-revisions'
@@ -15,7 +14,10 @@ import onError from '@modules/on-error'
 import { assertPostImagesCanBeUpdated } from './images-update-authorization.mts'
 import { completePostImageUpdate } from './complete-post-image-update.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
-import { prepareLockedPostImageUpdate } from './prepare-locked-image-update.mts'
+import {
+  prepareLockedPostImageUpdate,
+  lockPostImageAdmission,
+} from './prepare-locked-image-update.mts'
 export { getPostImages } from './post-image-read.mts'
 
 export type PostImageInput = {
@@ -35,19 +37,10 @@ export async function setPostImages(
   async function savePostImagesInTransaction() {
     await using query = await beginTransaction()
     async function saveImageRows(query: TransactionQuery) {
-      if (images.length > 0) {
-        const imageIds = images.map(img => img.image_id)
-        const { rows: imageRows } = await query<{ id: string }>(sql`/* setPostImages */
-        SELECT id
-        FROM images
-        WHERE id = ANY(${imageIds}::uuid[])
-          AND upload_completed_at IS NOT NULL
-          AND deleted_at IS NULL
-          AND quarantine_pending_at IS NULL
-        FOR SHARE
-      `)
-        assert(imageRows.length === imageIds.length, 400, 'Image not found or not complete')
-      }
+      await lockPostImageAdmission(
+        query,
+        images.map(image => image.image_id),
+      )
       deliveryPrepared = true
       const postState = await prepareLockedPostImageUpdate(
         query,

@@ -14,7 +14,6 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/aws": "workspace:^",
-    "@modules/utils": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

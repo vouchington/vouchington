@@ -1,3 +1,4 @@
+import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -102,7 +103,7 @@ export async function deliverInitialCopyrightWithhold(
   )
   if (!withhold) throw new Error('initial withhold intent disappeared')
   await processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
-    publishImagePlacementDeliveryRecord: publish,
+    ...createTestCopyrightDeliveryDependencies(publish),
   })
 }
 

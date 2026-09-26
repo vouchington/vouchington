@@ -6526,9 +6526,6 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

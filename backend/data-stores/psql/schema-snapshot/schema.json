@@ -540,6 +540,9 @@
     "fn_assert_web_push_subscription_owner": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_web_push_subscription_owner()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  checked_user_id UUID := COALESCE(NEW.user_id, OLD.user_id);\n  checked_subscription_id UUID := COALESCE(NEW.id, OLD.id);\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_subscriptions subscription\n    WHERE subscription.user_id = checked_user_id\n      AND subscription.id = checked_subscription_id\n      AND subscription.deleted_at IS NULL\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_endpoint_owners owner\n        WHERE owner.endpoint_digest = digest(subscription.endpoint, 'sha256')\n          AND owner.endpoint = subscription.endpoint\n          AND owner.user_id = subscription.user_id\n          AND owner.subscription_id = subscription.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'active web push subscription requires one exact endpoint owner';\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_endpoint_owners owner\n    WHERE owner.user_id = checked_user_id\n      AND owner.subscription_id = checked_subscription_id\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_subscriptions subscription\n        WHERE subscription.user_id = owner.user_id\n          AND subscription.id = owner.subscription_id\n          AND subscription.endpoint = owner.endpoint\n          AND subscription.deleted_at IS NULL\n      )\n  ) THEN\n    RAISE EXCEPTION 'web push endpoint owner requires one exact active subscription';\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
+    "fn_assign_media_delivery_registry_generation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assign_media_delivery_registry_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT'\n    OR NEW.desired_state IS DISTINCT FROM OLD.desired_state\n    OR NEW.generation IS DISTINCT FROM OLD.generation THEN\n    NEW.generation := nextval('media_delivery_registry_generation_sequence');\n  ELSE\n    NEW.generation := OLD.generation;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_capture_notification_push_intent": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_capture_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    DELETE FROM notification_push_intent_subscription_receipts\n    WHERE user_id = NEW.user_id AND notification_id IN (OLD.id, NEW.id);\n  END IF;\n\n  INSERT INTO notification_push_intents (user_id, notification_id)\n  VALUES (NEW.user_id, NEW.id)\n  ON CONFLICT (user_id, notification_id) DO UPDATE\n  SET status = 'pending',\n      lease_token = NULL,\n      leased_at = NULL,\n      lease_expires_at = NULL,\n      suppressed_at = NULL,\n      delivered_at = NULL,\n      updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -37020,14 +37023,14 @@
         },
         "generation": {
           "collation": null,
-          "comment": "Monotonic delivery generation; an intent completes only for the generation it claimed.",
+          "comment": "Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 8,
-          "type": "integer"
+          "type": "bigint"
         },
         "invalidated_at": {
           "collation": null,
@@ -37248,8 +37251,168 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_media_delivery_registry_records_generation": "CREATE TRIGGER trigger_media_delivery_registry_records_generation BEFORE INSERT OR UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_assign_media_delivery_registry_generation()",
         "trigger_media_delivery_registry_records_updated_at": "CREATE TRIGGER trigger_media_delivery_registry_records_updated_at BEFORE UPDATE ON public.media_delivery_registry_records FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
+      "uniqueConstraints": {}
+    },
+    "media_delivery_repair_markers": {
+      "checkConstraints": {
+        "media_delivery_repair_markers_check": "CHECK ((((route_kind = 'placement'::text) AND (placement_id IS NOT NULL) AND (placement_revision IS NOT NULL)) OR ((route_kind = 'legacy-image'::text) AND (placement_id IS NULL) AND (placement_revision IS NULL))))",
+        "media_delivery_repair_markers_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
+        "media_delivery_repair_markers_placement_revision_check": "CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))",
+        "media_delivery_repair_markers_route_kind_check": "CHECK ((route_kind = ANY (ARRAY['placement'::text, 'legacy-image'::text])))"
+      },
+      "columns": {
+        "asset_id": {
+          "collation": null,
+          "comment": "Image snapshot without an FK so repair survives owner rollback and never-committed images.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "delivery_key": {
+          "collation": null,
+          "comment": "Exact immutable delivery URL identity; coalesces outstanding repair work.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        },
+        "marker_token": {
+          "collation": null,
+          "comment": "Monotonic wakeup identity allocated on coalescing; acknowledgement deletes only its observed token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "Placement snapshot without an FK so repair survives owner rollback and never-committed placements.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "placement_revision": {
+          "collation": null,
+          "comment": "Exact immutable URL revision captured before denial.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "route_kind": {
+          "collation": null,
+          "comment": "Typed placement or legacy-image URL namespace.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "FK-free committed repair intent for a successful pre-commit edge denial; drained by the existing media delivery reconciler.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "idx_media_delivery_repair_markers__oldest": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_repair_markers__oldest ON public.media_delivery_repair_markers USING btree (created_at, delivery_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "created_at",
+              "descending": false,
+              "expression": "created_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "media_delivery_repair_markers_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_repair_markers_pkey ON public.media_delivery_repair_markers USING btree (delivery_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["delivery_key"],
+        "definition": "PRIMARY KEY (delivery_key)"
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "media_placements": {
