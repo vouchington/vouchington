@@ -9,8 +9,8 @@ runs the same command through the `jscpd` package script.
 
 ## How the Threshold Works
 
-The configured `"minLines": 200` and `"exitCode": 1` make jscpd fail when it finds any clone that
-spans roughly 200 lines or more. A clone is one duplicated block shared by two files, so the unit
+The configured `"minLines": 150` and `"exitCode": 1` make jscpd fail when it finds any clone that
+spans roughly 150 lines or more. A clone is one duplicated block shared by two files, so the unit
 that fails is the pair of copies, not one file. jscpd's console reporter lists each clone
 (`Clone found (<format>): <file> [start:end] ... <file> [start:end]`) above a per-format summary
 table. There is no baseline and no base-branch comparison: every run judges the whole tree the same
@@ -21,8 +21,8 @@ shorter than `minLines`, so the threshold bounds the scan as well as the report.
 
 ### Near-Miss Clones
 
-`.jscpd.json` sets `similarity: 0.9`. Besides exact token matches, jscpd compares JavaScript and
-TypeScript function pairs by AST similarity and reports a pair that reaches 90% as a `similar`
+`.jscpd.json` sets `similarity: 0.85`. Besides exact token matches, jscpd compares JavaScript and
+TypeScript function pairs by AST similarity and reports a pair that reaches 85% as a `similar`
 clone. The comparison ignores identifier names and literal values, so a copied function that renames
 its variables, changes its literals, or adds or drops a line still counts. `minLines` applies to
 both kinds. Code outside a function, and SQL, Bash, and CSS, stay exact-only.
