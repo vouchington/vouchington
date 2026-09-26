@@ -2097,59 +2097,6 @@
       }
     },
     {
-      "id": "engineering-agents",
-      "title": "Agent directory and conversation browsing",
-      "domain": "Staff",
-      "intents": [],
-      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
-      "matrixRows": [
-        {
-          "table": "B",
-          "surface": "engineering ops (staff)"
-        }
-      ],
-      "clients": {
-        "web": {
-          "status": "none",
-          "uiEvidence": [],
-          "behaviorTests": ["playwright/tests/routes/page-coverage-baseline.spec.mts"]
-        },
-        "swift": {
-          "status": "full",
-          "uiEvidence": [
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringAgentsSurface.swift",
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringAgentDetailSurface.swift"
-          ],
-          "behaviorTests": [
-            "swift-clients/ui/Tests/VouchaUITests/NativeEngineeringAgentsSurfaceTests.swift",
-            "swift-clients/ui/Tests/VouchaUITests/NativeRouteSurfaceViewModelAgentSupportTests.swift"
-          ],
-          "apiEvidence": [
-            "swift-clients/core/Sources/VouchaAPI/Endpoint+EngineeringAgents.swift",
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteSurfaceViewModelLoadingAgents.swift",
-            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeRouteSurfaceViewModelLoadingAgentMessages.swift"
-          ]
-        },
-        "dotnet": {
-          "status": "full",
-          "uiEvidence": [
-            "dotnet-clients/src/Voucha.Client.App/Pages/AgentListsPage.cs",
-            "dotnet-clients/src/Voucha.Client.App/Pages/AgentConversationPage.cs"
-          ],
-          "behaviorTests": [
-            "dotnet-clients/tests/Voucha.Client.App.Tests/AgentPagesTests.cs",
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/AgentListsViewModelTests.cs",
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/AgentConversationViewModelTests.cs",
-            "dotnet-clients/tests/Voucha.Client.Core.Tests/Navigation/EngineeringAgentsAccessTests.cs"
-          ],
-          "apiEvidence": [
-            "dotnet-clients/src/Voucha.Client.Core/Api/VouchaApiEndpoints.Engineering.cs",
-            "dotnet-clients/src/Voucha.Client.Core/Engineering/ApiAgentConversationsService.cs"
-          ]
-        }
-      }
-    },
-    {
       "id": "ai-costs",
       "title": "AI cost operations",
       "domain": "Staff",

@@ -10,7 +10,6 @@ import { nativeSpendingCategoryApiFixtureCases } from './native-spending-categor
 import { nativeRewardsStatusApiFixtureCases } from './native-rewards-status-cases.mts'
 import { nativeHouseholdPaginationApiFixtureCases } from './native-household-pagination-cases.mts'
 import { nativeAccountPaginationApiFixtureCases } from './native-account-pagination-cases.mts'
-import { nativeAgentConversationApiFixtureCases } from './native-agent-conversation-cases.mts'
 import { nativeCommentThreadApiFixtureCases } from './native-comment-thread-cases.mts'
 import { nativeCommentAncestorPaginationApiFixtureCases } from './native-comment-ancestor-pagination-cases.mts'
 import { nativeLandingPageApiFixtureCases } from './native-landing-page-cases.mts'
@@ -91,10 +90,6 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     dynamicConfigApiFixtureCases,
   ),
   ...fromCaseFile('backend/test-helpers/api-fixtures/web-cases.mts', webApiFixtureCases),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-agent-conversation-cases.mts',
-    nativeAgentConversationApiFixtureCases,
-  ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-tags-bookmarks-cases.mts',
     nativeTagsBookmarksApiFixtureCases,

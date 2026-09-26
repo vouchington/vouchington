@@ -1,6 +1,6 @@
 # Posts API
 
-Post CRUD, consolidated detail responses, comment trees, images, and agent responses.
+Post CRUD, consolidated detail responses, comment trees, and images.
 
 ## Contents
 
@@ -18,7 +18,6 @@ Post CRUD, consolidated detail responses, comment trees, images, and agent respo
 - <a id="delete-apiv1postsidorslug"></a>[DELETE /api/v1/posts/:idOrSlug](reference-delete-api-v1-posts-idorslug.md)
 - <a id="put-apiv1postsidorslugimages"></a>[PUT /api/v1/posts/:idOrSlug/images](reference-put-api-v1-posts-idorslug-images.md)
 - <a id="review-ratings"></a>[Review Ratings](reference-review-ratings.md)
-- <a id="get-apiv1postspostidagentsagentidresponses"></a>[GET /api/v1/posts/:postId/agents/:agentId/responses](reference-get-api-v1-posts-postid-agents-agentid-responses.md)
 - <a id="authorization"></a>[Authorization](reference-authorization.md)
 - <a id="related"></a>[Related](reference-related.md)
 

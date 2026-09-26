@@ -38,7 +38,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
 
 - [`../modules/activitypub-uris/README.md`](../modules/activitypub-uris/README.md)
-- [`../modules/agents/README.md`](../modules/agents/README.md)
 - [`../modules/api-egress-proxy/README.md`](../modules/api-egress-proxy/README.md)
 - [`../modules/bluesky-oauth/README.md`](../modules/bluesky-oauth/README.md)
 - [`../modules/api-utils/README.md`](../modules/api-utils/README.md)

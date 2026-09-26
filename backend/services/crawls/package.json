@@ -56,7 +56,6 @@
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {
-    "@modules/agents": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
     "@services/users": "workspace:^",
     "@types/http-errors": "^2.0.5",
