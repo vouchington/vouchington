@@ -46,6 +46,7 @@ jobs:
         uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
           template: docs/prompts/automation/merge-queue-ejection.md
+          merge-authority-doc: docs/development/merge-authority.md
           vars: |
             REPOSITORY=${{ github.repository }}
             PR_NUMBER=${{ github.event.pull_request.number }}
