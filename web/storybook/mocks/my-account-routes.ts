@@ -105,6 +105,9 @@ export function accountPost(endpoint: string, body: unknown): unknown | undefine
   if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint)) {
     return { image: { id: endpoint.split('/')[4] ?? 'image-story', upload_status: 'complete' } }
   }
+  if (endpoint === '/api/v1/auth/mfa/re-auth/email/tokens') {
+    return { email_address: 'cardholder@example.com' }
+  }
   if (
     endpoint === '/api/v1/auth/mfa/re-auth/totp/verification' ||
     endpoint === '/api/v1/auth/mfa/re-auth/email/verification'

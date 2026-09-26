@@ -2,11 +2,16 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Navbar } from '@/components/navbar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { toProfileMenuUser } from '@/lib/auth/client-auth-user'
+import { clearNavbarFixture, setNavbarFixture } from '@/storybook/mocks/navbar-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
 
 const meta = {
   title: 'Navbar/Navbar',
+  beforeEach() {
+    setNavbarFixture()
+    return () => clearNavbarFixture()
+  },
 } satisfies Meta
 
 export default meta
