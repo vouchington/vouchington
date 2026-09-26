@@ -88,6 +88,8 @@ describe('parseCommandPrefix', () => {
     [['env', '-C']],
     [['env', '-S', 'bash']],
     [['env', '--split-string=bash']],
+    [['env', '--chdirx=/a']],
+    [['env', '--unsetFOO']],
     [['env', '-v']],
     [['env', '-iC/tmp']],
     [['exec', '-a']],

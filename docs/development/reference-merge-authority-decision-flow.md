@@ -40,7 +40,8 @@ and #434.
 matter what auto-mode is active, so the hook emits it only for an attended session. An unattended
 Claude session (`claude -p`) gets empty output, and its permission mode decides. Codex's confirm
 relies on `approval_policy = "on-request"` in `.codex/config.toml`. A Codex session explicitly
-started in a bypass/full-auto mode has opted out of that, and the hook has no Codex-side
+started with `--ask-for-approval never` or `--dangerously-bypass-approvals-and-sandbox` has opted
+out of that, and the hook has no Codex-side
 equivalent to force a prompt either way. Interactive Codex merge may still surface a confirmation,
 but that confirmation is inherited from session config, not guaranteed by the hook.
 

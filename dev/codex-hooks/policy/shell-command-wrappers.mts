@@ -143,7 +143,7 @@ function readWrapperOptions(
     const word = words[cursor++]
     if (word === '--') break
     if (grammar.flags.includes(word)) continue
-    const spelling = Object.keys(grammar.arguments).find(option => word.startsWith(option))
+    const spelling = Object.keys(grammar.arguments).find(option => takesOption(word, option))
     const attached = spelling === undefined ? '' : word.slice(spelling.length).replace(/^=/, '')
     const value = attached || words[cursor++]
     if (spelling === undefined || value === undefined) return -1
@@ -152,4 +152,11 @@ function readWrapperOptions(
   }
   if (chdir !== undefined) prefix.chdir.push(chdir)
   return cursor
+}
+
+// A short option takes its argument attached (`-C/tmp`); a long one only after `=` (`--chdir=/tmp`),
+// so `--chdirx` is an unknown option, not `--chdir x`.
+function takesOption(word: string, option: string): boolean {
+  if (!option.startsWith('--')) return word.startsWith(option)
+  return word === option || word.startsWith(`${option}=`)
 }
