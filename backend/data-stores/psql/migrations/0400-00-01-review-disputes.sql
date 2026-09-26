@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   public_response text,
   internal_notes text,
 
-  -- Human-in-the-loop lifecycle (mirrors support_messages)
+  -- Human-in-the-loop review lifecycle
   drafted_at timestamptz,
   edited_at timestamptz,
   -- guardrails-disable-next-line uuid-must-be-key

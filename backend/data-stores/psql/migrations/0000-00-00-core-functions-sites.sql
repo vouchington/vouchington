@@ -7,6 +7,9 @@
 -- 0000-00-00-functions-and-sites.sql
 -- ============================================================================
 
+CREATE TYPE content_creation_channels AS ENUM ('web', 'swift', 'dotnet', 'api', 'mcp', 'system');
+COMMENT ON TYPE content_creation_channels IS 'Channel that created a row: a first-party client (web, swift, dotnet), a credentialed agent path (api, mcp), or a platform job (system).';
+
 -- Wilson score lower bound function for ranking
 CREATE OR REPLACE FUNCTION fn_wilson_score_lower_bound(pos double precision, tot double precision)
 RETURNS double precision

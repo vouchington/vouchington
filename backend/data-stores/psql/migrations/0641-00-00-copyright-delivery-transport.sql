@@ -3,33 +3,11 @@
 -- durable intent; it never guesses the purpose of claimant evidence.
 
 ALTER TABLE notifications
-  ADD COLUMN copyright_notice_id uuid;
-ALTER TABLE notifications
   ADD CONSTRAINT fk_notifications__copyright_notice
   FOREIGN KEY (copyright_notice_id)
   REFERENCES copyright_notices(id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__copyright_notice;
-ALTER TABLE notifications
-  ADD CONSTRAINT notifications_copyright_notice_entity_shape
-  CHECK (
-    (entity_type = 'copyright_notice'
-      AND copyright_notice_id IS NOT NULL
-      AND post_id IS NULL
-      AND rss_feed_item_id IS NULL
-      AND actor_user_id IS NULL
-      AND moderation_report_id IS NULL
-      AND review_dispute_id IS NULL
-      AND user_warning_id IS NULL
-      AND moderation_appeal_id IS NULL
-      AND community_ban_id IS NULL
-      AND conversation_id IS NULL
-      AND community_id IS NULL)
-    OR (entity_type <> 'copyright_notice' AND copyright_notice_id IS NULL)
-  ) NOT VALID;
-ALTER TABLE notifications
-  VALIDATE CONSTRAINT notifications_copyright_notice_entity_shape;
-
 CREATE INDEX idx_notifications__copyright_notice
   ON notifications (copyright_notice_id) WHERE copyright_notice_id IS NOT NULL;
 

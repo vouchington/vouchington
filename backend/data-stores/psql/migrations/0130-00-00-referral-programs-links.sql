@@ -10,6 +10,9 @@
 -- we just show one
 CREATE TABLE IF NOT EXISTS user_referral_program_links (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT user_referral_program_links_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -217,3 +220,7 @@ COMMENT ON COLUMN user_referral_program_links.last_crawl_id IS 'The most recent 
 CREATE INDEX IF NOT EXISTS idx_crawlers__referral_program_id
 ON crawlers (referral_program_id)
 WHERE referral_program_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__created_via_oauth_client_id
+  ON user_referral_program_links (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;

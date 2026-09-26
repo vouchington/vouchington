@@ -15,6 +15,8 @@ Not partitioned — growth: unbounded.
 | `charge_id`                                       | `text`                     | yes      |                              |          |           |           | Stripe charge selector when the payment target is charge-backed.                            |
 | `payment_intent_id`                               | `text`                     | yes      |                              |          |           |           | Stripe payment-intent selector when the target has no charge selector.                      |
 | `generation`                                      | `bigint`                   | no       | `1`                          |          |           |           | Compare-and-set fence incremented whenever a scan restarts from its first page.             |
+| `registered_cycle_generation`                     | `bigint`                   | no       | `1`                          |          |           |           | Latest case-level verification pass that lazily registered this stable payment-target scan. |
+| `verified_cycle_generation`                       | `bigint`                   | yes      |                              |          |           |           | Latest registered verification pass whose current Stripe head was observed for this target. |
 | `head_stripe_refund_id`                           | `text`                     | yes      |                              |          |           |           | First refund ID seen in the current generation, or null for an empty first page.            |
 | `cursor_stripe_refund_id`                         | `text`                     | yes      |                              |          |           |           | Last committed Stripe refund ID from which the next page resumes.                           |
 | `first_page_seen_at`                              | `timestamp with time zone` | yes      |                              |          |           |           | Time the current generation committed its first page.                                       |
@@ -23,8 +25,6 @@ Not partitioned — growth: unbounded.
 | `completed_at`                                    | `timestamp with time zone` | yes      |                              |          |           |           | Time an unchanged first-page head verified the exhaustive terminal scan.                    |
 | `created_at`                                      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                             |
 | `updated_at`                                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                             |
-| `registered_cycle_generation`                     | `bigint`                   | no       | `1`                          |          |           |           | Latest case-level verification pass that lazily registered this stable payment-target scan. |
-| `verified_cycle_generation`                       | `bigint`                   | yes      |                              |          |           |           | Latest registered verification pass whose current Stripe head was observed for this target. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -42,7 +42,6 @@ _none_
 - `membership_ineligible_purchase_reversal_payment_intent_id_check`: `CHECK (((payment_intent_id IS NULL) OR (((char_length(payment_intent_id) >= 1) AND (char_length(payment_intent_id) <= 255)) AND (payment_intent_id = TRIM(BOTH FROM payment_intent_id)))))`
 - `membership_ineligible_purchase_reversal_ref_currency_code_check`: `CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))`
 - `membership_ineligible_purchase_reversal_refund__charge_id_check`: `CHECK (((charge_id IS NULL) OR (((char_length(charge_id) >= 1) AND (char_length(charge_id) <= 255)) AND (charge_id = TRIM(BOTH FROM charge_id)))))`
-- `membership_ineligible_purchase_reversal_refund_generation_check`: `CHECK ((generation >= 1))`
 - `membership_ineligible_purchase_reversal_refund_invoice_id_check`: `CHECK ((((char_length(invoice_id) >= 1) AND (char_length(invoice_id) <= 255)) AND (invoice_id = TRIM(BOTH FROM invoice_id))))`
 - `membership_ineligible_purchase_reversal_refund_scans_check`: `CHECK ((num_nonnulls(charge_id, payment_intent_id) = 1))`
 - `membership_ineligible_purchase_reversal_refund_scans_check1`: `CHECK (((first_page_seen_at IS NOT NULL) OR (num_nonnulls(head_stripe_refund_id, cursor_stripe_refund_id, reached_end_at, nonterminal_refund_seen_at, completed_at) = 0)))`

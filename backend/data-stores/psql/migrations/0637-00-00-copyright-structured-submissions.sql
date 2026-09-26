@@ -24,13 +24,6 @@ CREATE TABLE copyright_notice_submission_requests (
 CREATE INDEX idx_copyright_submission_targets__target ON copyright_notice_submission_targets(copyright_notice_target_id, copyright_notice_submission_id);
 
 ALTER TABLE copyright_restrictions
-  -- squawk-ignore adding-required-field -- Intake is activation-gated and cannot have restriction rows before this migration.
-  ADD COLUMN authorizing_assessment_id uuid NOT NULL;
-
-ALTER TABLE copyright_notice_submission_assessments
-  ADD COLUMN copyright_notice_form_screening_id uuid;
-
-ALTER TABLE copyright_restrictions
   ADD CONSTRAINT fk_copyright_restrictions__authorizing_assessment
   FOREIGN KEY (authorizing_assessment_id)
   REFERENCES copyright_notice_submission_assessments(id)

@@ -1,42 +1,6 @@
 -- Copyright action intents are durable media-delivery sagas. Legal eligibility is evaluated
 -- before an intent is created and again by the worker against the authoritative placement.
 
-ALTER TABLE copyright_notice_action_intents
-  ADD COLUMN state text NOT NULL DEFAULT 'pending'
-    CHECK (state IN ('pending', 'claimed', 'completed', 'stale', 'blocked', 'failed')),
-  ADD COLUMN delivery_attempt_count integer NOT NULL DEFAULT 0
-    CHECK (delivery_attempt_count BETWEEN 0 AND 5),
-  ADD COLUMN claimed_at timestamptz,
-  ADD COLUMN completed_at_reason text
-    CHECK (completed_at_reason IS NULL OR completed_at_reason IN ('completed', 'stale', 'blocked', 'failed')),
-  ADD COLUMN failure_message text
-    CHECK (failure_message IS NULL OR char_length(failure_message) BETWEEN 1 AND 4096),
-  ADD COLUMN next_attempt_at timestamptz;
-
-UPDATE copyright_notice_action_intents
-SET state = 'completed', completed_at_reason = 'completed'
-WHERE completed_at IS NOT NULL;
-
-ALTER TABLE copyright_notice_action_intents
-  ADD CONSTRAINT copyright_action_intents_delivery_state
-  CHECK (
-    (state = 'pending' AND completed_at IS NULL AND completed_at_reason IS NULL AND claimed_at IS NULL)
-    OR (state = 'claimed' AND completed_at IS NULL AND completed_at_reason IS NULL AND claimed_at IS NOT NULL)
-    OR (state IN ('completed', 'stale', 'blocked', 'failed')
-      AND completed_at IS NOT NULL AND completed_at_reason = state AND next_attempt_at IS NULL)
-  ) NOT VALID,
-  ADD CONSTRAINT copyright_action_intents_retry_schedule
-  CHECK (
-    ((state = 'pending' AND (delivery_attempt_count = 0 OR next_attempt_at IS NOT NULL))
-      OR state <> 'pending')
-    AND (state <> 'claimed' OR next_attempt_at IS NULL)
-  ) NOT VALID;
-
-ALTER TABLE copyright_notice_action_intents
-  VALIDATE CONSTRAINT copyright_action_intents_delivery_state;
-
-ALTER TABLE copyright_notice_action_intents
-  VALIDATE CONSTRAINT copyright_action_intents_retry_schedule;
 
 CREATE INDEX idx_copyright_notice_action_intents__recoverable
   ON copyright_notice_action_intents (next_attempt_at, id) WHERE state = 'pending';
@@ -95,7 +59,7 @@ CREATE TABLE media_delivery_registry_records (
   placement_revision integer CHECK (placement_revision IS NULL OR placement_revision >= 0),
   asset_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
   desired_state text NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
-  generation integer NOT NULL DEFAULT 0 CHECK (generation >= 0),
+  generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'failed')),
   delivery_attempt_count integer NOT NULL DEFAULT 0 CHECK (delivery_attempt_count BETWEEN 0 AND 5),
   claimed_at timestamptz,
@@ -116,6 +80,29 @@ CREATE TABLE media_delivery_registry_records (
     OR (state IN ('completed', 'failed') AND completed_at IS NOT NULL)
   )
 );
+
+CREATE SEQUENCE media_delivery_registry_generation_sequence AS bigint;
+
+CREATE OR REPLACE FUNCTION fn_assign_media_delivery_registry_generation()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT'
+    OR NEW.desired_state IS DISTINCT FROM OLD.desired_state
+    OR NEW.generation IS DISTINCT FROM OLD.generation THEN
+    NEW.generation := nextval('media_delivery_registry_generation_sequence');
+  ELSE
+    NEW.generation := OLD.generation;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_media_delivery_registry_records_generation
+BEFORE INSERT OR UPDATE ON media_delivery_registry_records
+FOR EACH ROW EXECUTE FUNCTION fn_assign_media_delivery_registry_generation();
+
+COMMENT ON COLUMN media_delivery_registry_records.generation IS
+  'Database-assigned, nontransactional monotonic edge authority generation. It advances for a new record, effective desired-state change, or explicit republish, so a rolled-back prepublication cannot be reused.';
 
 CREATE INDEX idx_media_delivery_registry_records__recoverable
   ON media_delivery_registry_records (next_attempt_at, delivery_key)
@@ -138,7 +125,6 @@ COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Optional type
 COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
 COMMENT ON COLUMN media_delivery_registry_records.asset_id IS 'Typed immutable image asset authorized or withheld by this exact tuple.';
 COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Desired legal delivery state; DynamoDB is updated before this row becomes completed.';
-COMMENT ON COLUMN media_delivery_registry_records.generation IS 'Monotonic delivery generation; an intent completes only for the generation it claimed.';
 COMMENT ON COLUMN media_delivery_registry_records.state IS 'Durable edge-projection workflow state: pending, claimed, completed, or failed.';
 COMMENT ON COLUMN media_delivery_registry_records.delivery_attempt_count IS 'Bounded count of worker claims for this edge-projection operation.';
 COMMENT ON COLUMN media_delivery_registry_records.claimed_at IS 'Time the current worker claim began before it rechecks the authoritative tuple.';

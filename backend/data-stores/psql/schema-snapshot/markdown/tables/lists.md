@@ -9,6 +9,8 @@ Not partitioned — growth: unbounded.
 | Column                        | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
 | ----------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
 | `id`                          | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `created_via`                 | `content_creation_channels` | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                 |
+| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 | `owner_user_id`               | `uuid`                      | no       |                              |          |           |           | The user who owns and manages this list.                                                                          |
 | `name`                        | `text`                      | no       |                              |          |           |           | Display name for the list (1–255 characters).                                                                     |
 | `description`                 | `text`                      | yes      |                              |          |           |           | Optional description of the list.                                                                                 |
@@ -16,8 +18,6 @@ Not partitioned — growth: unbounded.
 | `created_at`                  | `timestamp with time zone`  | no       | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                   |
 | `updated_at`                  | `timestamp with time zone`  | no       | `now()`                      |          |           |           |                                                                                                                   |
 | `removed_at`                  | `timestamp with time zone`  | yes      |                              |          |           |           | Soft-delete timestamp; NULL means the list is active.                                                             |
-| `created_via`                 | `content_creation_channels` | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                 |
-| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 
 **Primary key:** `PRIMARY KEY (id)`
 

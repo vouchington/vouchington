@@ -64,6 +64,11 @@ CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_recommendation
 ON user_import_requests (topic_recommendation_post_id)
 WHERE topic_recommendation_post_id IS NOT NULL AND followed_at IS NULL;
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_import_requests__user_topic_recommendation
+ON user_import_requests (user_id, topic_recommendation_post_id)
+WHERE topic_recommendation_post_id IS NOT NULL;
+COMMENT ON INDEX idx_user_import_requests__user_topic_recommendation IS 'Makes one missing-topic audit durable per user and recommendation across exact import retries.';
+
 COMMENT ON TABLE user_import_requests IS 'Tracks user import requests so imported or later-approved entities can be followed for the requesting user.';
 COMMENT ON COLUMN user_import_requests.user_id IS 'The user who submitted the import request.';
 COMMENT ON COLUMN user_import_requests.entity_type IS 'The imported entity family.';

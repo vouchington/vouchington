@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS users (
 
   -- user profile
   markdown TEXT NOT NULL DEFAULT '',
+  hn_discussions BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- user settings
   -- TRUE = opt-in
@@ -252,7 +253,8 @@ CREATE INDEX IF NOT EXISTS users_lingua_rs_pending_idx
   WHERE lingua_rs_input_sha256 IS NULL;
 
 COMMENT ON TABLE users IS 'User accounts. Core identity table for all registered users.';
-COMMENT ON COLUMN users.is_system IS 'Marks a row as a system-owned account (e.g. jong admin, customer-support, autotagger). Reserved-username seed generators reclaim the username from any non-system holder before upserting here, and role/lookup gates require is_system = TRUE so a squatter can never inherit a system identity.';
+COMMENT ON COLUMN users.is_system IS 'Marks a row as a system-owned account (for example, jong admin or autotagger). Reserved-username seed generators reclaim the username from any non-system holder before upserting here, and role or lookup gates require is_system = TRUE so a squatter can never inherit a system identity.';
+COMMENT ON COLUMN users.hn_discussions IS 'Whether this user opts in to Hacker News discussion imports.';
 COMMENT ON COLUMN users.use_display_name_from IS 'Which source to use for the displayed name (username, facebook, x, etc.).';
 COMMENT ON COLUMN users.username IS 'Unique username chosen by the user. NULL if not yet set. Case-insensitive (stored lowercase).';
 COMMENT ON COLUMN users.markdown IS 'User profile bio in markdown format.';
@@ -621,7 +623,7 @@ COMMENT ON COLUMN user_permissions.user_id IS 'The user who has this permission.
 COMMENT ON COLUMN user_permissions.permission_type_id IS 'The permission type granted to this user.';
 
 INSERT INTO user_roles_types (slug)
-VALUES ('administrator'), ('investor'), ('customer_support'), ('moderator'), ('developer')
+VALUES ('administrator'), ('investor'), ('moderator'), ('developer')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================

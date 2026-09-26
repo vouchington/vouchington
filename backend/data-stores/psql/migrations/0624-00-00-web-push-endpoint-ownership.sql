@@ -6,50 +6,25 @@ CREATE TABLE web_push_endpoint_owners (
   endpoint TEXT NOT NULL UNIQUE CHECK (endpoint LIKE 'https://%'),
   user_id UUID NOT NULL,
   subscription_id UUID NOT NULL,
+  CONSTRAINT web_push_endpoint_owners_subscription_fkey FOREIGN KEY (user_id, subscription_id)
+    REFERENCES web_push_subscriptions (user_id, id) ON UPDATE CASCADE ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (user_id, subscription_id)
 );
 
-ALTER TABLE web_push_endpoint_owners
-  ADD CONSTRAINT web_push_endpoint_owners_subscription_fkey
-    FOREIGN KEY (user_id, subscription_id)
-    REFERENCES web_push_subscriptions (user_id, id)
-    ON UPDATE CASCADE ON DELETE CASCADE NOT VALID;
-
-ALTER TABLE web_push_endpoint_owners
-  VALIDATE CONSTRAINT web_push_endpoint_owners_subscription_fkey;
-
 CREATE OR REPLACE TRIGGER trigger_web_push_endpoint_owners_updated_at
 BEFORE UPDATE ON web_push_endpoint_owners
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-
--- Fail closed for historical cross-account owners and even theoretical SHA-256 collision groups.
--- Repeated generations for one user are safe only when exactly one generation remains active.
-WITH ambiguous AS (
-  SELECT digest(endpoint, 'sha256') AS endpoint_digest
-  FROM web_push_subscriptions
-  GROUP BY digest(endpoint, 'sha256')
-  HAVING count(DISTINCT user_id) <> 1
-    OR count(DISTINCT endpoint) <> 1
-    OR count(*) FILTER (WHERE deleted_at IS NULL) <> 1
-)
-UPDATE web_push_subscriptions subscription
-SET deleted_at = CURRENT_TIMESTAMP
-FROM ambiguous
-WHERE subscription.deleted_at IS NULL
-  AND digest(subscription.endpoint, 'sha256') = ambiguous.endpoint_digest;
-
-INSERT INTO web_push_endpoint_owners (endpoint_digest, endpoint, user_id, subscription_id)
-SELECT digest(subscription.endpoint, 'sha256'), subscription.endpoint,
-  subscription.user_id, subscription.id
-FROM web_push_subscriptions subscription
-WHERE subscription.deleted_at IS NULL;
 
 CREATE TABLE notification_push_intent_subscription_receipts (
   user_id UUID NOT NULL,
   notification_id UUID NOT NULL,
   subscription_id UUID NOT NULL,
+  CONSTRAINT notification_push_receipts_intent_fkey FOREIGN KEY (user_id, notification_id)
+    REFERENCES notification_push_intents (user_id, notification_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT notification_push_receipts_subscription_fkey FOREIGN KEY (user_id, subscription_id)
+    REFERENCES web_push_subscriptions (user_id, id) ON UPDATE CASCADE ON DELETE CASCADE,
   endpoint TEXT NOT NULL,
   status notification_push_endpoint_status NOT NULL DEFAULT 'pending',
   delivered_at TIMESTAMPTZ,
@@ -59,20 +34,6 @@ CREATE TABLE notification_push_intent_subscription_receipts (
   CHECK ((status = 'delivered') = (delivered_at IS NOT NULL)),
   CHECK ((status = 'permanently_failed') = (permanently_failed_at IS NOT NULL))
 );
-
-ALTER TABLE notification_push_intent_subscription_receipts
-  ADD CONSTRAINT notification_push_receipts_intent_fkey
-    FOREIGN KEY (user_id, notification_id)
-    REFERENCES notification_push_intents (user_id, notification_id)
-    ON UPDATE CASCADE ON DELETE CASCADE NOT VALID,
-  ADD CONSTRAINT notification_push_receipts_subscription_fkey
-    FOREIGN KEY (user_id, subscription_id)
-    REFERENCES web_push_subscriptions (user_id, id)
-    ON UPDATE CASCADE ON DELETE CASCADE NOT VALID;
-
-ALTER TABLE notification_push_intent_subscription_receipts
-  VALIDATE CONSTRAINT notification_push_receipts_intent_fkey,
-  VALIDATE CONSTRAINT notification_push_receipts_subscription_fkey;
 
 CREATE INDEX idx_push_intent_subscription_receipts_user_subscription
   ON notification_push_intent_subscription_receipts (user_id, subscription_id);
@@ -198,8 +159,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- squawk-ignore ban-drop-table -- The pre-launch schema has no endpoint-keyed receipt readers or writers.
-DROP TABLE notification_push_intent_endpoints;
+CREATE TRIGGER trigger_notifications_capture_push_intent
+AFTER INSERT OR UPDATE OF id ON notifications
+FOR EACH ROW EXECUTE FUNCTION fn_capture_notification_push_intent();
 
 COMMENT ON TABLE web_push_endpoint_owners IS 'Global exact browser endpoint owner; SHA-256 digest serializes endpoint claims while exact endpoint comparison detects digest collisions.';
 COMMENT ON COLUMN web_push_endpoint_owners.endpoint_digest IS 'SHA-256 digest of endpoint, used as the global registry primary key.';

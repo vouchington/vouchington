@@ -5,7 +5,6 @@ import {
   getContributionAdmissionConsumptionCountForTest,
   getContributionAdmissionPolicyRevisionForTest,
   getTopicImportRequestCountByRecommendationForTest,
-  insertPendingTopicImportRequestForTest,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
@@ -102,46 +101,6 @@ describe('topic import admission', () => {
     ).resolves.toBe(1)
     await expect(
       getContributionAdmissionConsumptionCountForTest(user.id, 'topic_recommendation'),
-    ).resolves.toBe(1)
-  })
-
-  it('keeps old import-audit writers compatible during the uniqueness rollout', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const topicName = `Mixed-version import ${crypto.randomUUID()}`
-    const [created] = await importTopics(user, [topicName], {
-      assertCanCreateTopicRecommendations: async () => {},
-      importAttemptId: crypto.randomUUID(),
-    })
-    if (!created?.recommendation_post_id)
-      throw new Error('Expected a recommendation-backed import audit')
-
-    await expect(
-      insertPendingTopicImportRequestForTest(user.id, created.recommendation_post_id, topicName),
-    ).resolves.toBeUndefined()
-    await expect(
-      getTopicImportRequestCountByRecommendationForTest(user.id, created.recommendation_post_id),
-    ).resolves.toBe(1)
-  })
-
-  it('serializes concurrent old-writer recommendation audits', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS, {
-      administrator: true,
-    })
-    const input = {
-      name: `Concurrent old-writer import ${crypto.randomUUID()}`,
-      slug: `concurrent-old-writer-import-${crypto.randomUUID()}`,
-    }
-    const owner = await admitImportedTopicRecommendation(user, input, null, crypto.randomUUID())
-    if (owner.kind !== 'created') throw new Error('Expected a recommendation to audit')
-
-    await expect(
-      Promise.all([
-        insertPendingTopicImportRequestForTest(user.id, owner.response.id, input.name),
-        insertPendingTopicImportRequestForTest(user.id, owner.response.id, input.name),
-      ]),
-    ).resolves.toEqual([undefined, undefined])
-    await expect(
-      getTopicImportRequestCountByRecommendationForTest(user.id, owner.response.id),
     ).resolves.toBe(1)
   })
 

@@ -9,6 +9,7 @@ Not partitioned — growth: unbounded.
 | Column                               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
 | ------------------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
 | `id`                                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
+| `copyright_notice_form_screening_id` | `uuid`                     | yes      |                              |          |           |           | Exact clear anti-spam screening authorizing an automated initial-notice assessment; null for human decisions. |
 | `copyright_notice_submission_id`     | `uuid`                     | no       |                              |          |           |           | Immutable submission evaluated by this assessment.                                                            |
 | `supersedes_assessment_id`           | `uuid`                     | yes      |                              |          |           |           | Prior assessment corrected by this append-only assessment; NULL for the first assessment.                     |
 | `assessed_at`                        | `timestamp with time zone` | no       |                              |          |           |           | When deterministic validation or a moderator recorded this assessment.                                        |
@@ -16,7 +17,6 @@ Not partitioned — growth: unbounded.
 | `substantially_compliant`            | `boolean`                  | no       |                              |          |           |           | Whether this exact submission contains the required elements for its legal procedure.                         |
 | `created_at`                         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
 | `updated_at`                         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
-| `copyright_notice_form_screening_id` | `uuid`                     | yes      |                              |          |           |           | Exact clear anti-spam screening authorizing an automated initial-notice assessment; null for human decisions. |
 
 **Primary key:** `PRIMARY KEY (id)`
 

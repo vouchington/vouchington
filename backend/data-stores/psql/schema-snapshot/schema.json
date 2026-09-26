@@ -558,9 +558,6 @@
     "fn_create_user_metrics_on_insert": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_metrics (id)\n  VALUES (NEW.id)\n  ON CONFLICT (id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
-    "fn_deduplicate_user_import_topic_recommendation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_deduplicate_user_import_topic_recommendation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.topic_recommendation_post_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'user-import-topic-recommendation:' || NEW.user_id::text || ':' || NEW.topic_recommendation_post_id::text,\n    0\n  ));\n  IF EXISTS (\n    SELECT 1\n    FROM user_import_requests\n    WHERE user_id = NEW.user_id\n      AND topic_recommendation_post_id = NEW.topic_recommendation_post_id\n  ) THEN\n    RETURN NULL;\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
-    },
     "fn_enforce_membership_provider_evidence_immutability": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership provider evidence records are immutable';\n  END IF;\n\n  IF ROW(\n    NEW.id,\n    NEW.provider,\n    NEW.environment,\n    NEW.application_id,\n    NEW.provider_event_id,\n    NEW.evidence_lookup_sha256,\n    NEW.encrypted_evidence,\n    NEW.received_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.provider,\n    OLD.environment,\n    OLD.application_id,\n    OLD.provider_event_id,\n    OLD.evidence_lookup_sha256,\n    OLD.encrypted_evidence,\n    OLD.received_at\n  ) OR (\n    OLD.membership_provider_lineage_id IS NOT NULL\n    AND NEW.membership_provider_lineage_id IS DISTINCT FROM OLD.membership_provider_lineage_id\n  ) THEN\n    RAISE EXCEPTION 'membership provider evidence identity is immutable';\n  END IF;\n\n  IF OLD.rejected_at IS NOT NULL\n    OR num_nonnulls(NEW.verified_at, NEW.rejected_at) <> 1\n    OR (\n      OLD.verified_at IS NOT NULL\n      AND (NEW.verified_at IS NOT NULL OR NEW.rejected_at IS NULL)\n    )\n  THEN\n    RAISE EXCEPTION 'membership provider evidence lifecycle is terminal';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
     },
@@ -1318,7 +1315,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -1340,7 +1337,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "failed_at": {
@@ -1351,7 +1348,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -1395,7 +1392,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "topic_id": {
@@ -3978,7 +3975,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "date_header": {
@@ -4055,7 +4052,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -4077,7 +4074,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "text"
         },
         "processing_at": {
@@ -4165,7 +4162,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "sender_allowed_at": {
@@ -4209,7 +4206,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "verified_at": {
@@ -7423,7 +7420,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "disconnect_requested_at": {
@@ -7434,7 +7431,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "handle": {
@@ -7478,7 +7475,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -11133,7 +11130,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "boolean"
         },
         "allow_review_posts": {
@@ -11144,7 +11141,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "boolean"
         },
         "archived_at": {
@@ -11155,7 +11152,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -11166,7 +11163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "banner_image_id": {
@@ -11177,7 +11174,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "created_at": {
@@ -11188,7 +11185,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -11199,7 +11196,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "created_via": {
@@ -11210,7 +11207,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -11221,7 +11218,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "default_language": {
@@ -11232,7 +11229,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "text"
         },
         "deleted_at": {
@@ -11243,7 +11240,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -11254,7 +11251,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "uuid"
         },
         "id": {
@@ -11276,7 +11273,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -11287,7 +11284,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -11298,7 +11295,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -11309,7 +11306,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -11320,7 +11317,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "jsonb"
         },
         "list_type": {
@@ -11331,7 +11328,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "community_list_types"
         },
         "markdown": {
@@ -11342,7 +11339,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "member_invites_allowed_at": {
@@ -11353,7 +11350,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "member_roster_visibility": {
@@ -11364,7 +11361,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "community_member_roster_visibility_types"
         },
         "name": {
@@ -11375,7 +11372,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "post_approval_required_at": {
@@ -11386,7 +11383,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "profile_image_id": {
@@ -11397,7 +11394,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "rules_markdown": {
@@ -11408,7 +11405,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "text"
         },
         "search_vector": {
@@ -11419,7 +11416,7 @@
           "generatedExpression": "((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'B'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "tsvector"
         },
         "slug": {
@@ -11430,7 +11427,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "trusted_at": {
@@ -11441,7 +11438,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -11452,7 +11449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "visibility": {
@@ -11463,7 +11460,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "community_visibility_types"
         }
       },
@@ -12641,7 +12638,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "approved_at": {
@@ -12652,7 +12649,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "community_id": {
@@ -12663,7 +12660,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "created_at": {
@@ -12674,7 +12671,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -12685,7 +12682,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -12696,7 +12693,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "id": {
@@ -12718,7 +12715,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "rejected_at": {
@@ -12729,7 +12726,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "rejection_reason": {
@@ -12740,7 +12737,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "reviewed_at": {
@@ -12751,7 +12748,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "reviewed_by_id": {
@@ -12762,7 +12759,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "updated_at": {
@@ -12773,7 +12770,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -12784,7 +12781,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "uuid"
         }
       },
@@ -17501,7 +17498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "ai_prompt": {
@@ -17512,7 +17509,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "approved_at": {
@@ -17523,7 +17520,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -17534,7 +17531,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "body_html": {
@@ -17545,7 +17542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "body_text": {
@@ -17556,7 +17553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "bounced_at": {
@@ -17567,7 +17564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "content": {
@@ -17578,7 +17575,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 11,
           "type": "jsonb"
         },
         "conversation_id": {
@@ -17622,7 +17619,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -17633,7 +17630,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "delivered_at": {
@@ -17644,7 +17641,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "direction": {
@@ -17655,7 +17652,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 10,
           "type": "conversation_message_directions"
         },
         "discarded_at": {
@@ -17666,7 +17663,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "drafted_at": {
@@ -17677,7 +17674,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "edited_at": {
@@ -17688,7 +17685,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "edited_by_id": {
@@ -17699,7 +17696,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 26,
           "type": "uuid"
         },
         "email_from": {
@@ -17710,7 +17707,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "email_message_id": {
@@ -17721,7 +17718,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "email_subject": {
@@ -17732,7 +17729,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "email_to": {
@@ -17743,7 +17740,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "id": {
@@ -17765,7 +17762,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 9,
           "type": "conversation_message_kinds"
         },
         "received_at": {
@@ -17776,7 +17773,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "sent_at": {
@@ -17787,7 +17784,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -17798,7 +17795,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -17809,7 +17806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 6,
           "type": "uuid"
         }
       },
@@ -17986,7 +17983,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -18008,7 +18005,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "removed_by_id": {
@@ -18019,7 +18016,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "role": {
@@ -18030,7 +18027,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 4,
           "type": "conversation_participant_roles"
         },
         "updated_at": {
@@ -18041,7 +18038,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -18051,7 +18048,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 3,
           "type": "uuid"
         }
@@ -18246,7 +18243,7 @@
         },
         "created_by_id": {
           "collation": null,
-          "comment": "The registered user who started the conversation. NULL for conversations initiated by an anonymous support contact, or if the creating user was hard-deleted (ON DELETE SET NULL).",
+          "comment": "The registered user who started the conversation. NULL if the creating user was hard-deleted (ON DELETE SET NULL).",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -19085,7 +19082,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "claimed_at": {
@@ -19096,7 +19093,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -19107,7 +19104,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "completed_at_reason": {
@@ -19118,7 +19115,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "copyright_notice_deadline_id": {
@@ -19129,7 +19126,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "copyright_restriction_id": {
@@ -19140,7 +19137,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "created_at": {
@@ -19151,7 +19148,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -19162,7 +19159,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 3,
           "type": "integer"
         },
         "expected_placement_revision": {
@@ -19173,7 +19170,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 10,
           "type": "integer"
         },
         "failure_message": {
@@ -19184,7 +19181,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "id": {
@@ -19206,7 +19203,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "state": {
@@ -19217,7 +19214,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 2,
           "type": "text"
         },
         "updated_at": {
@@ -19228,7 +19225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         }
       },
@@ -19943,7 +19940,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -19954,7 +19951,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "body_ciphertext": {
@@ -19965,7 +19962,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "composition_kind": {
@@ -19976,7 +19973,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "copyright_notice_email_intake_id": {
@@ -19987,7 +19984,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "copyright_notice_id": {
@@ -19998,7 +19995,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "copyright_notice_submission_id": {
@@ -20009,7 +20006,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "correspondence_kind": {
@@ -20020,7 +20017,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "created_at": {
@@ -20031,7 +20028,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "direction": {
@@ -20042,7 +20039,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "drafted_by_id": {
@@ -20053,7 +20050,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "id": {
@@ -20075,7 +20072,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -20086,7 +20083,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         }
       },
@@ -25966,7 +25963,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "assessed_by_id": {
@@ -25977,7 +25974,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "copyright_notice_form_screening_id": {
@@ -25988,7 +25985,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "copyright_notice_submission_id": {
@@ -25999,7 +25996,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "created_at": {
@@ -26010,7 +26007,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -26032,7 +26029,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "boolean"
         },
         "supersedes_assessment_id": {
@@ -26043,7 +26040,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "updated_at": {
@@ -26054,7 +26051,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },
@@ -28050,7 +28047,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "copyright_notice_target_id": {
@@ -28061,7 +28058,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "created_at": {
@@ -28072,7 +28069,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "human_review_action": {
@@ -28083,7 +28080,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "human_reviewed_at": {
@@ -28094,7 +28091,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "human_reviewed_by_id": {
@@ -28105,7 +28102,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "id": {
@@ -28127,7 +28124,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "imposed_by_id": {
@@ -28138,7 +28135,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "lifted_at": {
@@ -28149,7 +28146,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "lifted_by_id": {
@@ -28160,7 +28157,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "updated_at": {
@@ -28171,7 +28168,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         }
       },
@@ -34458,7 +34455,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -34469,7 +34466,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -34546,7 +34543,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "openai_omni_moderation_flagged": {
@@ -34557,7 +34554,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "boolean"
         },
         "openai_omni_moderation_results": {
@@ -34568,7 +34565,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "jsonb"
         },
         "quarantine_pending_at": {
@@ -34579,7 +34576,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "quarantine_s3_key": {
@@ -34590,7 +34587,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "quarantined_at": {
@@ -34601,7 +34598,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "s3_key": {
@@ -34678,7 +34675,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "upload_staged_at": {
@@ -34689,7 +34686,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "upload_started_at": {
@@ -36691,7 +36688,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -36702,7 +36699,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -36713,7 +36710,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "description": {
@@ -36724,7 +36721,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "id": {
@@ -36746,7 +36743,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "owner_user_id": {
@@ -36757,7 +36754,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "removed_at": {
@@ -36768,7 +36765,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -36779,7 +36776,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "visibility": {
@@ -36790,7 +36787,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "list_visibility"
         }
       },
@@ -40790,7 +40787,7 @@
     },
     "membership_ineligible_purchase_reversal_refund_scan_cycles": {
       "checkConstraints": {
-        "membership_ineligible_purchase_reversal_refun_generation_check1": "CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))"
+        "membership_ineligible_purchase_reversal_refund_generation_check": "CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))"
       },
       "columns": {
         "completed_at": {
@@ -40907,7 +40904,6 @@
         "membership_ineligible_purchase_reversal_payment_intent_id_check": "CHECK (((payment_intent_id IS NULL) OR (((char_length(payment_intent_id) >= 1) AND (char_length(payment_intent_id) <= 255)) AND (payment_intent_id = TRIM(BOTH FROM payment_intent_id)))))",
         "membership_ineligible_purchase_reversal_ref_currency_code_check": "CHECK ((((char_length(currency_code) >= 1) AND (char_length(currency_code) <= 16)) AND (currency_code = TRIM(BOTH FROM currency_code))))",
         "membership_ineligible_purchase_reversal_refund__charge_id_check": "CHECK (((charge_id IS NULL) OR (((char_length(charge_id) >= 1) AND (char_length(charge_id) <= 255)) AND (charge_id = TRIM(BOTH FROM charge_id)))))",
-        "membership_ineligible_purchase_reversal_refund_generation_check": "CHECK ((generation >= 1))",
         "membership_ineligible_purchase_reversal_refund_invoice_id_check": "CHECK ((((char_length(invoice_id) >= 1) AND (char_length(invoice_id) <= 255)) AND (invoice_id = TRIM(BOTH FROM invoice_id))))",
         "membership_ineligible_purchase_reversal_refund_scans_check": "CHECK ((num_nonnulls(charge_id, payment_intent_id) = 1))",
         "membership_ineligible_purchase_reversal_refund_scans_check1": "CHECK (((first_page_seen_at IS NOT NULL) OR (num_nonnulls(head_stripe_refund_id, cursor_stripe_refund_id, reached_end_at, nonterminal_refund_seen_at, completed_at) = 0)))",
@@ -40935,7 +40931,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -40946,7 +40942,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -40968,7 +40964,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "first_page_seen_at": {
@@ -40979,7 +40975,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "generation": {
@@ -41001,7 +40997,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "id": {
@@ -41045,7 +41041,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "payment_intent_id": {
@@ -41067,7 +41063,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "registered_cycle_generation": {
@@ -41078,7 +41074,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 8,
           "type": "bigint"
         },
         "updated_at": {
@@ -41089,7 +41085,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "verified_cycle_generation": {
@@ -41100,7 +41096,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 9,
           "type": "bigint"
         }
       },
@@ -41246,7 +41242,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -41257,7 +41253,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -41290,7 +41286,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "release_reason": {
@@ -41301,7 +41297,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "released_at": {
@@ -41312,7 +41308,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "source_kind": {
@@ -41323,7 +41319,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "membership_source_kinds"
         },
         "user_id": {
@@ -41334,7 +41330,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         }
       },
@@ -42065,7 +42061,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "collision_at": {
@@ -42076,7 +42072,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -42087,7 +42083,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -42098,7 +42094,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "currency_code": {
@@ -42109,7 +42105,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "environment": {
@@ -42120,7 +42116,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 9,
           "type": "membership_provider_environments"
         },
         "execution_claim_token": {
@@ -42131,7 +42127,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "execution_claimed_at": {
@@ -42142,7 +42138,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "failed_at": {
@@ -42153,7 +42149,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "failure_message": {
@@ -42164,7 +42160,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 24,
           "type": "text"
         },
         "id": {
@@ -42186,7 +42182,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "membership_lineage_binding_id": {
@@ -42197,7 +42193,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "membership_provider_lineage_id": {
@@ -42230,7 +42226,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 11,
           "type": "membership_operation_kinds"
         },
         "period_ends_at": {
@@ -42241,7 +42237,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "period_started_at": {
@@ -42252,7 +42248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "provider": {
@@ -42263,7 +42259,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 8,
           "type": "membership_provider_kinds"
         },
         "provider_refund_id": {
@@ -42274,7 +42270,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "qualifying_allocation_minor_units": {
@@ -42285,7 +42281,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
           "type": "bigint"
         },
         "reconciliation_attempt_ordinal": {
@@ -42296,7 +42292,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 20,
           "type": "integer"
         },
         "reconciliation_due_at": {
@@ -42307,7 +42303,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "remaining_refundable_minor_units": {
@@ -42318,7 +42314,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 14,
           "type": "bigint"
         },
         "requested_at": {
@@ -42329,7 +42325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         }
       },
@@ -48144,7 +48140,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "ai_internal_response": {
@@ -48155,7 +48151,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "ai_public_response": {
@@ -48166,7 +48162,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "appeal_reason": {
@@ -48177,7 +48173,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "appellant_id": {
@@ -48188,7 +48184,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "approved_at": {
@@ -48199,7 +48195,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -48210,7 +48206,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "uuid"
         },
         "case_id": {
@@ -48221,7 +48217,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "uuid"
         },
         "community_ban_id": {
@@ -48232,7 +48228,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "community_id": {
@@ -48243,7 +48239,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "created_at": {
@@ -48254,7 +48250,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -48265,7 +48261,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -48276,7 +48272,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "drafted_at": {
@@ -48287,7 +48283,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "edited_at": {
@@ -48298,7 +48294,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "edited_by_id": {
@@ -48309,7 +48305,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "id": {
@@ -48331,7 +48327,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "latest_lifecycle_change_id": {
@@ -48342,7 +48338,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "uuid"
         },
         "model": {
@@ -48353,7 +48349,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "moderation_transparency_community_id": {
@@ -48364,7 +48360,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "post_id": {
@@ -48375,7 +48371,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "post_removal_kind": {
@@ -48386,7 +48382,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "moderation_appeal_post_removal_kinds"
         },
         "public_response": {
@@ -48397,7 +48393,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "recommended_action": {
@@ -48408,7 +48404,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "moderation_appeal_action"
         },
         "resolution_action": {
@@ -48419,7 +48415,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "moderation_appeal_action"
         },
         "resolved_at": {
@@ -48430,7 +48426,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "resolved_by_id": {
@@ -48441,7 +48437,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "uuid"
         },
         "sent_at": {
@@ -48452,7 +48448,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -48463,7 +48459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "user_suspension_id": {
@@ -48474,7 +48470,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "user_warning_id": {
@@ -48485,7 +48481,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "uuid"
         }
       },
@@ -50317,7 +50313,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "created_at": {
@@ -50328,7 +50324,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -50339,7 +50335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -50350,7 +50346,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "escalated_at": {
@@ -50361,7 +50357,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "escalated_by_id": {
@@ -50372,7 +50368,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "uuid"
         },
         "hostname_id": {
@@ -50383,7 +50379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "id": {
@@ -50405,7 +50401,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "note": {
@@ -50416,7 +50412,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "original_reason": {
@@ -50427,7 +50423,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "moderation_report_reason"
         },
         "post_id": {
@@ -50438,7 +50434,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "reason": {
@@ -50449,7 +50445,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "moderation_report_reason"
         },
         "reported_user_id": {
@@ -50460,7 +50456,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "reporter_user_id": {
@@ -50471,7 +50467,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "resolution_action": {
@@ -50482,7 +50478,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "moderation_report_resolution_action"
         },
         "resolved_by_id": {
@@ -50493,7 +50489,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "reviewed_at": {
@@ -50504,7 +50500,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "rss_feed_item_id": {
@@ -50515,7 +50511,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "uuid"
         }
       },
@@ -52876,7 +52872,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "actor_user_id": {
@@ -52887,7 +52883,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "body": {
@@ -52898,7 +52894,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "community_ban_id": {
@@ -52909,7 +52905,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "community_id": {
@@ -52920,7 +52916,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "conversation_id": {
@@ -52931,7 +52927,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "copyright_notice_id": {
@@ -52942,7 +52938,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "created_at": {
@@ -52953,7 +52949,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "delete_reason": {
@@ -52964,7 +52960,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 29,
           "type": "notification_delete_reasons"
         },
         "deleted_at": {
@@ -52975,7 +52971,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "delivery_type": {
@@ -52986,7 +52982,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 18,
           "type": "notification_delivery_types"
         },
         "entity_type": {
@@ -53008,7 +53004,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "id": {
@@ -53030,7 +53026,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "moderation_report_id": {
@@ -53041,7 +53037,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "post_id": {
@@ -53063,7 +53059,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "publication_rss_feed_item_id": {
@@ -53074,7 +53070,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "pushed_at": {
@@ -53085,7 +53081,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "read_at": {
@@ -53096,7 +53092,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "review_dispute_id": {
@@ -53107,7 +53103,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "rss_feed_item_id": {
@@ -53129,7 +53125,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 19,
           "type": "uuid"
         },
         "target_entity": {
@@ -53140,7 +53136,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 24,
           "type": "jsonb"
         },
         "target_intent": {
@@ -53151,7 +53147,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 25,
           "type": "text"
         },
         "target_path": {
@@ -53162,7 +53158,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "title": {
@@ -53173,7 +53169,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 20,
           "type": "text"
         },
         "updated_at": {
@@ -53184,7 +53180,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -53206,7 +53202,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 12,
           "type": "uuid"
         }
       },
@@ -56068,7 +56064,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "client_name": {
@@ -56079,7 +56075,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "client_secret_hash": {
@@ -56090,7 +56086,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "client_type": {
@@ -56101,7 +56097,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "created_at": {
@@ -56112,7 +56108,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "grant_types": {
@@ -56123,7 +56119,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 11,
           "type": "text[]"
         },
         "id": {
@@ -56145,7 +56141,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 2,
           "type": "text"
         },
         "owner_user_id": {
@@ -56156,7 +56152,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "redirect_uris": {
@@ -56167,7 +56163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 10,
           "type": "text[]"
         },
         "response_types": {
@@ -56178,7 +56174,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 12,
           "type": "text[]"
         },
         "revoked_at": {
@@ -56189,7 +56185,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "scopes": {
@@ -56200,7 +56196,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 13,
           "type": "text[]"
         },
         "token_endpoint_auth_method": {
@@ -56211,7 +56207,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "updated_at": {
@@ -56222,7 +56218,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "verified_at": {
@@ -56233,7 +56229,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "verified_by_id": {
@@ -56244,7 +56240,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 4,
           "type": "uuid"
         }
       },
@@ -63329,7 +63325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "created_at": {
@@ -63340,7 +63336,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "created_topic_id": {
@@ -63351,7 +63347,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "example_referral_link": {
@@ -63362,7 +63358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "hostname_id": {
@@ -63384,7 +63380,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "text[]"
         },
         "post_id": {
@@ -63406,7 +63402,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "reviewed_at": {
@@ -63417,7 +63413,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "reviewed_by_id": {
@@ -63428,7 +63424,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "topic_markdown": {
@@ -63472,7 +63468,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "post_topic_recommendation_topic_types"
         },
         "updated_at": {
@@ -63483,7 +63479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         }
       },
@@ -64136,7 +64132,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "approved_at": {
@@ -64147,7 +64143,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "archived_at": {
@@ -64158,7 +64154,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "archived_by_id": {
@@ -64169,7 +64165,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "uuid"
         },
         "ban_evasion_post_embedding_input_sha256": {
@@ -64180,7 +64176,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 43,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -64191,7 +64187,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 38,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -64202,7 +64198,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 40,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -64213,7 +64209,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 41,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -64224,7 +64220,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 39,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -64235,7 +64231,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 42,
           "type": "integer"
         },
         "broadcast": {
@@ -64246,7 +64242,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "broadcast_types"
         },
         "community_id": {
@@ -64257,7 +64253,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "created_at": {
@@ -64268,7 +64264,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -64279,7 +64275,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "uuid"
         },
         "created_via": {
@@ -64290,7 +64286,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -64301,18 +64297,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "creation_source_url_id": {
           "collation": null,
-          "comment": "Immutable raw URL submitted when creating a link post; NULL for existing URL records and rows written before immutable provenance.",
+          "comment": "Immutable raw URL submitted when creating a link post.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 31,
           "type": "uuid"
         },
         "data_point_vertical": {
@@ -64323,7 +64319,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "declared_language": {
@@ -64334,7 +64330,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 32,
           "type": "text"
         },
         "deleted_at": {
@@ -64345,7 +64341,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -64356,7 +64352,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "uuid"
         },
         "id": {
@@ -64378,7 +64374,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "is_anonymous": {
@@ -64389,7 +64385,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "boolean"
         },
         "latest_clearance_change_id": {
@@ -64400,7 +64396,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "lingua_rs_content_sha256": {
@@ -64411,7 +64407,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 34,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -64422,7 +64418,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -64433,7 +64429,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 33,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -64444,7 +64440,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 35,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -64455,7 +64451,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 36,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -64466,7 +64462,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 41,
+          "ordinalPosition": 44,
           "type": "bytea"
         },
         "markdown": {
@@ -64477,7 +64473,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "parent_id": {
@@ -64488,7 +64484,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "uuid"
         },
         "post_type": {
@@ -64499,7 +64495,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "post_types"
         },
         "privacy": {
@@ -64510,7 +64506,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "privacy_types"
         },
         "rejected_at": {
@@ -64521,7 +64517,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "root_id": {
@@ -64532,7 +64528,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "search_vector": {
@@ -64543,7 +64539,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 45,
           "type": "tsvector"
         },
         "structured_data": {
@@ -64554,7 +64550,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "jsonb"
         },
         "title": {
@@ -64565,7 +64561,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "updated_at": {
@@ -64576,7 +64572,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -64587,7 +64583,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "url_id": {
@@ -64598,7 +64594,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -64697,7 +64693,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -64708,7 +64704,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "xid8"
         }
       },
@@ -86229,7 +86225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "published_at": {
@@ -86240,7 +86236,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "rss_feed_id": {
@@ -87637,7 +87633,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "created_at": {
@@ -87648,7 +87644,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -87659,7 +87655,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "uuid"
         },
         "created_via": {
@@ -87670,7 +87666,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -87681,7 +87677,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "declared_language": {
@@ -87692,7 +87688,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "deleted_at": {
@@ -87703,7 +87699,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "etag": {
@@ -87714,7 +87710,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "feed_type": {
@@ -87725,7 +87721,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "rss_feed_content_types"
         },
         "id": {
@@ -87747,7 +87743,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "boolean"
         },
         "is_discoverable": {
@@ -87758,7 +87754,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "boolean"
         },
         "is_enabled": {
@@ -87769,7 +87765,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "boolean"
         },
         "last_fetched_at": {
@@ -87780,7 +87776,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "last_modified_at": {
@@ -87791,7 +87787,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "rss_feed_url_id": {
@@ -87802,7 +87798,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "search_vector": {
@@ -87813,7 +87809,7 @@
           "generatedExpression": "setweight(to_tsvector('voucha_english'::regconfig, COALESCE(title, ''::text)), 'A'::\"char\")",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "tsvector"
         },
         "title": {
@@ -87824,7 +87820,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "topic_id": {
@@ -87835,7 +87831,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "unreliable_status_codes": {
@@ -87846,7 +87842,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "smallint[]"
         },
         "updated_at": {
@@ -87857,7 +87853,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         }
       },
@@ -93123,7 +93119,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "text[]"
         },
         "allow_reviews": {
@@ -93134,7 +93130,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -93145,7 +93141,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -93156,7 +93152,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -93167,7 +93163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -93178,7 +93174,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -93189,7 +93185,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "integer"
         },
         "created_at": {
@@ -93200,7 +93196,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -93211,7 +93207,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "created_via": {
@@ -93222,7 +93218,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -93233,7 +93229,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "deleted_at": {
@@ -93244,7 +93240,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -93255,7 +93251,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "uuid"
         },
         "hero_image_id": {
@@ -93266,7 +93262,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "uuid"
         },
         "homepage_url_id": {
@@ -93277,7 +93273,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "uuid"
         },
         "hostname_id": {
@@ -93288,7 +93284,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "id": {
@@ -93310,7 +93306,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 35,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -93321,7 +93317,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -93332,7 +93328,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 34,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -93343,7 +93339,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 36,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -93354,7 +93350,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 37,
           "type": "jsonb"
         },
         "logo_image_id": {
@@ -93365,7 +93361,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "markdown": {
@@ -93376,7 +93372,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "merged_at": {
@@ -93387,7 +93383,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "merged_by_id": {
@@ -93398,7 +93394,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "uuid"
         },
         "merged_into_topic_id": {
@@ -93409,7 +93405,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "uuid"
         },
         "name": {
@@ -93420,7 +93416,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "noindex": {
@@ -93431,7 +93427,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "boolean"
         },
         "referral_program_id": {
@@ -93442,7 +93438,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 33,
           "type": "uuid"
         },
         "rewards_program_id": {
@@ -93453,7 +93449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 32,
           "type": "uuid"
         },
         "search_vector": {
@@ -93464,7 +93460,7 @@
           "generatedExpression": "(((setweight(to_tsvector('voucha_english'::regconfig, COALESCE(name, ''::text)), 'A'::\"char\") || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(slug, ''::text)), 'A'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(fn_immutable_array_to_string(aliases, ' '::text), ''::text)), 'B'::\"char\")) || setweight(to_tsvector('voucha_english'::regconfig, COALESCE(markdown, ''::text)), 'D'::\"char\"))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "tsvector"
         },
         "slug": {
@@ -93475,7 +93471,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "topic_type": {
@@ -93486,7 +93482,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "topic_types"
         },
         "updated_at": {
@@ -93497,7 +93493,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "updated_by_id": {
@@ -93508,7 +93504,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -93607,7 +93603,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -93618,7 +93614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "xid8"
         }
       },
@@ -97209,7 +97205,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "upload_lease_expires_at": {
@@ -97220,7 +97216,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },
@@ -99105,8 +99101,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_user_import_requests_updated_at": "CREATE TRIGGER trigger_user_import_requests_updated_at BEFORE UPDATE ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
-        "user_import_requests_deduplicate_topic_recommendation": "CREATE TRIGGER user_import_requests_deduplicate_topic_recommendation BEFORE INSERT ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_deduplicate_user_import_topic_recommendation()"
+        "trigger_user_import_requests_updated_at": "CREATE TRIGGER trigger_user_import_requests_updated_at BEFORE UPDATE ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -101342,7 +101337,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "consecutive_crawl_failures": {
@@ -101353,7 +101348,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "smallint"
         },
         "created_at": {
@@ -101364,7 +101359,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 2,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -101375,7 +101370,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "created_via": {
@@ -101386,7 +101381,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 2,
           "type": "content_creation_channels"
         },
         "created_via_oauth_client_id": {
@@ -101397,7 +101392,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "deactivated_at": {
@@ -101408,7 +101403,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "deleted_at": {
@@ -101419,7 +101414,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -101430,7 +101425,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "id": {
@@ -101452,7 +101447,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "last_crawl_failure_at": {
@@ -101463,7 +101458,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "last_crawl_id": {
@@ -101474,7 +101469,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "last_crawl_success_at": {
@@ -101485,7 +101480,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "parent_link_id": {
@@ -101496,7 +101491,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "uuid"
         },
         "referral_program_id": {
@@ -101507,7 +101502,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "unfurl_completed_at": {
@@ -101518,7 +101513,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "unfurl_failed_at": {
@@ -101529,7 +101524,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "unfurl_last_error": {
@@ -101540,7 +101535,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "text"
         },
         "unfurl_requested_at": {
@@ -101551,7 +101546,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -101562,7 +101557,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -101573,7 +101568,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "user_id": {
@@ -101584,7 +101579,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "uuid"
         }
       },
@@ -104242,7 +104237,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 43,
           "type": "timestamp with time zone"
         },
         "cards_visibility": {
@@ -104253,7 +104248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "user_privacy_audiences"
         },
         "community_digest_frequency": {
@@ -104264,7 +104259,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "community_memberships_visibility": {
@@ -104275,7 +104270,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "user_privacy_audiences"
         },
         "country": {
@@ -104286,7 +104281,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "created_at": {
@@ -104297,7 +104292,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 55,
+          "ordinalPosition": 56,
           "type": "timestamp with time zone"
         },
         "default_post_broadcast": {
@@ -104308,7 +104303,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "broadcast_types"
         },
         "default_post_privacy": {
@@ -104319,7 +104314,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "privacy_types"
         },
         "deleted_at": {
@@ -104330,7 +104325,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 57,
+          "ordinalPosition": 58,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -104341,7 +104336,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 58,
+          "ordinalPosition": 59,
           "type": "uuid"
         },
         "direct_messages_audience": {
@@ -104352,7 +104347,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "user_privacy_audiences"
         },
         "engagement_emails_enabled": {
@@ -104363,7 +104358,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "boolean"
         },
         "fediverse_federation_enabled": {
@@ -104374,7 +104369,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "boolean"
         },
         "followers_visibility": {
@@ -104385,7 +104380,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "user_privacy_audiences"
         },
         "follows_visibility": {
@@ -104396,18 +104391,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "user_privacy_audiences"
         },
         "hn_discussions": {
           "collation": null,
-          "comment": "When TRUE, related Hacker News threads are fetched for linked URLs on post and article pages.",
+          "comment": "Whether this user opts in to Hacker News discussion imports.",
           "defaultExpression": "false",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 59,
+          "ordinalPosition": 6,
           "type": "boolean"
         },
         "id": {
@@ -104429,7 +104424,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 54,
+          "ordinalPosition": 55,
           "type": "uuid"
         },
         "is_system": {
@@ -104451,7 +104446,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "user_privacy_audiences"
         },
         "lingua_rs_content_sha256": {
@@ -104462,7 +104457,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -104473,7 +104468,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -104484,7 +104479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -104495,7 +104490,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -104506,7 +104501,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "jsonb"
         },
         "markdown": {
@@ -104528,7 +104523,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "moderation_email_cadences"
         },
         "moderation_email_days_of_week": {
@@ -104539,7 +104534,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "smallint[]"
         },
         "moderation_email_time_of_day": {
@@ -104550,7 +104545,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "moderation_email_timezone": {
@@ -104561,7 +104556,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "moderation_emails_enabled": {
@@ -104572,7 +104567,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "boolean"
         },
         "news_digest_frequency": {
@@ -104583,7 +104578,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "pending_checkout_session_id": {
@@ -104594,7 +104589,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 53,
           "type": "text"
         },
         "pending_verification_session_id": {
@@ -104605,7 +104600,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 51,
+          "ordinalPosition": 52,
           "type": "text"
         },
         "processing_restricted_at": {
@@ -104616,7 +104611,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 42,
           "type": "timestamp with time zone"
         },
         "profile_image_id": {
@@ -104627,7 +104622,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 53,
+          "ordinalPosition": 54,
           "type": "uuid"
         },
         "public_verified_name_display": {
@@ -104638,7 +104633,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 47,
+          "ordinalPosition": 48,
           "type": "public_verified_name_displays"
         },
         "referrer_id": {
@@ -104649,7 +104644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 41,
           "type": "uuid"
         },
         "rewards_program_statuses_visibility": {
@@ -104660,7 +104655,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "user_privacy_audiences"
         },
         "rss_feed_follows_visibility": {
@@ -104671,7 +104666,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "user_privacy_audiences"
         },
         "spending_categories_visibility": {
@@ -104682,7 +104677,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "user_privacy_audiences"
         },
         "third_party_marketing": {
@@ -104693,7 +104688,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "boolean"
         },
         "topic_follows_visibility": {
@@ -104704,7 +104699,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "user_privacy_audiences"
         },
         "ui_locale": {
@@ -104715,7 +104710,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "updated_at": {
@@ -104726,7 +104721,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 56,
+          "ordinalPosition": 57,
           "type": "timestamp with time zone"
         },
         "use_display_name_from": {
@@ -104759,7 +104754,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 45,
+          "ordinalPosition": 46,
           "type": "timestamp with time zone"
         },
         "verification_provider": {
@@ -104770,7 +104765,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 45,
           "type": "identity_verification_providers"
         },
         "verification_status": {
@@ -104781,7 +104776,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 43,
+          "ordinalPosition": 44,
           "type": "identity_verification_statuses"
         },
         "verified_badge_visible": {
@@ -104792,7 +104787,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 46,
+          "ordinalPosition": 47,
           "type": "boolean"
         },
         "verified_first_name": {
@@ -104803,7 +104798,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 49,
           "type": "text"
         },
         "verified_full_name": {
@@ -104814,7 +104809,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 51,
           "type": "text"
         },
         "verified_last_name_initial": {
@@ -104825,7 +104820,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 50,
           "type": "text"
         },
         "vote_weight": {
@@ -104836,7 +104831,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "double precision"
         },
         "vote_weight_admin_set_at": {
@@ -104847,7 +104842,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "vote_weight_recalculated_at": {
@@ -104858,7 +104853,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "votes_count_down": {
@@ -104957,7 +104952,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 40,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -104968,7 +104963,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "xid8"
         }
       },

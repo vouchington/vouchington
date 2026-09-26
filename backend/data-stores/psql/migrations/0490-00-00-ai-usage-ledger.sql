@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS ai_usage_records (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   -- guardrails-disable-next-line uuid-must-be-key
-  -- Nullable: most agents (chat, autotagger, customer-support, ...) run outside any community.
+  -- Nullable: agents running outside a community do not have a community scope.
   community_id UUID REFERENCES communities (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   post_id UUID REFERENCES posts (id) ON DELETE SET NULL,
@@ -59,7 +59,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
 COMMENT ON TABLE ai_usage_records IS 'Append-only per-call LLM usage and cost ledger for every agent that calls OpenAI, not only community moderation.';
 COMMENT ON TABLE ai_usage_openai_response_keys IS 'Global idempotency map from an OpenAI Responses API response id to its single partitioned ai_usage_records row.';
 
-COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community (chat, autotagger, customer-support, ...).';
+COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community.';
 COMMENT ON COLUMN ai_usage_records.post_id IS 'The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.';
 COMMENT ON COLUMN ai_usage_records.agent_slug IS 'The slug of the agent that made the LLM call (a moderator, or another agent workload identifier).';
 COMMENT ON COLUMN ai_usage_records.model IS 'The OpenAI model actually served, from the response (e.g. gpt-5.4-nano-2026-03-17) — not necessarily the requested alias.';

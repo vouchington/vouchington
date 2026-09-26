@@ -35,13 +35,6 @@ const captureMigrationSql = readFileSync(
   ),
   'utf8',
 )
-const topicAliasKeyMigrationSql = readFileSync(
-  new URL(
-    '../../data-stores/psql/migrations/0607-00-03-post-publication-topic-alias-keys.sql',
-    import.meta.url,
-  ),
-  'utf8',
-)
 
 async function record(change: PostPublicationChange) {
   await using query = await beginTransaction()
@@ -252,10 +245,7 @@ describe('post publication capture', () => {
       extractSqlValues(captureMigrationSql, /reasons <@ ARRAY\[([\s\S]*?)\]::TEXT\[\]/u),
     ).toEqual([...POST_PUBLICATION_REASONS].toSorted())
     expect(
-      extractSqlValues(
-        topicAliasKeyMigrationSql,
-        /post_publication_dirty_work_keys_kind_check CHECK \(kind IN \(([\s\S]*?)\)\) NOT VALID/u,
-      ),
+      extractSqlValues(captureMigrationSql, /kind TEXT NOT NULL CHECK \(kind IN \(([\s\S]*?)\)\)/u),
     ).toEqual([...POST_PUBLICATION_DIRTY_WORK_KEY_KINDS].toSorted())
   })
 

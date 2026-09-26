@@ -16,6 +16,9 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS moderation_reports (
   id               uuid PRIMARY KEY DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT moderation_reports_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   created_at       timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   reviewed_at      timestamptz,
   reporter_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -102,3 +105,7 @@ COMMENT ON COLUMN moderation_reports.resolved_by_id IS 'Moderator who resolved t
 COMMENT ON COLUMN moderation_reports.escalated_at IS 'When a moderator escalated this report for senior-mod attention. NULL means not escalated.';
 COMMENT ON COLUMN moderation_reports.escalated_by_id IS 'The moderator who escalated this report.';
 COMMENT ON COLUMN moderation_reports.case_id IS 'The moderation case this report belongs to.';
+
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__created_via_oauth_client_id
+  ON moderation_reports (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;

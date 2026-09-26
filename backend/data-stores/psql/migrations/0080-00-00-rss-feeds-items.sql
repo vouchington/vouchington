@@ -19,6 +19,9 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS rss_feeds (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT rss_feeds_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
 
   rss_feed_url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics ON DELETE RESTRICT, -- the owner of this feed
@@ -433,6 +436,7 @@ COMMENT ON COLUMN rss_feed_items.votes_snapshot_xip_count IS 'Number of transact
 CREATE TABLE IF NOT EXISTS rss_feed_item_sources (
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds ON DELETE CASCADE,
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
+  published_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (rss_feed_id, rss_feed_item_id)
 );
@@ -441,6 +445,7 @@ COMMENT ON TABLE rss_feed_item_sources IS 'Join table: which RSS feeds contain w
 COMMENT ON COLUMN rss_feed_item_sources.rss_feed_id IS 'The RSS feed that contains this item.';
 COMMENT ON COLUMN rss_feed_item_sources.rss_feed_item_id IS 'The RSS feed item.';
 COMMENT ON COLUMN rss_feed_item_sources.created_at IS 'When this feed-to-item association was first observed (during crawl).';
+COMMENT ON COLUMN rss_feed_item_sources.published_at IS 'Publication timestamp captured when this feed-to-item association is first observed. Production ingestion applies the item UUIDv7 clamp to this feed payload''s sanitized publication dates and preserves an existing association on conflict.';
 
 -------------------------------------------------------------------------------
 -- rss_feed_item_categories
@@ -634,3 +639,7 @@ COMMENT ON COLUMN rss_feeds.created_by_id IS 'User who created this RSS feed, us
 -- checks whether each item belongs to one of a small set of source feeds.
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__item_feed
 ON rss_feed_item_sources (rss_feed_item_id, rss_feed_id);
+
+CREATE INDEX IF NOT EXISTS idx_rss_feeds__created_via_oauth_client_id
+  ON rss_feeds (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;

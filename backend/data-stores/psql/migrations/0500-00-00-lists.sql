@@ -15,6 +15,9 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS lists (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT lists_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   owner_user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 255),
   description TEXT,
@@ -93,3 +96,7 @@ COMMENT ON COLUMN list_items__posts.list_id IS 'The list this item belongs to.';
 COMMENT ON COLUMN list_items__posts.post_id IS 'The post added to the list.';
 COMMENT ON COLUMN list_items__posts.order_index IS 'Manual sort order within the list (lower = first).';
 COMMENT ON COLUMN list_items__posts.removed_at IS 'Soft-delete timestamp; NULL means active. Re-adding after removal creates a new row.';
+
+CREATE INDEX IF NOT EXISTS idx_lists__created_via_oauth_client_id
+  ON lists (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;

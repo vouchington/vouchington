@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS bluesky_linked_accounts (
   CHECK (handle IS NULL OR (char_length(handle) > 0 AND char_length(handle) <= 253)),
   link_authorization_id UUID NOT NULL REFERENCES bluesky_link_authorizations ON DELETE RESTRICT,
   session_ciphertext TEXT NOT NULL,
+  disconnect_requested_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (bluesky_did, link_authorization_id)
@@ -78,12 +79,17 @@ ON bluesky_linked_accounts (user_id) WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bluesky_linked_accounts__link_authorization_id
 ON bluesky_linked_accounts (link_authorization_id);
 
+CREATE INDEX IF NOT EXISTS idx_bluesky_linked_accounts__pending_disconnect
+ON bluesky_linked_accounts (disconnect_requested_at, link_authorization_id)
+WHERE disconnect_requested_at IS NOT NULL;
+
 COMMENT ON TABLE bluesky_linked_accounts IS 'Encrypted Bluesky OAuth sessions. Each row belongs to one exact durable link authorization generation and is deleted when that generation is retired.';
 COMMENT ON COLUMN bluesky_linked_accounts.bluesky_did IS 'Permanent AT Protocol account DID; handles are mutable display data.';
 COMMENT ON COLUMN bluesky_linked_accounts.user_id IS 'Attached Voucha user. NULL only while the referenced authorization is callback_claimed or handoff_ready.';
 COMMENT ON COLUMN bluesky_linked_accounts.handle IS 'Cached display handle, populated on attachment.';
 COMMENT ON COLUMN bluesky_linked_accounts.link_authorization_id IS 'Exact authorization generation owning this credential. Lifecycle state lives in bluesky_link_authorizations.';
 COMMENT ON COLUMN bluesky_linked_accounts.session_ciphertext IS 'AES-256-GCM ciphertext of the SDK session using purpose bluesky:session:<bluesky_did>. Every mutation validates exact authorization status and owner.';
+COMMENT ON COLUMN bluesky_linked_accounts.disconnect_requested_at IS 'Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked.';
 
 CREATE TABLE IF NOT EXISTS bluesky_link_completions (
   authorization_id UUID PRIMARY KEY REFERENCES bluesky_link_authorizations ON DELETE CASCADE,

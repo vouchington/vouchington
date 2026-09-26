@@ -1,9 +1,3 @@
-ALTER TABLE ap_inbox_deliveries
-  ADD COLUMN IF NOT EXISTS first_failed_at TIMESTAMPTZ;
-
-ALTER TABLE ap_inbox_deliveries
-  ADD COLUMN IF NOT EXISTS retention_expires_at TIMESTAMPTZ;
-
 CREATE OR REPLACE FUNCTION fn_ap_inbox_delivery_retention()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -54,6 +48,3 @@ CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_retention
 BEFORE INSERT OR UPDATE ON ap_inbox_deliveries
 FOR EACH ROW
 EXECUTE FUNCTION fn_ap_inbox_delivery_retention();
-
-COMMENT ON COLUMN ap_inbox_deliveries.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
-COMMENT ON COLUMN ap_inbox_deliveries.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';

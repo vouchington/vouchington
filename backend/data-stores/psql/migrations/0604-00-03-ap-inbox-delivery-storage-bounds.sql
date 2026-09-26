@@ -1,12 +1,3 @@
-ALTER TABLE ap_inbox_deliveries
-  VALIDATE CONSTRAINT ap_inbox_deliveries__failed_requires_first_failed,
-  VALIDATE CONSTRAINT ap_inbox_deliveries__first_failed_requires_retention,
-  VALIDATE CONSTRAINT ap_inbox_deliveries__verified_never_failed_has_no_retention,
-  VALIDATE CONSTRAINT ap_inbox_deliveries__unverified_requires_retention,
-  VALIDATE CONSTRAINT ap_inbox_deliveries__first_failed_precedes_failure,
-  VALIDATE CONSTRAINT ap_inbox_deliveries__unverified_retention_bounded,
-  VALIDATE CONSTRAINT ap_inbox_deliveries__verified_failure_retention_bounded;
-
 CREATE TABLE IF NOT EXISTS ap_inbox_delivery_storage_counters (
   singleton BOOLEAN PRIMARY KEY DEFAULT TRUE,
   retained_rows BIGINT NOT NULL,
@@ -23,10 +14,6 @@ CREATE TABLE IF NOT EXISTS ap_inbox_delivery_storage_counters (
   )
 );
 
--- DML is blocked only for the exact ledger snapshot and statement-trigger handoff. Reads remain
--- available, and the preceding backfill and constraint validation migrations run without it.
-LOCK TABLE ap_inbox_deliveries IN SHARE ROW EXCLUSIVE MODE;
-
 INSERT INTO ap_inbox_delivery_storage_counters (
   singleton,
   retained_rows,
@@ -34,18 +21,7 @@ INSERT INTO ap_inbox_delivery_storage_counters (
   unverified_rows,
   unverified_raw_body_bytes
 )
-SELECT TRUE,
-       COUNT(*),
-       COALESCE(SUM(OCTET_LENGTH(raw_body)), 0),
-       COUNT(*) FILTER (WHERE verified_at IS NULL),
-       COALESCE(SUM(OCTET_LENGTH(raw_body)) FILTER (WHERE verified_at IS NULL), 0)
-FROM ap_inbox_deliveries
-ON CONFLICT (singleton) DO UPDATE
-SET retained_rows = EXCLUDED.retained_rows,
-    retained_raw_body_bytes = EXCLUDED.retained_raw_body_bytes,
-    unverified_rows = EXCLUDED.unverified_rows,
-    unverified_raw_body_bytes = EXCLUDED.unverified_raw_body_bytes,
-    updated_at = CURRENT_TIMESTAMP;
+VALUES (TRUE, 0, 0, 0, 0);
 
 CREATE OR REPLACE FUNCTION fn_ap_inbox_delivery_storage_after_insert()
 RETURNS TRIGGER
