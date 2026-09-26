@@ -80,9 +80,7 @@ async function describeRssFeedItem(
     item.data.title ? { content: item.data.title, isTitle: true } : null,
     description ? { content: description, isRssHtml: true } : null,
   ]
-  const filteredParts = parts.filter(
-    (part): part is ClassifierExternalContentPart => part !== null,
-  )
+  const filteredParts = parts.filter((part): part is ClassifierExternalContentPart => part !== null)
   const sanitizedContent = await sanitizeClassifierExternalContentParts(filteredParts, '\n', {
     source: 'rss_feed_item',
     contentType: 'article',
