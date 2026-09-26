@@ -1,17 +1,16 @@
 import {
   automodSimulation,
   communityDiscussion,
-  referralValidation,
   createdPost,
   imageUploadCompletion,
   imageUploadUrl,
   modNote,
   communityAgentPrompt,
   purchaseIntent,
-  storyClaimMutation,
   storyMutationAt,
   storyText,
 } from './story-mutation-bodies'
+import { referralValidation, storyClaimMutation } from './story-mutation-claim'
 import { categoryRelationPost } from './category-relations-store'
 import { conversationParticipant } from './story-mutation-participant'
 import { followerActionPost } from './story-mutation-follower-post'

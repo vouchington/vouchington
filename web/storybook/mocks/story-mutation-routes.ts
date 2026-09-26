@@ -4,8 +4,8 @@ import {
   storyMutationAt,
   storyTail,
   storyText,
-  referralValidation,
 } from './story-mutation-bodies'
+import { referralValidation } from './story-mutation-claim'
 import { storyMutationPost } from './story-mutation-post-routes'
 
 export { storyMutationPost }
