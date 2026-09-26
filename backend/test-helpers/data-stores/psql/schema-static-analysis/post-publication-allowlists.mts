@@ -1,5 +1,9 @@
 export const POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS = [
   [
+    'post_publication_identity_cleanup_progress.cursor_snapshot_id',
+    'Sweep checkpoint tombstone intentionally survives deletion of reclaimed snapshot headers.',
+  ],
+  [
     'post_publication_identity_snapshots.dirty_work_id',
     'Snapshot storage intentionally outlives dirty-work acknowledgement.',
   ],
