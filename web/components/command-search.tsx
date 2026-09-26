@@ -18,6 +18,7 @@ import {
 } from './command-search-data'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
 import { ResultGroups } from './command-search/result-groups'
+import { hasVisibleSearchResults } from './command-search/visible-results'
 import { SearchTabs } from './command-search/search-tabs'
 import { useSearchEffect } from './command-search/use-search-effect'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -156,13 +157,7 @@ export function CommandSearch({
           tabsRef={tabsRef}
           tabs={searchTabs}
         />
-        {matchedShortcuts.length > 0 ||
-        results.topics.length > 0 ||
-        results.posts.length > 0 ||
-        results.news.length > 0 ||
-        results.domains.length > 0 ||
-        results.communities.length > 0 ||
-        results.fediverse.length > 0 ? (
+        {hasVisibleSearchResults(activeTab, results, matchedShortcuts.length) ? (
           <CommandList>
             <ResultGroups
               activeTab={activeTab}

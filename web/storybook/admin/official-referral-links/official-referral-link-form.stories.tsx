@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { OfficialReferralLinkForm } from '@/components/admin/official-referral-links/official-referral-link-form'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { OfficialReferralLink } from '@/lib/api/server/referral-links'
 
@@ -20,6 +24,10 @@ const amexLinks: OfficialReferralLink[] = [
 
 const meta = {
   title: 'Admin/Official Referral Link Form',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
