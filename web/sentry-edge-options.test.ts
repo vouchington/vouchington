@@ -3,7 +3,6 @@ import { createSentryEdgeInitOptions } from './sentry-edge-options'
 
 const scrubSentryError = () => ({ scrubbedError: true }) as never
 const scrubSentrySpan = () => ({ scrubbedSpan: true }) as never
-const scrubSentryTransaction = () => ({ scrubbedTransaction: true }) as never
 
 describe('createSentryEdgeInitOptions', () => {
   it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
@@ -22,20 +21,10 @@ describe('createSentryEdgeInitOptions', () => {
     ).toMatchObject({ dsn: 'https://public@example.test/123', enabled: true })
   })
 
-  it('enables local OTel without sending Sentry events', () => {
-    const options = createSentryEdgeInitOptions(
-      { NODE_ENV: 'development', OTEL_ENABLED: '1' },
-      { scrubSentryError, scrubSentrySpan, scrubSentryTransaction },
-    )
-
-    expect(options).toMatchObject({ dsn: undefined, enabled: true })
-    expect(options.beforeSend?.({} as never, {} as never)).toBeNull()
-  })
-
   it('stays disabled outside the deployed-environment allowlist', () => {
     const options = createSentryEdgeInitOptions(
       { NODE_ENV: 'production' },
-      { scrubSentryError, scrubSentrySpan, scrubSentryTransaction },
+      { scrubSentryError, scrubSentrySpan },
     )
 
     expect(options.enabled).toBe(false)
@@ -50,7 +39,7 @@ describe('createSentryEdgeInitOptions', () => {
           NODE_ENV: 'production',
           SENTRY_DSN: 'https://public@example.test/123',
         },
-        { scrubSentryError, scrubSentrySpan, scrubSentryTransaction },
+        { scrubSentryError, scrubSentrySpan },
       )
 
       expect(options.dsn).toBe('https://public@example.test/123')
@@ -58,7 +47,6 @@ describe('createSentryEdgeInitOptions', () => {
       expect(options.environment).toBe(environment)
       expect(options.beforeSend).toBe(scrubSentryError)
       expect(options.beforeSendSpan).toBe(scrubSentrySpan)
-      expect(options.beforeSendTransaction).toBe(scrubSentryTransaction)
     },
   )
 })

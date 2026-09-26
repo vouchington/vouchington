@@ -3,23 +3,14 @@ import {
   resolveSentryDsnEnablement,
   SENTRY_CONFIGURATION_WARNING,
 } from '@ts-shared/utils/sentry-deployment-gate'
-import {
-  scrubSentryError,
-  scrubSentrySpan,
-  scrubSentryTransaction,
-} from '@/lib/on-error/scrub-sentry-event'
-import { createOtelSpanProcessors } from './sentry-otel'
+import { scrubSentryError, scrubSentrySpan } from '@/lib/on-error/scrub-sentry-event'
 
-type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]> & {
-  openTelemetrySpanProcessors?: ReturnType<typeof createOtelSpanProcessors>
-}
+type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
 interface SentryServerInitDeps {
-  createOtelSpanProcessors?: typeof createOtelSpanProcessors
   scrubSentryError?: typeof scrubSentryError
   resolveSentryEnablement?: typeof resolveSentryDsnEnablement
   scrubSentrySpan?: typeof scrubSentrySpan
-  scrubSentryTransaction?: typeof scrubSentryTransaction
 }
 
 let sentryConfigurationInvalidLogged = false
@@ -37,19 +28,16 @@ export function createSentryServerInitOptions(
 ): SentryInitOptions {
   const env = envVars.NODE_ENV || 'development'
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
-  const createSpanProcessors = deps.createOtelSpanProcessors ?? createOtelSpanProcessors
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const beforeSendTransaction = deps.scrubSentryTransaction ?? scrubSentryTransaction
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
-  const { enabled, environment, otelOnly, sentryDsn, configurationInvalid } = resolveEnablement({
+  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: envVars.SENTRY_DSN,
     environment: envVars.ENVIRONMENT,
-    otelEnabled: envVars.OTEL_ENABLED === '1',
   })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
   return {
-    dsn: otelOnly ? undefined : sentryDsn?.dsn,
+    dsn: sentryDsn?.dsn,
 
     // Set sample rate (1.0 = 100% for development, adjust for production)
     tracesSampleRate: 1,
@@ -65,12 +53,13 @@ export function createSentryServerInitOptions(
     debug: false,
 
     // Drop expected 4xx ApiError events — client errors are normal and not actionable.
-    beforeSend: otelOnly ? () => null : beforeSend,
+    beforeSend,
 
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,
-    beforeSendTransaction,
 
-    openTelemetrySpanProcessors: createSpanProcessors(envVars),
+    // @sentry/nextjs registers its own global TracerProvider by default. With OTEL_ENABLED=1 the
+    // server runs under the dev/otel-register.mts preload, which owns the provider and OTLP export.
+    ...(envVars.OTEL_ENABLED === '1' && { enableOpenTelemetrySetup: false }),
   }
 }

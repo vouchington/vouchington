@@ -95,7 +95,6 @@ export function warnIfSentryConfigurationInvalid(env: {
 }): void {
   const { enabled } = resolveSentryEnablement({
     environment: env.ENVIRONMENT,
-    otelEnabled: false,
   })
   const requiredConfigurationInvalid =
     !getSentryDsnConfig(env.SENTRY_DSN) || !getSentryDsnConfig(env.SENTRY_WEB_DSN)

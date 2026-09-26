@@ -11,7 +11,6 @@ import {
 
 const scrubSentryError = () => ({ scrubbedError: true }) as never
 const scrubSentrySpan = () => ({ scrubbedSpan: true }) as never
-const scrubSentryTransaction = () => ({ scrubbedTransaction: true }) as never
 
 describe('createSentryClientInitOptions', () => {
   it('uses the configured runtime-public web DSN in deployed environments', () => {
@@ -38,7 +37,6 @@ describe('createSentryClientInitOptions', () => {
       getRuntimePublicConfig: () => ({}),
       scrubSentryError,
       scrubSentrySpan,
-      scrubSentryTransaction,
     })
 
     expect(options.enabled).toBe(false)
@@ -54,14 +52,12 @@ describe('createSentryClientInitOptions', () => {
         }),
         scrubSentryError,
         scrubSentrySpan,
-        scrubSentryTransaction,
       })
 
       expect(options.enabled).toBe(true)
       expect(options.environment).toBe(environment)
       expect(options.beforeSend).toBe(scrubSentryError)
       expect(options.beforeSendSpan).toBe(scrubSentrySpan)
-      expect(options.beforeSendTransaction).toBe(scrubSentryTransaction)
     },
   )
 
@@ -70,7 +66,6 @@ describe('createSentryClientInitOptions', () => {
       getRuntimePublicConfig: () => ({ environment: 'development' }),
       scrubSentryError,
       scrubSentrySpan,
-      scrubSentryTransaction,
     })
 
     expect(options.enabled).toBe(false)

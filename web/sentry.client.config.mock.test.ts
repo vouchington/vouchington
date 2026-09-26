@@ -61,6 +61,5 @@ describe('client Sentry config', () => {
       },
     })
     expect(options.beforeSendSpan).toBeTypeOf('function')
-    expect(options.beforeSendTransaction).toBeTypeOf('function')
   })
 })

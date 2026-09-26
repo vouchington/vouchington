@@ -1,5 +1,5 @@
 import { addGracefulShutdownCallback } from '@data-stores/graceful-shutdown'
-import onError from '@modules/on-error'
+import onError, { suppressSentryTracing } from '@modules/on-error'
 import { getExternalFetch } from '@modules/utils'
 import { context } from '@opentelemetry/api'
 import { suppressTracing } from '@opentelemetry/core'
@@ -49,18 +49,20 @@ export async function sendGrafanaHeartbeat(
   signal?: AbortSignal,
 ): Promise<void> {
   const url = validateHeartbeatUrl(heartbeatUrl)
-  // The Grafana IRM credential is embedded in the URL path. Suppress this one
-  // request so Undici instrumentation cannot export it as url.full.
-  const response = await context.with(suppressTracing(context.active()), () =>
-    requestFetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: '{}',
-      redirect: 'error',
-      signal: signal
-        ? AbortSignal.any([signal, AbortSignal.timeout(GRAFANA_HEARTBEAT_TIMEOUT_MS)])
-        : AbortSignal.timeout(GRAFANA_HEARTBEAT_TIMEOUT_MS),
-    }),
+  // The Grafana IRM credential is embedded in the URL path. Suppress this one request in both
+  // Sentry and OpenTelemetry so neither can export it as url.full.
+  const response = await suppressSentryTracing(() =>
+    context.with(suppressTracing(context.active()), () =>
+      requestFetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+        redirect: 'error',
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(GRAFANA_HEARTBEAT_TIMEOUT_MS)])
+          : AbortSignal.timeout(GRAFANA_HEARTBEAT_TIMEOUT_MS),
+      }),
+    ),
   )
   if (!response.ok) {
     throw new Error(`Grafana IRM heartbeat returned HTTP ${response.status}`)

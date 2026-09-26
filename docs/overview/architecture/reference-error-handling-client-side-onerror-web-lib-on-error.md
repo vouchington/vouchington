@@ -34,8 +34,8 @@ async function handleSubmit(e: React.FormEvent) {
 - `skipSentry: true` suppresses Sentry capture even for unexpected errors. Use it for known-expected business outcomes that surface as plain `Error` (not `ApiError`): client-side validation rejections (e.g. invalid UUID before hitting the API), user-cancelled WebAuthn prompts (`NotAllowedError`), and wrapper errors like `PostSavedWithRatingError` where the underlying cause has already been reported elsewhere. Do **not** use `skipSentry` to hide real failures.
 - `scrubSentryError(event, hint)` — filters expected errors first, then scrubs request URLs,
   credential headers, and cookies from every non-null error event across client, server, and edge.
-- `scrubSentrySpan(span)` / `scrubSentryTransaction(event, hint)` — apply the same request-metadata
-  contract to span attributes, breadcrumb data, and the Sentry Request Interface. See
+- `scrubSentrySpan(span)` — applies the same request-metadata contract to a streamed span's
+  `attributes`, which carry the request URL, headers, and cookies. See
   [Sentry request-metadata scrubbing](../../requirements/security/reference-security-observability-scrubbing.md).
 
 ### Routing rules

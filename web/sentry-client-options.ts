@@ -3,11 +3,7 @@ import {
   resolveSentryDsnEnablement,
   SENTRY_CONFIGURATION_WARNING,
 } from '@ts-shared/utils/sentry-deployment-gate'
-import {
-  scrubSentryError,
-  scrubSentrySpan,
-  scrubSentryTransaction,
-} from '@/lib/on-error/scrub-sentry-event'
+import { scrubSentryError, scrubSentrySpan } from '@/lib/on-error/scrub-sentry-event'
 import {
   getBrowserRuntimePublicConfig,
   getBrowserRuntimePublicConfigIfAvailable,
@@ -22,7 +18,6 @@ interface SentryClientInitDeps {
   resolveSentryEnablement?: typeof resolveSentryDsnEnablement
   scrubSentryError?: typeof scrubSentryError
   scrubSentrySpan?: typeof scrubSentrySpan
-  scrubSentryTransaction?: typeof scrubSentryTransaction
 }
 
 interface RuntimePublicConfigEventTarget {
@@ -43,13 +38,10 @@ export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): 
   const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
   const beforeSend = deps.scrubSentryError ?? scrubSentryError
   const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const beforeSendTransaction = deps.scrubSentryTransaction ?? scrubSentryTransaction
-  // The browser has no OTel tracing story — OTEL_ENABLED never reaches the client bundle.
   const runtimeConfig = getRuntimeConfig() ?? {}
   const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
     dsn: runtimeConfig.sentryDsn,
     environment: runtimeConfig.environment,
-    otelEnabled: false,
   })
   warnIfSentryConfigurationInvalid(configurationInvalid)
 
@@ -85,9 +77,8 @@ export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): 
     // Drop expected 4xx ApiError events — client errors are normal and not actionable.
     beforeSend,
 
-    // Scrub request URLs and credentials from errors, transactions, and spans.
+    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
     beforeSendSpan,
-    beforeSendTransaction,
 
     // Suppress common browser noise that is not actionable.
     ignoreErrors: [
