@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { mockCreateReviewDispute, mockOnError, mockTurnstileReset } = vi.hoisted(() => ({
@@ -28,12 +29,16 @@ vi.mock(import('@/hooks/use-turnstile-token'), () => ({
 vi.mock(import('./dispute-form'), () => ({
   DisputeForm: ({
     submitted,
+    reason,
+    claimText,
     onReasonChange,
     onClaimTextChange,
     onSubmit,
     onClose,
   }: {
     submitted: boolean
+    reason: string
+    claimText: string
     onReasonChange: (v: string) => void
     onClaimTextChange: (v: string) => void
     onSubmit: (e: { preventDefault: () => void }) => void
@@ -43,6 +48,8 @@ vi.mock(import('./dispute-form'), () => ({
       <p>Your dispute has been submitted</p>
     ) : (
       <div>
+        <output data-testid='reason'>{reason}</output>
+        <output data-testid='claim-text'>{claimText}</output>
         <button
           type='button'
           onClick={() => onReasonChange('defamatory')}
@@ -86,8 +93,40 @@ function renderDialog(open = true) {
   return { ...result, onOpenChange }
 }
 
+function renderControlledDialog() {
+  function ControlledDialog() {
+    const [open, setOpen] = useState(true)
+    return (
+      <>
+        <button
+          type='button'
+          onClick={() => setOpen(false)}
+        >
+          external-close
+        </button>
+        <button
+          type='button'
+          onClick={() => setOpen(true)}
+        >
+          reopen
+        </button>
+        <DisputeReviewDialog
+          open={open}
+          onOpenChange={setOpen}
+          postId='post-1'
+          topicId='topic-1'
+        />
+      </>
+    )
+  }
+
+  return render(<ControlledDialog />)
+}
+
 describe('DisputeReviewDialog', () => {
   afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
     vi.clearAllMocks()
   })
 
@@ -157,5 +196,67 @@ describe('DisputeReviewDialog', () => {
     const { onOpenChange } = renderDialog()
     fireEvent.click(screen.getByText('do-close'))
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('cancels a pending reset when the dialog unmounts', async () => {
+    vi.useFakeTimers()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout')
+    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+    const { unmount } = renderControlledDialog()
+
+    await act(async () => fireEvent.click(screen.getByText('do-close')))
+    const resetTimeout = setTimeoutSpy.mock.results.findLast(
+      (_, index) => setTimeoutSpy.mock.calls[index]?.[1] === 300,
+    )?.value
+    expect(resetTimeout).toBeDefined()
+    unmount()
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(resetTimeout)
+
+    await act(async () => vi.advanceTimersByTime(300))
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('keeps a reopened draft when its prior reset deadline passes', async () => {
+    vi.useFakeTimers()
+    renderControlledDialog()
+
+    await act(async () => fireEvent.click(screen.getByText('set-reason')))
+    await act(async () => fireEvent.click(screen.getByText('set-claim')))
+    await act(async () => fireEvent.click(screen.getByText('do-close')))
+    await act(async () => vi.advanceTimersByTime(299))
+    await act(async () => fireEvent.click(screen.getByText('reopen')))
+    await act(async () => vi.advanceTimersByTime(1))
+
+    expect(screen.getByTestId('reason')).toHaveTextContent('defamatory')
+    expect(screen.getByTestId('claim-text')).toHaveTextContent('This is wrong.')
+  })
+
+  it('resets a closed draft after 300ms', async () => {
+    vi.useFakeTimers()
+    renderControlledDialog()
+
+    await act(async () => fireEvent.click(screen.getByText('set-reason')))
+    await act(async () => fireEvent.click(screen.getByText('set-claim')))
+    await act(async () => fireEvent.click(screen.getByText('do-close')))
+    await act(async () => vi.advanceTimersByTime(300))
+    await act(async () => fireEvent.click(screen.getByText('reopen')))
+
+    expect(screen.getByTestId('reason')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('claim-text')).toBeEmptyDOMElement()
+  })
+
+  it('resets after an external controlled close', async () => {
+    vi.useFakeTimers()
+    renderControlledDialog()
+
+    await act(async () => fireEvent.click(screen.getByText('set-reason')))
+    await act(async () => fireEvent.click(screen.getByText('set-claim')))
+    await act(async () => fireEvent.click(screen.getByText('external-close')))
+    await act(async () => vi.advanceTimersByTime(300))
+    await act(async () => fireEvent.click(screen.getByText('reopen')))
+
+    expect(screen.getByTestId('reason')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('claim-text')).toBeEmptyDOMElement()
   })
 })
