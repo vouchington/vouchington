@@ -159,7 +159,7 @@
     "oxfmt": "^0.70.0",
     "oxlint": "1.85.0",
     "oxlint-plugin-react-doctor": "^0.9.14",
-    "oxlint-tsgolint": "7.0.2002",
+    "oxlint-tsgolint": "7.0.2003",
     "p-settle": "5.2.1",
     "picomatch": "^4.0.4",
     "playwright": "1.63.0",
