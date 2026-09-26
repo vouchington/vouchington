@@ -19,8 +19,9 @@ Before adding or changing a Vitest test, fixture, or mock for these hooks, load 
 - Block coarsely, allow precisely. Any block in the command beats an allow. The only allow is a
   single plain merge in an attended Claude session; it needs a positive attended signal, never
   merely the absence of `CI`.
-- Policy decisions are local: `dev/codex-hooks` runs no `gh`, no git network subcommands, and no
-  HTTP (`ast-grep-rules/codex-hooks-no-network.yml`). Network-backed checks belong in the
-  validators or CI. Journal checkpoints (`dev/journal-checkpoint`) may write to agent-blackboard
-  from a hook because they fail open and never affect an allow or block.
+- Policy decisions are local: `dev/codex-hooks` uses no shell child-process APIs and runs no `gh`,
+  git network subcommands, or HTTP (`ast-grep-rules/codex-hooks-no-network.yml`). Use structured
+  argv child-process APIs for local commands; network-backed checks belong in the validators or CI.
+  Journal checkpoints (`dev/journal-checkpoint`) may write to agent-blackboard from a hook because
+  they fail open and never affect an allow or block.
 - Do not duplicate enforcement another owner has (oxlint `max-lines`, no-mistakes doc size, CI).

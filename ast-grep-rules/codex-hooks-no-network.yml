@@ -1,7 +1,7 @@
 id: codex-hooks-no-network
 language: Tsx
 severity: error
-message: 'Hook policy is local: no gh, no git network subcommands, and no HTTP. Network-backed checks belong in the validators (dev/pr-description.mts, dev/plan-issue.mts) or CI.'
+message: 'Hook policy is local: no shell child-process APIs, gh, git network subcommands, or HTTP. Network-backed checks belong in the validators (dev/pr-description.mts, dev/plan-issue.mts) or CI.'
 files:
   - 'dev/codex-hooks/**/*.mts'
 ignores:
@@ -16,10 +16,17 @@ utils:
       - has:
           field: function
           regex: ^(\w+\.)?(execFile|execFileSync|spawn|spawnSync|exec|execSync)$
+  shell-child-process-call:
+    all:
+      - kind: call_expression
+      - has:
+          field: function
+          regex: ^(exec|execSync|childProcess\.(exec|execSync))$
   network-module:
     regex: ^['"](node:)?(http|https|net)['"]$
 rule:
   any:
+    - matches: shell-child-process-call
     - all:
         - matches: child-process-call
         - has:
@@ -58,21 +65,7 @@ rule:
             field: arguments
             has:
               nthChild: 2
-              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`][^'"`]*['"`]|[^,\]]+)|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]git\s.*\b(fetch|ls-remote|pull|push|clone)\b
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]git\s+(?:(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)\s+(?:"[^"]*"|'[^']*'|[^\s'"`]+)|(?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--git-dir=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--work-tree=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--namespace=(?:"[^"]*"|'[^']*'|[^\s'"`]+)|--config-env=(?:"[^"]*"|'[^']*'|[^\s'"`]+))|\d*(?:>>?|<<?|<>|>&|<&)\s*(?:"[^"]*"|'[^']*'|[^\s'"`]+))\s+)*(?:remote|'remote'|"remote"|submodule|'submodule'|"submodule")\s+(?:(?:(?:-v|--verbose|--no-verbose|--quiet)|\d*(?:>>?|<<?|<>|>&|<&)\s*(?:"[^"]*"|'[^']*'|[^\s'"`]+))\s+)*(?:update|'update'|"update")(?:['"`]|\s|[;&|<>()]|$)
+              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`][^'"`]*['"`]|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*|[^,\]]+)|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
     - pattern: fetch($$$ARGS)
     - pattern: globalThis.fetch
     - pattern: global.fetch
@@ -95,7 +88,7 @@ rule:
               matches: network-module
 examples:
   - code: |
-      import { execFileSync } from 'node:child_process'
+      import { execFileSync, spawnSync } from 'node:child_process'
       const body = execFileSync('gh', ['issue', 'view', '1'], { encoding: 'utf8' })
     isValid: false
     file: 'dev/codex-hooks/policy/github-workflow.mts'
@@ -157,6 +150,7 @@ examples:
       import { execFileSync } from 'node:child_process'
       execFileSync('git', ['--git-dir', dir, 'remote', 'update'])
       execFileSync('git', ['--git-dir', '/tmp/repo,backup', 'remote', 'update'])
+      execFileSync('git', ['-C', dirs[0], 'remote', 'update'])
     isValid: false
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
@@ -247,7 +241,7 @@ examples:
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
-      import { execFileSync, execSync } from 'node:child_process'
+      import { execFileSync, spawnSync } from 'node:child_process'
       execFileSync('git', ['remote', '-v'])
       execFileSync('git', ['remote', 'get-url', 'origin'])
       execFileSync('git', ['remote', 'set-url', 'update'])
@@ -255,11 +249,6 @@ examples:
       execFileSync('git', ['show', 'remote', 'update'])
       execFileSync('node', ['remote', 'update'])
       spawnSync('grep', ['submodule', 'update'])
-      execSync('git remote -v', { cwd })
-      execSync('git remote update-check', { cwd })
-      execSync("git log --grep='submodule update'", { cwd })
-      execSync('git --no-pager show remote update', { cwd })
-      execSync('git --version remote update', { cwd })
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
