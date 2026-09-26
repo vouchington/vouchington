@@ -55,3 +55,20 @@ package metadata or upgrade the parent dependency instead. Removing the remainin
 enforcing that policy is tracked as a follow-up (formerly filed as jonathanong/filaments#7794).
 `packageExtensions`, which correct dependency metadata without
 forcing a version, is outside that ban.
+
+### <a id="optional-peer-instance-keys"></a>Optional peer instance keys
+
+pnpm records each resolved optional peer in the dependent package's lockfile instance key.
+`openai` optionally peers `undici`, so a workspace package that declares `undici` directly and a
+package that only receives `undici` as `openai`'s auto-installed peer become two copies of
+`openai` when those versions differ. `instanceof` on SDK error classes is then false across that
+boundary: `backend/test-helpers` constructs `APIError`, and `backend/modules/openai-utils`
+classifies it.
+
+Dependabot updates `undici` where a manifest declares it and can leave the auto-installed peer on
+the previous release. Rebasing leaves that split in place. Point every `openai` importer and
+package instance at the same `undici` version as the direct workspace dependency, drop the extra
+snapshot, and keep
+[`ci/openai-peer-resolution.test.mts`](../../ci/openai-peer-resolution.test.mts) green. Overrides
+remain banned. A full `pnpm dedupe` also collapses unrelated duplicates, so an `undici` bump keeps
+only the peer-key edit.

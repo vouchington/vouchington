@@ -36,6 +36,7 @@ Native dependency policy and automation are owned by the
 
 - <a id="coverage-matrix"></a>[Coverage matrix](reference-dependency-updates-coverage-matrix.md)
 - <a id="frozen-install-policy"></a>[Frozen-install policy](reference-dependency-updates-frozen-install-policy.md)
+- <a id="optional-peer-instance-keys"></a>[Optional peer instance keys](reference-dependency-updates-frozen-install-policy.md#optional-peer-instance-keys)
 
 ### Sentry 10.72/10.73 compatibility hold
 
