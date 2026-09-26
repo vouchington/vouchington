@@ -1,50 +1,12 @@
 #!/usr/bin/env node
 
-/* oxlint-disable no-restricted-imports -- docs-publish needs a GFM-aware Markdown-to-HTML renderer */
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
-import remarkGfm from 'remark-gfm'
-import remarkRehype from 'remark-rehype'
-import rehypeStringify from 'rehype-stringify'
+import { htmlPage, renderMarkdownToHtml } from './render-docs-page.mts'
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DEFAULT_SCHEMA_DIR = resolve(__dirname, '..', 'backend/data-stores/psql/schema-snapshot')
-
-const PAGE_STYLE = `
-  body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 80rem; margin: 2rem auto; padding: 0 1.5rem; line-height: 1.5; color: #1a1a1a; }
-  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.875rem; }
-  th, td { border: 1px solid #d0d0d0; padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
-  th { background: #f0f0f0; }
-  code { font-family: ui-monospace, monospace; background: #f5f5f5; padding: 0.1rem 0.3rem; border-radius: 3px; }
-  h2 { border-top: 1px solid #d0d0d0; padding-top: 1.5rem; margin-top: 2rem; }
-`
-
-function htmlPage(title: string, body: string): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>${title}</title>
-<style>${PAGE_STYLE}</style>
-</head>
-<body>
-${body}
-</body>
-</html>
-`
-}
-
-export async function renderMarkdownToHtml(markdown: string): Promise<string> {
-  const file = await unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkRehype)
-    .use(rehypeStringify)
-    .process(markdown)
-  return String(file)
-}
 
 function markdownForHtml(markdown: string): string {
   return markdown.replaceAll(

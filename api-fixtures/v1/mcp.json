@@ -1,0 +1,1360 @@
+{
+  "servers": [
+    {
+      "name": "voucha-user-mcp",
+      "path": "/api/v1/mcp",
+      "surface": "mcp",
+      "tools": [
+        {
+          "tool": {
+            "name": "compare_topics",
+            "description": "Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id_a": {
+                  "type": "string",
+                  "description": "UUID of the first topic to compare"
+                },
+                "topic_id_b": {
+                  "type": "string",
+                  "description": "UUID of the second topic to compare"
+                },
+                "vertical": {
+                  "type": "string",
+                  "enum": ["credit_card", "bank_account"],
+                  "description": "Optionally filter to a specific data point vertical"
+                }
+              },
+              "required": ["topic_id_a", "topic_id_b"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics/compare"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_domain_ratings",
+            "description": "Look up trust signals for a linked source. Returns hostname/domain trust votes and, when a URL maps to an RSS source, the associated source topic ratings and metrics.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "A fully-qualified URL to inspect"
+                },
+                "hostname": {
+                  "type": "string",
+                  "description": "A bare hostname/domain to inspect, such as example.com"
+                }
+              },
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["domain-ratings:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": null
+        },
+        {
+          "tool": {
+            "name": "get_my_cards",
+            "description": "List the current user's wallet cards.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous list page"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Number of cards to return, from 1 to 100"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["cards:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/cards"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_point_valuations",
+            "description": "List the current user's rewards program point valuations.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous page"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Number of valuations to return, from 1 to 100"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["point-valuations:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/rewards-program-point-valuations"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_profile",
+            "description": "Get the current user's wallet profile including their cards, point valuations, rewards program statuses, and financial profile (credit score range, income range).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "cards_after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous cards page"
+                },
+                "cards_limit": {
+                  "type": "number",
+                  "description": "Number of cards to return, from 1 to 100"
+                },
+                "point_valuations_after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous point valuations page"
+                },
+                "point_valuations_limit": {
+                  "type": "number",
+                  "description": "Number of point valuations to return, from 1 to 100"
+                },
+                "rewards_program_statuses_after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous rewards program statuses page"
+                },
+                "rewards_program_statuses_limit": {
+                  "type": "number",
+                  "description": "Number of rewards program statuses to return, from 1 to 100"
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["profile:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/profile"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_rewards_statuses",
+            "description": "List the current user's rewards program statuses.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the previous status page"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Number of statuses to return, from 1 to 100"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rewards-statuses:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/rewards-program-statuses"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_my_spending",
+            "description": "List the current user's spending categories.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "after": {
+                  "type": "string",
+                  "description": "Opaque cursor from the prior list page"
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 100,
+                  "description": "Entries per list page"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["spending:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/spending-categories"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_recommended_topics",
+            "description": "Get personalized topic recommendations based on the current user's activity, including positive post choices, followed feeds, and views. Use this for questions like 'what cards should I look into?' or 'what topics might interest me?'. Returns topic IDs with recommendation scores. Use get_topic_details for full card information.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of recommendations to return (1-25). Defaults to 10."
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["recommendations:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/recommended-topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_referral_links",
+            "description": "Get prioritized referral links for a topic. Ranks links by social connections: mutual follows, follows, referrers, positive-choice authors, then everyone else.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id": {
+                  "type": "string",
+                  "description": "The topic identifier (UUID or slug) to look up referral links for. Can be a referral program topic or any topic with a linked referral program."
+                }
+              },
+              "required": ["topic_id"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["referral-links:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics/:id/prioritized-referral-links"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_topic_details",
+            "description": "Get detailed information about a topic (card, bank account, rewards program, etc.). For cards, returns the annual fee, issuing bank, and card brand. For rewards programs, returns the parent company. Always includes the full description and aliases.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id": {
+                  "type": "string",
+                  "description": "The topic UUID or slug to retrieve details for"
+                }
+              },
+              "required": ["topic_id"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_topic_hierarchy",
+            "description": "Get the parent and/or child topics for a given topic. Useful for finding all cards issued by a bank (children of the bank topic), all tiers in a rewards program (children of the program topic), or discovering what organization issues a card (parents of the card topic).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id": {
+                  "type": "string",
+                  "description": "The topic UUID to look up hierarchy for"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": ["parents", "children", "both"],
+                  "description": "Which direction to traverse. \"parents\" = what this topic belongs to, \"children\" = what belongs to this topic, \"both\" = all relations. Defaults to \"both\"."
+                }
+              },
+              "required": ["topic_id"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_topic_insights",
+            "description": "Get aggregate data point statistics for a topic (card, bank account, etc.). Returns approval rate, median credit limit, and credit score distribution.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id": {
+                  "type": "string",
+                  "description": "The topic UUID to aggregate data points for"
+                },
+                "vertical": {
+                  "type": "string",
+                  "enum": ["credit_card", "bank_account"],
+                  "description": "Optionally filter to a specific data point vertical"
+                }
+              },
+              "required": ["topic_id"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["data-points:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": null
+        },
+        {
+          "tool": {
+            "name": "get_topic_metrics",
+            "description": "Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id": {
+                  "type": "string",
+                  "description": "The topic UUID to retrieve metrics for"
+                }
+              },
+              "required": ["topic_id"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": null
+        },
+        {
+          "tool": {
+            "name": "get_trending_posts",
+            "description": "Get posts that are trending based on time-decay voting. Useful for \"what discussions are hot this week?\" or \"what are the most popular reviews for this card?\". Optionally filter by post type or topic.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "time_range": {
+                  "type": "string",
+                  "enum": ["day", "week", "month"],
+                  "description": "Time window for trending calculation. Defaults to \"week\"."
+                },
+                "post_type": {
+                  "type": "string",
+                  "enum": ["discussion", "review", "data_point", "story"],
+                  "description": "Optionally filter to a specific post type."
+                },
+                "topic_id": {
+                  "type": "string",
+                  "description": "Optionally filter to posts tagged with a specific topic."
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results to return (1-10). Defaults to 10."
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/trending-posts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_trending_topics",
+            "description": "Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering \"what credit cards are popular right now?\" or \"what topics are being discussed?\". Returns topic IDs with trending scores — use get_topic_details to get full card information.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "time_range": {
+                  "type": "string",
+                  "enum": ["day", "week", "month"],
+                  "description": "Time window for trending calculation. Defaults to \"week\"."
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results to return (1-25). Defaults to 10."
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/trending-topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_wikipedia_summary",
+            "description": "Gets detailed summary information for a Wikipedia article by title. Returns the full Wikipedia page data including description, extract, URL, and thumbnail. Use this after searching to get complete details about a specific article.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "The exact Wikipedia article title (e.g., \"Artificial intelligence\")"
+                }
+              },
+              "required": ["title"]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["wikipedia:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": null
+        },
+        {
+          "tool": {
+            "name": "manage_my_cards",
+            "description": "Manage the current user's wallet cards. Use this to add, update, remove, or list cards.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["add", "update", "remove"],
+                  "description": "The operation to perform."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Required for update and remove actions."
+                },
+                "card_id": {
+                  "type": "string",
+                  "description": "The topic UUID of the card to add (required for action=add)"
+                },
+                "opened_on": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Date the card was opened in YYYY-MM-DD format"
+                },
+                "closed_on": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Date the card was closed in YYYY-MM-DD format"
+                },
+                "credit_limit": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["amount", "currency"],
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"]
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Credit limit in integer minor units paired with its currency"
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "A note about the card"
+                },
+                "is_authorized_user": {
+                  "type": "boolean",
+                  "description": "Whether the user is an authorized user on this card"
+                },
+                "authorized_user_of_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Wallet-card UUID of the primary account, or null to clear the relationship"
+                },
+                "received_sign_up_bonus_on": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Date the sign-up bonus was received in YYYY-MM-DD format"
+                }
+              },
+              "required": ["action"]
+            },
+            "annotations": {
+              "destructiveHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["cards:read", "cards:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/cards"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/cards/:id"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/cards/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "manage_my_point_valuations",
+            "description": "Manage the current user's rewards program point valuations — how much the user values each rewards program's points.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["add", "update", "remove"],
+                  "description": "The operation to perform."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Required for update and remove actions."
+                },
+                "rewards_program_id": {
+                  "type": "string",
+                  "description": "The topic UUID of the rewards program (required for action=add)"
+                },
+                "value_per_point": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["amount", "currency", "scale"],
+                  "properties": {
+                    "amount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9999999999
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"]
+                    },
+                    "scale": {
+                      "type": "integer",
+                      "const": 6
+                    }
+                  },
+                  "description": "New point value in millionths of the major currency unit"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "A note about the valuation"
+                }
+              },
+              "required": ["action"]
+            },
+            "annotations": {
+              "destructiveHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["point-valuations:read", "point-valuations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/rewards-program-point-valuations"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/rewards-program-point-valuations/:id"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/rewards-program-point-valuations/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "manage_my_rewards_statuses",
+            "description": "Manage the current user's loyalty tier / rewards program statuses (e.g. Gold, Platinum).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["add", "update", "remove"],
+                  "description": "The operation to perform."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Required for update and remove actions."
+                },
+                "rewards_program_status_id": {
+                  "type": "string",
+                  "description": "The topic UUID of the rewards program status to add (required for action=add)"
+                },
+                "since": {
+                  "type": "string",
+                  "description": "Date the status started in YYYY-MM-DD format"
+                },
+                "until": {
+                  "type": "string",
+                  "description": "Date the status ends in YYYY-MM-DD format"
+                }
+              },
+              "required": ["action"]
+            },
+            "annotations": {
+              "destructiveHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rewards-statuses:read", "rewards-statuses:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/rewards-program-statuses"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/rewards-program-statuses/:id"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/rewards-program-statuses/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "manage_my_spending",
+            "description": "Manage the current user's spending by category.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["add", "update", "remove"],
+                  "description": "The operation to perform."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Required for update and remove actions."
+                },
+                "spending_category_id": {
+                  "type": "string",
+                  "description": "The topic UUID of the spending category (required for action=add)"
+                },
+                "amount": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["amount", "currency"],
+                  "properties": {
+                    "amount": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"]
+                    }
+                  },
+                  "description": "New spending amount in integer minor units paired with its currency"
+                },
+                "spending_frequency": {
+                  "type": "string",
+                  "enum": ["monthly", "annually"],
+                  "description": "How often the spending occurs"
+                },
+                "note": {
+                  "type": "string",
+                  "description": "A note about the spending"
+                }
+              },
+              "required": ["action"]
+            },
+            "annotations": {
+              "destructiveHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["spending:read", "spending:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/spending-categories"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/spending-categories/:id"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/spending-categories/:id"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_data_points",
+            "description": "Search for data point posts with optional JSONB filters. Use this to find approval rates, credit limits, and application outcomes for a specific card or topic.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_id": {
+                  "type": "string",
+                  "description": "Filter by topic UUID (e.g. a specific credit card or bank account topic)"
+                },
+                "vertical": {
+                  "type": "string",
+                  "enum": ["credit_card", "bank_account"],
+                  "description": "Filter by data point vertical"
+                },
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "approved",
+                    "denied",
+                    "pending",
+                    "counter_offer",
+                    "retention_offer",
+                    "sign_up_bonus",
+                    "offer"
+                  ],
+                  "description": "Filter by application result"
+                },
+                "credit_score_range": {
+                  "type": "string",
+                  "enum": ["300-579", "580-669", "670-739", "740-799", "800-850"],
+                  "description": "Filter by applicant credit score range"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum results to return (default: 25, max: 25)"
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["data-points:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": null
+        },
+        {
+          "tool": {
+            "name": "search_posts_semantic",
+            "description": "Search for posts using semantic similarity (vector embeddings). Best for finding conceptually related posts.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "Natural language search query"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results to return (default: 5, max: 10)"
+                },
+                "post_type": {
+                  "type": "string",
+                  "enum": ["discussion", "review", "data_point", "comment", "link"],
+                  "description": "Filter by post type"
+                }
+              },
+              "required": ["query"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/posts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_posts",
+            "description": "Search for posts using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "search": {
+                  "type": "string",
+                  "description": "Hybrid search shortcut. Same as setting both text_search_query and semantic_search_query to this value."
+                },
+                "text_search_query": {
+                  "type": "string",
+                  "description": "Text/keyword query for exact or lexical matching"
+                },
+                "semantic_search_query": {
+                  "type": "string",
+                  "description": "Natural language query for semantic similarity search"
+                },
+                "similar_post_id": {
+                  "type": "string",
+                  "description": "Find results similar to a post ID using embeddings"
+                },
+                "similar_topic_id": {
+                  "type": "string",
+                  "description": "Find results similar to a topic ID using embeddings"
+                },
+                "similar_rss_feed_item_id": {
+                  "type": "string",
+                  "description": "Find results similar to an RSS feed item UUID"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results to return (default: 5, max: 10)"
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": ["new", "best", "ranking"],
+                  "description": "Sort order: new (most recent), best (highest voted), ranking (search relevance)"
+                },
+                "post_type": {
+                  "type": "string",
+                  "enum": ["discussion", "review", "data_point", "comment"],
+                  "description": "Filter by post type"
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/posts"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_topics_semantic",
+            "description": "Search topics using semantic similarity (vector embeddings). Best for finding conceptually related topics.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "Natural language search query"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Max results (default: 10, max: 25)"
+                }
+              },
+              "required": ["query"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_topics_text",
+            "description": "Search topics using text matching. Best for finding topics by name or slug.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "Text query to match against topic names and slugs"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Max results (default: 10, max: 25)"
+                }
+              },
+              "required": ["query"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_topics",
+            "description": "Search topics using text, semantic, and similar-item signals. Use search for hybrid text+semantic search.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "search": {
+                  "type": "string",
+                  "description": "Hybrid search shortcut. Same as setting both text_search_query and semantic_search_query to this value."
+                },
+                "text_search_query": {
+                  "type": "string",
+                  "description": "Text/keyword query for exact or lexical matching"
+                },
+                "semantic_search_query": {
+                  "type": "string",
+                  "description": "Natural language query for semantic similarity search"
+                },
+                "similar_post_id": {
+                  "type": "string",
+                  "description": "Find results similar to a post ID using embeddings"
+                },
+                "similar_topic_id": {
+                  "type": "string",
+                  "description": "Find results similar to a topic ID using embeddings"
+                },
+                "similar_rss_feed_item_id": {
+                  "type": "string",
+                  "description": "Find results similar to an RSS feed item UUID"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Max results (default: 10, max: 25)"
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topics:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "search_wikipedia",
+            "description": "Searches Wikipedia for articles by title. Returns a list of matching Wikipedia pages with their titles and page IDs. Use this to find relevant Wikipedia articles based on keywords or topics mentioned in the content.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "The search query (e.g., \"Artificial Intelligence\", \"Climate Change\", \"New York\")"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results to return (default: 5, max: 10)",
+                  "minimum": 1,
+                  "maximum": 10
+                }
+              },
+              "required": ["query"]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["wikipedia:read"]
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": null
+        },
+        {
+          "tool": {
+            "name": "update_my_financial_profile",
+            "description": "Update the current user's financial profile used for personalized data point comparisons. Only provide fields you want to update — omitted fields are unchanged.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"],
+                  "description": "Currency shared by all of the user's monetary profile values"
+                },
+                "credit_score_range": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "enum": ["300-579", "580-669", "670-739", "740-799", "800-850"]
+                    }
+                  ],
+                  "description": "User's credit score range"
+                },
+                "stated_income_range": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["minimum", "maximum"],
+                      "properties": {
+                        "minimum": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": ["amount", "currency"],
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"]
+                            }
+                          }
+                        },
+                        "maximum": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": ["amount", "currency"],
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "description": "Annual income range in integer minor units paired with its currency; for example, USD 75,000 to USD 100,000 is {\"minimum\":{\"amount\":7500000,\"currency\":\"usd\"},\"maximum\":{\"amount\":10000000,\"currency\":\"usd\"}}"
+                },
+                "total_credit_limit": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["amount", "currency"],
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": ["usd", "cad", "eur", "gbp", "aud", "jpy"]
+                        }
+                      }
+                    }
+                  ],
+                  "description": "Total credit limit across all cards in integer minor units paired with its currency; for example, USD 25,000 is {\"amount\":2500000,\"currency\":\"usd\"}"
+                },
+                "years_of_credit_history": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  ],
+                  "description": "Years of credit history (0–100)"
+                }
+              },
+              "required": []
+            },
+            "annotations": {
+              "destructiveHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["financial-profile:read", "financial-profile:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/financial-profile"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/my/financial-profile"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "voucha-admin-mcp",
+      "path": "/api/v1/admin/mcp",
+      "surface": "admin_mcp",
+      "tools": [
+        {
+          "tool": {
+            "name": "search_support_messages",
+            "description": "Search past customer support messages for relevant context. Use this to find how similar issues were handled before.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "Search query to find relevant support messages"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results to return (default: 5, max: 10)"
+                }
+              },
+              "required": ["query"]
+            },
+            "annotations": {
+              "readOnlyHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["support-messages:read"]
+            }
+          },
+          "roles": ["administrator", "customer_support"],
+          "api": null
+        }
+      ]
+    }
+  ]
+}

@@ -46,6 +46,7 @@ backend:
   - 'backend/entrypoints/worker-io/**'
   - 'backend/worker-runtime/**'
   - 'backend/workers/**'
+  - 'docs/overview/architecture/agent-tools/**'
   - 'test-helpers/**'
   - 'ts-shared/**'
 backend-credentialed:
@@ -223,7 +224,6 @@ tooling:
   - 'CLAUDE.md'
   - 'docs/development/ci.md'
   - 'docs/prompts/**'
-  - 'docs/overview/architecture/agent-tools/**'
   - 'backend/api/v1/**'
   - 'backend/Dockerfile'
   - 'backend/package.json'
@@ -231,7 +231,6 @@ tooling:
   - 'backend/worker-runtime/package.json'
   - 'lambdas/*/package.json'
   - 'backend/tools/**'
-  - 'backend/tools/registry.docs.test.mts'
   - 'ci/**'
   - 'dev/**'
   - 'package.json'
