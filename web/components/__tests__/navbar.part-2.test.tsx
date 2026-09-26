@@ -11,6 +11,8 @@ import {
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { logout } from '@/lib/auth/logout'
+import { toProfileMenuUser } from '@/lib/auth/client-auth-user'
+import { Navbar } from '@/components/navbar'
 
 import { toast } from 'sonner'
 
@@ -119,5 +121,21 @@ describe('Navbar user dropdown', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to log out')
     })
+  })
+
+  it('uses a provided sign-out callback without calling logout', () => {
+    vi.mocked(logout).mockClear()
+    const onLoggedOut = vi.fn<() => void>()
+    render(
+      <Navbar
+        onLoggedOut={onLoggedOut}
+        profileMenuUser={toProfileMenuUser(testUser)}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Sign out'))
+
+    expect(onLoggedOut).toHaveBeenCalledOnce()
+    expect(logout).not.toHaveBeenCalled()
   })
 })
