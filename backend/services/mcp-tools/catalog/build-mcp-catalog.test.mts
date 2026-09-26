@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import { isToolMcpEligible, listToolsForSurface } from '@voucha/tools/registry/select'
 import { format } from 'oxfmt'
 import { describe, expect, it } from 'vitest'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from '../config.mts'
@@ -69,9 +70,12 @@ describe('generated MCP catalog artifacts', () => {
         everyScope,
         config,
       )
+      const registered = listToolsForSurface(config.surface, ALL_TOOLS)
+        .filter(tool => isToolMcpEligible(tool))
+        .map(tool => tool.schema.name)
       const server = catalog.servers.find(entry => entry.name === config.serverName)
 
-      expect(listed.length).toBeGreaterThan(0)
+      expect(listed.map(tool => tool.name)).toEqual(registered)
       expect(server?.tools.map(entry => entry.tool)).toEqual(listed)
     },
   )

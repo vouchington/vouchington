@@ -1325,36 +1325,7 @@
       "name": "voucha-admin-mcp",
       "path": "/api/v1/admin/mcp",
       "surface": "admin_mcp",
-      "tools": [
-        {
-          "tool": {
-            "name": "search_support_messages",
-            "description": "Search past customer support messages for relevant context. Use this to find how similar issues were handled before.",
-            "inputSchema": {
-              "type": "object",
-              "properties": {
-                "query": {
-                  "type": "string",
-                  "description": "Search query to find relevant support messages"
-                },
-                "limit": {
-                  "type": "number",
-                  "description": "Maximum number of results to return (default: 5, max: 10)"
-                }
-              },
-              "required": ["query"]
-            },
-            "annotations": {
-              "readOnlyHint": true
-            },
-            "_meta": {
-              "voucha/requiredScopes": ["support-messages:read"]
-            }
-          },
-          "roles": ["administrator", "customer_support"],
-          "api": null
-        }
-      ]
+      "tools": []
     }
   ]
 }
