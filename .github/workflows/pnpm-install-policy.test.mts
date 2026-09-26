@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { runsPnpmInstall, stepLists } from './pnpm-policy.test-helpers.mts'
+import { runsPnpmInstall, stepLists } from '../test-helpers/pnpm-policy.test-helpers.mts'
 
 type Step = {
   env?: Record<string, unknown>

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { fixMainPrompt, parsedDispatch, parsedMain } from './fix-main.test-helpers.mts'
+import {
+  fixMainPrompt,
+  parsedDispatch,
+  parsedMain,
+} from '../test-helpers/fix-main.test-helpers.mts'
 
 describe('fix-main workflow', () => {
   it('renders failure and related-work evidence into the disabled prompt', () => {

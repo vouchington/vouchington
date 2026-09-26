@@ -4,7 +4,7 @@ import { parse as load } from 'yaml'
 import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
 
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 type WorkflowStep = {
   run?: string

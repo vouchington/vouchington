@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeGateWithTitle } from './shepherd.test-helpers.mts'
+import { executeGateWithTitle } from '../test-helpers/shepherd.test-helpers.mts'
 type WorkflowJob = {
   'runs-on'?: string | string[]
   permissions?: Record<string, string>

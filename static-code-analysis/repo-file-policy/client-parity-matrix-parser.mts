@@ -10,17 +10,18 @@ import {
   type ClientParityMatrixInput,
   type MatrixSourceLocation,
 } from './client-parity-matrix-source.mts'
+import { statusFromMatrixCell, type ClientFeatureStatus } from './client-parity-status.mts'
 import {
-  statusFromGapState,
-  statusFromMatrixCell,
-  type ClientFeatureStatus,
-} from './client-parity-status.mts'
+  classifyTableKind,
+  statusFromTableRow,
+  type TableKind,
+} from './client-parity-matrix-table-kind.mts'
 
 const CLOSED_BY_LIST_RE = /closed by\s+((?:\[#\d+\](?:\s*(?:,|and)\s*)?)+)/gi
 const OPEN_ARROW_RE = /→\s*\[#(\d+)\]/g
 const CURRENT_STATE_CLOSED_RE = /^(closed by|closed\b)/i
 
-export type TableKind = 'A' | 'B' | 'C'
+export type { TableKind } from './client-parity-matrix-table-kind.mts'
 export type StatusKind = ClientFeatureStatus
 export type { IssueLinkDefinition }
 
@@ -41,38 +42,6 @@ export interface ParsedMatrixRow extends MatrixSourceLocation {
 
 function normalizeCell(text: string): string {
   return text.trim()
-}
-
-function classifyTableKind(cells: string[]): TableKind | undefined {
-  if (
-    cells[0] === 'Capability' &&
-    cells[1] === 'Web' &&
-    cells[2] === 'Swift' &&
-    cells[3] === '.NET'
-  )
-    return 'A'
-  if (cells[0] === '#' && cells[1].startsWith('Domain')) return 'B'
-  if (
-    cells[0] === '#' &&
-    cells[2] === 'Feature ID' &&
-    cells[3] === 'Client(s)' &&
-    cells[4] === 'Current state'
-  )
-    return 'C'
-  return undefined
-}
-
-function statusFromTableRow(kind: TableKind, cells: string[]): StatusKind | undefined {
-  if (kind === 'C') return statusFromGapState(cells[4] ?? '')
-  const nativeCells =
-    kind === 'A' ? [cells[2] ?? '', cells[3] ?? ''] : [cells[3] ?? '', cells[4] ?? '']
-  const nativeStatuses = nativeCells.map(statusFromMatrixCell)
-  if (nativeStatuses.includes('none')) return 'none'
-  if (nativeStatuses.includes('present')) return 'present'
-  if (nativeStatuses.includes('plumb')) return 'plumb'
-  if (nativeStatuses.includes('read')) return 'read'
-  if (nativeStatuses.includes('partial')) return 'partial'
-  return nativeStatuses.every(status => status === 'full') ? 'full' : 'partial'
 }
 
 function clientStatuses(

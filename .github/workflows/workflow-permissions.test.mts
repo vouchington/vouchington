@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { githubWorkflowPaths } from '../../ci/repo-topology.mts'
 import { missingTopLevelPermissionPaths } from './workflow-permissions-audit.mts'
-import { assertNoWorkflowViolations } from './workflow-test-helpers.mts'
+import { assertNoWorkflowViolations } from '../test-helpers/workflow-test-helpers.mts'
 
 type Workflow = {
   permissions?: unknown

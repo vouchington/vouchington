@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeFixRequestExtraction } from './fix-issue.test-helpers.mts'
+import { executeFixRequestExtraction } from '../test-helpers/fix-issue.test-helpers.mts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 

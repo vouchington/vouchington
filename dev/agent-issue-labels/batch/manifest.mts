@@ -1,3 +1,4 @@
+import { parseDuplicateSearch } from './duplicate-search.mts'
 export const CANONICAL_PRIORITIES = [
   'priority: critical',
   'priority: high',
@@ -39,49 +40,6 @@ const ENTRY_ID = /^[A-Za-z_][A-Za-z0-9_]*$/
 // capture the author's explicit non-duplicate judgment inside the manifest; a hit or intra-batch
 // collision blocks unless acknowledged here. Omitting the field entirely defaults to the
 // strictest behavior (search by title, acknowledge nothing) rather than skipping the check.
-function parseDuplicateSearch(
-  raw: unknown,
-  title: string,
-  id: string,
-  index: number,
-): DuplicateSearchConfig {
-  if (raw === undefined || raw === null) {
-    return { query: title, acknowledgedHits: [], acknowledgedSiblings: [] }
-  }
-  if (typeof raw !== 'object' || Array.isArray(raw)) {
-    throw new Error(`entries[${index}] ("${id}").duplicateSearch must be an object if present.`)
-  }
-  const record = raw as Record<string, unknown>
-
-  const query = record.query ?? title
-  if (typeof query !== 'string' || query.trim().length === 0) {
-    throw new Error(`entries[${index}] ("${id}").duplicateSearch.query must be a non-empty string.`)
-  }
-
-  const acknowledgedHits = record.acknowledgedHits ?? []
-  if (!Array.isArray(acknowledgedHits) || acknowledgedHits.some(hit => typeof hit !== 'number')) {
-    throw new Error(
-      `entries[${index}] ("${id}").duplicateSearch.acknowledgedHits must be an array of numbers if present.`,
-    )
-  }
-
-  const acknowledgedSiblings = record.acknowledgedSiblings ?? []
-  if (
-    !Array.isArray(acknowledgedSiblings) ||
-    acknowledgedSiblings.some(sibling => typeof sibling !== 'string')
-  ) {
-    throw new Error(
-      `entries[${index}] ("${id}").duplicateSearch.acknowledgedSiblings must be an array of strings if present.`,
-    )
-  }
-
-  return {
-    query,
-    acknowledgedHits: acknowledgedHits as number[],
-    acknowledgedSiblings: acknowledgedSiblings as string[],
-  }
-}
-
 function parseEntry(raw: Record<string, unknown>, index: number): BatchEntry {
   const { id } = raw
   if (typeof id !== 'string' || !ENTRY_ID.test(id)) {

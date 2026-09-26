@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeTrustedVersionStep } from './shepherd.test-helpers.mts'
+import { executeTrustedVersionStep } from '../test-helpers/shepherd.test-helpers.mts'
 
 type VersionStep = { id?: string; run?: string; uses?: string }
 type Workflow = {

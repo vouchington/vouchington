@@ -3,14 +3,17 @@ import { join } from 'node:path'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { workflowHasMainPushTrigger, workflowRunSubscriptions } from './workflow-test-helpers.mts'
+import {
+  workflowHasMainPushTrigger,
+  workflowRunSubscriptions,
+} from '../test-helpers/workflow-test-helpers.mts'
 import {
   fixMain,
   fixMainPrompt,
   parsedDispatch,
   parsedMain,
   renderCodexFixMainPrompt,
-} from './fix-main.test-helpers.mts'
+} from '../test-helpers/fix-main.test-helpers.mts'
 
 type Workflow = {
   name?: string

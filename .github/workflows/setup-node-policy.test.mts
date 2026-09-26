@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { actionStepBlocks, workflowYamlPaths, yamlSource } from './pnpm-policy.test-helpers.mts'
+import {
+  actionStepBlocks,
+  workflowYamlPaths,
+  yamlSource,
+} from '../test-helpers/pnpm-policy.test-helpers.mts'
 
 const allBlocks: Array<{ path: string; block: string }> = workflowYamlPaths.flatMap(path =>
   actionStepBlocks(yamlSource(path), /uses:\s+actions\/setup-node@/).map(block => ({

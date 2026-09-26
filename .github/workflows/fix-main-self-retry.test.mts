@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { workflowRunSubscriptions, workflowTriggerNames } from './workflow-test-helpers.mts'
+import {
+  workflowRunSubscriptions,
+  workflowTriggerNames,
+} from '../test-helpers/workflow-test-helpers.mts'
 
 type Step = {
   name?: string
