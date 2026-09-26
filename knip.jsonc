@@ -28,6 +28,7 @@
         "psql", // PostgreSQL system CLI probed by local DB-backed test setup checks
         "valkey-cli", // Valkey system CLI probed by local DB-backed test setup checks
         "wrangler", // GitHub Actions invokes the Cloudflare Worker workspace's pinned binary
+        "gitleaks", // GitHub Actions runs the real scanner in gitleaks-scanner.test.mts
       ],
       "ignoreExportsUsedInFile": true,
     },

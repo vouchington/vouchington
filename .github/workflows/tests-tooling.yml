@@ -49,8 +49,11 @@ jobs:
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           cache: false
-          install_args: gitleaks
+          install_args: aqua:gitleaks/gitleaks
         timeout-minutes: 3
+      - name: Verify Gitleaks is active for scanner fixtures
+        run: gitleaks version
+        timeout-minutes: 1
       - name: Run tooling tests
         env:
           VITEST_CI_REPORTERS: run

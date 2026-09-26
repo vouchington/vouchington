@@ -1,5 +1,5 @@
 import { execFile, spawnSync } from 'node:child_process'
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
@@ -84,61 +84,6 @@ describe('gitleaks workflow', () => {
     expect(step.run).toContain('--bin-dir "$RUNNER_TEMP/bin"')
     expect(step.run).toContain('--version-flag version')
     expect(step.run).not.toMatch(/(?<!")\bif gitleaks version\b/)
-  })
-
-  it('scans fixture secrets while retaining scoped fake-value exceptions', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'voucha-gitleaks-fixtures-'))
-    temporaryDirectories.push(directory)
-    const sourceDirectory = join(directory, 'source')
-    const reportPath = join(directory, 'report.json')
-    const syntheticToken = `ghp_${randomBytes(18).toString('hex')}`
-    const tokenLine = `API_TOKEN="${syntheticToken}"\n`
-
-    for (const relativeDirectory of [
-      'fixtures',
-      'ordinary',
-      'node_modules/fixtures',
-      '.local/fixtures',
-      'backend/test-helpers/entities',
-    ]) {
-      await mkdir(join(sourceDirectory, relativeDirectory), { recursive: true })
-    }
-    await writeFile(join(sourceDirectory, 'fixtures/synthetic-secret.txt'), tokenLine)
-    await writeFile(join(sourceDirectory, 'fixtures/benign.txt'), 'An ordinary fixture value.\n')
-    await writeFile(join(sourceDirectory, 'ordinary/synthetic-secret.txt'), tokenLine)
-    await writeFile(join(sourceDirectory, 'node_modules/fixtures/generated.txt'), tokenLine)
-    await writeFile(join(sourceDirectory, '.local/fixtures/generated.txt'), tokenLine)
-    await writeFile(
-      join(sourceDirectory, 'backend/test-helpers/entities/totp.mts'),
-      "export const TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXP'\n",
-    )
-
-    const scan = spawnSync(
-      'gitleaks',
-      [
-        'dir',
-        '--config',
-        join(process.cwd(), '.gitleaks.toml'),
-        '--report-format=json',
-        `--report-path=${reportPath}`,
-        '--redact=100',
-        '--no-banner',
-        '.',
-      ],
-      { cwd: sourceDirectory, encoding: 'utf8' },
-    )
-    expect(scan.error).toBeUndefined()
-    expect(scan.status).toBe(1)
-
-    const report = await readFile(reportPath, 'utf8')
-    const findings = JSON.parse(report) as Array<{ File?: string }>
-    expect([...new Set(findings.map(finding => finding.File))].sort()).toEqual([
-      'fixtures/synthetic-secret.txt',
-      'ordinary/synthetic-secret.txt',
-    ])
-    expect(report).not.toContain(syntheticToken)
-    expect(scan.stdout).not.toContain(syntheticToken)
-    expect(scan.stderr).not.toContain(syntheticToken)
   })
 
   it('installs through GitHub Releases and continues through verification and the PR scan', async () => {
