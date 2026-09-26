@@ -12,13 +12,20 @@ import {
   analyzePublicationSnapshotKeyPageForTest,
   analyzePublicationCleanupPageForTest,
   analyzePublicationFeedItemPageForTest,
+  countPublicationFeedSourcesForTest,
+  publicationPhysicalRowsWithinBudget as physicalRows,
+  publicationMatchesRelation as matchesRelation,
+  publicationScanIndexes as scanIndexes,
   insertTestPublicationSnapshotHeaderFanout,
 } from '@voucha/test-helpers/entities/post-publication-query-plans'
 import {
   insertTestPublicationTopicSlugFanout,
   insertTestPublicationFeedFanout,
 } from '@voucha/test-helpers/entities/post-publication-snapshots'
-import { insertTestPublicationSourceLessFeedItems } from '@voucha/test-helpers/entities/post-publication-feed-pages'
+import {
+  insertTestPublicationSourceLessFeedItems,
+  insertTestPublicationAdditionalFeedItems,
+} from '@voucha/test-helpers/entities/post-publication-feed-pages'
 import { listFeedRows } from './identity-feed-paging.mts'
 import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
@@ -33,6 +40,7 @@ let snapshotQuery: CapturedTestQuery
 let cleanupQuery: CapturedTestQuery
 let cleanupLockQuery: CapturedTestQuery
 let feedItemQuery: CapturedTestQuery
+const sparseFeedPlans = new Map<string, { plan: unknown; cardinality: number }>()
 
 describe('publication identity physical page query plans', () => {
   beforeAll(async () => {
@@ -109,14 +117,61 @@ describe('publication identity physical page query plans', () => {
       feedFixture.user.id,
       1,
     )
-    await insertTestPublicationFeedFanout(feedFixture.candidate.id, feedFixture.user.id, topicIds)
+    const feedIds = await insertTestPublicationFeedFanout(
+      feedFixture.candidate.id,
+      feedFixture.user.id,
+      topicIds,
+    )
     await insertTestPublicationSourceLessFeedItems(feedFixture.candidate.id, 1001)
     feedItemQuery = await captureAnnotatedQuery('listPublicationIdentityFeedItem', async () => {
       await using query = await beginTransaction()
       await listFeedRows(query, feedFixture.candidate.id, null, 100)
     })
+    for (const mode of ['force_custom_plan', 'force_generic_plan'] as const) {
+      const plan = await explainCapturedTestQuery(
+        'publication-sparse-feed-item-page',
+        feedItemQuery,
+        mode,
+        analyzePublicationFeedItemPageForTest,
+      )
+      sparseFeedPlans.set(mode, { plan, cardinality: await countPublicationFeedSourcesForTest() })
+    }
+    await insertTestPublicationAdditionalFeedItems(
+      feedFixture.candidate.id,
+      feedIds[0]!,
+      1001,
+      true,
+    )
+    const unrelated = await createTestPublicationSnapshotWork()
+    const unrelatedTopics = await insertTestPublicationTopicSlugFanout(
+      unrelated.candidate.id,
+      unrelated.user.id,
+      1,
+    )
+    const unrelatedFeeds = await insertTestPublicationFeedFanout(
+      unrelated.candidate.id,
+      unrelated.user.id,
+      unrelatedTopics.topicIds,
+    )
+    await insertTestPublicationAdditionalFeedItems(unrelated.candidate.id, unrelatedFeeds[0]!, 1001)
   })
 
+  it.each(['force_custom_plan', 'force_generic_plan'] as const)(
+    'bounds sparse source probes in %s without rounded per-loop overcounts',
+    mode => {
+      const { plan, cardinality } = sparseFeedPlans.get(mode)!
+      expect(physicalRows(plan, 'rss_feed_items')).toBe(100)
+      const scans = collectPlanNodes(plan).filter(node =>
+        matchesRelation(node, 'rss_feed_item_sources'),
+      )
+      const loops = scans.reduce((total, node) => total + Number(node['Actual Loops'] ?? 0), 0)
+      expect(loops).toBeLessThanOrEqual(100)
+      const sourceRows = scans.some(node => node['Node Type'] === 'Seq Scan')
+        ? cardinality * loops
+        : physicalRows(plan, 'rss_feed_item_sources')
+      expect(sourceRows).toBeLessThanOrEqual(100)
+    },
+  )
   it.each(['force_custom_plan', 'force_generic_plan'] as const)(
     'bounds native item candidates and source existence probes in %s',
     async mode => {
@@ -184,7 +239,7 @@ describe('publication identity physical page query plans', () => {
           typeof node['Index Name'] === 'string' &&
           String(node['Index Cond']).includes('snapshot_id'),
       )
-      expect(scopedSeeks).toHaveLength(1)
+      expect(scopedSeeks).toHaveLength(2)
     },
   )
   it.each(['force_custom_plan', 'force_generic_plan'] as const)(
@@ -234,28 +289,4 @@ async function captureAnnotatedQuery(
   if (selected.length !== 1)
     throw new Error(`Expected one actual ${annotation} query, got ${selected.length}`)
   return selected[0]!
-}
-
-function physicalRows(plan: unknown, relation: string): number {
-  return collectPlanNodes(plan)
-    .filter(node => matchesRelation(node, relation))
-    .reduce(
-      (rows, node) =>
-        rows +
-        (Number(node['Actual Rows'] ?? 0) +
-          Number(node['Rows Removed by Filter'] ?? 0) +
-          Number(node['Rows Removed by Index Recheck'] ?? 0)) *
-          Number(node['Actual Loops'] ?? 1),
-      0,
-    )
-}
-function matchesRelation(node: Record<string, unknown>, relation: string): boolean {
-  return (
-    node['Relation Name'] === relation || String(node['Relation Name']).startsWith(`${relation}_`)
-  )
-}
-function scanIndexes(plan: unknown, relation: string): unknown[] {
-  return collectPlanNodes(plan).flatMap(node =>
-    node['Relation Name'] === relation ? [node['Index Name']] : [],
-  )
 }

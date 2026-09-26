@@ -2,6 +2,8 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { containsReferralLinks } from '@services/referral-program-link-validations/contains-referral-links'
 import { assertUrlsHaveNoBlockedHostnames } from '@services/urls/assert-hostname-not-blocked'
 import pMap from 'p-map'
+import sql from 'sql-template-strings'
+import { publicationStoryItemPageCtes } from '@services/post-publication/story-item-pages'
 import type {
   ProjectionWork,
   SourceDecision,
@@ -18,19 +20,13 @@ export async function getStoryPostRelatedUrlProjectionSourcePage(input: {
   sourceHighWaterId: string
   limit: number
 }): Promise<SourceRow[]> {
-  const { rows } = await write<SourceRow>(
-    `/* storyPostRelatedUrlProjectionSourcePage */
-      SELECT rfi.id, rfi.url_id, urls.url
-      FROM rss_feed_items rfi
-      JOIN urls ON urls.id = rfi.url_id
-      WHERE rfi.story_id = $1
-        AND rfi.deleted_at IS NULL
-        AND ($2::uuid IS NULL OR rfi.id > $2::uuid)
-        AND ($3::uuid IS NULL OR rfi.id <= $3::uuid)
-      ORDER BY rfi.id
-      LIMIT $4`,
-    [input.storyId, input.sourceCursorId, input.sourceHighWaterId, input.limit],
-  )
+  const cursor = input.sourceCursorId ?? '00000000-0000-0000-0000-000000000000'
+  const scope = sql`SELECT ${input.storyId}::uuid AS story_id, ${cursor}::uuid AS cursor_id, ${input.sourceHighWaterId}::uuid AS high_water_id`
+  const statement = sql`/* storyPostRelatedUrlProjectionSourcePage */ `.append(
+    publicationStoryItemPageCtes(scope, input.limit, input.sourceCursorId === null, true),
+  ).append(sql`SELECT items.id, items.url_id, urls.url FROM items
+      JOIN urls ON urls.id = items.url_id ORDER BY items.id`)
+  const { rows } = await write<SourceRow>(statement)
   return rows
 }
 

@@ -3,6 +3,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import type { SourceRow } from './identity-source-paging.mts'
 import { nativeSourceBounds, nativeSourceRange } from './native-source-range.mts'
 import { publicationPageLimit } from './page-limit.mts'
+import { publicationStoryItemPageCtes } from './story-item-pages.mts'
 
 export async function listFeedRows(
   query: TransactionQuery,
@@ -14,22 +15,15 @@ export async function listFeedRows(
     cursor === null
       ? [null, null, false]
       : (JSON.parse(cursor) as [string, string | null, boolean?])
-  const itemStatement = sql`/* listPublicationIdentityFeedItem */ WITH story_scope AS MATERIALIZED (
-    SELECT story.story_id FROM posts candidate JOIN post__stories story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
-    WHERE candidate.id = ${postId}), items AS MATERIALIZED (
-    SELECT item.id FROM story_scope CROSS JOIN LATERAL (
-      SELECT id FROM rss_feed_items WHERE story_id = story_scope.story_id AND deleted_at IS NULL
-        AND (story_id, id) `
-    .append(itemComplete ? '>' : '>=')
-    .append(
-      sql` (story_scope.story_id, ${itemId ?? '00000000-0000-0000-0000-000000000000'}::uuid)
-      ORDER BY story_id, id LIMIT `,
-    )
-    .append(publicationPageLimit(limit))
-    .append(sql`) item) SELECT items.id, source.rss_feed_id IS NOT NULL AS has_source FROM items
+  const scope = sql`
+    SELECT story.story_id, ${itemId ?? '00000000-0000-0000-0000-000000000000'}::uuid AS cursor_id FROM posts candidate JOIN post__stories story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
+    WHERE candidate.id = ${postId}`
+  const itemStatement = sql`/* listPublicationIdentityFeedItem */ `.append(
+    publicationStoryItemPageCtes(scope, limit, !itemComplete),
+  ).append(sql`SELECT items.id, source.rss_feed_id IS NOT NULL AS has_source FROM items
       LEFT JOIN LATERAL (SELECT rss_feed_id FROM rss_feed_item_sources
         WHERE rss_feed_item_id = items.id
-          AND (rss_feed_item_id, rss_feed_id) >= (items.id, '00000000-0000-0000-0000-000000000000'::uuid)
+          AND rss_feed_id >= '00000000-0000-0000-0000-000000000000'::uuid
         ORDER BY rss_feed_item_id, rss_feed_id LIMIT 1) source ON TRUE ORDER BY items.id`)
   const { rows: items } = await query<{ id: string; has_source: boolean }>(itemStatement)
   const emptyRows: SourceRow[] = []

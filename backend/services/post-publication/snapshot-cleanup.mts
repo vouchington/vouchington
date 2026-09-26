@@ -35,9 +35,11 @@ export async function cleanupPostPublicationIdentitySnapshots(
     FROM page ORDER BY page.id`)
   const ids = headers.flatMap(row => (row.eligible ? [row.id] : []))
   const keyStatement = sql`/* deleteStalePublicationSnapshotKeyPage */
-    DELETE FROM post_publication_identity_snapshot_keys WHERE id IN (SELECT id FROM (`
+    DELETE FROM post_publication_identity_snapshot_keys target USING (`
     .append(publicationSnapshotKeyPageSql(ids[0] ?? null, null, limit))
-    .append(sql`) key_page)`)
+    .append(
+      sql`) key_page WHERE target.snapshot_id = ${ids[0] ?? null}::uuid AND target.id = key_page.id`,
+    )
   const { rowCount: keys } = await query(keyStatement)
   const { rowCount: snapshots } = await query(sql`/* deleteEmptyStalePublicationSnapshots */
     DELETE FROM post_publication_identity_snapshots snapshot WHERE id = ANY(${ids}::uuid[])

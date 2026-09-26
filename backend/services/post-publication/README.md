@@ -47,6 +47,20 @@ descendant sitemap targets page descendant post IDs before projecting the type/d
 Native pages preserve the scoped composite index interval. Their positive safe-integer row budgets
 are structural SQL literals so generic prepared plans can cost an early stop; identity and cursor
 values remain parameters.
+RSS story paging retains the live partial `(story_id, id)` covering index; foreign-key probes
+across deleted items use an ordered `(story_id, deleted_at, id)` index instead of the old unordered
+story index. The online leaf build is attached and validated before retiring that unordered index.
+Native item and typed-key pages share [`story-item-pages.mts`](story-item-pages.mts) and
+[`snapshot-key-pages.mts`](snapshot-key-pages.mts) recursive single-row scoped seeks in one SQL statement,
+stopping before the next seek once their literal row budget is reached. `LIMIT 1` preserves
+early-stop planning even when statistics underestimate a scope below the ordinary page size;
+no whole-scope bitmap/sort or global-ID traversal is hidden behind an outer `LIMIT 100`.
+Live RSS seeks explicitly prove `story_id IS NOT NULL` as well as `deleted_at IS NULL`, so
+the planner can use the live partial covering index even with composite interval predicates.
+Physical plan gates cover fresh and dirty databases, interleaved snapshot keys, deleted-item noise,
+and unrelated feed sources in both prepared-plan modes. A source table small enough to fit the
+entire probe budget is measured by exact cardinality times loops, avoiding PostgreSQL's rounded
+per-loop filtered-row means; larger tables must use scoped indexed probes within the same cap.
 Typed prior receipts page the composite snapshot/key interval; compatibility receipts page bounded JSON array ordinals
 in PostgreSQL. Neither reader repeats a whole-set union or expands a complete array for each page.
 Every page
@@ -81,8 +95,8 @@ Each existing scheduled reconciliation invocation reclaims an independent bounde
 there is no dirty work. Cleanup advances a persisted cyclic header cursor, caps examined headers
 before locking or checking accepted/current-generation ownership, and deletes keys through their native
 snapshot/id interval, sharing [`snapshot-key-pages.mts`](snapshot-key-pages.mts) with typed receipt
-retention. The composite ordering prevents a prepared plan from scanning unrelated interleaved
-snapshot keys through the global key-ID primary key. A partially reclaimed snapshot pins sweep progress until its key page reaches EOF;
+retention. The snapshot-scoped primary key removes a competing global key-ID ordering that could
+scan unrelated interleaved snapshots. Deletion joins both ownership and key ID. A partially reclaimed snapshot pins sweep progress until its key page reaches EOF;
 header EOF wraps the sweep so newly stale snapshots behind the cursor are revisited. The separate
 candidate page bounds per-ID lock probes before `SKIP LOCKED`; skipped headers advance that
 candidate boundary and are revisited after wrap instead of expanding the physical scan.

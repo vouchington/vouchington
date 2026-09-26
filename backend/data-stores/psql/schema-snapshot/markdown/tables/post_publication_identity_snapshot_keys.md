@@ -17,7 +17,7 @@ Not partitioned — growth: unbounded.
 | `day`         | `date`                     | yes      |                              |          |           |           | UTC publication day of a sitemap tuple.                           |
 | `created_at`  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                   |
 
-**Primary key:** `PRIMARY KEY (id)`
+**Primary key:** `PRIMARY KEY (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day)`
 
 **Unique constraints:**
 
@@ -34,9 +34,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `idx_post_publication_identity_snapshot_keys__snapshot_id_id`: `CREATE INDEX idx_post_publication_identity_snapshot_keys__snapshot_id_id ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id)`
 - `post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key`: `CREATE UNIQUE INDEX post_publication_identity_sna_snapshot_id_kind_uuid_value_t_key ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, kind, uuid_value, text_value, post_type, day) NULLS NOT DISTINCT`
-- `post_publication_identity_snapshot_keys_pkey`: `CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (id)`
+- `post_publication_identity_snapshot_keys_pkey`: `CREATE UNIQUE INDEX post_publication_identity_snapshot_keys_pkey ON public.post_publication_identity_snapshot_keys USING btree (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day)`
 
 **Triggers:**
 _none_

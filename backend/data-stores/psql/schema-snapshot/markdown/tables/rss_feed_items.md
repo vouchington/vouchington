@@ -90,8 +90,8 @@ _none_
 - `idx_rss_feed_items__media_type__pub`: `CREATE INDEX idx_rss_feed_items__media_type__pub ON ONLY public.rss_feed_items USING btree (media_type, published_at DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__published_at__id`: `CREATE INDEX idx_rss_feed_items__published_at__id ON ONLY public.rss_feed_items USING btree (published_at DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__search_vector`: `CREATE INDEX idx_rss_feed_items__search_vector ON ONLY public.rss_feed_items USING gin (search_vector) WHERE (deleted_at IS NULL)`
+- `idx_rss_feed_items__story_id__deleted_at__id`: `CREATE INDEX idx_rss_feed_items__story_id__deleted_at__id ON ONLY public.rss_feed_items USING btree (story_id, deleted_at, id) WHERE (story_id IS NOT NULL)`
 - `idx_rss_feed_items__story_id__id__url_id`: `CREATE INDEX idx_rss_feed_items__story_id__id__url_id ON ONLY public.rss_feed_items USING btree (story_id, id) INCLUDE (url_id) WHERE ((story_id IS NOT NULL) AND (deleted_at IS NULL))`
-- `idx_rss_feed_items__story_id__ri`: `CREATE INDEX idx_rss_feed_items__story_id__ri ON ONLY public.rss_feed_items USING btree (story_id) WHERE (story_id IS NOT NULL)`
 - `idx_rss_feed_items__url_id`: `CREATE INDEX idx_rss_feed_items__url_id ON ONLY public.rss_feed_items USING btree (url_id)`
 - `idx_rss_feed_items__votes_score_sort__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE (deleted_at IS NULL)`
 - `idx_rss_feed_items__votes_score_sort__pos__id`: `CREATE INDEX idx_rss_feed_items__votes_score_sort__pos__id ON ONLY public.rss_feed_items USING btree (votes_score_sort DESC, id DESC) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`

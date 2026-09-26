@@ -24,6 +24,7 @@ export async function insertTestPublicationAdditionalFeedItems(
   postId: string,
   feedId: string,
   count: number,
+  deleted = false,
 ): Promise<void> {
   const { rows } = await write<{ story_id: string; url_id: string }>(
     `/* findPublicationFeedStoryFixture */ SELECT story.story_id, item.url_id FROM post__stories story
@@ -39,7 +40,8 @@ export async function insertTestPublicationAdditionalFeedItems(
     urlId: source.url_id,
   })
   await write(
-    `/* mapPublicationFeedItemFixturesToStory */ UPDATE rss_feed_items SET story_id = $1 WHERE id = ANY($2::uuid[])`,
-    [source.story_id, itemIds],
+    `/* mapPublicationFeedItemFixturesToStory */ UPDATE rss_feed_items SET story_id = $1,
+      deleted_at = CASE WHEN $3 THEN CURRENT_TIMESTAMP END WHERE id = ANY($2::uuid[])`,
+    [source.story_id, itemIds, deleted],
   )
 }

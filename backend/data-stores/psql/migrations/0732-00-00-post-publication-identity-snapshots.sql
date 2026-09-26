@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_post_publication_identity_snapshots__post_complet
   ON post_publication_identity_snapshots (post_id, completed_at, id);
 
 CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID NOT NULL DEFAULT uuidv7(),
   snapshot_id UUID NOT NULL REFERENCES post_publication_identity_snapshots (id) ON DELETE RESTRICT,
   kind TEXT NOT NULL CHECK (kind IN ('topic', 'author', 'author_username', 'community', 'community_slug', 'post_slug', 'rss_feed', 'sitemap_target')),
   uuid_value UUID,
@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
   post_type post_types,
   day DATE,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  PRIMARY KEY (snapshot_id, id) INCLUDE (kind, uuid_value, text_value, post_type, day),
   UNIQUE NULLS NOT DISTINCT (snapshot_id, kind, uuid_value, text_value, post_type, day),
   CHECK (
     (kind IN ('topic', 'author', 'community', 'rss_feed') AND uuid_value IS NOT NULL
@@ -66,9 +67,6 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
       AND post_type IS NOT NULL AND day IS NOT NULL)
   )
 );
-
-CREATE INDEX IF NOT EXISTS idx_post_publication_identity_snapshot_keys__snapshot_id_id
-  ON post_publication_identity_snapshot_keys (snapshot_id, id);
 
 ALTER TABLE post_publication_projection_receipts
   ADD COLUMN applied_snapshot_id UUID;
