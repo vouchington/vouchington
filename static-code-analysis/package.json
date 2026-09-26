@@ -17,7 +17,7 @@
     "no-mistakes": "^0.65.0",
     "oxfmt": "^0.70.0",
     "smol-toml": "^1.9.0",
-    "vouchington-tooling": "^0.20.0",
+    "vouchington-tooling": "^0.21.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
