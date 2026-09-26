@@ -34,16 +34,15 @@ vi.mock(import('@/lib/on-error'), () => ({
 
 vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
   TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
-    <div data-testid='mock-topic-autocomplete'>
-      <input
-        type='text'
-        placeholder={placeholder}
-        aria-label={placeholder ?? 'Topic'}
-        value={value ?? ''}
-        onChange={e => onChange(e.target.value, 'Mocked Card')}
-        data-testid='mock-topic-autocomplete-input'
-      />
-    </div>
+    // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the autocomplete with a native text input
+    <input
+      type='text'
+      placeholder={placeholder}
+      aria-label={placeholder ?? 'Topic'}
+      value={value ?? ''}
+      onChange={e => onChange(e.target.value, 'Mocked Card')}
+      data-testid='mock-topic-autocomplete-input'
+    />
   ),
 }))
 
@@ -74,6 +73,7 @@ vi.mock(import('@/components/ui/select'), () => {
       const content = childArray.find(child => isSelectElement(child, contentMock))
 
       return (
+        // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the UI Select with native select semantics
         <select
           id={trigger?.props.id}
           value={value}
@@ -99,6 +99,7 @@ vi.mock(
   () =>
     ({
       Checkbox: ({ checked, onCheckedChange, id }: any) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the UI Checkbox with a native checkbox
         <input
           type='checkbox'
           id={id}
