@@ -7,6 +7,7 @@ import {
 } from '../../../modules/openai-utils/create-response.mts'
 import { CHAT_SUBAGENT_RETRY_POLICY } from '../../../agents/_shared/retry-policy.mts'
 
+import { suppressedError } from '../../suppressed-error.mts'
 import { setupSubagentFixtures } from './subagent-fixtures.mts'
 import {
   type AgentTool,
@@ -112,7 +113,7 @@ export function subagentToolCases(tool: AgentTool, config: SubagentToolCaseConfi
           testUserId,
           config.errorConversation,
         )
-        const testError = Object.assign(new Error('API error'), { tags: { suppressLogging: true } })
+        const testError = suppressedError('API error')
         vi.mocked(streamOpenAIResponse).mockImplementationOnce(async function* (): AsyncGenerator<
           { delta: string },
           OpenAIResponse
