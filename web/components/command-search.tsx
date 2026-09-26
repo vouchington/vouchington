@@ -6,7 +6,7 @@
  * page shortcut autocomplete, and admin page shortcuts.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CommandDialog, CommandInput, CommandList } from '@/components/ui/command'
 import {
@@ -21,6 +21,7 @@ import { ResultGroups } from './command-search/result-groups'
 import { hasVisibleSearchResults } from './command-search/visible-results'
 import { SearchTabs } from './command-search/search-tabs'
 import { useSearchEffect } from './command-search/use-search-effect'
+import { useSearchInputFocus } from './command-search/use-search-input-focus'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface CommandSearchProps {
@@ -44,14 +45,7 @@ export function CommandSearch({
   const [loading, setLoading] = useState(false)
   const featureFlags = useFeatureFlags()
   const tabsRef = useRef<HTMLFieldSetElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const setInputNode = useCallback(
-    (node: HTMLInputElement | null) => {
-      inputRef.current = node
-      if (node && open) node.focus()
-    },
-    [open],
-  )
+  const { inputRef, setInputNode } = useSearchInputFocus()
 
   const searchTabs = getSearchTabs(featureFlags)
 
@@ -64,15 +58,17 @@ export function CommandSearch({
     setLoading,
   )
 
-  // Reset query and tab when dialog closes
+  // Reset query and tab when dialog closes. Focus the input when it opens.
   useEffect(() => {
     if (!open) {
       queueMicrotask(() => {
         setQuery('')
         setActiveTab('all')
       })
+      return
     }
-  }, [open])
+    inputRef.current?.focus()
+  }, [inputRef, open])
 
   const matchedShortcuts = getMatchingShortcuts(t, query, isAdmin, isAuthenticated, featureFlags)
   const showResults = hasVisibleSearchResults(activeTab, results, matchedShortcuts.length)
@@ -143,7 +139,7 @@ export function CommandSearch({
 
     document.addEventListener('keydown', onKeyDown, true)
     return () => document.removeEventListener('keydown', onKeyDown, true)
-  }, [open, searchTabs])
+  }, [inputRef, open, searchTabs])
 
   return (
     <CommandDialog

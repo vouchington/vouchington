@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { BehaviorClient } from '@/components/topics/settings/behavior-client'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
@@ -8,6 +12,12 @@ const person = topics.find(topic => topic.name === 'Jane Analyst')!
 
 const meta = {
   title: 'Topics/Behavior',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

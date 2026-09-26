@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { TopicRecommendationsTableRow } from '@/components/topic-recommendations/topic-recommendations-table-row'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -11,6 +15,12 @@ const election = recommendationsResponse.post_elections[recommendationPost.id]
 
 const meta = {
   title: 'Topic Recommendations/Table Row',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

@@ -97,16 +97,6 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         new URL('../storybook/mocks/feed-page-header.tsx', import.meta.url),
       ),
     },
-    ...[
-      '@/components/tags/topic-category-tags-aside',
-      '@/components/tags/topic-publisher-types-aside',
-    ].map(find => ({
-      // These async Server Components reach next/headers via server API helpers.
-      find,
-      replacement: fileURLToPath(
-        new URL('../storybook/mocks/topic-tag-asides.tsx', import.meta.url),
-      ),
-    })),
     {
       // EditPostPage is an async Server Component that reaches auth/server API helpers.
       find: '@/components/posts/edit-post-page',

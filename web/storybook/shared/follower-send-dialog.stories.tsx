@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { FollowerSendDialog } from '@/components/shared/follower-send-dialog'
 import { StoryFrame } from '@/storybook/story-frame'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
@@ -7,6 +11,12 @@ const alex = publicUsers[0]!
 
 const meta = {
   title: 'Shared/Follower Send Dialog',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

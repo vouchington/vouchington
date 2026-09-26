@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { userEvent, within } from 'storybook/test'
 import AdminModerationButton from '@/components/admin/admin-moderation-button'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -34,6 +38,12 @@ const election: AgentModerationElection = {
 
 const meta = {
   title: 'Admin/Admin Moderation Button',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

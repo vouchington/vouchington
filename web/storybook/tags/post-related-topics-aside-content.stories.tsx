@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { PostRelatedTopicsAsideContent } from '@/components/tags/post-related-topics-aside-content'
 import { StoryFrame } from '@/storybook/story-frame'
 import { now } from '@/storybook/entities/fixtures/shared'
@@ -30,6 +34,12 @@ const relations: EntityRelation[] = [
 
 const meta = {
   title: 'Tags/Related Topics Aside',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

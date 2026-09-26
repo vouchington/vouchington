@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { expect, userEvent, within } from 'storybook/test'
 import { UnlinkValidationButton } from '@/components/referral-links/validations/unlink-validation-button'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -8,6 +12,12 @@ const referralProgram = topics.find(topic => topic.topic_type === 'referral_prog
 
 const meta = {
   title: 'Referral Links/Unlink Validation Button',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

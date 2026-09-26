@@ -1,4 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { AliasesClient } from '@/components/topics/aliases/aliases-client'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
@@ -7,6 +12,12 @@ const topic = topics[0]!
 
 const meta = {
   title: 'Topics/Aliases',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

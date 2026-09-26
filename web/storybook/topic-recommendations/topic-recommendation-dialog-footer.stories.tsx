@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { TopicRecommendationDialogFooter } from '@/components/topic-recommendations/topic-recommendation-dialog-footer'
 import { StoryFrame } from '@/storybook/story-frame'
 import { recommendationPost } from '@/storybook/entities/topics-story-recommendations'
@@ -13,6 +17,12 @@ const election = {
 
 const meta = {
   title: 'Topic Recommendations/Dialog Footer',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

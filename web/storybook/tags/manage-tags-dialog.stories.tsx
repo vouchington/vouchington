@@ -1,9 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearCategoryRelationsFixture,
+  setCategoryRelationsFixture,
+} from '@/storybook/mocks/category-relations-store'
 import { ManageTagsDialog } from '@/components/tags/manage-tags-dialog'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Tags/Manage Tags Dialog',
+  beforeEach() {
+    setCategoryRelationsFixture()
+    return () => {
+      clearCategoryRelationsFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

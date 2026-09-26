@@ -8,6 +8,7 @@ import {
 import { referralValidation } from './story-mutation-claim'
 import { storyMutationPost } from './story-mutation-post-routes'
 import { applyListMembership } from './list-membership-fixture'
+import { storyTopicDelete, storyTopicPatch } from './story-topic-routes'
 
 export { storyMutationPost }
 
@@ -31,7 +32,7 @@ export function storyMutationPatch(endpoint: string, body: unknown): unknown | u
   if (/^\/api\/v1\/communities\/[^/]+\/reports\/[^/]+$/.test(endpoint)) return {}
   if (/^\/api\/v1\/referral-link-validations\/[^/]+$/.test(endpoint))
     return referralValidation(body)
-  return undefined
+  return storyTopicPatch(endpoint, body)
 }
 
 export function storyMutationDelete(endpoint: string): unknown | undefined {
@@ -48,7 +49,7 @@ export function storyMutationDelete(endpoint: string): unknown | undefined {
   if (endpoint.includes('/link-validations/')) return {}
   if (endpoint.includes('/ratings/')) return {}
   if (endpoint.endsWith('/vote') || endpoint.includes('/bookmarks/')) return {}
-  return undefined
+  return storyTopicDelete(endpoint)
 }
 
 export function storyMutationPut(endpoint: string): unknown | undefined {

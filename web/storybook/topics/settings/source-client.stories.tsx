@@ -1,4 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { SourceClient } from '@/components/topics/settings/source-client'
 import { StoryFrame } from '@/storybook/story-frame'
 import { now } from '@/storybook/entities/fixtures/shared'
@@ -8,6 +13,12 @@ const feed = topics.find(topic => topic.topic_type === 'rss_feed')!
 
 const meta = {
   title: 'Topics/Source',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

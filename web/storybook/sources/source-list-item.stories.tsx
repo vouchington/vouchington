@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { SourceListItem } from '@/components/sources/source-list-item'
 import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
@@ -41,6 +45,12 @@ const feed = {
 
 const meta = {
   title: 'Sources/Source List Item',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

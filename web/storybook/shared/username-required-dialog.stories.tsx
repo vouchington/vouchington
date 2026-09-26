@@ -1,9 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { UsernameRequiredDialog } from '@/components/shared/username-required-dialog'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Shared/Username Required Dialog',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => {
+      clearMyAccountFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

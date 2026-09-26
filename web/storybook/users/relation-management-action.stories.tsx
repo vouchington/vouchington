@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { RelationManagementAction } from '@/components/users/relation-management-action'
 import { USER_RELATION_ACTIONS } from '@/components/users/user-relation-actions'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -10,6 +14,12 @@ const member = publicUsers[0]!
 
 const meta = {
   title: 'Users/Relation Management Action',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => {
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

@@ -15,6 +15,7 @@ import { applyListMembership } from './list-membership-fixture'
 import { purchaseIntent } from './story-mutation-purchase'
 import { conversationParticipant } from './story-mutation-participant'
 import { followerActionPost } from './story-mutation-follower-post'
+import { storyTopicPost } from './story-topic-routes'
 
 let nextInvite = 0
 
@@ -126,7 +127,7 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint.endsWith('/members')) return {}
   if (endpoint.endsWith('/modmail')) return { thread: { id: 'modmail-thread-story' } }
   if (endpoint.endsWith('/mod-notes')) return modNote(body)
-  return storyClaimMutation(endpoint, body)
+  return storyClaimMutation(endpoint, body) ?? storyTopicPost(endpoint, body)
 }
 
 export function storyMutationPost(endpoint: string, body: unknown): unknown | undefined {
