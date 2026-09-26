@@ -78,37 +78,6 @@ COMMENT ON COLUMN post__stories.post_id IS 'FK to the story post.';
 COMMENT ON COLUMN post__stories.story_id IS 'FK to the story being discussed.';
 COMMENT ON COLUMN post__stories.initiated_by_id IS 'The user who requested the story post creation.';
 
--- ==========================================================================
--- 0290-00-00-hn-discussions.sql
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS hn_stories (
-  hn_item_id BIGINT PRIMARY KEY,
-  url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
-
-  title TEXT,
-  points INT,
-  num_comments INT,
-  hn_created_at TIMESTAMPTZ,
-
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE OR REPLACE TRIGGER trigger_hn_stories_updated_at
-BEFORE UPDATE ON hn_stories
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
-CREATE INDEX IF NOT EXISTS idx_hn_stories__url_id ON hn_stories (url_id);
-
-COMMENT ON TABLE hn_stories IS 'Cached Hacker News top story metadata, synced periodically from the HN Firebase API.';
-COMMENT ON COLUMN hn_stories.hn_item_id IS 'HN item ID. Story URL: https://news.ycombinator.com/item?id={hn_item_id}';
-COMMENT ON COLUMN hn_stories.url_id IS 'FK to urls table for the story external URL.';
-COMMENT ON COLUMN hn_stories.title IS 'Title of the HN submission.';
-COMMENT ON COLUMN hn_stories.points IS 'Upvote score of the HN submission.';
-COMMENT ON COLUMN hn_stories.num_comments IS 'Number of comments on the HN submission (descendants).';
-COMMENT ON COLUMN hn_stories.hn_created_at IS 'When the HN submission was created (unix time from API).';
 
 -- FK for rss_feed_items.story_id (column defined in 0080 without FK due to circular dependency with stories table)
 

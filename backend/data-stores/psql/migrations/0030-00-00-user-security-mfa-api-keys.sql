@@ -75,6 +75,6 @@ COMMENT ON COLUMN api_keys.prefix IS 'Visible prefix of the API key for identifi
 COMMENT ON COLUMN api_keys.key_hash IS 'SHA-256 hash of the full API key (32 bytes).';
 COMMENT ON COLUMN api_keys.type IS 'Key type scope (rss or mcp). Determines which API features the key can access.';
 COMMENT ON COLUMN api_keys.label IS 'User-provided label to identify the key''s purpose.';
-COMMENT ON COLUMN api_keys.permissions IS 'Array of permission scopes granted to this key.';
+COMMENT ON COLUMN api_keys.permissions IS 'Canonical scope set granted to this key; validated against the application scope catalogue.';
 COMMENT ON COLUMN api_keys.last_used_at IS 'When this API key was last used for authentication.';
 COMMENT ON COLUMN api_keys.revoked_at IS 'When this API key was revoked; revoked keys cannot authenticate.';

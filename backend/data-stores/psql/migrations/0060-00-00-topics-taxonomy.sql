@@ -24,6 +24,9 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS topics (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT topics_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
 
   topic_type topic_types NOT NULL DEFAULT 'topic',
 
@@ -779,6 +782,10 @@ SET aliases = COALESCE(
 )
 WHERE topic.deleted_at IS NULL
   AND topic.merged_into_topic_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_topics__created_via_oauth_client_id
+  ON topics (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;
 
 -- 2. Insert singular aliases
 -- Extract topic IDs from the topics we just inserted

@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work_keys (
     'impact_post', 'impact_topic', 'impact_community', 'impact_rss_feed_item',
     'identity_author', 'identity_author_username',
     'identity_community', 'identity_rss_feed', 'identity_post_slug', 'identity_community_slug',
+    'identity_topic_alias',
     'sitemap_target'
   )),
   uuid_value UUID,
@@ -72,7 +73,7 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work_keys (
     )
       AND uuid_value IS NOT NULL AND text_value IS NULL AND post_type IS NULL AND day IS NULL)
     OR
-    (kind IN ('identity_author_username', 'identity_post_slug', 'identity_community_slug')
+    (kind IN ('identity_author_username', 'identity_post_slug', 'identity_community_slug', 'identity_topic_alias')
       AND uuid_value IS NULL AND text_value IS NOT NULL
       AND char_length(text_value) BETWEEN 1 AND 255
       AND post_type IS NULL AND day IS NULL)

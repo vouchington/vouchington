@@ -50,6 +50,9 @@ END $$;
 -- communities
 CREATE TABLE IF NOT EXISTS communities (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT communities_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   markdown TEXT,
@@ -229,6 +232,9 @@ COMMENT ON COLUMN community_application_questions.required IS 'Whether the appli
 -- community_applications
 CREATE TABLE IF NOT EXISTS community_applications (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
+  created_via content_creation_channels,
+  created_via_oauth_client_id UUID,
+  CONSTRAINT community_applications_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   answers JSONB NOT NULL,
@@ -646,3 +652,11 @@ ALTER TABLE curated_aside_items
   VALIDATE CONSTRAINT fk_curated_aside_items__rss_feed_id;
 ALTER TABLE curated_aside_items
   VALIDATE CONSTRAINT fk_curated_aside_items__community_id;
+
+CREATE INDEX IF NOT EXISTS idx_communities__created_via_oauth_client_id
+  ON communities (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_community_applications__created_via_oauth_client_id
+  ON community_applications (created_via_oauth_client_id)
+  WHERE created_via_oauth_client_id IS NOT NULL;

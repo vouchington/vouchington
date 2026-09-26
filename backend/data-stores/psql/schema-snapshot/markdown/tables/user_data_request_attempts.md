@@ -11,8 +11,8 @@ Not partitioned — growth: unbounded.
 | `request_id`              | `uuid`                     | no       |                     |          |           |           | Owning account-data export request; part of the composite attempt identity.                                  |
 | `processing_attempt_id`   | `uuid`                     | no       |                     |          |           |           | Claimed export attempt token retained across stale recovery so deletion can purge every possible object key. |
 | `started_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Timestamp copied from the export claim that first made this deterministic object key possible.               |
-| `upload_lease_expires_at` | `timestamp with time zone` | yes      |                     |          |           |           | Bounded provider-effect lease; deletion waits through this deadline before acknowledging cleanup.            |
 | `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                              |
+| `upload_lease_expires_at` | `timestamp with time zone` | yes      |                     |          |           |           | Bounded provider-effect lease; deletion waits through this deadline before acknowledging cleanup.            |
 
 **Primary key:** `PRIMARY KEY (request_id, processing_attempt_id)`
 

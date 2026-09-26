@@ -21,7 +21,7 @@ _none_
 
 **Check constraints:**
 
-- `membership_ineligible_purchase_reversal_refun_generation_check1`: `CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))`
+- `membership_ineligible_purchase_reversal_refund_generation_check`: `CHECK (((generation >= 1) AND (generation <= '9007199254740991'::bigint)))`
 
 **Foreign keys:**
 

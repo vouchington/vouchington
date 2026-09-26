@@ -7,7 +7,7 @@
 -- ============================================================================
 
 DO $$ BEGIN
-  CREATE TYPE admin_import_types AS ENUM ('topic', 'rss_feed', 'crm_contact');
+  CREATE TYPE admin_import_types AS ENUM ('topic', 'rss_feed');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_admin_import_batches__created_by
   ON admin_import_batches (created_by_id);
 
 COMMENT ON TABLE admin_import_batches IS 'Tracks bulk import operations initiated by admins, with progress counters.';
-COMMENT ON COLUMN admin_import_batches.import_type IS 'The type of entities being imported: topic, CRM contact, or RSS feed.';
+COMMENT ON COLUMN admin_import_batches.import_type IS 'The type of entities being imported: topic or RSS feed.';
 COMMENT ON COLUMN admin_import_batches.total_rows IS 'Total number of rows in this import batch (max 50000).';
 COMMENT ON COLUMN admin_import_batches.completed_rows IS 'Number of rows successfully imported so far.';
 COMMENT ON COLUMN admin_import_batches.failed_rows IS 'Number of rows that failed to import.';
@@ -75,7 +75,6 @@ CREATE TABLE IF NOT EXISTS admin_import_rows (
   row_index INT NOT NULL CHECK (row_index >= 0),
   input_data JSONB NOT NULL,
   topic_id UUID REFERENCES topics ON DELETE RESTRICT,
-  crm_contact_id UUID REFERENCES crm_contacts ON DELETE RESTRICT,
   rss_feed_id UUID REFERENCES rss_feeds ON DELETE RESTRICT,
   completed_at TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
@@ -85,8 +84,8 @@ CREATE TABLE IF NOT EXISTS admin_import_rows (
     AND (failed_at IS NULL OR error_message IS NOT NULL)
   ),
   CONSTRAINT chk_admin_import_rows__created_entity_lifecycle CHECK (
-    (completed_at IS NULL AND num_nonnulls(topic_id, crm_contact_id, rss_feed_id) = 0)
-    OR (completed_at IS NOT NULL AND num_nonnulls(topic_id, crm_contact_id, rss_feed_id) = 1)
+    (completed_at IS NULL AND num_nonnulls(topic_id, rss_feed_id) = 0)
+    OR (completed_at IS NOT NULL AND num_nonnulls(topic_id, rss_feed_id) = 1)
   ),
   CONSTRAINT admin_import_rows__batch_row_index UNIQUE (batch_id, row_index)
 );
@@ -115,7 +114,6 @@ BEGIN
 
   IF NOT (
     (batch_import_type = 'topic' AND NEW.topic_id IS NOT NULL)
-    OR (batch_import_type = 'crm_contact' AND NEW.crm_contact_id IS NOT NULL)
     OR (batch_import_type = 'rss_feed' AND NEW.rss_feed_id IS NOT NULL)
   ) THEN
     RAISE EXCEPTION 'admin import row target does not match batch import type %', batch_import_type
@@ -127,7 +125,7 @@ END;
 $$;
 
 CREATE TRIGGER trigger_admin_import_rows_validate_target
-  BEFORE INSERT OR UPDATE OF batch_id, completed_at, topic_id, crm_contact_id, rss_feed_id ON admin_import_rows
+  BEFORE INSERT OR UPDATE OF batch_id, completed_at, topic_id, rss_feed_id ON admin_import_rows
   FOR EACH ROW
   WHEN (NEW.completed_at IS NOT NULL)
   EXECUTE FUNCTION fn_validate_admin_import_row_target();
@@ -138,8 +136,6 @@ CREATE INDEX IF NOT EXISTS idx_admin_import_rows__batch_id
 -- RI-usable indexes for the created-entity FKs
 CREATE INDEX IF NOT EXISTS idx_admin_import_rows__topic_id
   ON admin_import_rows (topic_id) WHERE topic_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_admin_import_rows__crm_contact_id
-  ON admin_import_rows (crm_contact_id) WHERE crm_contact_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_admin_import_rows__rss_feed_id
   ON admin_import_rows (rss_feed_id) WHERE rss_feed_id IS NOT NULL;
 
@@ -148,7 +144,6 @@ COMMENT ON COLUMN admin_import_rows.batch_id IS 'The import batch this row belon
 COMMENT ON COLUMN admin_import_rows.row_index IS 'Zero-based position of this row within the batch.';
 COMMENT ON COLUMN admin_import_rows.input_data IS 'The raw input data for this row as JSON.';
 COMMENT ON COLUMN admin_import_rows.topic_id IS 'Topic created or updated by this import row.';
-COMMENT ON COLUMN admin_import_rows.crm_contact_id IS 'CRM contact created or updated by this import row.';
 COMMENT ON COLUMN admin_import_rows.rss_feed_id IS 'RSS feed created or updated by this import row.';
 COMMENT ON COLUMN admin_import_rows.completed_at IS 'When this row was successfully imported.';
 COMMENT ON COLUMN admin_import_rows.failed_at IS 'When this row failed to import.';

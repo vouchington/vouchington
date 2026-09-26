@@ -9,6 +9,8 @@ Not partitioned — growth: unbounded.
 | Column                        | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                           |
 | ----------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
 | `id`                          | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                                   |
+| `created_via`                 | `content_creation_channels` | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                 |
+| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 | `community_id`                | `uuid`                      | no       |                              |          |           |           | The community being applied to.                                                                                   |
 | `user_id`                     | `uuid`                      | no       |                              |          |           |           | The user who submitted the application.                                                                           |
 | `answers`                     | `jsonb`                     | no       |                              |          |           |           | JSON object with answers keyed by question ID.                                                                    |
@@ -20,8 +22,6 @@ Not partitioned — growth: unbounded.
 | `message`                     | `text`                      | yes      |                              |          |           |           | Optional freeform message from the applicant when submitting an application.                                      |
 | `created_at`                  | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                   |
 | `updated_at`                  | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                   |
-| `created_via`                 | `content_creation_channels` | yes      |                              |          |           |           | Immutable channel that created the row; NULL for rows written before content provenance tracking.                 |
-| `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 
 **Primary key:** `PRIMARY KEY (id)`
 

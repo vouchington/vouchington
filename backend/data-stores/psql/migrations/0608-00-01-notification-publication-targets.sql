@@ -1,12 +1,5 @@
 -- Stable internal targets let reconciliation suppress stale notifications even after display FKs
 -- are cleared by an entity hard delete. They are not exposed through the API contract.
-ALTER TABLE notifications ADD COLUMN publication_post_id UUID;
-ALTER TABLE notifications ADD COLUMN publication_rss_feed_item_id UUID;
-
-UPDATE notifications
-SET publication_post_id = post_id,
-    publication_rss_feed_item_id = rss_feed_item_id
-WHERE post_id IS NOT NULL OR rss_feed_item_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_notifications__publication_post_id
 ON notifications (publication_post_id)

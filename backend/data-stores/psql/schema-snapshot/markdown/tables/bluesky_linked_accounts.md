@@ -13,9 +13,9 @@ Not partitioned — growth: unbounded.
 | `handle`                  | `text`                     | yes      |                     |          |           |           | Cached display handle, populated on attachment.                                                                                                           |
 | `link_authorization_id`   | `uuid`                     | no       |                     |          |           |           | Exact authorization generation owning this credential. Lifecycle state lives in bluesky_link_authorizations.                                              |
 | `session_ciphertext`      | `text`                     | no       |                     |          |           |           | AES-256-GCM ciphertext of the SDK session using purpose bluesky:session:<bluesky_did>. Every mutation validates exact authorization status and owner.     |
+| `disconnect_requested_at` | `timestamp with time zone` | yes      |                     |          |           |           | Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked. |
 | `created_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                           |
 | `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                           |
-| `disconnect_requested_at` | `timestamp with time zone` | yes      |                     |          |           |           | Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked. |
 
 **Primary key:** `PRIMARY KEY (bluesky_did)`
 

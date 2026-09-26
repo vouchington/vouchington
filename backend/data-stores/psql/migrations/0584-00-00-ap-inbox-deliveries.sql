@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
   sender_allowed_at TIMESTAMPTZ,
   deferred_until TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
+  first_failed_at TIMESTAMPTZ,
+  retention_expires_at TIMESTAMPTZ,
   last_error TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -54,7 +56,16 @@ CREATE TABLE IF NOT EXISTS ap_inbox_deliveries (
   CONSTRAINT ap_inbox_deliveries__terminal_diagnostics_present CHECK (
     (deferred_until IS NULL AND failed_at IS NULL) OR last_error IS NOT NULL
   ),
-  CONSTRAINT ap_inbox_deliveries__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000)
+  CONSTRAINT ap_inbox_deliveries__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000),
+  CONSTRAINT ap_inbox_deliveries__failed_requires_first_failed CHECK (failed_at IS NULL OR first_failed_at IS NOT NULL),
+  CONSTRAINT ap_inbox_deliveries__first_failed_requires_retention CHECK (first_failed_at IS NULL OR retention_expires_at IS NOT NULL),
+  CONSTRAINT ap_inbox_deliveries__verified_never_failed_has_no_retention CHECK (verified_at IS NULL OR first_failed_at IS NOT NULL OR retention_expires_at IS NULL),
+  CONSTRAINT ap_inbox_deliveries__unverified_requires_retention CHECK (verified_at IS NOT NULL OR retention_expires_at IS NOT NULL),
+  CONSTRAINT ap_inbox_deliveries__first_failed_precedes_failure CHECK (failed_at IS NULL OR first_failed_at <= failed_at),
+  CONSTRAINT ap_inbox_deliveries__unverified_retention_bounded CHECK (verified_at IS NOT NULL OR retention_expires_at <= received_at + INTERVAL '1 hour'),
+  CONSTRAINT ap_inbox_deliveries__verified_failure_retention_bounded CHECK (
+    verified_at IS NULL OR first_failed_at IS NULL OR retention_expires_at <= first_failed_at + INTERVAL '7 days'
+  )
 );
 
 CREATE OR REPLACE TRIGGER trigger_ap_inbox_deliveries_updated_at
@@ -89,6 +100,8 @@ COMMENT ON COLUMN ap_inbox_deliveries.verified_at IS 'When the worker first veri
 COMMENT ON COLUMN ap_inbox_deliveries.sender_allowed_at IS 'Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.';
 COMMENT ON COLUMN ap_inbox_deliveries.deferred_until IS 'Earliest retry time after a valid sender exceeds its hostname delivery allowance.';
 COMMENT ON COLUMN ap_inbox_deliveries.failed_at IS 'Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.';
+COMMENT ON COLUMN ap_inbox_deliveries.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
+COMMENT ON COLUMN ap_inbox_deliveries.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';
 COMMENT ON COLUMN ap_inbox_deliveries.last_error IS 'Latest bounded operational failure message for recovery and operator diagnostics.';
 
 COMMENT ON TABLE ap_inbox_activities IS 'Replay-dedup ledger for the ActivityPub inbox receiver. The marker commits atomically with the activity core database effect; a second delivery of the same activity id is rejected before it reaches any write-path.';
