@@ -163,9 +163,6 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   if (endpoint === '/api/v1/my/notifications/unread' && inboxFixture !== undefined) {
     return Promise.resolve(inboxFixture as T)
   }
-  if (endpoint === '/api/v1/topics' && topicSearchFixture) {
-    return Promise.resolve(storybookAutocompleteResponse(endpoint, options?.searchParams) as T)
-  }
   if (
     endpoint === '/api/v1/communities' &&
     options?.searchParams?.member_id === 'me' &&
@@ -197,6 +194,5 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   }
   const availability = availabilityFixtureBody(endpoint)
   if (availability !== undefined) return Promise.resolve(availability as T)
-
   return clientRequestGet.call(this, endpoint, options) as Promise<T>
 }
