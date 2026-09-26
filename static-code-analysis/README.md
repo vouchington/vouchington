@@ -23,14 +23,16 @@ Pnpm filters the lockfile walk through its platform-installability check. The co
 derives a temporary, command-scoped workspace whose `supportedArchitectures` cover every `os`,
 `cpu`, and `libc` value in the lockfile, including non-runner targets. It runs `pnpm fetch` without
 lifecycle scripts and with incompatible optional packages included in that disposable workspace
-before `pnpm licenses list`. Both commands use the same audit-only content-addressable store beneath
-the temporary workspace, guaranteeing that a clean runner has every package manifest without
-expanding or polluting the normal cached pnpm store. A newly locked platform is included
-automatically, and malformed selectors fail the policy instead of silently under-scanning. The
-temporary workspace and its store are deleted after the scan and do not expand normal developer or
-CI installs with every native binary package. The audit temporarily needs enough free disk for all
-locked platform packages, so clean-runner validation must retain peak-disk evidence when runner
-sizing changes.
+before `pnpm licenses list`. Both commands use a dedicated owner-only store under the pnpm cache
+(`dependency-license-audit-store`), so a later audit reuses content-addressed packages instead of
+downloading every platform again, without writing those packages into the developer store. A newly
+locked platform is included automatically, and malformed selectors fail the policy instead of
+silently under-scanning. The temporary workspace is removed when the audit finishes, when the
+process receives SIGINT, SIGTERM, or SIGHUP, and on the next audit if the previous process died
+first, including SIGKILL. The dedicated store stays in the pnpm cache and does not expand normal
+developer or CI installs with every native binary package. The first audit still needs enough free
+disk for every locked platform package, so clean-runner validation must retain peak-disk evidence
+when runner sizing changes.
 
 LGPL and MPL are denied by default (any future dependency introducing an unreviewed variant fails
 closed) but the two copyleft entries the graph is already known to contain are allowlisted in local

@@ -9,7 +9,9 @@ import { dependencyLicensePolicy } from './policy.mts'
 
 export async function checkDependencyLicensePolicy(
   ctx: SharedContext,
-  dependencies: { collectPnpmLicenseReport?: (repoRoot: string) => PnpmLicenseReport } = {},
+  dependencies: {
+    collectPnpmLicenseReport?: (repoRoot: string) => PnpmLicenseReport | Promise<PnpmLicenseReport>
+  } = {},
 ): Promise<{ errors: string[] }> {
   if (!ctx.isInsideGitRepo) {
     return { errors: [`::error::${ctx.repoRoot} is not inside a git repository`] }
@@ -18,7 +20,7 @@ export async function checkDependencyLicensePolicy(
   const collect = dependencies.collectPnpmLicenseReport ?? collectPnpmLicenseReport
   let report: PnpmLicenseReport
   try {
-    report = collect(ctx.repoRoot)
+    report = await collect(ctx.repoRoot)
   } catch (error) {
     return {
       errors: [

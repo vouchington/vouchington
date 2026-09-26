@@ -78,6 +78,15 @@ describe('checkDependencyLicensePolicy', () => {
     expect(result.errors[0]).toContain('pnpm not found')
   })
 
+  it('surfaces a rejected collection promise as a check error instead of throwing', async () => {
+    const result = await checkDependencyLicensePolicy(insideGitRepoCtx, {
+      collectPnpmLicenseReport: () => Promise.reject(new Error('pnpm fetch aborted')),
+    })
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0]).toContain('failed to collect the pnpm license report')
+    expect(result.errors[0]).toContain('pnpm fetch aborted')
+  })
+
   it('passes on an empty report', async () => {
     const result = await checkDependencyLicensePolicy(insideGitRepoCtx, {
       collectPnpmLicenseReport: () => ({}),
