@@ -36,7 +36,7 @@ describe('lint-links workflow', () => {
     )
 
     expect(checkStep?.run).toBe('./ci/lint-links.sh')
-    expect(checkStep?.env).toMatchObject({ GITHUB_TOKEN: '\${{ github.token }}' })
+    expect(checkStep?.env).toMatchObject({ GITHUB_TOKEN: '${{ github.token }}' })
   })
 
   it('probes the narrowly scoped Lychee exclusions before checking repository links', () => {
