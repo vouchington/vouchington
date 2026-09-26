@@ -22,6 +22,11 @@ type Workflow = {
 
 const workflow = load(readFileSync('.github/workflows/plan-completion.yml', 'utf8')) as Workflow
 
+function numberField(value: unknown, label: string): number {
+  if (typeof value !== 'number') throw new Error(`${label} must be a number`)
+  return value
+}
+
 describe('plan completion advisory workflow', () => {
   it('runs one trusted snapshot on every main push with a retained global lock', () => {
     expect(workflowTriggerNames(workflow.on)).toEqual(['push'])
@@ -40,7 +45,12 @@ describe('plan completion advisory workflow', () => {
     })
     const audit = workflow.jobs?.audit
     expect(audit?.['runs-on']).toBe('ubuntu-slim')
-    expect(audit?.['timeout-minutes']).toBe(5)
+    const jobBudget = numberField(audit?.['timeout-minutes'], 'audit job timeout')
+    const stepBudgets = audit?.steps?.map(step =>
+      numberField(step['timeout-minutes'], 'audit step timeout'),
+    )
+    expect(stepBudgets).toBeDefined()
+    expect(jobBudget).toBeGreaterThan(stepBudgets!.reduce((total, budget) => total + budget, 0))
     expect(audit?.permissions).toEqual({
       contents: 'read',
       issues: 'write',

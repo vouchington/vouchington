@@ -103,11 +103,11 @@ export function candidatePullRequestNumbers(json: string, repository: string): n
           throw new Error('Cross-referenced timeline item is missing an issue source')
         }
         const pullRequest = item.source.issue.pull_request
-        if (pullRequest !== undefined && typeof pullRequest.url !== 'string') {
+        if (pullRequest === undefined) return []
+        const url = pullRequest.url
+        if (typeof url !== 'string') {
           throw new Error('Timeline pull request candidate is missing url')
         }
-        const url = pullRequest?.url
-        if (url === undefined) return []
         const match = pattern.exec(url)
         if (match?.groups === undefined)
           throw new Error('Timeline pull request candidate has invalid url')
