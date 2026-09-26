@@ -1,4 +1,4 @@
-import type { registerWorkerServe } from '@backend/worker-runtime/serve-runtime'
+import type { registerWorkerServe } from '../../worker-runtime/serve-runtime.mts'
 
 export type RegisterWorkerServe = typeof registerWorkerServe
 export type ShutdownCallback = () => void | Promise<void>
@@ -10,7 +10,7 @@ export function makeWorker(close: () => Promise<void> = async () => {}) {
 
 function makeTimeoutMock(): typeof globalThis.setTimeout {
   const timeout = {} as NodeJS.Timeout
-  return (() => timeout) as typeof globalThis.setTimeout
+  return (() => timeout) as unknown as typeof globalThis.setTimeout
 }
 
 const silentConsole = { log: () => {}, error: () => {} }
@@ -41,7 +41,7 @@ export function bootWorkerServe(
   }
   const returned = registerWorkerServe({
     workers: options.workers ?? [makeWorker()],
-    addGracefulShutdownCallback: callback => {
+    addGracefulShutdownCallback: (callback: () => Promise<void>) => {
       options.shutdownCallbacks?.push(callback)
       return 1
     },
