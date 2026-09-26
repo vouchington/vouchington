@@ -3,7 +3,11 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/admin'),
     'getArticleSyncStatus' | 'triggerArticleSync'
   >
-  readonly apiKeys: Pick<typeof import('@/lib/api/client/api-keys'), 'getApiKeys'>
+  readonly adminOAuthClients: Pick<
+    typeof import('@/lib/api/client/admin-oauth-clients'),
+    'getAdminOAuthClients' | 'unverifyOAuthClient' | 'verifyOAuthClient'
+  >
+  readonly apiKeys: Pick<typeof import('@/lib/api/client/api-keys'), 'createApiKey' | 'getApiKeys'>
   readonly auth: Pick<typeof import('@/lib/api/client/auth'), 'acknowledgeOAuthAuthorization'>
   readonly captchaConfig: Pick<
     typeof import('@/lib/api/client/captcha-config'),
@@ -131,6 +135,14 @@ export interface WebFixtureClientEndpointContext {
   readonly myNotifications: Pick<
     typeof import('@/lib/api/client/my-notifications'),
     'getMyWebPushSubscriptionsClient'
+  >
+  readonly oauthApps: Pick<
+    typeof import('@/lib/api/client/oauth-apps'),
+    'createOAuthApp' | 'getOAuthApps' | 'revokeOAuthApp' | 'rotateOAuthAppSecret' | 'updateOAuthApp'
+  >
+  readonly oauthGrants: Pick<
+    typeof import('@/lib/api/client/oauth-grants'),
+    'getOAuthGrants' | 'revokeOAuthGrant'
   >
   readonly podcastEpisodeChapters: Pick<
     typeof import('@/lib/api/client/podcast-episode-chapters'),

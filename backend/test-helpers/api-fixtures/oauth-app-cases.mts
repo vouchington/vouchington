@@ -3,7 +3,6 @@ import type { ApiFixtureCase } from './types.mts'
 const timestamp = '2026-09-01T12:00:00.000Z'
 const appId = '00000000-0000-7000-8000-000000000721'
 const redirectUri = 'https://agent.example.com/oauth/callback'
-const deferredWebConsumers: ApiFixtureCase['consumers'] = []
 
 const oauthApp = {
   id: appId,
@@ -35,7 +34,7 @@ export const oauthAppApiFixtureCases: ApiFixtureCase[] = [
         end_cursor: 'fixture-oauth-app-end-cursor',
       },
     },
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/my/oauth-apps.test.mts'],
   },
   {
@@ -52,7 +51,7 @@ export const oauthAppApiFixtureCases: ApiFixtureCase[] = [
     },
     status: 201,
     body: { oauth_app: oauthApp, client_secret: 'fixture-client-secret' },
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/my/oauth-apps.test.mts'],
   },
   {
@@ -64,7 +63,7 @@ export const oauthAppApiFixtureCases: ApiFixtureCase[] = [
     requestBody: { client_name: 'Renamed Agent' },
     status: 200,
     body: { oauth_app: { ...oauthApp, client_name: 'Renamed Agent' } },
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/my/oauth-apps.test.mts'],
   },
   {
@@ -75,7 +74,7 @@ export const oauthAppApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 204,
     body: null,
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/my/oauth-apps.test.mts'],
   },
   {
@@ -89,7 +88,7 @@ export const oauthAppApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-user',
     status: 201,
     body: { oauth_app: oauthApp, client_secret: 'fixture-rotated-client-secret' },
-    consumers: deferredWebConsumers,
+    consumers: ['web'],
     migratedFrom: ['backend/api/v1/my/oauth-apps.test.mts'],
   },
 ]
