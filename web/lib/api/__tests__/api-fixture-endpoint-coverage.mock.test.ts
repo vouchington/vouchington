@@ -99,7 +99,10 @@ function captureSingleRequest(): CapturedRequest {
     entry.mock.mock.calls.map(args => ({ args: args as unknown[], method: entry.method })),
   )
   const rawFetchCalls = mockClientFetch.mock.calls.map(([input, init]) => ({
-    args: [String(input), init?.body] as unknown[],
+    args: [
+      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+      init?.body,
+    ] as unknown[],
     method: init?.method ?? 'GET',
   }))
   const calls = [...apiCalls, ...rawFetchCalls]

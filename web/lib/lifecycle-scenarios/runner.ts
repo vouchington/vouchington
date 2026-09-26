@@ -6,11 +6,14 @@ import {
   type LifecycleScenarioManifest,
 } from './manifest'
 import { webLifecycleAdapters, type LifecycleObservation } from './adapters'
+import { formatUnknownValue } from '@/lib/format-unknown-value'
 
 function sameJson(actual: unknown, expected: unknown, path: string): void {
   if (typeof actual !== typeof expected || actual === null || expected === null) {
     if (actual !== expected)
-      throw new Error(`${path}: expected ${String(expected)}, got ${String(actual)}`)
+      throw new Error(
+        `${path}: expected ${formatUnknownValue(expected)}, got ${formatUnknownValue(actual)}`,
+      )
     return
   }
   if (Array.isArray(actual) || Array.isArray(expected)) {
@@ -34,7 +37,9 @@ function sameJson(actual: unknown, expected: unknown, path: string): void {
     return
   }
   if (actual !== expected)
-    throw new Error(`${path}: expected ${String(expected)}, got ${String(actual)}`)
+    throw new Error(
+      `${path}: expected ${formatUnknownValue(expected)}, got ${formatUnknownValue(actual)}`,
+    )
 }
 
 function compareObservation(

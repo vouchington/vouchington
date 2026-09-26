@@ -1,6 +1,6 @@
 /* oxlint-disable vitest/prefer-import-in-mock, jest/no-untyped-mock-factory -- web tests use string-literal vi.mock() calls so runtime dynamic imports stay mocked at lazy boundaries. */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { BlueskyConnection } from '../bluesky-connection'
 
@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next/navigation', () => navMockModule)
 
 const mockNav = createNavMock()
+const originalLocationHref = window.location.href
+const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
 vi.mock('sonner', async importOriginal => {
   const actual = await importOriginal<SonnerModule>()
@@ -52,11 +54,13 @@ describe('BlueskyConnection', () => {
     vi.clearAllMocks()
     mockNav.reset()
     mocks.fediverseEnabled = true
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: mocks.locationAssign, pathname: '/my/identity' },
-      writable: true,
-    })
+    window.history.replaceState(null, '', '/my/identity')
+    setLocationAssign(mocks.locationAssign)
+  })
+
+  afterEach(() => {
+    restoreLocationAssign()
+    window.history.replaceState(null, '', originalLocationHref)
   })
 
   it('renders nothing when the fediverse flag is off', () => {
@@ -212,3 +216,16 @@ describe('BlueskyConnection', () => {
     expect(mocks.toastSuccess).not.toHaveBeenCalled()
   })
 })
+
+function setLocationAssign(implementation: typeof window.location.assign) {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: { pathname: window.location.pathname, assign: implementation },
+  })
+}
+
+function restoreLocationAssign() {
+  if (originalWindowLocationDescriptor) {
+    Object.defineProperty(window, 'location', originalWindowLocationDescriptor)
+  }
+}

@@ -198,4 +198,17 @@ describe('CrawlMetaTags', () => {
     expect(screen.getAllByText('width=device-width, initial-scale=1')).toHaveLength(2)
     expect(screen.getAllByText('#ffffff')).toHaveLength(2)
   })
+
+  it('renders nested metadata and cycles without base object text or a render error', () => {
+    const cycle: Record<string, unknown> = {}
+    cycle.self = cycle
+    renderTags({
+      meta: { nested: { values: [1, 'two'] }, cycle, empty: null },
+      lang: null,
+    })
+
+    expect(screen.getByText('{"values":[1,"two"]}')).toBeInTheDocument()
+    expect(screen.getByText('{"self":"[Circular]"}')).toBeInTheDocument()
+    expect(screen.queryByText('[object Object]')).toBeNull()
+  })
 })

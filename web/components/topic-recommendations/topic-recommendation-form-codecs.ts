@@ -1,5 +1,21 @@
 import type { TopicRecommendationMutationInput } from '@/lib/api/client/topic-recommendations'
 import type { Post } from '@/types/posts'
+import { getFormText } from '@/lib/form-data'
+
+export function readTopicRecommendationFormValues(formData: FormData) {
+  return {
+    title: (getFormText(formData, 'title') ?? '').trim(),
+    markdown: (getFormText(formData, 'markdown') ?? '').trim(),
+    topic_title: (getFormText(formData, 'topic_title') ?? '').trim(),
+    topic_slug: (getFormText(formData, 'topic_slug') ?? '').trim(),
+    topic_markdown: (getFormText(formData, 'topic_markdown') ?? '').trim(),
+    topic_hostname: (getFormText(formData, 'topic_hostname') ?? '').trim(),
+    topic_hostnames: getFormText(formData, 'topic_hostnames') ?? '',
+    topic_type: (getFormText(formData, 'topic_type') ?? 'topic').trim(),
+    example_referral_link: (getFormText(formData, 'example_referral_link') ?? '').trim(),
+    landing_page_urls: (getFormText(formData, 'landing_page_urls') ?? '').trim(),
+  }
+}
 
 export function aliasesToText(aliases?: string[] | null): string {
   return aliases?.join('\n') ?? ''

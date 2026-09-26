@@ -74,7 +74,9 @@ vi.mock(
             data-election-id={props.electionId as string}
             data-count-up={String(props.countUp)}
             data-count-down={String(props.countDown)}
-            data-existing-vote-choice={String(props.existingVoteChoice ?? '')}
+            data-existing-vote-choice={
+              typeof props.existingVoteChoice === 'string' ? props.existingVoteChoice : ''
+            }
           />
         )
       },

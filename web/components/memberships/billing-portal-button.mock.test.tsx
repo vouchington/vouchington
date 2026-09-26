@@ -1,11 +1,12 @@
 import { act } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const { mockCreateBillingPortalSession, mockLocationAssign } = vi.hoisted(() => ({
   mockCreateBillingPortalSession: vi.fn<VitestLooseMock>(),
   mockLocationAssign: vi.fn<VitestLooseMock>(),
 }))
+const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
 vi.mock(import('@/lib/api/client'), () => ({
   createBillingPortalSession: mockCreateBillingPortalSession,
@@ -22,12 +23,10 @@ async function clickButton() {
 describe('BillingPortalButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: mockLocationAssign },
-      writable: true,
-    })
+    setLocationAssign(mockLocationAssign)
   })
+
+  afterEach(() => restoreLocationAssign())
 
   it('redirects to the billing portal URL', async () => {
     mockCreateBillingPortalSession.mockResolvedValue({
@@ -65,3 +64,16 @@ describe('BillingPortalButton', () => {
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })
 })
+
+function setLocationAssign(implementation: typeof window.location.assign) {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: { assign: implementation },
+  })
+}
+
+function restoreLocationAssign() {
+  if (originalWindowLocationDescriptor) {
+    Object.defineProperty(window, 'location', originalWindowLocationDescriptor)
+  }
+}

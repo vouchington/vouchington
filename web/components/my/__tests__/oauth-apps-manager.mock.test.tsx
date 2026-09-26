@@ -49,6 +49,7 @@ const emptyPage: ListResponse<OAuthApp> = {
   results: [],
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
 }
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
 
 function renderManager(initialData = emptyPage) {
   return render(
@@ -84,12 +85,16 @@ describe('OAuthAppsManager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     writeText.mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
     mockCreate.mockResolvedValue(issued)
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
+    if (originalClipboardDescriptor) {
+      Object.defineProperty(navigator, 'clipboard', originalClipboardDescriptor)
+    } else {
+      Reflect.deleteProperty(navigator, 'clipboard')
+    }
   })
 
   it('shows the empty state when no apps are registered', () => {

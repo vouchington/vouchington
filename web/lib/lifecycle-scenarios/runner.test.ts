@@ -63,4 +63,27 @@ describe('web lifecycle scenario contract', () => {
       'Invalid moderation appeal viewerRole',
     )
   })
+
+  it('formats object mismatch values without base object stringification', async () => {
+    const manifest = loadLifecycleScenarioManifest()
+    const scenario = getWebLifecycleScenarios(manifest)[0]!
+    const broken = {
+      ...manifest,
+      scenarios: manifest.scenarios.map(candidate =>
+        candidate.id === scenario.id
+          ? {
+              ...candidate,
+              expected: {
+                ...candidate.expected,
+                visibleState: { ...candidate.expected.visibleState, status: { nested: true } },
+              },
+            }
+          : candidate,
+      ),
+    } satisfies LifecycleScenarioManifest
+
+    await expect(runWebLifecycleScenario(scenario.id, broken)).rejects.toThrow(
+      'expected {"nested":true}, got pending',
+    )
+  })
 })

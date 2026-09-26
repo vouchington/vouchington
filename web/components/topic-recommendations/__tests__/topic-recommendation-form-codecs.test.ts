@@ -8,7 +8,35 @@ import {
   landingPageUrlsToText,
   buildTopicRecommendationMutationInput,
   buildTopicRecommendationFieldsPayload,
+  readTopicRecommendationFormValues,
 } from '../topic-recommendation-form-codecs'
+
+describe('readTopicRecommendationFormValues', () => {
+  it('reads and trims text fields while preserving raw hostname lines', () => {
+    const formData = new FormData()
+    formData.set('title', '  Title  ')
+    formData.set('markdown', '  Body  ')
+    formData.set('topic_title', '  Topic  ')
+    formData.set('topic_slug', '  topic-slug  ')
+    formData.set('topic_hostnames', 'first.example\nsecond.example')
+
+    expect(readTopicRecommendationFormValues(formData)).toMatchObject({
+      title: 'Title',
+      markdown: 'Body',
+      topic_title: 'Topic',
+      topic_slug: 'topic-slug',
+      topic_hostnames: 'first.example\nsecond.example',
+      topic_type: 'topic',
+    })
+  })
+
+  it('treats a file in a text-only field as absent', () => {
+    const formData = new FormData()
+    formData.set('topic_title', new File(['bad'], 'title.txt'))
+
+    expect(readTopicRecommendationFormValues(formData).topic_title).toBe('')
+  })
+})
 
 describe('aliasesToText', () => {
   it('joins an array of aliases with newlines', () => {

@@ -4,7 +4,10 @@ import type { UserMetrics } from '@/types/user'
 import { describe, expect, it } from 'vitest'
 import { buildUserProfileDropdownItems } from '../user-detail-tab-definitions'
 
-const t: Translator = (key, params) => (params?.count ? `${key}:${String(params.count)}` : key)
+const t: Translator = (key, params) => {
+  const count = params?.count
+  return (typeof count === 'number' || typeof count === 'string') && count ? `${key}:${count}` : key
+}
 
 interface UserMetricsOverrides extends Omit<Partial<UserMetrics>, 'count' | 'viewer_count'> {
   count?: Partial<UserMetrics['count']>

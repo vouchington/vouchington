@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { SearchInput } from '@/components/shared/search-input'
 import { cn } from '@/lib/utils'
+import { getFormText } from '@/lib/form-data'
 import { FILTER_CONTROL_HEIGHT } from './filter-control-height'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -51,7 +52,7 @@ function ClientSearchFormContent({
       onSubmit={event => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)
-        const query = String(formData.get(searchParamName) ?? '').trim()
+        const query = (getFormText(formData, searchParamName) ?? '').trim()
         const params = new URLSearchParams(window.location.search)
         if (query) {
           params.set(searchParamName, query)

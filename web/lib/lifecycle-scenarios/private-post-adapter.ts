@@ -4,6 +4,7 @@ import {
   stringValue,
   type LifecycleAdapter,
 } from './adapters'
+import { formatUnknownValue } from '@/lib/format-unknown-value'
 
 export const webPrivatePostCollection: LifecycleAdapter = input => {
   const action = input.action.type
@@ -21,7 +22,7 @@ export const webPrivatePostCollection: LifecycleAdapter = input => {
     }
   }
   if (action !== 'load-more') {
-    throw new Error(`Unknown web private-post lifecycle action: ${action}`)
+    throw new Error(`Unknown web private-post lifecycle action: ${formatUnknownValue(action)}`)
   }
   return {
     visibleState: {

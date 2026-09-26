@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { suspendUser, unsuspendUser } from '@/lib/api/client/users'
+import { getFormText } from '@/lib/form-data'
 import { IdentityVerificationAttemptGrant } from './identity-verification-attempt-grant'
 import { UserAdminWarningsCard } from './user-admin-warnings-card'
 import type { User } from '@/types/user'
@@ -45,7 +46,7 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
     setFormState(current => ({ ...current, action: 'suspend' }))
     try {
       const formData = new FormData(event.currentTarget)
-      const trimmedReason = String(formData.get('reason') ?? '').trim()
+      const trimmedReason = (getFormText(formData, 'reason') ?? '').trim()
       const response = await suspendUser(user.id, trimmedReason ? { reason: trimmedReason } : {})
       toast.success(t('extracted.admin.userAdminPanel.userSuspended_8c2f7a11'))
       setDisplayedUser(response.user)

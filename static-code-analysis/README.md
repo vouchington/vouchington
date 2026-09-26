@@ -557,6 +557,13 @@ because nested Oxlint configs do not inherit ancestor overrides. The
 [`no-explicit-any-oxlint` fixture](__tests__/no-explicit-any-oxlint.test.mts) checks both the root
 policy and the effective web behavior.
 
+The root [`typescript/no-base-to-string` and `typescript/no-misused-spread`
+rules](../.oxlintrc.json) are error-level semantic checks. The
+[`semantic-string-and-spread` fixture](__tests__/semantic-string-and-spread-oxlint.test.mts)
+asserts those severities and demonstrates both rejected conversions and accepted primitive/plain
+object counterparts. Consumer fixes preserve each value's actual boundary rather than suppressing
+the rules.
+
 `no-mistakes/no-inline-noop-promise-catch` is enforced for production `backend/**` and `web/**`
 under [`../.oxlintrc.json`](../.oxlintrc.json). Its four test-helper/test-file exclusions keep
 test-only rejection swallowing out of the production inventory. The authoritative 2026-09-10 scan

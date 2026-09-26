@@ -86,8 +86,8 @@ describe('createTopicSectionMetadata', () => {
     })
 
     const title = (result.title as { default?: string })?.default ?? result.title
-    expect(String(title)).toContain('Fintech Daily')
-    expect(String(title)).not.toContain('fintech.example/feed/rss')
+    expect(title).toContain('Fintech Daily')
+    expect(title).not.toContain('fintech.example/feed/rss')
   })
 })
 

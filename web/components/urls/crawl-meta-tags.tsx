@@ -1,6 +1,7 @@
 import { EmbedPreviewCard } from '@/components/shared/embed-preview-card'
 import type { getTranslations } from '@/lib/i18n/get-translations'
 import { selectCrawlEmbedPreview } from '@/lib/embeds/embed-preview'
+import { formatUnknownValue } from '@/lib/format-unknown-value'
 import type { CrawlResponse } from '@/types/api-responses/urls-onboarding-and-trends'
 import type { CrawlerHtmlStructuredObject } from '@/types/api-responses/posts-topics-and-feeds'
 
@@ -119,9 +120,7 @@ export function CrawlMetaTags({
                 <dd className='mt-0.5 break-all text-sm text-foreground'>
                   {value === null
                     ? t('extracted.urls.crawlMetaTags.null_2874d780')
-                    : typeof value === 'object'
-                      ? JSON.stringify(value)
-                      : String(value)}
+                    : formatUnknownValue(value)}
                 </dd>
               </div>
             ))}

@@ -1,11 +1,12 @@
 import { act } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const { mockCreatePurchaseIntent, mockLocationAssign } = vi.hoisted(() => ({
   mockCreatePurchaseIntent: vi.fn<VitestLooseMock>(),
   mockLocationAssign: vi.fn<VitestLooseMock>(),
 }))
+const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
 vi.mock(import('@/lib/api/client'), () => ({
   createMembershipPurchaseIntent: mockCreatePurchaseIntent,
@@ -22,12 +23,10 @@ async function clickButton() {
 describe('CheckoutButton https guard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: mockLocationAssign },
-      writable: true,
-    })
+    setLocationAssign(mockLocationAssign)
   })
+
+  afterEach(() => restoreLocationAssign())
 
   it('redirects to https Stripe URL', async () => {
     mockCreatePurchaseIntent.mockResolvedValue({
@@ -116,3 +115,16 @@ describe('CheckoutButton https guard', () => {
     expect(mockLocationAssign).not.toHaveBeenCalled()
   })
 })
+
+function setLocationAssign(implementation: typeof window.location.assign) {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: { assign: implementation },
+  })
+}
+
+function restoreLocationAssign() {
+  if (originalWindowLocationDescriptor) {
+    Object.defineProperty(window, 'location', originalWindowLocationDescriptor)
+  }
+}
