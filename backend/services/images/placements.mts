@@ -88,8 +88,7 @@ export async function getImagePlacementForCopyright(
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN images image ON image.id = image_placement.image_id
     JOIN posts post ON post.id = image_placement.post_id
-    WHERE placement.placement_kind = 'image'
-      AND ${placementKey} = concat('image-placement:', placement.id)
+    WHERE ${placementKey} = concat('image-placement:', placement.id)
   `)
   const placement = rows[0]
   if (!placement) return null
@@ -134,7 +133,6 @@ async function changeImagePlacementCopyrightWithholding(
     JOIN images image ON image.id = image_placement.image_id
     JOIN posts post ON post.id = image_placement.post_id
     WHERE placement.id = image_placement.placement_id
-      AND placement.placement_kind = 'image'
       AND ${input.placementKey} = concat('image-placement:', placement.id)
       AND placement.revision = ${input.expectedRevision}
       AND placement.retired_at IS NULL

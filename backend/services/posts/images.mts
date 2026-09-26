@@ -9,7 +9,7 @@ import { createPostRevision } from '@services/post-revisions'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { resetPostImageClearance } from './image-publication-state.mts'
 import { syncPostImagePlacements, type PostImagePlacement } from './image-placements.mts'
-import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { assertPostImagesCanBeUpdated } from './images-update-authorization.mts'
 import { completePostImageUpdate } from './complete-post-image-update.mts'
@@ -168,7 +168,7 @@ export async function setPostImages(
   }
   const { savedImages, rollback } = await savePostImagesInTransaction().catch(async err => {
     if (deliveryPrepared) {
-      await compensateFailedImageDeliveryMutation({
+      await repairFailedImageDeliveryMutation({
         postIds: [post.id],
         imageIds: images.map(image => image.image_id),
       }).catch(onError)

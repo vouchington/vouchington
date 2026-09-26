@@ -30,7 +30,6 @@ export function PostDetailMetadata({
           data-pw='post-detail-byline-link'
         >
           <UserAvatar
-            profileImageId={author.profile_image_id}
             profileImagePlacement={author.profile_image_placement}
             username={author.username ?? authorName}
             size='sm'

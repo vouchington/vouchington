@@ -8,9 +8,11 @@ function createMockEvent(
   headers: Record<string, string> = {},
 ): APIGatewayProxyEvent {
   return {
+    rawPath:
+      '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002',
     queryStringParameters: params,
     headers,
-  } as APIGatewayProxyEvent
+  } as unknown as APIGatewayProxyEvent
 }
 
 describe('parseRequest', () => {
@@ -18,7 +20,7 @@ describe('parseRequest', () => {
     const event = createMockEvent({ key: 'test.jpg', w: '800' })
     const result = parseRequest(event)
 
-    expect(result.key).toBe('test.jpg')
+    expect(result.key).toBe('00000000-0000-7000-8000-000000000002')
     expect(result.width).toBe(800)
     expect(result.quality).toBe(75)
     expect(result.lossless).toBe(false)
@@ -87,47 +89,6 @@ describe('parseRequest', () => {
     const result = parseRequest(event)
 
     expect(result.acceptHeader).toBe('image/avif')
-  })
-
-  it('should throw error for missing key', () => {
-    const event = createMockEvent({ w: '800' })
-
-    expect(() => parseRequest(event)).toThrow(RequestParseError)
-    expect(() => parseRequest(event)).toThrow('Missing required parameter: key')
-  })
-
-  it('extracts key from event.path when key query param is absent (production: CloudFront → Lambda Function URL)', () => {
-    // In production, CloudFront forwards /images/{key} as-is without injecting
-    // a `key` query param. http-request-to-lambda-event.mts does the injection
-    // only in local dev.
-    const event = {
-      ...createMockEvent({ w: '800' }),
-      path: '/images/photos/cat.jpg',
-    }
-    const result = parseRequest(event as APIGatewayProxyEvent)
-
-    expect(result.key).toBe('photos/cat.jpg')
-    expect(result.width).toBe(800)
-  })
-
-  it('extracts key from rawPath (Lambda Function URL V2 payload format)', () => {
-    const event = {
-      ...createMockEvent({ w: '400' }),
-      rawPath: '/images/test-image.png',
-    }
-    const result = parseRequest(event as APIGatewayProxyEvent)
-
-    expect(result.key).toBe('test-image.png')
-  })
-
-  it('prefers key query param over path when both are present (local dev fallback)', () => {
-    const event = {
-      ...createMockEvent({ key: 'query-key.jpg', w: '200' }),
-      path: '/images/path-key.jpg',
-    }
-    const result = parseRequest(event as APIGatewayProxyEvent)
-
-    expect(result.key).toBe('query-key.jpg')
   })
 
   it('should throw error for missing width', () => {
@@ -205,62 +166,5 @@ describe('parseRequest', () => {
 
     expect(() => parseRequest(event)).toThrow(RequestParseError)
     expect(() => parseRequest(event)).toThrow('Invalid format')
-  })
-
-  it('should accept multi-segment key with forward slashes', () => {
-    // /images/{key} captures everything after `/images/` (including slashes),
-    // so parseRequest must accept nested prefixes like `photos/cat.jpg`.
-    const event = createMockEvent({ key: 'photos/2024/cat.jpg', w: '800' })
-    const result = parseRequest(event)
-
-    expect(result.key).toBe('photos/2024/cat.jpg')
-  })
-
-  it('should reject key with empty path segments', () => {
-    const event = createMockEvent({ key: 'photos//cat.jpg', w: '800' })
-
-    expect(() => parseRequest(event)).toThrow(RequestParseError)
-    expect(() => parseRequest(event)).toThrow('Invalid key')
-  })
-
-  it('should reject key with leading slash', () => {
-    const event = createMockEvent({ key: '/photos/cat.jpg', w: '800' })
-
-    expect(() => parseRequest(event)).toThrow(RequestParseError)
-    expect(() => parseRequest(event)).toThrow('Invalid key')
-  })
-
-  describe('key path-traversal hardening', () => {
-    // S3's keyspace is flat, so these never escape a bucket, but parseRequest
-    // rejects them anyway: traversal-shaped segments, encoded traversal and null
-    // bytes (excluded from the charset), and control/whitespace characters.
-    it.each([
-      ['classic traversal', '../../../etc/passwd'],
-      ['interior traversal segment', 'a/../b'],
-      ['trailing traversal segment', 'photos/..'],
-      ['lone dot segment', 'a/./b'],
-      ['lone dot key', '.'],
-      ['lone dot-dot key', '..'],
-      ['percent-encoded traversal', '%2e%2e%2fetc%2fpasswd'],
-      ['percent-encoded null byte', 'cat%00.jpg'],
-      ['raw null byte', 'cat\0.jpg'],
-      ['backslash traversal', '..\\..\\secret'],
-      ['embedded space', 'cat .jpg'],
-    ])('should reject %s (%j)', (_label, key) => {
-      const event = createMockEvent({ key, w: '800' })
-
-      expect(() => parseRequest(event)).toThrow(RequestParseError)
-      expect(() => parseRequest(event)).toThrow('Invalid key')
-    })
-
-    it.each([
-      ['dotted hex prefix', 'abc.def/cat.jpg'],
-      ['uuid v7 key', '00000000-0000-7000-8000-000000000001'],
-      ['leading-dot filename', '.hidden.jpg'],
-    ])('should accept legitimate %s (%j)', (_label, key) => {
-      const event = createMockEvent({ key, w: '800' })
-
-      expect(parseRequest(event).key).toBe(key)
-    })
   })
 })

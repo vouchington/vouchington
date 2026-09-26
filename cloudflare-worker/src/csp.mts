@@ -57,7 +57,7 @@ const FACEBOOK_API_ORIGINS = ['https://graph.facebook.com', 'https://www.faceboo
 const HN_ALGOLIA_ORIGIN = 'https://hn.algolia.com'
 
 // CloudFront image-delivery origins. The web image URL builder mints
-// `https://images{,-staging}.voucha.ai/images/<id>` URLs that resolve directly
+// `https://images{,-staging}.voucha.ai/images/placements/...` URLs that resolve directly
 // to CloudFront (DNS no longer routes through this worker). Both hosts are
 // allowed unconditionally so staging and production behave identically.
 const IMAGE_DELIVERY_ORIGINS = ['https://images-staging.voucha.ai', 'https://images.voucha.ai']
@@ -186,7 +186,7 @@ export const buildWebCsp = (
     "default-src 'self'",
     `script-src 'self'${nonce} 'inline-speculation-rules'${devEval} ${GTM_ORIGIN} ${TURNSTILE_ORIGIN} ${OAUTH_SCRIPT_ORIGINS.join(' ')} ${RECAPTCHA_SCRIPT_ORIGINS.join(' ')}${asset}`,
     `style-src 'self' 'unsafe-inline'${asset}`,
-    `img-src 'self' data: https:${devImg} ${IMAGE_DELIVERY_ORIGINS.join(' ')}${asset}`,
+    `img-src 'self' data: blob: https:${devImg} ${IMAGE_DELIVERY_ORIGINS.join(' ')}${asset}`,
     `font-src 'self'${asset}`,
     `frame-src 'self' ${GTM_ORIGIN} ${TURNSTILE_ORIGIN} ${GOOGLE_FRAME_ORIGIN} ${RECAPTCHA_FRAME_ORIGIN} ${VIDEO_EMBED_ORIGINS.join(' ')}`,
     `media-src 'self' https: blob:`,

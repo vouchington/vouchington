@@ -14,9 +14,10 @@ import {
 } from '@voucha/test-helpers'
 import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
 import {
-  compensateFailedImageDeliveryMutation,
+  repairFailedImageDeliveryMutation,
   getImagePlacementDeliveryKey,
   processMediaDeliveryRegistryRecord,
+  publishImagePlacementDeliveryRecord,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
 
@@ -109,7 +110,19 @@ describe('media delivery registry processor', () => {
     vi.spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath').mockResolvedValue({
       $metadata: {},
     })
-    await compensateFailedImageDeliveryMutation({ postIds: [postId], imageIds: [imageId] })
+    {
+      await using transaction = await beginTransaction()
+      await publishImagePlacementDeliveryRecord(
+        {
+          placementId: placement.placement_id,
+          revision: placement.placement_revision,
+          imageId,
+          state: 'withheld',
+        },
+        { query: transaction },
+      )
+    }
+    await repairFailedImageDeliveryMutation({ postIds: [postId], imageIds: [imageId] })
     const deliveryKey = getImagePlacementDeliveryKey({
       placementId: placement.placement_id,
       revision: placement.placement_revision,

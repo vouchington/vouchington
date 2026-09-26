@@ -38,7 +38,6 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
     >
       <div className='flex items-center gap-3'>
         <UserAvatar
-          profileImageId={user?.profile_image_id}
           profileImagePlacement={user?.profile_image_placement}
           username={
             user?.username ?? t('extracted.communities.communityMemberRow.userAvatar_e75e0e7c')

@@ -18,7 +18,10 @@ export {
 } from './asset-admission-lock.mts'
 export { lockImageDeliveryMutation } from './delivery-lock.mts'
 export {
-  lockImageSurfaceOwner,
+  lockUserProfileImageOwners,
+  lockUserProfileLinkImageOwners,
+  lockTopicImageOwners,
+  lockCommunityImageOwners,
   lockImageSurfacePlacements,
   imageSurfaceWhere,
   type ImageSurfaceReference,

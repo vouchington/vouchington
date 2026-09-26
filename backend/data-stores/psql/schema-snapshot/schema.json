@@ -643,7 +643,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_images_id_immutable()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id THEN\n    RAISE EXCEPTION 'image ids are immutable byte identities' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_media_placement": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.placement_kind IS DISTINCT FROM OLD.placement_kind THEN\n    RAISE EXCEPTION 'media placement kind is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_membership_grant_activation_period_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_grant_activation_period_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership grant activation periods cannot be deleted';\n  END IF;\n\n  IF OLD.ended_at IS NULL\n    AND NEW.ended_at IS NOT NULL\n    AND ROW(\n      NEW.id, NEW.membership_grant_id, NEW.user_id, NEW.started_at\n    ) IS NOT DISTINCT FROM ROW(\n      OLD.id, OLD.membership_grant_id, OLD.user_id, OLD.started_at\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'membership grant activation periods only allow an open-to-ended lifecycle transition';\nEND $function$\n"
@@ -904,7 +904,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_status fediverse_integration_statuses;\nBEGIN\n  -- Serialize concurrent triggers for the same topic: acquire a row-level lock on\n  -- topics__fediverse_instances before re-reading the latest change, so whichever\n  -- trigger holds the lock last wins and writes the correct (most-recently-committed) value.\n  PERFORM topic_id FROM topics__fediverse_instances WHERE topic_id = NEW.topic_id FOR UPDATE;\n  SELECT integration_status INTO v_status\n  FROM fediverse_instance_integration_changes\n  WHERE topic_id = NEW.topic_id\n  ORDER BY id DESC LIMIT 1;\n  UPDATE topics__fediverse_instances SET integration_status = v_status\n  WHERE topic_id = NEW.topic_id AND integration_status IS DISTINCT FROM v_status;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    'image', 'placement', placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements (placement_kind) VALUES ('image') RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    'image', 'placement', v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, media_kind, route_kind, asset_id, desired_state\n  ) VALUES (concat('legacy-image:', p_image_id), 'image', 'legacy-image', p_image_id, 'withheld')\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n     placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements DEFAULT VALUES RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n     v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
     },
     "fn_sync_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -36854,30 +36854,17 @@
     },
     "media_delivery_registry_records": {
       "checkConstraints": {
-        "media_delivery_registry_records_check": "CHECK ((((route_kind = 'placement'::text) AND (placement_id IS NOT NULL) AND (placement_revision IS NOT NULL)) OR ((route_kind = 'legacy-image'::text) AND (placement_id IS NULL) AND (placement_revision IS NULL) AND (media_kind = 'image'::text))))",
         "media_delivery_registry_records_check1": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))",
         "media_delivery_registry_records_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
         "media_delivery_registry_records_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
         "media_delivery_registry_records_desired_state_check": "CHECK ((desired_state = ANY (ARRAY['allow'::text, 'withheld'::text])))",
+        "media_delivery_registry_records_exact_key": "CHECK ((delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)))",
         "media_delivery_registry_records_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))",
         "media_delivery_registry_records_generation_check": "CHECK ((generation >= 0))",
-        "media_delivery_registry_records_media_kind_check": "CHECK ((media_kind = 'image'::text))",
         "media_delivery_registry_records_placement_revision_check": "CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))",
-        "media_delivery_registry_records_route_kind_check": "CHECK ((route_kind = ANY (ARRAY['placement'::text, 'legacy-image'::text])))",
         "media_delivery_registry_records_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'failed'::text])))"
       },
       "columns": {
-        "asset_id": {
-          "collation": null,
-          "comment": "Typed immutable image asset authorized or withheld by this exact tuple.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "uuid"
-        },
         "claimed_at": {
           "collation": null,
           "comment": "Time the current worker claim began before it rechecks the authoritative tuple.",
@@ -36924,7 +36911,7 @@
         },
         "delivery_key": {
           "collation": null,
-          "comment": "Exact edge identity: image-placement:<placement UUID>:<revision>:<image UUID>, video-placement equivalent, or legacy-image:<image UUID>.",
+          "comment": "Exact canonical image-placement:<placement UUID>:<revision>:<image UUID> URL identity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -36966,6 +36953,17 @@
           "ordinalPosition": 8,
           "type": "bigint"
         },
+        "image_id": {
+          "collation": null,
+          "comment": "Immutable image bound to the exact public-use placement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
         "invalidated_at": {
           "collation": null,
           "comment": "Time a superseded edge tuple was explicitly invalidated.",
@@ -36976,17 +36974,6 @@
           "nullable": true,
           "ordinalPosition": 13,
           "type": "timestamp with time zone"
-        },
-        "media_kind": {
-          "collation": null,
-          "comment": "Media family served by this delivery tuple; the check grows only when a typed asset branch is added.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
         },
         "next_attempt_at": {
           "collation": null,
@@ -37001,12 +36988,12 @@
         },
         "placement_id": {
           "collation": null,
-          "comment": "Optional typed placement owner required for revision-fenced placement routes.",
+          "comment": "Typed placement authority; never inferred from image existence.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 4,
           "type": "uuid"
         },
@@ -37017,7 +37004,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 5,
           "type": "integer"
         },
@@ -37031,17 +37018,6 @@
           "nullable": true,
           "ordinalPosition": 12,
           "type": "timestamp with time zone"
-        },
-        "route_kind": {
-          "collation": null,
-          "comment": "Trusted delivery route shape: revision-fenced placement or the retained legacy image route.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
         },
         "state": {
           "collation": null,
@@ -37066,11 +37042,11 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.",
+      "comment": "Durable exact image-placement delivery outbox; image and placement parents are retained.",
       "foreignKeys": {
-        "media_delivery_registry_records_asset_id_fkey": {
-          "columns": ["asset_id"],
-          "definition": "FOREIGN KEY (asset_id) REFERENCES images(id) ON DELETE RESTRICT",
+        "media_delivery_registry_records_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -37089,16 +37065,16 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_media_delivery_registry_records__asset": {
+        "idx_media_delivery_registry_records__image": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__asset ON public.media_delivery_registry_records USING btree (asset_id)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__image ON public.media_delivery_registry_records USING btree (image_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "asset_id",
+              "column": "image_id",
               "descending": false,
-              "expression": "asset_id",
+              "expression": "image_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -37192,23 +37168,10 @@
     },
     "media_delivery_repair_markers": {
       "checkConstraints": {
-        "media_delivery_repair_markers_check": "CHECK ((((route_kind = 'placement'::text) AND (placement_id IS NOT NULL) AND (placement_revision IS NOT NULL)) OR ((route_kind = 'legacy-image'::text) AND (placement_id IS NULL) AND (placement_revision IS NULL))))",
         "media_delivery_repair_markers_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
-        "media_delivery_repair_markers_placement_revision_check": "CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))",
-        "media_delivery_repair_markers_route_kind_check": "CHECK ((route_kind = ANY (ARRAY['placement'::text, 'legacy-image'::text])))"
+        "media_delivery_repair_markers_exact_key": "CHECK (\nCASE\n    WHEN (delivery_key ~ '^image-placement:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(0|[1-9][0-9]{0,9}):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) THEN ((split_part(delivery_key, ':'::text, 3))::bigint <= 2147483647)\n    ELSE false\nEND)"
       },
       "columns": {
-        "asset_id": {
-          "collation": null,
-          "comment": "Image snapshot without an FK so repair survives owner rollback and never-committed images.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "uuid"
-        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -37242,39 +37205,6 @@
           "ordinalPosition": 2,
           "type": "bigint"
         },
-        "placement_id": {
-          "collation": null,
-          "comment": "Placement snapshot without an FK so repair survives owner rollback and never-committed placements.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "placement_revision": {
-          "collation": null,
-          "comment": "Exact immutable URL revision captured before denial.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "integer"
-        },
-        "route_kind": {
-          "collation": null,
-          "comment": "Typed placement or legacy-image URL namespace.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -37287,7 +37217,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "FK-free committed repair intent for a successful pre-commit edge denial; drained by the existing media delivery reconciler.",
+      "comment": "FK-free exact-key wakeups for rollback/crash recovery; committed typed authority is re-read under the placement fence.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
@@ -37352,7 +37282,6 @@
     "media_placements": {
       "checkConstraints": {
         "media_placements_check": "CHECK ((((retired_at IS NULL) AND (retirement_reason IS NULL)) OR ((retired_at IS NOT NULL) AND (retirement_reason IS NOT NULL))))",
-        "media_placements_placement_kind_check": "CHECK ((placement_kind = 'image'::text))",
         "media_placements_retirement_reason_check": "CHECK ((retirement_reason = ANY (ARRAY['asset_deleted'::text, 'owner_removed'::text])))",
         "media_placements_revision_check": "CHECK ((revision >= 0))"
       },
@@ -37389,17 +37318,6 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "placement_kind": {
-          "collation": null,
-          "comment": "Typed binding kind. Additional media kinds receive their own immutable binding tables.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
         },
         "retired_at": {
           "collation": null,
@@ -37446,7 +37364,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Media-neutral, durable hosted-use placements. Delivery availability is revision-fenced and never inferred from an asset alone.",
+      "comment": "Durable image-use placements; exact binding and revision authority governs public delivery.",
       "foreignKeys": {},
       "growth": "unbounded",
       "indexes": {

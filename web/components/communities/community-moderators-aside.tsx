@@ -59,7 +59,6 @@ function ModeratorGroup({ title, data }: { title: string; data: CommunityMembers
               className='flex items-center gap-2 text-sm'
             >
               <UserAvatar
-                profileImageId={user.profile_image_id}
                 profileImagePlacement={user.profile_image_placement}
                 username={username}
                 size='sm'

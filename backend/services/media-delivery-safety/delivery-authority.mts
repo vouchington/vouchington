@@ -2,14 +2,13 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 
-/** Called only while the delivery's placement (or legacy image) fence is retained. */
+/** Called only while the exact delivery placement fence is retained. */
 export async function lockImageDeliveryLegalAuthority(
   query: QueryExecutor,
-  record: Pick<ImageDeliveryRecord, 'route_kind' | 'placement_id'>,
+  record: Pick<ImageDeliveryRecord, 'placement_id'>,
 ): Promise<void> {
-  if (record.route_kind === 'placement') {
-    // Filing admission takes the notice lock. Hold it from proof through provider publication.
-    await query(sql`/* imageDeliveryIsAuthorized:noticeLocks */
+  // Filing admission takes the notice lock. Hold it from proof through provider publication.
+  await query(sql`/* imageDeliveryIsAuthorized:noticeLocks */
       SELECT notice.id FROM copyright_notices notice
       WHERE EXISTS (
         SELECT 1 FROM copyright_notice_targets target
@@ -17,22 +16,18 @@ export async function lockImageDeliveryLegalAuthority(
           AND target.placement_key = concat('image-placement:', ${record.placement_id}::uuid)
       ) ORDER BY notice.id FOR NO KEY UPDATE
     `)
-  }
 }
 
 export async function imageDeliveryIsAuthorized(
   query: QueryExecutor,
-  record: Pick<
-    ImageDeliveryRecord,
-    'route_kind' | 'asset_id' | 'placement_id' | 'placement_revision'
-  >,
+  record: Pick<ImageDeliveryRecord, 'image_id' | 'placement_id' | 'placement_revision'>,
 ): Promise<boolean> {
   await lockImageDeliveryLegalAuthority(query, record)
   const statement = sql`/* imageDeliveryIsAuthorized */ SELECT `
   statement.append(imageDeliveryAuthorityProof())
-  statement.append(sql` AS allowed FROM (VALUES (${record.route_kind}::text, ${record.asset_id}::uuid,
+  statement.append(sql` AS allowed FROM (VALUES (${record.image_id}::uuid,
     ${record.placement_id}::uuid, ${record.placement_revision}::integer))
-    authority(route_kind, asset_id, placement_id, placement_revision)`)
+    authority(image_id, placement_id, placement_revision)`)
   const { rows } = await query<{ allowed: boolean }>(statement)
   return rows[0]?.allowed ?? false
 }
@@ -41,21 +36,13 @@ export async function imageDeliveryIsAuthorized(
 export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
   return sql`EXISTS (
       SELECT 1 FROM images image
-      WHERE image.id = authority.asset_id
+      WHERE image.id = authority.image_id
         AND image.deleted_at IS NULL AND image.upload_completed_at IS NOT NULL
         AND image.quarantine_pending_at IS NULL
         AND image.openai_omni_moderation_flagged = FALSE
         AND image.openai_omni_moderation_results IS NOT NULL
         AND image.openai_omni_moderation_created_at IS NOT NULL
-        AND (
-          (authority.route_kind = 'legacy-image'
-            AND NOT EXISTS (SELECT 1 FROM post_images attachment WHERE attachment.image_id = image.id)
-            AND NOT EXISTS (
-              SELECT 1 FROM image_surface_placements surface JOIN media_placements placement
-                ON placement.id = surface.placement_id
-              WHERE surface.image_id = image.id AND placement.retired_at IS NULL
-            ))
-          OR (authority.route_kind = 'placement' AND EXISTS (
+        AND EXISTS (
             SELECT 1 FROM media_placements placement
             WHERE placement.id = authority.placement_id
               AND placement.revision = authority.placement_revision
@@ -116,7 +103,6 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
                     )
                   )
               )
-          ))
-        )
+          )
     )`
 }

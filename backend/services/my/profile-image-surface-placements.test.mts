@@ -4,7 +4,6 @@ import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import {
   getImagePlacementDeliveryKey,
-  getLegacyImageDeliveryKey,
   stageImagePlacementDeliveryRecord,
   stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from '@services/media-delivery-safety'
@@ -97,7 +96,7 @@ describe('image surface placement lifecycle', () => {
     })
   })
 
-  it('keeps one active profile binding and stages both old exact and generic routes withheld on replacement', async () => {
+  it('keeps one active profile binding and stages the old exact route withheld on replacement', async () => {
     const user = await createTestUserDirect()
     const oldImageId = await insertTestImage(user.id)
     const newImageId = await insertTestImage(user.id)
@@ -108,9 +107,6 @@ describe('image surface placement lifecycle', () => {
     await updateProfileImageId(user.id, newImageId)
     const placements = await getTestImageSurfacePlacements({ userId: user.id })
     expect(placements.filter(placement => placement.retired_at === null)).toHaveLength(1)
-    expect(await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(oldImageId))).toMatchObject({
-      desired_state: 'withheld',
-    })
     expect(
       await getTestMediaDeliveryRecord(
         getImagePlacementDeliveryKey({
@@ -120,9 +116,6 @@ describe('image surface placement lifecycle', () => {
         }),
       ),
     ).toMatchObject({ desired_state: 'withheld' })
-    expect(await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(newImageId))).toMatchObject({
-      desired_state: 'withheld',
-    })
   })
 
   it('keeps a profile use retired when its owner removes it during image-delete rollback', async () => {
@@ -173,9 +166,6 @@ describe('image surface placement lifecycle', () => {
 
     await stageCurrentImagePlacementDeliveryRecordsForImageIds([imageId])
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ desired_state: 'allow' })
-    expect(await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(imageId))).toMatchObject({
-      desired_state: 'withheld',
-    })
     expect(
       await isTestImagePlacementPubliclyProjected({
         placementId: placement!.placement_id,

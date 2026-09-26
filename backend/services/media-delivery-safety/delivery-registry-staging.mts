@@ -2,10 +2,7 @@ import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
-import {
-  getImagePlacementDeliveryKey,
-  getLegacyImageDeliveryKey,
-} from './delivery-registry-types.mts'
+import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 
 export async function stagePostImagePlacementDeliveryRecords(
   postId: string,
@@ -14,10 +11,10 @@ export async function stagePostImagePlacementDeliveryRecords(
   const query = options.query ?? write
   await query(sql`/* stagePostImagePlacementDeliveryRecords */
     INSERT INTO media_delivery_registry_records (
-      delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
+      delivery_key, placement_id, placement_revision, image_id, desired_state
     )
     SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-      'image', 'placement', placement.id, placement.revision, binding.image_id, 'allow'
+      placement.id, placement.revision, binding.image_id, 'allow'
     FROM image_placements binding
     JOIN media_placements placement ON placement.id = binding.placement_id
     JOIN images image ON image.id = binding.image_id
@@ -44,35 +41,6 @@ export async function stagePostImagePlacementDeliveryRecords(
   `)
 }
 
-export async function stageLegacyImageDeliveryRecord(
-  imageId: string,
-  state: MediaDeliveryRegistryState,
-  options: QueryOptions & { forceGeneration?: boolean } = {},
-): Promise<{ deliveryKey: string; generation: string }> {
-  const query = options.query ?? write
-  const forceGeneration = options.forceGeneration ?? false
-  const deliveryKey = getLegacyImageDeliveryKey(imageId)
-  const { rows } = await query<{ generation: string }>(sql`/* stageLegacyImageDeliveryRecord */
-    INSERT INTO media_delivery_registry_records (delivery_key, media_kind, route_kind, asset_id, desired_state)
-    VALUES (${deliveryKey}, 'image', 'legacy-image', ${imageId}, ${state})
-    ON CONFLICT (delivery_key) DO UPDATE
-    SET desired_state = EXCLUDED.desired_state, state = 'pending', claimed_at = NULL,
-      completed_at = NULL, projected_at = NULL, invalidated_at = NULL, next_attempt_at = NULL,
-      failure_message = NULL, delivery_attempt_count = 0,
-      generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
-        ELSE media_delivery_registry_records.generation END
-    WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-      OR ${forceGeneration}
-    RETURNING generation
-  `)
-  if (rows[0]) return { deliveryKey, generation: rows[0].generation }
-  const { rows: currentRows } = await query<{ generation: string }>(sql`
-    /* stageLegacyImageDeliveryRecord:current */
-    SELECT generation FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
-  `)
-  return { deliveryKey, generation: currentRows[0]!.generation }
-}
-
 export async function stageImagePlacementDeliveryRecord(
   input: {
     placementId: string
@@ -87,8 +55,8 @@ export async function stageImagePlacementDeliveryRecord(
   const forceGeneration = options.forceGeneration ?? false
   const { rows } = await query<{ generation: string }>(sql`/* stageImagePlacementDeliveryRecord */
     INSERT INTO media_delivery_registry_records (
-      delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
-    ) VALUES (${deliveryKey}, 'image', 'placement', ${input.placementId}, ${input.revision},
+      delivery_key, placement_id, placement_revision, image_id, desired_state
+    ) VALUES (${deliveryKey}, ${input.placementId}, ${input.revision},
       ${input.imageId}, ${input.state})
     ON CONFLICT (delivery_key) DO UPDATE
     SET desired_state = EXCLUDED.desired_state,

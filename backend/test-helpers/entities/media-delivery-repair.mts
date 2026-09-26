@@ -99,7 +99,7 @@ export async function advanceTestDeliveryPlacementRevision(
 export async function reconcileTestDeliveryRepairMarker(deliveryKey: string): Promise<void> {
   const { rows } = await read<Parameters<typeof reconcileDeliveryRepairMarker>[0]>(sql`
     /* reconcileTestDeliveryRepairMarker */
-    SELECT delivery_key, marker_token, route_kind, placement_id, placement_revision, asset_id
+    SELECT delivery_key, marker_token
     FROM media_delivery_repair_markers WHERE delivery_key = ${deliveryKey}
   `)
   if (!rows[0]) throw new Error('Owned delivery repair marker missing')

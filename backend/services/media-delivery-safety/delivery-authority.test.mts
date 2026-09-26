@@ -15,7 +15,6 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getImagePlacementDeliveryKey,
-  getLegacyImageDeliveryKey,
   lockImageDeliveryMutation,
   lockImageAssetAdmission,
   processMediaDeliveryRegistryRecord,
@@ -23,7 +22,6 @@ import {
   publishStagedMediaDeliveryRecord,
   reconcileMediaDeliveryRepairMarkers,
   stageImagePlacementDeliveryRecord,
-  stageLegacyImageDeliveryRecord,
 } from './index.mts'
 import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
 import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
@@ -177,15 +175,6 @@ describe('delivery authority and durable denial repair', () => {
     await reconcileTestDeliveryRepairMarker(deliveryKey)
     expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
-  })
-
-  it('refuses a legacy allow when the asset belongs to an active surface', async () => {
-    const fixture = await createSurface()
-    const edge = enableEdge()
-    const deliveryKey = getLegacyImageDeliveryKey(fixture.tuple.imageId)
-    await stageLegacyImageDeliveryRecord(fixture.tuple.imageId, 'allow')
-    await processMediaDeliveryRegistryRecord(deliveryKey)
-    expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
   })
 
   it('repairs an unauthorized allow denial accepted before invalidation fails and authority recovers', async () => {

@@ -17,13 +17,13 @@ describe('TopicLogo', () => {
   it('renders a Next image with the fixed topic logo dimensions', () => {
     render(
       <TopicLogo
-        imageId='logo-123'
+        placement={{ placement_id: 'placement-123', placement_revision: 0, image_id: 'logo-123' }}
         name='Test Card'
       />,
     )
 
     const image = screen.getByAltText('Test Card logo')
-    expect(image).toHaveAttribute('src', '/images/logo-123?w=200')
+    expect(image).toHaveAttribute('src', '/images/placements/placement-123/0/logo-123?w=200')
     expect(image).toHaveAttribute('width', '200')
     expect(image).toHaveAttribute('height', '200')
     expect(image).toHaveAttribute('data-unoptimized', 'true')

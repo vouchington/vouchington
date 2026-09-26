@@ -12,8 +12,7 @@ export async function clearUnavailableImagePlacementCopyrightWithholding(
     UPDATE media_placements placement
     SET copyright_withheld_at = NULL,
         revision = placement.revision + 1
-    WHERE placement.placement_kind = 'image'
-      AND ${placementKey} = concat('image-placement:', placement.id)
+    WHERE ${placementKey} = concat('image-placement:', placement.id)
       AND placement.copyright_withheld_at IS NOT NULL
   `)
 }

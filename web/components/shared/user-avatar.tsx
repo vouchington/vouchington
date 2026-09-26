@@ -1,5 +1,5 @@
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { getImageUrl, getPlacementImageUrl } from '@/lib/utils/image-url'
+import { getPlacementImageUrl } from '@/lib/utils/image-url'
 import { cn } from '@/lib/utils'
 import type { ImagePlacementTuple } from '@/types/user'
 
@@ -18,19 +18,14 @@ const SIZE_PIXELS: Record<AvatarSize, number> = {
 }
 
 interface UserAvatarProps {
-  profileImageId: string | null | undefined
   profileImagePlacement?: ImagePlacementTuple | null
-  /** Generic image delivery is reserved for an in-progress upload preview. */
-  isUploadPreview?: boolean
   username: string
   size?: AvatarSize
   className?: string
 }
 
 export function UserAvatar({
-  profileImageId,
   profileImagePlacement,
-  isUploadPreview = false,
   username,
   size = 'md',
   className,
@@ -42,18 +37,14 @@ export function UserAvatar({
       data-pw='user-avatar'
       className={cn(SIZE_CLASSES[size], className)}
     >
-      {(profileImagePlacement || (isUploadPreview && profileImageId)) && (
+      {profileImagePlacement && (
         <AvatarImage
-          src={
-            profileImagePlacement
-              ? getPlacementImageUrl(
-                  profileImagePlacement.placement_id,
-                  profileImagePlacement.placement_revision,
-                  profileImagePlacement.image_id,
-                  { width: SIZE_PIXELS[size] },
-                )
-              : getImageUrl(profileImageId!, { width: SIZE_PIXELS[size] })
-          }
+          src={getPlacementImageUrl(
+            profileImagePlacement.placement_id,
+            profileImagePlacement.placement_revision,
+            profileImagePlacement.image_id,
+            { width: SIZE_PIXELS[size] },
+          )}
           alt={username}
         />
       )}

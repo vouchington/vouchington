@@ -64,8 +64,7 @@ export async function findCopyrightImageSimilarityCandidates(input: {
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN images image ON image.id = image_placement.image_id
     JOIN posts post ON post.id = image_placement.post_id
-    WHERE placement.placement_kind = 'image'
-      AND placement.retired_at IS NULL
+    WHERE placement.retired_at IS NULL
       AND placement.copyright_withheld_at IS NULL
       AND concat('image-placement:', placement.id) <> source.placement_key
       AND image.deleted_at IS NULL

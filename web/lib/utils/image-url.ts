@@ -11,10 +11,6 @@
 
 import { getImageOrigin } from './image-origin'
 
-export function getImageUrl(imageId: string, opts: { width: number; quality?: number }): string {
-  return getDeliveryUrl(`/images/${imageId}`, opts)
-}
-
 /**
  * Builds a placement-bound delivery URL for media attached to a post. The
  * revision is part of the delivery identity so edge authorization can reject

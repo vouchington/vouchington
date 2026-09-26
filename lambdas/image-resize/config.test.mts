@@ -9,7 +9,7 @@ import {
 
 describe('resize cache and decode constants', () => {
   it('bumps CACHE_VERSION when resize semantics change', () => {
-    expect(CACHE_VERSION).toBe('v2')
+    expect(CACHE_VERSION).toBe('v3')
   })
 
   it('caps decoded Sharp input at 24 megapixels', () => {

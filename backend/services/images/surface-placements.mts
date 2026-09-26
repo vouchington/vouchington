@@ -4,7 +4,6 @@ import type { ImagePlacementRetirement } from './placements.mts'
 import sql from 'sql-template-strings'
 import {
   publishImagePlacementDeliveryRecord,
-  publishLegacyImageDeliveryRecord,
   stageImagePlacementDeliveryRecord,
   lockImageSurfacePlacements,
   lockImageAssetAdmission,
@@ -116,7 +115,7 @@ export async function syncImageSurfacePlacement(
     const columns = surfaceColumns(reference)
     const { rows } = await query<ImagePlacementTuple>(sql`/* syncImageSurfacePlacement:create */
       WITH inserted_placement AS (
-        INSERT INTO media_placements (placement_kind) VALUES ('image')
+        INSERT INTO media_placements DEFAULT VALUES
         RETURNING id, revision
       ), inserted_surface AS (
         INSERT INTO image_surface_placements (
@@ -141,7 +140,6 @@ export async function syncImageSurfacePlacement(
     },
     { query },
   )
-  await publishLegacyImageDeliveryRecord(placement.image_id, 'withheld', { query })
   return placement
 }
 

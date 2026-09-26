@@ -38,7 +38,6 @@ export function UserSearchListItemContent({
           prefetch={false}
         >
           <UserAvatar
-            profileImageId={user.profile_image_id}
             profileImagePlacement={user.profile_image_placement}
             username={username}
             className='shrink-0'

@@ -3752,6 +3752,7 @@
 {"id":"copy.extracted.webSearch.webSearchListClient.tryADifferentSearchQuery_67989328","value":"Prueba con otra búsqueda."},
 {"id":"copy.extracted.webSearch.webSearchResultItem.urlMatch_2447c943","value":"Coincidencia de URL"},
 {"id":"copy.extracted.x.page.completingXSignIn_cba21950","value":"Completando inicio de sesión de X"},
+{"id":"copy.images.uploadPreviewUnavailable","value":"Imagen subida. Vista previa no disponible."},
 {"id":"copy.my.connectedAppsManager.connectedAppRow.authorizedConsentedatNotUsedYet","value":"Autorizada {consentedAt} · Aún no se ha usado"},
 {"id":"copy.my.oauthAppsManager.redirectUriErrors.duplicate","value":"Las URI de redirección deben ser únicas."},
 {"id":"copy.my.oauthAppsManager.redirectUriErrors.invalidCount","value":"Ingresa entre 1 y 10 URI de redirección."},

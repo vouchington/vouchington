@@ -21,7 +21,7 @@ import {
 import type { PrivateUser } from './types.mts'
 import {
   prepublishImageSurfaceDenials,
-  lockImageSurfaceOwner,
+  lockUserProfileImageOwners,
 } from '@services/media-delivery-safety'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
 
@@ -85,7 +85,7 @@ async function lockAndGetUserDeletionTarget(
   userId: string,
 ): Promise<UserDeletionTarget> {
   await lockUserDeletionLifecycle(query, userId)
-  await lockImageSurfaceOwner({ surfaceKind: 'user-profile-image', userId }, query)
+  await lockUserProfileImageOwners([userId], query)
   return getUserDeletionTarget(query, userId)
 }
 

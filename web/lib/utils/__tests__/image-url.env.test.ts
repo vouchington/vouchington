@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { buildPlacementImagePath, getImageUrl, getPlacementImageUrl } from '../image-url'
+import { buildPlacementImagePath, getPlacementImageUrl } from '../image-url'
 
-describe('getImageUrl', () => {
+describe('getPlacementImageUrl', () => {
   const originalImageOrigin = process.env.IMAGE_ORIGIN
 
   beforeEach(() => {
@@ -26,24 +26,24 @@ describe('getImageUrl', () => {
   })
 
   it('appends width param', () => {
-    const url = getImageUrl('abc123', { width: 400 })
+    const url = getPlacementImageUrl('placement-123', 0, 'abc123', { width: 400 })
     expect(url).toContain('?w=400')
   })
 
   it('appends quality param', () => {
-    const url = getImageUrl('abc123', { width: 400, quality: 80 })
+    const url = getPlacementImageUrl('placement-123', 0, 'abc123', { width: 400, quality: 80 })
     expect(url).toContain('q=80')
   })
 
   it('appends both width and quality', () => {
-    const url = getImageUrl('abc123', { width: 200, quality: 75 })
+    const url = getPlacementImageUrl('placement-123', 0, 'abc123', { width: 200, quality: 75 })
     expect(url).toContain('w=200')
     expect(url).toContain('q=75')
   })
 
   it('uses the imageId in the URL path', () => {
     const imageId = '01927abc-def0-7000-1234-56789abcdef0'
-    const url = getImageUrl(imageId, { width: 400 })
+    const url = getPlacementImageUrl('placement-123', 0, imageId, { width: 400 })
     expect(url).toContain(imageId)
   })
 
@@ -68,23 +68,27 @@ describe('getImageUrl', () => {
     expect(buildPlacementImagePath()).toBeUndefined()
   })
 
-  it('returns a relative /images/{id}?w=... URL when no host is configured (local dev)', () => {
-    const url = getImageUrl('test.jpg', { width: 400 })
-    expect(url).toBe('/images/test.jpg?w=400')
+  it('returns a relative /images/placements/{placement}/0/{id}?w=... URL when no host is configured (local dev)', () => {
+    const url = getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })
+    expect(url).toBe('/images/placements/placement-123/0/test.jpg?w=400')
   })
 
   it('uses IMAGE_ORIGIN as the runtime origin (server-side)', () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.voucha.ai')
-    const url = getImageUrl('test.jpg', { width: 400, quality: 75 })
-    expect(url).toBe('https://images.voucha.ai/images/test.jpg?w=400&q=75')
+    const url = getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400, quality: 75 })
+    expect(url).toBe(
+      'https://images.voucha.ai/images/placements/placement-123/0/test.jpg?w=400&q=75',
+    )
   })
 
   it('reads window.__IMAGE_ORIGIN__ when present (client-side)', () => {
     ;(globalThis as { window?: { __IMAGE_ORIGIN__?: string } }).window = {
       __IMAGE_ORIGIN__: 'https://images-staging.voucha.ai',
     }
-    const url = getImageUrl('test.jpg', { width: 400 })
-    expect(url).toBe('https://images-staging.voucha.ai/images/test.jpg?w=400')
+    const url = getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })
+    expect(url).toBe(
+      'https://images-staging.voucha.ai/images/placements/placement-123/0/test.jpg?w=400',
+    )
   })
 
   it('window.__IMAGE_ORIGIN__ takes precedence over IMAGE_ORIGIN', () => {
@@ -92,21 +96,23 @@ describe('getImageUrl', () => {
     ;(globalThis as { window?: { __IMAGE_ORIGIN__?: string } }).window = {
       __IMAGE_ORIGIN__: 'http://localhost:9100',
     }
-    const url = getImageUrl('test.jpg', { width: 400 })
-    expect(url).toBe('http://localhost:9100/images/test.jpg?w=400')
+    const url = getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })
+    expect(url).toBe('http://localhost:9100/images/placements/placement-123/0/test.jpg?w=400')
   })
 
   it('throws when deployed production has no host configured', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('ENVIRONMENT', 'production')
-    expect(() => getImageUrl('test.jpg', { width: 400 })).toThrow('IMAGE_ORIGIN')
+    expect(() => getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })).toThrow(
+      'IMAGE_ORIGIN',
+    )
   })
 
   it('does not throw when NODE_ENV=production and IMAGE_ORIGIN is set', () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
-    const url = getImageUrl('test.jpg', { width: 400 })
-    expect(url).toBe('https://images.example.com/images/test.jpg?w=400')
+    const url = getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })
+    expect(url).toBe('https://images.example.com/images/placements/placement-123/0/test.jpg?w=400')
   })
 
   it('does not throw when NODE_ENV=production and window.__IMAGE_ORIGIN__ is set', () => {
@@ -114,7 +120,7 @@ describe('getImageUrl', () => {
     ;(globalThis as { window?: { __IMAGE_ORIGIN__?: string } }).window = {
       __IMAGE_ORIGIN__: 'https://images.voucha.ai',
     }
-    const url = getImageUrl('test.jpg', { width: 400 })
-    expect(url).toBe('https://images.voucha.ai/images/test.jpg?w=400')
+    const url = getPlacementImageUrl('placement-123', 0, 'test.jpg', { width: 400 })
+    expect(url).toBe('https://images.voucha.ai/images/placements/placement-123/0/test.jpg?w=400')
   })
 })

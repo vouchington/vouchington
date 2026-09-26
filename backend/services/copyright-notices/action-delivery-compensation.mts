@@ -1,4 +1,4 @@
-import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
   failCopyrightActionIntent,
@@ -13,7 +13,7 @@ export async function compensateCopyrightActionFailure(
   error: unknown,
 ): Promise<'blocked'> {
   if (intent.action === 'withhold')
-    await compensateFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
+    await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
   if (restorePublishedTuple) {
     await dependencies.publishImagePlacementDeliveryRecord({
       ...restorePublishedTuple,

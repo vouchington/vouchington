@@ -16,7 +16,7 @@ export function parseRouterRequest(
   // Detect route type
   // OG route: /og/{base64url}
   // Sideload route: /sideload/{base64url}
-  // S3 route: everything else (uses query params)
+  // Uploaded images require an exact placement path; other paths are rejected below.
   if (isOgRequest(event)) {
     const ogRequest = parseOgRequest(event, options.sideloadSigningKeys)
     return {
@@ -33,7 +33,7 @@ export function parseRouterRequest(
     }
   }
 
-  // Default to S3 route
+  // Validate the concrete placement route before reading S3.
   const s3Request = parseRequest(event)
   return {
     type: 's3',

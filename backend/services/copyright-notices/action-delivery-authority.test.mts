@@ -180,7 +180,6 @@ describe('copyright action persisted delivery authority', () => {
     await markTestMediaDeliveryRecordFailed(deliveryKey)
     await using authority = await beginTransaction()
     await lockImageDeliveryLegalAuthority(authority, {
-      route_kind: 'placement',
       placement_id: current.placementId,
     })
     {

@@ -2,10 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import {
-  publishImagePlacementDeliveryRecord,
-  publishLegacyImageDeliveryRecord,
-} from './delivery-registry-publish.mts'
+import { publishImagePlacementDeliveryRecord } from './delivery-registry-publish.mts'
 
 export async function prepublishImagePlacementDenials(
   input: { postId?: string; imageId?: string; retainImageIds?: string[] },
@@ -62,5 +59,4 @@ export async function prepublishImageDeliveryDenials(
     return
   }
   await prepublishImagePlacementDenials({ imageId }, options)
-  await publishLegacyImageDeliveryRecord(imageId, 'withheld', options)
 }

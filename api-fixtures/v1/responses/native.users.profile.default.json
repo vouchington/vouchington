@@ -4,10 +4,10 @@
       "created_at": "2026-07-01T16:00:00Z",
       "handle": null,
       "id": "link-1",
-      "image_id": "profile-link-image-1",
+      "image_id": "00000000-0000-7000-8000-000000000202",
       "image_placement": {
-        "image_id": "profile-link-image-1",
-        "placement_id": "placement-profile-link-image-1",
+        "image_id": "00000000-0000-7000-8000-000000000202",
+        "placement_id": "00000000-0000-7000-8000-000000000302",
         "placement_revision": 1
       },
       "link_type": "url",
@@ -40,10 +40,10 @@
     "moderation_email_timezone": "America/Los_Angeles",
     "moderation_emails_enabled": true,
     "news_digest_frequency": "weekly",
-    "profile_image_id": "avatar-1",
+    "profile_image_id": "00000000-0000-7000-8000-000000000201",
     "profile_image_placement": {
-      "image_id": "avatar-1",
-      "placement_id": "placement-user-avatar-1",
+      "image_id": "00000000-0000-7000-8000-000000000201",
+      "placement_id": "00000000-0000-7000-8000-000000000301",
       "placement_revision": 2
     },
     "rewards_program_statuses_visibility": "everyone",

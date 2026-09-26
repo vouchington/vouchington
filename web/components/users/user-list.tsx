@@ -119,7 +119,6 @@ export function UserList({
               </div>
               {user.profile_image_id && (
                 <UserAvatar
-                  profileImageId={user.profile_image_id}
                   profileImagePlacement={user.profile_image_placement}
                   username={username}
                   className='flex-shrink-0'

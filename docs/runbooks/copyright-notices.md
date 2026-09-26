@@ -114,7 +114,9 @@ intent through the domain recovery path and create no replacement until staff co
 placement is within the case.
 
 For an edge mismatch after a failed or rolled-back publication, use the existing media-delivery
-worker's durable repair-marker reconciliation. It rechecks current exact-tuple authority before
+worker's durable exact-key repair reconciliation. A wakeup contains no entity snapshot; repair
+re-reads committed binding authority even when the original outbox insert rolled back. It rechecks
+current exact-tuple authority before
 publishing recovery; never manufacture an allow or manually advance a generation. See the
 [media-delivery safety protocol](../../backend/services/media-delivery-safety/README.md) for the
 publication fence, repair markers, and bounded reconciliation contract.

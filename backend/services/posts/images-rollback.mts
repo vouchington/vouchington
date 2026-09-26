@@ -9,7 +9,7 @@ import {
 } from '@services/post-clearance'
 import { syncPostImagePlacements } from './image-placements.mts'
 import {
-  compensateFailedImageDeliveryMutation,
+  repairFailedImageDeliveryMutation,
   lockImageDeliveryMutation,
   lockImageAssetAdmission,
 } from '@services/media-delivery-safety'
@@ -158,7 +158,7 @@ export async function rollbackPostImages(
   const result = await rollbackImagesInTransaction(query)
   await query.commit()
   if (result) {
-    await compensateFailedImageDeliveryMutation({ postIds: [postId], imageIds: deliveryImageIds })
+    await repairFailedImageDeliveryMutation({ postIds: [postId], imageIds: deliveryImageIds })
   }
   return result
 }

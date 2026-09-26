@@ -9,7 +9,8 @@ import {
   mockUploadImageFile,
 } from '@/test-helpers/components/posts/post-form-images.mock-support'
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mockObjectUrls } from '@/test-helpers/object-urls'
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -19,6 +20,7 @@ import type { Post } from '@/types/posts'
 
 describe('PostForm image state', () => {
   beforeEach(() => {
+    mockObjectUrls()
     mockRouterPush.mockClear()
     mockCreatePost.mockClear()
     mockUpdatePost.mockClear()
@@ -26,13 +28,14 @@ describe('PostForm image state', () => {
     mockUploadImageFile.mockClear()
     mockToastError.mockClear()
   })
+  afterEach(() => vi.unstubAllGlobals())
 
-  it('includes uploaded images in createPost payload', async () => {
+  it('preserves the successful upload ID in submission when local bytes cannot decode', async () => {
     mockUploadImageFile.mockResolvedValue('new-img-id')
     mockCreatePost.mockResolvedValue({ post: { ...mockDiscussion, id: 'new-1' } })
     render(<PostForm postType='discussion' />)
 
-    const file = new File(['content'], 'photo.jpg', { type: 'image/jpeg' })
+    const file = new File(['content'], 'photo.heic', { type: 'image/heic' })
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(fileInput, { target: { files: [file] } })
 
@@ -43,6 +46,9 @@ describe('PostForm image state', () => {
       },
       { timeout: IMAGE_UPLOAD_WAIT_TIMEOUT },
     )
+
+    fireEvent.error(screen.getByAltText('Uploaded image'))
+    expect(screen.getByRole('status')).toHaveTextContent('Image uploaded. Preview unavailable.')
 
     fireEvent.change(screen.getByPlaceholderText('Write your post...'), {
       target: { value: 'Post content' },

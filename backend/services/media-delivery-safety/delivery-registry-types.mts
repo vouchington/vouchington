@@ -3,10 +3,9 @@ import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-reg
 export type ImageDeliveryRecord = {
   delivery_key: string
   desired_state: MediaDeliveryRegistryState
-  route_kind: 'placement' | 'legacy-image'
-  placement_id: string | null
-  placement_revision: number | null
-  asset_id: string
+  placement_id: string
+  placement_revision: number
+  image_id: string
   generation: string
 }
 
@@ -27,14 +26,27 @@ export function getImagePlacementDeliveryKey(input: {
   return `image-placement:${input.placementId}:${input.revision}:${input.imageId}`
 }
 
-export function getLegacyImageDeliveryKey(imageId: string): string {
-  return `legacy-image:${imageId}`
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const IMAGE_PLACEMENT_KEY = new RegExp(`^image-placement:(${UUID}):(0|[1-9][0-9]*):(${UUID})$`)
+
+/** Only canonical immutable placement URL identities may enter authority recovery. */
+export function parseImagePlacementDeliveryKey(deliveryKey: string): {
+  placementId: string
+  revision: number
+  imageId: string
+} {
+  const match = IMAGE_PLACEMENT_KEY.exec(deliveryKey)
+  const revision = Number(match?.[2])
+  if (
+    !match ||
+    match[0] !== deliveryKey ||
+    !Number.isSafeInteger(revision) ||
+    revision > 2147483647
+  )
+    throw new Error('Invalid image placement delivery key')
+  return { placementId: match[1]!, revision, imageId: match[3]! }
 }
 
 export function getMediaDeliveryPath(record: ImageDeliveryRecord): string {
-  if (record.route_kind === 'legacy-image') return `/images/${record.asset_id}`
-  if (!record.placement_id || record.placement_revision === null) {
-    throw new Error(`Placement delivery record ${record.delivery_key} is missing its exact tuple`)
-  }
-  return `/images/placements/${record.placement_id}/${record.placement_revision}/${record.asset_id}`
+  return `/images/placements/${record.placement_id}/${record.placement_revision}/${record.image_id}`
 }

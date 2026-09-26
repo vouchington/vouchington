@@ -1,11 +1,7 @@
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
-import {
-  beginTransaction,
-  registerPostRollbackAction,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import type { CommunityPostReview } from '@services/communities/types'
 import { getPostByAny } from './get.mts'
@@ -16,14 +12,12 @@ import { validateCreatePostInput, validatePostCategories } from './create/valida
 import { addUrl } from '@services/urls/upsert'
 import { getUrlById } from '@services/urls/get'
 import { recordCreatedPostPublicationChange } from './create/publication-change.mts'
-import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import type { PostCategoryFinalization } from './post-category-finalizations.mts'
 import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import { finalizePreparedPost } from './create/finalize.mts'
 export { createPost } from './create-post.mts'
 export const preparePostWithCommunityReviews = async (
@@ -41,7 +35,6 @@ export const preparePostWithCommunityReviews = async (
   let resolvedUrlHostnameId: string | undefined
   let sourceUrlId: string | undefined
   let updates: CreatePostInput = input
-  let deliveryPrepared = false
   const createInTransaction = async (query: TransactionQuery) => {
     await lockActivePostAuthorImageAdmission(
       query,
@@ -49,16 +42,6 @@ export const preparePostWithCommunityReviews = async (
       input.images?.map(image => image.image_id) ?? [],
     )
     const options = { query }
-    deliveryPrepared = true
-    if (input.images?.length) {
-      // Register before the first cross-store deny. A later image can fail after an earlier
-      // DynamoDB denial, and caller-owned transactions otherwise have no rollback compensation.
-      registerPostRollbackAction(query, () =>
-        compensateFailedImageDeliveryMutation({
-          imageIds: input.images!.map(image => image.image_id),
-        }),
-      )
-    }
     await preparePostImageDeliveryMutation(query, {
       imageIds: input.images?.map(image => image.image_id) ?? [],
     })
@@ -158,12 +141,7 @@ export const preparePostWithCommunityReviews = async (
   }
   const post = await (
     options.query ? createInTransaction(options.query) : createInOwnedTransaction()
-  ).catch(async error => {
-    if (deliveryPrepared && !options.query) {
-      await compensateFailedImageDeliveryMutation({
-        imageIds: input.images?.map(image => image.image_id) ?? [],
-      }).catch(onError)
-    }
+  ).catch(error => {
     const pgError = error as { code?: string; constraint?: string }
     if (pgError.code === '23503') {
       if (

@@ -7,6 +7,14 @@
 
 ## Image Proxying
 
+Uploaded images render only through exact placement descriptors returned by the API, using
+`/images/placements/<placement-id>/<revision>/<image-id>`. There is no generic public upload-preview
+route. Post editors retain the successfully uploaded selected `File` and preview those local bytes
+with an object URL; replacement, removal, failed decoding and unmount revoke it. Unsupported browser
+formats retain their upload ID and show the localized preview-unavailable status. Submission sends
+image IDs, ordering and captions, never local files. Saved rendering uses the authoritative returned
+placement descriptor. See [delivery authority](../../../backend/services/media-delivery-safety/README.md).
+
 All browser-facing external `http(s)://` image URLs are rewritten to
 `${IMAGE_ORIGIN}/sideload/{base64url}?w=1200&sig={hmac}`. Browsers therefore request the dedicated
 image hostname directly, bypassing both the apex Cloudflare Worker and Next.js image optimization.

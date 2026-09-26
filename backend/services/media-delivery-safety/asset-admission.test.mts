@@ -24,7 +24,7 @@ import {
   getImagePlacementDeliveryKey,
   processMediaDeliveryRegistryRecord,
   assertImagesReadyForSurface,
-  lockImageSurfaceOwner,
+  lockUserProfileLinkImageOwners,
 } from './index.mts'
 import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
 import { createCommunity } from '../communities/create.mts'
@@ -60,16 +60,10 @@ describe('asset admission root domain', () => {
     const ownerId = crypto.randomUUID()
     await using first = await beginTransaction()
     await using second = await beginTransaction()
-    await lockImageSurfaceOwner(
-      { surfaceKind: 'user-profile-link-image', userProfileLinkId: ownerId },
-      first,
-    )
+    await lockUserProfileLinkImageOwners([ownerId], first)
     const pid = await getTestDeliveryTransactionPid(second)
-    const locking = lockImageSurfaceOwner(
-      {
-        surfaceKind: 'user-profile-link-image',
-        userProfileLinkId: ownerId.replaceAll('-', '').toUpperCase(),
-      },
+    const locking = lockUserProfileLinkImageOwners(
+      [ownerId.replaceAll('-', '').toUpperCase()],
       second,
     )
     void locking.catch(() => undefined)

@@ -39,7 +39,6 @@ export function IdentityProfileImageSection({
       <div className='mt-3 space-y-3'>
         <div className='flex items-center gap-4'>
           <UserAvatar
-            profileImageId={profileImageId}
             profileImagePlacement={profileImagePlacement}
             username={username}
             size='lg'

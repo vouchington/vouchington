@@ -3752,6 +3752,7 @@
 {"id":"copy.extracted.webSearch.webSearchListClient.tryADifferentSearchQuery_67989328","value":"Essayez une autre recherche."},
 {"id":"copy.extracted.webSearch.webSearchResultItem.urlMatch_2447c943","value":"Correspondance d'URL"},
 {"id":"copy.extracted.x.page.completingXSignIn_cba21950","value":"Finalisation de la connexion X"},
+{"id":"copy.images.uploadPreviewUnavailable","value":"Image téléversée. Aperçu indisponible."},
 {"id":"copy.my.connectedAppsManager.connectedAppRow.authorizedConsentedatNotUsedYet","value":"Autorisée {consentedAt} · Pas encore utilisée"},
 {"id":"copy.my.oauthAppsManager.redirectUriErrors.duplicate","value":"Les URI de redirection doivent être uniques."},
 {"id":"copy.my.oauthAppsManager.redirectUriErrors.invalidCount","value":"Saisissez entre 1 et 10 URI de redirection."},

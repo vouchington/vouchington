@@ -11,7 +11,7 @@ import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enq
 import { runSequentially } from '@modules/utils/run-sequentially'
 import {
   lockImageAssetAdmission,
-  lockImageSurfaceOwner,
+  lockUserProfileLinkImageOwners,
   prepareImageSurfaceAdmission,
 } from '@services/media-delivery-safety'
 import {
@@ -109,10 +109,7 @@ export async function updateProfileLink(
   // CASE WHEN preserves existing column values for fields not included in input
   await using transaction = await beginTransaction()
   await lockImageAssetAdmission(input.image_id ? [input.image_id] : [], transaction)
-  await lockImageSurfaceOwner(
-    { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
-    transaction,
-  )
+  await lockUserProfileLinkImageOwners([linkId], transaction)
   const { rows: existingRows } = await transaction<{ image_id: string | null }>(sql`
     /* updateProfileLink:lockImageSurface */
     SELECT image_id FROM user_profile_links
@@ -156,10 +153,7 @@ export async function updateProfileLink(
 }
 export async function deleteProfileLink(userId: string, linkId: string): Promise<void> {
   await using transaction = await beginTransaction()
-  await lockImageSurfaceOwner(
-    { surfaceKind: 'user-profile-link-image', userProfileLinkId: linkId },
-    transaction,
-  )
+  await lockUserProfileLinkImageOwners([linkId], transaction)
   const { rows } = await transaction(
     sql`/* deleteProfileLink */ SELECT id FROM user_profile_links
       WHERE id = ${linkId} AND user_id = ${userId} FOR UPDATE`,

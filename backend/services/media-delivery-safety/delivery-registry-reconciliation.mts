@@ -3,10 +3,7 @@ import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import { imageDeliveryAuthorityProof, imageDeliveryIsAuthorized } from './delivery-authority.mts'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import {
-  stageImagePlacementDeliveryRecord,
-  stageLegacyImageDeliveryRecord,
-} from './delivery-registry-staging.mts'
+import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 
 export async function replayFailedMediaDeliveryRegistryRecords(input?: {
@@ -20,7 +17,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   )
   const deliveryKeys = input?.deliveryKeys ? [...input.deliveryKeys] : null
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ delivery_key: string; placement_id: string | null }>(sql`
+  const { rows } = await transaction<{ delivery_key: string; placement_id: string }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords */
     UPDATE media_delivery_registry_records
     SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL, completed_at = NULL,
@@ -62,22 +59,18 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
   const imageIdScope = imageIds ? [...imageIds] : null
   const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
     WITH candidates AS (
-      SELECT delivery_key, route_kind, placement_id, placement_revision, asset_id
+      SELECT delivery_key, placement_id, placement_revision, image_id
       FROM media_delivery_registry_records
-      WHERE (${imageIdScope}::uuid[] IS NULL OR asset_id = ANY(${imageIdScope}::uuid[]))
+      WHERE (${imageIdScope}::uuid[] IS NULL OR image_id = ANY(${imageIdScope}::uuid[]))
       UNION
       SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-        'placement', placement.id, placement.revision, binding.image_id
+        placement.id, placement.revision, binding.image_id
       FROM media_placements placement
       JOIN (SELECT placement_id, image_id FROM image_placements
         UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
         ON binding.placement_id = placement.id
       WHERE placement.retired_at IS NULL
         AND (${imageIdScope}::uuid[] IS NULL OR binding.image_id = ANY(${imageIdScope}::uuid[]))
-      UNION
-      SELECT concat('legacy-image:', image.id), 'legacy-image', NULL::uuid, NULL::integer, image.id
-      FROM images image
-      WHERE (${imageIdScope}::uuid[] IS NULL OR image.id = ANY(${imageIdScope}::uuid[]))
     ), intended AS (
       SELECT authority.*, CASE WHEN `
   statement.append(imageDeliveryAuthorityProof())
@@ -101,22 +94,18 @@ async function stageCurrentDeliveryRecord(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await lockImageDeliveryMutation(transaction, {
-    placementIds: record.placement_id ? [record.placement_id] : [],
-    placementOnly: record.route_kind === 'placement',
-    imageIds: record.route_kind === 'legacy-image' ? [record.asset_id] : [],
+    placementIds: [record.placement_id],
+    placementOnly: true,
   })
   const state = (await imageDeliveryIsAuthorized(transaction, record)) ? 'allow' : 'withheld'
-  if (record.route_kind === 'legacy-image')
-    await stageLegacyImageDeliveryRecord(record.asset_id, state, { query: transaction })
-  else
-    await stageImagePlacementDeliveryRecord(
-      {
-        placementId: record.placement_id!,
-        revision: record.placement_revision!,
-        imageId: record.asset_id,
-        state,
-      },
-      { query: transaction },
-    )
+  await stageImagePlacementDeliveryRecord(
+    {
+      placementId: record.placement_id,
+      revision: record.placement_revision,
+      imageId: record.image_id,
+      state,
+    },
+    { query: transaction },
+  )
   await transaction.commit()
 }

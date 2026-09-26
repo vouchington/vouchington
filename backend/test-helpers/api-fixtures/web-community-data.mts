@@ -18,15 +18,17 @@ export const communitySearchBody = {
   communities: {
     [community.id]: {
       ...community,
+      profile_image_id: '00000000-0000-7000-8000-000000000203',
+      banner_image_id: '00000000-0000-7000-8000-000000000204',
       profile_image_placement: {
-        placement_id: 'placement-community-profile-image-1',
+        placement_id: '00000000-0000-7000-8000-000000000304',
         placement_revision: 2,
-        image_id: 'community-profile-image-1',
+        image_id: '00000000-0000-7000-8000-000000000203',
       },
       banner_image_placement: {
-        placement_id: 'placement-community-banner-image-1',
+        placement_id: '00000000-0000-7000-8000-000000000305',
         placement_revision: 5,
-        image_id: 'community-banner-image-1',
+        image_id: '00000000-0000-7000-8000-000000000204',
       },
     },
   },
