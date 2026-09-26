@@ -7,8 +7,10 @@ import {
   hasUniqueSlugIndexOnTopics,
   softDeleteTopic,
   mergeTopicForTest,
+  readTestContentProvenance,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 describe('upsertTopic', () => {
   it('creates new topic', async () => {
@@ -119,13 +121,18 @@ describe('upsertTopic', () => {
     const restoredSlug = `restored-topic-${random}`
     const name = `Deleted Topic ${random}`
 
-    const topic1 = await upsertTopic(WEB_PROVENANCE, name, originalSlug)
+    const topic1 = await upsertTopic(SYSTEM_PROVENANCE, name, originalSlug)
     await softDeleteTopic(topic1.id, user!.id)
 
     const topic2 = await upsertTopic(WEB_PROVENANCE, name, restoredSlug)
 
     expect(topic2.id).toBe(topic1.id)
     expect(topic2.slug).toBe(restoredSlug)
+    // Reviving keeps the channel of the write that first created the topic.
+    await expect(readTestContentProvenance('topics', topic1.id)).resolves.toEqual({
+      createdVia: 'system',
+      oauthClientId: null,
+    })
 
     const fetched = await getTopicByAny(restoredSlug)
     expect(fetched).toBeDefined()

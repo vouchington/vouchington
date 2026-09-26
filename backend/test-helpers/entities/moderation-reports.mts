@@ -62,17 +62,18 @@ export async function insertTestModerationReport(options: {
   const { rows } = await write<{ id: string }>(query)
   return rows[0]!.id
 }
-export async function getTestModerationReportTransparencyCommunityId(
+export async function getTestLatestModerationReportAgainstUser(
   reportedUserId: string,
-): Promise<string | null | undefined> {
-  const { rows } = await read<{ moderation_transparency_community_id: string | null }>(sql`
-    SELECT moderation_transparency_community_id
+): Promise<{ id: string; moderationTransparencyCommunityId: string | null }> {
+  const { rows } = await read<{ id: string; moderationTransparencyCommunityId: string | null }>(sql`
+    SELECT id, moderation_transparency_community_id AS "moderationTransparencyCommunityId"
     FROM moderation_reports
     WHERE reported_user_id = ${reportedUserId}::uuid
     ORDER BY id DESC
     LIMIT 1
   `)
-  return rows[0]?.moderation_transparency_community_id
+  if (!rows[0]) throw new Error(`User ${reportedUserId} has no moderation report`)
+  return rows[0]
 }
 
 export async function getTestModerationReportCaseId(reportId: string): Promise<string> {

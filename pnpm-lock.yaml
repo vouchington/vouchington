@@ -6511,6 +6511,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/services/landing-page-analytics:
     dependencies:

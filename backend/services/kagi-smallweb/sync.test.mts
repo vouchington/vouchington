@@ -5,6 +5,7 @@ import { getExistingRssFeedUrls } from './get-existing-feed-urls.mts'
 import { getTopicByAny } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
 import type { ParsedFeedEntry } from './parse.mts'
+import { readTestContentProvenance } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -32,6 +33,10 @@ describe('processFeedEntry', () => {
     const feed = await getRssFeedByTopicId(result.topicId!)
     expect(feed).not.toBeNull()
     expect(feed!.title).toBe(hostname)
+    // The import job authors the topic and feed as the platform.
+    const system = { createdVia: 'system', oauthClientId: null }
+    await expect(readTestContentProvenance('topics', topic!.id)).resolves.toEqual(system)
+    await expect(readTestContentProvenance('rss_feeds', feed!.id)).resolves.toEqual(system)
   })
 
   it('creates topic with per-channel hostname for YouTube entries', async () => {

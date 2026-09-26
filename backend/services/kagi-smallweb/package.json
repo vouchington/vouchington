@@ -29,6 +29,7 @@
     "undici": "^8.11.0"
   },
   "devDependencies": {
-    "@services/topics": "workspace:^"
+    "@services/topics": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
   }
 }

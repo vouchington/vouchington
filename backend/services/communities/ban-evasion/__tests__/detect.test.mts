@@ -13,7 +13,8 @@ import {
   createTestUrlWithHostname,
   insertTestUserReferralProgramLink,
   getTestBanEvasionFlagState,
-  getTestModerationReportTransparencyCommunityId,
+  getTestLatestModerationReportAgainstUser,
+  readTestContentProvenance,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
@@ -208,9 +209,13 @@ describe('detectBanEvasionForMember', () => {
 
     const flagState = await getTestBanEvasionFlagState(community.id, member.id)
     expect(flagState?.suspected_ban_evader_at).not.toBeNull()
-    await expect(getTestModerationReportTransparencyCommunityId(member.id)).resolves.toBe(
-      community.id,
-    )
+    const report = await getTestLatestModerationReportAgainstUser(member.id)
+    expect(report.moderationTransparencyCommunityId).toBe(community.id)
+    // The detector files the report as the platform, so it records system, not a user channel.
+    await expect(readTestContentProvenance('moderation_reports', report.id)).resolves.toEqual({
+      createdVia: 'system',
+      oauthClientId: null,
+    })
   })
 
   it('returns flagged=false when posts exist but no hash or referral match', async () => {
