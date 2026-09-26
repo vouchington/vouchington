@@ -211,6 +211,10 @@ post title or markdown must carry both language fields, and pass the resolved la
 boundary. Native clients consume the same fields from `api-fixtures/v1` and apply direction at the
 individual text or HTML leaf, never to an enclosing row.
 
+Community about text is a separate plain-text boundary, `CommunityAboutCopy`. It uses the same
+declared-then-detected rule with `default_language` and `lingua_rs_detected_language`, on both the
+community card and the community about aside. It is not a post-content boundary.
+
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
 fragments travel separately as `target_content`; comment prefixes and deleted/private fallbacks
 stay outside the authored boundary. Inputs, ARIA interpolation, metadata/routes, image alt text,
