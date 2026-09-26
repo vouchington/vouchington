@@ -7,8 +7,8 @@ useDefault = true
 # condition, and regexTarget. Keep docs/test placeholders narrow instead of
 # adding broad repository-wide regexes.
 [[allowlists]]
-description = "Generated fixtures and captured test pages"
-paths = ['''(^|/)fixtures/''', '''(^|/)node_modules/''', '''^\.local/''']
+description = "Generated dependency and local-state directories"
+paths = ['''(^|/)node_modules/''', '''^\.local/''']
 
 [[allowlists]]
 description = "Bluesky keyset code names the environment variable that contains keys; the name is not a credential"

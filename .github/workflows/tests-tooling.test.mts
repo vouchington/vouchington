@@ -76,13 +76,27 @@ describe('tests-tooling.yml setup timing', () => {
     const setupBackend = toolingJob?.steps?.find(
       step => step.uses === './.github/actions/setup-backend' && step.id === 'setup-backend',
     )
+    const installGitleaks = toolingJob?.steps?.find(
+      step => step.name === 'Install Gitleaks for scanner fixtures',
+    )
+    const verifyGitleaks = toolingJob?.steps?.find(
+      step => step.name === 'Verify Gitleaks is active for scanner fixtures',
+    )
     const runToolingTests = toolingJob?.steps?.find(step => step.name === 'Run tooling tests')
 
     const jobTimeout = numberField(toolingJob?.['timeout-minutes'], 'tooling job timeout')
     const setupTimeout = numberField(setupBackend?.['timeout-minutes'], 'setup-backend timeout')
+    const gitleaksTimeout = numberField(
+      installGitleaks?.['timeout-minutes'],
+      'Gitleaks install timeout',
+    )
+    const verifyTimeout = numberField(
+      verifyGitleaks?.['timeout-minutes'],
+      'Gitleaks verify timeout',
+    )
     const testTimeout = numberField(runToolingTests?.['timeout-minutes'], 'tooling test timeout')
 
-    expect(jobTimeout).toBeGreaterThan(setupTimeout + testTimeout)
+    expect(jobTimeout).toBeGreaterThan(setupTimeout + gitleaksTimeout + verifyTimeout + testTimeout)
   })
 
   it('allows tooling tests enough time to finish coverage reporting', () => {
@@ -104,6 +118,26 @@ describe('tests-tooling.yml setup timing', () => {
     )
 
     expect(setupBackendStep().with).toBeUndefined()
+  })
+
+  it('installs the configured Gitleaks version for scanner-backed tooling tests', () => {
+    const steps = workflow.jobs?.tooling?.steps ?? []
+    const gitleaks = steps.find(step => step.name === 'Install Gitleaks for scanner fixtures')
+    const gitleaksIndex = steps.indexOf(gitleaks!)
+    const verifyGitleaks = steps.find(
+      step => step.name === 'Verify Gitleaks is active for scanner fixtures',
+    )
+    const verifyIndex = steps.indexOf(verifyGitleaks!)
+    const toolingTestsIndex = steps.indexOf(runToolingTestsStep())
+
+    expect(gitleaks).toMatchObject({
+      uses: expect.stringMatching(/^jdx\/mise-action@[0-9a-f]{40}$/),
+      with: { cache: false, install_args: 'aqua:gitleaks/gitleaks' },
+    })
+    expect(gitleaksIndex).toBeGreaterThan(steps.indexOf(setupBackendStep()))
+    expect(verifyGitleaks?.run).toBe('gitleaks version')
+    expect(verifyIndex).toBe(gitleaksIndex + 1)
+    expect(verifyIndex).toBeLessThan(toolingTestsIndex)
   })
 
   it('isolates route bounds from regular tooling coverage and artifacts', () => {
