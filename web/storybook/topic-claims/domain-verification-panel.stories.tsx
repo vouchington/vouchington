@@ -9,7 +9,7 @@ import type { TopicClaim } from '@/types/topic-claims'
 const feed = topics.find(topic => topic.topic_type === 'rss_feed')!
 const claimant = publicUsers[0]!
 
-const claim: TopicClaim = {
+const claim = {
   id: 'claim-fintech-daily',
   topic_id: feed.id,
   claimant_user_id: claimant.id,
@@ -26,12 +26,11 @@ const claim: TopicClaim = {
   revoked_by_id: null,
   revocation_reason: null,
   verification_hostname_id: null,
-  verification_token_hash: null,
   verification_token_issued_at: null,
   domain_verified_at: null,
   created_at: now,
   updated_at: now,
-}
+} as TopicClaim
 
 const meta = {
   title: 'Topic Claims/Domain Verification Panel',
