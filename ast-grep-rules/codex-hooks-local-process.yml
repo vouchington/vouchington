@@ -91,7 +91,8 @@ rule:
                   execFileSync('git', ['config', '--get-regexp', '^remote\\..+\\.gh-resolved$'],
                   $$$OPTIONS)
               - pattern: execFileSync('git', ['show', $HEAD_PATH], $$$OPTIONS)
-              - pattern: "spawnSync(existsSync($LOCAL_BIN) ? $LOCAL_BIN : 'oxfmt', $$$ARGS)"
+              - pattern: >-
+                  spawnSync('pnpm', ['exec', 'oxfmt', $FILE_PATH], $$$OPTIONS)
               - pattern: >-
                   spawnSync('grep', ['-rlF', '--', $VALUE, 'playwright/tests'], $$$OPTIONS)
     - pattern: exec($$$ARGS)
@@ -209,5 +210,6 @@ examples:
       execFileSync('git', ['remote', '-v'], { cwd })
       execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], { cwd })
       spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], { cwd })
+      spawnSync('pnpm', ['exec', 'oxfmt', filePath], { cwd })
     isValid: true
     file: 'dev/codex-hooks/local-process.mts'
