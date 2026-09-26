@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Button } from '@/components/ui/button'
 import { NewsItemClusterRelatedItems } from '@/components/news/news-item-cluster-related-items'
@@ -15,9 +16,10 @@ type Story = StoryObj<typeof meta>
 const articles = [newsItems[0]!, newsItems[3]!]
 
 function Related({ expanded, items }: { expanded: boolean; items: typeof articles }) {
+  const [isExpanded, setIsExpanded] = useState(expanded)
   return (
     <NewsItemClusterRelatedItems
-      isExpanded={expanded}
+      isExpanded={isExpanded}
       renderActions={() => (
         <Button
           type='button'
@@ -28,7 +30,7 @@ function Related({ expanded, items }: { expanded: boolean; items: typeof article
         </Button>
       )}
       renderOfficialBadge={() => null}
-      setExpanded={() => {}}
+      setExpanded={setIsExpanded}
       storyItemActionContexts={{}}
       storyItems={items}
       storyItemsId='transfer-bonus-related'

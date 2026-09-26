@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DisputeForm } from '@/components/disputes/dispute-form'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
@@ -15,16 +16,18 @@ const claimText =
 
 function ReadyForm({ error }: { error: string | null }) {
   const turnstile = useTurnstileToken()
+  const [reason, setReason] = useState('factually_inaccurate')
+  const [text, setText] = useState(claimText)
   return (
     <DisputeForm
       submitted={false}
-      reason='factually_inaccurate'
-      claimText={claimText}
+      reason={reason}
+      claimText={text}
       loading={false}
       error={error}
       turnstile={turnstile}
-      onReasonChange={() => {}}
-      onClaimTextChange={() => {}}
+      onReasonChange={setReason}
+      onClaimTextChange={setText}
       onSubmit={event => event.preventDefault()}
       onClose={() => {}}
     />

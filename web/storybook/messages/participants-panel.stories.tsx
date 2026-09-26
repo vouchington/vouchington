@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ParticipantsPanel } from '@/components/messages/participants-panel'
 import type { DirectMessageParticipant } from '@/types/messages'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
+import { clearUserSearchFixture, setUserSearchFixture } from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
@@ -36,6 +37,10 @@ const participants: DirectMessageParticipant[] = [
 ]
 
 export const Owner: Story = {
+  beforeEach() {
+    setUserSearchFixture()
+    return () => clearUserSearchFixture()
+  },
   args: {
     conversationId,
     currentUserId: storyCurrentUser.id,

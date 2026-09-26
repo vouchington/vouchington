@@ -14,6 +14,7 @@ import {
   disableInboxMutations,
   enableInboxMutations,
 } from '@/storybook/mocks/inbox-mutation-fixture'
+import { inboxUnreadFixture } from '@/storybook/mocks/inbox-unread-fixture'
 
 const emptyPage = { has_next_page: false, end_cursor: null, start_cursor: null }
 const creditCards = communities[0]!
@@ -23,8 +24,9 @@ let inboxFixture: NotificationsUnreadSummaryResponseBody | undefined
 let myCommunitiesFixture: CommunitiesSearchResponseBody | undefined
 let myListsFixture: ListsSearchResponseBody | undefined
 let moderationContextFixture: UserModerationContextResponse | undefined
-let topicSearchFixture = false
 let userSearchFixture = false
+let topicSearchFixture = false
+let categoryRelationsFixture = false
 const clientRequestGet = ClientRequest.prototype.get
 
 export function setNotificationSettingsFixture(preferences: EmailPreferences): void {
@@ -37,44 +39,16 @@ export function clearNotificationSettingsFixture(): void {
 
 export function setInboxFixture(): void {
   enableInboxMutations()
-  inboxFixture = {
-    unread_count: 1,
-    results: [{ __entity_type: 'notification', id: 'notif-follow', read_at: null }],
-    notifications: {
-      'notif-follow': {
-        __entity_type: 'notification',
-        id: 'notif-follow',
-        user_id: 'user-cardholder',
-        entity_type: 'follow',
-        post_id: null,
-        rss_feed_item_id: null,
-        actor_user_id: null,
-        moderation_report_id: null,
-        review_dispute_id: null,
-        user_warning_id: null,
-        conversation_id: null,
-        community_id: null,
-        copyright_notice_id: null,
-        event_key: null,
-        title: '@alex started following you',
-        body: 'Alex Morgan followed your profile.',
-        actor_label: null,
-        target_path: '/user/alex',
-        target_entity: null,
-        target_intent: null,
-        read_at: null,
-        pushed_at: null,
-        created_at: '2026-05-10T12:00:00.000Z',
-        updated_at: '2026-05-10T12:00:00.000Z',
-      },
-    },
-    communities: {},
-  }
+  inboxFixture = inboxUnreadFixture()
 }
 
 export function clearInboxFixture(): void {
   disableInboxMutations()
   inboxFixture = undefined
+}
+
+export function clearMyCommunitiesFixture(): void {
+  myCommunitiesFixture = undefined
 }
 
 export function setMyCommunitiesFixture(): void {
@@ -85,6 +59,10 @@ export function setMyCommunitiesFixture(): void {
     users: {},
     community_metrics: {},
   }
+}
+
+export function clearMyListsFixture(): void {
+  myListsFixture = undefined
 }
 
 export function setMyListsFixture(): void {
@@ -120,6 +98,22 @@ export function clearUserSearchFixture(): void {
   userSearchFixture = false
 }
 
+export function setTopicSearchFixture(): void {
+  topicSearchFixture = true
+}
+
+export function clearTopicSearchFixture(): void {
+  topicSearchFixture = false
+}
+
+export function setCategoryRelationsFixture(): void {
+  categoryRelationsFixture = true
+}
+
+export function clearCategoryRelationsFixture(): void {
+  categoryRelationsFixture = false
+}
+
 export function setModerationContextFixture(): void {
   moderationContextFixture = {
     context: {
@@ -142,14 +136,6 @@ export function setModerationContextFixture(): void {
     ],
     page_info: { has_next_page: false },
   }
-}
-
-export function setTopicSearchFixture(): void {
-  topicSearchFixture = true
-}
-
-export function clearTopicSearchFixture(): void {
-  topicSearchFixture = false
 }
 
 ClientRequest.prototype.get = function storybookClientRequestGet<T>(
@@ -181,6 +167,16 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   }
   if (endpoint === '/api/v1/lists' && myListsFixture !== undefined) {
     return Promise.resolve(myListsFixture as T)
+  }
+  if (endpoint === '/api/v1/lists/contains' && myListsFixture !== undefined) {
+    return Promise.resolve({ list_ids: Object.keys(myListsFixture.lists) } as T)
+  }
+  if (endpoint.startsWith('/api/v1/entity-relations/') && categoryRelationsFixture) {
+    return Promise.resolve({
+      results: [],
+      page_info: emptyPage,
+      entity_relations: {},
+    } as T)
   }
   if (endpoint.endsWith('/moderation-context') && moderationContextFixture !== undefined) {
     return Promise.resolve(moderationContextFixture as T)
