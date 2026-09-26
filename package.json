@@ -134,7 +134,7 @@
     "@types/pg": "^8.23.1",
     "@types/picomatch": "^4.0.3",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/browser": "^5.0.1",
     "@vitest/browser-playwright": "^5.0.1",

@@ -29,7 +29,7 @@
     "@queues/vote-weight": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@simplewebauthn/server": "^14.0.2",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
     "@vouchington/auth": "0.1.0",
     "http-assert": "^1.5.0",

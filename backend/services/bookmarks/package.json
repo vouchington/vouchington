@@ -34,7 +34,7 @@
     "@services/memberships": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0"
   },

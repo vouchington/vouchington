@@ -31,7 +31,7 @@
     "@services/passkeys": "workspace:^",
     "@services/totp": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@valkey/valkey-glide": "^2.5.2",
+    "@valkey/valkey-glide": "^2.5.3",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
