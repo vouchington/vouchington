@@ -6,28 +6,23 @@
 
 ### Schema Object Buckets
 
-| Bucket           | What belongs here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Runs                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| `migrations/`    | Fixed schema: `CREATE TABLE`, `CREATE INDEX`, `CREATE TYPE`, structural DDL. Immutable after running.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Once, tracked in ledger |
-| `config-driven/` | Seeds (`INSERT … ON CONFLICT`/`WHERE NOT EXISTS`, and `ON CONFLICT DO UPDATE` only when convergent — self-references shielded by `COALESCE`/`GREATEST`/`LEAST`, never a bare accumulating `col = col + 1`, and never a bare volatile/current-time value such as `gen_random_uuid()` or `CURRENT_TIMESTAMP` unless it is a `COALESCE` fallback after a self-reference, never replay-unsafe against a row-level trigger on an assigned column unless that trigger's function is on the replay-safe allowlist or the `WHERE` clause proves the assignment is a no-op, and never an assignment to a source column of a `GENERATED ... STORED` arbiter column unless that assignment is a bare self-reference) and functions (`CREATE OR REPLACE FUNCTION`) driven by config. `.mts` generators for entity relations, partitions, and elections. **No structural DDL.** | Every deploy            |
-| `views/`         | Managed `CREATE OR REPLACE VIEW` statements.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Every deploy            |
+| Bucket           | What belongs here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Runs                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| `migrations/`    | Canonical fixed schema: `CREATE TABLE`, `CREATE INDEX`, `CREATE TYPE`, structural DDL. Edit its owning creator before launch; rebuild disposable databases after edits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Once per fresh database, tracked in ledger |
+| `config-driven/` | Seeds (`INSERT … ON CONFLICT`/`WHERE NOT EXISTS`, and `ON CONFLICT DO UPDATE` only when convergent — self-references shielded by `COALESCE`/`GREATEST`/`LEAST`, never a bare accumulating `col = col + 1`, and never a bare volatile/current-time value such as `gen_random_uuid()` or `CURRENT_TIMESTAMP` unless it is a `COALESCE` fallback after a self-reference, never replay-unsafe against a row-level trigger on an assigned column unless that trigger's function is on the replay-safe allowlist or the `WHERE` clause proves the assignment is a no-op, and never an assignment to a source column of a `GENERATED ... STORED` arbiter column unless that assignment is a bare self-reference) and functions (`CREATE OR REPLACE FUNCTION`) driven by config. `.mts` generators for entity relations, partitions, and elections. **No structural DDL.** | Every bootstrap or replay                  |
+| `views/`         | Managed `CREATE OR REPLACE VIEW` statements.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Every bootstrap or replay                  |
 
 [migrations/](migrations/), [views/](views/), and [config-driven/](config-driven/) are the three
 package directories backing the buckets above; `config-driven/` is also updated in place as config
 grows (entity relations, partitions, seed topics, seed agents).
 
-Before a schema has been deployed, add a column by folding it into the owning migration's original
-`CREATE TABLE`. Once that migration has run on a durable deployed schema, add the column in a new
-fixed forward migration and register every exact `ALTER TABLE ADD COLUMN` action in
-the `postgres-no-add-column` rule in [`.no-mistakes.yml`](../../../.no-mistakes.yml). Allowed actions declare
-`nullable` and an optional canonical `default`, and must match those clauses exactly (PostgreSQL accepts either `NOT NULL DEFAULT …` or
-`DEFAULT … NOT NULL`). Quoted defaults such as `'pending'` are matched against the unmasked ADD
-COLUMN statement text. `ADD COLUMN IF NOT EXISTS … NOT NULL` is a no-op when the column already
-exists, so a drift-recovery repair that needs to enforce nullability may still need a follow-up
-`ALTER COLUMN SET NOT NULL`. The registry is path-specific and rejects missing, extra, broadened, or stale
-actions; it does not relax explicit `ON DELETE`, named `NOT VALID` plus `VALIDATE CONSTRAINT`, or
-other schema guardrails. Add `CHECK` and foreign keys as named `NOT VALID` constraints with a
-matching `VALIDATE CONSTRAINT`, not as trailing clauses on `ADD COLUMN`.
+Voucha has not launched. Add columns in the owning migration's original `CREATE TABLE`, then
+rebuild disposable databases, including staging through its operator runbook. Do not add a forward
+`ALTER TABLE ADD COLUMN` merely because an earlier application version once used a different shape.
+The existing exact `postgres-no-add-column` exceptions in [`.no-mistakes.yml`](../../../.no-mistakes.yml)
+are prelaunch cleanup debt; do not extend them. Add cross-file `CHECK` and foreign keys as named
+`NOT VALID` constraints with a matching `VALIDATE CONSTRAINT` where the bootstrap ordering requires
+them. See [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
 
 The fixed-schema runner acquires a database-scoped PostgreSQL advisory lock before reading the
 ledger and keeps the lock, ledger reads, and migration execution on one pinned writer client. A
@@ -114,7 +109,7 @@ before/after.
 
 ### Staging Schema Drift (Pre-launch Only)
 
-> **Temporary policy until production launch.** Pre-launch staging data is disposable.
+Pre-launch staging data is disposable; canonical schema edits require an operator-controlled rebuild.
 
 Two independent checks now catch this drift instead of letting it pass silently. See
 [Migration Rules](CLAUDE.md#migration-rules) for the in-place-edit policy these checks back up.
@@ -125,10 +120,8 @@ Two independent checks now catch this drift instead of letting it pass silently.
   the recorded hash, the run fails immediately -- it neither silently skips the edited file nor
   re-applies it. This is exactly the incident scenario: a migration was edited in place after staging
   had already run the old version. Ledger rows written before this check existed have no stored
-  checksum; the first time the runner sees one of these legacy rows it is skipped as already-applied
-  (there is nothing to compare yet) and its checksum is backfilled from the current file content, so
-  every later run against that same database compares against a real value like any other migration.
-  This is a one-time bridge past pre-checksum history, not a permanent exemption.
+  checksum. Historical pre-checksum ledger rows still have a compatibility path in the current
+  runner; remove that path in the bootstrap cleanup after disposable databases are rebuilt.
 - **Post-migration schema verification** (`verifyLiveSchemaMatchesSnapshot`,
   `schema-snapshot/verify-live-schema.mts`): after every migration run, the live PostgreSQL catalog is
   compared structurally against the committed schema snapshot (`schema-snapshot/schema.json`). This
@@ -184,11 +177,8 @@ the first-deploy checklist in the private `vouchington-infra` repository), which
 organization access. This is a manual-only operator procedure, not an automatic migration-failure
 action or a receiver rerun.
 
-This reset policy applies only when the migration has never reached production or another
-non-disposable database. Once a fixed migration has been deployed there, restore its historical
-bytes and use a proper forward migration. A forward `ALTER TABLE ADD COLUMN` repair must be added to
-the exact `postgres-no-add-column` allowlist in [`.no-mistakes.yml`](../../../.no-mistakes.yml); stale or broadened
-entries fail repository policy.
+Production has not launched. If a database must become durable in the future, establish its
+deployment and migration policy before treating it as an exception to this prelaunch workflow.
 
 ### What `db:migrate` creates
 

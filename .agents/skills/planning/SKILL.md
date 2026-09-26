@@ -13,6 +13,12 @@ The runtime chooses its available agents; if an independent reviewer cannot run,
 
 ## Vouchington additions
 
+Before planning a schema or runtime-contract change, verify launch status and challenge whether
+compatibility or a migration deployment is needed. Voucha is unlaunched: plan one canonical
+fresh-bootstrap schema and current producer/consumer contract. Classify every JSON field and
+reference by ownership; plan concrete live or entity-specific retained identity FKs for internal
+relations. See [prelaunch relational storage](../../../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
+
 Read [impact discovery](references/impact-discovery.md) and [live-browser preflight](references/live-browser-preflight.md).
 Use the exact local [Plan template](references/plan-template.md), then run
 `node dev/plan-issue.mts validate --title "Plan: …" --body-file <file>` so every
