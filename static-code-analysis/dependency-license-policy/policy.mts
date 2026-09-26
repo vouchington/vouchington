@@ -4,7 +4,11 @@ import type { DependencyLicensePolicy } from 'vouchington-tooling/dependency-lic
 export const dependencyLicensePolicy: DependencyLicensePolicy = {
   deniedLicenseIds: ['UNLICENSED', 'Unknown', ''],
   deniedLicensePrefixes: ['GPL', 'AGPL', 'LGPL', 'EPL', 'CDDL', 'SSPL', 'BUSL', 'MPL'],
-  knownLicenseAliases: { 'SIL OPEN FONT LICENSE': 'OFL-1.1' },
+  knownLicenseAliases: {
+    'SIL OPEN FONT LICENSE': 'OFL-1.1',
+    // The `sentry` CLI publishes this string; the SPDX id is FSL-1.1-ALv2.
+    'FSL-1.1-Apache-2.0': 'FSL-1.1-ALv2',
+  },
   allowlist: [
     {
       licenseId: 'MPL-2.0',

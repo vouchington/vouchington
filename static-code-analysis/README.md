@@ -46,10 +46,11 @@ narrow-scope-plus-reasoning justification as the existing entries, not a blanket
 `pnpm licenses list` occasionally reports a package's `package.json` `license` field verbatim even
 when it is not valid SPDX syntax — `geist@1.7.2` ships the free-text string
 `SIL OPEN FONT LICENSE` instead of the SPDX identifier `OFL-1.1` (`@fontsource/inter` reports the
-same underlying font license correctly as `OFL-1.1`). A small `KNOWN_LICENSE_ALIASES` map in
-`policy.mts` normalizes confirmed, unambiguous cases like this before parsing; add to it only when
-a new non-SPDX string is confirmed to name exactly one real SPDX license, not to paper over
-genuinely ambiguous text.
+same underlying font license correctly as `OFL-1.1`). The `sentry` CLI publishes
+`FSL-1.1-Apache-2.0`, which is the same license as SPDX `FSL-1.1-ALv2`. A small
+`knownLicenseAliases` map in `policy.mts` normalizes confirmed, unambiguous cases like these
+before parsing; add to it only when a new non-SPDX string is confirmed to name exactly one real
+SPDX license, not to paper over genuinely ambiguous text.
 
 Run it locally with `pnpm run dependency-license-policy` or
 `node static-code-analysis/run-node-checks.mts --checks dependency-license-policy`. A denied match
