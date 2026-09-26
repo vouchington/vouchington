@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAgentPromptItem } from '@/components/communities/community-agent-prompt-item'
 import {
@@ -16,7 +17,7 @@ const meta = {
     setStoryMutationFixture()
     return () => clearStoryMutationFixture()
   },
-} satisfies Meta<typeof CommunityAgentPromptItem>
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -42,23 +43,46 @@ const allocatedPrompt: CommunityAgentPrompt = {
   deleted_by_id: null,
 }
 
-export const Allocated: Story = {
-  args: { communitySlug: communities[0]!.slug, prompt: allocatedPrompt },
-  render: args => (
+function PromptPreview({
+  initialPrompt,
+  communitySlug,
+}: {
+  initialPrompt: CommunityAgentPrompt
+  communitySlug: string
+}) {
+  const [prompt, setPrompt] = useState<CommunityAgentPrompt | null>(initialPrompt)
+  if (prompt === null) {
+    return (
+      <StoryFrame>
+        <p>Prompt deleted</p>
+      </StoryFrame>
+    )
+  }
+  return (
     <StoryFrame>
-      <CommunityAgentPromptItem {...args} />
+      <CommunityAgentPromptItem
+        communitySlug={communitySlug}
+        prompt={prompt}
+        onPromptUpdated={setPrompt}
+      />
     </StoryFrame>
+  )
+}
+
+export const Allocated: Story = {
+  render: () => (
+    <PromptPreview
+      communitySlug={communities[0]!.slug}
+      initialPrompt={allocatedPrompt}
+    />
   ),
 }
 
 export const Unallocated: Story = {
-  args: {
-    communitySlug: communities[0]!.slug,
-    prompt: { ...allocatedPrompt, slot_allocated: false, activated_at: null },
-  },
-  render: args => (
-    <StoryFrame>
-      <CommunityAgentPromptItem {...args} />
-    </StoryFrame>
+  render: () => (
+    <PromptPreview
+      communitySlug={communities[0]!.slug}
+      initialPrompt={{ ...allocatedPrompt, slot_allocated: false, activated_at: null }}
+    />
   ),
 }

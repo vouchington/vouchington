@@ -19,9 +19,10 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface Props {
   prompt: CommunityAgentPrompt
   communitySlug: string
+  onPromptUpdated?: (prompt: CommunityAgentPrompt | null) => void
 }
 
-export function CommunityAgentPromptItem({ prompt, communitySlug }: Props) {
+export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdated }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -40,8 +41,11 @@ export function CommunityAgentPromptItem({ prompt, communitySlug }: Props) {
   async function handleSaveEdit() {
     startPending(async () => {
       try {
-        await updateCommunityAgentPrompt(communitySlug, prompt.id, { prompt: editText })
+        const updated = await updateCommunityAgentPrompt(communitySlug, prompt.id, {
+          prompt: editText,
+        })
         setIsEditing(false)
+        onPromptUpdated?.({ ...prompt, ...updated.community_agent_prompt, prompt: editText })
         onSuccess(t('extracted.communities.communityAgentPromptItem.promptUpdated_8dc48c5d'))
         refresh()
       } catch (error) {
@@ -58,6 +62,7 @@ export function CommunityAgentPromptItem({ prompt, communitySlug }: Props) {
     startPending(async () => {
       try {
         await deleteCommunityAgentPrompt(communitySlug, prompt.id)
+        onPromptUpdated?.(null)
         onSuccess(t('extracted.communities.communityAgentPromptItem.promptDeleted_8e7b89b8'))
         refresh()
       } catch (error) {
@@ -75,9 +80,15 @@ export function CommunityAgentPromptItem({ prompt, communitySlug }: Props) {
       try {
         if (prompt.slot_allocated) {
           await deallocateCommunityAgentPromptSlot(communitySlug, prompt.id)
+          onPromptUpdated?.({ ...prompt, slot_allocated: false, activated_at: null })
           onSuccess(t('extracted.communities.communityAgentPromptItem.slotDeallocated_b7497458'))
         } else {
           await allocateCommunityAgentPromptSlot(communitySlug, prompt.id)
+          onPromptUpdated?.({
+            ...prompt,
+            slot_allocated: true,
+            activated_at: prompt.activated_at ?? '2026-05-01T12:00:00.000Z',
+          })
           onSuccess(t('extracted.communities.communityAgentPromptItem.slotAllocated_417c6c1d'))
         }
         refresh()
