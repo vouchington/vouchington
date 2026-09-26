@@ -1326,16 +1326,6 @@ rules:
     scope: repository
     options:
       projectFilters:
-        # Target-scoped API and PostgreSQL resource triggers cover their owning projects;
-        # root-config now contains only repository-wide tooling configuration.
-        root-config: [tooling, backend]
-        api-contracts: [backend]
-        workspace-package-boundaries: [tooling]
-        postgres-resources: [backend, postgres-schema, backend-credentialed, web-integration]
-        mcp-catalog: [backend]
-        automation-prompt-docs: [tooling]
-        agent-skill-docs: [tooling]
-        ci-inventory-config: [tooling]
         ts-shared: [ts-shared]
         static-analysis-tools: [tooling]
         static-analysis-ast-grep: [tooling]
