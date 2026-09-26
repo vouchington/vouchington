@@ -158,7 +158,7 @@
     "no-mistakes": "^0.65.0",
     "oxfmt": "^0.70.0",
     "oxlint": "1.85.0",
-    "oxlint-plugin-react-doctor": "^0.9.13",
+    "oxlint-plugin-react-doctor": "^0.9.14",
     "oxlint-tsgolint": "7.0.2002",
     "p-settle": "5.2.1",
     "picomatch": "^4.0.4",

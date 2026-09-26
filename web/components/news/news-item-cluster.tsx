@@ -1,4 +1,3 @@
-// oxlint-disable react-doctor/no-render-prop-children -- render-prop pattern required for item-specific action context
 'use client'
 
 import { useId, useState } from 'react'

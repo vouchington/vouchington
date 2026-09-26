@@ -24,7 +24,6 @@ export interface TopicDetailLayoutProps {
   children: React.ReactNode
 }
 
-// oxlint-disable-next-line react-doctor/no-many-boolean-props -- established component API
 export function TopicDetailLayout({
   topic,
   metrics,
