@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAgentPromptItem } from '@/components/communities/community-agent-prompt-item'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import type { CommunityAgentPrompt } from '@/lib/api/client/community-agent-prompts'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
@@ -8,6 +12,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Communities/Community Agent Prompt Item',
   component: CommunityAgentPromptItem,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof CommunityAgentPromptItem>
 
 export default meta

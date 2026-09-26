@@ -8,8 +8,14 @@ import {
 import { newsItems } from '@/storybook/entities/fixtures/feeds'
 import {
   clearCategoryRelationsFixture,
+  clearTopicSearchFixture,
   setCategoryRelationsFixture,
+  setTopicSearchFixture,
 } from '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
@@ -17,7 +23,13 @@ const meta = {
   component: ManageCategoriesMenuItem,
   beforeEach() {
     setCategoryRelationsFixture()
-    return () => clearCategoryRelationsFixture()
+    setTopicSearchFixture()
+    setStoryMutationFixture()
+    return () => {
+      clearCategoryRelationsFixture()
+      clearTopicSearchFixture()
+      clearStoryMutationFixture()
+    }
   },
 } satisfies Meta<typeof ManageCategoriesMenuItem>
 

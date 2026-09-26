@@ -3,11 +3,19 @@ import { ParticipantsPanel } from '@/components/messages/participants-panel'
 import type { DirectMessageParticipant } from '@/types/messages'
 import { publicUsers, storyCurrentUser } from '@/storybook/entities/fixtures/users'
 import { clearUserSearchFixture, setUserSearchFixture } from '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Messages/Participants Panel',
   component: ParticipantsPanel,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof ParticipantsPanel>
 
 export default meta
@@ -38,8 +46,12 @@ const participants: DirectMessageParticipant[] = [
 
 export const Owner: Story = {
   beforeEach() {
+    setStoryMutationFixture()
     setUserSearchFixture()
-    return () => clearUserSearchFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearUserSearchFixture()
+    }
   },
   args: {
     conversationId,

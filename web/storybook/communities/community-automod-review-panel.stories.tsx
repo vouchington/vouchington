@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAutomodReviewPanel } from '@/components/communities/community-automod-review-panel'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import type { CommunityAutomodAction } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { posts } from '@/storybook/entities/fixtures/posts'
@@ -9,6 +13,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Communities/Community Automod Review Panel',
   component: CommunityAutomodReviewPanel,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof CommunityAutomodReviewPanel>
 
 export default meta

@@ -2,12 +2,20 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { EditPostPageBody } from '@/components/posts/edit-post-page-body'
 import { PostForm } from '@/components/posts/post-form'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { administrator, reviewWithBody } from './fixtures'
 
 const meta = {
   title: 'Posts/Edit Post Page',
   component: EditPostPageBody,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

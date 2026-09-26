@@ -7,6 +7,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { posts } from '@/storybook/entities/fixtures/posts'
 import { clearMyListsFixture, setMyListsFixture } from '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
@@ -14,7 +18,11 @@ const meta = {
   component: AddToListMenuItem,
   beforeEach() {
     setMyListsFixture()
-    return () => clearMyListsFixture()
+    setStoryMutationFixture()
+    return () => {
+      clearMyListsFixture()
+      clearStoryMutationFixture()
+    }
   },
 } satisfies Meta<typeof AddToListMenuItem>
 

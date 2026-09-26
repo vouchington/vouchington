@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostLockMenuItem } from '@/components/posts/post-lock-menu-item'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { reviewPost } from './fixtures'
 import { OpenPostMenu } from './open-post-menu'
@@ -7,6 +11,10 @@ import { OpenPostMenu } from './open-post-menu'
 const meta = {
   title: 'Posts/Post Lock Menu Item',
   component: PostLockMenuItem,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
