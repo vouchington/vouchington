@@ -1,5 +1,10 @@
 import { it, expect, describe } from 'vitest'
-import { createTestTopic, createTestUser, insertTestRssFeedDirect } from '@voucha/test-helpers'
+import {
+  createTestTopic,
+  createTestUser,
+  insertTestRssFeedDirect,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createRssFeed } from './create.mts'
 import { softDeleteRssFeedById } from './delete.mts'
 import { filterRssFeedIdsByFeedType, getRssFeedsByIdBatch } from './get-batch.mts'
@@ -23,18 +28,21 @@ describe('get-batch', () => {
       ),
     )
     const feed1 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       topic_id: topics[0].id,
       title: 'Test Feed 1',
       rss_feed_url: `https://example.com/feed1-${Date.now()}.xml`,
     })
     const feed2 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       topic_id: topics[1].id,
       title: 'Test Feed 2',
       rss_feed_url: `https://example.com/feed2-${Date.now()}.xml`,
     })
     const feed3 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       topic_id: topics[2].id,
       title: 'Test Feed 3',
@@ -58,6 +66,7 @@ describe('get-batch', () => {
       hostname: `order-${Date.now()}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       topic_id: topic.id,
       title: 'Test Feed Order',

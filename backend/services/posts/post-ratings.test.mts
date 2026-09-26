@@ -8,6 +8,7 @@ import {
   createTestUser,
   getTestPostPublicationDirtyWorkForScope,
   insertTestTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { onceEntityListenerCompleted } from '../../workers/entity-listeners/test-support.mts'
@@ -29,7 +30,7 @@ describe('post-ratings', () => {
       slug: `test-topic-non-review-add-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Discussion post',
       markdown: 'Not a review',
       post_type: 'discussion',
@@ -48,7 +49,7 @@ describe('post-ratings', () => {
       slug: `test-topic-update-notfound-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review for update non-existent test',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -70,7 +71,7 @@ describe('post-ratings', () => {
         }),
       ),
     )
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review with reordered ratings',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -105,7 +106,7 @@ describe('post-ratings', () => {
       slug: `test-topic-non-review-del-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Discussion for delete test',
       markdown: 'Not a review',
       post_type: 'discussion',
@@ -122,7 +123,7 @@ describe('post-ratings', () => {
       slug: `test-topic-dup-add-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review for duplicate topic test',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -146,7 +147,7 @@ describe('post-ratings', () => {
         }),
       ),
     )
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review for capped topic count',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -175,7 +176,7 @@ describe('post-ratings', () => {
         }),
       ),
     )
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review for concurrent capped topic count',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -207,7 +208,7 @@ describe('post-ratings', () => {
         }),
       ),
     )
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review with concurrent rating updates',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',

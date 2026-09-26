@@ -17,6 +17,7 @@ import {
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 import { apiHeaders } from '../../../response-contract.mts'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
   apiHeaders('POST:/api/v1/topic-recommendations', {
@@ -46,6 +47,7 @@ app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
     },
   })
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/topic-recommendations')
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
   if (!currentUserCanCreatePost(currentUser)) {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
@@ -67,7 +69,7 @@ app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
       verifyCaptchaOrAttestation(ctx, body, { actionTag: 'topic-recommendations.create' }),
     execute: query =>
       executePreparedContribution(query, () =>
-        prepareTopicRecommendation(currentUser, body, { query }),
+        prepareTopicRecommendation(provenance, currentUser, body, { query }),
       ),
   })
   if (admission.kind === 'in_progress') {

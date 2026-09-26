@@ -7,6 +7,7 @@ import {
   insertTestPost,
   suspendTestUserGetId,
   insertTestModerationAppeal,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { openOrGetOpenCase, findOpenCaseForEntity, resolveCase } from '@services/moderation-cases'
@@ -35,7 +36,7 @@ describe('resolveAppealTarget — warning reopenCase branches', () => {
       target_id: warning.id,
       appeal_reason: 'The warning was unjust.',
     })
-    await createModerationAppeal(appellant, input)
+    await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     const openCase = await findOpenCaseForEntity({ entityType: 'user', entityId: appellant.id })
     expect(openCase?.id).toBe(warning.case_id)
@@ -57,7 +58,7 @@ describe('resolveAppealTarget — warning reopenCase branches', () => {
       target_id: warning.id,
       appeal_reason: 'Using newer case.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     expect(appeal.case_id).toBe(caseB)
   })
@@ -91,7 +92,7 @@ describe('resolveAppealTarget — ban reopenCase branches', () => {
       target_id: ban.id,
       appeal_reason: 'The ban was unjust.',
     })
-    await createModerationAppeal(appellant, input)
+    await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     const openCase = await findOpenCaseForEntity({ entityType: 'user', entityId: appellant.id })
     expect(openCase?.id).toBe(ban.case_id)
@@ -119,7 +120,7 @@ describe('resolveAppealTarget — ban reopenCase branches', () => {
       target_id: ban.id,
       appeal_reason: 'Using newer case for ban.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     expect(appeal.case_id).toBe(caseB)
   })
@@ -138,7 +139,7 @@ describe('resolveAppealTarget — suspension', () => {
       target_type: 'suspension',
       appeal_reason: 'I was suspended in error.',
     })
-    const { appeal, isDuplicate } = await createModerationAppeal(appellant, input)
+    const { appeal, isDuplicate } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     expect(isDuplicate).toBe(false)
     expect(appeal.user_suspension_id).not.toBeNull()
@@ -167,7 +168,7 @@ describe('resolveAppealTarget — suspension', () => {
       target_type: 'suspension',
       appeal_reason: 'Filing again.',
     })
-    const { isDuplicate } = await createModerationAppeal(appellant, input)
+    const { isDuplicate } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     expect(isDuplicate).toBe(true)
   })
 
@@ -177,7 +178,9 @@ describe('resolveAppealTarget — suspension', () => {
       target_type: 'suspension',
       appeal_reason: 'I have no suspension but am trying anyway.',
     })
-    await expect(createModerationAppeal(noSuspensionUser, input)).rejects.toMatchObject({
+    await expect(
+      createModerationAppeal(WEB_PROVENANCE, noSuspensionUser, input),
+    ).rejects.toMatchObject({
       status: 404,
     })
   })
@@ -209,7 +212,7 @@ describe('resolveAppealTarget — post removal reopenCase branch', () => {
       target_id: postId,
       appeal_reason: 'My post was wrongly removed.',
     })
-    await createModerationAppeal(appellant, input)
+    await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     const openCase = await findOpenCaseForEntity({ entityType: 'post', entityId: postId })
     expect(openCase?.id).toBe(caseId)

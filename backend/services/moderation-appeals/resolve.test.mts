@@ -12,6 +12,7 @@ import {
   getCommunityPostReviewStatus,
   getTestPostPublicationDirtyWorkForScope,
   listTestPostPublicationImpactCommunityIds,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
@@ -39,7 +40,7 @@ describe('resolve moderation appeals', () => {
       target_id: warning.id,
       appeal_reason: 'I did not spam.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     return { appeal, warning }
   }
 
@@ -66,7 +67,7 @@ describe('resolve moderation appeals', () => {
       target_id: ban.id,
       appeal_reason: 'I understand the rules now.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     await deliverModerationAppealForTest(staff.id, appeal.id)
     return { appeal, ban, community }
   }
@@ -84,7 +85,7 @@ describe('resolve moderation appeals', () => {
       target_id: postId,
       appeal_reason: 'My post was wrongly removed.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     await deliverModerationAppealForTest(staff.id, appeal.id)
     return { appeal, postId }
   }
@@ -113,7 +114,7 @@ describe('resolve moderation appeals', () => {
       target_id: postId,
       appeal_reason: 'Wrong community removal.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     await deliverModerationAppealForTest(staff.id, appeal.id)
     return { appeal, postId, communityId: community.id }
   }
@@ -140,7 +141,7 @@ describe('resolve moderation appeals', () => {
         target_id: warning.id,
         appeal_reason: 'Abuse was not correct.',
       })
-      const { appeal } = await createModerationAppeal(appellant, input)
+      const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
       await deliverModerationAppealForTest(staff.id, appeal.id)
       await resolveModerationAppealAccept(staff.id, appeal.id)
 
@@ -150,7 +151,9 @@ describe('resolve moderation appeals', () => {
         target_id: warning.id,
         appeal_reason: 'Retry after revoke.',
       })
-      await expect(createModerationAppeal(appellant, retryInput)).rejects.toMatchObject({
+      await expect(
+        createModerationAppeal(WEB_PROVENANCE, appellant, retryInput),
+      ).rejects.toMatchObject({
         status: 404,
       })
     })
@@ -217,7 +220,7 @@ describe('resolve moderation appeals', () => {
         target_id: postId,
         appeal_reason: 'Platform removal was wrong.',
       })
-      const { appeal } = await createModerationAppeal(appellant, input)
+      const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
       await deliverModerationAppealForTest(staff.id, appeal.id)
       await resolveModerationAppealAccept(staff.id, appeal.id)
       // Clearance should now be approved
@@ -261,7 +264,7 @@ describe('resolve moderation appeals', () => {
         appeal_reason: 'Community removal was wrong.',
         post_removal_kind: 'community',
       })
-      const { appeal } = await createModerationAppeal(appellant, input)
+      const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
       await deliverModerationAppealForTest(staff.id, appeal.id)
       await resolveModerationAppealAccept(staff.id, appeal.id)
       const status = await getCommunityPostReviewStatus(community.id, postId)

@@ -1,6 +1,6 @@
 import { expect, it, describe } from 'vitest'
 import { getTopicByAny } from './get.mts'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from './create.mts'
 import { createTopicAliases } from './aliases.mts'
 
@@ -8,7 +8,7 @@ describe('get', () => {
   it('retrieves topic by slug (case insensitive)', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -22,7 +22,7 @@ describe('get', () => {
   it('retrieves topic by alias (case insensitive)', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })

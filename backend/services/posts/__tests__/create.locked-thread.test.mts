@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createPost } from '../create.mts'
 import { lockPost } from '../lock.mts'
-import { createTestUser, createRandomString, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createRandomString,
+  insertTestPost,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 describe('create: locked thread enforcement', () => {
@@ -18,7 +23,7 @@ describe('create: locked thread enforcement', () => {
   }
 
   it('rejects direct reply when root post is locked', async () => {
-    const root = await createPost(creator, {
+    const root = await createPost(WEB_PROVENANCE, creator, {
       title: 'Locked root post',
       markdown: 'root content',
       post_type: 'discussion',
@@ -29,7 +34,7 @@ describe('create: locked thread enforcement', () => {
     await lockPost(root.id, creator.id)
 
     await expect(
-      createPost(commenter, {
+      createPost(WEB_PROVENANCE, commenter, {
         markdown: 'blocked reply',
         post_type: 'comment',
         parent_id: root.id,
@@ -42,7 +47,7 @@ describe('create: locked thread enforcement', () => {
   })
 
   it('rejects nested reply when root post is locked', async () => {
-    const root = await createPost(creator, {
+    const root = await createPost(WEB_PROVENANCE, creator, {
       title: 'Root for nested lock test',
       markdown: 'root content',
       post_type: 'discussion',
@@ -65,7 +70,7 @@ describe('create: locked thread enforcement', () => {
 
     // trying to reply to the comment when the root is locked should fail
     await expect(
-      createPost(commenter, {
+      createPost(WEB_PROVENANCE, commenter, {
         markdown: 'nested blocked reply',
         post_type: 'comment',
         parent_id: commentId,
@@ -78,7 +83,7 @@ describe('create: locked thread enforcement', () => {
   })
 
   it('rejects reply when the immediate parent comment is locked', async () => {
-    const root = await createPost(creator, {
+    const root = await createPost(WEB_PROVENANCE, creator, {
       title: 'Root for parent comment lock test',
       markdown: 'root content',
       post_type: 'discussion',
@@ -99,7 +104,7 @@ describe('create: locked thread enforcement', () => {
     await lockPost(commentId, creator.id)
 
     await expect(
-      createPost(commenter, {
+      createPost(WEB_PROVENANCE, commenter, {
         markdown: 'blocked nested reply',
         post_type: 'comment',
         parent_id: commentId,
@@ -116,7 +121,7 @@ describe('create: locked thread enforcement', () => {
   // unlocked child of the locked comment) can still receive replies unless the root
   // is also locked. This is intentional — no ancestor walk.
   it('allows reply to a child of a locked intermediate comment (scope limitation)', async () => {
-    const root = await createPost(creator, {
+    const root = await createPost(WEB_PROVENANCE, creator, {
       title: 'Root for scope-limitation test',
       markdown: 'root content',
       post_type: 'discussion',
@@ -148,7 +153,7 @@ describe('create: locked thread enforcement', () => {
 
     // Replying directly to the locked comment is rejected
     await expect(
-      createPost(commenter, {
+      createPost(WEB_PROVENANCE, commenter, {
         markdown: 'blocked direct reply',
         post_type: 'comment',
         parent_id: lockedCommentId,
@@ -158,7 +163,7 @@ describe('create: locked thread enforcement', () => {
     // Replying to the unlocked child (grandchild of root) succeeds: parent is
     // unlocked and root is unlocked — intermediate ancestor not checked.
     await expect(
-      createPost(commenter, {
+      createPost(WEB_PROVENANCE, commenter, {
         markdown: 'allowed grandchild reply',
         post_type: 'comment',
         parent_id: unlockedChildId,
@@ -167,7 +172,7 @@ describe('create: locked thread enforcement', () => {
   })
 
   it('allows reply to unlocked thread', async () => {
-    const root = await createPost(creator, {
+    const root = await createPost(WEB_PROVENANCE, creator, {
       title: 'Unlocked root post',
       markdown: 'root content',
       post_type: 'discussion',
@@ -176,7 +181,7 @@ describe('create: locked thread enforcement', () => {
     })
 
     await expect(
-      createPost(commenter, {
+      createPost(WEB_PROVENANCE, commenter, {
         markdown: 'allowed reply',
         post_type: 'comment',
         parent_id: root.id,

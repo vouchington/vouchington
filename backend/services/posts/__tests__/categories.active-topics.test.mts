@@ -4,6 +4,7 @@ import {
   insertTestPost,
   insertTestTopic,
   softDeleteTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getEntityRelation } from '@voucha/test-helpers/entities/entity-relations'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
@@ -29,7 +30,7 @@ describe('post category topic lifecycle validation', () => {
     await softDeleteTopic(topicId, user!.id)
 
     await expect(
-      createPost(user!, {
+      createPost(WEB_PROVENANCE, user!, {
         title: `Deleted category post ${suffix}`,
         categories: [{ type: 'topic', topic_id: topicId }],
       }),
@@ -39,7 +40,7 @@ describe('post category topic lifecycle validation', () => {
   it('rejects a deleted topic when updating post categories', async () => {
     const user = await createTestUser({ administrator: true })
     const suffix = Math.random().toString(36).slice(2, 12)
-    const post = await createPost(user!, { title: `Category update ${suffix}` })
+    const post = await createPost(WEB_PROVENANCE, user!, { title: `Category update ${suffix}` })
     const topicId = await insertTestTopic({
       name: `Deleted update category ${suffix}`,
       slug: `deleted-update-category-${suffix}`,
@@ -83,7 +84,7 @@ describe('post category topic lifecycle validation', () => {
       slug: `retained-deleted-topic-${suffix}`,
       createdById: administrator!.id,
     })
-    const post = await createPost(author!, {
+    const post = await createPost(WEB_PROVENANCE, author!, {
       title: `Retained deleted category ${suffix}`,
       categories: [{ type: 'topic', topic_id: topicId }],
     })
@@ -110,7 +111,7 @@ describe('post category topic lifecycle validation', () => {
       slug: `retained-merged-destination-${suffix}`,
       createdById: administrator!.id,
     })
-    const post = await createPost(author!, {
+    const post = await createPost(WEB_PROVENANCE, author!, {
       title: `Retained merged category ${suffix}`,
       categories: [{ type: 'topic', topic_id: sourceTopicId }],
     })
@@ -130,7 +131,7 @@ describe('post category topic lifecycle validation', () => {
   it('returns create mutations with finalized implicit hashtag votes', async () => {
     const user = await createTestUser()
     const suffix = Math.random().toString(36).slice(2, 12)
-    const post = await createPost(user!, {
+    const post = await createPost(WEB_PROVENANCE, user!, {
       title: `Hashtag vote visibility ${suffix}`,
       markdown: `#After.Commit_${suffix}`,
     })
@@ -148,7 +149,9 @@ describe('post category topic lifecycle validation', () => {
   it('returns update mutations with finalized implicit hashtag votes', async () => {
     const user = await createTestUser()
     const suffix = Math.random().toString(36).slice(2, 12)
-    const post = await createPost(user!, { title: `Hashtag update visibility ${suffix}` })
+    const post = await createPost(WEB_PROVENANCE, user!, {
+      title: `Hashtag update visibility ${suffix}`,
+    })
 
     const updated = await updatePost(user!, post!, { markdown: `#Updated.Hashtag_${suffix}` })
 
@@ -183,7 +186,7 @@ describe('post category topic lifecycle validation', () => {
         createdById: author!.id,
       }),
     ])
-    const post = await createPost(author!, {
+    const post = await createPost(WEB_PROVENANCE, author!, {
       title: `Category replacement ${suffix}`,
       categories: [
         { type: 'topic', topic_id: sharedTopicId },
@@ -250,7 +253,7 @@ describe('post category topic lifecycle validation', () => {
         }),
       ),
     )
-    const post = await createPost(author!, {
+    const post = await createPost(WEB_PROVENANCE, author!, {
       title: `Explicit category provenance ${suffix}`,
       categories: [{ type: 'topic', topic_id: authorTopicId }],
     })

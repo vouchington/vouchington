@@ -1,5 +1,6 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import { getPublicUserByAny } from '@services/users/get'
 import { getSystemUserByUsername } from '@services/users/system-users'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
@@ -129,7 +130,8 @@ export async function detectBanEvasionForMember(
       options,
     )
 
-    // Member left or was removed between signal checks and the write
+    // Member left or was removed between signal checks and the write. The detector, not the
+    // member whose post triggered detection, files this report.
     if (rowCount) {
       await write(
         sql`/* detectBanEvasionForMember:create-report */
@@ -140,7 +142,9 @@ export async function detectBanEvasionForMember(
           reason,
           original_reason,
           moderation_transparency_community_id,
-          note
+          note,
+          created_via,
+          created_via_oauth_client_id
         ) VALUES (
           ${systemUser.id},
           ${userId},
@@ -148,7 +152,9 @@ export async function detectBanEvasionForMember(
           'other',
           'other',
           ${communityId},
-          ${`Suspected ban evasion: matches @${sourceUsername ?? sourceUserId}`}
+          ${`Suspected ban evasion: matches @${sourceUsername ?? sourceUserId}`},
+          ${SYSTEM_PROVENANCE.createdVia},
+          ${SYSTEM_PROVENANCE.oauthClientId}
         )
         ON CONFLICT DO NOTHING
         `,

@@ -1,7 +1,7 @@
 import { it, beforeAll, describe } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'node:assert/strict'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { createUserReferralLink } from './create.mts'
 import { deactivateUserReferralLink } from './activate.mts'
@@ -27,7 +27,7 @@ describe('create', () => {
     referralProgramId = fixture.referralProgramId
   })
   it('createUserReferralLink creates link with valid URL', async () => {
-    const link = await createUserReferralLink(user, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer`,
@@ -44,7 +44,7 @@ describe('create', () => {
     const randomSuffix = Math.random().toString(36).slice(7)
     const url = `https://${testHostname}/refer?dedupe=${randomSuffix}`
 
-    const first = await createUserReferralLink(user, {
+    const first = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId!,
       url,
@@ -52,7 +52,7 @@ describe('create', () => {
     })
     await deactivateUserReferralLink(user, first.id)
 
-    const second = await createUserReferralLink(user, {
+    const second = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId!,
       url,
@@ -67,7 +67,7 @@ describe('create', () => {
 
   it('createUserReferralLink fails with invalid URL', async () => {
     try {
-      await createUserReferralLink(user, {
+      await createUserReferralLink(WEB_PROVENANCE, user, {
         user_id: user.id,
         referral_program_id: referralProgramId!,
         url: 'https://invalid.com/other',
@@ -81,7 +81,7 @@ describe('create', () => {
 
   it('createUserReferralLink requires authentication', async () => {
     try {
-      await createUserReferralLink(null, {
+      await createUserReferralLink(WEB_PROVENANCE, null, {
         user_id: user.id,
         referral_program_id: referralProgramId!,
         url: 'https://example.com/refer',
@@ -98,7 +98,7 @@ describe('create', () => {
 
     await assert.rejects(
       () =>
-        createUserReferralLink(admin, {
+        createUserReferralLink(WEB_PROVENANCE, admin, {
           user_id: admin.id,
           referral_program_id: referralProgramId!,
           url: `https://${testHostname}/refer?official=1`,

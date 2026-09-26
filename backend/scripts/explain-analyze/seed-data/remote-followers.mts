@@ -112,7 +112,7 @@ async function seedRemoteFollowerDirectories(): Promise<void> {
       )
       const topicBase = topicValues.length - 4
       topicRows.push(
-        `($${topicBase}, $${topicBase + 1}, $${topicBase + 2}, 'fediverse_instance', $${topicBase + 3}, $${topicBase + 4})`,
+        `($${topicBase}, $${topicBase + 1}, $${topicBase + 2}, 'fediverse_instance', $${topicBase + 3}, $${topicBase + 4}, 'system')`,
       )
       extensionValues.push(topicId)
       extensionRows.push(`($${extensionValues.length})`)
@@ -124,7 +124,7 @@ async function seedRemoteFollowerDirectories(): Promise<void> {
     )
     await query(
       `/* seedExplainData */ INSERT INTO topics
-           (id, name, slug, topic_type, hostname_id, bedrock_nova_multimodal_v1_content_sha256)
+           (id, name, slug, topic_type, hostname_id, bedrock_nova_multimodal_v1_content_sha256, created_via)
          VALUES ${topicRows.join(', ')} ON CONFLICT DO NOTHING`,
       topicValues,
     )

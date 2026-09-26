@@ -6,7 +6,7 @@ import {
   getUrlHostnameCacheKeys,
 } from '@services/entity-cache/keys'
 
-import { createTestUser, softDeleteTopic } from '@voucha/test-helpers'
+import { createTestUser, softDeleteTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 import { createTopic } from '@services/topics/create'
 
@@ -24,7 +24,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns alias key for soft-deleted topic', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })

@@ -4,6 +4,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createRandomString,
   createTestUserWithAge,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
@@ -26,7 +27,7 @@ describe('create.link-post.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const href = `https://example-${random}.com/url-id-fallback`
     const url = await addUrl(null, href)
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url_id: url!.id,
     })
@@ -39,7 +40,7 @@ describe('create.link-post.generated', () => {
     const url = await addUrl(null, `https://example-${random}.com/long-title`)
     // Repeated phrase with spaces so createSlugFromTitle can find a hyphen break point
     const longTitle = 'Blog post about interesting topics '.repeat(10)
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url_id: url!.id,
       title: longTitle,
@@ -50,7 +51,7 @@ describe('create.link-post.generated', () => {
 
   it('createPost rejects link post with non-https url', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         post_type: 'link',
         url: 'http://example.com/page',
       }),
@@ -62,7 +63,7 @@ describe('create.link-post.generated', () => {
 
   it('createPost rejects link post with a nonexistent url_id', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         post_type: 'link',
         url_id: '00000000-0000-0000-0000-000000000000',
       }),
@@ -74,7 +75,7 @@ describe('create.link-post.generated', () => {
 
   it('createPost rejects link post with a malformed url', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         post_type: 'link',
         url: 'https://',
       }),
@@ -87,7 +88,7 @@ describe('create.link-post.generated', () => {
   it('createPost resolves title from crawl data when url_id given with no title', async () => {
     const urlId = await createTestUrlWithHostname()
     await insertTestCrawl({ urlId, statusCode: 200, markdown: '', title: 'Crawled Article Title' })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url_id: urlId,
     })
@@ -110,7 +111,7 @@ describe('create.link-post.generated', () => {
       })
 
       await expect(
-        createPost(user, {
+        createPost(WEB_PROVENANCE, user, {
           post_type: 'link',
           url_id: urlId,
           slug,

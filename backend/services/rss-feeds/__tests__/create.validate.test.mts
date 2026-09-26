@@ -1,5 +1,5 @@
 import { it, expect, vi, describe } from 'vitest'
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 import { createRssFeed } from '../create.mts'
 import { buildSourceTopicName } from '../validate.mts'
@@ -22,6 +22,7 @@ describe('create.validate', () => {
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue(undefined)
     await createRssFeed({
+      provenance: WEB_PROVENANCE,
       rss_feed_url: `https://validate-${random}.example.com/feed.xml`,
       topic_id: topic.id,
       title: `Validate Test ${random}`,
@@ -50,6 +51,7 @@ describe('create.validate', () => {
 
     await expect(
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         rss_feed_url: `https://validate-fail-${random}.example.com/feed.xml`,
         topic_id: topic.id,
         title: `Validate Fail ${random}`,
@@ -65,6 +67,7 @@ describe('create.validate', () => {
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue(undefined)
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://no-validate-${random}.example.com/feed.xml`,
       topic_id: topic.id,

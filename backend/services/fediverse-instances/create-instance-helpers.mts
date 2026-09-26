@@ -1,5 +1,6 @@
 import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import type { BasicUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { createSlugFromTitle } from '@modules/utils'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import { linkHostnameToSourceTopic } from '@services/topics/hostname-link'
@@ -54,6 +55,7 @@ export type CreateInstanceTransactionResult = { topicId: string; claimedAlias: T
  * the topic revision is created unconditionally.
  */
 export async function createInstanceInTransaction(
+  provenance: ContentProvenance,
   createdById: string,
   hostnameId: string,
   name: string,
@@ -68,18 +70,12 @@ export async function createInstanceInTransaction(
     const { rows: topicRows } = await write(
       sql`/* createInstanceInTransaction:topic */
         INSERT INTO topics (
-          name,
-          slug,
-          topic_type,
-          created_by_id,
-          bedrock_nova_multimodal_v1_content_sha256
+          name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256,
+          created_via, created_via_oauth_client_id
         )
         VALUES (
-          ${name},
-          ${slug},
-          'fediverse_instance',
-          ${createdById},
-          ${content_sha256}
+          ${name}, ${slug}, 'fediverse_instance', ${createdById}, ${content_sha256},
+          ${provenance.createdVia}, ${provenance.oauthClientId}
         )
         RETURNING id
       `,
@@ -133,6 +129,7 @@ export async function createInstanceInTransaction(
 }
 
 export type CreateFediverseInstanceArgs = {
+  provenance: ContentProvenance
   hostnameId: string
   name: string
   slug: string
@@ -145,6 +142,7 @@ export async function createFediverseInstance(
   args: CreateFediverseInstanceArgs,
 ): Promise<(CreateInstanceTransactionResult & { slug: string; name: string }) | null> {
   const result = await createInstanceInTransaction(
+    args.provenance,
     args.createdById,
     args.hostnameId,
     args.name,
@@ -163,6 +161,7 @@ export async function createFediverseInstance(
 }
 
 export type CreateInstanceWithRetryArgs = {
+  provenance: ContentProvenance
   currentUser: BasicUser
   hostnameId: string
   hostname: string
@@ -174,9 +173,10 @@ export type CreateInstanceWithRetryArgs = {
 export async function createInstanceWithRetry(
   args: CreateInstanceWithRetryArgs,
 ): Promise<(CreateInstanceTransactionResult & { slug: string; name: string }) | null> {
-  const { currentUser, hostnameId, hostname, attempt, metadata } = args
+  const { provenance, currentUser, hostnameId, hostname, attempt, metadata } = args
   const { name, slug } = generateInstanceDetails(hostname, attempt)
   const result = await createFediverseInstance({
+    provenance,
     hostnameId,
     name,
     slug,

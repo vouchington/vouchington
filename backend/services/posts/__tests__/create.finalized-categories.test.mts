@@ -5,6 +5,7 @@ import {
   createTestUser,
   insertTestTopic,
   updatePostTitleMarkdown,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { executePreparedContribution } from '@services/contribution-gating'
 import { createPost, preparePostWithCommunityReviews } from '../create.mts'
@@ -20,7 +21,7 @@ describe('createPost finalized categories', () => {
       createdById: user.id,
     })
 
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Explicit category post ${suffix}`,
       categories: [{ type: 'topic', topic_id: topicId }],
     })
@@ -49,6 +50,7 @@ describe('createPost finalized categories', () => {
     async function createPostWhileFinalizationIsLocked() {
       await using query = await beginTransaction()
       const prepared = await preparePostWithCommunityReviews(
+        WEB_PROVENANCE,
         user,
         {
           title: originalTitle,

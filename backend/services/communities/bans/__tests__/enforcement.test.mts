@@ -7,6 +7,7 @@ import {
   insertTestCommunityApplication,
   insertTestPendingCommunityPostReview,
   insertTestPost,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createRandomString } from '@voucha/test-helpers/data'
 import { joinCommunity } from '../../members/join.mts'
@@ -55,7 +56,9 @@ describe('community ban enforcement', () => {
       })
       await banUserFromCommunity(owner!, community.id, user!.id)
 
-      await expect(createApplication(user!.id, community.id, {})).rejects.toMatchObject({
+      await expect(
+        createApplication(WEB_PROVENANCE, user!.id, community.id, {}),
+      ).rejects.toMatchObject({
         status: 403,
         code: 'COMMUNITY_BANNED',
       })

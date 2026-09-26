@@ -4,7 +4,7 @@ import { createOpenAIPostLLMModerationPrompt } from '../moderation-prompts.mts'
 import { createPostLLMModerator, updatePostLLMModerator } from '../moderators.mts'
 import { createPost } from '@services/posts'
 import { createPostModerationContent } from '@services/posts/content'
-import { createTestUser, createSystemUser } from '@voucha/test-helpers'
+import { createTestUser, createSystemUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
 
@@ -35,7 +35,7 @@ describe('post-moderation-agents (hasPostModerationAgent and insertPostModeratio
       moderator.id,
     )
     // Create a post
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Test content ${random}`,
       post_type: 'discussion',
@@ -75,7 +75,7 @@ describe('post-moderation-agents (hasPostModerationAgent and insertPostModeratio
       moderator.id,
     )
     // Create a post
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Test content ${random}`,
       post_type: 'discussion',
@@ -105,7 +105,7 @@ describe('post-moderation-agents (hasPostModerationAgent and insertPostModeratio
       moderator.id,
     )
     // Create a post
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Test content ${random}`,
       post_type: 'discussion',
@@ -149,7 +149,7 @@ describe('post-moderation-agents (hasPostModerationAgent and insertPostModeratio
       moderator.id,
     )
     // Create a post
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Test content ${random}`,
       post_type: 'discussion',

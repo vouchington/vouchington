@@ -4,6 +4,7 @@ import {
   isTestAuthorPublicationLifecycleLockWaiting,
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { createPost } from '../create.mts'
@@ -27,7 +28,7 @@ describe('createPost deleted author lifecycle', () => {
       )
       await deletionHoldsAuthorLifecycle.promise
 
-      creationOutcome = createPost(author, {
+      creationOutcome = createPost(WEB_PROVENANCE, author, {
         title: 'Creation blocked by concurrent author deletion',
         markdown: 'This post must not be created after the author is deleted.',
         post_type: 'discussion',

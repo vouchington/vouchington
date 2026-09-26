@@ -35,6 +35,7 @@ import {
   lockTestRssFeedItemCategory,
   setTestEntityRelationIdAndScore,
   waitForTestPostgresLockWaiter,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('categories', () => {
@@ -161,7 +162,7 @@ describe('categories', () => {
 
     // Add the alias so the backfill can match it
     const user = await createTestUser({ administrator: true })
-    const backfillTopic = await createTopic(user!, {
+    const backfillTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Backfill Topic ${random}`,
       slug: `backfill-topic-${random}`,
     })

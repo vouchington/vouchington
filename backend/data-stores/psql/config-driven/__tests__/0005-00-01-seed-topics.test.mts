@@ -17,6 +17,16 @@ describe('0005-00-01-seed-topics idempotent', () => {
     expect(sql).toContain("topic_type = 'topic'")
   })
 
+  it('records seeded topics as platform-created content', () => {
+    const sql = generateSeedTopicsSQL()
+    const inserts = sql.match(/INSERT INTO topics \([^)]*\)\s+SELECT [^\n]*/g) ?? []
+
+    expect(inserts).toHaveLength(SEEDED_TOPICS.length)
+    for (const insert of inserts) {
+      expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
+    }
+  })
+
   it('generates alias inserts for aliased topics', () => {
     const sql = generateSeedTopicsSQL()
     expect(sql).toContain('INSERT INTO topic_aliases')

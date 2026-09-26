@@ -3,6 +3,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { requireAuth, parseJsonBody } from '../../response-helpers.mts'
 import { createList, searchUserLists, type ListVisibility } from '@services/lists'
 import { assertNotSuspended } from '@services/users'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 const VALID_VISIBILITIES = new Set<ListVisibility>(['private', 'unlisted', 'public'])
 
@@ -27,6 +28,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/lists')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const body = await parseJsonBody<{
@@ -51,7 +53,7 @@ app
       ctx.assert(VALID_VISIBILITIES.has(body.visibility), 422, 'Invalid visibility value')
     }
 
-    const list = await createList(currentUser.id, {
+    const list = await createList(provenance, currentUser.id, {
       name: body!.name,
       description: body?.description ?? null,
       visibility: body?.visibility ?? 'private',

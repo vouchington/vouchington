@@ -3,6 +3,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   getTopicImportRequestCountByRecommendationForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import {
   claimContributionAdmission,
@@ -58,22 +59,34 @@ describe('topic import retry', () => {
       recordImportRequests,
     }
 
-    await expect(importTopics(user, topicNames, options)).rejects.toBe(auditFailure)
-    await expect(importTopics(user, topicNames, options)).rejects.toBeInstanceOf(
+    await expect(importTopics(WEB_PROVENANCE, user, topicNames, options)).rejects.toBe(auditFailure)
+    await expect(importTopics(WEB_PROVENANCE, user, topicNames, options)).rejects.toBeInstanceOf(
       TopicImportInProgressError,
     )
 
-    const first = await admitImportedTopicRecommendation(user, firstInput, null, importAttemptId)
+    const first = await admitImportedTopicRecommendation(
+      WEB_PROVENANCE,
+      user,
+      firstInput,
+      null,
+      importAttemptId,
+    )
     if (first.kind !== 'replay') throw new Error('Expected the first recommendation to replay')
     await expect(
       getTopicImportRequestCountByRecommendationForTest(user.id, first.response.id),
     ).resolves.toBe(1)
 
     await discardRejectedContributionAdmission(heldClaim.reservationId, heldClaim.leaseId)
-    const heldOwner = await admitImportedTopicRecommendation(user, heldInput, null, importAttemptId)
+    const heldOwner = await admitImportedTopicRecommendation(
+      WEB_PROVENANCE,
+      user,
+      heldInput,
+      null,
+      importAttemptId,
+    )
     if (heldOwner.kind !== 'created') throw new Error('Expected the held recommendation to settle')
 
-    await expect(importTopics(user, topicNames, options)).resolves.toEqual([
+    await expect(importTopics(WEB_PROVENANCE, user, topicNames, options)).resolves.toEqual([
       {
         input: topicNames[0],
         status: 'recommendation_created',

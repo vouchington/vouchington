@@ -6,6 +6,7 @@ import {
   insertTestTopic,
   createTestRssFeedItemWithUrl,
   insertTestRssFeed,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createList } from '../lists.mts'
@@ -20,7 +21,9 @@ describe('getListsContainingEntity', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-    const list = await createList(user.id, { name: `Lookup Test ${createRandomString(8)}` })
+    const list = await createList(WEB_PROVENANCE, user.id, {
+      name: `Lookup Test ${createRandomString(8)}`,
+    })
     listId = list.id
 
     const topicId = await insertTestTopic({

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser, insertTestUserWarning } from '@voucha/test-helpers'
+import { createTestUser, insertTestUserWarning, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { approveModerationAppeal } from '@services/moderation-appeals/approve-appeal'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
@@ -54,7 +54,7 @@ describe('runAppealResolutionAgent concurrency', () => {
       target_id: warning.id,
       appeal_reason: `Appeal concurrency reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     await runAppealResolutionAgent({ appealId: appeal.id }, () =>
       Promise.resolve(
         makeModelResponse('deny', 'Human-reviewed response.', 'Initial internal response.'),

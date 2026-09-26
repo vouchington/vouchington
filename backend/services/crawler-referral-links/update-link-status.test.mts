@@ -1,6 +1,6 @@
 import { it, beforeAll, describe } from 'vitest'
 import assert from 'node:assert/strict'
-import { createTestUser, createReferralProgramFixture } from '@voucha/test-helpers'
+import { createTestUser, createReferralProgramFixture, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   getReferralLinkCrawlStatus,
   setReferralLinkCrawlFailures,
@@ -29,7 +29,7 @@ describe('update-link-status', () => {
   })
 
   function createActiveLink(suffix: string) {
-    return createUserReferralLink(user, {
+    return createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/${suffix}`,

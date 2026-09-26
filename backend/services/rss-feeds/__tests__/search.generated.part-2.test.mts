@@ -14,6 +14,7 @@ import {
   addRssFeedTopicPublisherTypeWithScore,
   insertEntityRelation,
   insertTestTopicParentRelation,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('search.generated', () => {
@@ -22,6 +23,7 @@ describe('search.generated', () => {
     const topic = await createTestTopic({ hostname: `text-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -49,12 +51,14 @@ describe('search.generated', () => {
     })
 
     const childFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/child-feed-${random}.xml`,
       topic_id: child.id,
       title: `Child Feed ${random}`,
     })
     const otherFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/other-feed-${random}.xml`,
       topic_id: other.id,
@@ -96,12 +100,14 @@ describe('search.generated', () => {
     })
 
     const childFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/shared-child-feed-${random}.xml`,
       topic_id: child.id,
       title: `Shared Child Feed ${random}`,
     })
     const siblingFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/single-child-feed-${random}.xml`,
       topic_id: sibling.id,

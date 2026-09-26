@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { processRssFeedRow } from './process-rss-feed-row.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { ImportRow } from './types.mts'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 const importSingleRssFeed = vi.fn<VitestLooseMock>()
 
@@ -56,7 +57,7 @@ describe('processRssFeedRow', () => {
     const result = await processRow(user, row)
 
     expect(result).toBe('entity-abc-123')
-    expect(importSingleRssFeed).toHaveBeenCalledWith(user, 'https://example.com/feed.xml', {
+    expect(importSingleRssFeed).toHaveBeenCalledWith(SYSTEM_PROVENANCE, user, 'https://example.com/feed.xml', {
       follow: false,
     })
   })
@@ -120,7 +121,7 @@ describe('processRssFeedRow', () => {
 
     await processRow(user, row)
 
-    expect(importSingleRssFeed).toHaveBeenCalledWith(user, 'https://example.com/feed.xml', {
+    expect(importSingleRssFeed).toHaveBeenCalledWith(SYSTEM_PROVENANCE, user, 'https://example.com/feed.xml', {
       follow: false,
     })
   })

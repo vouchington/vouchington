@@ -1,6 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import onError from '@modules/on-error'
 import { type ModerationReport, reportEntityFkColumn } from './config.mts'
 import { decorateModerationEnqueueError } from './enqueue-observability.mts'
@@ -32,6 +33,7 @@ export interface CreateModerationReportResult {
 }
 
 export async function createModerationReport(
+  provenance: ContentProvenance,
   currentUserId: string,
   input: CreateModerationReportInput,
 ): Promise<CreateModerationReportResult> {
@@ -42,7 +44,7 @@ export async function createModerationReport(
   const query = sql`/* createModerationReport */ INSERT INTO moderation_reports (reporter_user_id, `
   query.append(fkColumn)
   query.append(
-    sql`, case_id, reason, original_reason, note) VALUES (${currentUserId}, ${input.entityId}::uuid, ${caseId}, ${input.reason}, ${input.reason}, ${input.note}) ON CONFLICT (reporter_user_id, `,
+    sql`, case_id, reason, original_reason, note, created_via, created_via_oauth_client_id) VALUES (${currentUserId}, ${input.entityId}::uuid, ${caseId}, ${input.reason}, ${input.reason}, ${input.note}, ${provenance.createdVia}, ${provenance.oauthClientId}) ON CONFLICT (reporter_user_id, `,
   )
   query.append(fkColumn)
   query.append(sql`) WHERE reviewed_at IS NULL AND `)

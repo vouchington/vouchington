@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createTestUser, pollUntilNotNull } from '@voucha/test-helpers'
+import { createTestUser, pollUntilNotNull, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from './create.mts'
 import { caches } from '@services/entity-cache/caches'
 import { enqueueBulkRefreshTopicMetricsById } from '@queues/entity-metrics-cache-refresh/enqueues'
@@ -8,7 +8,7 @@ describe('enqueues.generated', () => {
   it('enqueueBulkRefreshTopicMetricsById refreshes topic metrics cache', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Queue Topic ${random}`,
       slug: `queue-topic-${random}`,
     })

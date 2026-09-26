@@ -1,6 +1,6 @@
 import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createUserReferralLink } from './create.mts'
 import { createChildReferralLink } from './create-child.mts'
 import { deleteUserReferralLink } from './delete.mts'
@@ -28,7 +28,7 @@ describe('delete', () => {
   })
 
   it('deleteUserReferralLink soft deletes a link', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete1`,
@@ -42,7 +42,7 @@ describe('delete', () => {
 
   it('deleteUserReferralLink forbids non-admins from deleting other users links', async () => {
     const otherUser = await createTestUser()
-    const link = await createUserReferralLink(otherUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, otherUser, {
       user_id: otherUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete2`,
@@ -58,7 +58,7 @@ describe('delete', () => {
   })
 
   it('deleteUserReferralLink allows admins to delete any link', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete3`,
@@ -71,13 +71,13 @@ describe('delete', () => {
   })
 
   it('deleteUserReferralLink forbids deleting a child referral link directly', async () => {
-    const parent = await createUserReferralLink(regularUser, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete-child-parent`,
       label: 'Parent link',
     })
-    const child = await createChildReferralLink(regularUser!.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, regularUser!.id, {
       userId: regularUser!.id,
       referralProgramId: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete-child`,
@@ -91,13 +91,13 @@ describe('delete', () => {
   })
 
   it('deleteUserReferralLink cascades to soft-delete children of the deleted parent', async () => {
-    const parent = await createUserReferralLink(regularUser, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete-cascade-parent`,
       label: 'Parent link',
     })
-    const child = await createChildReferralLink(regularUser!.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, regularUser!.id, {
       userId: regularUser!.id,
       referralProgramId: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete-cascade-child`,
@@ -113,7 +113,7 @@ describe('delete', () => {
   })
 
   it('deleteUserReferralLink requires authentication', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=delete4`,

@@ -9,7 +9,12 @@ import {
 } from '@services/moderation'
 import { createPost } from '@services/posts'
 import { createPostModerationContent } from '@services/posts/content'
-import { createTestUser, softDeleteModerationPrompt, createSystemUser } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  softDeleteModerationPrompt,
+  createSystemUser,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { getPostElectionVote } from '@services/elections-votes/post'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
@@ -97,7 +102,7 @@ describe('index.retrieval', () => {
     )
     await updateOpenAIPostLLMModerationPrompt(user!, prompt.id, { active: true })
 
-    const post = await createPost(user!, {
+    const post = await createPost(WEB_PROVENANCE, user!, {
       title: `Test ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',

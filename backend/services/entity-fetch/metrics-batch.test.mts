@@ -5,6 +5,7 @@ import {
   createTestTopic,
   createTestUser,
   createUserProfileFixture,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createPost } from '@services/posts/create'
 import type { PrivateUser } from '@services/users/types'
@@ -110,7 +111,7 @@ describe('metrics-batch', () => {
 
       const privateReviewTopic = await createTestTopic({ user: fixture.owner })
 
-      await createPost(fixture.owner, {
+      await createPost(WEB_PROVENANCE, fixture.owner, {
         post_type: 'review',
         title: `Private review ${Date.now()}`,
         markdown:

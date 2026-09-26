@@ -17,10 +17,12 @@ export async function insertLocalTestPost(data: {
     INSERT INTO posts (
       post_type, title, markdown, created_by_id,
       bedrock_nova_multimodal_v1_content_sha256,
-      llm_moderation_content_sha256
+      llm_moderation_content_sha256,
+      created_via
     ) VALUES (
       'discussion', ${data.title}, ${data.markdown}, ${data.createdById},
-      ${sha256}, ${sha256}
+      ${sha256}, ${sha256},
+      'system'
     )
     RETURNING id
   `)

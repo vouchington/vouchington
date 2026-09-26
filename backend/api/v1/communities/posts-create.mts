@@ -27,6 +27,7 @@ import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { assessRecaptchaToken } from '@services/recaptcha'
 import { isHoneypotTriggered } from '@services/honeypot'
 import { sendCommunityPostHoneypotResponse } from './posts-honeypot-response.mts'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
   apiHeaders('POST:/api/v1/communities/:idOrSlug/posts', {
@@ -56,6 +57,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
     },
   })
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/:idOrSlug/posts')
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
   if (!currentUserCanCreatePost(currentUser)) {
     ctx.throw(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
@@ -116,7 +118,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
       }),
     execute: query =>
       executePreparedContribution(query, () =>
-        preparePostWithCommunityReviews(currentUser, input, membershipPlan, { query }),
+        preparePostWithCommunityReviews(provenance, currentUser, input, membershipPlan, { query }),
       ),
   })
   if (admission.kind === 'in_progress') {

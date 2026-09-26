@@ -6,7 +6,7 @@ import {
   getUrlHostnameCacheKeys,
 } from '@services/entity-cache/keys'
 
-import { createTestUser, softDeleteTopic } from '@voucha/test-helpers'
+import { createTestUser, softDeleteTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 import { createTopic } from '@services/topics/create'
 
@@ -87,7 +87,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns keys for topic ID', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -100,7 +100,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns keys for topic slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -113,7 +113,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns keys for topic alias', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -130,7 +130,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns keys for topic object with id', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -143,7 +143,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns keys for topic object with slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -156,12 +156,12 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys handles multiple topics', async () => {
     const user = await createTestUser({ administrator: true })
     const random1 = Math.random().toString(36).slice(2, 15)
-    const topic1 = await createTopic(user!, {
+    const topic1 = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic 1 ${random1}`,
       slug: `test-topic-1-${random1}`,
     })
     const random2 = Math.random().toString(36).slice(2, 15)
-    const topic2 = await createTopic(user!, {
+    const topic2 = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic 2 ${random2}`,
       slug: `test-topic-2-${random2}`,
     })
@@ -176,7 +176,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys handles case-insensitive slug lookup', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -189,7 +189,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys handles case-insensitive alias lookup', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -214,7 +214,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns slug and id keys for soft-deleted topic (by id)', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -228,7 +228,7 @@ describe('keys.generated (entity cache keys)', () => {
   it('getTopicCacheKeys returns slug and id keys for soft-deleted topic (by slug)', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })

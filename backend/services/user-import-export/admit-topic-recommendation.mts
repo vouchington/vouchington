@@ -9,8 +9,10 @@ import {
 } from '@services/contribution-gating'
 import { prepareTopicRecommendation } from '@services/topic-recommendations'
 import type { BasicUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 export async function admitImportedTopicRecommendation(
+  provenance: ContentProvenance,
   currentUser: BasicUser,
   input: { name: string; slug: string },
   membershipPlan: ContributionLimitMembershipPlan,
@@ -49,7 +51,7 @@ export async function admitImportedTopicRecommendation(
     },
     execute: query =>
       executePreparedContribution(query, () =>
-        prepareTopicRecommendation(currentUser, recommendationInput, { query }),
+        prepareTopicRecommendation(provenance, currentUser, recommendationInput, { query }),
       ),
   })
 }

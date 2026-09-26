@@ -11,6 +11,7 @@ import {
   createTestUserWithAge,
   insertTestCard,
   insertTestTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls'
 import type { PrivateUser } from '@services/users/types'
@@ -27,7 +28,7 @@ describe('create.generated', () => {
     admin = await createTestUser({ administrator: true })
   })
   it('createPost creates a discussion post', async () => {
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Test Discussion',
       markdown: 'Test content',
       post_type: 'discussion',
@@ -40,7 +41,7 @@ describe('create.generated', () => {
   })
 
   it('createPost immediately approves admin-created posts', async () => {
-    const post = await createPost(admin, {
+    const post = await createPost(WEB_PROVENANCE, admin, {
       title: 'Admin Discussion',
       markdown: 'Trusted admin content',
       post_type: 'discussion',
@@ -51,7 +52,7 @@ describe('create.generated', () => {
 
   it('createPost creates link post with url_id', async () => {
     const url = await addUrl(null, 'https://example.com/test-post')
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Post with URL',
       url_id: url!.id,
       post_type: 'link',
@@ -67,7 +68,7 @@ describe('create.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const href = `https://example-${random}.com/article`
     const url = await addUrl(null, href)
-    const post = await createLinkPost(user, { url_id: url!.id })
+    const post = await createLinkPost(WEB_PROVENANCE, user, { url_id: url!.id })
     expect(post.post_type).toBe('link')
     expect(post.title).toBe(href)
   })
@@ -75,7 +76,7 @@ describe('create.generated', () => {
   it('createPost creates link post with url string resolves via addUrl', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const href = `https://example-${random}.com/page`
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url: href,
       title: 'Link via url string',
@@ -87,7 +88,7 @@ describe('create.generated', () => {
   it('createPost falls back to url as title for link posts with no title', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const href = `https://example-${random}.com/notitle`
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url: href,
       title: '',
@@ -105,7 +106,7 @@ describe('create.generated', () => {
       slug: `test-topic-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review Post',
       post_type: 'review',
       markdown:
@@ -119,7 +120,7 @@ describe('create.generated', () => {
   it('createPost creates post with custom slug', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const slug = `custom-slug-${random}`
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Custom Slug Post',
       slug,
     })
@@ -136,7 +137,7 @@ describe('create.generated', () => {
       createdById: user.id,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Invalid Review',
         post_type: 'review',
         markdown:
@@ -163,7 +164,7 @@ describe('create.generated', () => {
       await testPostsBloomFilter.delete()
       await testPostsBloomFilter.ensureExists()
 
-      await createPost(user, {
+      await createPost(WEB_PROVENANCE, user, {
         title: 'Bloom Filter Slug Test',
         slug,
       })
@@ -177,7 +178,7 @@ describe('create.generated', () => {
 
   it('updatePost schedules slug addition to posts bloom filter', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Bloom Filter Slug Update Test',
     })
     const originalPostsBloomFilter = entityCacheBloomFilters.posts
@@ -205,7 +206,7 @@ describe('create.generated', () => {
   })
 
   it('createPost defaults to discussion type', async () => {
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Default Type Post',
     })
     expect(post.post_type).toBe('discussion')
@@ -216,7 +217,7 @@ describe('create.generated', () => {
     const topicA = await insertTestCard({ createdById: dataPointUser.id })
     const topicB = await insertTestCard({ createdById: dataPointUser.id })
 
-    const post = await createPost(dataPointUser, {
+    const post = await createPost(WEB_PROVENANCE, dataPointUser, {
       post_type: 'data_point',
       title: 'Batched data point topic validation',
       data_point_vertical: 'credit_card',
@@ -237,7 +238,7 @@ describe('create.generated', () => {
     const topicId = await insertTestCard({ createdById: admin.id })
 
     await expect(
-      createPost(admin, {
+      createPost(WEB_PROVENANCE, admin, {
         post_type: 'data_point',
         title: 'Official account data point',
         data_point_vertical: 'credit_card',
@@ -259,7 +260,7 @@ describe('create.generated', () => {
 
   it('createPost rejects recommendation workflows in the generic post service', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Should Fail',
         markdown: 'Use the dedicated workflow',
         post_type: 'topic_recommendation',

@@ -1,6 +1,6 @@
 import { it, beforeAll, describe } from 'vitest'
 import assert from 'node:assert/strict'
-import { createTestUser, createReferralProgramFixture } from '@voucha/test-helpers'
+import { createTestUser, createReferralProgramFixture, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   getReferralLinkCrawlStatus,
   setReferralLinkLastCrawlSuccessAtRecent,
@@ -36,7 +36,7 @@ describe('dispatch', () => {
     referralProgramId = fixture.referralProgramId
 
     // Make the hostname crawlable
-    const link = await createUserReferralLink(user, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/setup`,
@@ -48,7 +48,7 @@ describe('dispatch', () => {
   })
 
   function createActiveLink(suffix: string) {
-    return createUserReferralLink(user, {
+    return createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/${suffix}`,
@@ -117,7 +117,7 @@ describe('dispatch', () => {
       hostname: unrelatedHostname,
       pathname: '/ref/%',
     })
-    const unrelatedLink = await createUserReferralLink(user, {
+    const unrelatedLink = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: unrelatedFixture.referralProgramId,
       url: `https://${unrelatedHostname}/ref/unselected`,
@@ -133,7 +133,7 @@ describe('dispatch', () => {
       hostname: targetHostname,
       pathname: '/ref/%',
     })
-    const targetLink = await createUserReferralLink(user, {
+    const targetLink = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: targetFixture.referralProgramId,
       url: `https://${targetHostname}/ref/selected`,

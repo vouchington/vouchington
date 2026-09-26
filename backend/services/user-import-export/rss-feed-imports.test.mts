@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createTestUser, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
 import type { PrivateUser } from '@services/users/types'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import {
   getRssFeedImport,
   processRssFeedImportRow,
@@ -134,6 +135,12 @@ describe('RSS feed import batches', () => {
       createSourceFromUrlImpl,
     })
 
+    expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
+      SYSTEM_PROVENANCE,
+      expect.objectContaining({ id: user.id }),
+      rssFeedUrl,
+      expect.any(Object),
+    )
     const status = await getRssFeedImport(user.id, created.import.id)
     expect(status?.rows[0]).toMatchObject({
       input: rssFeedUrl,

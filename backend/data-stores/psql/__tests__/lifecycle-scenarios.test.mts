@@ -10,6 +10,7 @@ import {
   insertTestVoteIntegrityFlag,
   insertTestVoteWeightPenaltyRecord,
   suspendTestUserGetId,
+  WEB_PROVENANCE,
 } from '../../../test-helpers/index.mts'
 import {
   type LifecycleScenarioInput,
@@ -166,6 +167,7 @@ async function createAppeal(
     await suspendTestUserGetId(appellant.id, 'Lifecycle scenario suspension')
     return (
       await createModerationAppeal(
+        WEB_PROVENANCE,
         appellant,
         parseCreateModerationAppealInput({
           target_type: 'suspension',
@@ -181,6 +183,7 @@ async function createAppeal(
   })
   return (
     await createModerationAppeal(
+      WEB_PROVENANCE,
       appellant,
       parseCreateModerationAppealInput({
         target_type: 'warning',

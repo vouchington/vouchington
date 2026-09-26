@@ -6,6 +6,7 @@ import {
   markPostFlaggedForModeration,
   findAiUsageRecordForPost,
   pollUntilNotNull,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
@@ -29,7 +30,7 @@ describe('runAppealResolutionAgent', () => {
       target_id: postId,
       appeal_reason: `Failure cost appeal reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(author, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, author, input)
 
     // max_output_tokens hit mid-call still bills the tokens it consumed. This proves the direct
     // call-site catch block records from the thrown OpenAIResponseNotCompletedError -- not just

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
-import { createTestUserDirect, createReferralProgramFixture } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  createReferralProgramFixture,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
@@ -12,7 +16,7 @@ describe('unfurl referral links processor', () => {
   it('dispatcher job enqueues an unfurl job for a stuck requested link', async () => {
     const owner = await createTestUserDirect()
     const fixture = await createReferralProgramFixture({ createdById: owner!.id })
-    const parent = await createUserReferralLink(owner, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner!.id,
       referral_program_id: fixture.referralProgramId,
       url: `https://${fixture.hostname}/ref/${randomSlug('dispatch')}`,
@@ -43,7 +47,7 @@ describe('unfurl referral links processor', () => {
   it('unfurl_referral_link job delegates to runReferralLinkUnfurl using job.data.parentLinkId', async () => {
     const owner = await createTestUserDirect()
     const fixture = await createReferralProgramFixture({ createdById: owner!.id })
-    const parent = await createUserReferralLink(owner, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner!.id,
       referral_program_id: fixture.referralProgramId,
       url: `https://${fixture.hostname}/ref/${randomSlug('processor-unfurl')}`,
@@ -68,13 +72,13 @@ describe('unfurl referral links processor', () => {
   it('remove_unfurled_children_for_user job delegates to softDeleteChildrenForUser using job.data.userId', async () => {
     const owner = await createTestUserDirect()
     const fixture = await createReferralProgramFixture({ createdById: owner!.id })
-    const parent = await createUserReferralLink(owner, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner!.id,
       referral_program_id: fixture.referralProgramId,
       url: `https://${fixture.hostname}/ref/${randomSlug('remove-parent')}`,
       label: 'parent for removal test',
     })
-    const child = await createChildReferralLink(owner!.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, owner!.id, {
       userId: owner!.id,
       referralProgramId: fixture.referralProgramId,
       url: `https://${fixture.hostname}/ref/${randomSlug('remove-child')}`,

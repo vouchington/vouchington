@@ -1,5 +1,10 @@
 import { it, expect, describe } from 'vitest'
-import { createTestUser, createTestPost, pollUntilNotNull } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createTestPost,
+  pollUntilNotNull,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
 import { caches } from '@services/entity-cache/caches'
 import { refresh } from './refresh.mts'
@@ -10,7 +15,7 @@ describe('refresh', () => {
   it('refresh.topic_metrics sets metrics cache for topic id and slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Refresh Topic ${random}`,
       slug: `refresh-topic-${random}`,
     })

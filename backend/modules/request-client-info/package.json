@@ -20,6 +20,11 @@
   "scripts": {},
   "dependencies": {
     "@ts-shared/request-client-info": "workspace:^",
-    "@ts-shared/session-jwt": "workspace:^"
+    "@ts-shared/session-jwt": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
   }
 }

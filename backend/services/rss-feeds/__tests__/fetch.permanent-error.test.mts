@@ -21,6 +21,7 @@ import {
   createTestTopic,
   getRssFeedDeletedAt,
   updateUrlHostnameUnreliableStatusCodes,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 const VALID_CONTENT_TYPES = ['application/rss+xml', 'application/atom+xml']
@@ -54,6 +55,7 @@ describe('fetch.permanent-error', () => {
       hostname: `perm-err-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://perm-err-${random}.example.com/feed.xml`,
       topic_id: topic.id,

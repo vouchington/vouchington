@@ -12,6 +12,7 @@ import {
   insertTestAgentPrompt,
   insertTestCommunity,
   insertTestCommunityMember,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('Community automod recent action routes', () => {
@@ -48,7 +49,7 @@ describe('Community automod recent action routes', () => {
     const moderator = await createPostLLMModerator(owner, systemUser, `automod-agent-${random}`)
     await updatePostLLMModerator(owner, moderator.id, { active: true })
     const promptId = await insertTestAgentPrompt({ agentId: moderator.id })
-    const post = await createPost(owner, {
+    const post = await createPost(WEB_PROVENANCE, owner, {
       title: `Automod route candidate ${random}`,
       markdown: `Automod route candidate body ${random}`,
       post_type: 'discussion',

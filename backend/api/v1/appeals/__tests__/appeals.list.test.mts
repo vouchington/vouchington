@@ -5,6 +5,7 @@ import {
   insertTestPost,
   insertTestUserWarning,
   appendTestPlatformRejectionNote,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
@@ -40,7 +41,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
         target_id: warning.id,
         appeal_reason: reason,
       })
-      return createModerationAppeal(user, input)
+      return createModerationAppeal(WEB_PROVENANCE, user, input)
     }
 
     const [r1, r2] = await Promise.all([
@@ -144,7 +145,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
       target_id: postId,
       appeal_reason: 'Please review this removal.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
     const request = createRequest()
     await request.authenticateAs(appellant)
@@ -173,7 +174,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
       target_id: staffWarning.id,
       appeal_reason: `Staff own appeal ${crypto.randomUUID()}`,
     })
-    const { appeal: staffAppeal } = await createModerationAppeal(staff, staffInput)
+    const { appeal: staffAppeal } = await createModerationAppeal(WEB_PROVENANCE, staff, staffInput)
 
     const request = createRequest()
     await request.authenticateAs(staff)
@@ -215,7 +216,7 @@ describe('GET /api/v1/appeals — list behavior', () => {
         target_id: warning.id,
         appeal_reason: reason,
       })
-      return createModerationAppeal(paginationUser, input)
+      return createModerationAppeal(WEB_PROVENANCE, paginationUser, input)
     }
 
     // Create 3 appeals for a fresh user so limit=2 guarantees a second page

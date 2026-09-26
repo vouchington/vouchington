@@ -15,6 +15,7 @@ import {
   insertTestCommunityMember,
   findAiUsageRecordForPost,
   pollUntilNotNull,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
@@ -55,7 +56,7 @@ describe('runModeratorOnPost cost tracking', () => {
     })
     await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
 
-    const post = (await createPost(user, {
+    const post = (await createPost(WEB_PROVENANCE, user, {
       title: `Cost tracking test post ${random}`,
       markdown: `Test content ${random}`,
       post_type: 'discussion',

@@ -101,7 +101,7 @@ async function seedPlaywrightMembershipsAndCommunities(
   )
   /* v8 ignore start -- exercised by Playwright global setup, not Vitest coverage */
   await query(
-    `INSERT INTO communities ( id, name, slug, markdown, visibility, created_by_id ) VALUES ( '019c0000-0000-7000-8000-000000000010', '000 Playwright Popular Community', 'playwright-popular-community', 'Seed community used by Playwright aside coverage.', 'public', '019f0000-0000-7000-8000-000000000000' ) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, markdown = EXCLUDED.markdown, visibility = EXCLUDED.visibility, created_by_id = EXCLUDED.created_by_id, deleted_at = NULL, archived_at = NULL`,
+    `INSERT INTO communities ( id, name, slug, markdown, visibility, created_by_id, created_via ) VALUES ( '019c0000-0000-7000-8000-000000000010', '000 Playwright Popular Community', 'playwright-popular-community', 'Seed community used by Playwright aside coverage.', 'public', '019f0000-0000-7000-8000-000000000000', 'system' ) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug, markdown = EXCLUDED.markdown, visibility = EXCLUDED.visibility, created_by_id = EXCLUDED.created_by_id, deleted_at = NULL, archived_at = NULL`,
   )
   await query(
     `DELETE FROM community_members WHERE community_id = '019c0000-0000-7000-8000-000000000010' AND user_id = '00000000-0000-0000-0000-000000000000'`,

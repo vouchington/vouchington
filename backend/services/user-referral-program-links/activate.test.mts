@@ -1,7 +1,7 @@
 import { it, beforeAll, describe } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'node:assert/strict'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { activateUserReferralLink, deactivateUserReferralLink } from './activate.mts'
 import { createUserReferralLink } from './create.mts'
 import { createChildReferralLink } from './create-child.mts'
@@ -26,7 +26,7 @@ describe('activate', () => {
       pathname: '/refer',
     })
     referralProgramId = fixture.referralProgramId
-    const link = await createUserReferralLink(user, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId!,
       url: `https://${hostname}/refer`,
@@ -72,7 +72,7 @@ describe('activate', () => {
   })
 
   it('activateUserReferralLink forbids activating a child referral link directly', async () => {
-    const child = await createChildReferralLink(user.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, user.id, {
       userId: user.id,
       referralProgramId: referralProgramId!,
       url: `https://${hostname}/refer?test=activate-child`,
@@ -86,7 +86,7 @@ describe('activate', () => {
   })
 
   it('deactivateUserReferralLink forbids deactivating a child referral link directly', async () => {
-    const child = await createChildReferralLink(user.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, user.id, {
       userId: user.id,
       referralProgramId: referralProgramId!,
       url: `https://${hostname}/refer?test=deactivate-child`,

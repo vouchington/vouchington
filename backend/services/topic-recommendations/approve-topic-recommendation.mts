@@ -14,6 +14,7 @@ import { getLockedTopicRecommendationApproval } from './get-locked-topic-recomme
 import { markTopicRecommendationApproved } from './mark-topic-recommendation-approved.mts'
 import { setTopicRecommendationApprovalError } from './set-topic-recommendation-approval-error.mts'
 import { runApprovedTopicRecommendationSideEffects } from './approve-topic-recommendation-side-effects.mts'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 export type TopicRecommendationApprovalTransactionResult = {
   topic: Awaited<ReturnType<typeof createTopic>>
@@ -25,6 +26,7 @@ export type TopicRecommendationApprovalTransactionResult = {
 }
 
 export async function approveTopicRecommendationInTransaction(
+  provenance: ContentProvenance,
   currentUser: PrivateUser,
   recommendationId: string,
   options: { query: NonNullable<QueryOptions['query']> },
@@ -32,6 +34,7 @@ export async function approveTopicRecommendationInTransaction(
   const lockedRecommendation = await getLockedTopicRecommendationApproval(recommendationId, options)
 
   const topic = await createTopic(
+    provenance,
     currentUser,
     {
       name: lockedRecommendation.topic_title,
@@ -104,6 +107,7 @@ export async function approveTopicRecommendationInTransaction(
 }
 
 export async function approveTopicRecommendation(
+  provenance: ContentProvenance,
   currentUser: PrivateUser,
   recommendation: TopicRecommendationPost,
 ): Promise<{
@@ -122,6 +126,7 @@ export async function approveTopicRecommendation(
   try {
     await using query = await beginTransaction()
     const transactionResult = await approveTopicRecommendationInTransaction(
+      provenance,
       currentUser,
       recommendation.id,
       { query },

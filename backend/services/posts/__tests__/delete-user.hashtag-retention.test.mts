@@ -8,6 +8,7 @@ import {
   createTestUserWithAge,
   createTestTopic,
   getEntityRelation,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUnlinkedTopicAlias, linkTopicAlias, searchTopHashtags } from '@services/topics'
 import { deleteUserAndDrainForTest } from '@services/users/delete-test-support'
@@ -28,13 +29,13 @@ describe('deleteUser hashtag retention', () => {
     const viewer = await createTestUser()
     const topic = await createTestTopic({ user: viewer })
     const alias = await createUnlinkedTopicAlias(hashtag)
-    const sourcePost = await createPost(author, {
+    const sourcePost = await createPost(WEB_PROVENANCE, author, {
       post_type: 'discussion',
       title: `Retained source #${hashtag}`,
     })
     const supportingPosts = await Promise.all(
       contributors.map((contributor, index) =>
-        createPost(contributor!, {
+        createPost(WEB_PROVENANCE, contributor!, {
           post_type: 'discussion',
           title: `Supporting source ${index} #${hashtag}`,
         }),
@@ -70,7 +71,7 @@ describe('deleteUser hashtag retention', () => {
     const editor = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS, {
       administrator: true,
     })
-    const post = await createPost(owner, {
+    const post = await createPost(WEB_PROVENANCE, owner, {
       post_type: 'discussion',
       title: `Original #${hashtag}`,
     })

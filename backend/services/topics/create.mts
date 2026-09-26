@@ -4,6 +4,7 @@ import type { CreateTopicUpdates, Topic } from './types.mts'
 import { createTopicEmbeddingContent } from './content.mts'
 import { resolveHostname, setTopicHostnameLink } from './hostname-link.mts'
 import type { PrivateUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID, validateSlug } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
@@ -27,6 +28,7 @@ export function finalizeCreatedTopic(topic: Topic, updates: CreateTopicUpdates):
 
 // on create, we create the minimum topic and expect all updates to happen after
 export const createTopic = async (
+  provenance: ContentProvenance,
   creator: PrivateUser,
   updates: CreateTopicUpdates,
   options: QueryOptions = {},
@@ -48,17 +50,18 @@ export const createTopic = async (
   const queryOptions = options.query ? { query: options.query } : options.client ? options : null
 
   if (queryOptions) {
-    return createTopicInDatabase(creator, updates, queryOptions)
+    return createTopicInDatabase(provenance, creator, updates, queryOptions)
   }
 
   await using query = await beginTransaction()
-  const createdTopic = await createTopicInDatabase(creator, updates, { query })
+  const createdTopic = await createTopicInDatabase(provenance, creator, updates, { query })
   await query.commit()
   finalizeCreatedTopic(createdTopic, updates)
   return createdTopic
 }
 
 async function createTopicInDatabase(
+  provenance: ContentProvenance,
   creator: PrivateUser,
   updates: CreateTopicUpdates,
   options: QueryOptions,
@@ -86,6 +89,7 @@ async function createTopicInDatabase(
         AND topic.merged_into_topic_id IS NULL
       FOR UPDATE OF topic
     ),
+    -- A revived topic keeps the provenance of the request that first created it.
     revived_topic AS (
       UPDATE topics
       SET
@@ -106,7 +110,9 @@ async function createTopicInDatabase(
         topic_type,
         created_by_id,
         bedrock_nova_multimodal_v1_content_sha256,
-        homepage_url_id
+        homepage_url_id,
+        created_via,
+        created_via_oauth_client_id
       )
       SELECT
         ${updates.name},
@@ -114,7 +120,9 @@ async function createTopicInDatabase(
         ${topicType},
         ${creator.id},
         ${content_sha256},
-        ${updates.homepage_url_id ?? null}
+        ${updates.homepage_url_id ?? null},
+        ${provenance.createdVia},
+        ${provenance.oauthClientId}
       WHERE NOT EXISTS (SELECT 1 FROM source_alias_owner)
       RETURNING id
     )

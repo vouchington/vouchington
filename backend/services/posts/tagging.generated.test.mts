@@ -7,6 +7,7 @@ import {
   hasPostRelatedTopic,
   insertTestPost,
   mergeTopicForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Topic } from '@services/topics/types'
@@ -19,6 +20,7 @@ describe('tagging.generated', () => {
     const random = Math.random().toString(36).slice(2, 15)
     testUser = await createTestUser({ administrator: true })
     testTopic = await upsertTopic(
+      WEB_PROVENANCE,
       `Test Post Tagging Topic ${random}`,
       `test-post-tagging-${random}`,
     )
@@ -27,6 +29,7 @@ describe('tagging.generated', () => {
     it('tags post with multiple topics', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topic2 = await upsertTopic(
+        WEB_PROVENANCE,
         `Test Post Tagging Topic 2 ${random}`,
         `test-post-tagging-2-${random}`,
       )
@@ -69,8 +72,16 @@ describe('tagging.generated', () => {
 
     it('redirects a merged-away source slug to its destination topic', async () => {
       const random = Math.random().toString(36).slice(2, 15)
-      const source = await upsertTopic(`Merge Source ${random}`, `merge-source-${random}`)
-      const destination = await upsertTopic(`Merge Dest ${random}`, `merge-dest-${random}`)
+      const source = await upsertTopic(
+        WEB_PROVENANCE,
+        `Merge Source ${random}`,
+        `merge-source-${random}`,
+      )
+      const destination = await upsertTopic(
+        WEB_PROVENANCE,
+        `Merge Dest ${random}`,
+        `merge-dest-${random}`,
+      )
       await mergeTopicForTest(source.id, destination.id, testUser.id)
 
       const postId = await insertTestPost({
@@ -91,10 +102,12 @@ describe('tagging.generated', () => {
     it('dedupes when both a merged source slug and its destination slug are requested together', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const source = await upsertTopic(
+        WEB_PROVENANCE,
         `Merge Dedup Source ${random}`,
         `merge-dedup-source-${random}`,
       )
       const destination = await upsertTopic(
+        WEB_PROVENANCE,
         `Merge Dedup Dest ${random}`,
         `merge-dedup-dest-${random}`,
       )

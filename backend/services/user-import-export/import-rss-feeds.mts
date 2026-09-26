@@ -2,6 +2,7 @@
 // upsertEntityRelation bookmark-predicate write below.
 import '@services/bookmarks'
 import type { BasicUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -36,6 +37,7 @@ export type ImportSingleRssFeedOptions = {
 }
 
 export async function importSingleRssFeed(
+  provenance: ContentProvenance,
   currentUser: BasicUser,
   rawUrl: string,
   { assertRssFeedLimit, follow = true, createSourceFromUrlImpl }: ImportSingleRssFeedOptions = {},
@@ -79,6 +81,7 @@ export async function importSingleRssFeed(
 
   // No existing feed — create a new source (topic + rss_feed) directly
   const sourceResult = await (createSourceFromUrlImpl ?? createSourceFromUrl)(
+    provenance,
     currentUser,
     canonicalUrl,
     {

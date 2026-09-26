@@ -29,6 +29,7 @@ import {
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import createHttpError from 'http-errors'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 const rssFeedsPaginationParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -113,6 +114,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/rss-feeds')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     // apiRequest gives this wrapper-parsed body a real documented shape (rather than the
@@ -125,7 +127,7 @@ app
       ),
     )
     const membershipPlan = await getUserActivePlan(currentUser.id)
-    const result = await createSourceFromUrl(currentUser, body.rss_feed_url, {
+    const result = await createSourceFromUrl(provenance, currentUser, body.rss_feed_url, {
       assertContributionLimit: () =>
         assertWithinContributionActionLimit(currentUser, membershipPlan, 'rss_feed'),
       follow: body.follow,

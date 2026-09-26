@@ -10,6 +10,7 @@ import {
   insertTestStory,
   readAllQueueJobs,
   setPostLLMModerationContentSha256,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { crawlUrls } from '@queues/crawler/queues'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
@@ -100,7 +101,7 @@ describe('post entity listener creation dispatch', () => {
       const canonicalUrlId = await createTestUrlWithHostname()
       const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
       const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         title: `Redirect recovery ${randomUUID()}`,
         markdown: 'Link post recovery body',
         post_type: 'link',
@@ -185,7 +186,7 @@ describe('post entity listener creation dispatch', () => {
       await crawlUrls.obliterate()
       const creator = await createTestUser()
       const urlId = await createTestUrlWithHostname()
-      const post = await createPost(creator, { post_type: 'link', url_id: urlId })
+      const post = await createPost(WEB_PROVENANCE, creator, { post_type: 'link', url_id: urlId })
       await crawlUrls.obliterate()
 
       await processPostCreated({ id: post.id })

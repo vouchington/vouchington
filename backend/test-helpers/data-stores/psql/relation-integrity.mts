@@ -43,7 +43,7 @@ export async function getMismatchedAdminImportTargetViolationCodes(
   suffix: string,
 ): Promise<string[]> {
   const { rows: topicRows } = await write<{ id: string }>(
-    sql`INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256) VALUES (${`Admin import ${suffix}`}, ${`admin-import-${suffix}`}, ${`\\x${'0'.repeat(64)}`}) RETURNING id`,
+    sql`INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via) VALUES (${`Admin import ${suffix}`}, ${`admin-import-${suffix}`}, ${`\\x${'0'.repeat(64)}`}, 'system') RETURNING id`,
   )
   const { rows: batches } = await write<{ id: string; import_type: string }>(
     sql`INSERT INTO admin_import_batches (import_type, created_by_id, total_rows) VALUES ('topic', ${userId}, 1), ('rss_feed', ${userId}, 1) RETURNING id, import_type`,

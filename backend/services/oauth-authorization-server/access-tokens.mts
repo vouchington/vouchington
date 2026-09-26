@@ -31,7 +31,7 @@ export async function validateOAuthAccessToken(
            AND suspension.lifted_at IS NULL
        )
        AND access.resource = $2
-     RETURNING client.client_id, oauth_grant.user_id, access.resource, access.scopes, access.expires_at`,
+     RETURNING client.client_id, client.id AS oauth_client_id, oauth_grant.user_id, access.resource, access.scopes, access.expires_at`,
     [hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken), getOAuthResourceUrl(audience)],
   )
   return result.rows[0] ?? null

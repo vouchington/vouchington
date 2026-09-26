@@ -6,6 +6,7 @@ import {
   insertTestCommunityPostReview,
   insertTestPost,
   updateTestCommunityPostReviewState,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { lockPostPublication } from '@services/post-publication'
 import { createModerationAppeal } from './create.mts'
@@ -37,6 +38,7 @@ describe('resolveModerationAppealAccept publication lock', () => {
       unpublishedAt: new Date(),
     })
     const { appeal } = await createModerationAppeal(
+      WEB_PROVENANCE,
       appellant,
       parseCreateModerationAppealInput({
         target_type: 'removal',

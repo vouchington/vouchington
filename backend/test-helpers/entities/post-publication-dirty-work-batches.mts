@@ -9,10 +9,11 @@ export async function insertTestPostBatch(createdById: string, count: number): P
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id,
       bedrock_nova_multimodal_v1_content_sha256,
-      llm_moderation_content_sha256
+      llm_moderation_content_sha256,
+      created_via
     )
     SELECT uuidv7(), 'discussion', 'Batch test post ' || series::text, '', ${createdById},
-      ${sha256}, ${sha256}
+      ${sha256}, ${sha256}, 'system'
     FROM generate_series(1, ${count}) AS generated(series)
     RETURNING id
   `)
@@ -101,9 +102,10 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       INSERT INTO posts (
         id, post_type, title, markdown, created_by_id,
         bedrock_nova_multimodal_v1_content_sha256,
-        llm_moderation_content_sha256
+        llm_moderation_content_sha256,
+        created_via
       )
-      SELECT post_id, 'story', 'Publication batch post ' || post_id::text, '', $10, $6, $6
+      SELECT post_id, 'story', 'Publication batch post ' || post_id::text, '', $10, $6, $6, 'system'
       FROM input
     )
     INSERT INTO post__stories (post_id, story_id, initiated_by_id)

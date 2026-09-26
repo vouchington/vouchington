@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { it, expect, beforeAll, describe } from 'vitest'
 import { createPost } from '../create.mts'
 import { updatePost } from '../update.mts'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUser, insertTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Post } from '../types.mts'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
@@ -31,7 +31,7 @@ describe('update.review-content-validation', () => {
     })
 
     // Regular user creates a review with valid content.
-    userReview = await createPost(user, {
+    userReview = await createPost(WEB_PROVENANCE, user, {
       post_type: 'review',
       markdown: VALID_REVIEW_MARKDOWN,
       review_topic_ratings: [{ topic_id: topicId, rating: 4 }],

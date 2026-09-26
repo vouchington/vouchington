@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUserDirect, createTestMembership } from '@voucha/test-helpers'
+import { createTestUserDirect, createTestMembership, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getTopicBySlug } from '@services/topics/get'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
@@ -28,7 +28,7 @@ describe('unfurls', () => {
   }, 30_000)
 
   async function createOwnerParentLink(labelSuffix: string) {
-    const link = await createUserReferralLink(owner, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl(labelSuffix),
@@ -65,7 +65,7 @@ describe('unfurls', () => {
     const request = createRequest()
     await request.authenticateAs(owner!)
     const parentLinkId = await createOwnerParentLink('child-parent')
-    const child = await createChildReferralLink(owner!.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, owner!.id, {
       userId: owner!.id,
       referralProgramId: referralProgramId!,
       url: buildAmexReferralUrl('api-child'),
@@ -87,7 +87,7 @@ describe('unfurls', () => {
   it('returns 202 for a plus-tier owner requesting unfurl on their own link', async () => {
     const plusUser = await createTestUserDirect()
     await createTestMembership({ user_id: plusUser!.id, plan: 'plus' })
-    const link = await createUserReferralLink(plusUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, plusUser, {
       user_id: plusUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('api-plus'),

@@ -12,6 +12,7 @@ import {
 import { admitImportedTopicRecommendation } from './admit-topic-recommendation.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating'
 import { claimTopicImportAttempt, finalizeTopicImportAttempt } from './topic-import-attempts.mts'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 export type ImportTopicResult = {
   input: string
@@ -40,6 +41,7 @@ const followTopicRelation = getEntityRelationMetadataOrThrow({
 })
 
 export async function importTopics(
+  provenance: ContentProvenance,
   currentUser: BasicUser,
   names: string[],
   options: {
@@ -84,6 +86,7 @@ export async function importTopics(
       if (recommendationGateError) throw recommendationGateError
       // oxlint-disable-next-line no-await-in-loop -- preserve per-input contribution checks and ordered result attribution
       const admission = await admitImportedTopicRecommendation(
+        provenance,
         currentUser,
         input,
         options.membershipPlan ?? null,

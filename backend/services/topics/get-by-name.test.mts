@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getTopicByName, topicSlugExists } from './get-by-name.mts'
 import { createTopic } from './create.mts'
-import { createTestUser, createRandomString } from '@voucha/test-helpers'
+import { createTestUser, createRandomString, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 function rand(): string {
@@ -12,7 +12,11 @@ describe('topicSlugExists', () => {
   it('returns true for an existing topic slug', async () => {
     const admin = (await createTestUser({ administrator: true })) as PrivateUser
     const slug = `tse-${rand()}`
-    await createTopic(admin, { name: `Slug Exists ${rand()}`, slug, topic_type: 'topic' })
+    await createTopic(WEB_PROVENANCE, admin, {
+      name: `Slug Exists ${rand()}`,
+      slug,
+      topic_type: 'topic',
+    })
     expect(await topicSlugExists(slug)).toBe(true)
   })
 
@@ -26,7 +30,7 @@ describe('getTopicByName', () => {
     const admin = (await createTestUser({ administrator: true })) as PrivateUser
     const name = `Get By Name ${rand()}`
     const slug = `gbn-${rand()}`
-    const created = await createTopic(admin, { name, slug, topic_type: 'topic' })
+    const created = await createTopic(WEB_PROVENANCE, admin, { name, slug, topic_type: 'topic' })
 
     const row = await getTopicByName(name.toUpperCase())
     expect(row).not.toBeNull()

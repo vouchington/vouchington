@@ -11,6 +11,7 @@ import {
   insertTestAgentModeration,
   insertTestAgentPrompt,
   mockAiGeneratedModerationResults,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -43,7 +44,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByPostIds - returns empty array when no moderations exist', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',
@@ -54,7 +55,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByPostIds - returns moderation with correct fields', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',
@@ -82,12 +83,12 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByPostIds - returns moderations for multiple posts', async () => {
     const random = randomSuffix()
-    const post1 = await createPost(user, {
+    const post1 = await createPost(WEB_PROVENANCE, user, {
       title: `Post 1 ${random}`,
       markdown: `Content 1 ${random}`,
       post_type: 'discussion',
     })
-    const post2 = await createPost(user, {
+    const post2 = await createPost(WEB_PROVENANCE, user, {
       title: `Post 2 ${random}`,
       markdown: `Content 2 ${random}`,
       post_type: 'discussion',
@@ -103,7 +104,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByPostIds - caps results at 10 per post', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',
@@ -119,7 +120,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByAgent - returns moderations for post + agent', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',
@@ -145,7 +146,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByAgent - preserves stored confidence metadata', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Confidence Post ${random}`,
       markdown: `Confidence Content ${random}`,
       post_type: 'discussion',
@@ -164,7 +165,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByAgent - respects limit option', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',
@@ -179,7 +180,7 @@ describe('search-post-moderations', () => {
 
   it('searchPostModerationsByAgent - returns empty array when no moderations for agent', async () => {
     const random = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Test Post ${random}`,
       markdown: `Content ${random}`,
       post_type: 'discussion',

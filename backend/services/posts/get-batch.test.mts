@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { getPostsByAnyBatch } from './get-batch.mts'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createPost } from './create.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -12,17 +12,17 @@ describe('get-batch', () => {
 
   it('getPostsByAnyBatch fetches multiple posts by IDs in correct order', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const post1 = await createPost(user, {
+    const post1 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post 1',
       markdown: 'Content 1',
     })
-    const post2 = await createPost(user, {
+    const post2 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post 2',
       markdown: 'Content 2',
     })
-    const post3 = await createPost(user, {
+    const post3 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post 3',
       markdown: 'Content 3',
@@ -42,19 +42,19 @@ describe('get-batch', () => {
     const slug2 = `test-slug-2-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
     const slug3 = `test-slug-3-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
 
-    const post1 = await createPost(user, {
+    const post1 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post Slug 1',
       markdown: 'Content 1',
       slug: slug1,
     })
-    const post2 = await createPost(user, {
+    const post2 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post Slug 2',
       markdown: 'Content 2',
       slug: slug2,
     })
-    const post3 = await createPost(user, {
+    const post3 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post Slug 3',
       markdown: 'Content 3',
@@ -73,12 +73,12 @@ describe('get-batch', () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
     const slug = `test-mixed-slug-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
 
-    const post1 = await createPost(user, {
+    const post1 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post ID',
       markdown: 'Content',
     })
-    const post2 = await createPost(user, {
+    const post2 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post Slug',
       markdown: 'Content',
@@ -94,7 +94,7 @@ describe('get-batch', () => {
 
   it('getPostsByAnyBatch returns null for non-existent posts while preserving order', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Test Post',
       markdown: 'Content',

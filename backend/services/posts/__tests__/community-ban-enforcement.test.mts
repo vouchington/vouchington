@@ -4,6 +4,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestPost,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createRandomString } from '@voucha/test-helpers/data'
 import { createPost } from '../create.mts'
@@ -27,7 +28,7 @@ describe('community ban enforcement — post creation', () => {
       await banUserFromCommunity(owner!, community.id, user!.id)
 
       await expect(
-        createPost(user!, {
+        createPost(WEB_PROVENANCE, user!, {
           title: `Ban enforcement post ${createRandomString(8)}`,
           markdown: 'blocked content',
           post_type: 'discussion',
@@ -66,7 +67,7 @@ describe('community ban enforcement — post creation', () => {
       await banUserFromCommunity(owner!, community.id, user!.id)
 
       await expect(
-        createPost(user!, {
+        createPost(WEB_PROVENANCE, user!, {
           markdown: 'banned comment',
           post_type: 'comment',
           parent_id: postId,

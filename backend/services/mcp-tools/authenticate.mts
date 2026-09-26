@@ -11,7 +11,7 @@ const BEARER_CREDENTIAL_PATTERN = /^Bearer +([A-Za-z0-9\-._~+/]+=*) *$/i
 
 type McpVerifiedCredential =
   | { credential: 'api_key'; rateLimitIdentity: { apiKeyId: string } }
-  | { credential: 'oauth'; rateLimitIdentity: { userId: string } }
+  | { credential: 'oauth'; oauthClientId: string; rateLimitIdentity: { userId: string } }
 
 export type McpBearerAuthentication =
   | { status: 'missing' }
@@ -45,7 +45,11 @@ async function verifyMcpBearerToken(
     const principal = await validateOAuthAccessToken(rawToken, config.audience)
     if (!principal) return null
     return {
-      credential: { credential: 'oauth', rateLimitIdentity: { userId: principal.user_id } },
+      credential: {
+        credential: 'oauth',
+        oauthClientId: principal.oauth_client_id,
+        rateLimitIdentity: { userId: principal.user_id },
+      },
       scopes: principal.scopes,
       userId: principal.user_id,
     }

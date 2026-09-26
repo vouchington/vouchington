@@ -1,4 +1,5 @@
 import type { QueryOptions } from '@data-stores/psql/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from '../types.mts'
 import type { CreatePostDefaults } from './validation.mts'
@@ -14,6 +15,7 @@ export async function insertPost({
   defaults,
   isAdminCreator,
   options,
+  provenance,
   scope,
   sourceUrlId,
   updates,
@@ -22,6 +24,7 @@ export async function insertPost({
   defaults: CreatePostDefaults
   isAdminCreator: boolean
   options: QueryOptions
+  provenance: ContentProvenance
   scope: PostScope
   sourceUrlId?: string
   updates: CreatePostInput
@@ -39,7 +42,8 @@ export async function insertPost({
         post_type, title, markdown, created_by_id, parent_id, root_id, community_id,
         broadcast, privacy, is_anonymous, bedrock_nova_multimodal_v1_content_sha256,
         llm_moderation_content_sha256,
-        data_point_vertical, structured_data, declared_language, url_id, creation_source_url_id
+        data_point_vertical, structured_data, declared_language, url_id, creation_source_url_id,
+        created_via, created_via_oauth_client_id
       )
       VALUES (
         ${defaults.postType}, ${updates.title || ''}, ${updates.markdown || ''}, ${creator.id},
@@ -48,7 +52,8 @@ export async function insertPost({
         ${moderationContentSha}, ${updates.data_point_vertical ?? null},
         ${updates.structured_data != null ? JSON.stringify(updates.structured_data) : null},
         ${normalizeContentLanguageTag(updates.declared_language ?? null)},
-        ${defaults.postType === 'link' ? (updates.url_id ?? null) : null}, ${sourceUrlId ?? null}
+        ${defaults.postType === 'link' ? (updates.url_id ?? null) : null}, ${sourceUrlId ?? null},
+        ${provenance.createdVia}, ${provenance.oauthClientId}
       )
       RETURNING *
     `,

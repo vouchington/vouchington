@@ -15,6 +15,7 @@ import {
   getLatestPostElectionVoteCreatedAt,
   followUser,
   pollUntilNotNull,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
 import {
@@ -34,7 +35,7 @@ describe('legacy sentiment topic metric migration refresh', () => {
       administrator: true,
       username: `migration-cache-${suffix}`,
     })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Migration cache ${suffix}`,
       slug: `migration-cache-${suffix}`,
     })
@@ -64,7 +65,7 @@ describe('legacy sentiment topic metric migration refresh', () => {
       administrator: true,
       username: `migration-retry-${suffix}`,
     })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Migration retry ${suffix}`,
       slug: `migration-retry-${suffix}`,
     })
@@ -89,7 +90,7 @@ describe('legacy sentiment topic metric migration refresh', () => {
       administrator: true,
       username: `migration-finalize-${suffix}`,
     })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Migration finalize ${suffix}`,
       slug: `migration-finalize-${suffix}`,
     })
@@ -116,7 +117,7 @@ describe('legacy sentiment topic metric migration refresh', () => {
       administrator: true,
       username: `migration-finalize-clear-${suffix}`,
     })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Migration finalize Clear ${suffix}`,
       slug: `migration-finalize-clear-${suffix}`,
     })

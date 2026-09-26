@@ -4,6 +4,7 @@ import {
   createTestUserDirect,
   createReferralProgramFixture,
   createTestMembership,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
@@ -35,7 +36,7 @@ describe('runReferralLinkUnfurl', () => {
   }
 
   async function createParentLink(owner: PrivateUser, labelSuffix: string) {
-    return createUserReferralLink(owner, {
+    return createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner.id,
       referral_program_id: parentProgramId,
       url: `https://${parentHostname}/ref/${randomSlug(labelSuffix)}`,
@@ -135,7 +136,7 @@ describe('runReferralLinkUnfurl', () => {
     const card: AmexCardSlug = { kind: 'personal', slug: randomSlug('child-target-card') }
     const cardFixture = await createAmexCardFixture(owner, card)
     const [childUrl] = constructChildUrls('https://redirected.example.com/landed?x=1', [card])
-    const child = await createChildReferralLink(owner.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, owner.id, {
       userId: owner.id,
       referralProgramId: cardFixture.referralProgramId,
       url: childUrl,
@@ -269,7 +270,7 @@ describe('runReferralLinkUnfurl', () => {
     const [conflictUrl] = constructChildUrls(finalUrl, [cardConflict])
     const [okUrl] = constructChildUrls(finalUrl, [cardOk])
 
-    const manualLink = await createUserReferralLink(owner, {
+    const manualLink = await createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner.id,
       referral_program_id: conflictFixture.referralProgramId,
       url: conflictUrl,

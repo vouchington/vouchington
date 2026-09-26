@@ -19,6 +19,7 @@ import {
   insertTestVerifiedIdentity,
   getUserVerificationState,
   getVerifiedIdentityByFingerprint,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { deleteUser } from '../delete.mts'
 import { deleteUserAndDrainForTest } from '../delete-test-support.mts'
@@ -280,7 +281,7 @@ describe('deleteUser', () => {
 
   it('soft-deletes all active lists on user deletion', async () => {
     const user = await createTestUser()
-    const list = await createList(user.id, { name: 'My List' })
+    const list = await createList(WEB_PROVENANCE, user.id, { name: 'My List' })
     expect(list.removed_at).toBeNull()
 
     await deleteUserAndDrainForTest(user, user)

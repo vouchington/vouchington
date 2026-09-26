@@ -2,6 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { validateUUID } from '@modules/utils'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import { addUrl } from '@services/urls/upsert'
@@ -13,6 +14,7 @@ import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 
 export async function createUserReferralLink(
+  provenance: ContentProvenance,
   currentUser: PrivateUser | null,
   data: {
     user_id: string
@@ -70,14 +72,18 @@ export async function createUserReferralLink(
         referral_program_id,
         url_id,
         label,
-        activated_at
+        activated_at,
+        created_via,
+        created_via_oauth_client_id
       )
       VALUES (
         ${data.user_id},
         ${data.referral_program_id},
         ${urlRecord.id},
         ${label},
-        CURRENT_TIMESTAMP
+        CURRENT_TIMESTAMP,
+        ${provenance.createdVia},
+        ${provenance.oauthClientId}
       )
       ON CONFLICT (user_id, referral_program_id, url_id)
         WHERE deleted_at IS NULL

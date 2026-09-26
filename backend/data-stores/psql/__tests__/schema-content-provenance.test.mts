@@ -8,7 +8,7 @@ import {
   readConstraintDefinition,
   readContentProvenanceCatalog,
   readViewsReferencingContentProvenance,
-  type ContentProvenance,
+  type ContentProvenanceColumns,
 } from '../../../test-helpers/data-stores/psql/content-provenance.mts'
 import { createTestUser } from '../../../test-helpers/entities/users.mts'
 import { beginTransaction, onGracefulShutdown } from '../index.mts'
@@ -65,7 +65,7 @@ describe('content provenance schema', () => {
 
   it('accepts every channel without a client, and an OAuth client only on API or MCP', async () => {
     const fixture = await createContentProvenanceListFixture()
-    const accepted: ContentProvenance[] = [
+    const accepted: ContentProvenanceColumns[] = [
       { createdVia: null, oauthClientId: null },
       { createdVia: 'web', oauthClientId: null },
       { createdVia: 'swift', oauthClientId: null },
@@ -128,7 +128,7 @@ describe('content provenance schema', () => {
       'content provenance is immutable',
     )
     await expect(
-      post.updateProvenance({ createdVia: null, oauthClientId: null }),
+      post.updateProvenance({ createdVia: 'system', oauthClientId: null }),
     ).resolves.toMatchObject({ rowCount: 1 })
   })
 

@@ -278,6 +278,7 @@
     "@types/node": "^26.4.0",
     "@types/supertest": "^7.2.1",
     "@voucha/test-helpers": "workspace:^",
+    "@voucha/tools": "workspace:^",
     "@workers/elections": "workspace:^",
     "@workers/entity-listeners": "workspace:^",
     "node-app-attest": "^1.0.1",

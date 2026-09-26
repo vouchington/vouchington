@@ -8,7 +8,12 @@ import {
 import { runModeratorOnPost } from '@agents/moderation'
 import { createPost } from '@services/posts'
 import { getPostByAny } from '@services/posts/get'
-import { createTestUser, createSystemUser, getPostClearanceChanges } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createSystemUser,
+  getPostClearanceChanges,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
@@ -50,7 +55,7 @@ describe('runModeratorOnPost on_flag_action', () => {
 
   async function makePost(): Promise<Post> {
     const r = randomSuffix()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Flag action test ${r}`,
       markdown: 'Test content for moderation',
       post_type: 'discussion',

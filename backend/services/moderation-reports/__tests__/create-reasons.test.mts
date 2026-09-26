@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, insertTestPost } from '@voucha/test-helpers'
+import { createTestUser, insertTestPost, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createModerationReport } from '../create.mts'
 import { MODERATION_REPORT_REASONS } from '../config.mts'
 import { parseCreateModerationReportInput } from '../parse.mts'
@@ -17,6 +17,7 @@ describe('createModerationReport report reasons', () => {
       })
       const reasonReporter = await createTestUser()
       const { report } = await createModerationReport(
+        WEB_PROVENANCE,
         reasonReporter.id,
         parseCreateModerationReportInput({
           entityType: 'post',

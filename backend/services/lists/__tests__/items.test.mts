@@ -6,6 +6,7 @@ import {
   insertTestTopic,
   createTestRssFeedItemWithUrl,
   insertTestRssFeed,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createList } from '../lists.mts'
@@ -20,7 +21,9 @@ describe('items service', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-    const list = await createList(user.id, { name: `Items Test ${createRandomString(8)}` })
+    const list = await createList(WEB_PROVENANCE, user.id, {
+      name: `Items Test ${createRandomString(8)}`,
+    })
     listId = list.id
 
     const topicId = await insertTestTopic({
@@ -52,8 +55,9 @@ describe('items service', () => {
     })
 
     it('is idempotent on duplicate add (returns existing row)', async () => {
-      const listId2 = (await createList(user.id, { name: `Idempotent ${createRandomString(8)}` }))
-        .id
+      const listId2 = (
+        await createList(WEB_PROVENANCE, user.id, { name: `Idempotent ${createRandomString(8)}` })
+      ).id
       const item1 = await addListItem(listId2, 'post', postId)
       const item2 = await addListItem(listId2, 'post', postId)
       expect(item1.id).toBe(item2.id)
@@ -68,8 +72,9 @@ describe('items service', () => {
 
   describe('removeListItem', () => {
     it('removes an item from the list', async () => {
-      const listId3 = (await createList(user.id, { name: `Remove Test ${createRandomString(8)}` }))
-        .id
+      const listId3 = (
+        await createList(WEB_PROVENANCE, user.id, { name: `Remove Test ${createRandomString(8)}` })
+      ).id
       await addListItem(listId3, 'post', postId)
       await removeListItem(listId3, 'post', postId)
 

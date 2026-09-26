@@ -4,6 +4,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   waitForQueueJobs,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import {
   createTestRedirectUrl,
@@ -28,7 +29,7 @@ describe('create.link-post-crawl', () => {
   })
 
   it('AC#1: enqueues a crawl job when a link post is created with a raw url string', async () => {
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url: 'https://example.com/',
     })
@@ -47,7 +48,7 @@ describe('create.link-post-crawl', () => {
     const { urlString } = await createTestRedirectUrl({ canonicalUrlId })
     const sourceUrlId = (await getUrlByAny(urlString))!.id
 
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url: urlString,
     })
@@ -67,7 +68,7 @@ describe('create.link-post-crawl', () => {
     const urlId = await createTestUrlWithHostname()
     await crawlUrls.obliterate()
 
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'link',
       url_id: urlId,
     })

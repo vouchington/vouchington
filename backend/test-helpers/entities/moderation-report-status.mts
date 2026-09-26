@@ -34,10 +34,10 @@ export async function insertTestSystemModerationReport(
   if (reportId) insertQuery.append(sql`id, `)
   insertQuery.append(sql`reporter_user_id, `)
   insertQuery.append(fkColumn)
-  insertQuery.append(sql`, case_id, reason, original_reason, note)
+  insertQuery.append(sql`, case_id, reason, original_reason, note, created_via)
     VALUES (`)
   if (reportId) insertQuery.append(sql`${reportId}, `)
-  insertQuery.append(sql`${systemUser.id}, ${entityId}::uuid, ${caseId}, 'other', 'other', ${note ?? null})
+  insertQuery.append(sql`${systemUser.id}, ${entityId}::uuid, ${caseId}, 'other', 'other', ${note ?? null}, 'system')
     ON CONFLICT DO NOTHING
     RETURNING id
   `)

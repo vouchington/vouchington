@@ -1,6 +1,6 @@
 import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { createUserReferralLink } from './create.mts'
 import { createChildReferralLink } from './create-child.mts'
@@ -28,7 +28,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink updates label', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update1`,
@@ -44,7 +44,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink trims and validates label length', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update2`,
@@ -63,7 +63,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink validates label type', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update3`,
@@ -81,7 +81,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink returns unchanged link when label is undefined', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update4`,
@@ -95,7 +95,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink sets label to null when empty string', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update5`,
@@ -111,7 +111,7 @@ describe('update', () => {
 
   it('updateUserReferralLink forbids non-admins from updating other users links', async () => {
     const otherUser = await createTestUser()
-    const link = await createUserReferralLink(otherUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, otherUser, {
       user_id: otherUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update6`,
@@ -127,7 +127,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink rejects official accounts', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update7`,
@@ -148,13 +148,13 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink forbids editing a child referral link', async () => {
-    const parent = await createUserReferralLink(regularUser, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update-child-parent`,
       label: 'Parent link',
     })
-    const child = await createChildReferralLink(regularUser!.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, regularUser!.id, {
       userId: regularUser!.id,
       referralProgramId: referralProgramId!,
       url: `https://${testHostname}/refer?test=update-child`,
@@ -168,7 +168,7 @@ describe('update', () => {
   })
 
   it('updateUserReferralLink requires authentication', async () => {
-    const link = await createUserReferralLink(regularUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, regularUser, {
       user_id: regularUser!.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=update8`,

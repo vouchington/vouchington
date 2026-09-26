@@ -2,7 +2,7 @@ import { it, expect, beforeAll, describe } from 'vitest'
 import { createPost } from '../create.mts'
 import { addPostRating, updatePostRating, deletePostRating } from '../post-ratings.mts'
 import { getPostByAny } from '../get.mts'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUser, insertTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 const VALID_REVIEW_MARKDOWN =
@@ -27,7 +27,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: `test-topic-update-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to update',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -54,7 +54,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: `test-topic-addallsame-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to test add invariant',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -78,7 +78,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: `test-topic-updateallsame-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to test update invariant',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -100,7 +100,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: `test-topic-update-invalid-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to update with invalid rating',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -120,7 +120,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: topicSlug,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to retrieve',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -158,7 +158,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: `test-topic-3c-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Three-topic review',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -193,7 +193,7 @@ describe('create.reviews.generated (ratings management)', () => {
       createdById: user.id,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Three-topic same rating review',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -218,7 +218,7 @@ describe('create.reviews.generated (ratings management)', () => {
       slug: `test-topic-del-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to delete rating from',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',

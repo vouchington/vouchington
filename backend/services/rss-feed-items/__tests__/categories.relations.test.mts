@@ -32,6 +32,7 @@ import {
   softDeleteTopic,
   insertTestRssFeedDirect,
   setTestEntityRelationIdAndScore,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 import { createTopic } from '@services/topics'
@@ -189,7 +190,7 @@ describe('categories relations', () => {
     // Before backfill: no relation for this topic
     let mappedTopics = await getRssFeedItemMappedTopics(testRssFeedItemId, 10)
     const user = await createTestUser({ administrator: true })
-    const backfillTopic = await createTopic(user!, {
+    const backfillTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Backfill Rel Topic ${random}`,
       slug: `backfill-rel-topic-${random}`,
     })
@@ -210,7 +211,7 @@ describe('categories relations', () => {
     ])
     const aliasId = await getTopicAliasIdForTest(canonical)
     const user = await createTestUser({ administrator: true })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Hashtag Backfill ${random}`,
       slug: `hashtag-backfill-${random}`,
     })
@@ -229,11 +230,11 @@ describe('categories relations', () => {
     const authored = `#Moved_${random}`
     const canonical = `moved-${random}`
     const user = await createTestUser({ administrator: true })
-    const originalTopic = await createTopic(user!, {
+    const originalTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Original Hashtag Topic ${random}`,
       slug: `original-hashtag-topic-${random}`,
     })
-    const destinationTopic = await createTopic(user!, {
+    const destinationTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Destination Hashtag Topic ${random}`,
       slug: `destination-hashtag-topic-${random}`,
     })
@@ -261,7 +262,7 @@ describe('categories relations', () => {
 
     // Create a topic with the category text as an alias
     const user = await createTestUser({ administrator: true })
-    const newTopic = await createTopic(user!, {
+    const newTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Update Rel Topic ${random}`,
       slug: `update-rel-topic-${random}`,
     })

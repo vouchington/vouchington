@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, getTestPostPublicationDirtyWorkForScope } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getTestPostPublicationDirtyWorkForScope,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createTopicRecommendation, updateTopicRecommendation } from './index.mts'
 
 describe('updateTopicRecommendation publication capture', () => {
   it('records the edited recommendation for durable post reconciliation', async () => {
     const user = await createTestUser()
-    const recommendation = await createTopicRecommendation(user, {
+    const recommendation = await createTopicRecommendation(WEB_PROVENANCE, user, {
       markdown: 'Original recommendation rationale',
       topic_title: 'Original recommendation topic',
       topic_slug: `recommendation-publication-${crypto.randomUUID()}`,

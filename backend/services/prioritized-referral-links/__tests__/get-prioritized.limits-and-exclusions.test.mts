@@ -10,6 +10,7 @@ import {
   insertTestReferralProgram,
   insertTestUserReferralProgramLink,
   createTestUrlWithHostname,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import {
   createTestMembership,
@@ -30,7 +31,7 @@ async function createUserWithLink(
   const user = await createTestUser()
   if (!user) throw new Error('Failed to create test user')
   const suffix = createRandomString(8)
-  const link = await createUserReferralLink(user, {
+  const link = await createUserReferralLink(WEB_PROVENANCE, user, {
     user_id: user.id,
     referral_program_id: referralProgramId,
     url: `https://${testHostname}/ref/${labelPrefix}-${suffix}`,
@@ -150,7 +151,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
   it('excludes the current user from results', async () => {
     const viewer = await createTestUser()
     const suffix = createRandomString(8)
-    await createUserReferralLink(viewer, {
+    await createUserReferralLink(WEB_PROVENANCE, viewer, {
       user_id: viewer.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/self-${suffix}`,
@@ -166,7 +167,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
     const viewer = await createTestUser()
     const suffix = createRandomString(8)
     // Create viewer's own link
-    await createUserReferralLink(viewer, {
+    await createUserReferralLink(WEB_PROVENANCE, viewer, {
       user_id: viewer.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/all-self-${suffix}`,

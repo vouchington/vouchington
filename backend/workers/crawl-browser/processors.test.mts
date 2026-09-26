@@ -9,7 +9,12 @@ import {
   CrawlerRateLimitError,
   CrawlerTimeoutError,
 } from '@modules/on-error/errors'
-import { createReferralProgramFixture, createTestUser, getCrawlData } from '@voucha/test-helpers'
+import {
+  createReferralProgramFixture,
+  createTestUser,
+  getCrawlData,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import {
   getReferralLinkCrawlStatus,
   getReferralLinkLastCrawlId,
@@ -38,7 +43,7 @@ describe('processBrowserCrawl', () => {
       hostname,
       pathname: '/ref/%',
     })
-    const link = await createUserReferralLink(user, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgram.referralProgramId,
       url: `https://${hostname}/ref/${suffix}`,

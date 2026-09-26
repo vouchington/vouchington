@@ -5,6 +5,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   readAllQueueJobs,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
 import { approveApplication, rejectApplication } from './review.mts'
@@ -33,7 +34,7 @@ describe('review', () => {
     it('owner can approve and applicant becomes member', async () => {
       const applicant = await createTestUser()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       await approveApplication(owner, app.id)
 
@@ -57,7 +58,7 @@ describe('review', () => {
     it('rejects re-reviewing an already reviewed application', async () => {
       const applicant = await createTestUser()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
       await approveApplication(owner, app.id)
       await expect(approveApplication(owner, app.id)).rejects.toMatchObject({ status: 422 })
     })
@@ -65,7 +66,7 @@ describe('review', () => {
     it('queues an approval decision email when the applicant has an email address', async () => {
       const applicant = await createTestUser()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       await approveApplication(owner, app.id)
 
@@ -93,7 +94,7 @@ describe('review', () => {
     it('queues a user-targeted decision email when the approved applicant has no email address', async () => {
       const applicant = await createTestUserDirect()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       await approveApplication(owner, app.id)
 
@@ -117,7 +118,7 @@ describe('review', () => {
     it('owner can reject an application with a reason', async () => {
       const applicant = await createTestUser()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       await rejectApplication(owner, app.id, 'Not a good fit')
 
@@ -141,14 +142,14 @@ describe('review', () => {
       const applicant = await createTestUser()
       const stranger = await createTestUser()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
       await expect(rejectApplication(stranger, app.id)).rejects.toMatchObject({ status: 403 })
     })
 
     it('queues a rejection decision email with the reason when the applicant has an email address', async () => {
       const applicant = await createTestUser()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       await rejectApplication(owner, app.id, 'Not a good fit')
 
@@ -175,7 +176,7 @@ describe('review', () => {
     it('uses the no-reason copy and queues a user-targeted rejection email', async () => {
       const applicant = await createTestUserDirect()
       const community = await createPrivateCommunityOwnedBy(owner.id)
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       await rejectApplication(owner, app.id)
 

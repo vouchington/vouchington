@@ -10,6 +10,7 @@ import {
   rejectApplication,
 } from '@services/communities'
 import { indexById } from '@modules/utils'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 app
   .route('/api/v1/communities/:idOrSlug/applications')
@@ -41,6 +42,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/:idOrSlug/applications')
+    const provenance = getRequestContentProvenance()
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const community = await getCommunityOrThrow(idOrSlug)
@@ -65,7 +67,13 @@ app
       }
     }
 
-    const application = await createApplication(currentUser.id, community.id, body.answers, message)
+    const application = await createApplication(
+      provenance,
+      currentUser.id,
+      community.id,
+      body.answers,
+      message,
+    )
 
     ctx.setStatus(201)
     ctx.json({ community_application: application })

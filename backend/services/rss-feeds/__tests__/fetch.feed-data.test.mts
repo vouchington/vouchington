@@ -16,7 +16,7 @@ import {
 } from '../crawls.mts'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createRssFeedItemEmbeddingContent } from '../../rss-feed-items/content.mts'
-import { createTestTopic, insertTestRssFeedItem } from '@voucha/test-helpers'
+import { createTestTopic, insertTestRssFeedItem, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
 
@@ -65,6 +65,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-mock-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -91,6 +92,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-chapters-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/chapters-${random}.xml`,
       topic_id: topic.id,
@@ -164,6 +166,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-latest-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/f-${random}.xml`,
       topic_id: topic.id,
@@ -188,6 +191,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-304-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/304-${random}.xml`,
       topic_id: topic.id,
@@ -236,6 +240,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-headers-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/headers-${random}.xml`,
       topic_id: topic.id,
@@ -270,6 +275,7 @@ describe('fetch.feed-data', () => {
       hostname: `fetch-bad-last-modified-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/bad-last-modified-${random}.xml`,
       topic_id: topic.id,

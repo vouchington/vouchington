@@ -5,6 +5,7 @@ import {
   insertTestCard,
   getPostDataPointTopicIds,
   getEntityRelation,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createPost } from '../create.mts'
@@ -24,7 +25,7 @@ describe('update.data-point-topics', () => {
   })
 
   function makeDataPointPost(suffix: string, topicId: string) {
-    return createPost(creator, {
+    return createPost(WEB_PROVENANCE, creator, {
       post_type: 'data_point',
       title: `Data point topics test ${suffix}`,
       data_point_vertical: 'credit_card',
@@ -124,7 +125,7 @@ describe('update.data-point-topics', () => {
 
     it('does not touch post_data_point_topics for non-data_point posts', async () => {
       const suffix = `${Date.now().toString(36)}-nondp`
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         title: `Non data point ${suffix}`,
         markdown: 'hello',
       })

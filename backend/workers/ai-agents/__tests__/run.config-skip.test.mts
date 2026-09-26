@@ -31,6 +31,7 @@ import {
   createTestUser,
   createSystemUser,
   mockAiGeneratedModerationResults,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 import type { Post } from '@services/posts/types'
@@ -87,7 +88,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   async function ensureTopicExists(topicSlug: string) {
     const existingTopic = await getTopicByAny(topicSlug)
     if (existingTopic) return
-    await upsertTopic(topicSlug, topicSlug)
+    await upsertTopic(WEB_PROVENANCE, topicSlug, topicSlug)
   }
 
   it('getModeratorConfig returns null for unknown moderator slug', async () => {
@@ -117,7 +118,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
 
   it('checkExistingModeration returns existing moderation result', async () => {
     const { prompt, moderator } = await setupModeratorAndPrompt()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Moderation query ${randomSuffix()}`,
       markdown: `Moderation query content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -141,7 +142,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
 
   it('runModeratorOnPost skips when moderator is missing', async () => {
     const testUser = await createTestUser()
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `Missing moderator ${randomSuffix()}`,
       markdown: `Missing moderator content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -154,7 +155,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
 
   it('runModeratorOnPost skips when no content is available', async () => {
     const { moderator } = await setupModeratorAndPrompt()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `No content ${randomSuffix()}`,
       markdown: `Will be cleared ${randomSuffix()}`,
       post_type: 'discussion',
@@ -167,7 +168,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
 
   it('runModeratorOnPost returns existing moderation result', async () => {
     const { moderator, prompt } = await setupModeratorAndPrompt()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Existing moderation ${randomSuffix()}`,
       markdown: `Existing moderation content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -193,7 +194,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
 
   it('runModeratorOnPost skips when the coarse clearance state requires review', async () => {
     const { moderator } = await setupModeratorAndPrompt()
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `In-review post ${randomSuffix()}`,
       markdown: `In-review content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -212,7 +213,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
       prompt,
       user: testUser,
     } = await setupModeratorBySlugAndPrompt('self-promotion')
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `Self-promotion post ${randomSuffix()}`,
       markdown: `Self-promotion content ${randomSuffix()}`,
       post_type: 'discussion',

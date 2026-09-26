@@ -5,6 +5,7 @@ import {
   insertTestCommunityBan,
   insertTestUserWarning,
   softDeleteUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { revokeUserWarning } from '@services/user-warnings'
@@ -33,7 +34,7 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: warning.id,
         appeal_reason: 'I did not spam, this was legitimate content.',
       })
-      const { appeal, isDuplicate } = await createModerationAppeal(appellant, input)
+      const { appeal, isDuplicate } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
       expect(isDuplicate).toBe(false)
       expect(appeal.appellant_id).toBe(appellant.id)
@@ -79,8 +80,8 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: warning.id,
         appeal_reason: 'First attempt.',
       })
-      await createModerationAppeal(appellant, input)
-      const { appeal, isDuplicate } = await createModerationAppeal(appellant, {
+      await createModerationAppeal(WEB_PROVENANCE, appellant, input)
+      const { appeal, isDuplicate } = await createModerationAppeal(WEB_PROVENANCE, appellant, {
         ...input,
         appealReason: 'Second attempt.',
       })
@@ -108,7 +109,7 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: warning.id,
         appeal_reason: 'Please review this warning.',
       })
-      const { appeal } = await createModerationAppeal(appellant, input)
+      const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
       await softDeleteUser(removedActor.id)
       const refreshed = await getModerationAppealByIdFromPrimary(appeal.id)
@@ -133,7 +134,9 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: warning.id,
         appeal_reason: 'Not my warning.',
       })
-      await expect(createModerationAppeal(appellant, input)).rejects.toMatchObject({ status: 403 })
+      await expect(createModerationAppeal(WEB_PROVENANCE, appellant, input)).rejects.toMatchObject({
+        status: 403,
+      })
     })
 
     it('throws 404 for a revoked warning', async () => {
@@ -148,7 +151,9 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: warning.id,
         appeal_reason: 'Revoked warning appeal.',
       })
-      await expect(createModerationAppeal(appellant, input)).rejects.toMatchObject({ status: 404 })
+      await expect(createModerationAppeal(WEB_PROVENANCE, appellant, input)).rejects.toMatchObject({
+        status: 404,
+      })
     })
   })
 
@@ -170,7 +175,7 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: ban.id,
         appeal_reason: 'I understand the rules better now.',
       })
-      const { appeal, isDuplicate } = await createModerationAppeal(appellant, input)
+      const { appeal, isDuplicate } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
 
       expect(isDuplicate).toBe(false)
       expect(appeal.community_ban_id).toBe(ban.id)
@@ -209,8 +214,8 @@ describe('createModerationAppeal warning and ban targets', () => {
       })
 
       const results = await Promise.all([
-        createModerationAppeal(appellant, input),
-        createModerationAppeal(appellant, input),
+        createModerationAppeal(WEB_PROVENANCE, appellant, input),
+        createModerationAppeal(WEB_PROVENANCE, appellant, input),
       ])
 
       expect(new Set(results.map(result => result.appeal.id)).size).toBe(1)
@@ -235,7 +240,9 @@ describe('createModerationAppeal warning and ban targets', () => {
         target_id: ban.id,
         appeal_reason: 'Not my ban.',
       })
-      await expect(createModerationAppeal(appellant, input)).rejects.toMatchObject({ status: 403 })
+      await expect(createModerationAppeal(WEB_PROVENANCE, appellant, input)).rejects.toMatchObject({
+        status: 403,
+      })
     })
   })
 })

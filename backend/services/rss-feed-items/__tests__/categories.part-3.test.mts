@@ -19,6 +19,7 @@ import {
   createTestUser,
   softDeleteTopic,
   insertTestRssFeedDirect,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('categories', () => {
@@ -87,7 +88,7 @@ describe('categories', () => {
     const before = allCategories.find(c => c.category_text === slug)
     expect(before?.topic_id).toBeNull()
 
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Energy ${random}`,
       slug,
     })

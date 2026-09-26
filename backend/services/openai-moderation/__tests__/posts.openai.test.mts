@@ -1,7 +1,12 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { upsertPostOpenAIModeration } from '../posts.mts'
 import { createPost } from '@services/posts'
-import { createTestUser, getPostModerationData, liveOpenAITest } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getPostModerationData,
+  liveOpenAITest,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
 
@@ -28,7 +33,7 @@ describe('posts.openai', () => {
     /* no-mistakes: integration=openai */
     liveOpenAITest(async () => {
       const random = randomSuffix()
-      const post = await createPost(user, {
+      const post = await createPost(WEB_PROVENANCE, user, {
         title: `Test Post for OpenAI Moderation Integration ${random}`,
         markdown: `This is a test post with appropriate content that should not be flagged. ${random}`,
         post_type: 'discussion',

@@ -11,9 +11,11 @@ export async function insertContributionAdmissionFkLockedTopicForTest(
     id: string
   }>(sql`/* insertContributionAdmissionFkLockedTopicForTest */
     INSERT INTO topics (
-      name, slug, created_by_id, bedrock_nova_multimodal_v1_content_sha256
+      name, slug, created_by_id, bedrock_nova_multimodal_v1_content_sha256,
+      created_via
     ) VALUES (
-      ${randomUUID()}, ${randomUUID()}, ${actorId}, ${`\\x${'0'.repeat(64)}`}
+      ${randomUUID()}, ${randomUUID()}, ${actorId}, ${`\\x${'0'.repeat(64)}`},
+      'system'
     )
     RETURNING id`)
   const topicId = result.rows[0]?.id

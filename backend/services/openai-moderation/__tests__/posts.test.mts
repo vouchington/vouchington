@@ -8,6 +8,7 @@ import {
   setPostModerationContentSha256,
   updatePostModerationData,
   getPostModerationData,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import { createPostModerationContent } from '@services/posts/content'
@@ -90,12 +91,12 @@ describe('posts', () => {
       const sharedTitle = `Reuse Moderation ${random}`
       const sharedMarkdown = `Reuse moderation content ${random}`
 
-      const post1 = await createPost(user, {
+      const post1 = await createPost(WEB_PROVENANCE, user, {
         title: sharedTitle,
         markdown: sharedMarkdown,
         post_type: 'discussion',
       })
-      const post2 = await createPost(user, {
+      const post2 = await createPost(WEB_PROVENANCE, user, {
         title: sharedTitle,
         markdown: sharedMarkdown,
         post_type: 'discussion',
@@ -128,7 +129,7 @@ describe('posts', () => {
     it('calls mocked OpenAI API when no existing results', async () => {
       const random = randomSuffix()
 
-      const post = await createPost(user, {
+      const post = await createPost(WEB_PROVENANCE, user, {
         title: `New Moderation ${random}`,
         markdown: `New moderation content ${random}`,
         post_type: 'discussion',
@@ -157,7 +158,7 @@ describe('posts', () => {
     it('skips moderation when content is already up to date', async () => {
       const random = randomSuffix()
 
-      const post = await createPost(user, {
+      const post = await createPost(WEB_PROVENANCE, user, {
         title: `Skip Moderation ${random}`,
         markdown: `Skip moderation content ${random}`,
         post_type: 'discussion',
@@ -176,7 +177,7 @@ describe('posts', () => {
     it('skips moderation when no content to moderate', async () => {
       const random = randomSuffix()
 
-      const post = await createPost(user, {
+      const post = await createPost(WEB_PROVENANCE, user, {
         title: `Title ${random}`,
         markdown: '',
         post_type: 'discussion',
@@ -195,7 +196,7 @@ describe('posts', () => {
     it('handles flagged content correctly', async () => {
       const random = randomSuffix()
 
-      const post = await createPost(user, {
+      const post = await createPost(WEB_PROVENANCE, user, {
         title: `Flagged Content ${random}`,
         markdown: `This content will be flagged ${random}`,
         post_type: 'discussion',
@@ -220,7 +221,7 @@ describe('posts', () => {
   })
 
   it('reconstructs a bounded stored result instead of exposing provider output', async () => {
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Malformed moderation ${randomSuffix()}`,
       markdown: 'Malformed moderation result fixture',
       post_type: 'discussion',
@@ -235,7 +236,7 @@ describe('posts', () => {
   })
 
   it('filters non-string stored category values when reusing a ledger disposition', async () => {
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Mixed stored categories ${randomSuffix()}`,
       markdown: 'Stored result category fixture',
       post_type: 'discussion',

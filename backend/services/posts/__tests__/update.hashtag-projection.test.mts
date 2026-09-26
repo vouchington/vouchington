@@ -9,6 +9,7 @@ import {
   insertTestTopic,
   restoreUser,
   softDeleteUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getPostByAnyCached } from '../../entity-fetch/get.mts'
@@ -31,7 +32,7 @@ describe('updatePost hashtag projection', () => {
 
   it('rebuilds hashtag sources from the locked current row when callers hold stale posts', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const original = await createPost(creator, {
+    const original = await createPost(WEB_PROVENANCE, creator, {
       post_type: 'discussion',
       title: `Original #old-title-${suffix}`,
       markdown: `Original #old-markdown-${suffix}`,
@@ -60,7 +61,7 @@ describe('updatePost hashtag projection', () => {
   it('rejects a deleted author before recreating hashtag sources', async () => {
     const suffix = createRandomString(8).toLowerCase()
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    const post = await createPost(author, {
+    const post = await createPost(WEB_PROVENANCE, author, {
       post_type: 'discussion',
       title: `Original #before-${suffix}`,
     })
@@ -87,7 +88,7 @@ describe('updatePost hashtag projection', () => {
     const suffix = createRandomString(8).toLowerCase()
     const hashtag = `retained-${suffix}`
     const administrator = await createTestUser({ administrator: true })
-    const post = await createPost(creator, {
+    const post = await createPost(WEB_PROVENANCE, creator, {
       post_type: 'discussion',
       title: `Original #${hashtag}`,
     })
@@ -137,11 +138,11 @@ describe('updatePost hashtag projection', () => {
     const secondHashtag = `second-${suffix}`
 
     const [firstPost, secondPost] = await Promise.all([
-      createPost(creator, {
+      createPost(WEB_PROVENANCE, creator, {
         post_type: 'discussion',
         title: `First #${firstHashtag} #${secondHashtag}`,
       }),
-      createPost(creator, {
+      createPost(WEB_PROVENANCE, creator, {
         post_type: 'discussion',
         title: `Second #${secondHashtag} #${firstHashtag}`,
       }),
@@ -175,7 +176,7 @@ describe('updatePost hashtag projection', () => {
 
   it('schedules a post update for a hashtag-bearing edit', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(WEB_PROVENANCE, creator, {
       post_type: 'discussion',
       title: `Committed update #before-${suffix}`,
     })
@@ -203,7 +204,7 @@ describe('updatePost hashtag projection', () => {
       slug: `listener-category-${suffix}`,
       createdById: creator.id,
     })
-    const post = await createPost(creator, {
+    const post = await createPost(WEB_PROVENANCE, creator, {
       post_type: 'discussion',
       title: `Listener category update ${suffix}`,
     })
@@ -223,7 +224,7 @@ describe('updatePost hashtag projection', () => {
 
   it('invalidates a cached post after finalizing its hashtag votes', async () => {
     const suffix = createRandomString(8).toLowerCase()
-    const post = await createPost(creator, {
+    const post = await createPost(WEB_PROVENANCE, creator, {
       post_type: 'discussion',
       title: `Cached hashtag update ${suffix}`,
     })

@@ -4,6 +4,7 @@ import {
   createRandomString,
   restoreUser,
   softDeleteUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createList, getList, updateList, softDeleteList, searchUserLists } from '../lists.mts'
@@ -18,7 +19,7 @@ describe('lists service', () => {
   describe('createList', () => {
     it('creates a list with default private visibility', async () => {
       const name = `Test List ${createRandomString(8)}`
-      const list = await createList(user.id, { name })
+      const list = await createList(WEB_PROVENANCE, user.id, { name })
       expect(list.__entity_type).toBe('list')
       expect(list.owner_user_id).toBe(user.id)
       expect(list.name).toBe(name)
@@ -30,7 +31,11 @@ describe('lists service', () => {
     it('creates a list with specified visibility and description', async () => {
       const name = `Public List ${createRandomString(8)}`
       const description = 'A public list'
-      const list = await createList(user.id, { name, description, visibility: 'public' })
+      const list = await createList(WEB_PROVENANCE, user.id, {
+        name,
+        description,
+        visibility: 'public',
+      })
       expect(list.visibility).toBe('public')
       expect(list.description).toBe(description)
     })
@@ -40,7 +45,7 @@ describe('lists service', () => {
       try {
         await softDeleteUser(deletedOwner.id)
         await expect(
-          createList(deletedOwner.id, { name: 'Deleted owner list' }),
+          createList(WEB_PROVENANCE, deletedOwner.id, { name: 'Deleted owner list' }),
         ).rejects.toMatchObject({ code: '23514' })
       } finally {
         await restoreUser(deletedOwner.id)
@@ -55,13 +60,17 @@ describe('lists service', () => {
     })
 
     it('returns a list by id', async () => {
-      const list = await createList(user.id, { name: `Get Test ${createRandomString(8)}` })
+      const list = await createList(WEB_PROVENANCE, user.id, {
+        name: `Get Test ${createRandomString(8)}`,
+      })
       const found = await getList(list.id)
       expect(found?.id).toBe(list.id)
     })
 
     it('returns null for soft-deleted list', async () => {
-      const list = await createList(user.id, { name: `Delete Test ${createRandomString(8)}` })
+      const list = await createList(WEB_PROVENANCE, user.id, {
+        name: `Delete Test ${createRandomString(8)}`,
+      })
       await softDeleteList(user.id, list.id)
       const found = await getList(list.id)
       expect(found).toBeNull()
@@ -70,21 +79,27 @@ describe('lists service', () => {
 
   describe('updateList', () => {
     it('updates list name', async () => {
-      const list = await createList(user.id, { name: `Update Test ${createRandomString(8)}` })
+      const list = await createList(WEB_PROVENANCE, user.id, {
+        name: `Update Test ${createRandomString(8)}`,
+      })
       const newName = `Updated ${createRandomString(8)}`
       const updated = await updateList(user.id, list.id, { name: newName })
       expect(updated.name).toBe(newName)
     })
 
     it('updates list visibility', async () => {
-      const list = await createList(user.id, { name: `Visibility Test ${createRandomString(8)}` })
+      const list = await createList(WEB_PROVENANCE, user.id, {
+        name: `Visibility Test ${createRandomString(8)}`,
+      })
       const updated = await updateList(user.id, list.id, { visibility: 'public' })
       expect(updated.visibility).toBe('public')
     })
 
     it('rejects updates from a deleted owner', async () => {
       const deletedOwner = await createTestUser()
-      const list = await createList(deletedOwner.id, { name: 'Deleted owner update' })
+      const list = await createList(WEB_PROVENANCE, deletedOwner.id, {
+        name: 'Deleted owner update',
+      })
       try {
         await softDeleteUser(deletedOwner.id)
         await expect(
@@ -104,7 +119,9 @@ describe('lists service', () => {
 
   describe('softDeleteList', () => {
     it('soft-deletes a list', async () => {
-      const list = await createList(user.id, { name: `Soft Delete ${createRandomString(8)}` })
+      const list = await createList(WEB_PROVENANCE, user.id, {
+        name: `Soft Delete ${createRandomString(8)}`,
+      })
       await softDeleteList(user.id, list.id)
       expect(await getList(list.id)).toBeNull()
       await expect(softDeleteList(user.id, list.id)).rejects.toMatchObject({ status: 404 })
@@ -121,7 +138,7 @@ describe('lists service', () => {
     it('returns lists for a user', async () => {
       const listUser = await createTestUser()
       const name = `Search Test ${createRandomString(8)}`
-      await createList(listUser.id, { name })
+      await createList(WEB_PROVENANCE, listUser.id, { name })
 
       const { results } = await searchUserLists(listUser.id)
       expect(results.length).toBeGreaterThanOrEqual(1)
@@ -137,7 +154,9 @@ describe('lists service', () => {
 
     it('excludes soft-deleted lists', async () => {
       const listUser = await createTestUser()
-      const list = await createList(listUser.id, { name: `To Delete ${createRandomString(8)}` })
+      const list = await createList(WEB_PROVENANCE, listUser.id, {
+        name: `To Delete ${createRandomString(8)}`,
+      })
       await softDeleteList(listUser.id, list.id)
 
       const { results } = await searchUserLists(listUser.id)

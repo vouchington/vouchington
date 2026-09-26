@@ -20,10 +20,10 @@ export async function seedRssFeeds(feedCount = 500, itemCount = 5000): Promise<v
     const title = `Seed Feed ${i}`
     values.push(id, urlId, topicId, title)
     const base = values.length - 3
-    rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3})`)
+    rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
   }
   await feedsTransaction(
-    `/* seedExplainData */ INSERT INTO rss_feeds (id, rss_feed_url_id, topic_id, title)
+    `/* seedExplainData */ INSERT INTO rss_feeds (id, rss_feed_url_id, topic_id, title, created_via)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
     values,
   )

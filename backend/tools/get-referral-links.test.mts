@@ -4,6 +4,7 @@ import {
   createRandomString,
   createReferralProgramFixture,
   createTestUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { insertTestCard, assignReferralProgramToCard } from '@voucha/test-helpers/entities/cards'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
@@ -33,7 +34,7 @@ describe('get-referral-links', () => {
     const linkUser = await createTestUser()
     const suffix = createRandomString(8)
     const url = `https://${input.hostname}/ref/${suffix}`
-    const link = await createUserReferralLink(linkUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, linkUser, {
       user_id: linkUser.id,
       referral_program_id: input.referralProgramId,
       url,

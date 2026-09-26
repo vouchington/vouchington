@@ -5,6 +5,7 @@ import {
   insertTestUserWarning,
   insertTestCommunityBan,
   insertTestCommunity,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
@@ -140,7 +141,7 @@ describe('GET /api/v1/appeals/:id — single appeal', () => {
       target_id: warning.id,
       appeal_reason: 'Lifecycle test appeal.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     appealId = appeal.id
   })
 
@@ -195,7 +196,7 @@ describe('PATCH /api/v1/appeals/:id — staff draft edit', () => {
       target_id: warning.id,
       appeal_reason: 'Patch test appeal.',
     })
-    const { appeal } = await createModerationAppeal(regularUser, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, regularUser, input)
     appealId = appeal.id
   })
 
@@ -238,7 +239,7 @@ describe('POST /api/v1/appeals/:id/approval and /delivery', () => {
       target_id: warning.id,
       appeal_reason: 'Approval test appeal.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     appealId = appeal.id
     await updateModerationAppealDraft(staff.id, appealId, {
       publicResponse: 'Approved appeal response',

@@ -2,11 +2,13 @@ import { randomBytes } from 'node:crypto'
 import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import type { ContentCreationChannel } from '@voucha/types/entities/content-provenance'
 import { createTestPost } from '../../entities/create-test-entities.mts'
 import { createTestUser } from '../../entities/users.mts'
 
-export type ContentProvenance = {
-  createdVia: 'web' | 'swift' | 'dotnet' | 'api' | 'mcp' | 'system' | null
+// Raw column values, including combinations the schema must reject.
+export type ContentProvenanceColumns = {
+  createdVia: ContentCreationChannel | null
   oauthClientId: string | null
 }
 
@@ -62,13 +64,13 @@ export async function readContentCreationChannels(): Promise<string[]> {
   return rows[0]!.channels
 }
 
-// Raw fixture post (no provenance), so the partitioned posts table's cloned trigger, CHECK and FK
-// are exercised on a real partition row.
+// A fixture post recorded as `system`, so the partitioned posts table's cloned trigger, CHECK and
+// FK are exercised on a real partition row.
 export async function createContentProvenancePostFixture() {
   const post = await createTestPost()
   return {
     postId: post.id,
-    updateProvenance: (provenance: ContentProvenance) =>
+    updateProvenance: (provenance: ContentProvenanceColumns) =>
       write(sql`/* updateContentProvenancePost */
         UPDATE posts
         SET created_via = ${provenance.createdVia}, created_via_oauth_client_id = ${provenance.oauthClientId}
@@ -78,8 +80,8 @@ export async function createContentProvenancePostFixture() {
 
 export type ContentProvenanceListFixture = {
   oauthClientId: string
-  insertList(provenance: ContentProvenance): Promise<string>
-  updateProvenance(listId: string, provenance: ContentProvenance): ReturnType<typeof write>
+  insertList(provenance: ContentProvenanceColumns): Promise<string>
+  updateProvenance(listId: string, provenance: ContentProvenanceColumns): ReturnType<typeof write>
   keepProvenance(listId: string): ReturnType<typeof write>
   renameList(listId: string): ReturnType<typeof write>
   deleteOAuthClient(): ReturnType<typeof write>

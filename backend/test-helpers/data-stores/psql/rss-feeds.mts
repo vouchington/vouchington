@@ -16,8 +16,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
   const embeddingSha256 = `\\x${'0'.repeat(64)}`
 
   const { rows: topicRows } = await write<{ id: string }>(sql`
-    INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256)
-    VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256})
+    INSERT INTO topics (name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
+    VALUES (${`Test Feed Topic ${random}`}, ${`test-feed-topic-${random}`}, ${embeddingSha256}, 'system')
     RETURNING id
   `)
   const topicId = topicRows[0]!.id
@@ -34,8 +34,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
   `)
 
   const { rows: feedRows } = await write<{ id: string }>(sql`
-    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title)
-    VALUES (${urlRows[0]!.id}, ${topicId}, ${`Test Feed ${random}`})
+    INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, created_via)
+    VALUES (${urlRows[0]!.id}, ${topicId}, ${`Test Feed ${random}`}, 'system')
     RETURNING id
   `)
   const feedId = feedRows[0]!.id

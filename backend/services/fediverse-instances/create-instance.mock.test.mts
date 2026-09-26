@@ -4,7 +4,7 @@ import { getFediverseInstanceAttributes } from './get-attributes.mts'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
 import { resolveHostname } from '@services/topics/hostname-link'
 import { FEDIVERSE_MASTODON_HOST } from '@voucha/config'
-import { createTestUserDirect, softDeleteTopic } from '@voucha/test-helpers'
+import { createTestUserDirect, softDeleteTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 /* no-mistakes: integration=nodeinfo */
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -54,7 +54,7 @@ describe('createInstanceFromHostname — classification-succeeds path', () => {
     )
     fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(NODEINFO_DOCUMENT), { status: 200 }))
 
-    const result = await createInstanceFromHostname(user, HOST)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, HOST)
     expect(result.status).toBe('created')
 
     const attributes = await getFediverseInstanceAttributes(result.topic_id)

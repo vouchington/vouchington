@@ -12,6 +12,7 @@ import {
   type ImportTopicResult,
 } from '@services/user-import-export/import-topics'
 import { assertNotSuspended } from '@services/users/suspension'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 const MAX_TOPICS_PER_IMPORT = 500
 const MAX_TOPIC_IMPORT_BYTES = '2mb'
@@ -36,6 +37,7 @@ app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {
     },
   })
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/import/topics')
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
 
   const body = await parseJsonBody<Record<string, unknown>>(ctx, MAX_TOPIC_IMPORT_BYTES)
@@ -62,7 +64,7 @@ app.route('/api/v1/my/import/topics').post(async (ctx: Context) => {
   const importIdentity = resolveAdmissionIdentity(idempotencyKeyHeader ?? null)
   let results: ImportTopicResult[]
   try {
-    results = await importTopics(currentUser, names, {
+    results = await importTopics(provenance, currentUser, names, {
       assertCanCreateTopicRecommendations: () =>
         assertCanContribute(currentUser, { membershipPlan }),
       importAttemptId: importIdentity.idempotencyKey,

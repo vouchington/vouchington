@@ -10,6 +10,7 @@ import {
   updateTestCommunityPostReviewState,
   markPostFlaggedForModeration,
   suspendTestUserGetId,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
@@ -52,7 +53,7 @@ describe('runAppealResolutionAgent', () => {
       target_id: warning.id,
       appeal_reason: `Appeal reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     return appeal
   }
 
@@ -167,7 +168,7 @@ describe('runAppealResolutionAgent', () => {
       target_id: ban.id,
       appeal_reason: `Ban appeal reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(bannedUser, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, bannedUser, input)
 
     const callModel = makeModelCaller({
       recommended_action: 'deny',
@@ -198,7 +199,7 @@ describe('runAppealResolutionAgent', () => {
       target_id: postId,
       appeal_reason: `Post removal appeal reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(author, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, author, input)
 
     const callModel = makeModelCaller({
       recommended_action: 'accept',
@@ -235,7 +236,7 @@ describe('runAppealResolutionAgent', () => {
       post_removal_kind: 'community',
       appeal_reason: `Community post removal appeal reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(author, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, author, input)
 
     const callModel = makeModelCaller({
       recommended_action: 'deny',
@@ -271,7 +272,7 @@ describe('runAppealResolutionAgent', () => {
       target_type: 'suspension',
       appeal_reason: `Suspension appeal reason ${randomUUID()}`,
     })
-    const { appeal } = await createModerationAppeal(suspendedUser, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, suspendedUser, input)
 
     const callModel = makeModelCaller({
       recommended_action: 'deny',

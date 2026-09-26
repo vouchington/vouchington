@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import { v7 as uuidv7 } from 'uuid'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { validateCommunitySlug, generateCommunitySlug } from './slugs.mts'
 import type {
@@ -38,6 +39,7 @@ export type CreateCommunityInput = {
 }
 
 export async function createCommunity(
+  provenance: ContentProvenance,
   currentUserId: string,
   input: CreateCommunityInput,
 ): Promise<CommunityWithOwner> {
@@ -70,7 +72,9 @@ export async function createCommunity(
       profile_image_id,
       banner_image_id,
       created_by_id,
-      default_language
+      default_language,
+      created_via,
+      created_via_oauth_client_id
     )
     VALUES (
       ${id},
@@ -87,7 +91,9 @@ export async function createCommunity(
       ${input.profile_image_id ?? null},
       ${input.banner_image_id ?? null},
       ${currentUserId},
-      ${defaultLanguage}
+      ${defaultLanguage},
+      ${provenance.createdVia},
+      ${provenance.oauthClientId}
     )
     RETURNING *
     `,

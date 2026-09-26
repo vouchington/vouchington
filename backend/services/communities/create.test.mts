@@ -1,5 +1,10 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { createTestUser, insertTestCommunity, createTestMembership } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestCommunity,
+  createTestMembership,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createCommunity } from './create.mts'
 import { getCommunity } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -15,7 +20,7 @@ describe('create', () => {
 
   describe('createCommunity', () => {
     it('creates a community and makes creator the owner', async () => {
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(WEB_PROVENANCE, user.id, {
         name: 'Test Community Create',
         slug: `test-community-create-${Date.now()}`,
       })
@@ -28,7 +33,7 @@ describe('create', () => {
 
     it('auto-generates slug from name with a base36 suffix', async () => {
       const ts = Date.now()
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(WEB_PROVENANCE, user.id, {
         name: `My Auto Slug Community ${ts}`,
       })
 
@@ -39,49 +44,57 @@ describe('create', () => {
     it('two communities with the same name get different slugs', async () => {
       const name = 'Shared Name Community Test'
       const [a, b] = await Promise.all([
-        createCommunity(user.id, { name }),
-        createCommunity(user.id, { name }),
+        createCommunity(WEB_PROVENANCE, user.id, { name }),
+        createCommunity(WEB_PROVENANCE, user.id, { name }),
       ])
       expect(a.slug).not.toBe(b.slug)
     })
 
     it('rejects duplicate slug', async () => {
       const slug = `dup-slug-${Date.now()}`
-      await createCommunity(user.id, { name: 'First Test Community', slug })
+      await createCommunity(WEB_PROVENANCE, user.id, { name: 'First Test Community', slug })
 
       await expect(
-        createCommunity(user.id, { name: 'Second Test Community', slug }),
+        createCommunity(WEB_PROVENANCE, user.id, { name: 'Second Test Community', slug }),
       ).rejects.toMatchObject({ status: 409 })
     })
 
     it('rejects name with leading whitespace', async () => {
-      await expect(createCommunity(user.id, { name: ' Bad Name Again' })).rejects.toMatchObject({
+      await expect(
+        createCommunity(WEB_PROVENANCE, user.id, { name: ' Bad Name Again' }),
+      ).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('rejects empty name', async () => {
-      await expect(createCommunity(user.id, { name: '' })).rejects.toMatchObject({
+      await expect(createCommunity(WEB_PROVENANCE, user.id, { name: '' })).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('rejects a name with fewer than 3 words', async () => {
-      await expect(createCommunity(user.id, { name: 'Only Two' })).rejects.toMatchObject({
+      await expect(
+        createCommunity(WEB_PROVENANCE, user.id, { name: 'Only Two' }),
+      ).rejects.toMatchObject({
         status: 422,
         message: 'Community name must have at least 3 words',
       })
     })
 
     it('rejects a single-word name', async () => {
-      await expect(createCommunity(user.id, { name: 'OneWord' })).rejects.toMatchObject({
+      await expect(
+        createCommunity(WEB_PROVENANCE, user.id, { name: 'OneWord' }),
+      ).rejects.toMatchObject({
         status: 422,
       })
     })
 
     it('accepts a name with exactly 3 words', async () => {
       const ts = Date.now()
-      const community = await createCommunity(user.id, { name: `Exactly Three Words ${ts}` })
+      const community = await createCommunity(WEB_PROVENANCE, user.id, {
+        name: `Exactly Three Words ${ts}`,
+      })
       expect(community.name).toBe(`Exactly Three Words ${ts}`)
     })
 
@@ -89,8 +102,8 @@ describe('create', () => {
       const freeUser = await createTestUser()
       const ts = Date.now()
       const [c1, c2] = await Promise.all([
-        createCommunity(freeUser.id, { name: `Free Limit First ${ts}` }),
-        createCommunity(freeUser.id, { name: `Free Limit Second ${ts}` }),
+        createCommunity(WEB_PROVENANCE, freeUser.id, { name: `Free Limit First ${ts}` }),
+        createCommunity(WEB_PROVENANCE, freeUser.id, { name: `Free Limit Second ${ts}` }),
       ])
       expect(c1.created_by_id).toBe(freeUser.id)
       expect(c2.created_by_id).toBe(freeUser.id)

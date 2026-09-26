@@ -4,6 +4,7 @@ import {
   createReferralProgramFixture,
   createTestMembership,
   suspendTestUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { getPrivateUserByAny } from '@services/users/get'
 import { getTopicBySlug } from '@services/topics/get'
@@ -41,7 +42,7 @@ describe('requestReferralLinkUnfurl', () => {
   }, 30_000)
 
   async function createOwnerParentLink(labelSuffix: string) {
-    const link = await createUserReferralLink(owner, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, owner, {
       user_id: owner!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl(labelSuffix),
@@ -85,7 +86,7 @@ describe('requestReferralLinkUnfurl', () => {
     const plusUser = await createTestUserDirect()
     await createTestMembership({ user_id: plusUser!.id, plan: 'plus' })
     const otherProgram = await createReferralProgramFixture({ createdById: plusUser!.id })
-    const link = await createUserReferralLink(plusUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, plusUser, {
       user_id: plusUser!.id,
       referral_program_id: otherProgram.referralProgramId,
       url: `https://${otherProgram.hostname}/ref/non-amex-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -109,7 +110,7 @@ describe('requestReferralLinkUnfurl', () => {
 
   it('throws 403 for a child referral link', async () => {
     const parentLinkId = await createOwnerParentLink('child-parent')
-    const child = await createChildReferralLink(owner!.id, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, owner!.id, {
       userId: owner!.id,
       referralProgramId: referralProgramId!,
       url: buildAmexReferralUrl('child'),
@@ -125,7 +126,7 @@ describe('requestReferralLinkUnfurl', () => {
 
   it('throws 403 Premium membership required when the owner has no membership', async () => {
     const freeUser = await createTestUserDirect()
-    const link = await createUserReferralLink(freeUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, freeUser, {
       user_id: freeUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('free'),
@@ -141,7 +142,7 @@ describe('requestReferralLinkUnfurl', () => {
   it('succeeds for a plus-tier owner: marks the link requested and enqueues the unfurl job', async () => {
     const plusUser = await createTestUserDirect()
     await createTestMembership({ user_id: plusUser!.id, plan: 'plus' })
-    const link = await createUserReferralLink(plusUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, plusUser, {
       user_id: plusUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('plus'),
@@ -160,7 +161,7 @@ describe('requestReferralLinkUnfurl', () => {
   it('succeeds for a pro-tier owner', async () => {
     const proUser = await createTestUserDirect()
     await createTestMembership({ user_id: proUser!.id, plan: 'pro' })
-    const link = await createUserReferralLink(proUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, proUser, {
       user_id: proUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('pro'),
@@ -175,7 +176,7 @@ describe('requestReferralLinkUnfurl', () => {
   it('allows an admin to request unfurl on behalf of a plus-tier owner', async () => {
     const plusUser = await createTestUserDirect()
     await createTestMembership({ user_id: plusUser!.id, plan: 'plus' })
-    const link = await createUserReferralLink(plusUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, plusUser, {
       user_id: plusUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('admin-plus'),
@@ -189,7 +190,7 @@ describe('requestReferralLinkUnfurl', () => {
 
   it('rejects an admin requesting unfurl on behalf of a free-tier owner (paid gate is on the owner)', async () => {
     const freeUser = await createTestUserDirect()
-    const link = await createUserReferralLink(freeUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, freeUser, {
       user_id: freeUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('admin-free'),
@@ -205,7 +206,7 @@ describe('requestReferralLinkUnfurl', () => {
   it('re-requesting a previously-failed unfurl clears unfurl_failed_at and unfurl_last_error', async () => {
     const plusUser = await createTestUserDirect()
     await createTestMembership({ user_id: plusUser!.id, plan: 'plus' })
-    const link = await createUserReferralLink(plusUser, {
+    const link = await createUserReferralLink(WEB_PROVENANCE, plusUser, {
       user_id: plusUser!.id,
       referral_program_id: referralProgramId!,
       url: buildAmexReferralUrl('retry'),

@@ -145,13 +145,15 @@ export async function insertTestRssFeedWithUrlId(data: {
       rss_feed_url_id,
       topic_id,
       title,
-      feed_type
+      feed_type,
+      created_via
     )
     VALUES (
       ${rssFeedUrlObj!.id},
       ${data.topicId},
       ${data.title},
-      ${data.feedType ?? 'article'}
+      ${data.feedType ?? 'article'},
+      'system'
     )
     RETURNING id
   `)

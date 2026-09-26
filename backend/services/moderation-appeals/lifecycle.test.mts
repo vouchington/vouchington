@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createTestUser, insertTestUserWarning } from '@voucha/test-helpers'
+import { createTestUser, insertTestUserWarning, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
@@ -27,7 +27,7 @@ describe('appendAppealLifecycleChange', () => {
       target_id: warning.id,
       appeal_reason: 'Lifecycle test appeal.',
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     appealId = appeal.id
   })
 
@@ -54,7 +54,7 @@ describe('lifecycle change reflected in latest_lifecycle_change_id', () => {
       target_id: warning.id,
       appeal_reason: 'Approve lifecycle check.',
     })
-    const { appeal: created } = await createModerationAppeal(appellant, input)
+    const { appeal: created } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     const originalChangeId = created.latest_lifecycle_change_id
 
     // Set a draft first so approve has a drafted_at to read

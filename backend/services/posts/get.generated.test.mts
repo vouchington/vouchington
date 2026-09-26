@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { getPostByAny } from './get.mts'
 import { createPost } from './create.mts'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 describe('get.generated', () => {
@@ -16,7 +16,7 @@ describe('get.generated', () => {
   })
 
   it('getPostByAny returns post by UUID', async () => {
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Test Post',
       markdown: 'Test content',
       post_type: 'discussion',
@@ -30,7 +30,7 @@ describe('get.generated', () => {
   it('getPostByAny returns post by slug', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const slug = `slug-test-post-${random}`
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Slug Test Post',
       markdown: 'Test content',
       slug,
@@ -49,7 +49,7 @@ describe('get.generated', () => {
   })
 
   it('getPostByAny filters by post_type', async () => {
-    const discussionPost = await createPost(user, {
+    const discussionPost = await createPost(WEB_PROVENANCE, user, {
       title: 'Discussion Post',
       post_type: 'discussion',
     })

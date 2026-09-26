@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { it, expect, beforeAll, describe } from 'vitest'
 import { createPost } from '../create.mts'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUser, insertTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 const VALID_REVIEW_MARKDOWN =
@@ -21,7 +21,7 @@ describe('create.reviews.generated (create and validate)', () => {
       slug: `test-topic-review-1-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review with rating 1',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -39,7 +39,7 @@ describe('create.reviews.generated (create and validate)', () => {
       slug: `test-topic-review-5-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review with rating 5',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -62,7 +62,7 @@ describe('create.reviews.generated (create and validate)', () => {
       slug: `test-topic-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Multi-topic review',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -91,7 +91,7 @@ describe('create.reviews.generated (create and validate)', () => {
       createdById: user.id,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Same rating review',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -111,7 +111,7 @@ describe('create.reviews.generated (create and validate)', () => {
       createdById: user.id,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Duplicate topic review',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -125,7 +125,7 @@ describe('create.reviews.generated (create and validate)', () => {
 
   it('createPost validates review_topic_ratings is required', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Review without ratings',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -141,7 +141,7 @@ describe('create.reviews.generated (create and validate)', () => {
       createdById: user.id,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Review with invalid rating 0',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -158,7 +158,7 @@ describe('create.reviews.generated (create and validate)', () => {
       createdById: user.id,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Review with invalid rating 6',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -169,7 +169,7 @@ describe('create.reviews.generated (create and validate)', () => {
 
   it('createPost validates topic_id is valid UUID', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Review with invalid topic ID',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -180,7 +180,7 @@ describe('create.reviews.generated (create and validate)', () => {
 
   it('createPost maps missing review topics to a 422 error', async () => {
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Review with missing topic',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',

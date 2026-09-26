@@ -1,4 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { CreatePostInput } from './types.mts'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import {
@@ -28,6 +29,7 @@ import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-
 import { finalizePreparedPost } from './create/finalize.mts'
 export { createPost } from './create-post.mts'
 export const preparePostWithCommunityReviews = async (
+  provenance: ContentProvenance,
   creator: PrivateUser,
   input: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan = null,
@@ -124,6 +126,7 @@ export const preparePostWithCommunityReviews = async (
       defaults,
       isAdminCreator,
       options,
+      provenance,
       scope,
       sourceUrlId,
       updates,

@@ -1,7 +1,7 @@
 import { it, expect, describe } from 'vitest'
 import { createRssFeed } from './create.mts'
 import { getRssFeedById } from './get.mts'
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 
 describe('get.generated', () => {
@@ -10,6 +10,7 @@ describe('get.generated', () => {
     const topic = await createTestTopic({ hostname: `get-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,

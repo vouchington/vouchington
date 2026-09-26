@@ -5,6 +5,7 @@ import {
   insertTestModerationReport,
   insertTestModerationAppeal,
   softDeleteUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { openOrGetOpenCase } from '@services/moderation-cases'
@@ -34,7 +35,7 @@ describe('getModerationAppealById', () => {
       target_id: warning.id,
       appeal_reason: 'Testing get by ID.',
     })
-    const { appeal: created } = await createModerationAppeal(appellant, input)
+    const { appeal: created } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     const fetched = await getModerationAppealById(created.id)
 
     expect(fetched).not.toBeNull()
@@ -59,7 +60,7 @@ describe('getModerationAppealById', () => {
       target_id: warning.id,
       appeal_reason: 'Durable deleted appellant fallback.',
     })
-    const { appeal } = await createModerationAppeal(deletedAppellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, deletedAppellant, input)
     await softDeleteUser(deletedAppellant.id)
 
     const fetched = await getModerationAppealById(appeal.id)
@@ -83,7 +84,7 @@ describe('getModerationAppealById', () => {
       target_id: warning.id,
       appeal_reason: 'Checking overdue flag.',
     })
-    const { appeal: created } = await createModerationAppeal(appellant, input)
+    const { appeal: created } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     const fetched = await getModerationAppealById(created.id)
 
     expect(fetched!.is_overdue).toBe(false)
@@ -100,7 +101,7 @@ describe('getModerationAppealById', () => {
       target_id: warning.id,
       appeal_reason: 'Will be dismissed.',
     })
-    const { appeal: created } = await createModerationAppeal(appellant, input)
+    const { appeal: created } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     await deliverModerationAppealForTest(staff.id, created.id)
     await dismissModerationAppeal(staff.id, created.id)
     const fetched = await getModerationAppealById(created.id)
@@ -130,7 +131,7 @@ describe('listModerationAppeals', () => {
       target_id: warning.id,
       appeal_reason: reason,
     })
-    const { appeal } = await createModerationAppeal(appellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, appellant, input)
     return appeal
   }
 
@@ -162,7 +163,7 @@ describe('listModerationAppeals', () => {
         target_id: warning.id,
         appeal_reason: `Pagination test ${i}`,
       })
-      await createModerationAppeal(uniqueAppellant, input)
+      await createModerationAppeal(WEB_PROVENANCE, uniqueAppellant, input)
     }
 
     const { appeals, hasNextPage } = await listModerationAppeals({
@@ -187,7 +188,7 @@ describe('listModerationAppeals', () => {
       target_id: warning.id,
       appeal_reason: 'Will be dismissed.',
     })
-    const { appeal } = await createModerationAppeal(uniqueAppellant, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, uniqueAppellant, input)
     await deliverModerationAppealForTest(staff.id, appeal.id)
     await dismissModerationAppeal(staff.id, appeal.id)
 

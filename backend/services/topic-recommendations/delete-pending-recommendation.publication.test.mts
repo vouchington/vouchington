@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, getTestPostPublicationDirtyWorkForScope } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getTestPostPublicationDirtyWorkForScope,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { createTopicRecommendation, deletePendingRecommendation } from './index.mts'
 
 describe('pending topic-recommendation publication capture', () => {
@@ -7,7 +11,7 @@ describe('pending topic-recommendation publication capture', () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected recommendation author')
     const suffix = crypto.randomUUID()
-    const recommendation = await createTopicRecommendation(user, {
+    const recommendation = await createTopicRecommendation(WEB_PROVENANCE, user, {
       markdown: `Withdraw publication ${suffix}`,
       topic_title: `Withdraw publication ${suffix}`,
       topic_slug: `withdraw-publication-${suffix}`,

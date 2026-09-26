@@ -11,6 +11,7 @@ import { validateSlug } from '@modules/utils'
 import type { Topic, TopicTypes } from './types.mts'
 import type { TopicAlias } from './alias-types.mts'
 import createError from 'http-errors'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 type UpsertTopicOptions = {
   aliases?: string[]
@@ -18,6 +19,7 @@ type UpsertTopicOptions = {
 }
 
 export async function upsertTopic(
+  provenance: ContentProvenance,
   name: string,
   slug: string,
   options?: UpsertTopicOptions,
@@ -26,10 +28,10 @@ export async function upsertTopic(
 
   let result: Awaited<ReturnType<typeof upsertTopicOnce>>
   try {
-    result = await upsertTopicOnce(name, slug, options)
+    result = await upsertTopicOnce(provenance, name, slug, options)
   } catch (error) {
     if (isUniqueViolation(error)) {
-      result = await upsertTopicOnce(name, slug, options)
+      result = await upsertTopicOnce(provenance, name, slug, options)
     } else {
       throw error
     }
@@ -39,6 +41,7 @@ export async function upsertTopic(
 }
 
 async function upsertTopicOnce(
+  provenance: ContentProvenance,
   name: string,
   slug: string,
   options?: UpsertTopicOptions,
@@ -50,8 +53,8 @@ async function upsertTopicOnce(
   const queryOptions = { query }
   // no-mistakes-disable-next-line postgres-required-predicates: revive matches soft-deleted rows; merge resolution inspects merged sources
   const { rows } = await write(
-    `/* upsertTopicOnce */ WITH existing_topic AS (SELECT id FROM topics WHERE (slug = $2 OR LOWER(name) = LOWER($1)) AND merged_into_topic_id IS NULL ORDER BY CASE WHEN slug = $2 THEN 0 ELSE 1 END LIMIT 1), merged_destination AS (SELECT destination_topic.id FROM topics source_topic JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id WHERE (source_topic.slug = $2 OR LOWER(source_topic.name) = LOWER($1)) AND source_topic.merged_into_topic_id IS NOT NULL AND destination_topic.deleted_at IS NULL AND destination_topic.merged_into_topic_id IS NULL ORDER BY CASE WHEN source_topic.slug = $2 THEN 0 ELSE 1 END LIMIT 1), slug_resolution AS (SELECT CASE WHEN direct.merged_into_topic_id IS NULL THEN direct.id ELSE destination.id END AS id FROM (SELECT id, merged_into_topic_id FROM topics WHERE slug = $2 LIMIT 1) direct LEFT JOIN topics destination ON destination.id = direct.merged_into_topic_id AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL), name_resolution AS (SELECT CASE WHEN direct.merged_into_topic_id IS NULL THEN direct.id ELSE destination.id END AS id FROM (SELECT id, merged_into_topic_id FROM topics WHERE LOWER(name) = LOWER($1) LIMIT 1) direct LEFT JOIN topics destination ON destination.id = direct.merged_into_topic_id AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL), mismatch AS (SELECT 1 FROM slug_resolution s, name_resolution n WHERE s.id IS NOT NULL AND n.id IS NOT NULL AND s.id <> n.id), updated_topic AS (UPDATE topics SET deleted_at = NULL, name = $1, slug = $2, topic_type = $4, bedrock_nova_multimodal_v1_content_sha256 = $3 WHERE id = (SELECT id FROM existing_topic) AND NOT EXISTS (SELECT 1 FROM merged_destination) AND NOT EXISTS (SELECT 1 FROM mismatch) RETURNING id), inserted_topic AS (INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256) SELECT $1, $2, $4, $3 WHERE NOT EXISTS (SELECT 1 FROM existing_topic) AND NOT EXISTS (SELECT 1 FROM merged_destination) AND NOT EXISTS (SELECT 1 FROM mismatch) RETURNING id) SELECT id, false AS conflict FROM updated_topic UNION ALL SELECT id, false AS conflict FROM inserted_topic UNION ALL SELECT id, false AS conflict FROM merged_destination WHERE NOT EXISTS (SELECT 1 FROM mismatch) UNION ALL SELECT NULL, true AS conflict FROM mismatch`,
-    [name, slug, content_sha256, topicType],
+    `/* upsertTopicOnce */ WITH existing_topic AS (SELECT id FROM topics WHERE (slug = $2 OR LOWER(name) = LOWER($1)) AND merged_into_topic_id IS NULL ORDER BY CASE WHEN slug = $2 THEN 0 ELSE 1 END LIMIT 1), merged_destination AS (SELECT destination_topic.id FROM topics source_topic JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id WHERE (source_topic.slug = $2 OR LOWER(source_topic.name) = LOWER($1)) AND source_topic.merged_into_topic_id IS NOT NULL AND destination_topic.deleted_at IS NULL AND destination_topic.merged_into_topic_id IS NULL ORDER BY CASE WHEN source_topic.slug = $2 THEN 0 ELSE 1 END LIMIT 1), slug_resolution AS (SELECT CASE WHEN direct.merged_into_topic_id IS NULL THEN direct.id ELSE destination.id END AS id FROM (SELECT id, merged_into_topic_id FROM topics WHERE slug = $2 LIMIT 1) direct LEFT JOIN topics destination ON destination.id = direct.merged_into_topic_id AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL), name_resolution AS (SELECT CASE WHEN direct.merged_into_topic_id IS NULL THEN direct.id ELSE destination.id END AS id FROM (SELECT id, merged_into_topic_id FROM topics WHERE LOWER(name) = LOWER($1) LIMIT 1) direct LEFT JOIN topics destination ON destination.id = direct.merged_into_topic_id AND destination.deleted_at IS NULL AND destination.merged_into_topic_id IS NULL), mismatch AS (SELECT 1 FROM slug_resolution s, name_resolution n WHERE s.id IS NOT NULL AND n.id IS NOT NULL AND s.id <> n.id), updated_topic AS (UPDATE topics SET deleted_at = NULL, name = $1, slug = $2, topic_type = $4, bedrock_nova_multimodal_v1_content_sha256 = $3 WHERE id = (SELECT id FROM existing_topic) AND NOT EXISTS (SELECT 1 FROM merged_destination) AND NOT EXISTS (SELECT 1 FROM mismatch) RETURNING id), inserted_topic AS (INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via, created_via_oauth_client_id) SELECT $1, $2, $4, $3, $5, $6 WHERE NOT EXISTS (SELECT 1 FROM existing_topic) AND NOT EXISTS (SELECT 1 FROM merged_destination) AND NOT EXISTS (SELECT 1 FROM mismatch) RETURNING id) SELECT id, false AS conflict FROM updated_topic UNION ALL SELECT id, false AS conflict FROM inserted_topic UNION ALL SELECT id, false AS conflict FROM merged_destination WHERE NOT EXISTS (SELECT 1 FROM mismatch) UNION ALL SELECT NULL, true AS conflict FROM mismatch`,
+    [name, slug, content_sha256, topicType, provenance.createdVia, provenance.oauthClientId],
     queryOptions,
   )
 

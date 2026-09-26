@@ -7,6 +7,7 @@ import {
   getContributionAdmissionReplayRetentionForTest,
   insertTestTopic,
   setContributionAdmissionExpiryForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
 import { preparePostWithCommunityReviews } from '../posts/create.mts'
@@ -160,6 +161,7 @@ describe('contribution admission finalization', () => {
         execute: query =>
           executePreparedContribution(query, () =>
             preparePostWithCommunityReviews(
+              WEB_PROVENANCE,
               user,
               {
                 title: `Initial admission post ${suffix}`,
@@ -201,6 +203,7 @@ describe('contribution admission finalization', () => {
       execute: async query =>
         (
           await preparePostWithCommunityReviews(
+            WEB_PROVENANCE,
             user,
             {
               title: `Admission replay post ${suffix}`,

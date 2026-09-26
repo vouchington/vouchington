@@ -65,14 +65,16 @@ export async function createTestReferralProgramLink(input: {
       referral_program_id,
       url_id,
       label,
-      activated_at
+      activated_at,
+      created_via
     )
     VALUES (
       ${input.userId},
       ${input.referralProgramId},
       ${urlRecord.id},
       ${input.label},
-      CURRENT_TIMESTAMP
+      CURRENT_TIMESTAMP,
+      'system'
     )
     RETURNING id
   `)

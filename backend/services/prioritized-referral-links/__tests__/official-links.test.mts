@@ -4,6 +4,7 @@ import {
   createReferralProgramFixture,
   createTestUser,
   createRandomString,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createUserReferralLink } from '@services/user-referral-program-links'
@@ -37,7 +38,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
 
   it('official links appear as priority_group 0 and is_official true', async () => {
     const suffix = createRandomString(8)
-    const link = await createOfficialReferralLink(admin, {
+    const link = await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/official-${suffix}`,
       label: 'Official link',
@@ -61,7 +62,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
     // Create a personal link for a regular user
     const personalUser = await createTestUser()
     if (!personalUser) throw new Error('Failed to create personal user')
-    await createUserReferralLink(personalUser, {
+    await createUserReferralLink(WEB_PROVENANCE, personalUser, {
       user_id: personalUser.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/personal-${suffix}`,
@@ -70,7 +71,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
 
     // Create an official link
     const officialSuffix = createRandomString(8)
-    await createOfficialReferralLink(admin, {
+    await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/official-order-${officialSuffix}`,
     })
@@ -96,7 +97,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
 
     const personalUser = await createTestUser()
     if (!personalUser) throw new Error('Failed to create personal user')
-    await createUserReferralLink(personalUser, {
+    await createUserReferralLink(WEB_PROVENANCE, personalUser, {
       user_id: personalUser.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/personal-groups-${suffix}`,
@@ -116,7 +117,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
 
   it('collectUsers does not fail for official links (user_id is not null for voucha)', async () => {
     const suffix = createRandomString(8)
-    await createOfficialReferralLink(admin, {
+    await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/users-check-${suffix}`,
     })

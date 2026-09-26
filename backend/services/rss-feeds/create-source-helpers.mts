@@ -1,5 +1,6 @@
 import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import type { BasicUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { createSlugFromTitle } from '@modules/utils'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import { linkHostnameToSourceTopic } from '@services/topics/hostname-link'
@@ -30,6 +31,7 @@ export type CreateSourceTransactionResult = {
   claimedAlias: ClaimedTopicAlias
 }
 type CreateSourceWithRetryArgs = {
+  provenance: ContentProvenance
   currentUser: BasicUser
   rssFeedUrlId: string
   hostnameId: string
@@ -63,6 +65,7 @@ export function generateSourceDetails(
 
 /** Creates a topic (type=rss_feed) and rss_feeds row in a transaction; returns null on unique violation. */
 export async function createSourceInTransaction(
+  provenance: ContentProvenance,
   createdById: string | null,
   rssFeedUrlId: string,
   hostnameId: string,
@@ -78,18 +81,12 @@ export async function createSourceInTransaction(
     const { rows: topicRows } = await write(
       sql`/* createSourceInTransaction:topic */
           INSERT INTO topics (
-            name,
-            slug,
-            topic_type,
-            created_by_id,
-            bedrock_nova_multimodal_v1_content_sha256
+            name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256,
+            created_via, created_via_oauth_client_id
           )
           VALUES (
-            ${topicName},
-            ${slug},
-            'rss_feed',
-            ${createdById},
-            ${content_sha256}
+            ${topicName}, ${slug}, 'rss_feed', ${createdById}, ${content_sha256},
+            ${provenance.createdVia}, ${provenance.oauthClientId}
           )
           RETURNING id
         `,
@@ -108,8 +105,10 @@ export async function createSourceInTransaction(
 
     const { rows: feedRows } = await write(
       sql`/* createSourceInTransaction:rss_feed */
-          INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type, created_by_id)
-          VALUES (${rssFeedUrlId}, ${topicId}, ${feedTitle}, ${feedType}, ${createdById})
+          INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type, created_by_id,
+            created_via, created_via_oauth_client_id)
+          VALUES (${rssFeedUrlId}, ${topicId}, ${feedTitle}, ${feedType}, ${createdById},
+            ${provenance.createdVia}, ${provenance.oauthClientId})
           RETURNING id
         `,
       options,
@@ -128,6 +127,7 @@ export async function createSourceInTransaction(
 }
 
 export type CreateRssFeedSourceArgs = {
+  provenance: ContentProvenance
   rssFeedUrlId: string
   hostnameId: string
   topicName: string
@@ -142,6 +142,7 @@ export async function createRssFeedSource(
   args: CreateRssFeedSourceArgs,
 ): Promise<(CreateSourceTransactionResult & { slug: string; name: string }) | null> {
   const result = await createSourceInTransaction(
+    args.provenance,
     args.createdById,
     args.rssFeedUrlId,
     args.hostnameId,
@@ -166,6 +167,7 @@ export async function createSourceWithRetry(
   args: CreateSourceWithRetryArgs,
 ): Promise<(CreateSourceTransactionResult & { slug: string; name: string }) | null> {
   const {
+    provenance,
     currentUser,
     rssFeedUrlId,
     hostnameId,
@@ -178,6 +180,7 @@ export async function createSourceWithRetry(
   } = args
   const { name, slug } = generateSourceDetails(topicName, rawTitle, feedUrl, attempt)
   const result = await createRssFeedSource({
+    provenance,
     rssFeedUrlId,
     hostnameId,
     topicName: name,

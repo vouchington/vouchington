@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { createPostSlug } from './slugs.mts'
@@ -8,6 +9,7 @@ import type { Post } from './types.mts'
 import { createPostRevision, computePostChanges } from '@services/post-revisions'
 import { setPostClearanceStatus } from '@services/post-clearance'
 
+// The platform authors story posts, whichever request or job asked for the story.
 export async function insertStoryPostRecord(
   input: {
     title: string
@@ -30,7 +32,9 @@ export async function insertStoryPostRecord(
       privacy,
       is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
-      llm_moderation_content_sha256
+      llm_moderation_content_sha256,
+      created_via,
+      created_via_oauth_client_id
     )
     VALUES (
       'story',
@@ -42,7 +46,9 @@ export async function insertStoryPostRecord(
       'public',
       false,
       ${input.embeddingContentSha},
-      ${input.moderationContentSha}
+      ${input.moderationContentSha},
+      ${SYSTEM_PROVENANCE.createdVia},
+      ${SYSTEM_PROVENANCE.oauthClientId}
     )
     RETURNING *
   `,

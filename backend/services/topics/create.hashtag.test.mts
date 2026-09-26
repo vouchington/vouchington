@@ -5,6 +5,7 @@ import {
   insertTestTopic,
   mergeTopicForTest,
   softDeleteTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createTopicAliases, createUnlinkedTopicAlias } from './aliases.mts'
 import { createTopic } from './create.mts'
@@ -49,7 +50,7 @@ describe('createTopic hashtag alias source', () => {
         await mergeTopicForTest(staleTopicId, mergeDestinationId, user!.id)
       }
 
-      const topic = await createTopic(user!, {
+      const topic = await createTopic(WEB_PROVENANCE, user!, {
         name: `Reclaimed source alias ${suffix}`,
         slug: sourceAlias,
         source_topic_alias_id: alias!.id,
@@ -75,7 +76,7 @@ describe('createTopic hashtag alias source', () => {
     try {
       await testBloomFilter.delete()
       await testBloomFilter.ensureExists()
-      const topic = await createTopic(user!, {
+      const topic = await createTopic(WEB_PROVENANCE, user!, {
         name: `Source alias ${suffix}`,
         slug: `source-alias-${suffix}`,
         source_topic_alias_id: alias.id,
@@ -102,7 +103,7 @@ describe('createTopic hashtag alias source', () => {
     const [alias] = await createTopicAliases(staleTopicId, slug)
     await softDeleteTopic(staleTopicId, user!.id)
 
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Revived source ${suffix}`,
       slug,
       source_topic_alias_id: alias!.id,

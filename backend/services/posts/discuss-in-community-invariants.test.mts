@@ -14,6 +14,7 @@ import {
   getCommentAncestorsByAny,
   getVisibleCommentDescendantIdsPage,
 } from '@services/comments'
+import { WEB_PROVENANCE } from '@voucha/test-helpers'
 
 describe('discuss-in-community-invariants', () => {
   let creator: PrivateUser
@@ -26,7 +27,7 @@ describe('discuss-in-community-invariants', () => {
     it('discusses a public global post as a community discussion', async () => {
       const community = await insertTestCommunity({ createdById: creator.id })
       await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
-      const source = await createPost(creator, {
+      const source = await createPost(WEB_PROVENANCE, creator, {
         title: 'Global source',
         markdown: 'public source',
         post_type: 'discussion',
@@ -35,7 +36,7 @@ describe('discuss-in-community-invariants', () => {
       })
       await approveTestPost(source.id)
 
-      const discussInCommunity = await createPost(creator, {
+      const discussInCommunity = await createPost(WEB_PROVENANCE, creator, {
         title: 'Discuss source',
         markdown: 'community discussion',
         post_type: 'discussion',
@@ -59,7 +60,7 @@ describe('discuss-in-community-invariants', () => {
     it('rejects restricted global posts as community discussion sources', async () => {
       const community = await insertTestCommunity({ createdById: creator.id })
       await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
-      const source = await createPost(creator, {
+      const source = await createPost(WEB_PROVENANCE, creator, {
         title: 'Followers source',
         markdown: 'restricted source',
         post_type: 'discussion',
@@ -69,7 +70,7 @@ describe('discuss-in-community-invariants', () => {
       await approveTestPost(source.id)
 
       await expect(
-        createPost(creator, {
+        createPost(WEB_PROVENANCE, creator, {
           title: 'Discuss restricted source',
           markdown: 'community discussion',
           post_type: 'discussion',
@@ -85,7 +86,7 @@ describe('discuss-in-community-invariants', () => {
       const community = await insertTestCommunity({ createdById: creator.id })
       await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
       const administrator = await createTestUser({ administrator: true })
-      const source = await createPost(administrator, {
+      const source = await createPost(WEB_PROVENANCE, administrator, {
         title: 'Source article',
         markdown: 'public source',
         post_type: 'article',
@@ -93,7 +94,7 @@ describe('discuss-in-community-invariants', () => {
         privacy: 'public',
       })
       await approveTestPost(source.id)
-      const discussInCommunity = await createPost(creator, {
+      const discussInCommunity = await createPost(WEB_PROVENANCE, creator, {
         title: 'Discuss article',
         markdown: 'community discussion',
         post_type: 'discussion',
@@ -102,7 +103,7 @@ describe('discuss-in-community-invariants', () => {
         broadcast: 'everyone',
         privacy: 'public',
       })
-      const comment = await createPost(creator, {
+      const comment = await createPost(WEB_PROVENANCE, creator, {
         markdown: 'community reply',
         post_type: 'comment',
         parent_id: discussInCommunity.id,
@@ -121,7 +122,7 @@ describe('discuss-in-community-invariants', () => {
     it('rejects restricted audience updates for community posts', async () => {
       const community = await insertTestCommunity({ createdById: creator.id })
       await insertTestCommunityMember({ communityId: community.id, userId: creator.id })
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         title: 'Community update audience',
         markdown: 'test',
         community_id: community.id,

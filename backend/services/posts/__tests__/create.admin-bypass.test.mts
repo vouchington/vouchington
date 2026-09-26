@@ -4,6 +4,7 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
@@ -31,7 +32,7 @@ describe('create.admin-bypass', () => {
     const suffix = createRandomString(8)
     const community = await insertTestCommunity({ createdById: admin.id })
 
-    const post = await createPost(admin, {
+    const post = await createPost(WEB_PROVENANCE, admin, {
       title: `Admin community post ${suffix}`,
       markdown: 'Admin-created post published to a community',
       post_type: 'discussion',
@@ -48,7 +49,7 @@ describe('create.admin-bypass', () => {
     const community = await insertTestCommunity({ createdById: user.id })
     await insertTestCommunityMember({ communityId: community.id, userId: user.id })
 
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `User community post ${suffix}`,
       markdown: 'Regular user post published to a community',
       post_type: 'discussion',

@@ -61,8 +61,8 @@ updated_topic AS (
   RETURNING id
 ),
 inserted_topic AS (
-  INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256)
-  SELECT '${safeName}', '${safeSlug}', 'topic', decode('${hash}', 'hex')
+  INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
+  SELECT '${safeName}', '${safeSlug}', 'topic', decode('${hash}', 'hex'), 'system'
   WHERE NOT EXISTS (SELECT 1 FROM existing_topic)
   RETURNING id
 )

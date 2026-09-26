@@ -96,7 +96,7 @@ describe('request client information listener', () => {
     })
   })
 
-  it('accepts invalid metadata without context in observe mode', async () => {
+  it('accepts invalid metadata without client information in observe mode', async () => {
     const response = await send({ headers: {}, isEnforced: () => false })
     expect(response.status).toBe(200)
     expect(await response.json()).toBeNull()

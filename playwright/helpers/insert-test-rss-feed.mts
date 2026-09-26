@@ -47,8 +47,8 @@ export async function insertTestRssFeed(topicId: string, suffix: string): Promis
   await linkHostnameToSourceTopic(topicId, hostnameId)
 
   const feedResult = await write(
-    `INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title)
-     VALUES ($1, $2, $3)
+    `INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, created_via)
+     VALUES ($1, $2, $3, 'system')
      RETURNING id`,
     [rssFeedUrlId, topicId, `Test Feed ${suffix}`],
   )

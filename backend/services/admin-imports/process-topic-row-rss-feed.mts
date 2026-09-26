@@ -6,6 +6,7 @@ import { softDeleteRssFeedById } from '@services/rss-feeds/delete'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import type { PrivateUser } from '@services/users/types'
 import type { CreateTopicUpdates, Topic } from '@services/topics/types'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 type ProcessTopicRssFeedOptions = {
   admin: PrivateUser
@@ -48,6 +49,7 @@ export async function processTopicRssFeed({
     await updateRssFeedById(existingFeed.id, { rss_feed_url: rssFeedUrl, title: rssFeedTitle })
   } else {
     await createRssFeed({
+      provenance: SYSTEM_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: rssFeedUrl,
       topic_id: topicId,

@@ -9,6 +9,7 @@ import {
   insertTestTopic,
   insertTestUrlHostname,
   CONTRIBUTING_USER_AGE_MS,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { addUrls } from '@services/urls'
 import { createRssFeed } from '@services/rss-feeds'
@@ -34,6 +35,7 @@ async function createTestRssFeedItemForVoting(creator: string) {
   const random = crypto.randomUUID().slice(0, 8)
   const topicId = await createLinkedTopicId(creator)
   const rssFeed = await createRssFeed({
+    provenance: WEB_PROVENANCE,
     skipRemoteValidation: true,
     rss_feed_url: `https://example.com/votes-pagination-feed-${random}.xml`,
     topic_id: topicId,

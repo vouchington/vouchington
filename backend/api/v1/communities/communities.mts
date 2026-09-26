@@ -22,6 +22,7 @@ import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
 import { parseEligiblePostType } from './list-query.mts'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 const VALID_SORT_MODES: CommunitySortMode[] = ['name', 'members', 'virtual_subscriptions']
 const VALID_LIST_TYPES = ['follow', 'mute']
@@ -164,6 +165,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
     assertCanCreateCommunity(currentUser)
 
@@ -191,7 +193,7 @@ app
     await verifyCaptchaOrAttestation(ctx, raw, { actionTag: 'communities.create' })
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'community')
 
-    const community = await createCommunity(currentUser.id, body)
+    const community = await createCommunity(provenance, currentUser.id, body)
     const { owner: _owner, ...communityData } = community
 
     ctx.setStatus(201)

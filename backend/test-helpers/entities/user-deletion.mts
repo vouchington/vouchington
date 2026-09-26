@@ -111,8 +111,8 @@ export async function countTestUserDeletionPostVotes(userId: string): Promise<nu
 
 export async function insertTestUserDeletionLists(userId: string, count: number): Promise<void> {
   await write(sql`
-    INSERT INTO lists (owner_user_id, name)
-    SELECT ${userId}, 'deletion batch list ' || ordinality
+    INSERT INTO lists (owner_user_id, name, created_via)
+    SELECT ${userId}, 'deletion batch list ' || ordinality, 'system'
     FROM generate_series(1, ${count}) WITH ORDINALITY AS generated(value, ordinality)
   `)
 }

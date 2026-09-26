@@ -37,8 +37,8 @@ updated AS (
   WHERE id = (SELECT id FROM existing) RETURNING id
 ),
 inserted AS (
-  INSERT INTO communities (name, slug, markdown, visibility, created_by_id)
-  SELECT '${safeName}', '${safeSlug}', '${safeMd}', 'public', (SELECT id FROM users WHERE username = 'system')
+  INSERT INTO communities (name, slug, markdown, visibility, created_by_id, created_via)
+  SELECT '${safeName}', '${safeSlug}', '${safeMd}', 'public', (SELECT id FROM users WHERE username = 'system'), 'system'
   WHERE NOT EXISTS (SELECT 1 FROM existing)
   RETURNING id
 )

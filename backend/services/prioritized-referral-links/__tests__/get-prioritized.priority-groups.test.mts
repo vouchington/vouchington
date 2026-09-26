@@ -13,6 +13,7 @@ import {
   insertTestDataPoint,
   setPostVotesScoreUp,
   archivePostForTopHashtagTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links'
 import { getPrioritizedReferralLinks } from '../get-prioritized.mts'
@@ -29,7 +30,7 @@ async function createUserWithLink(
   const user = await createTestUser()
   if (!user) throw new Error('Failed to create test user')
   const suffix = createRandomString(8)
-  const link = await createUserReferralLink(user, {
+  const link = await createUserReferralLink(WEB_PROVENANCE, user, {
     user_id: user.id,
     referral_program_id: referralProgramId,
     url: `https://${testHostname}/ref/${labelPrefix}-${suffix}`,

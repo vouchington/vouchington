@@ -6,6 +6,7 @@ import {
   insertEntityRelation,
   insertTestPost,
   updatePostUpdatedAt,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createPost } from './create.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -18,17 +19,17 @@ describe('metrics-batch', () => {
 
   it('getPostMetricsByAnyBatch fetches multiple post metrics by IDs in correct order', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const post1 = await createPost(user, {
+    const post1 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Metrics Test 1',
       markdown: 'Content 1',
     })
-    const post2 = await createPost(user, {
+    const post2 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Metrics Test 2',
       markdown: 'Content 2',
     })
-    const post3 = await createPost(user, {
+    const post3 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Metrics Test 3',
       markdown: 'Content 3',
@@ -143,7 +144,7 @@ describe('metrics-batch', () => {
     const owner = (await createTestUser({ administrator: true })) as PrivateUser
     const [follower1, follower2] = await Promise.all([createTestUser(), createTestUser()])
     if (!follower1 || !follower2) throw new Error('Failed to create bookmark users')
-    const post = await createPost(owner, {
+    const post = await createPost(WEB_PROVENANCE, owner, {
       post_type: 'discussion',
       title: 'Batch bookmark metrics',
       markdown: 'Content',
@@ -200,13 +201,13 @@ describe('metrics-batch', () => {
     const slug1 = `metrics-slug-1-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
     const slug2 = `metrics-slug-2-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
 
-    const post1 = await createPost(user, {
+    const post1 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Metrics Slug Test 1',
       markdown: 'Content 1',
       slug: slug1,
     })
-    const post2 = await createPost(user, {
+    const post2 = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Metrics Slug Test 2',
       markdown: 'Content 2',
@@ -221,7 +222,7 @@ describe('metrics-batch', () => {
 
   it('getPostMetricsByAnyBatch returns null for non-existent posts while preserving order', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       post_type: 'discussion',
       title: 'Metrics Order Test',
       markdown: 'Content',

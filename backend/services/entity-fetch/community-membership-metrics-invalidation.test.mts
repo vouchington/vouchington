@@ -18,6 +18,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   pollUntilNotNull,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { getUserMetricsByAnyCached } from './metrics.mts'
@@ -27,7 +28,9 @@ describe('community membership user metrics invalidation', () => {
     const user = await createTestUser()
     await expectCommunityCount(user, 0)
 
-    await createCommunity(user.id, { name: `Metrics Community ${crypto.randomUUID()}` })
+    await createCommunity(WEB_PROVENANCE, user.id, {
+      name: `Metrics Community ${crypto.randomUUID()}`,
+    })
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 1)
@@ -60,7 +63,7 @@ describe('community membership user metrics invalidation', () => {
   it('invalidates metrics when approving a community application', async () => {
     const { communityId, owner } = await createOwnedCommunity('private')
     const user = await createTestUser()
-    const application = await createApplication(user.id, communityId, {})
+    const application = await createApplication(WEB_PROVENANCE, user.id, communityId, {})
     await expectCommunityCount(user, 0)
 
     await approveApplication(owner, application.id)

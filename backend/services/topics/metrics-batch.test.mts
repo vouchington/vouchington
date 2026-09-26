@@ -11,6 +11,7 @@ import {
   suspendTestUser,
   setTestPostClearanceStatus,
   insertTestCommunity,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createTopic } from './create.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -24,17 +25,17 @@ describe('metrics-batch', () => {
   it('getTopicMetricsByAnyBatch fetches multiple topic metrics by IDs in correct order', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
     const random = Math.random().toString(36).slice(2, 15)
-    const topic1 = await createTopic(user, {
+    const topic1 = await createTopic(WEB_PROVENANCE, user, {
       slug: `test-metrics-1-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       topic_type: 'card',
       name: `Test Metrics Topic 1 ${random}`,
     })
-    const topic2 = await createTopic(user, {
+    const topic2 = await createTopic(WEB_PROVENANCE, user, {
       slug: `test-metrics-2-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       topic_type: 'card',
       name: `Test Metrics Topic 2 ${random}`,
     })
-    const topic3 = await createTopic(user, {
+    const topic3 = await createTopic(WEB_PROVENANCE, user, {
       slug: `test-metrics-3-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       topic_type: 'card',
       name: `Test Metrics Topic 3 ${random}`,
@@ -58,17 +59,17 @@ describe('metrics-batch', () => {
     const slug3 = `test-metrics-slug3-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
 
     const random = Math.random().toString(36).slice(2, 15)
-    const topic1 = await createTopic(user, {
+    const topic1 = await createTopic(WEB_PROVENANCE, user, {
       slug: slug1,
       topic_type: 'card',
       name: `Test Metrics Slug 1 ${random}`,
     })
-    const topic2 = await createTopic(user, {
+    const topic2 = await createTopic(WEB_PROVENANCE, user, {
       slug: slug2,
       topic_type: 'card',
       name: `Test Metrics Slug 2 ${random}`,
     })
-    const topic3 = await createTopic(user, {
+    const topic3 = await createTopic(WEB_PROVENANCE, user, {
       slug: slug3,
       topic_type: 'card',
       name: `Test Metrics Slug 3 ${random}`,
@@ -85,7 +86,7 @@ describe('metrics-batch', () => {
   it('getTopicMetricsByAnyBatch returns null for non-existent IDs while preserving order', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user, {
+    const topic = await createTopic(WEB_PROVENANCE, user, {
       slug: `test-metrics-null-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       topic_type: 'card',
       name: `Test Metrics Null ${random}`,
@@ -102,7 +103,7 @@ describe('metrics-batch', () => {
   it('getTopicMetricsByAnyBatch returns correct metrics structure', async () => {
     const user = (await createTestUser({ administrator: true })) as PrivateUser
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user, {
+    const topic = await createTopic(WEB_PROVENANCE, user, {
       slug: `test-metrics-struct-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       topic_type: 'card',
       name: `Test Metrics Structure ${random}`,

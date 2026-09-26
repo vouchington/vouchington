@@ -52,6 +52,8 @@ export type OAuthTokenResponse = {
 
 export type OAuthAccessPrincipal = {
   client_id: string
+  // The `oauth_clients.id` row, which content provenance records.
+  oauth_client_id: string
   expires_at: Date
   resource: string
   scopes: ApiScope[]

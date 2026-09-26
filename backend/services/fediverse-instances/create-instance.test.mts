@@ -13,6 +13,7 @@ import {
   insertTestTopic,
   softDeleteTopic,
   mergeTopicForTest,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
@@ -41,7 +42,7 @@ describe('createInstanceFromHostname', () => {
       throw new Error('provider unavailable')
     })
 
-    const result = await createInstanceFromHostname(user, hostname, classifier)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname, classifier)
 
     expect(result.status).toBe('created')
     expect(classifier).toHaveBeenCalledWith(hostname)
@@ -56,7 +57,7 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const hostname = `fedi-create-${randomSuffix()}.example.com`
 
-    const result = await createInstanceFromHostname(user, hostname)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
 
     expect(result.status).toBe('created')
     expect(result.topic_slug).toContain('fedi-create')
@@ -79,7 +80,7 @@ describe('createInstanceFromHostname', () => {
   it('claims the instance slug as a topic alias', async () => {
     const user = await createTestUserDirect()
     const hostname = `fedi-alias-${randomSuffix()}.example.com`
-    const result = await createInstanceFromHostname(user, hostname)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
 
     await expect(getTopicAliases(result.topic_id)).resolves.toMatchObject({
       results: [result.topic_slug],
@@ -90,10 +91,10 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const hostname = `fedi-dup-${randomSuffix()}.example.com`
 
-    const first = await createInstanceFromHostname(user, hostname)
+    const first = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(first.status).toBe('created')
 
-    const second = await createInstanceFromHostname(user, hostname)
+    const second = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(second.status).toBe('upvoted')
     expect(second.topic_id).toBe(first.topic_id)
     expect(second.topic_slug).toBe(first.topic_slug)
@@ -104,10 +105,10 @@ describe('createInstanceFromHostname', () => {
     const suffix = randomSuffix()
     const hostname = `Fedi-Case-${suffix}.Example.COM`
 
-    const first = await createInstanceFromHostname(user, hostname)
+    const first = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(first.status).toBe('created')
 
-    const second = await createInstanceFromHostname(user, hostname.toLowerCase())
+    const second = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname.toLowerCase())
     expect(second.status).toBe('upvoted')
     expect(second.topic_id).toBe(first.topic_id)
   })
@@ -126,7 +127,7 @@ describe('createInstanceFromHostname', () => {
       createdById: user.id,
     })
 
-    const result = await createInstanceFromHostname(user, hostname)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
 
     expect(result.status).toBe('created')
     expect(result.topic_slug).toMatch(new RegExp(`^${collidingSlug}-[0-9a-f]{4}$`))
@@ -144,7 +145,7 @@ describe('createInstanceFromHostname', () => {
     })
     await createTopicAliases(ownerTopicId, claimedAlias)
 
-    const result = await createInstanceFromHostname(user, hostname)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
 
     expect(result.status).toBe('created')
     expect(result.topic_slug).not.toBe(claimedAlias)
@@ -167,7 +168,7 @@ describe('createInstanceFromHostname', () => {
       createdById: user.id,
     })
 
-    const result = await createInstanceFromHostname(user, hostname)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
 
     expect(result.status).toBe('created')
     const topic = await getTopicByAny(result.topic_id)
@@ -179,8 +180,8 @@ describe('createInstanceFromHostname', () => {
     const hostname = `fedi-race-${randomSuffix()}.example.com`
 
     const [a, b] = await Promise.all([
-      createInstanceFromHostname(user, hostname),
-      createInstanceFromHostname(user, hostname),
+      createInstanceFromHostname(WEB_PROVENANCE, user, hostname),
+      createInstanceFromHostname(WEB_PROVENANCE, user, hostname),
     ])
 
     expect([a.status, b.status].sort()).toEqual(['created', 'upvoted'])
@@ -195,11 +196,11 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const hostname = `fedi-lifecycle-del-${randomSuffix()}.example.com`
 
-    const first = await createInstanceFromHostname(user, hostname)
+    const first = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(first.status).toBe('created')
     await softDeleteTopic(first.topic_id, user.id)
 
-    const second = await createInstanceFromHostname(user, hostname)
+    const second = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(second.status).toBe('created')
     expect(second.topic_id).not.toBe(first.topic_id)
   })
@@ -209,7 +210,7 @@ describe('createInstanceFromHostname', () => {
     const suffix = randomSuffix()
     const hostname = `fedi-lifecycle-merge-${suffix}.example.com`
 
-    const first = await createInstanceFromHostname(user, hostname)
+    const first = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(first.status).toBe('created')
 
     const mergeDestTopicId = await insertTestTopic({
@@ -219,14 +220,16 @@ describe('createInstanceFromHostname', () => {
     })
     await mergeTopicForTest(first.topic_id, mergeDestTopicId, user.id)
 
-    const second = await createInstanceFromHostname(user, hostname)
+    const second = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(second.status).toBe('created')
     expect(second.topic_id).not.toBe(first.topic_id)
   })
 
   it('throws 422 for an invalid hostname', async () => {
     const user = await createTestUserDirect()
-    await expect(createInstanceFromHostname(user, 'not a hostname')).rejects.toMatchObject({
+    await expect(
+      createInstanceFromHostname(WEB_PROVENANCE, user, 'not a hostname'),
+    ).rejects.toMatchObject({
       status: 422,
     })
   })
@@ -240,7 +243,7 @@ describe('createInstanceFromHostname', () => {
     const user = await createTestUserDirect()
     const hostname = `fedi-unsupported-${randomSuffix()}.example.com`
 
-    const result = await createInstanceFromHostname(user, hostname)
+    const result = await createInstanceFromHostname(WEB_PROVENANCE, user, hostname)
     expect(result.status).toBe('created')
 
     const attributes = await getFediverseInstanceAttributes(result.topic_id)
@@ -269,6 +272,7 @@ describe('createInstanceInTransaction', () => {
 
     await expect(
       createInstanceInTransaction(
+        WEB_PROVENANCE,
         user.id,
         nonexistentHostnameId,
         hostname,

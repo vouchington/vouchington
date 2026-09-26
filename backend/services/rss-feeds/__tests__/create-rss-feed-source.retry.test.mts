@@ -4,7 +4,7 @@ import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { createTopicAliases } from '@services/topics/aliases'
 import { getTopicAliases } from '@services/topics/get-topic-aliases'
-import { createTestUserDirect, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUserDirect, insertTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -24,6 +24,7 @@ describe('createSourceWithRetry', () => {
     const user = await createTestUserDirect()
 
     const result = await createSourceWithRetry({
+      provenance: WEB_PROVENANCE,
       currentUser: user!,
       rssFeedUrlId,
       hostnameId,
@@ -55,6 +56,7 @@ describe('createSourceWithRetry', () => {
     await createTopicAliases(ownerTopicId, claimedAlias)
 
     const result = await createSourceWithRetry({
+      provenance: WEB_PROVENANCE,
       currentUser: user,
       rssFeedUrlId,
       hostnameId,

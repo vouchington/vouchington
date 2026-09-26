@@ -2,6 +2,7 @@ import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import { addUrl } from '@services/urls/upsert'
 import type { UserReferralLink } from './types.mts'
@@ -18,6 +19,7 @@ import type { UserReferralLink } from './types.mts'
  * untouched and no row is returned.
  */
 export async function createChildReferralLink(
+  provenance: ContentProvenance,
   currentUserId: string,
   data: {
     userId: string
@@ -64,7 +66,9 @@ export async function createChildReferralLink(
         url_id,
         parent_link_id,
         label,
-        activated_at
+        activated_at,
+        created_via,
+        created_via_oauth_client_id
       )
       VALUES (
         ${data.userId},
@@ -72,7 +76,9 @@ export async function createChildReferralLink(
         ${urlRecord.id},
         ${data.parentLinkId},
         ${label},
-        CURRENT_TIMESTAMP
+        CURRENT_TIMESTAMP,
+        ${provenance.createdVia},
+        ${provenance.oauthClientId}
       )
       ON CONFLICT (user_id, referral_program_id, url_id)
         WHERE deleted_at IS NULL

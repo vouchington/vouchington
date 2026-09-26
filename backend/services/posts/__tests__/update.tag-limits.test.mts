@@ -4,6 +4,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   insertTestCard,
   createRandomString,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
@@ -40,7 +41,7 @@ describe('updatePost — manual tag-add cap (#8246)', () => {
       const topicIds = await Promise.all(
         [1, 2, 3].map(() => insertTestCard({ createdById: creator.id })),
       )
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'data_point',
         title: `Tag cap update setup ${createRandomString(8)}`,
         data_point_vertical: 'credit_card',
@@ -133,7 +134,7 @@ describe('updatePost — manual tag-add cap (#8246)', () => {
         insertTestCard({ createdById: creator.id }),
         insertTestCard({ createdById: creator.id }),
       ])
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'data_point',
         title: `Tag cap update within budget ${createRandomString(8)}`,
         data_point_vertical: 'credit_card',
@@ -161,7 +162,7 @@ describe('updatePost — manual tag-add cap (#8246)', () => {
       const [topicA, topicB, topicC] = await Promise.all(
         [1, 2, 3].map(() => insertTestCard({ createdById: creator.id })),
       )
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'data_point',
         title: `Combined category cap ${suffix}`,
         data_point_vertical: 'credit_card',
@@ -188,7 +189,7 @@ describe('updatePost — manual tag-add cap (#8246)', () => {
     const initialRestore = overrideDynamicConfigFieldsForTest(manualTagLimitConfig, { free: 3 })
     let post: Awaited<ReturnType<typeof createPost>>
     try {
-      post = await createPost(creator, {
+      post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'discussion',
         title: `Retained hashtag cap ${suffix}`,
         categories: [
@@ -219,7 +220,7 @@ describe('updatePost — manual tag-add cap (#8246)', () => {
     const restore = overrideDynamicConfigFieldsForTest(manualTagLimitConfig, { free: 3 })
     try {
       const suffix = createRandomString(8).toLowerCase()
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'discussion',
         title: `Standing hashtag cap ${suffix} #first-${suffix}`,
       })
@@ -241,7 +242,7 @@ describe('updatePost — manual tag-add cap (#8246)', () => {
     const restore = overrideDynamicConfigFieldsForTest(manualTagLimitConfig, { free: 3 })
     try {
       const suffix = createRandomString(8).toLowerCase()
-      const stalePost = await createPost(creator, {
+      const stalePost = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'discussion',
         title: `Locked hashtag cap #first-${suffix}`,
         markdown: 'Original markdown',

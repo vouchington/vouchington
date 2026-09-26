@@ -5,6 +5,7 @@ import {
   createRandomString,
   insertTestPost,
   safeUsername,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
 import { createTopicAliases } from '@services/topics/aliases'
@@ -28,7 +29,7 @@ describe('checkAvailability', () => {
 
     it('returns taken with conflict for existing slug', async () => {
       const admin = (await createTestUser({ administrator: true })) as PrivateUser
-      const topic = await createTopic(admin, {
+      const topic = await createTopic(WEB_PROVENANCE, admin, {
         name: `Test Topic ${randomSlug()}`,
         slug: `ts-${randomSlug()}`,
         topic_type: 'topic',
@@ -41,7 +42,7 @@ describe('checkAvailability', () => {
 
     it('returns taken when the slug matches an existing topic alias', async () => {
       const admin = (await createTestUser({ administrator: true })) as PrivateUser
-      const topic = await createTopic(admin, {
+      const topic = await createTopic(WEB_PROVENANCE, admin, {
         name: `Aliased Topic ${randomSlug()}`,
         slug: `at-${randomSlug()}`,
         topic_type: 'topic',
@@ -64,7 +65,7 @@ describe('checkAvailability', () => {
     it('returns taken with conflict for existing name (case-insensitive)', async () => {
       const admin = (await createTestUser({ administrator: true })) as PrivateUser
       const name = `Test Name ${randomSlug()}`
-      await createTopic(admin, {
+      await createTopic(WEB_PROVENANCE, admin, {
         name,
         slug: `tn-${randomSlug()}`,
         topic_type: 'topic',
@@ -103,7 +104,7 @@ describe('checkAvailability', () => {
 
     it('returns taken with conflict for an existing public community slug', async () => {
       const user = (await createTestUser()) as PrivateUser
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(WEB_PROVENANCE, user.id, {
         name: `Test Community ${randomSlug()}`,
         slug: `tc-${randomSlug()}`,
         visibility: 'public',
@@ -120,7 +121,7 @@ describe('checkAvailability', () => {
 
     it('returns taken without conflict for an existing private community slug', async () => {
       const user = (await createTestUser()) as PrivateUser
-      const community = await createCommunity(user.id, {
+      const community = await createCommunity(WEB_PROVENANCE, user.id, {
         name: `Private Community ${randomSlug()}`,
         slug: `pc-${randomSlug()}`,
         visibility: 'private',

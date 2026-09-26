@@ -2,6 +2,7 @@ import { beginTransaction, read, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { List, ListVisibility } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
@@ -20,6 +21,7 @@ function rowToList(row: Record<string, unknown>): List {
 }
 
 export async function createList(
+  provenance: ContentProvenance,
   currentUserId: string,
   data: { name: string; description?: string | null; visibility?: ListVisibility },
 ): Promise<List> {
@@ -29,11 +31,20 @@ export async function createList(
   ])
   const { rows } = await query(
     `/* createList */
-      INSERT INTO lists (owner_user_id, name, description, visibility)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO lists (
+        owner_user_id, name, description, visibility, created_via, created_via_oauth_client_id
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at
       `,
-    [currentUserId, data.name, data.description ?? null, data.visibility ?? 'private'],
+    [
+      currentUserId,
+      data.name,
+      data.description ?? null,
+      data.visibility ?? 'private',
+      provenance.createdVia,
+      provenance.oauthClientId,
+    ],
   )
   await query.commit()
   const list = rowToList(rows[0]!)

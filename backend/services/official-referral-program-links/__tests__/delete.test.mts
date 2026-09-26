@@ -1,7 +1,7 @@
 import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createOfficialReferralLink } from '../create.mts'
 import { deleteOfficialReferralLink } from '../delete.mts'
@@ -39,7 +39,7 @@ describe('deleteOfficialReferralLink', () => {
 
   it('admin can soft-delete an official link (sets deleted_at and deleted_by_id)', async () => {
     const suffix = Math.random().toString(36).slice(7)
-    const link = await createOfficialReferralLink(admin, {
+    const link = await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/refer/${suffix}`,
     })
@@ -54,7 +54,7 @@ describe('deleteOfficialReferralLink', () => {
 
   it('non-admin gets 403 Forbidden', async () => {
     const suffix = Math.random().toString(36).slice(7)
-    const link = await createOfficialReferralLink(admin, {
+    const link = await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/refer/${suffix}`,
     })
@@ -64,7 +64,7 @@ describe('deleteOfficialReferralLink', () => {
 
   it('anonymous user gets 401 Unauthorized', async () => {
     const suffix = Math.random().toString(36).slice(7)
-    const link = await createOfficialReferralLink(admin, {
+    const link = await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/refer/${suffix}`,
     })

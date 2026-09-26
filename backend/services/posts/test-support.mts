@@ -7,6 +7,7 @@ import {
   createTestUser,
   approveTestPost,
   setTestPostClearanceStatus,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 export type CreateTestPostOptions = {
@@ -42,7 +43,7 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
   if (!user) throw new Error('Failed to create test post creator')
 
   const random = createRandomString(10)
-  const post = await createPost(user, {
+  const post = await createPost(WEB_PROVENANCE, user, {
     title: options.title || `Test Post ${random}`,
     slug: options.slug || `test-post-${random}`,
     markdown: options.markdown || options.description || `Test post description ${random}`,
@@ -80,7 +81,7 @@ export async function createCommunityPostFixture(
   const random = createRandomString(8)
   const { community_id: _ignored, ...restAttrs } = attrs ?? {}
   const isComment = restAttrs.post_type === 'comment'
-  const post = await createPost(currentUser, {
+  const post = await createPost(WEB_PROVENANCE, currentUser, {
     post_type: 'discussion',
     title: isComment ? undefined : `Community Post ${random}`,
     markdown: `Community post content ${random}`,

@@ -11,8 +11,8 @@ type InsertTestListOptions = {
 export async function insertTestList(options: InsertTestListOptions): Promise<List> {
   const { rows } = await write(
     `/* insertTestList */
-    INSERT INTO lists (owner_user_id, name, description, visibility)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO lists (owner_user_id, name, description, visibility, created_via)
+    VALUES ($1, $2, $3, $4, 'system')
     RETURNING id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at
     `,
     [

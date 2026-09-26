@@ -16,6 +16,7 @@ import {
   addRssFeedTopicPublisherTypeWithScore,
   insertEntityRelation,
   insertTestTopicParentRelation,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('search.generated', () => {
@@ -24,6 +25,7 @@ describe('search.generated', () => {
     const topic = await createTestTopic({ hostname: `search-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -45,12 +47,14 @@ describe('search.generated', () => {
     const topic2 = await createTestTopic({ hostname: `search-2-${random}.example.com` })
 
     const feed1 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed1-${random}.xml`,
       topic_id: topic1.id,
       title: `Test Feed 1 ${random}`,
     })
     const feed2 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed2-${random}.xml`,
       topic_id: topic2.id,
@@ -73,18 +77,21 @@ describe('search.generated', () => {
     const topic3 = await createTestTopic({ hostname: `primary-3-${random}.example.com` })
 
     const topic1Feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/topic-1-primary-${random}.xml`,
       topic_id: topic1.id,
       title: `Topic 1 Primary ${random}`,
     })
     const topic2Feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/topic-2-primary-${random}.xml`,
       topic_id: topic2.id,
       title: `Topic 2 Primary ${random}`,
     })
     const disabledFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/disabled-primary-${random}.xml`,
       topic_id: topic3.id,
@@ -110,6 +117,7 @@ describe('search.generated', () => {
     const topic = await createTestTopic({ hostname: `disabled-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -129,12 +137,14 @@ describe('search.generated', () => {
     const topic2 = await createTestTopic({ hostname: `all-2-${random}.example.com` })
 
     const feed1 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed1-${random}.xml`,
       topic_id: topic1.id,
       title: `Test Feed 1 ${random}`,
     })
     const feed2 = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed2-${random}.xml`,
       topic_id: topic2.id,
@@ -155,6 +165,7 @@ describe('search.generated', () => {
     const topic = await createTestTopic({ hostname: `hidden-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -182,6 +193,7 @@ describe('search.generated', () => {
       hostname: `muted-publisher-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -207,6 +219,7 @@ describe('search.generated', () => {
       hostname: `secondary-filter-publisher-${random}.example.com`,
     })
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/filter-feed-${random}.xml`,
       topic_id: topic.id,
@@ -233,12 +246,14 @@ describe('search.generated', () => {
     const topicArticle = await createTestTopic({ hostname: `article-ft-${random}.example.com` })
 
     const podcastFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/podcast-ft-${random}.xml`,
       topic_id: topicPodcast.id,
       title: `Podcast Feed ${random}`,
     })
     const articleFeed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/article-ft-${random}.xml`,
       topic_id: topicArticle.id,
@@ -262,6 +277,7 @@ describe('search.generated', () => {
     const categoryTopic = await createTestTopic({ slug: categorySlug, name: categorySlug })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/cat-feed-${random}.xml`,
       topic_id: topic.id,

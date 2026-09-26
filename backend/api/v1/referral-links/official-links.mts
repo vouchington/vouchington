@@ -11,6 +11,7 @@ import {
   getOfficialReferralLinks,
   currentUserCanManageOfficialReferralLink,
 } from '@services/official-referral-program-links'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 // GET /api/v1/referral-programs/:id/official-referral-links
 app.route('/api/v1/referral-programs/:id/official-referral-links').get(async (ctx: Context) => {
@@ -31,10 +32,11 @@ app.route('/api/v1/referral-programs/:id/official-referral-links').post(async (c
     currentUserCanManageOfficialReferralLink,
     'POST:/api/v1/referral-programs/:id/official-referral-links',
   )
+  const provenance = getRequestContentProvenance()
   const referral_program_id = validateUUIDParam(ctx, 'id')
   const body = await parseJsonBody<{ url: string; label?: string | null }>(ctx)
   ctx.assert(typeof body.url === 'string' && body.url.trim(), 422, 'url is required')
-  const link = await createOfficialReferralLink(currentUser, {
+  const link = await createOfficialReferralLink(provenance, currentUser, {
     referral_program_id,
     url: body.url.trim(),
     label: body.label,

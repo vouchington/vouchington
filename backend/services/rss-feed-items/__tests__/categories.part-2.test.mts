@@ -19,6 +19,7 @@ import {
   createTestUser,
   softDeleteTopic,
   insertTestRssFeedDirect,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('categories', () => {
@@ -75,7 +76,7 @@ describe('categories', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const topicName = `Finance Corp ${random}`
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: topicName,
       slug: `finance-corp-${random}`,
     })
@@ -95,7 +96,7 @@ describe('categories', () => {
   it('upsertRssFeedItemCategories matches topic name case-insensitively', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Bank Of America ${random}`,
       slug: `bank-of-america-${random}`,
     })
@@ -119,14 +120,14 @@ describe('categories', () => {
     const sharedText = `shared-label-${random}`
 
     // Topic A has sharedText as an alias
-    const topicA = await createTopic(user!, {
+    const topicA = await createTopic(WEB_PROVENANCE, user!, {
       name: `Topic A ${random}`,
       slug: `topic-a-${random}`,
     })
     await createTopicAliases(topicA.id, [sharedText])
 
     // Topic B has sharedText as its name
-    const topicB = await createTopic(user!, {
+    const topicB = await createTopic(WEB_PROVENANCE, user!, {
       name: sharedText,
       slug: `topic-b-${random}`,
     })
@@ -163,7 +164,7 @@ describe('categories', () => {
     expect(before?.topic_id).toBeNull()
 
     // Create the topic after categories already exist
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: topicName,
       slug: `health-care-${random}`,
     })
@@ -180,7 +181,7 @@ describe('categories', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const topicName = `Deleted Corp ${random}`
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: topicName,
       slug: `deleted-corp-${random}`,
     })
@@ -203,7 +204,7 @@ describe('categories', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const slug = `tech-sector-${random}`
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Tech Sector ${random}`,
       slug,
     })

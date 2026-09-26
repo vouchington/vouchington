@@ -16,6 +16,7 @@ import {
 } from './test-support.mts'
 import {
   exchangeOAuthAuthorizationCode,
+  getOAuthClient,
   registerOAuthClient,
   validateOAuthAccessToken,
   validatePkceVerifier,
@@ -59,8 +60,10 @@ describe('OAuth authorization-code exchange', () => {
     expect(rejected).toHaveLength(1)
     expect(rejected[0]?.reason).toMatchObject({ code: 'invalid_grant' })
     const token = fulfilled[0]!.value
+    const client = await getOAuthClient(flow.client.client_id)
     await expect(validateOAuthAccessToken(token.access_token, 'user')).resolves.toMatchObject({
       client_id: flow.client.client_id,
+      oauth_client_id: client!.id,
       user_id: owner.id,
       scopes: ['mcp.user:read', 'mcp.user:write'],
     })

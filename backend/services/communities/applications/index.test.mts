@@ -3,6 +3,7 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
 import { searchApplications } from './get.mts'
@@ -99,7 +100,7 @@ describe('index', () => {
         visibility: 'private',
       })
 
-      const app = await createApplication(applicant.id, community.id, {})
+      const app = await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
       expect(app.user_id).toBe(applicant.id)
       expect(app.community_id).toBe(community.id)
       expect(app.approved_at).toBeNull()
@@ -109,7 +110,9 @@ describe('index', () => {
 
     it('rejects application for a public community', async () => {
       const user = await createTestUser()
-      await expect(createApplication(user.id, publicCommunity.id, {})).rejects.toMatchObject({
+      await expect(
+        createApplication(WEB_PROVENANCE, user.id, publicCommunity.id, {}),
+      ).rejects.toMatchObject({
         status: 422,
       })
     })
@@ -120,8 +123,10 @@ describe('index', () => {
         createdById: owner.id,
         visibility: 'private',
       })
-      await createApplication(applicant.id, community.id, {})
-      await expect(createApplication(applicant.id, community.id, {})).rejects.toMatchObject({
+      await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
+      await expect(
+        createApplication(WEB_PROVENANCE, applicant.id, community.id, {}),
+      ).rejects.toMatchObject({
         status: 409,
       })
     })
@@ -129,7 +134,9 @@ describe('index', () => {
     it('rejects application for existing member', async () => {
       const user = await createTestUser()
       await insertTestCommunityMember({ communityId: privateCommunity.id, userId: user.id })
-      await expect(createApplication(user.id, privateCommunity.id, {})).rejects.toMatchObject({
+      await expect(
+        createApplication(WEB_PROVENANCE, user.id, privateCommunity.id, {}),
+      ).rejects.toMatchObject({
         status: 409,
       })
     })
@@ -142,7 +149,7 @@ describe('index', () => {
         visibility: 'private',
       })
       const applicant = await createTestUser()
-      await createApplication(applicant.id, community.id, {})
+      await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       const result = await searchApplications(community.id)
       expect(result.results.length).toBeGreaterThan(0)

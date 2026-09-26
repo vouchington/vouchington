@@ -5,6 +5,7 @@ import {
   approveTestPost,
   createTestTopic,
   createTestUserWithAge,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createPost } from '@services/posts/create'
 
@@ -13,7 +14,7 @@ describe('post ratings', () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const initialTopic = await createTestTopic({ user })
     const topic = await createTestTopic({ user })
-    const review = await createPost(user, {
+    const review = await createPost(WEB_PROVENANCE, user, {
       title: 'Review with rating route coverage',
       markdown:
         'This review has enough detail to pass the minimum review content validation. It rates several concrete aspects and provides useful context for the rating workflow test. The author explains strengths, weaknesses, tradeoffs, and repeatable observations clearly.',

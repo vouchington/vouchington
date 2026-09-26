@@ -19,6 +19,7 @@ import {
   createTestUser,
   softDeleteTopic,
   insertTestRssFeedDirect,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 describe('categories', () => {
@@ -137,7 +138,7 @@ describe('categories', () => {
 
     // Create a topic with alias matching the category
     const user = await createTestUser({ administrator: true })
-    const scienceTopic = await createTopic(user!, {
+    const scienceTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Science ${random}`,
       slug: `science-topic-${random}`,
     })
@@ -209,7 +210,7 @@ describe('categories', () => {
 
     // Create a topic and add matching aliases
     const user = await createTestUser({ administrator: true })
-    const scienceTopic = await createTopic(user!, {
+    const scienceTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Science ${random}`,
       slug: `science-topic-${random}`,
     })
@@ -230,7 +231,7 @@ describe('categories', () => {
   it('backfillCategoriesForTopicAliases handles no aliases', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const emptyTopic = await createTopic(user!, {
+    const emptyTopic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Empty Topic ${random}`,
       slug: `empty-${random}`,
     })

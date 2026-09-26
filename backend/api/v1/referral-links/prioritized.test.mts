@@ -4,6 +4,7 @@ import {
   createRandomString,
   createReferralProgramFixture,
   createTestUser,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { createUserReferralLink } from '@services/user-referral-program-links'
@@ -25,7 +26,7 @@ describe('prioritized referral links routes', () => {
     testHostname = fixture.hostname
 
     const linkOwner = await createTestUser()
-    await createUserReferralLink(linkOwner, {
+    await createUserReferralLink(WEB_PROVENANCE, linkOwner, {
       user_id: linkOwner.id,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/ref/${createRandomString(8)}`,

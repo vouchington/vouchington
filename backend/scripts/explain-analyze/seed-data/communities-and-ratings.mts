@@ -17,10 +17,10 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
       const slug = `seed-community-${i}`
       values.push(id, name, slug, createdById)
       const base = values.length - 3
-      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3})`)
+      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO communities (id, name, slug, created_by_id) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+      `/* seedExplainData */ INSERT INTO communities (id, name, slug, created_by_id, created_via) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
     )
 

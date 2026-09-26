@@ -1,7 +1,12 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import { tagPostWithTopicForModerators, tagPostWithTopicsForModerators } from './tagging.mts'
 import { upsertTopic } from '@services/topics'
-import { createTestUser, hasPostRelatedTopic, insertTestPost } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  hasPostRelatedTopic,
+  insertTestPost,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Topic } from '@services/topics/types'
 
@@ -12,7 +17,11 @@ describe('tagging.generated', () => {
   beforeAll(async () => {
     const random = Math.random().toString(36).slice(2, 15)
     testUser = await createTestUser({ administrator: true })
-    testTopic = await upsertTopic(`Test Tagging Topic ${random}`, `test-tagging-topic-${random}`)
+    testTopic = await upsertTopic(
+      WEB_PROVENANCE,
+      `Test Tagging Topic ${random}`,
+      `test-tagging-topic-${random}`,
+    )
   })
   describe('tagPostWithTopicForModerators', () => {
     it('tags post with topic successfully', async () => {
@@ -51,6 +60,7 @@ describe('tagging.generated', () => {
     it('tags post with multiple topics', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topic2 = await upsertTopic(
+        WEB_PROVENANCE,
         `Test Tagging Topic 2 ${random}`,
         `test-tagging-topic-2-${random}`,
       )

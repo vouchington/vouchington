@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { createTestUser, getRssFeedFollowExistsForTest } from '@voucha/test-helpers'
+import { createTestUser, getRssFeedFollowExistsForTest, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { FeedClassification } from '../validate.mts'
 import { createSourceFromUrl } from '../create-source.mts'
 
@@ -23,10 +23,10 @@ describe('create-source.part-2', () => {
         return { kind: 'feed', title: `Feed B ${random}`, feedType: 'podcast' }
       })
 
-    const first = await createSourceFromUrl(user, `https://${domain}/feed1.xml`, {
+    const first = await createSourceFromUrl(WEB_PROVENANCE, user, `https://${domain}/feed1.xml`, {
       fetchAndClassifyFeedImpl,
     })
-    const second = await createSourceFromUrl(user, `https://${domain}/feed2.xml`, {
+    const second = await createSourceFromUrl(WEB_PROVENANCE, user, `https://${domain}/feed2.xml`, {
       fetchAndClassifyFeedImpl,
     })
 
@@ -47,6 +47,7 @@ describe('create-source.part-2', () => {
     )
 
     const result = await createSourceFromUrl(
+      WEB_PROVENANCE,
       user,
       `https://follow-on-create-${random}.example.com/feed.xml`,
       { follow: true, fetchAndClassifyFeedImpl },
@@ -67,10 +68,12 @@ describe('create-source.part-2', () => {
       }),
     )
 
-    const first = await createSourceFromUrl(user, feedUrl, { fetchAndClassifyFeedImpl })
+    const first = await createSourceFromUrl(WEB_PROVENANCE, user, feedUrl, {
+      fetchAndClassifyFeedImpl,
+    })
     expect(first.status).toBe('created')
 
-    const second = await createSourceFromUrl(user, feedUrl, {
+    const second = await createSourceFromUrl(WEB_PROVENANCE, user, feedUrl, {
       follow: true,
       fetchAndClassifyFeedImpl,
     })

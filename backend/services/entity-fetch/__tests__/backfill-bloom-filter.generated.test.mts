@@ -12,6 +12,7 @@ import {
   insertTestTopic,
   insertTestRssFeedItem,
   insertTestRssFeedDirect,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { addUrls } from '@services/urls'
 import { createCommunity } from '@services/communities/create'
@@ -209,7 +210,7 @@ describe('backfill-bloom-filter.generated', () => {
 
   it('backfillBloomFilter for communities populates filter with community id and slug', async () => {
     const slug = `test-community-${suffix}`
-    const community = await createCommunity(userId, {
+    const community = await createCommunity(WEB_PROVENANCE, userId, {
       name: `Test Community ${suffix}`,
       slug,
     })

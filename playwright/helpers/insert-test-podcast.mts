@@ -45,8 +45,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   const topicSlug = `podcast-show-${suffix}`
   const topicName = `Test Podcast Show ${suffix}`
   const topicResult = await write(
-    `INSERT INTO topics (name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ($1, $2, 'rss_feed', '019f0000-0000-7000-8000-000000000000', $3)
+    `INSERT INTO topics (name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256, created_via)
+     VALUES ($1, $2, 'rss_feed', '019f0000-0000-7000-8000-000000000000', $3, 'system')
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`,
     [topicName, topicSlug, ZERO_SHA],
@@ -68,8 +68,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
 
   // RSS feed
   const feedResult = await write(
-    `INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type)
-     VALUES ($1, $2, $3, 'podcast')
+    `INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type, created_via)
+     VALUES ($1, $2, $3, 'podcast', 'system')
      RETURNING id`,
     [rssFeedUrlId, topicId, topicName],
   )
@@ -107,8 +107,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // With a per-run suffix the slug has never been seen before, so the lookup always hits the DB.
   const categorySlug = `business-${suffix}`
   const bizTopicResult = await write(
-    `INSERT INTO topics (name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256)
-     VALUES ($1, $2, 'topic', '019f0000-0000-7000-8000-000000000000', $3)
+    `INSERT INTO topics (name, slug, topic_type, created_by_id, bedrock_nova_multimodal_v1_content_sha256, created_via)
+     VALUES ($1, $2, 'topic', '019f0000-0000-7000-8000-000000000000', $3, 'system')
      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
      RETURNING id`,
     [`Business ${suffix}`, categorySlug, ZERO_SHA],

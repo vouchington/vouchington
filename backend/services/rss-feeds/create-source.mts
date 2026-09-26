@@ -14,6 +14,7 @@ import { findExistingFeedByUrlId, findExistingFeedByUrl } from './find-existing-
 import { resolveProtocolAndClassify } from './resolve-protocol.mts'
 import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
 import { isPublicRssFeedUrl } from './url-validation.mts'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 const MAX_REDIRECT_HOPS = 5
 
@@ -33,6 +34,7 @@ type CreateSourceOptions = {
 }
 
 export async function createSourceFromUrl(
+  provenance: ContentProvenance,
   currentUser: BasicUser,
   rssFeedUrl: string,
   {
@@ -98,7 +100,7 @@ export async function createSourceFromUrl(
       })
     }
 
-    return createSourceFromUrl(currentUser, resolvedRedirectUrl, {
+    return createSourceFromUrl(provenance, currentUser, resolvedRedirectUrl, {
       assertContributionLimit,
       follow,
       hopCount: hopCount + 1,
@@ -141,6 +143,7 @@ export async function createSourceFromUrl(
 
   // Attempt creation with up to 3 retries; null means a URL race condition was detected.
   const created = await createSourceWithRetry({
+    provenance,
     currentUser,
     rssFeedUrlId,
     hostnameId,

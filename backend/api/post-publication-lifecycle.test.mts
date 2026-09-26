@@ -19,6 +19,7 @@ import {
   listTestPostPublicationImpactTopicIds,
   listTestPostPublicationRetainedTextKeys,
   setTestItemStoryId,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { updateCommunity } from '@services/communities'
 import { createPost, deletePost, updatePost } from '@services/posts'
@@ -154,7 +155,7 @@ describe('post publication lifecycle capture integration', () => {
       createTestTopic({ user: author }),
       createTestTopic({ user: author }),
     ])
-    const post = await createPost(author, {
+    const post = await createPost(WEB_PROVENANCE, author, {
       post_type: 'discussion',
       title: `Publication topic replacement ${createRandomString(8)}`,
       categories: [{ type: 'topic', topic_id: firstTopic.id }],
@@ -170,7 +171,7 @@ describe('post publication lifecycle capture integration', () => {
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!author) throw new Error('Expected author')
     const topic = await createTestTopic({ user: author })
-    const post = await createPost(author, {
+    const post = await createPost(WEB_PROVENANCE, author, {
       post_type: 'discussion',
       title: `Publication hashtag ${createRandomString(8)}`,
       markdown: '#publication-topic',
@@ -193,7 +194,7 @@ describe('post publication lifecycle capture integration', () => {
       createTestTopic({ user: author }),
       createTestTopic({ user: author }),
     ])
-    const post = await createPost(author, {
+    const post = await createPost(WEB_PROVENANCE, author, {
       post_type: 'discussion',
       title: `Publication combined ${createRandomString(8)}`,
       markdown: 'first content',
@@ -256,7 +257,7 @@ describe('post publication lifecycle capture integration', () => {
       getTestPostPublicationDirtyWorkForScope({ type: 'community', id: community.id }),
     ).resolves.toMatchObject({ community_id: community.id })
 
-    const post = await createPost(administrator, {
+    const post = await createPost(WEB_PROVENANCE, administrator, {
       post_type: 'discussion',
       title: `Publication no-op ${createRandomString(8)}`,
     })

@@ -25,6 +25,7 @@
     "@queues/kagi-smallweb": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
+    "@voucha/types": "workspace:^",
     "undici": "^8.11.0"
   },
   "devDependencies": {

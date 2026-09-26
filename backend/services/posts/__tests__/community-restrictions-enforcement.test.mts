@@ -7,6 +7,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityRestriction,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createCommunityPostFixture } from '../test-support.mts'
 import { createPost } from '../create.mts'
@@ -68,7 +69,7 @@ describe('community restriction enforcement', () => {
     const { community, member } = await insertCommunityWithNoLinksAndMember()
     const post = await createCommunityPostFixture(member, community.id)
     await expect(
-      createPost(member, {
+      createPost(WEB_PROVENANCE, member, {
         post_type: 'comment',
         parent_id: post.id,
         markdown: 'see https://example.com',
@@ -80,7 +81,7 @@ describe('community restriction enforcement', () => {
     const { community, member } = await insertCommunityWithNoLinksAndMember()
     const imageId = await insertTestImage(member.id)
     await expect(
-      createPost(member, {
+      createPost(WEB_PROVENANCE, member, {
         post_type: 'discussion',
         community_id: community.id,
         title: 'caption link',
@@ -186,7 +187,7 @@ describe('community restriction enforcement', () => {
     const { community, member } = await insertCommunityWithNoLinksAndMember()
     const post = await createCommunityPostFixture(member, community.id)
     await expect(
-      createPost(member, {
+      createPost(WEB_PROVENANCE, member, {
         post_type: 'comment',
         parent_id: post.id,
         markdown: 'join discord.gg/raid please',
@@ -196,7 +197,7 @@ describe('community restriction enforcement', () => {
   it('blocks bare-domain links in title while no_links is active', async () => {
     const { community, member } = await insertCommunityWithNoLinksAndMember()
     await expect(
-      createPost(member, {
+      createPost(WEB_PROVENANCE, member, {
         post_type: 'discussion',
         community_id: community.id,
         title: 'visit t.me/abc for the raid',
@@ -207,7 +208,7 @@ describe('community restriction enforcement', () => {
     const { community, member } = await insertCommunityWithNoLinksAndMember()
     const imageId = await insertTestImage(member.id)
     await expect(
-      createPost(member, {
+      createPost(WEB_PROVENANCE, member, {
         post_type: 'discussion',
         community_id: community.id,
         title: 'raid announcement',
@@ -219,7 +220,7 @@ describe('community restriction enforcement', () => {
     const { community, member } = await insertCommunityWithNoLinksAndMember()
     const post = await createCommunityPostFixture(member, community.id)
     await expect(
-      createPost(member, {
+      createPost(WEB_PROVENANCE, member, {
         post_type: 'comment',
         parent_id: post.id,
         markdown: 'see e.g. the docs and use version v1.0 today',

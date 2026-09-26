@@ -6,6 +6,7 @@ import {
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
   insertTestPost,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicRecommendation } from '@services/topic-recommendations'
@@ -33,7 +34,7 @@ describe('post.vote', () => {
         const creator = await createTestUser()
         const voter = await createTestUser()
         const random = Date.now()
-        const rec = await createTopicRecommendation(creator, {
+        const rec = await createTopicRecommendation(WEB_PROVENANCE, creator, {
           markdown: 'Regression test for topic recommendation voting.',
           topic_title: `Vote Regression Topic ${random}`,
           topic_slug: `vote-regression-topic-${random}`,
@@ -59,7 +60,7 @@ describe('post.vote', () => {
       })
 
       it('uses sentiment for a comment beneath a topic recommendation', async () => {
-        const recommendation = await createTopicRecommendation(user, {
+        const recommendation = await createTopicRecommendation(WEB_PROVENANCE, user, {
           markdown: 'A recommendation with a comment-specific vote policy.',
           topic_title: `Comment vote policy ${crypto.randomUUID()}`,
           topic_slug: `comment-vote-policy-${crypto.randomUUID()}`,

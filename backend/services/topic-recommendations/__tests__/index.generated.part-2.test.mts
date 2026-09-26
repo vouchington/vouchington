@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 
@@ -44,7 +44,7 @@ describe('index.generated', () => {
   describe('topic recommendation services', () => {
     it('lets admins reject and approve recommendations', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const rejected = await createTopicRecommendation(user, {
+      const rejected = await createTopicRecommendation(WEB_PROVENANCE, user, {
         markdown: 'Reject me',
         topic_title: `Reject Me ${random}`,
         topic_slug: `reject-me-${Date.now()}-${random}`,
@@ -59,7 +59,7 @@ describe('index.generated', () => {
 
       const conflictAlias = `approve-me-alias-${random}`
       // Create the rec before the conflicting alias exists; insert alias after to test approval conflict.
-      const conflictingRecommendation = await createTopicRecommendation(user, {
+      const conflictingRecommendation = await createTopicRecommendation(WEB_PROVENANCE, user, {
         markdown: 'Approve me with a conflicting alias',
         topic_title: `Approve Me Conflict ${random}`,
         topic_slug: `approve-me-conflict-${Date.now()}-${random}`,
@@ -75,9 +75,9 @@ describe('index.generated', () => {
       })
       await createTopicAliases(existingAliasTopicId, conflictAlias)
       await getTopicByAny(conflictAlias)
-      await expect(approveTopicRecommendation(admin, conflictingRecommendation)).rejects.toThrow(
-        /Alias already belongs to another topic/,
-      )
+      await expect(
+        approveTopicRecommendation(WEB_PROVENANCE, admin, conflictingRecommendation),
+      ).rejects.toThrow(/Alias already belongs to another topic/)
 
       const conflictPost = await getPostByAny(conflictingRecommendation.id)
       const existingAliasTopic = await getTopicByAny(conflictAlias)
@@ -88,7 +88,7 @@ describe('index.generated', () => {
       expect(existingAliasTopic?.id).toBe(existingAliasTopicId)
 
       const cleanAlias = `approve-me-clean-alias-${random}`
-      const approved = await createTopicRecommendation(user, {
+      const approved = await createTopicRecommendation(WEB_PROVENANCE, user, {
         markdown: 'Approve me',
         topic_title: `Approve Me Clean ${random}`,
         topic_slug: `approve-me-clean-${Date.now()}-${random}`,
@@ -99,7 +99,7 @@ describe('index.generated', () => {
       })
       await getPostByAnyCached(approved.id)
 
-      const approval = await approveTopicRecommendation(admin, approved)
+      const approval = await approveTopicRecommendation(WEB_PROVENANCE, admin, approved)
       const createdTopic = await getTopicByAny(approval.topic_id)
       const refreshedPost = await getPostByAny(approved.id)
       const cachedApprovedPost = await getPostByAnyCached(approved.id)
@@ -113,7 +113,7 @@ describe('index.generated', () => {
 
     it('approves using the latest locked recommendation fields instead of a stale snapshot', async () => {
       const random = Math.random().toString(36).slice(2, 10)
-      const recommendation = await createTopicRecommendation(user, {
+      const recommendation = await createTopicRecommendation(WEB_PROVENANCE, user, {
         markdown: 'Approve the latest version',
         topic_title: `Original Approval Title ${random}`,
         topic_slug: `stale-approval-original-${Date.now()}-${random}`,
@@ -127,7 +127,7 @@ describe('index.generated', () => {
         topic_hostnames: [`latest-approval-${Date.now()}-${random}.example.com`],
       })
 
-      const approval = await approveTopicRecommendation(admin, recommendation)
+      const approval = await approveTopicRecommendation(WEB_PROVENANCE, admin, recommendation)
       const createdTopic = await getTopicByAny(approval.topic_id)
       const approvedPost = await getPostByAny(recommendation.id)
 

@@ -1,10 +1,15 @@
 import type { Context } from '@jongleberry/api-server'
 import {
+  runWithCredentialRequestContext,
+  type CredentialRequestOrigin,
+} from '@modules/request-client-info'
+import {
   authenticateMcpBearer,
   buildMcpBearerChallenge,
   buildMcpContextUser,
   findMcpStepUpScopes,
   handleMcpHttpRequest,
+  type McpBearerAuthentication,
   type McpServerConfig,
 } from '@services/mcp-tools'
 import { checkRouteRateLimit } from '@services/route-rate-limits'
@@ -22,6 +27,27 @@ export async function dispatchMcpRequest(ctx: Context, config: McpServerConfig):
     ctx.set('WWW-Authenticate', buildMcpBearerChallenge(config, { error }))
     ctx.throw(401, 'Unauthorized')
   }
+  const origin: CredentialRequestOrigin =
+    authentication.credential === 'oauth'
+      ? {
+          interface: 'mcp',
+          credential: 'oauth',
+          client: null,
+          oauthClientId: authentication.oauthClientId,
+        }
+      : { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null }
+  // Everything after authentication, including tool handlers, runs in the MCP origin so the
+  // content they write records the credential's channel and OAuth client.
+  return runWithCredentialRequestContext(origin, () =>
+    handleAuthenticatedMcpRequest(ctx, config, authentication),
+  )
+}
+
+async function handleAuthenticatedMcpRequest(
+  ctx: Context,
+  config: McpServerConfig,
+  authentication: Extract<McpBearerAuthentication, { status: 'authenticated' }>,
+): Promise<Response> {
   const { owner, scopes } = authentication
   if (config.audience === 'admin' && !isAdminUser(owner)) {
     ctx.throw(403, 'Administrator role required')

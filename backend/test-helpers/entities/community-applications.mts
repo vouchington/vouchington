@@ -14,12 +14,13 @@ export async function insertTestCommunityApplication(
 ): Promise<CommunityApplication> {
   const { rows } = await write(
     sql`/* insertTestCommunityApplication */
-    INSERT INTO community_applications (community_id, user_id, answers, message)
+    INSERT INTO community_applications (community_id, user_id, answers, message, created_via)
     VALUES (
       ${options.communityId},
       ${options.userId},
       ${JSON.stringify(options.answers ?? {})}::jsonb,
-      ${options.message ?? null}
+      ${options.message ?? null},
+      'system'
     )
     RETURNING *
     `,

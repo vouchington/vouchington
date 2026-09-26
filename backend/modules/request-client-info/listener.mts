@@ -10,7 +10,8 @@ import { mintUUIDv7, verifyDeviceJwt } from '@ts-shared/session-jwt'
 import {
   cacheBootstrapDeviceId,
   cacheVerifiedDeviceToken,
-  runWithRequestClientInfo,
+  INVALID_CLIENT_INFO_CODE,
+  runWithSessionRequestContext,
   type VerifiedDeviceIdentity,
 } from './index.mts'
 
@@ -76,11 +77,11 @@ async function handleRequest(
       ipAddress: getTrustedIpAddress(req),
       ...(requestId ? { requestId } : {}),
     }
-    runWithRequestClientInfo(value, () => listener(req, res))
+    runWithSessionRequestContext(value, () => listener(req, res))
   } catch (error) {
     logInvalidClientInfo(path, error)
     if (!dependencies.isEnforced()) {
-      listener(req, res)
+      runWithSessionRequestContext(null, () => listener(req, res))
       return
     }
     if (!res.headersSent) writeInvalidClientInfo(res, req, error)
@@ -161,7 +162,7 @@ function writeInvalidClientInfo(res: ServerResponse, req: IncomingMessage, error
   res.end(
     JSON.stringify({
       message: error instanceof Error ? error.message : 'Invalid client information',
-      code: 'INVALID_CLIENT_INFO',
+      code: INVALID_CLIENT_INFO_CODE,
       ...(requestId ? { request_id: requestId } : {}),
     }),
   )

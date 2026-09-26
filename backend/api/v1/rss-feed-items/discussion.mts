@@ -11,6 +11,7 @@ import { prepareLinkPost } from '@services/posts'
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
 import { apiHeaders } from '../../response-contract.mts'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 /**
  * POST /api/v1/rss-feed-items/:id/discussions
@@ -53,6 +54,7 @@ app.route('/api/v1/rss-feed-items/:id/discussions').post(async (ctx: Context) =>
     currentUserCanCreatePost,
     'POST:/api/v1/rss-feed-items/:id/discussions',
   )
+  const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
 
   const itemId = ctx.params.id!
@@ -78,6 +80,7 @@ app.route('/api/v1/rss-feed-items/:id/discussions').post(async (ctx: Context) =>
       executePreparedContribution(query, async () => {
         if (!item) throw new Error('RSS feed item admission precondition was not executed')
         const prepared = await prepareLinkPost(
+          provenance,
           currentUser,
           { url_id: item.url.id, title: item.data.title },
           { query },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRssFeed } from '../create.mts'
 import { searchRssFeeds } from '../search.mts'
 import { updateRssFeedById } from '../update.mts'
@@ -13,11 +13,13 @@ describe('searchRssFeeds topic filter intersections', () => {
     ])
     const [singularFeed, hashtagFeed] = await Promise.all([
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         skipRemoteValidation: true,
         rss_feed_url: `https://example.com/singular-topic-${random}.xml`,
         topic_id: singularTopic.id,
       }),
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         skipRemoteValidation: true,
         rss_feed_url: `https://example.com/hashtag-topic-${random}.xml`,
         topic_id: hashtagTopic.id,

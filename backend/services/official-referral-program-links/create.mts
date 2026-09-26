@@ -2,6 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import { addUrl } from '@services/urls/upsert'
 import { getPrivateUserByAny } from '@services/users'
@@ -11,6 +12,7 @@ import type { OfficialReferralLink } from './types.mts'
 import { officialReferralLinkColumns } from './columns.mts'
 
 export async function createOfficialReferralLink(
+  provenance: ContentProvenance,
   currentUser: PrivateUser | null,
   data: {
     referral_program_id: string
@@ -57,7 +59,9 @@ export async function createOfficialReferralLink(
       url_id,
       label,
       activated_at,
-      created_by_id
+      created_by_id,
+      created_via,
+      created_via_oauth_client_id
     )
     VALUES (
       ${vouchaUser.id},
@@ -65,7 +69,9 @@ export async function createOfficialReferralLink(
       ${urlRecord.id},
       ${label},
       CURRENT_TIMESTAMP,
-      ${currentUser.id}
+      ${currentUser.id},
+      ${provenance.createdVia},
+      ${provenance.oauthClientId}
     )
     ON CONFLICT (user_id, referral_program_id, url_id) WHERE deleted_at IS NULL
     DO NOTHING

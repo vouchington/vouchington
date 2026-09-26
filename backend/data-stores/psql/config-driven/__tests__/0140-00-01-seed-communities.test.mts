@@ -21,6 +21,16 @@ describe('0140-00-01-seed-communities', () => {
     expect(sql).toContain("username = 'system'")
   })
 
+  it('records seeded communities as platform-created content', () => {
+    const sql = generateSeedCommunitiesSQL()
+    const inserts = sql.match(/INSERT INTO communities \([^)]*\)\s+SELECT [^\n]*/g) ?? []
+
+    expect(inserts).toHaveLength(2)
+    for (const insert of inserts) {
+      expect(insert).toMatch(/, created_via\)\s+SELECT .*, 'system'$/)
+    }
+  })
+
   it('inserts owner membership with ON CONFLICT', () => {
     const sql = generateSeedCommunitiesSQL()
     expect(sql).toContain('INSERT INTO community_members')

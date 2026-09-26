@@ -6,6 +6,7 @@ import {
   getEntityRelation,
   getPostDataPointTopicIds,
   insertTestCard,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
@@ -40,7 +41,7 @@ describe('post explicit topic provenance', () => {
   }
 
   async function makeDualProvenancePost(topicId: string) {
-    return createPost(author, {
+    return createPost(WEB_PROVENANCE, author, {
       post_type: 'data_point',
       title: `Dual topic provenance ${Date.now().toString(36)}`,
       data_point_vertical: 'credit_card',
@@ -74,7 +75,7 @@ describe('post explicit topic provenance', () => {
 
   it('counts an adopted pre-existing topic relationship toward the combined tag cap', async () => {
     const tagger = await createTestUser()
-    const post = await createPost(author, {
+    const post = await createPost(WEB_PROVENANCE, author, {
       title: `Adopted category standing ${Date.now().toString(36)}`,
     })
     const relation = getEntityRelationMetadataOrThrow({
@@ -103,7 +104,7 @@ describe('post explicit topic provenance', () => {
 
   it("replaces the author's category vote when an administrator edits the post", async () => {
     const administrator = await createTestUser({ administrator: true })
-    const post = await createPost(author, {
+    const post = await createPost(WEB_PROVENANCE, author, {
       title: `Administrator category replacement ${Date.now().toString(36)}`,
       categories: [{ type: 'topic', topic_id: topicA }],
     })

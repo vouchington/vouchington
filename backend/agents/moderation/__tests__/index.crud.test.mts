@@ -9,7 +9,12 @@ import {
 } from '@services/moderation'
 import { createPost } from '@services/posts'
 import { createPostModerationContent } from '@services/posts/content'
-import { createTestUser, createSystemUser, getModerationPromptStatus } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createSystemUser,
+  getModerationPromptStatus,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 import type { PrivateUser } from '@services/users/types'
 
@@ -81,7 +86,7 @@ describe('index.crud', () => {
       `Insert prompt ${random}`,
       moderator.id,
     )
-    const post = await createPost(user!, {
+    const post = await createPost(WEB_PROVENANCE, user!, {
       title: `Insert moderation ${random}`,
       markdown: `Insert moderation content ${random}`,
       post_type: 'discussion',

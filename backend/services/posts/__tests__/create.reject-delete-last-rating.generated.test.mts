@@ -3,7 +3,12 @@ import { it, expect, beforeAll, describe } from 'vitest'
 import { createPost } from '../create.mts'
 import { addPostRating, deletePostRating } from '../post-ratings.mts'
 import { updateTopicRatingStats } from '@services/topics/ratings'
-import { createTestUser, insertTestTopic, getTopicRatingStats } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestTopic,
+  getTopicRatingStats,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
 const VALID_REVIEW_MARKDOWN =
@@ -28,7 +33,7 @@ describe('create.reviews.generated', () => {
       slug: `test-topic-lastdel-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to test last rating delete',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -56,7 +61,7 @@ describe('create.reviews.generated', () => {
       slug: `test-topic-notfound-b-${random}`,
       createdById: user.id,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review to test non-existent topic delete',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -80,7 +85,7 @@ describe('create.reviews.generated', () => {
       allowReviews: false,
     })
     await expect(
-      createPost(user, {
+      createPost(WEB_PROVENANCE, user, {
         title: 'Review on not-reviewable topic',
         markdown: VALID_REVIEW_MARKDOWN,
         post_type: 'review',
@@ -102,7 +107,7 @@ describe('create.reviews.generated', () => {
       createdById: user.id,
       allowReviews: false,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review for addRating no-review test',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -121,7 +126,7 @@ describe('create.reviews.generated', () => {
       createdById: user.id,
       allowReviews: true,
     })
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: 'Review on reviewable topic',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',
@@ -138,7 +143,7 @@ describe('create.reviews.generated', () => {
       slug: `test-topic-stats-update-${random}`,
       createdById: user.id,
     })
-    await createPost(user, {
+    await createPost(WEB_PROVENANCE, user, {
       title: 'Review for stats test',
       markdown: VALID_REVIEW_MARKDOWN,
       post_type: 'review',

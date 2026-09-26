@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, createRandomString } from '@voucha/test-helpers'
+import { createTestUser, createRandomString, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
 
 function randomSlug(prefix?: string): string {
@@ -51,7 +51,7 @@ describe('GET /api/v1/availability', () => {
 
   it('returns 200 with available: false and topic conflict for a taken topic slug', async () => {
     const slug = `avail-test-${randomSlug()}`
-    await createTopic(admin, {
+    await createTopic(WEB_PROVENANCE, admin, {
       name: `Availability Test ${randomSlug()}`,
       slug,
       topic_type: 'topic',

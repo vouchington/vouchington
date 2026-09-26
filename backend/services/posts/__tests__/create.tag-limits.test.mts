@@ -4,6 +4,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   insertTestCard,
   createRandomString,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { PrivateUser } from '@services/users/types'
@@ -40,7 +41,7 @@ describe('createPost — manual tag-add cap (#8246)', () => {
       const topicIds = await Promise.all(
         [1, 2, 3].map(() => insertTestCard({ createdById: creator.id })),
       )
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'data_point',
         title: `Tag cap create within limit ${createRandomString(8)}`,
         data_point_vertical: 'credit_card',
@@ -63,7 +64,7 @@ describe('createPost — manual tag-add cap (#8246)', () => {
       const slug = `tag-cap-create-over-limit-${createRandomString(8)}`
 
       await expect(
-        createPost(creator, {
+        createPost(WEB_PROVENANCE, creator, {
           post_type: 'data_point',
           title: 'Tag cap create over limit',
           slug,
@@ -86,6 +87,7 @@ describe('createPost — manual tag-add cap (#8246)', () => {
         [1, 2, 3, 4, 5].map(() => insertTestCard({ createdById: creator.id })),
       )
       const post = await createPost(
+        WEB_PROVENANCE,
         creator,
         {
           post_type: 'data_point',
@@ -113,7 +115,7 @@ describe('createPost — manual tag-add cap (#8246)', () => {
       const suffix = createRandomString(8)
 
       await expect(
-        createPost(creator, {
+        createPost(WEB_PROVENANCE, creator, {
           post_type: 'data_point',
           title: `Tag cap combined ${suffix}`,
           markdown: `#markdown-${suffix}`,
@@ -139,7 +141,7 @@ describe('createPost — manual tag-add cap (#8246)', () => {
       const topicIds = await Promise.all(
         [1, 2].map(() => insertTestCard({ createdById: creator.id })),
       )
-      const post = await createPost(creator, {
+      const post = await createPost(WEB_PROVENANCE, creator, {
         post_type: 'data_point',
         title: `Tag cap deduped topic #title-${createRandomString(8)}`,
         data_point_vertical: 'credit_card',

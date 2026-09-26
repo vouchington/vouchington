@@ -4,6 +4,7 @@ import {
   insertTestCommunity,
   insertTestCommunityBan,
   insertTestUserWarning,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
@@ -28,6 +29,7 @@ describe('moderation appeal delivery requirement', () => {
       reason: 'spam',
     })
     const { appeal } = await createModerationAppeal(
+      WEB_PROVENANCE,
       appellant,
       parseCreateModerationAppealInput({
         target_type: 'warning',
@@ -110,6 +112,7 @@ describe('moderation appeal delivery requirement', () => {
       reason: 'Violations',
     })
     const { appeal } = await createModerationAppeal(
+      WEB_PROVENANCE,
       appellant,
       parseCreateModerationAppealInput({
         target_type: 'ban',

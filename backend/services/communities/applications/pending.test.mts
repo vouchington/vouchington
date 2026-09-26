@@ -1,5 +1,5 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
+import { createTestUser, insertTestCommunity, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
 import { getPendingApplicationForUser, getPendingApplicationCommunityIds } from './pending.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -27,7 +27,7 @@ describe('pending applications', () => {
       const user = await createTestUser()
       const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
 
-      await createApplication(user.id, community.id, {})
+      await createApplication(WEB_PROVENANCE, user.id, community.id, {})
 
       const result = await getPendingApplicationForUser(community.id, user.id)
       expect(result).not.toBeNull()
@@ -42,7 +42,7 @@ describe('pending applications', () => {
       const community1 = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
       const community2 = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
 
-      await createApplication(user.id, community1.id, {})
+      await createApplication(WEB_PROVENANCE, user.id, community1.id, {})
 
       const result = await getPendingApplicationForUser(community2.id, user.id)
       expect(result).toBeNull()
@@ -69,7 +69,7 @@ describe('pending applications', () => {
       const user = await createTestUser()
       const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
 
-      await createApplication(user.id, community.id, {})
+      await createApplication(WEB_PROVENANCE, user.id, community.id, {})
 
       const result = await getPendingApplicationCommunityIds(user.id, [community.id])
       expect(result.has(community.id)).toBe(true)
@@ -86,7 +86,7 @@ describe('pending applications', () => {
         visibility: 'private',
       })
 
-      await createApplication(user.id, communityWith.id, {})
+      await createApplication(WEB_PROVENANCE, user.id, communityWith.id, {})
 
       const result = await getPendingApplicationCommunityIds(user.id, [
         communityWith.id,
@@ -101,7 +101,7 @@ describe('pending applications', () => {
       const otherUser = await createTestUser()
       const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
 
-      await createApplication(applicant.id, community.id, {})
+      await createApplication(WEB_PROVENANCE, applicant.id, community.id, {})
 
       const result = await getPendingApplicationCommunityIds(otherUser.id, [community.id])
       expect(result.size).toBe(0)
@@ -112,7 +112,7 @@ describe('pending applications', () => {
       const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
       const expectedMessage = 'I would love to join this community!'
 
-      await createApplication(user.id, community.id, {}, expectedMessage)
+      await createApplication(WEB_PROVENANCE, user.id, community.id, {}, expectedMessage)
 
       const application = await getPendingApplicationForUser(community.id, user.id)
       expect(application).not.toBeNull()
@@ -124,7 +124,7 @@ describe('pending applications', () => {
       const user = await createTestUser()
       const community = await insertTestCommunity({ createdById: owner.id, visibility: 'private' })
 
-      await createApplication(user.id, community.id, {})
+      await createApplication(WEB_PROVENANCE, user.id, community.id, {})
 
       const application = await getPendingApplicationForUser(community.id, user.id)
       expect(application).not.toBeNull()

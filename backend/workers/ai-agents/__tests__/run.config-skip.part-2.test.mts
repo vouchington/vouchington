@@ -33,6 +33,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   mockAiGeneratedModerationResults,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
 import type { Post } from '@services/posts/types'
@@ -89,7 +90,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
   async function ensureTopicExists(topicSlug: string) {
     const existingTopic = await getTopicByAny(topicSlug)
     if (existingTopic) return
-    await upsertTopic(topicSlug, topicSlug)
+    await upsertTopic(WEB_PROVENANCE, topicSlug, topicSlug)
   }
 
   it('runModeratorOnPost stores AI-generated confidence data, queues review, and tags ai-generated', async () => {
@@ -99,7 +100,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
       prompt,
       user: testUser,
     } = await setupModeratorBySlugAndPrompt('ai-generated')
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `AI generated post ${randomSuffix()}`,
       markdown: `AI generated content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -134,7 +135,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
       role: 'owner',
     })
     // ai-generated is a baseline (always-on) moderator — no enableCommunityAutoTaggerAgent needed
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `AI generated worker prompt ${randomSuffix()}`,
       markdown: `AI generated worker prompt content ${randomSuffix()}`,
       community_id: community.id,
@@ -158,7 +159,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
       prompt,
       user: testUser,
     } = await setupModeratorBySlugAndPrompt('ai-generated')
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `AI generated detector missing ${randomSuffix()}`,
       markdown: `AI generated detector missing content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -176,7 +177,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
       prompt,
       user: testUser,
     } = await setupModeratorBySlugAndPrompt('politics-averse')
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `Political post ${randomSuffix()}`,
       markdown: `Political content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -209,7 +210,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
     await ensureTopicExists('for-hire')
     await ensureTopicExists('selling')
     const { moderator, prompt, user: testUser } = await setupModeratorBySlugAndPrompt('marketplace')
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `Marketplace post ${randomSuffix()}`,
       markdown: `Marketplace content ${randomSuffix()}`,
       post_type: 'discussion',
@@ -235,7 +236,7 @@ describe('runModeratorOnPost config and skip behaviors', () => {
 
   it('runModeratorOnPost marketplace tagging ignores legacy reason categories', async () => {
     const { moderator, prompt, user: testUser } = await setupModeratorBySlugAndPrompt('marketplace')
-    const post = await createPost(testUser, {
+    const post = await createPost(WEB_PROVENANCE, testUser, {
       title: `Marketplace legacy reason post ${randomSuffix()}`,
       markdown: `Marketplace legacy reason content ${randomSuffix()}`,
       post_type: 'discussion',

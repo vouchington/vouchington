@@ -1,7 +1,7 @@
 import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createUserReferralLink } from './create.mts'
 import { createChildReferralLink } from './create-child.mts'
 import {
@@ -32,7 +32,7 @@ describe('children', () => {
   })
 
   async function createParentWithChildren(count: number) {
-    const parent = await createUserReferralLink(user, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: user.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=parent-${Math.random().toString(36).slice(7)}`,
@@ -41,7 +41,7 @@ describe('children', () => {
 
     const children = []
     for (let i = 0; i < count; i++) {
-      const child = await createChildReferralLink(user.id, {
+      const child = await createChildReferralLink(WEB_PROVENANCE, user.id, {
         userId: user.id,
         referralProgramId: referralProgramId!,
         url: `https://${testHostname}/refer?test=child-${parent.id}-${i}`,
@@ -81,12 +81,12 @@ describe('children', () => {
     const otherUser = await createTestUser()
     const { children: userChildren } = await createParentWithChildren(1)
 
-    const otherParent = await createUserReferralLink(otherUser, {
+    const otherParent = await createUserReferralLink(WEB_PROVENANCE, otherUser, {
       user_id: otherUser.id,
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=other-parent-${Math.random().toString(36).slice(7)}`,
     })
-    const otherChild = await createChildReferralLink(otherUser.id, {
+    const otherChild = await createChildReferralLink(WEB_PROVENANCE, otherUser.id, {
       userId: otherUser.id,
       referralProgramId: referralProgramId!,
       url: `https://${testHostname}/refer?test=other-child-${otherParent.id}`,

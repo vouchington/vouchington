@@ -5,6 +5,7 @@ import { followUser } from '@voucha/test-helpers/entities/test-entities'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { approveTestPost } from '@voucha/test-helpers/entities/post-clearance'
 import type { PrivateUser } from '@services/users/types'
+import { WEB_PROVENANCE } from '@voucha/test-helpers'
 
 describe('create.broadcast-privacy-search', () => {
   let creator: PrivateUser
@@ -33,13 +34,13 @@ describe('create.broadcast-privacy-search', () => {
     let followersPublicPost: Awaited<ReturnType<typeof createPost>>
 
     beforeAll(async () => {
-      privatePost = await createPost(creator, {
+      privatePost = await createPost(WEB_PROVENANCE, creator, {
         title: 'Private followers post for search',
         markdown: 'private content for search test',
         broadcast: 'followers',
         privacy: 'private',
       })
-      followersPublicPost = await createPost(creator, {
+      followersPublicPost = await createPost(WEB_PROVENANCE, creator, {
         title: 'Public followers post for search',
         markdown: 'public followers content for search test',
         broadcast: 'followers',
@@ -93,7 +94,7 @@ describe('create.broadcast-privacy-search', () => {
     let mutualPost: Awaited<ReturnType<typeof createPost>>
 
     beforeAll(async () => {
-      mutualPost = await createPost(creator, {
+      mutualPost = await createPost(WEB_PROVENANCE, creator, {
         title: 'Mutual followers private',
         markdown: 'mutual content',
         broadcast: 'mutual_followers',
@@ -120,12 +121,12 @@ describe('create.broadcast-privacy-search', () => {
     let usersPrivatePost: Awaited<ReturnType<typeof createPost>>
 
     beforeAll(async () => {
-      usersPost = await createPost(creator, {
+      usersPost = await createPost(WEB_PROVENANCE, creator, {
         title: 'Users-only post for search',
         markdown: 'users content',
         broadcast: 'users',
       })
-      usersPrivatePost = await createPost(creator, {
+      usersPrivatePost = await createPost(WEB_PROVENANCE, creator, {
         title: 'Users-only private post for search',
         markdown: 'private users content',
         broadcast: 'users',
@@ -153,7 +154,7 @@ describe('create.broadcast-privacy-search', () => {
     let anonymousPost: Awaited<ReturnType<typeof createPost>>
 
     beforeAll(async () => {
-      anonymousPost = await createPost(creator, {
+      anonymousPost = await createPost(WEB_PROVENANCE, creator, {
         title: 'Anonymous profile-hidden post',
         markdown: 'anonymous profile hidden',
         is_anonymous: true,

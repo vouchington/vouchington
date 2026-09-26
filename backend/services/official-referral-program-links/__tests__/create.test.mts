@@ -1,7 +1,7 @@
 import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createOfficialReferralLink } from '../create.mts'
 
@@ -37,7 +37,7 @@ describe('createOfficialReferralLink', () => {
 
   it('admin can create an official referral link', async () => {
     const suffix = Math.random().toString(36).slice(7)
-    const link = await createOfficialReferralLink(admin, {
+    const link = await createOfficialReferralLink(WEB_PROVENANCE, admin, {
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/refer/${suffix}`,
       label: 'Official test link',
@@ -54,7 +54,7 @@ describe('createOfficialReferralLink', () => {
     const suffix = Math.random().toString(36).slice(7)
     await assert.rejects(
       () =>
-        createOfficialReferralLink(regularUser, {
+        createOfficialReferralLink(WEB_PROVENANCE, regularUser, {
           referral_program_id: referralProgramId,
           url: `https://${testHostname}/refer/${suffix}`,
         }),
@@ -66,7 +66,7 @@ describe('createOfficialReferralLink', () => {
     const suffix = Math.random().toString(36).slice(7)
     await assert.rejects(
       () =>
-        createOfficialReferralLink(null, {
+        createOfficialReferralLink(WEB_PROVENANCE, null, {
           referral_program_id: referralProgramId,
           url: `https://${testHostname}/refer/${suffix}`,
         }),
@@ -77,7 +77,7 @@ describe('createOfficialReferralLink', () => {
   it('invalid URL gets 422', async () => {
     await assert.rejects(
       () =>
-        createOfficialReferralLink(admin, {
+        createOfficialReferralLink(WEB_PROVENANCE, admin, {
           referral_program_id: referralProgramId,
           url: 'https://not-a-referral-program.invalid/other',
         }),

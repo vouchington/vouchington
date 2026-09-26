@@ -8,6 +8,7 @@ import {
   isTestAuthorPublicationLifecycleLockWaiting,
   lockTestUserSuspension,
   getLatestTestAppealTrainingFeedback,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
@@ -35,7 +36,7 @@ describe('resolveModerationAppealAccept — suspension', () => {
       target_type: 'suspension',
       appeal_reason: 'I was suspended in error.',
     })
-    const { appeal } = await createModerationAppeal(suspensionUser, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, suspensionUser, input)
     expect(appeal.user_suspension_id).toBe(suspensionId)
 
     await deliverModerationAppealForTest(admin.id, appeal.id)
@@ -91,7 +92,7 @@ describe('resolveModerationAppealAccept — suspension', () => {
       target_type: 'suspension',
       appeal_reason: 'I was suspended in error.',
     })
-    const { appeal } = await createModerationAppeal(suspensionUser, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, suspensionUser, input)
     expect(appeal.user_suspension_id).toBe(suspensionId)
     await deliverModerationAppealForTest(admin.id, appeal.id)
 
@@ -132,7 +133,7 @@ describe('resolveModerationAppealAccept — suspension', () => {
       target_type: 'suspension',
       appeal_reason: 'I was suspended in error.',
     })
-    const { appeal } = await createModerationAppeal(suspensionUser, input)
+    const { appeal } = await createModerationAppeal(WEB_PROVENANCE, suspensionUser, input)
 
     await deliverModerationAppealForTest(moderator.id, appeal.id)
     await expect(resolveModerationAppealAccept(moderator.id, appeal.id)).rejects.toMatchObject({

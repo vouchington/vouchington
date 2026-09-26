@@ -11,6 +11,7 @@ import {
   createTopHashtagPostSourceForTest,
   insertTestTopic,
   softDeleteTopic,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
@@ -101,9 +102,14 @@ describe('topic alias post-cache invalidation', () => {
     const alias = await createUnlinkedTopicAlias(`cache-upsert-${suffix}`)
     const postIds = await createCachedAliasPosts(alias.id, user, suffix)
 
-    await upsertTopic(`Cache upsert topic ${suffix}`, `cache-upsert-topic-${suffix}`, {
-      aliases: [alias.alias],
-    })
+    await upsertTopic(
+      WEB_PROVENANCE,
+      `Cache upsert topic ${suffix}`,
+      `cache-upsert-topic-${suffix}`,
+      {
+        aliases: [alias.alias],
+      },
+    )
 
     await expectPostCachesInvalidated(postIds)
   })

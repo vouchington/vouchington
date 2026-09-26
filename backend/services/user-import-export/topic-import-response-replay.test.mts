@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestTopic, createTestUser } from '@voucha/test-helpers'
+import { createTestTopic, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { importTopics } from './import-topics.mts'
 
@@ -20,8 +20,8 @@ describe('topic import response replay', () => {
     const topic = await createTestTopic({ user })
     const attempt = options()
 
-    const first = await importTopics(user, [topic.name], attempt)
-    const replay = await importTopics(user, [topic.name], attempt)
+    const first = await importTopics(WEB_PROVENANCE, user, [topic.name], attempt)
+    const replay = await importTopics(WEB_PROVENANCE, user, [topic.name], attempt)
 
     expect(first).toEqual([
       expect.objectContaining({ input: topic.name, status: 'followed', entity_id: topic.id }),
@@ -34,9 +34,11 @@ describe('topic import response replay', () => {
     const second = await createTestTopic({ user })
     const attempt = options()
 
-    await importTopics(user, [first.name, second.name], attempt)
+    await importTopics(WEB_PROVENANCE, user, [first.name, second.name], attempt)
 
-    await expect(importTopics(user, [second.name, first.name], attempt)).rejects.toMatchObject({
+    await expect(
+      importTopics(WEB_PROVENANCE, user, [second.name, first.name], attempt),
+    ).rejects.toMatchObject({
       code: 'IDEMPOTENCY_KEY_REUSED',
       status: 409,
     })

@@ -1,4 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { Post } from './types.mts'
 import { read, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -21,6 +22,7 @@ export type CreateLinkPostInput = {
  * The URL may be resolved from a raw href via addUrl inside the post transaction.
  */
 export async function createLinkPost(
+  provenance: ContentProvenance,
   creator: PrivateUser,
   input: CreateLinkPostInput,
   options: { query?: TransactionQuery } = {},
@@ -33,6 +35,7 @@ export async function createLinkPost(
   const title = input.title?.trim() || (url_id ? await resolveLinkPostTitle(url_id) : null) || ''
 
   return createPost(
+    provenance,
     creator,
     {
       post_type: 'link',
@@ -47,6 +50,7 @@ export async function createLinkPost(
 }
 
 export async function prepareLinkPost(
+  provenance: ContentProvenance,
   creator: PrivateUser,
   input: CreateLinkPostInput,
   options: { query?: TransactionQuery } = {},
@@ -54,6 +58,7 @@ export async function prepareLinkPost(
   const { url_id, url, markdown } = input
   const title = input.title?.trim() || (url_id ? await resolveLinkPostTitle(url_id) : null) || ''
   return preparePostWithCommunityReviews(
+    provenance,
     creator,
     { post_type: 'link', url_id, url: url_id ? undefined : url, title, markdown: markdown ?? '' },
     undefined,

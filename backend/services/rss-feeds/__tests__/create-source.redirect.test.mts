@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { FeedClassification } from '../validate.mts'
 
 import { createSourceFromUrl } from '../create-source.mts'
@@ -31,7 +31,9 @@ describe('create-source.redirect', () => {
         },
       )
 
-      const result = await createSourceFromUrl(user, originalUrl, { fetchAndClassifyFeedImpl })
+      const result = await createSourceFromUrl(WEB_PROVENANCE, user, originalUrl, {
+        fetchAndClassifyFeedImpl,
+      })
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain('redir-perm-dst')
@@ -55,7 +57,9 @@ describe('create-source.redirect', () => {
         },
       )
 
-      const result = await createSourceFromUrl(user, originalUrl, { fetchAndClassifyFeedImpl })
+      const result = await createSourceFromUrl(WEB_PROVENANCE, user, originalUrl, {
+        fetchAndClassifyFeedImpl,
+      })
 
       expect(result.status).toBe('created')
     })
@@ -78,7 +82,7 @@ describe('create-source.redirect', () => {
         },
       )
 
-      const first = await createSourceFromUrl(user, originalUrl, {
+      const first = await createSourceFromUrl(WEB_PROVENANCE, user, originalUrl, {
         fetchAndClassifyFeedImpl: firstFetchAndClassifyFeedImpl,
       })
       expect(first.status).toBe('created')
@@ -91,7 +95,7 @@ describe('create-source.redirect', () => {
         }),
       )
 
-      const second = await createSourceFromUrl(user, canonicalUrl, {
+      const second = await createSourceFromUrl(WEB_PROVENANCE, user, canonicalUrl, {
         fetchAndClassifyFeedImpl: secondFetchAndClassifyFeedImpl,
       })
       expect(second.status).toBe('upvoted')
@@ -109,9 +113,14 @@ describe('create-source.redirect', () => {
       )
 
       await expect(
-        createSourceFromUrl(user, `https://redir-start-${random}.example.com/feed.xml`, {
-          fetchAndClassifyFeedImpl,
-        }),
+        createSourceFromUrl(
+          WEB_PROVENANCE,
+          user,
+          `https://redir-start-${random}.example.com/feed.xml`,
+          {
+            fetchAndClassifyFeedImpl,
+          },
+        ),
       ).rejects.toMatchObject({ status: 422 })
     })
   })

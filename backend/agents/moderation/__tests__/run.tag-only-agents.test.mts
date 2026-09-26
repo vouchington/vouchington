@@ -10,7 +10,7 @@ import { runModeratorOnPost } from '@agents/moderation'
 import { createPost } from '@services/posts'
 import { getPostElectionVote } from '@services/elections-votes/post'
 import { getTopicByAny, upsertTopic } from '@services/topics'
-import { createSystemUser, createTestUser } from '@voucha/test-helpers'
+import { createSystemUser, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { Post } from '@services/posts/types'
 
 describe('runModeratorOnPost tag-only agents', () => {
@@ -44,13 +44,13 @@ describe('runModeratorOnPost tag-only agents', () => {
   async function ensureTopicExists(topicSlug: string) {
     const existingTopic = await getTopicByAny(topicSlug)
     if (existingTopic) return
-    await upsertTopic(topicSlug, topicSlug)
+    await upsertTopic(WEB_PROVENANCE, topicSlug, topicSlug)
   }
 
   async function expectTagOnlyModeration(moderatorSlug: string, reason: string) {
     await ensureTopicExists(moderatorSlug)
     const { moderator, prompt, user } = await setupModeratorBySlugAndPrompt(moderatorSlug)
-    const post = await createPost(user, {
+    const post = await createPost(WEB_PROVENANCE, user, {
       title: `Tag-only post ${moderatorSlug} ${randomSuffix()}`,
       markdown: `Tag-only content ${moderatorSlug} ${randomSuffix()}`,
       post_type: 'discussion',

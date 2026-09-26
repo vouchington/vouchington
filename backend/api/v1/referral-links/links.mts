@@ -11,6 +11,7 @@ import {
 } from '@services/user-referral-program-links'
 import { assertNotSuspended } from '@services/users'
 import { createPaginationParser } from '@modules/pagination'
+import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 // Pagination parser for referral links
 const referralLinksParser = createPaginationParser({
@@ -47,6 +48,7 @@ app
   })
   .post(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/referral-links')
+    const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
     const body = (await ctx.request.json('1mb')) as Record<string, unknown>
@@ -54,7 +56,7 @@ app
     ctx.assert(body.referral_program_id, 422, 'referral_program_id is required')
     ctx.assert(body.url, 422, 'url is required')
 
-    const link = await createUserReferralLink(currentUser, {
+    const link = await createUserReferralLink(provenance, currentUser, {
       user_id: userId as string,
       referral_program_id: body.referral_program_id as string,
       url: body.url as string,

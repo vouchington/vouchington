@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, insertTestPost, readAllQueueJobs } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestPost,
+  readAllQueueJobs,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { createModerationReport } from '../create.mts'
 import { parseCreateModerationReportInput } from '../parse.mts'
@@ -11,6 +16,7 @@ describe('createModerationReport judgement refresh', () => {
     const firstReporter = await createTestUser()
     const secondReporter = await createTestUser()
     const first = await createModerationReport(
+      WEB_PROVENANCE,
       firstReporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -23,6 +29,7 @@ describe('createModerationReport judgement refresh', () => {
     await insertFreshJudgement(postId, first.report.id)
 
     await createModerationReport(
+      WEB_PROVENANCE,
       secondReporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -41,6 +48,7 @@ describe('createModerationReport judgement refresh', () => {
     const { postId } = await createReportTarget('refresh-rank')
     const reporter = await createTestUser()
     const first = await createModerationReport(
+      WEB_PROVENANCE,
       reporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -53,6 +61,7 @@ describe('createModerationReport judgement refresh', () => {
     await insertFreshJudgement(postId, first.report.id)
 
     await createModerationReport(
+      WEB_PROVENANCE,
       reporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -71,6 +80,7 @@ describe('createModerationReport judgement refresh', () => {
     const { postId } = await createReportTarget('refresh-note')
     const reporter = await createTestUser()
     const first = await createModerationReport(
+      WEB_PROVENANCE,
       reporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -83,6 +93,7 @@ describe('createModerationReport judgement refresh', () => {
     await insertFreshJudgement(postId, first.report.id)
 
     await createModerationReport(
+      WEB_PROVENANCE,
       reporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -101,6 +112,7 @@ describe('createModerationReport judgement refresh', () => {
     const { postId } = await createReportTarget('skip-lower-rank')
     const reporter = await createTestUser()
     const first = await createModerationReport(
+      WEB_PROVENANCE,
       reporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',
@@ -113,6 +125,7 @@ describe('createModerationReport judgement refresh', () => {
     await insertFreshJudgement(postId, first.report.id, 'escalate')
 
     await createModerationReport(
+      WEB_PROVENANCE,
       reporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',

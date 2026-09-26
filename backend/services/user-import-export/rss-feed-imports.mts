@@ -1,4 +1,5 @@
 import type { BasicUser } from '@services/users/types'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import { getPrivateUserByAny } from '@services/users/get'
 import { UnrecoverableError } from '@modules/queue-errors'
 import {
@@ -77,7 +78,8 @@ export async function processRssFeedImportRow(
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
     const membershipPlan = await getUserActivePlan(user.id)
-    const result = await importSingleRssFeed(user, row.input_url, {
+    // User RSS feed imports run in the user-rss-feed-imports queue job, not in the submitting request.
+    const result = await importSingleRssFeed(SYSTEM_PROVENANCE, user, row.input_url, {
       assertRssFeedLimit: () =>
         assertWithinContributionDailyLimit(user, membershipPlan, 'rss_feed'),
       follow: batch.follow,

@@ -1,5 +1,6 @@
 import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { isUUID, isYouTubeChannelFeedUrl } from '@modules/utils'
 import { isPublicRssFeedUrl } from './url-validation.mts'
 import sql from 'sql-template-strings'
@@ -14,6 +15,7 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 
 export type CreateRssFeedInput = {
+  provenance: ContentProvenance
   rss_feed_url: string
   topic_id: string
   title?: string
@@ -108,14 +110,18 @@ async function insertRssFeedAndInitialState(
         topic_id,
         title,
         feed_type,
-        created_by_id
+        created_by_id,
+        created_via,
+        created_via_oauth_client_id
       )
       VALUES (
         ${rssFeedUrlId},
         ${options.topic_id},
         ${options.title?.trim() || null},
         ${feedType},
-        ${options.created_by_id ?? null}
+        ${options.created_by_id ?? null},
+        ${options.provenance.createdVia},
+        ${options.provenance.oauthClientId}
       )
       RETURNING *
     `,

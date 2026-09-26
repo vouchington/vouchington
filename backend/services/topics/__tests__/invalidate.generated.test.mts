@@ -1,7 +1,7 @@
 import { it, expect, describe } from 'vitest'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { caches } from '@services/entity-cache/caches'
-import { createTestUser, softDeleteTopic } from '@voucha/test-helpers'
+import { createTestUser, softDeleteTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from '../create.mts'
 import { getTopicByAny } from '../get.mts'
 import type { Topic } from '../types.mts'
@@ -12,7 +12,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics clears cache for topic ID', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -31,7 +31,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics clears cache for topic slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -50,7 +50,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics clears cache for topic object with id', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -69,7 +69,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics clears cache for topic object with slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -88,12 +88,12 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics handles multiple topics', async () => {
     const user = await createTestUser({ administrator: true })
     const random1 = Math.random().toString(36).slice(2, 15)
-    const topic1 = await createTopic(user!, {
+    const topic1 = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic 1 ${random1}`,
       slug: `test-topic-1-${random1}`,
     })
     const random2 = Math.random().toString(36).slice(2, 15)
-    const topic2 = await createTopic(user!, {
+    const topic2 = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic 2 ${random2}`,
       slug: `test-topic-2-${random2}`,
     })
@@ -133,7 +133,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics handles mixed input types', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -157,7 +157,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics case-insensitive keys resolve to same cache and invalidate properly', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -187,7 +187,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics clears slug cache for soft-deleted topic when invalidating by id', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -210,7 +210,7 @@ describe('invalidate.generated (topics)', () => {
   it('invalidate.topics clears id cache for soft-deleted topic when invalidating by slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })

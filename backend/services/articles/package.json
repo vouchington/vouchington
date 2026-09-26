@@ -26,6 +26,7 @@
     "@modules/on-error": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
     "gray-matter": "^4.0.3"
   },
   "devDependencies": {

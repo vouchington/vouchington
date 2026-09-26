@@ -630,7 +630,8 @@ export async function insertLanguageDetectionPostForTest(params: {
       bedrock_nova_multimodal_v1_content_sha256,
       llm_moderation_content_sha256,
       lingua_rs_input_sha256,
-      deleted_at
+      deleted_at,
+      created_via
     ) VALUES (
       'discussion',
       ${params.title},
@@ -641,7 +642,8 @@ export async function insertLanguageDetectionPostForTest(params: {
       ${`\\x${'0'.repeat(64)}`},
       ${`\\x${'0'.repeat(64)}`},
       ${params.inputSha256 ?? null},
-      ${params.deleted ? new Date() : null}
+      ${params.deleted ? new Date() : null},
+      'system'
     )
     RETURNING id
   `)
@@ -659,7 +661,8 @@ export async function insertLanguageDetectionCommunityForTest(params: {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionCommunityForTest */
     INSERT INTO communities (
       name, slug, visibility, member_roster_visibility, created_by_id, default_language,
-      lingua_rs_input_sha256, deleted_at
+      lingua_rs_input_sha256, deleted_at,
+      created_via
     )
     VALUES (
       ${params.name},
@@ -669,7 +672,8 @@ export async function insertLanguageDetectionCommunityForTest(params: {
       ${params.createdById},
       ${params.defaultLanguage ?? null},
       ${params.inputSha256 ?? null},
-      ${params.deleted ? new Date() : null}
+      ${params.deleted ? new Date() : null},
+      'system'
     )
     RETURNING id
   `)
@@ -713,7 +717,8 @@ export async function insertLanguageDetectionTopicForTest(params: {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionTopicForTest */
     INSERT INTO topics (
       name, slug, created_by_id, topic_type, noindex, allow_reviews,
-      bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256, deleted_at
+      bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256, deleted_at,
+      created_via
     )
     VALUES (
       ${params.name},
@@ -724,7 +729,8 @@ export async function insertLanguageDetectionTopicForTest(params: {
       true,
       ${`\\x${'0'.repeat(64)}`},
       ${params.inputSha256 ?? null},
-      ${params.deleted ? new Date() : null}
+      ${params.deleted ? new Date() : null},
+      'system'
     )
     RETURNING id
   `)

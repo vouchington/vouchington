@@ -11,7 +11,7 @@
  * from here directly instead of through the @voucha/test-helpers barrel.
  */
 
-import { createTestTopic } from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRandomString } from '@voucha/test-helpers/data'
 import { createRssFeed } from './create.mts'
 
@@ -33,6 +33,7 @@ export async function createTestRssFeed(options: {
   }
 
   const feed = await createRssFeed({
+    provenance: WEB_PROVENANCE,
     skipRemoteValidation: true,
     rss_feed_url: rssFeedUrl,
     topic_id: topicId,

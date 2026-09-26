@@ -7,7 +7,7 @@ import {
   getTopicByAnyWithRedirectCached,
 } from './get.mts'
 import { caches } from '@services/entity-cache/caches'
-import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
+import { createTestUser, softDeleteUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTopic } from '@services/topics/create'
 import { mergeTopicAliases } from '@services/topics/merge-aliases'
 import { getPrivateUserByAny, getPublicUserByAny } from '@services/users/get'
@@ -114,7 +114,7 @@ describe('get', () => {
   it('getTopicByAnyCached returns cached topic by ID', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -130,7 +130,7 @@ describe('get', () => {
   it('getTopicByAnyCached returns cached topic by slug', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -146,7 +146,7 @@ describe('get', () => {
   it('getTopicByAnyCached handles case-insensitive ID and slug keys', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -212,7 +212,7 @@ describe('get', () => {
   it('getTopicByAnyCached matches getTopicByAny result', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const topic = await createTopic(user!, {
+    const topic = await createTopic(WEB_PROVENANCE, user!, {
       name: `Test Topic ${random}`,
       slug: `test-topic-${random}`,
     })
@@ -228,11 +228,11 @@ describe('get', () => {
   it('getTopicByAnyWithRedirectCached matches redirect-aware topic lookups', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
-    const source = await createTopic(user!, {
+    const source = await createTopic(WEB_PROVENANCE, user!, {
       name: `Source Topic ${random}`,
       slug: `source-topic-${random}`,
     })
-    const destination = await createTopic(user!, {
+    const destination = await createTopic(WEB_PROVENANCE, user!, {
       name: `Destination Topic ${random}`,
       slug: `destination-topic-${random}`,
     })

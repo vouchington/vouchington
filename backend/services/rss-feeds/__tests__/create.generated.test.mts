@@ -1,7 +1,12 @@
 import { it, expect, describe, vi } from 'vitest'
 import { createRssFeed } from '../create.mts'
 import { getRssFeedById } from '../get.mts'
-import { beginTransaction, createTestTopic, createTestUser } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestTopic,
+  createTestUser,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import { getTopicByAny } from '@services/topics/get'
 import { mergeTopicAliases } from '@services/topics/merge-aliases'
@@ -12,6 +17,7 @@ describe('create.generated', () => {
     const topic = await createTestTopic({ hostname: `example-${random}.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -30,6 +36,7 @@ describe('create.generated', () => {
 
     await expect(
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         rss_feed_url: 'not-a-url',
         topic_id: topic.id,
         title: 'Test Feed',
@@ -43,6 +50,7 @@ describe('create.generated', () => {
 
     await expect(
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         rss_feed_url: `https://example.com/feed-${random}.xml#section`,
         topic_id: topic.id,
         title: 'Test Feed',
@@ -56,6 +64,7 @@ describe('create.generated', () => {
 
     await expect(
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         rss_feed_url: 'https://localhost/feed.xml',
         topic_id: topic.id,
         title: 'Test Feed',
@@ -66,6 +75,7 @@ describe('create.generated', () => {
   it('createRssFeed throws error for invalid topic_id', async () => {
     await expect(
       createRssFeed({
+        provenance: WEB_PROVENANCE,
         rss_feed_url: 'https://example.com/feed.xml',
         topic_id: 'not-a-uuid',
         title: 'Test Feed',
@@ -78,6 +88,7 @@ describe('create.generated', () => {
     const topic = await createTestTopic({ hostname: `missing-title-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-notitle-${random}.xml`,
       topic_id: topic.id,
@@ -91,6 +102,7 @@ describe('create.generated', () => {
     const topic = await createTestTopic({ hostname: `retrieved-${random}.example.com` })
 
     const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/feed-${random}.xml`,
       topic_id: topic.id,
@@ -121,6 +133,7 @@ describe('create.generated', () => {
     await topicRowLocked.promise
 
     const creating = createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/attachment-create-${random}.xml`,
       topic_id: topic.id,
@@ -182,6 +195,7 @@ describe('create.generated', () => {
       await expect(contendForSourceAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
     })
     const creating = createRssFeed({
+      provenance: WEB_PROVENANCE,
       skipRemoteValidation: true,
       rss_feed_url: `https://example.com/attachment-merge-${crypto.randomUUID()}.xml`,
       topic_id: source.id,

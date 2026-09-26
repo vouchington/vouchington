@@ -12,6 +12,7 @@ import {
   processTopicParentRelations,
 } from './process-topic-row-relations.mts'
 import { processTopicRssFeed } from './process-topic-row-rss-feed.mts'
+import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 
 export async function processTopicRow(admin: PrivateUser, row: ImportRow): Promise<string> {
   const input = row.input_data as TopicImportRow
@@ -60,7 +61,8 @@ export async function processTopicRow(admin: PrivateUser, row: ImportRow): Promi
     if (topicType) updates.topic_type = topicType
     if (input.markdown?.trim()) updates.markdown = input.markdown.trim()
 
-    const topic = await createTopic(admin, updates)
+    // Admin imports run in the admin-imports queue job, not in the uploading request.
+    const topic = await createTopic(SYSTEM_PROVENANCE, admin, updates)
     topicId = topic.id
   }
 

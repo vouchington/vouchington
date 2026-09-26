@@ -11,6 +11,7 @@ import {
   type InstanceClassificationMetadata,
   type InstanceClassificationResult,
 } from '@services/fediverse-search/adapters/instance-classification'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 export type ClassifyFediverseInstance = (hostname: string) => Promise<InstanceClassificationResult>
 
@@ -29,6 +30,7 @@ export type CreateInstanceResult = {
  * admin-only, so this bespoke flow mirrors RSS's create-source-helpers.mts instead.
  */
 export async function createInstanceFromHostname(
+  provenance: ContentProvenance,
   currentUser: BasicUser,
   hostname: string,
   classifyInstance: ClassifyFediverseInstance = classifyFediverseInstance,
@@ -48,6 +50,7 @@ export async function createInstanceFromHostname(
   const metadata = await classifyNewInstanceHostname(normalizedHostname, classifyInstance)
 
   const created = await createInstanceWithRetry({
+    provenance,
     currentUser,
     hostnameId,
     hostname: normalizedHostname,

@@ -8,6 +8,7 @@ import {
   insertTestReportJudgement,
   reviewPendingTestModerationReportsByPostSlugPrefixes,
   reviewTestModerationReports,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationReport } from '../create.mts'
@@ -87,6 +88,7 @@ describe('listPendingModerationReports', () => {
       // Use a distinct reporter per post to avoid duplicate-pending conflict
       const distinctReporter = await createTestUser()
       await createModerationReport(
+        WEB_PROVENANCE,
         distinctReporter.id,
         parseCreateModerationReportInput({
           entityType: 'post',
@@ -112,6 +114,7 @@ describe('listPendingModerationReports', () => {
     })
     const cursorReporter = await createTestUser()
     const { report } = await createModerationReport(
+      WEB_PROVENANCE,
       cursorReporter.id,
       parseCreateModerationReportInput({
         entityType: 'post',

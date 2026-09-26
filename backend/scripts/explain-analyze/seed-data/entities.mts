@@ -92,10 +92,10 @@ export async function seedTopics(count = 100): Promise<void> {
       const hash = contentHash(`topic-${i}`)
       values.push(id, name, slug, hash)
       const base = values.length - 3
-      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3})`)
+      rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}, 'system')`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO topics (id, name, slug, bedrock_nova_multimodal_v1_content_sha256)
+      `/* seedExplainData */ INSERT INTO topics (id, name, slug, bedrock_nova_multimodal_v1_content_sha256, created_via)
        VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
       values,
     )
@@ -168,7 +168,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
         )
         const base = values.length - 8
         rows.push(
-          `($${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb)`,
+          `($${base}, $${base + 1}::post_types, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}::jsonb, 'system')`,
         )
       }
       await query(
@@ -176,7 +176,8 @@ export async function seedPosts(count = 10_000): Promise<void> {
           id, post_type, title, markdown, created_by_id,
           bedrock_nova_multimodal_v1_content_sha256,
           llm_moderation_content_sha256,
-          data_point_vertical, structured_data
+          data_point_vertical, structured_data,
+          created_via
         ) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )

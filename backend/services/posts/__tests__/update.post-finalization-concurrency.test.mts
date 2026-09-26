@@ -5,6 +5,7 @@ import {
   createTestUserWithAge,
   getEntityRelation,
   insertTestCard,
+  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createPost } from '../create.mts'
@@ -26,7 +27,7 @@ describe('updatePost post-finalization concurrency', () => {
   })
 
   it('finalizes concurrent data-point updates from the latest persisted topic provenance', async () => {
-    const post = await createPost(creator, {
+    const post = await createPost(WEB_PROVENANCE, creator, {
       post_type: 'data_point',
       title: `Post finalization concurrency ${Date.now().toString(36)}`,
       data_point_vertical: 'credit_card',

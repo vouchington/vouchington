@@ -1,7 +1,7 @@
 import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
-import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
+import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createUserReferralLink } from './create.mts'
 import { createChildReferralLink } from './create-child.mts'
 import { getUserReferralLink } from './get.mts'
@@ -35,7 +35,7 @@ describe('create-child', () => {
     })
     otherReferralProgramId = otherFixture.referralProgramId
 
-    const parent = await createUserReferralLink(user, {
+    const parent = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: userId,
       referral_program_id: referralProgramId,
       url: `https://${testHostname}/refer?test=parent`,
@@ -45,7 +45,7 @@ describe('create-child', () => {
   })
 
   it('creates a child link pointing at its parent', async () => {
-    const child = await createChildReferralLink(userId!, {
+    const child = await createChildReferralLink(WEB_PROVENANCE, userId!, {
       userId: userId!,
       referralProgramId: referralProgramId!,
       url: `https://${testHostname}/refer?test=child1`,
@@ -64,7 +64,7 @@ describe('create-child', () => {
   it('rejects a URL that does not match the specified referral program', async () => {
     await assert.rejects(
       () =>
-        createChildReferralLink(userId!, {
+        createChildReferralLink(WEB_PROVENANCE, userId!, {
           userId: userId!,
           referralProgramId: otherReferralProgramId!,
           url: `https://${testHostname}/refer?test=wrong-program`,
@@ -76,7 +76,7 @@ describe('create-child', () => {
 
   it('re-running with the same URL is idempotent and re-activates the child', async () => {
     const url = `https://${testHostname}/refer?test=idempotent`
-    const first = await createChildReferralLink(userId!, {
+    const first = await createChildReferralLink(WEB_PROVENANCE, userId!, {
       userId: userId!,
       referralProgramId: referralProgramId!,
       url,
@@ -84,7 +84,7 @@ describe('create-child', () => {
       label: 'First label',
     })
 
-    const second = await createChildReferralLink(userId!, {
+    const second = await createChildReferralLink(WEB_PROVENANCE, userId!, {
       userId: userId!,
       referralProgramId: referralProgramId!,
       url,
@@ -100,7 +100,7 @@ describe('create-child', () => {
 
   it('never hijacks a manually-added link with the same user/program/url', async () => {
     const url = `https://${testHostname}/refer?test=manual`
-    const manual = await createUserReferralLink(user, {
+    const manual = await createUserReferralLink(WEB_PROVENANCE, user, {
       user_id: userId!,
       referral_program_id: referralProgramId!,
       url,
@@ -109,7 +109,7 @@ describe('create-child', () => {
 
     await assert.rejects(
       () =>
-        createChildReferralLink(userId!, {
+        createChildReferralLink(WEB_PROVENANCE, userId!, {
           userId: userId!,
           referralProgramId: referralProgramId!,
           url,
