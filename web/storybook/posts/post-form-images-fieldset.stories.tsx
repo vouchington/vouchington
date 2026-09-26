@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ImagesFieldset, type ImageEntry } from '@/components/posts/post-form-images-fieldset'
+import {
+  clearImageUploadFixture,
+  setImageUploadFixture,
+} from '@/storybook/mocks/image-upload-fixture'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const loungeImages: ImageEntry[] = [
@@ -25,6 +33,14 @@ const loungeImages: ImageEntry[] = [
 const meta = {
   title: 'Posts/Images Fieldset',
   component: ImagesFieldset,
+  beforeEach() {
+    setStoryMutationFixture()
+    setImageUploadFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearImageUploadFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta

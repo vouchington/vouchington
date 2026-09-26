@@ -6,12 +6,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NewsCommunityDiscussionAction } from '@/components/news/news-community-discussion-action'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { newsItems } from '@/storybook/entities/fixtures/feeds'
 
 const meta = {
   title: 'News/News Community Discussion Action',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

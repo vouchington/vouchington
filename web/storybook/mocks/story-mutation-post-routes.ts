@@ -2,6 +2,8 @@ import {
   automodSimulation,
   communityDiscussion,
   createdPost,
+  imageUploadCompletion,
+  imageUploadUrl,
   modNote,
   purchaseIntent,
   storyMutationAt,
@@ -88,6 +90,9 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
       },
     }
   }
+  if (endpoint === '/api/v1/images/upload-url') return imageUploadUrl(body)
+  if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint))
+    return imageUploadCompletion(endpoint)
   if (endpoint.endsWith('/agent-prompts')) return { prompt: { id: 'prompt-story' } }
   if (endpoint.endsWith('/invites')) return { community_invite: { id: 'invite-story' } }
   if (endpoint.endsWith('/members')) return {}

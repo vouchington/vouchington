@@ -13,12 +13,14 @@ interface PinCommunityPostMenuItemProps {
   postId: string
   communitySlug: string
   isPinned: boolean
+  onPinnedChange?: (isPinned: boolean) => void
 }
 
 export function PinCommunityPostMenuItem({
   postId,
   communitySlug,
   isPinned,
+  onPinnedChange,
 }: PinCommunityPostMenuItemProps) {
   const t = useTranslations()
   const [pending, setPending] = useState(false)
@@ -38,12 +40,14 @@ export function PinCommunityPostMenuItem({
         toast.success(
           t('extracted.posts.pinCommunityPostMenuItem.postUnpinnedFromCommunity_4aa246d6'),
         )
+        onPinnedChange?.(false)
         router.refresh()
       } else {
         if (currentIds.includes(postId)) {
           toast.success(
             t('extracted.posts.pinCommunityPostMenuItem.postPinnedToCommunity_28fd63df'),
           )
+          onPinnedChange?.(true)
           router.refresh()
           return
         }
@@ -57,6 +61,7 @@ export function PinCommunityPostMenuItem({
         }
         await setCommunityPinnedPosts(communitySlug, [...currentIds, postId])
         toast.success(t('extracted.posts.pinCommunityPostMenuItem.postPinnedToCommunity_28fd63df'))
+        onPinnedChange?.(true)
         router.refresh()
       }
     } catch {

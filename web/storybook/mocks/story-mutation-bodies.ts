@@ -89,6 +89,26 @@ export function communityDiscussion(body: unknown): unknown {
   }
 }
 
+export function imageUploadUrl(body: unknown): unknown {
+  return {
+    upload: {
+      image_id: 'image-story',
+      upload_url: 'http://127.0.0.1/storybook-image-upload',
+      content_type: storyText(body, 'content_type') || 'image/png',
+      expires_at: storyMutationAt,
+    },
+  }
+}
+
+export function imageUploadCompletion(endpoint: string): unknown {
+  return {
+    image: {
+      id: endpoint.split('/')[4] ?? 'image-story',
+      upload_status: 'complete',
+    },
+  }
+}
+
 export function automodSimulation(body: unknown): unknown {
   return {
     simulation: {
