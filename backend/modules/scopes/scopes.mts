@@ -96,7 +96,7 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     action: 'read',
     audience: 'api',
     resource: 'rss',
-    surfaces: ['api-key', 'oauth'],
+    surfaces: ['api-key'],
   },
   ...(userResourceDefinitions() as Record<
     Exclude<

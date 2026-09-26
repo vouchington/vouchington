@@ -374,6 +374,7 @@ Feature specifications, rules, and policies.
 - [Email Classification](requirements/platform/email-classification.md) — transactional vs. marketing classification registry, SES config set isolation, bounce suppression, CAN-SPAM footer
 - [Memberships](requirements/users/memberships.md) — Plans, billing, Stripe integration, admin grants
 - [API Keys](requirements/users/api-keys.md) — API key system, permissions, RSS feed access, rate limits
+- [OAuth Apps and Connected Apps](requirements/users/oauth-apps.md) — Owned OAuth apps, approved grants, and their settings pages
 - [Data Points Spec](requirements/platform/data-points-spec.md) — Structured data point schemas per vertical, aggregation views, data quality rules
 - [Agent Access](requirements/platform/agent-access.md) — Why and how discovery steers AI agents to the API and MCP instead of browser automation
 - [Referral Links](requirements/users/REFERRAL-LINKS.md) — Referral link submission, ranking, and click attribution

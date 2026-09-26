@@ -21,7 +21,7 @@ describe('listScopeCatalog', () => {
     const rss = catalog.find(entry => entry.scope === 'rss:read')
     expect(rss).toMatchObject({ audience: 'api', requires: null })
     rss?.surfaces.push('oauth')
-    expect(SCOPE_DEFINITIONS['rss:read'].surfaces).toEqual(['api-key', 'oauth'])
+    expect(SCOPE_DEFINITIONS['rss:read'].surfaces).toEqual(['api-key'])
   })
 
   it('pairs every write scope with a read prerequisite that validates', () => {

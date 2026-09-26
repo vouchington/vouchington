@@ -139,6 +139,7 @@ describe('getActiveIntent', () => {
     expect(getActiveIntent('/my/preferences')).toBe('settings')
     expect(getActiveIntent('/my/account-status')).toBe('settings')
     expect(getActiveIntent('/my/api-keys')).toBe('settings')
+    expect(getActiveIntent('/my/connected-apps')).toBe('settings')
   })
 
   it('resolves /links to posts (WS1)', () => {

@@ -52,6 +52,7 @@ color, background, or inset ring/shadow treatments instead.
 | **CMS**                          | URLs                                                     | `/urls`                       | —      | —    | yes   | —        |
 |                                  | Review Queue                                             | `/posts/review-queue`         | —      | —    | yes   | —        |
 |                                  | Moderation Analytics                                     | `/admin/moderation-analytics` | —      | —    | yes   | —        |
+|                                  | OAuth Apps                                               | `/admin/oauth-clients`        | —      | —    | yes   | —        |
 |                                  | Recommend New Topics (page: "New Topic Recommendations") | `/topic-recommendations`      | —      | yes  | yes   | yes      |
 |                                  | Create Topic                                             | `/topics/create`              | —      | —    | yes   | —        |
 |                                  | Topic Aliases                                            | `/topics/aliases`             | —      | —    | yes   | —        |

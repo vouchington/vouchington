@@ -5,7 +5,8 @@ import { createApiKey, getApiKeys, revokeApiKey } from '@/lib/api/client/api-key
 import { ApiError } from '@/lib/api/error'
 import type { ApiKey } from '@/types/api-keys'
 import { useOptionalAuth } from '@/lib/auth/context'
-import { DEFAULT_API_KEY_PRESET_ID, getVisibleApiKeyPresets } from './api-key-presets'
+import type { ScopeCatalogEntry } from '@/types/scopes'
+import { useApiKeyScopeSelection } from './use-api-key-scope-selection'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ListResponse } from '@/types/api-responses'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
@@ -15,7 +16,10 @@ const EMPTY_PAGE: ListResponse<ApiKey> = {
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
 }
 
-export function useApiKeysManager(initialData?: ListResponse<ApiKey>) {
+export function useApiKeysManager(
+  scopeCatalog: readonly ScopeCatalogEntry[],
+  initialData?: ListResponse<ApiKey>,
+) {
   const t = useTranslations()
   const auth = useOptionalAuth()
   const isAdmin = auth?.currentUser?.roles?.includes('administrator') ?? false
@@ -45,7 +49,7 @@ export function useApiKeysManager(initialData?: ListResponse<ApiKey>) {
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [creating, setCreating] = useState(false)
   const [newLabel, setNewLabel] = useState('')
-  const [selectedPresetId, setSelectedPresetId] = useState(DEFAULT_API_KEY_PRESET_ID)
+  const { selection, reset: resetSelection } = useApiKeyScopeSelection(scopeCatalog)
   const [submitting, setSubmitting] = useState(false)
   const [newRawKey, setNewRawKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -74,22 +78,14 @@ export function useApiKeysManager(initialData?: ListResponse<ApiKey>) {
     }
     setSubmitting(true)
     try {
-      const visiblePresets = getVisibleApiKeyPresets(isAdmin)
-      const selectedPreset = visiblePresets.find(preset => preset.id === selectedPresetId)
-      if (!selectedPreset) {
-        toast.error(t('extracted.my.apiKeysManager.pleaseSelectAValidApiKeyType_3d9b1c8a'))
-        return
-      }
-      const result = await createApiKey(
-        newLabel.trim(),
-        selectedPreset.type,
-        selectedPreset.permissions,
-      )
+      const result = await createApiKey(newLabel.trim(), selection.keyType, [
+        ...selection.permissions,
+      ])
       setCreatedKeys(prev => [result.api_key, ...prev.filter(key => key.id !== result.api_key.id)])
       setNewRawKey(result.raw_key)
       setCreating(false)
       setNewLabel('')
-      setSelectedPresetId(DEFAULT_API_KEY_PRESET_ID)
+      resetSelection()
     } catch (error) {
       /* c8 ignore next -- error path requires injecting an API key creation failure */
       toast.error(
@@ -152,8 +148,8 @@ export function useApiKeysManager(initialData?: ListResponse<ApiKey>) {
     setCreating,
     newLabel,
     setNewLabel,
-    selectedPresetId,
-    setSelectedPresetId,
+    selection,
+    resetSelection,
     submitting,
     newRawKey,
     setNewRawKey,

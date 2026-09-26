@@ -153,6 +153,11 @@ export const tabGroups: TabGroup[] = [
         dataPw: 'settings-nav-dropdown-api-keys',
       },
       {
+        href: '/my/connected-apps',
+        label: 'extracted.my.settingsRoutes.connectedApps_4d658e7e',
+        dataPw: 'settings-nav-dropdown-connected-apps',
+      },
+      {
         href: '/my/data',
         label: 'extracted.my.settingsRoutes.yourData_0fdcada4',
         dataPw: 'settings-nav-dropdown-your-data',

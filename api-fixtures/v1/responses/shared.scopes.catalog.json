@@ -150,7 +150,7 @@
       "requires": null,
       "resource": "rss",
       "scope": "rss:read",
-      "surfaces": ["api-key", "oauth"]
+      "surfaces": ["api-key"]
     },
     {
       "action": "read",

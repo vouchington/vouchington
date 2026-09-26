@@ -57,6 +57,7 @@ describe('getMatchingShortcuts', () => {
     expect(derivedHrefs).toContain('/urls')
     expect(derivedHrefs).toContain('/users')
     expect(derivedHrefs).toContain('/admin/moderation-analytics')
+    expect(derivedHrefs).toContain('/admin/oauth-clients')
     expect(derivedHrefs).toContain('/curated-asides/topics')
     expect(derivedHrefs).toContain('/rss-feed-categories')
     expect(derivedHrefs).toContain('/admin/queues')

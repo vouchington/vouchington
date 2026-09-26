@@ -12,7 +12,7 @@ Key disambiguation rules (most-specific first):
 
 - `/messages` → `messages`
 - `/posts/review-queue` → `moderation` (before `/posts` → `posts`)
-- `/admin/modlog`, `/admin/moderation-analytics` → `moderation`
+- `/admin/modlog`, `/admin/moderation-analytics`, `/admin/oauth-clients` → `moderation`
 - `/admin/topic-claims` → `topics`
 - `/admin/queues`, `/admin/postgresql`, `/admin/valkey`, `/admin/ai-costs`, `/admin/dynamic-config` → `engineering`
 - `/topics/aliases`, `/topics/create` → `topics`
