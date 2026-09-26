@@ -10,6 +10,7 @@ import {
   restoreGlobals,
   setupMemoryCaches,
 } from '../../test-helpers/src/mock-env.mts'
+import { requiredMockCall } from '../../test-helpers/src/required-mock-call.mts'
 
 import type { Env } from '../types.mts'
 
@@ -136,7 +137,7 @@ describe('worker fetch handler — routing and caching', () => {
     // Static assets dispatch under the 'static' audience partition — distinct
     // from the 'anon'/'bot' partitions HTML page dispatch uses — so a favicon
     // fetch can never collide with an HTML page's cache entry.
-    const [, firstInit] = dispatchSpy.mock.calls[0]
+    const [, firstInit] = requiredMockCall(dispatchSpy.mock.calls, 0)
     expect(firstInit.props.audience).toBe('static')
   })
 

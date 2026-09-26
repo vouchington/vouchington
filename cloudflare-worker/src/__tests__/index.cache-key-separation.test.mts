@@ -8,6 +8,7 @@ import {
   setupMemoryCaches,
 } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
+import { requiredMockCall } from '../../test-helpers/src/required-mock-call.mts'
 
 describe('worker fetch handler — cache key separation', () => {
   beforeEach(() => {
@@ -54,8 +55,8 @@ describe('worker fetch handler — cache key separation', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(dispatchSpy).toHaveBeenCalledTimes(2)
-    const [, botInit] = dispatchSpy.mock.calls[0]
-    const [, anonInit] = dispatchSpy.mock.calls[1]
+    const [, botInit] = requiredMockCall(dispatchSpy.mock.calls, 0)
+    const [, anonInit] = requiredMockCall(dispatchSpy.mock.calls, 1)
     expect(botInit.props.audience).toBe('bot')
     expect(anonInit.props.audience).toBe('anon')
     expect(botInit.props.audience).not.toBe(anonInit.props.audience)
@@ -91,8 +92,8 @@ describe('worker fetch handler — cache key separation', () => {
 
     // No cross-audience shortcut remains — the origin is hit for both.
     expect(fetchSpy).toHaveBeenCalledTimes(2)
-    const [, anonInit] = dispatchSpy.mock.calls[0]
-    const [, botInit] = dispatchSpy.mock.calls[1]
+    const [, anonInit] = requiredMockCall(dispatchSpy.mock.calls, 0)
+    const [, botInit] = requiredMockCall(dispatchSpy.mock.calls, 1)
     expect(anonInit.props.audience).toBe('anon')
     expect(botInit.props.audience).toBe('bot')
   })
@@ -125,9 +126,9 @@ describe('worker fetch handler — cache key separation', () => {
     await worker.fetch(anonRequest, env, context)
 
     expect(fetchSpy).toHaveBeenCalledTimes(3)
-    const [, botInit1] = dispatchSpy.mock.calls[0]
-    const [, botInit2] = dispatchSpy.mock.calls[1]
-    const [, anonInit] = dispatchSpy.mock.calls[2]
+    const [, botInit1] = requiredMockCall(dispatchSpy.mock.calls, 0)
+    const [, botInit2] = requiredMockCall(dispatchSpy.mock.calls, 1)
+    const [, anonInit] = requiredMockCall(dispatchSpy.mock.calls, 2)
     expect(botInit1.props.audience).toBe('bot')
     expect(botInit2.props.audience).toBe(botInit1.props.audience)
     expect(anonInit.props.audience).toBe('anon')
@@ -214,7 +215,7 @@ describe('worker fetch handler — cache key separation', () => {
     })
     await worker.fetch(anonRequest, env, context)
 
-    const [, anonInit] = dispatchSpy.mock.calls[0]
+    const [, anonInit] = requiredMockCall(dispatchSpy.mock.calls, 0)
     expect(anonInit.props.lang).toBeUndefined()
   })
 
@@ -236,7 +237,7 @@ describe('worker fetch handler — cache key separation', () => {
     })
     await worker.fetch(anonRequest, env, context)
 
-    const [, anonInit] = dispatchSpy.mock.calls[0]
+    const [, anonInit] = requiredMockCall(dispatchSpy.mock.calls, 0)
     expect(anonInit.props.lang).toBe('fr')
   })
 
@@ -269,8 +270,8 @@ describe('worker fetch handler — cache key separation', () => {
     await worker.fetch(anonRequest, env, context)
 
     expect(fetchSpy).toHaveBeenCalledTimes(2)
-    const [botDispatchRequest, botInit] = dispatchSpy.mock.calls[0]
-    const [anonDispatchRequest, anonInit] = dispatchSpy.mock.calls[1]
+    const [botDispatchRequest, botInit] = requiredMockCall(dispatchSpy.mock.calls, 0)
+    const [anonDispatchRequest, anonInit] = requiredMockCall(dispatchSpy.mock.calls, 1)
     expect(botInit.props.audience).toBe('static')
     expect(anonInit.props.audience).toBe('static')
     expect(botDispatchRequest.url).toBe(anonDispatchRequest.url)

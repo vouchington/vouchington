@@ -128,7 +128,7 @@ export async function handleSentryTunnel(request: Request, env: Env): Promise<Re
   const { envelope } = readEnvelope
 
   // The first line of a Sentry envelope is a JSON header containing the DSN.
-  const firstLine = envelope.split('\n')[0]
+  const firstLine = envelope.split('\n')[0] ?? ''
   let header: unknown
   try {
     header = JSON.parse(firstLine)

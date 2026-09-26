@@ -84,6 +84,12 @@ describe('deriveEntityCacheTags', () => {
     expect(deriveEntityCacheTags('/podcasts/apple-news')).toEqual([])
   })
 
+  it('does not mint a tag when a recognized route lacks an entity identifier', () => {
+    for (const pathname of ['/api/v1/posts', '/md/posts', '/user', '/landing']) {
+      expect(deriveEntityCacheTags(pathname)).toEqual([])
+    }
+  })
+
   it('tags a domain detail page with the hostname family, since it renders hostname data', () => {
     expect(deriveEntityCacheTags('/domain/example.com')).toEqual(['hostname:example.com'])
   })

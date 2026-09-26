@@ -251,7 +251,9 @@ describe('Sentry request metadata scrubbing', () => {
       extra: { token: 'outside-request-metadata' },
     })
     expect(event.request.headers.authorization).toBe('Bearer secret')
-    expect(event.breadcrumbs[0].data.url).toContain('?token=secret')
+    expect(event.breadcrumbs).toMatchObject([
+      { data: { url: expect.stringContaining('?token=secret') } },
+    ])
     expect(result.extra).toBe(event.extra)
   })
 
