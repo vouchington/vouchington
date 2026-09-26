@@ -35,6 +35,13 @@ stall from a real code-bug deadlock. The
 derives each current timeout from its owning workflow and requires these ambiguous signatures to
 dispatch for investigation instead of automatically rerunning.
 
+The `cloudflare-worker-tsc-runtime-unknown-caller-pc` rule retries a TypeScript-Go
+unknown-caller-pc crash only for the `static-cloudflare` job in
+[checks-static.yml](../../.github/workflows/checks-static.yml), including when
+[ci.yml](../../.github/workflows/ci.yml) or
+[main-cloudflare-worker.yml](../../.github/workflows/main-cloudflare-worker.yml) calls that
+workflow. The same crash text attached only to `static-code-analysis` is not this fingerprint.
+
 Cancelled idempotent workflows, including standalone `Static Code Analysis` runs, with no failed-job
 signal are ignored instead of dispatching Codex. Unclassified timeouts are never blind-rerun.
 Each path-scoped `main-*` workflow tests and publishes its artifact unit independently, then

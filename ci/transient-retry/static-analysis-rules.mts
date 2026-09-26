@@ -8,6 +8,16 @@ import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 const staticAnalysisNoMistakesJobName = 'static-code-analysis / no-mistakes'
 
+// checks-static.yml job `static-cloudflare` runs the Cloudflare Worker tsc step.
+// GitHub names a reusable-workflow job `<caller> / <called>`.
+export const ciCloudflareWorkerStaticJobName = 'static-cloudflare-worker / static-cloudflare'
+export const mainCloudflareWorkerStaticJobName = 'static-checks / static-cloudflare'
+
+const cloudflareWorkerStaticJobByWorkflow = new Map<string, string>([
+  ['CI', ciCloudflareWorkerStaticJobName],
+  ['Main CI (cloudflare-worker)', mainCloudflareWorkerStaticJobName],
+])
+
 function isStaticAnalysisCheckRun(name: string): boolean {
   return name === staticAnalysisJobName || name === staticAnalysisNoMistakesJobName
 }
@@ -22,23 +32,33 @@ function hasOnlyStaticAnalysisAndAggregateFailures(ctx: WorkflowRunContext): boo
   })
 }
 
+function hasOnlyNamedJobAndAggregateFailures(ctx: WorkflowRunContext, jobName: string): boolean {
+  if (!ctx.failedJobNames.includes(jobName)) return false
+  return ctx.failedJobNames.every(name => {
+    if (name === jobName || CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name)) return true
+    return ctx.jobConclusions?.get(name) === 'cancelled'
+  })
+}
+
 export const cloudflareWorkerTscRuntimeCrashRule: TransientRetryRule = {
   id: 'cloudflare-worker-tsc-runtime-unknown-caller-pc',
   consumerKey: 'cloudflare-worker-tsc-typecheck',
   rootCauseKey: 'typescript-go-runtime-crash',
   description:
-    'Static analysis fails while tsc typechecks the Cloudflare Worker because the TypeScript-Go runtime crashes with an unknown caller pc.',
+    'Cloudflare Worker static typecheck fails because the TypeScript-Go runtime crashes with an unknown caller pc.',
   rationale:
-    'The failure is a Go runtime crash inside microsoft/typescript-go during parsing, not a TypeScript diagnostic; the same Cloudflare Worker tsc command passed locally on the failing commit.',
+    'The failure is a Go runtime crash inside microsoft/typescript-go during parsing, not a TypeScript diagnostic. The typecheck step runs in checks-static.yml job static-cloudflare.',
   exampleRunIds: ['26734765264'],
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
-    if (ctx.workflowName !== 'CI' || ctx.conclusion !== 'failure') return false
-    if (!hasOnlyStaticAnalysisAndAggregateFailures(ctx)) return false
+    if (ctx.conclusion !== 'failure') return false
+    const cloudflareJobName = cloudflareWorkerStaticJobByWorkflow.get(ctx.workflowName)
+    if (cloudflareJobName === undefined) return false
+    if (!hasOnlyNamedJobAndAggregateFailures(ctx, cloudflareJobName)) return false
 
     const logs = await ctx.failedJobLogs()
-    return hasCloudflareWorkerTscRuntimeCrash(logs.get(staticAnalysisJobName) ?? '')
+    return hasCloudflareWorkerTscRuntimeCrash(logs.get(cloudflareJobName) ?? '')
   },
 }
 

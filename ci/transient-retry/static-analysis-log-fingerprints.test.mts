@@ -1,7 +1,14 @@
+import { readdirSync, readFileSync } from 'node:fs'
+
+import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { decide } from './decide.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
+import {
+  ciCloudflareWorkerStaticJobName,
+  mainCloudflareWorkerStaticJobName,
+} from './static-analysis-rules.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 
@@ -18,16 +25,30 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   workflowName: 'CI',
   conclusion: 'failure',
   runAttempt: 1,
-  failedJobNames: [staticAnalysisJobName, 'tests', 'build'],
+  failedJobNames: [ciCloudflareWorkerStaticJobName, 'tests-processing / tests-processing', 'tests'],
   failedJobLogs: () =>
-    Promise.resolve(new Map([[staticAnalysisJobName, cloudflareWorkerCrashLog]])),
+    Promise.resolve(new Map([[ciCloudflareWorkerStaticJobName, cloudflareWorkerCrashLog]])),
   failedJobAnnotations: () => Promise.resolve([]),
   ...overrides,
 })
 
 describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
-  it('matches the Cloudflare Worker tsc runtime crash on attempt 1', async () => {
+  it('matches the CI static-cloudflare job that runs the Cloudflare Worker tsc step', async () => {
     const result = await decide(makeCtx(), RULES)
+    expect(result.decision).toBe('rerun')
+    expect(result.matchedRule).toBe('cloudflare-worker-tsc-runtime-unknown-caller-pc')
+  })
+
+  it('matches the Main CI cloudflare-worker static-cloudflare job', async () => {
+    const result = await decide(
+      makeCtx({
+        workflowName: 'Main CI (cloudflare-worker)',
+        failedJobNames: [mainCloudflareWorkerStaticJobName],
+        failedJobLogs: () =>
+          Promise.resolve(new Map([[mainCloudflareWorkerStaticJobName, cloudflareWorkerCrashLog]])),
+      }),
+      RULES,
+    )
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('cloudflare-worker-tsc-runtime-unknown-caller-pc')
   })
@@ -36,10 +57,10 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
     const result = await decide(
       makeCtx({
         failedJobNames: [
-          staticAnalysisJobName,
+          ciCloudflareWorkerStaticJobName,
           'Patch Coverage / Patch Coverage',
+          'tests-processing / tests-processing',
           'tests',
-          'build',
         ],
       }),
       RULES,
@@ -53,7 +74,7 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
         Promise.resolve(
           new Map([
             [
-              staticAnalysisJobName,
+              ciCloudflareWorkerStaticJobName,
               [
                 'pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json',
                 "cloudflare-worker/src/index.mts(1,1): error TS2304: Cannot find name 'x'.",
@@ -74,7 +95,7 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
         Promise.resolve(
           new Map([
             [
-              staticAnalysisJobName,
+              ciCloudflareWorkerStaticJobName,
               [
                 '##[group]Run pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json',
                 'pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json',
@@ -96,7 +117,7 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
 
   it('does not match when an additional non-aggregate job fails', async () => {
     const result = await decide(
-      makeCtx({ failedJobNames: [staticAnalysisJobName, 'test-web'] }),
+      makeCtx({ failedJobNames: [ciCloudflareWorkerStaticJobName, 'test-web'] }),
       RULES,
     )
     expect(result.decision).toBe('dispatch')
@@ -107,5 +128,70 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
     const result = await decide(makeCtx({ runAttempt: 2 }), RULES)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
+  })
+
+  it('does not match the same crash when it is only on static-code-analysis / static-code-analysis', async () => {
+    const result = await decide(
+      makeCtx({
+        failedJobNames: [staticAnalysisJobName, 'tests-processing / tests-processing', 'tests'],
+        failedJobLogs: () =>
+          Promise.resolve(new Map([[staticAnalysisJobName, cloudflareWorkerCrashLog]])),
+      }),
+      RULES,
+    )
+    expect(result.decision).toBe('dispatch')
+    expect(result.matchedRule).toBe('')
+  })
+})
+
+describe('cloudflare worker tsc job anchor', () => {
+  interface YamlJob {
+    uses?: unknown
+    with?: Record<string, unknown>
+    steps?: Array<{ run?: unknown }>
+  }
+  interface YamlWorkflow {
+    jobs?: Record<string, YamlJob>
+  }
+
+  function calledStaticCloudflareJobId(): string {
+    const parsed = load(readFileSync('.github/workflows/checks-static.yml', 'utf8')) as YamlWorkflow
+    const jobIds = Object.entries(parsed.jobs ?? {})
+      .filter(([, job]) =>
+        (job.steps ?? []).some(
+          step =>
+            typeof step.run === 'string' &&
+            step.run.split('\n')[0] ===
+              'pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json',
+        ),
+      )
+      .map(([jobId]) => jobId)
+    expect(jobIds).toHaveLength(1)
+    const [jobId] = jobIds
+    if (jobId === undefined) throw new Error('checks-static.yml has no Cloudflare Worker tsc job')
+    return jobId
+  }
+
+  function cloudflareStaticCallerJobIds(workflowPath: string): string[] {
+    const parsed = load(readFileSync(workflowPath, 'utf8')) as YamlWorkflow
+    return Object.entries(parsed.jobs ?? {})
+      .filter(
+        ([, job]) =>
+          job.uses === './.github/workflows/checks-static.yml' &&
+          job.with?.['cloudflare-worker'] === true,
+      )
+      .map(([jobId]) => jobId)
+  }
+
+  it('follows every checks-static.yml caller that enables the Cloudflare Worker tsc job', () => {
+    const calledJobId = calledStaticCloudflareJobId()
+    const composed = readdirSync('.github/workflows')
+      .filter(name => name.endsWith('.yml'))
+      .flatMap(name => cloudflareStaticCallerJobIds(`.github/workflows/${name}`))
+      .map(callerJobId => `${callerJobId} / ${calledJobId}`)
+
+    expect(new Set(composed)).toEqual(
+      new Set([ciCloudflareWorkerStaticJobName, mainCloudflareWorkerStaticJobName]),
+    )
   })
 })
