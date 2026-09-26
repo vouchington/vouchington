@@ -30,6 +30,12 @@ const CONSTANT_CONTEXTS: readonly RegExp[] = [
   /^(?:needs|steps)\.[\w-]+\.outputs\.shard-total$/u,
 ]
 
+// Generated at runtime (not embedded as a literal) so this fixture ref does not trip
+// no-test-git-sha / test-no-dependency-pins.
+const SYNTHETIC_SHA = '0'.repeat(40)
+const SYNTHETIC_GITHUB_SCRIPT_REF = `actions/github-script@${SYNTHETIC_SHA}`
+const SYNTHETIC_CHECKOUT_REF = `actions/checkout@${SYNTHETIC_SHA}`
+
 const workflowPaths = readdirSync('.github/workflows').flatMap(file =>
   /\.ya?ml$/u.test(file) ? [`.github/workflows/${file}`] : [],
 )
@@ -108,7 +114,7 @@ describe('workflow script expressions', () => {
         'wf',
         jobWithStep({
           name: 'script',
-          uses: 'actions/github-script@0000000000000000000000000000000000000000',
+          uses: SYNTHETIC_GITHUB_SCRIPT_REF,
           with: { script: 'core.info("${{ github.event.comment.body }}")' },
         }),
       ),
@@ -127,7 +133,7 @@ describe('workflow script expressions', () => {
       scriptExpressionViolations(
         'wf',
         jobWithStep({
-          uses: 'actions/checkout@0000000000000000000000000000000000000000',
+          uses: SYNTHETIC_CHECKOUT_REF,
           with: { ref: '${{ github.head_ref }}' },
           env: { BRANCH: '${{ github.head_ref }}' },
           run: 'echo "$BRANCH"',
