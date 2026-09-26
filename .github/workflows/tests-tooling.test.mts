@@ -56,6 +56,28 @@ function numberField(value: unknown, label: string): number {
 }
 
 describe('tests-tooling.yml setup timing', () => {
+  it('installs the pinned Lychee binary for real matcher tests', () => {
+    const toolingSteps = workflow.jobs?.tooling?.steps ?? []
+    const lycheeIndex = toolingSteps.findIndex(
+      step => step.name === 'Install Lychee for matcher tests',
+    )
+    const lycheeStep = toolingSteps[lycheeIndex]
+    const setupBackendIndex = toolingSteps.findIndex(
+      step => step.uses === './.github/actions/setup-backend' && step.id === 'setup-backend',
+    )
+    const testIndex = toolingSteps.findIndex(step => step.name === 'Run tooling tests')
+
+    expect(lycheeIndex).toBeGreaterThanOrEqual(0)
+    expect(lycheeIndex).toBeGreaterThan(setupBackendIndex)
+    expect(lycheeIndex).toBeLessThan(testIndex)
+    expect(lycheeStep?.uses).toMatch(/^jdx\/mise-action@[0-9a-f]{40}$/)
+    expect(lycheeStep?.with).toEqual({
+      cache: false,
+      install_args: 'aqua:lycheeverse/lychee',
+    })
+    expect(lycheeStep?.['timeout-minutes']).toBeGreaterThan(0)
+  })
+
   it('allows setup-backend enough time for slow Rust NAPI cache restores', () => {
     const toolingJob = workflow.jobs?.tooling
     expect(toolingJob).toBeDefined()
@@ -76,13 +98,17 @@ describe('tests-tooling.yml setup timing', () => {
     const setupBackend = toolingJob?.steps?.find(
       step => step.uses === './.github/actions/setup-backend' && step.id === 'setup-backend',
     )
+    const setupLychee = toolingJob?.steps?.find(
+      step => step.name === 'Install Lychee for matcher tests',
+    )
     const runToolingTests = toolingJob?.steps?.find(step => step.name === 'Run tooling tests')
 
     const jobTimeout = numberField(toolingJob?.['timeout-minutes'], 'tooling job timeout')
     const setupTimeout = numberField(setupBackend?.['timeout-minutes'], 'setup-backend timeout')
+    const lycheeTimeout = numberField(setupLychee?.['timeout-minutes'], 'Lychee setup timeout')
     const testTimeout = numberField(runToolingTests?.['timeout-minutes'], 'tooling test timeout')
 
-    expect(jobTimeout).toBeGreaterThan(setupTimeout + testTimeout)
+    expect(jobTimeout).toBeGreaterThan(setupTimeout + lycheeTimeout + testTimeout)
   })
 
   it('allows tooling tests enough time to finish coverage reporting', () => {
