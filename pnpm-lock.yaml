@@ -537,15 +537,6 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/dispute-resolution:
     dependencies:
@@ -670,15 +661,6 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@services/conversations-messages':
-        specifier: workspace:^
-        version: link:../../services/conversations-messages
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/agents/report-judgement:
     dependencies:
