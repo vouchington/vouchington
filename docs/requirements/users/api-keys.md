@@ -65,39 +65,10 @@ MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can on
 | `POST`   | `/api/v1/my/api-keys`     | Create a new API key |
 | `DELETE` | `/api/v1/my/api-keys/:id` | Revoke an API key    |
 
-### OAuth apps
+### OAuth apps and connected apps
 
-Developers register their own OAuth apps from settings instead of relying only on anonymous dynamic
-registration, so an app that asks users for access has an accountable owner. The
-[OAuth app routes](../../../backend/api/v1/my/reference-oauth-apps.md) list, register, rename or
-re-point, revoke, and rotate the secret of the caller's own apps.
-
-Registration goes through the same client-name, redirect-URI and auth-method validators as dynamic
-registration, and `scopes` is a list of catalogue scopes (at most 32). A confidential app's client
-secret is returned only by registration and rotation, is stored as a hash and is never readable
-afterwards; public apps have no secret, so rotation returns 409. Renaming an app or changing its
-redirect URIs clears staff verification, because staff verified the old name and destinations;
-administrators verify an app's name from the [Admin API](../../../backend/api/v1/admin/README.md).
-Removing a redirect URI also cancels sign-ins still waiting on it: a pending consent request or an
-unexchanged authorization code for that URI is refused.
-Revoking an app stops its access tokens, refresh tokens and authorization codes on their next use and
-removes its grants from every user's connected apps. Other users' apps return 404, and suspended
-users cannot change apps.
-
-### Connected apps
-
-Agents that connect through OAuth rather than a pasted key appear on the user's connected-apps list,
-so AI-agent access stays visible to the user.
-
-| Method   | Path                          | Description                         |
-| -------- | ----------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/my/oauth-grants`     | List the OAuth apps you approved    |
-| `DELETE` | `/api/v1/my/oauth-grants/:id` | Revoke an app's access to your data |
-
-Each grant shows the client name, whether staff verified that name, the protected resource, the
-granted scopes, when consent was given and when the app last used its access. Revoking a grant stops
-its access and refresh tokens on their next use; consenting again creates a new grant. Suspended
-users cannot revoke grants, matching API-key management.
+Owned OAuth apps and the grants users approved are documented in
+[OAuth Apps and Connected Apps](oauth-apps.md).
 
 ### RSS Feeds (API key optional)
 
@@ -135,20 +106,6 @@ checks its `requires` prerequisite, and unchecking a prerequisite drops the scop
 the picker never sends a set the API rejects. Administrators also choose the key's audience ("Your
 account" or "Administrator"); switching audience clears the selection because a key holds one
 audience. Create stays disabled until the label and at least one scope are set.
-
-### Managing OAuth apps and connected apps
-
-The same page lists the caller's [OAuth apps](#oauth-apps) below their keys. Registering an app takes
-a name, one redirect URI per line, a confidential or public client type and catalogue scopes that
-accept the `oauth` surface; admin-audience scopes are offered only to administrators. A confidential
-app's client secret appears once, after registration or rotation, in a dismissible alert with a copy
-button. Each app row shows its client ID, redirect URIs, scopes and verification badge; editing sends
-only the changed name or redirect URIs and warns that saving clears verification, rotating asks for
-confirmation (confidential apps only), and revoking asks for confirmation.
-
-Settings > Connected apps (`/my/connected-apps`) lists the [grants](#connected-apps) on the account,
-with a verified or unverified badge, the granted scopes and the consent and last-used dates, and
-revokes one after confirmation.
 
 ### Using with RSS Feeds
 

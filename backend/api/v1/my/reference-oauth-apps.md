@@ -12,7 +12,7 @@
 | DELETE | `/api/v1/my/oauth-apps/:id`                | Required       | Revoke an app and every credential issued to it            |
 | POST   | `/api/v1/my/oauth-apps/:id/client-secrets` | Required       | Replace a confidential app's secret (public apps: 409)     |
 
-Writes return 403 for suspended users. See [OAuth apps](../../../../docs/requirements/users/api-keys.md#oauth-apps).
+Writes return 403 for suspended users. See [OAuth apps](../../../../docs/requirements/users/oauth-apps.md#oauth-apps).
 
 ## Connected Apps
 
@@ -21,4 +21,4 @@ Writes return 403 for suspended users. See [OAuth apps](../../../../docs/require
 | GET    | `/api/v1/my/oauth-grants`     | Required       | List the OAuth apps the current user approved |
 | DELETE | `/api/v1/my/oauth-grants/:id` | Required       | Revoke an app's access (suspended users: 403) |
 
-See [API keys and connected apps](../../../../docs/requirements/users/api-keys.md#connected-apps).
+See [connected apps](../../../../docs/requirements/users/oauth-apps.md#connected-apps).
