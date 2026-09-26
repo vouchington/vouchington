@@ -169,6 +169,8 @@ describe('route rate-limit registry', () => {
       'DELETE:/api/v1/my/oauth-apps/:id',
       'POST:/api/v1/my/oauth-apps/:id/client-secrets',
       'DELETE:/api/v1/my/oauth-grants/:id',
+      'PUT:/api/v1/admin/oauth-clients/:id/verification',
+      'DELETE:/api/v1/admin/oauth-clients/:id/verification',
     ]
 
     for (const route of routes) {

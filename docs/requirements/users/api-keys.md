@@ -76,7 +76,8 @@ Registration goes through the same client-name, redirect-URI and auth-method val
 registration, and `scopes` is a list of catalogue scopes (at most 32). A confidential app's client
 secret is returned only by registration and rotation, is stored as a hash and is never readable
 afterwards; public apps have no secret, so rotation returns 409. Renaming an app or changing its
-redirect URIs clears staff verification, because staff verified the old name and destinations.
+redirect URIs clears staff verification, because staff verified the old name and destinations;
+administrators verify an app's name from the [Admin API](../../../backend/api/v1/admin/README.md).
 Removing a redirect URI also cancels sign-ins still waiting on it: a pending consent request or an
 unexchanged authorization code for that URI is refused.
 Revoking an app stops its access tokens, refresh tokens and authorization codes on their next use and

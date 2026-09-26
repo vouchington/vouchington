@@ -6,6 +6,7 @@ import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './back
 
 const expectedParameters = {
   'GET:/api/v1/admin/ai-costs': ['after', 'limit'],
+  'GET:/api/v1/admin/oauth-clients': ['after', 'limit', 'verification'],
   'GET:/api/v1/agent-moderations/:id/votes': ['after', 'limit'],
   'GET:/api/v1/auth/passkeys': ['after', 'limit'],
   'GET:/api/v1/auth/sessions': ['after', 'limit'],

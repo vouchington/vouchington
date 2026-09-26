@@ -13,6 +13,81 @@
       }
     },
     "schemas": {
+      "AdminOAuthClientView": {
+        "additionalProperties": false,
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "client_type": {
+            "$ref": "#/components/schemas/OAuthClientType"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "redirect_uris": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "verified_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "client_id",
+          "client_name",
+          "client_type",
+          "created_at",
+          "id",
+          "owner_user_id",
+          "redirect_uris",
+          "scopes",
+          "verified_at",
+          "verified_by_id"
+        ],
+        "type": "object"
+      },
       "AgentModelProvider": {
         "enum": [
           "android_aicore",
@@ -19191,6 +19266,16 @@
         "required": ["dnsInstructions", "rawToken", "wellKnownInstructions"],
         "type": "object"
       },
+      "VerifyOAuthClientRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "client_name": {
+            "type": "string"
+          }
+        },
+        "required": ["client_name"],
+        "type": "object"
+      },
       "ViewAgentModerationElection": {
         "additionalProperties": false,
         "properties": {
@@ -20753,6 +20838,364 @@
                     }
                   },
                   "required": ["moderator_actions", "page_info", "results", "users"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/oauth-clients": {
+      "get": {
+        "operationId": "get_api_v1_admin_oauth-clients",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verification",
+            "required": false,
+            "schema": {
+              "enum": ["all", "unverified", "verified"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "results": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "client_id": {
+                            "type": "string"
+                          },
+                          "client_name": {
+                            "type": "string"
+                          },
+                          "client_type": {
+                            "$ref": "#/components/schemas/OAuthClientType"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "owner": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "__entity_type": {
+                                    "const": "user"
+                                  },
+                                  "display_account": {
+                                    "$ref": "#/components/schemas/PublicDisplayAccount"
+                                  },
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "is_official_account": {
+                                    "type": "boolean"
+                                  },
+                                  "lingua_rs_detected_language": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "markdown": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "profile_image_id": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "profile_image_placement": {
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/ImagePlacementTuple"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "public_verified_name_display": {
+                                    "anyOf": [
+                                      {
+                                        "const": "first_name_last_initial"
+                                      },
+                                      {
+                                        "const": "first_name"
+                                      },
+                                      {
+                                        "const": "full_name"
+                                      },
+                                      {
+                                        "const": "hidden"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "roles": {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "use_display_name_from": {
+                                    "enum": [
+                                      "apple",
+                                      "facebook",
+                                      "github",
+                                      "google",
+                                      "linkedin",
+                                      "microsoft",
+                                      "username",
+                                      "x"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "username": {
+                                    "type": "string"
+                                  },
+                                  "verification_status": {
+                                    "anyOf": [
+                                      {
+                                        "const": "duplicate_id"
+                                      },
+                                      {
+                                        "const": "failed"
+                                      },
+                                      {
+                                        "const": "identity_pending"
+                                      },
+                                      {
+                                        "const": "payment_pending"
+                                      },
+                                      {
+                                        "const": "unverified"
+                                      },
+                                      {
+                                        "const": "verified"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "verified_badge_visible": {
+                                    "anyOf": [
+                                      {
+                                        "const": false
+                                      },
+                                      {
+                                        "const": true
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "verified_display_name": {
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": ["__entity_type", "id", "roles"],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "owner_user_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "redirect_uris": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "scopes": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "verified_at": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "verified_by_id": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "client_id",
+                          "client_name",
+                          "client_type",
+                          "created_at",
+                          "id",
+                          "owner",
+                          "owner_user_id",
+                          "redirect_uris",
+                          "scopes",
+                          "verified_at",
+                          "verified_by_id"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/oauth-clients/{id}/verification": {
+      "delete": {
+        "operationId": "delete_api_v1_admin_oauth-clients_id_verification",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "put_api_v1_admin_oauth-clients_id_verification",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOAuthClientRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "oauth_client": {
+                      "$ref": "#/components/schemas/AdminOAuthClientView"
+                    }
+                  },
+                  "required": ["oauth_client"],
                   "type": "object"
                 }
               }

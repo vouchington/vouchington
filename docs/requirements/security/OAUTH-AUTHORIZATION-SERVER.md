@@ -60,6 +60,13 @@ deletion committed cannot change the app or mint a secret afterwards. Account de
 revoke the apps the account owns; [#710](https://github.com/vouchington/vouchington/issues/710)
 tracks it.
 
+Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
+([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
+`verified_by_id` only when the stored `client_name` still equals the name the administrator
+reviewed, so a rename between review and approval returns 409 instead of verifying the new name.
+Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
+sets both columns back to `NULL`.
+
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
 and code paths on their next use because each requires an unrevoked grant. The listed `verified`
@@ -77,7 +84,7 @@ prunable.
 Clients are retired through `revoked_at` and never deleted, because
 [content provenance](../content/content-provenance.md) references the client that created each
 row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
-name the client; they stay `NULL` until Client ID Metadata Documents and staff verification ship.
+name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents ship.
 
 ## Protected resources and discovery
 

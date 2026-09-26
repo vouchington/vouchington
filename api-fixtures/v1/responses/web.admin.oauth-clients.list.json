@@ -1,0 +1,28 @@
+{
+  "page_info": {
+    "end_cursor": "fixture-admin-oauth-client-end-cursor",
+    "has_next_page": false,
+    "start_cursor": "fixture-admin-oauth-client-start-cursor"
+  },
+  "results": [
+    {
+      "client_id": "voucha_fixture-app",
+      "client_name": "Fixture Agent",
+      "client_type": "confidential",
+      "created_at": "2026-09-01T12:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000721",
+      "owner": {
+        "__entity_type": "user",
+        "id": "00000000-0000-7000-8000-000000000001",
+        "profile_image_id": null,
+        "roles": [],
+        "username": "fixture-user"
+      },
+      "owner_user_id": "00000000-0000-7000-8000-000000000001",
+      "redirect_uris": ["https://agent.example.com/oauth/callback"],
+      "scopes": ["mcp.user:read", "mcp.user:write"],
+      "verified_at": null,
+      "verified_by_id": null
+    }
+  ]
+}

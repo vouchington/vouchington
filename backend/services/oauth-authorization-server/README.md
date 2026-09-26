@@ -61,7 +61,9 @@ which checks the secret against the share-locked row, so rotating a secret or re
 serializes with in-flight token requests and the replaced secret stops working once rotation
 returns.
 `client-metadata-validation.mts` holds the RFC 7591 metadata validators that dynamic registration
-and owner apps share. Management views live in `management-types.mts`.
+and owner apps share. `client-verification.mts` lists active dynamically registered clients for
+administrators and verifies the exact reviewed `client_name` with one conditional update, or clears
+verification. Management views live in `management-types.mts`.
 
 ## Boundaries
 

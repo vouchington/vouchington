@@ -1,5 +1,80 @@
 {
   "components": {
+    "AdminOAuthClientView": {
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_name": {
+          "type": "string"
+        },
+        "client_type": {
+          "$ref": "#/components/schemas/OAuthClientType"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "owner_user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "redirect_uris": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "verified_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "client_id",
+        "client_name",
+        "client_type",
+        "created_at",
+        "id",
+        "owner_user_id",
+        "redirect_uris",
+        "scopes",
+        "verified_at",
+        "verified_by_id"
+      ],
+      "type": "object"
+    },
     "AgentModelProvider": {
       "enum": [
         "android_aicore",
@@ -19150,6 +19225,16 @@
       "required": ["dnsInstructions", "rawToken", "wellKnownInstructions"],
       "type": "object"
     },
+    "VerifyOAuthClientRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "client_name": {
+          "type": "string"
+        }
+      },
+      "required": ["client_name"],
+      "type": "object"
+    },
     "ViewAgentModerationElection": {
       "additionalProperties": false,
       "properties": {
@@ -20349,6 +20434,17 @@
     }
   },
   "operations": {
+    "DELETE:/api/v1/admin/oauth-clients/:id/verification": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "DELETE:/api/v1/agent-moderations/:id/vote": {
       "path": {
         "properties": {
@@ -21402,6 +21498,26 @@
           }
         },
         "required": ["pageId"],
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/admin/oauth-clients": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "verification": {
+            "enum": ["all", "unverified", "verified"],
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -27480,6 +27596,20 @@
       }
     },
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "PUT:/api/v1/admin/oauth-clients/:id/verification": {
+      "body": {
+        "$ref": "#/components/schemas/VerifyOAuthClientRequest"
+      },
       "path": {
         "properties": {
           "id": {

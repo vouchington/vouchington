@@ -72,7 +72,10 @@ what the label needs:
 | `verified_at`    | When staff verified a dynamically registered client's `client_name`                          |
 | `verified_by_id` | FK → `users.id`, `ON DELETE SET NULL`; set only when `verified_at` is set                    |
 
-All three stay `NULL` until the clients that fill them ship, so labels stay generic.
+`metadata_url` stays `NULL` until Client ID Metadata Documents ship. Administrators set and clear
+`verified_at` and `verified_by_id` through the
+[OAuth client verification routes](../../../backend/api/v1/admin/README.md), and renaming a client
+or replacing its redirect URIs clears them. Labels stay generic until the exposure stage below.
 
 The migrations are `backend/data-stores/psql/migrations/0726-00-*-content-provenance*.sql`.
 `0726-00-00` adds the enum, trigger function and OAuth client label columns. `0726-00-01` through
