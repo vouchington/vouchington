@@ -6,7 +6,11 @@ import { RULES, type WorkflowRunContext } from './rules.mts'
 
 const auditJobName = 'audit'
 const ruleId = 'plan-completion-setup-node-tool-cache-timeout'
-const setupNodeSha = '820762786026740c76f36085b0efc47a31fe5020'
+// Generated at runtime so the fixture does not embed a Git SHA or a versioned
+// release URL. The classifier accepts any 40-hex setup-node ref and the
+// node-versions download marker.
+const setupNodeSha = '0'.repeat(40)
+const nodeVersionsDownloadMarker = 'github.com/actions/node-versions/releases/download/'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
   workflowName: 'CI',
@@ -22,9 +26,13 @@ function setupNodeLine(message: string): string {
   return `audit\tRun actions/setup-node@${setupNodeSha}\t${message}`
 }
 
+function nodeVersionsDownloadLine(): string {
+  return setupNodeLine(`Acquiring Node from https://${nodeVersionsDownloadMarker}`)
+}
+
 // Trimmed from Plan completion advisory run 36261771483. Node was downloaded and
 // extracted; the step then stalled on the GitHub-hosted tool cache until the
-// one-minute action timeout.
+// one-minute action timeout. The setup-node ref and download URL are synthetic.
 const toolCacheTimeoutLog = [
   setupNodeLine(`##[group]Run actions/setup-node@${setupNodeSha}`),
   setupNodeLine('with:'),
@@ -32,9 +40,7 @@ const toolCacheTimeoutLog = [
   setupNodeLine('  package-manager-cache: false'),
   setupNodeLine('Resolved .nvmrc as 26'),
   setupNodeLine('Attempting to download 26...'),
-  setupNodeLine(
-    'Acquiring 26.10.0 - x64 from https://github.com/actions/node-versions/releases/download/26.10.0-35737674515/node-26.10.0-linux-x64.tar.gz',
-  ),
+  nodeVersionsDownloadLine(),
   setupNodeLine('Extracting ...'),
   setupNodeLine('Adding to the cache ...'),
   setupNodeLine(
@@ -85,9 +91,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
   it('does not match an audit-script failure after setup-node cached Node', async () => {
     const log = [
       setupNodeLine(`##[group]Run actions/setup-node@${setupNodeSha}`),
-      setupNodeLine(
-        'Acquiring 26.10.0 - x64 from https://github.com/actions/node-versions/releases/download/26.10.0-35737674515/node-26.10.0-linux-x64.tar.gz',
-      ),
+      nodeVersionsDownloadLine(),
       setupNodeLine('Adding to the cache ...'),
       'audit\tAudit open Plans\t##[group]Run node ci/plan-completion.mts',
       'audit\tAudit open Plans\t##[error]Process completed with exit code 1.',
@@ -125,9 +129,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
   it('does not match a tool-cache timeout mixed with another setup-node error', async () => {
     const log = [
       setupNodeLine(`##[group]Run actions/setup-node@${setupNodeSha}`),
-      setupNodeLine(
-        'Acquiring 26.10.0 - x64 from https://github.com/actions/node-versions/releases/download/26.10.0-35737674515/node-26.10.0-linux-x64.tar.gz',
-      ),
+      nodeVersionsDownloadLine(),
       setupNodeLine('Adding to the cache ...'),
       setupNodeLine('##[error]Unexpected error while extracting node'),
       setupNodeLine(
