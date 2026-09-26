@@ -31,6 +31,7 @@ export function PostDetailOverflowMenu({
   communitySlug,
   isCommunityMod,
   isPostPinned,
+  onDeleted,
   onPinnedChange,
   className,
 }: PostDetailOverflowMenuProps) {
@@ -128,7 +129,12 @@ export function PostDetailOverflowMenu({
               onPinnedChange={onPinnedChange}
             />
           )}
-          {showDelete && <DeletePostMenuItem postIdOrSlug={post.slug ?? post.id} />}
+          {showDelete && (
+            <DeletePostMenuItem
+              onDeleted={onDeleted}
+              postIdOrSlug={post.slug ?? post.id}
+            />
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {showShare && currentUserId && (

@@ -53,6 +53,14 @@ export const Reader: Story = {
 
 function ModeratorMenu() {
   const [isPostPinned, setIsPostPinned] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  if (deleted) {
+    return (
+      <StoryFrame width='max-w-sm'>
+        <p>Post deleted</p>
+      </StoryFrame>
+    )
+  }
   return (
     <StoryFrame width='max-w-sm'>
       <PostDetailOverflowMenu
@@ -60,6 +68,7 @@ function ModeratorMenu() {
         communitySlug={creditCardCommunity.slug}
         isCommunityMod
         isPostPinned={isPostPinned}
+        onDeleted={() => setDeleted(true)}
         onPinnedChange={setIsPostPinned}
       />
     </StoryFrame>

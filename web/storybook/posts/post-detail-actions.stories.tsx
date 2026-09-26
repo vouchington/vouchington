@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostDetailActions } from '@/components/posts/post-detail-actions'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
@@ -30,8 +31,16 @@ type Story = StoryObj
 
 const reviewElection = electionFor(reviewPost)
 
-export const Review: Story = {
-  render: () => (
+function ReviewActions() {
+  const [href, setHref] = useState<string | null>(null)
+  if (href) {
+    return (
+      <StoryFrame width='max-w-xl'>
+        <p>Discussion started at {href}</p>
+      </StoryFrame>
+    )
+  }
+  return (
     <StoryFrame width='max-w-xl'>
       <PostDetailActions
         election={{
@@ -40,6 +49,7 @@ export const Review: Story = {
           votesCountDown: reviewElection.votes_count_down ?? 0,
         }}
         hideDownCount={false}
+        onDiscussionCreated={setHref}
         post={{
           id: reviewPost.id,
           postType: 'review',
@@ -51,7 +61,11 @@ export const Review: Story = {
         }}
       />
     </StoryFrame>
-  ),
+  )
+}
+
+export const Review: Story = {
+  render: () => <ReviewActions />,
 }
 
 export const Comment: Story = {

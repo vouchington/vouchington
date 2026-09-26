@@ -19,11 +19,13 @@ export function storyTail(endpoint: string): string {
 let nextModNote = 0
 let nextComment = 0
 let nextPrompt = 0
+let nextImage = 0
 
 export function resetModNoteSequence(): void {
   nextModNote = 0
   nextComment = 0
   nextPrompt = 0
+  nextImage = 0
 }
 
 export function createdPost(body: unknown): unknown {
@@ -144,7 +146,7 @@ export function communityDiscussion(body: unknown): unknown {
 export function imageUploadUrl(body: unknown): unknown {
   return {
     upload: {
-      image_id: 'image-story',
+      image_id: `image-story-${(nextImage += 1)}`,
       upload_url: 'http://127.0.0.1/storybook-image-upload',
       content_type: storyText(body, 'content_type') || 'image/png',
       expires_at: storyMutationAt,

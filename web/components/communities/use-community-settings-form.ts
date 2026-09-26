@@ -10,7 +10,11 @@ import type {
   CommunityMemberRosterVisibility,
 } from '@/types/api-responses'
 
-export function useCommunitySettingsForm(community: Community, onArchived?: () => void) {
+export function useCommunitySettingsForm(
+  community: Community,
+  onArchived?: () => void,
+  onRestored?: () => void,
+) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [isNavigating, startNavigation] = useTransition()
@@ -87,6 +91,7 @@ export function useCommunitySettingsForm(community: Community, onArchived?: () =
       }
       startNavigation(() => {
         if (isArchived) {
+          onRestored?.()
           router.refresh()
           setLoading(false)
           setConfirmArchive(false)

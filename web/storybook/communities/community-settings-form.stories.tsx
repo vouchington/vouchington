@@ -78,6 +78,22 @@ export const Active: Story = {
   render: args => <ActiveSettings community={args.community} />,
 }
 
+function ArchivedSettings({ community }: { community: Community }) {
+  const [restored, setRestored] = useState(false)
+  return (
+    <StoryFrame>
+      {restored ? (
+        <p>Community restored</p>
+      ) : (
+        <CommunitySettingsForm
+          community={community}
+          onRestored={() => setRestored(true)}
+        />
+      )}
+    </StoryFrame>
+  )
+}
+
 export const Archived: Story = {
   args: {
     community: {
@@ -86,9 +102,5 @@ export const Archived: Story = {
       archived_by_id: storyCurrentUser.id,
     },
   },
-  render: args => (
-    <StoryFrame>
-      <CommunitySettingsForm {...args} />
-    </StoryFrame>
-  ),
+  render: args => <ArchivedSettings community={args.community} />,
 }
