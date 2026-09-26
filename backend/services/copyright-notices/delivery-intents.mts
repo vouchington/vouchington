@@ -9,8 +9,7 @@ import type {
   CopyrightDeliveryRecipientRecord,
 } from './delivery-types.mts'
 import {
-  parseCopyrightSweepPageOptions,
-  toCopyrightSweepIdPage,
+  queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
@@ -260,25 +259,23 @@ export async function recordCopyrightDeliveryRecipient(input: {
  * Pages one channel's delivery intents that are due or whose claim lease expired. Expired claims at
  * the retry cap stay listed: `claimCopyrightDeliveryIntent` fails them when their job runs.
  */
-export async function searchRecoverableCopyrightDeliveryIntentIds(
+export function searchRecoverableCopyrightDeliveryIntentIds(
   options: CopyrightSweepPageOptions & { channel: CopyrightDeliveryIntentRecord['channel'] },
 ): Promise<CopyrightSweepIdPage> {
-  const { limit, afterId } = parseCopyrightSweepPageOptions(
+  return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright delivery intent cursor',
+    'rowId',
+    sql`/* searchRecoverableCopyrightDeliveryIntentIds */
+      SELECT id
+      FROM copyright_notice_delivery_intents
+      WHERE channel = ${options.channel}
+        AND (
+          (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
+          OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
+        )`,
+    statement => read(statement),
   )
-  const query = sql`/* searchRecoverableCopyrightDeliveryIntentIds */
-    SELECT id
-    FROM copyright_notice_delivery_intents
-    WHERE channel = ${options.channel}
-      AND (
-        (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
-      )`
-  if (afterId) query.append(sql`\n      AND id > ${afterId}`)
-  query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
-  const { rows } = await read<{ id: string }>(query)
-  return toCopyrightSweepIdPage(rows, limit)
 }
 
 export async function replayFailedCopyrightDeliveryIntent(input: {

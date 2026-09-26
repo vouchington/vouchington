@@ -6,8 +6,7 @@ import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import {
-  parseCopyrightSweepPageOptions,
-  toCopyrightSweepIdPage,
+  queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
@@ -102,24 +101,22 @@ export async function prepareCopyrightEmailIntakeResponseDelivery(responseId: st
  * Pages the email intake responses that are due or whose claim lease expired. Expired claims at the
  * retry cap stay listed: `prepareCopyrightEmailIntakeResponseDelivery` fails them when their job runs.
  */
-export async function searchRecoverableCopyrightEmailIntakeResponseIds(
+export function searchRecoverableCopyrightEmailIntakeResponseIds(
   options: CopyrightSweepPageOptions,
 ): Promise<CopyrightSweepIdPage> {
-  const { limit, afterId } = parseCopyrightSweepPageOptions(
+  return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright email intake response cursor',
+    'rowId',
+    sql`/* searchRecoverableCopyrightEmailIntakeResponseIds */
+      SELECT id
+      FROM copyright_notice_email_intake_responses
+      WHERE (
+        (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
+        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
+      )`,
+    statement => read(statement),
   )
-  const query = sql`/* searchRecoverableCopyrightEmailIntakeResponseIds */
-    SELECT id
-    FROM copyright_notice_email_intake_responses
-    WHERE (
-      (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
-    )`
-  if (afterId) query.append(sql`\n      AND id > ${afterId}`)
-  query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
-  const { rows } = await read<{ id: string }>(query)
-  return toCopyrightSweepIdPage(rows, limit)
 }
 
 export async function markCopyrightEmailIntakeResponseBouncedBySesMessageId(
