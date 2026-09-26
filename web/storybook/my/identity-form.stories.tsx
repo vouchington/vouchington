@@ -1,10 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { IdentityForm } from '@/components/my/identity-form'
-import { StoryFrame } from '@/storybook/story-frame'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
+import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'My/Identity Form',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta

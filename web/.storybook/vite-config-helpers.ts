@@ -148,6 +148,11 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       ),
     },
     {
+      // Storybook has no platform authenticator, so passkey ceremonies resolve locally.
+      find: '@simplewebauthn/browser',
+      replacement: fileURLToPath(new URL('../storybook/mocks/webauthn.ts', import.meta.url)),
+    },
+    {
       find: 'next/headers',
       replacement: fileURLToPath(new URL('../storybook/mocks/next-headers.ts', import.meta.url)),
     },
