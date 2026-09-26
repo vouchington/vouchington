@@ -1,10 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MfaReauthDialog } from '@/components/my/mfa-reauth-dialog'
 import { EmailVerificationPane } from '@/components/my/mfa-reauth-dialog/verification-panes'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'My/Mfa Reauth Dialog',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta

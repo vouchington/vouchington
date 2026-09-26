@@ -2,6 +2,10 @@ import { ClientRequest } from '@/lib/api/client/request'
 import type { EmailPreferences } from '@/lib/api/client/email-preferences'
 import type { NotificationsUnreadSummaryResponseBody } from '@/types/api-responses'
 import { storybookAutocompleteResponse } from '@/storybook/design-system/autocomplete-fixtures'
+import {
+  disableInboxMutations,
+  enableInboxMutations,
+} from '@/storybook/mocks/inbox-mutation-fixture'
 
 let notificationSettingsFixture: EmailPreferences | undefined
 let inboxFixture: NotificationsUnreadSummaryResponseBody | undefined
@@ -17,6 +21,7 @@ export function clearNotificationSettingsFixture(): void {
 }
 
 export function setInboxFixture(): void {
+  enableInboxMutations()
   inboxFixture = {
     unread_count: 1,
     results: [{ __entity_type: 'notification', id: 'notif-follow', read_at: null }],
@@ -53,6 +58,7 @@ export function setInboxFixture(): void {
 }
 
 export function clearInboxFixture(): void {
+  disableInboxMutations()
   inboxFixture = undefined
 }
 

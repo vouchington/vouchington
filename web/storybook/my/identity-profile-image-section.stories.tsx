@@ -1,11 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { IdentityProfileImageSection } from '@/components/my/identity-profile-image-section'
+import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
 
 const meta = {
   title: 'My/Identity Profile Image Section',
+  beforeEach() {
+    setMyAccountFixture()
+    return () => clearMyAccountFixture()
+  },
 } satisfies Meta
 
 export default meta
