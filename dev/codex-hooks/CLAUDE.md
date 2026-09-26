@@ -20,8 +20,11 @@ Before adding or changing a Vitest test, fixture, or mock for these hooks, load 
   single plain merge in an attended Claude session; it needs a positive attended signal, never
   merely the absence of `CI`.
 - Policy decisions are local: `dev/codex-hooks` uses no shell child-process APIs and runs no `gh`,
-  git network subcommands, or HTTP (`ast-grep-rules/codex-hooks-no-network.yml`). Use structured
-  argv child-process APIs for local commands; network-backed checks belong in the validators or CI.
+  git network subcommands, or HTTP (`ast-grep-rules/codex-hooks-no-network.yml`).
+  [`local-process.mts`](local-process.mts) is the sole child-process owner and exposes only closed,
+  operation-specific local commands; hook modules never import `child_process` directly, and the
+  boundary exposes no generic executable or argv. Add a typed operation there instead of parsing a
+  command line in an AST rule. Network-backed checks belong in the validators or CI.
   Journal checkpoints (`dev/journal-checkpoint`) may write to agent-blackboard from a hook because
   they fail open and never affect an allow or block.
 - Do not duplicate enforcement another owner has (oxlint `max-lines`, no-mistakes doc size, CI).

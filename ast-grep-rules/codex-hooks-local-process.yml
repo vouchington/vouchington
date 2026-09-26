@@ -1,0 +1,135 @@
+id: codex-hooks-local-process
+language: Tsx
+severity: error
+message: 'The typed local-process boundary permits only structured local commands: no shell APIs, shell options, network modules, or network command tokens.'
+files:
+  - 'dev/codex-hooks/local-process.mts'
+utils:
+  child-process-module:
+    regex: ^['"`](?:node:)?child_process['"`]$
+  network-module:
+    regex: ^['"`](?:node:)?(?:http|https|net)['"`]$
+  network-command-token:
+    regex: ^['"`](?:gh|gh-stack|curl|wget|fetch|ls-remote|pull|push|clone|update)['"`]$
+rule:
+  any:
+    - all:
+        - kind: export_statement
+        - any:
+            - has:
+                field: source
+                matches: child-process-module
+            - has:
+                stopBy: neighbor
+                all:
+                  - kind: export_clause
+                  - regex: \b(?:exec|execSync|execFile|execFileSync|spawn|spawnSync)\b
+    - all:
+        - kind: import_statement
+        - has:
+            field: source
+            matches: child-process-module
+        - regex: \bexec(?:Sync)?\b
+    - all:
+        - kind: import_statement
+        - has:
+            field: source
+            matches: child-process-module
+        - has:
+            stopBy: neighbor
+            all:
+              - kind: import_clause
+              - has:
+                  stopBy: neighbor
+                  any:
+                    - kind: identifier
+                    - kind: namespace_import
+    - pattern: require('node:child_process')
+    - pattern: require('child_process')
+    - pattern: import('node:child_process')
+    - pattern: import('child_process')
+    - pattern: exec($$$ARGS)
+    - pattern: execSync($$$ARGS)
+    - pattern: $CHILD_PROCESS.exec($$$ARGS)
+    - pattern: $CHILD_PROCESS.execSync($$$ARGS)
+    - all:
+        - kind: pair
+        - has:
+            field: key
+            regex: ^(?:shell|['"]shell['"])$
+    - all:
+        - kind: shorthand_property_identifier
+        - regex: ^shell$
+    - all:
+        - any:
+            - kind: import_statement
+            - kind: export_statement
+        - has:
+            field: source
+            matches: network-module
+    - all:
+        - kind: call_expression
+        - has:
+            field: function
+            regex: ^(?:import|require)$
+        - has:
+            field: arguments
+            has:
+              nthChild: 1
+              matches: network-module
+    - pattern: fetch($$$ARGS)
+    - pattern: globalThis.fetch
+    - pattern: global.fetch
+    - all:
+        - any:
+            - kind: string
+            - kind: template_string
+        - matches: network-command-token
+examples:
+  - code: |
+      export { execFileSync } from 'node:child_process'
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { execSync } from 'node:child_process'
+      execSync('git status')
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import cp, { spawnSync } from 'node:child_process'
+      cp.execSync('git status')
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { spawnSync } from 'node:child_process'
+      spawnSync('git status', { shell: true })
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { spawnSync } from 'node:child_process'
+      const shell = true
+      spawnSync('git status', { shell })
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['fetch', 'origin'])
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync('git', ['remote', 'update'])
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { execFileSync } from 'node:child_process'
+      execFileSync(`git`, [`remote`, `update`])
+    isValid: false
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      import { execFileSync, spawnSync } from 'node:child_process'
+      execFileSync('git', ['remote', '-v'])
+      execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant])
+      spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'])
+    isValid: true
+    file: 'dev/codex-hooks/local-process.mts'

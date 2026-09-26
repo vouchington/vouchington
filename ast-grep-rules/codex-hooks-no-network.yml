@@ -1,369 +1,55 @@
 id: codex-hooks-no-network
 language: Tsx
 severity: error
-message: 'Hook policy is local: no shell child-process APIs, gh, git network subcommands, or HTTP. Network-backed checks belong in the validators (dev/pr-description.mts, dev/plan-issue.mts) or CI.'
+message: 'Hook subprocesses must use the typed local-process boundary; HTTP and direct child_process access are forbidden.'
 files:
   - 'dev/codex-hooks/**/*.mts'
 ignores:
   - 'dev/codex-hooks/**/*.test.mts'
-# Self-contained `all` branches instead of top-level `constraints`: constraints filter after `any`
-# has already picked its first structurally matching branch, so `execFileSync('git', …)` would be
-# claimed by the gh branch, fail its constraint, and never reach the git branches.
+  - 'dev/codex-hooks/local-process.mts'
 utils:
-  child-process-call:
-    any:
-      - all:
-          - kind: call_expression
-          - has:
-              field: function
-              regex: ^(execFile|execFileSync|spawn|spawnSync|exec|execSync)$
-      - matches: namespace-child-process-call
-  namespace-child-process-call:
-    all:
-      - kind: call_expression
-      - any:
-          - pattern: $CHILD_PROCESS.execFile($$$ARGS)
-          - pattern: $CHILD_PROCESS.execFileSync($$$ARGS)
-          - pattern: $CHILD_PROCESS.spawn($$$ARGS)
-          - pattern: $CHILD_PROCESS.spawnSync($$$ARGS)
-          - pattern: $CHILD_PROCESS.exec($$$ARGS)
-          - pattern: $CHILD_PROCESS.execSync($$$ARGS)
-      - matches: imports-child-process-namespace
-  imports-child-process-namespace:
-    inside:
-      kind: program
-      stopBy: end
-      has:
-        stopBy: end
-        all:
-          - kind: import_statement
-          - regex: \bfrom\s*['"](?:node:)?child_process['"]
-          - any:
-              - pattern: import * as $CHILD_PROCESS from '$SOURCE'
-              - pattern: import $CHILD_PROCESS from '$SOURCE'
-  shell-child-process-call:
-    any:
-      - matches: named-shell-child-process-call
-      - all:
-          - matches: namespace-child-process-call
-          - any:
-              - pattern: $CHILD_PROCESS.exec($$$ARGS)
-              - pattern: $CHILD_PROCESS.execSync($$$ARGS)
-  named-shell-child-process-call:
-    any:
-      - all:
-          - pattern: exec($$$ARGS)
-          - matches: imports-named-exec
-      - all:
-          - pattern: execSync($$$ARGS)
-          - matches: imports-named-exec-sync
-      - all:
-          - pattern: $EXEC($$$ARGS)
-          - matches: imports-aliased-exec
-      - all:
-          - pattern: $EXEC_SYNC($$$ARGS)
-          - matches: imports-aliased-exec-sync
-  imports-named-exec:
-    inside:
-      kind: program
-      stopBy: end
-      has:
-        stopBy: end
-        all:
-          - kind: import_statement
-          - regex: \bfrom\s*['"](?:node:)?child_process['"]
-          - has:
-              stopBy: end
-              kind: import_specifier
-              regex: ^exec$
-  imports-named-exec-sync:
-    inside:
-      kind: program
-      stopBy: end
-      has:
-        stopBy: end
-        all:
-          - kind: import_statement
-          - regex: \bfrom\s*['"](?:node:)?child_process['"]
-          - has:
-              stopBy: end
-              kind: import_specifier
-              regex: ^execSync$
-  imports-aliased-exec:
-    inside:
-      kind: program
-      stopBy: end
-      has:
-        stopBy: end
-        all:
-          - kind: import_statement
-          - regex: \bfrom\s*['"](?:node:)?child_process['"]
-          - has:
-              stopBy: end
-              kind: import_specifier
-              pattern:
-                context: "import { exec as $EXEC } from 'child_process'"
-                selector: import_specifier
-  imports-aliased-exec-sync:
-    inside:
-      kind: program
-      stopBy: end
-      has:
-        stopBy: end
-        all:
-          - kind: import_statement
-          - regex: \bfrom\s*['"](?:node:)?child_process['"]
-          - has:
-              stopBy: end
-              kind: import_specifier
-              pattern:
-                context: "import { execSync as $EXEC_SYNC } from 'child_process'"
-                selector: import_specifier
-  child-process-shell-option:
-    all:
-      - kind: object
-      - has:
-          stopBy: neighbor
-          all:
-            - kind: pair
-            - has:
-                field: key
-                regex: ^(?:shell|['"]shell['"])$
-            - has:
-                field: value
-                not:
-                  regex: ^false$
-  network-module:
-    regex: ^['"](node:)?(http|https|net)['"]$
+  forbidden-module:
+    regex: ^['"`](?:node:)?(?:child_process|http|https|net)['"`]$
 rule:
   any:
-    - matches: shell-child-process-call
-    - all:
-        - matches: child-process-call
-        - any:
-            - has:
-                field: arguments
-                has:
-                  nthChild: 2
-                  matches: child-process-shell-option
-            - has:
-                field: arguments
-                has:
-                  nthChild: 3
-                  matches: child-process-shell-option
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]gh(-stack)?(['"`]|\s)
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`](curl|wget)(['"`]|\s)
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]git['"`]$
-        - has:
-            field: arguments
-            has:
-              kind: string
-              regex: ^['"](fetch|ls-remote|pull|push|clone)['"]$
-              stopBy: end
-    - all:
-        - matches: child-process-call
-        - has:
-            field: arguments
-            has:
-              nthChild: 1
-              regex: ^['"`]git['"`]$
-        - has:
-            field: arguments
-            has:
-              nthChild: 2
-              regex: ^\[(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:(?:['"`](?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`][^'"`]*['"`]|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*|[^,\]]+)|['"`](?:-p|--paginate|-P|--no-pager|--no-replace-objects|--no-lazy-fetch|--no-optional-locks|--no-advice|--bare|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--exec-path=[^'"`]+|--git-dir=[^'"`]+|--work-tree=[^'"`]+|--namespace=[^'"`]+|--config-env=[^'"`]+)['"`])(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`](remote|submodule)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*(?:['"`](?:-q|-v|--verbose|--no-verbose|--quiet)['"`](?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*)*['"`]update['"`](?:(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*,|(?:\s|/\*[\s\S]*?\*/|//[^\n]*(?:\n|$))*\])
-    - pattern: fetch($$$ARGS)
-    - pattern: globalThis.fetch
-    - pattern: global.fetch
     - all:
         - any:
             - kind: import_statement
             - kind: export_statement
         - has:
             field: source
-            matches: network-module
+            matches: forbidden-module
     - all:
         - kind: call_expression
         - has:
             field: function
-            regex: ^(import|require)$
+            regex: ^(?:import|require)$
         - has:
             field: arguments
             has:
               nthChild: 1
-              matches: network-module
+              matches: forbidden-module
+    - pattern: fetch($$$ARGS)
+    - pattern: globalThis.fetch
+    - pattern: global.fetch
 examples:
-  - code: |
-      import { execFileSync, spawnSync } from 'node:child_process'
-      const body = execFileSync('gh', ['issue', 'view', '1'], { encoding: 'utf8' })
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { spawnSync } from 'node:child_process'
-      spawnSync('gh-stack', ['view', '--json'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-stack-workflow.mts'
-  - code: |
-      import * as childProcess from 'node:child_process'
-      childProcess.execSync('gh api repos/o/r/pulls')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import * as cp from 'node:child_process'
-      cp.execSync('git status')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import cp from 'node:child_process'
-      cp.exec('git status')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { exec, execSync as runSynchronously } from 'node:child_process'
-      exec('git status')
-      runSynchronously('git status')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { execFile, execFileSync, spawn, spawnSync } from 'node:child_process'
-      spawn('git status', { shell: true })
-      spawnSync('git status', { shell: true })
-      execFile('git status', { 'shell': true })
-      execFileSync('git status', { shell: true })
-      spawn('git status', { shell: '/bin/sh' })
-      spawnSync('git status', { shell: configuredShell })
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['fetch', 'origin', 'main'], { cwd })
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['-C', dir, 'ls-remote', 'origin'], { encoding: 'utf8' })
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-checkout-owners.mts'
-  - code: |
-      import { execSync } from 'node:child_process'
-      execSync('git -C dir push origin HEAD')
-    isValid: false
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
   - code: |
       import { execFileSync } from 'node:child_process'
       execFileSync('git', ['remote', 'update'])
-      execFileSync('git', ['remote', 'update', 'origin'])
     isValid: false
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['submodule', 'update', '--remote'])
-      execFileSync('git', ['-C', dir, 'remote', 'update'])
-      execFileSync('git', ['--git-dir', dir, 'submodule', 'update', '--remote'])
-      execFileSync('git', ['remote', '-v', 'update'])
-      execFileSync('git', ['submodule', '--quiet', 'update'])
-      execFileSync('git', ['submodule', '-q', 'update'])
-      execFileSync('git', [`remote`, `update`])
-      execFileSync('git', ['--no-pager', 'remote', 'update'])
-      execFileSync('git', ['--paginate', 'remote', 'update'])
-      execFileSync('git', ['-p', 'remote', 'update'])
-      execFileSync('git', ['--no-optional-locks', 'remote', 'update'])
-      execFileSync('git', ['--git-dir=/tmp/repo', 'remote', 'update'])
-      execSync('git --no-pager remote update', { cwd })
-      execSync('git -p submodule update', { cwd })
-      execSync('git --config-env=http.proxy=GIT_PROXY remote update', { cwd })
+      import cp, { spawnSync } from 'node:child_process'
+      cp.execSync('git fetch')
     isValid: false
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
   - code: |
-      import { execSync } from 'node:child_process'
-      execSync('git -C dir remote update', { cwd })
-    isValid: false
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['--git-dir', dir, 'remote', 'update'])
-      execFileSync('git', ['--git-dir', '/tmp/repo,backup', 'remote', 'update'])
-      execFileSync('git', ['-C', dirs[0], 'remote', 'update'])
+      const cp = require('child_process')
+      cp.execFileSync('gh', ['api', 'repos/o/r'])
     isValid: false
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['--work-tree', dir, 'submodule', 'update'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['--config-env', 'http.proxy=GIT_PROXY', 'remote', 'update'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { execSync } from 'node:child_process'
-      execSync('git --git-dir /tmp/repo remote update')
-    isValid: false
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('git', ['remote', '--no-verbose', 'update'])
-      execFileSync('git', ['remote', /* refresh refs */ 'update'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { execSync } from 'node:child_process'
-      execSync('git remote update;git status')
-      execSync('git submodule update&&echo done')
-      execSync('git --git-dir "/tmp/repo path" remote update')
-      execSync('git --work-tree="/tmp/tree path" submodule update')
-      execSync('git --literal-pathspecs remote update')
-      execSync('git remote </dev/null update')
-      execSync("git 'remote' 'update'")
-    isValid: false
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
-  - code: |
-      import { spawnSync } from 'node:child_process'
-      spawnSync('curl', ['-fsSL', 'https://api.github.com/repos/o/r'])
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      import { execSync } from 'node:child_process'
-      execSync('wget -qO- https://example.com')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      const response = await fetch('https://api.github.com/repos/o/r')
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
-  - code: |
-      const response = await globalThis.fetch(url)
-    isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
   - code: |
       import http from 'node:http'
-    isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
-  - code: |
-      import { request } from 'https'
-    isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
-  - code: |
-      export { connect } from 'node:net'
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
@@ -371,65 +57,16 @@ examples:
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
-      const https = require('https')
+      const childProcess = await import(`node:child_process`)
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
-      import { spawnSync } from 'node:child_process'
-      spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], { encoding: 'utf8' })
-      const fs = await import('node:fs')
-    isValid: true
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
-  - code: |
-      import { spawnSync } from 'node:child_process'
-      const { status } = spawnSync('git', ['show', `HEAD:${rel}`], { cwd: worktreeRoot })
-      spawnSync('git', ['status'], { shell: false })
-    isValid: true
-    file: 'dev/codex-hooks/post-tool-use-checkers.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      const text = execFileSync('git', args, { cwd, encoding: 'utf8' })
-      execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], { cwd })
-    isValid: true
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { execFileSync, spawnSync } from 'node:child_process'
-      execFileSync('git', ['remote', '-v'])
-      execFileSync('git', ['remote', 'get-url', 'origin'])
-      execFileSync('git', ['remote', 'set-url', 'update'])
-      execFileSync('git', ['submodule', 'status'])
-      execFileSync('git', ['show', 'remote', 'update'])
-      execFileSync('node', ['remote', 'update'])
-      spawnSync('grep', ['submodule', 'update'])
-    isValid: true
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      const runner = {
-        execSync(command: string) {
-          return command
-        },
-      }
-      runner.execSync('git status')
-    isValid: true
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+      const response = await fetch('https://api.github.com/repos/o/r')
+    isValid: false
+    file: 'dev/codex-hooks/policy/github-workflow.mts'
   - code: |
       const execSync = (command: string) => command
-      execSync('git status')
+      execSync('local calculation')
+      const metadata = { shell: true }
     isValid: true
     file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      import { spawn } from 'node:child_process'
-      spawn('git', ['status'], { onExit: () => ({ shell: true }) })
-    isValid: true
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
-  - code: |
-      const STACK_AGENT_ACTIONS = new Set(['add', 'push', 'rebase', 'sync'])
-      const isPush = match[2] === 'push'
-      const remote = REMOTE_LINE.exec(line)
-    isValid: true
-    file: 'dev/codex-hooks/policy/github-stack-workflow.mts'
-  - code: |
-      import { execFileSync } from 'node:child_process'
-      execFileSync('gh', ['pr', 'view', '1'])
-    isValid: true
-    file: 'dev/pr-description/github.mts'
