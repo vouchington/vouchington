@@ -64564,27 +64564,50 @@
     },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "bodyKind": "content",
-      "hash": "79f81039e91739dc83819cf9551cc8f6018c2a2fa0e441cf4661a3444e655774",
+      "hash": "c50267d3c1ab98efdbc5f0b0e3aae1932a6103e88f005e1ef0de96715b31fda4",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
       "routeTemplate": "/api/v1/posts/:idOrSlug/clearances",
       "schema": {
-        "definitions": {},
+        "definitions": {
+          "ClearanceStatus": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "approved"
+              },
+              {
+                "type": "literal",
+                "value": "in_review"
+              },
+              {
+                "type": "literal",
+                "value": "pending"
+              },
+              {
+                "type": "literal",
+                "value": "rejected"
+              }
+            ]
+          }
+        },
         "root": {
           "additionalProperties": false,
           "properties": {
             "clearance_status": {
               "required": true,
               "schema": {
-                "type": "string"
+                "name": "ClearanceStatus",
+                "type": "ref"
               }
             }
           },
           "type": "object"
         }
       },
-      "source": "backend/api/v1/posts/post-routes/post-mutation-routes.mts",
+      "source": "backend/api/v1/posts/post-routes/post-clearance-mutation-route.mts",
       "statusKnowledge": "default"
     },
     "POST:/api/v1/posts/:idOrSlug/sends": {
