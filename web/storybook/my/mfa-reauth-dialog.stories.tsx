@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MfaReauthDialog } from '@/components/my/mfa-reauth-dialog'
 import { EmailVerificationPane } from '@/components/my/mfa-reauth-dialog/verification-panes'
@@ -41,19 +42,24 @@ export const EmailCode: Story = {
   ),
 }
 
-export const EmailCodeSent: Story = {
-  render: () => (
+function SentEmailCode() {
+  const [emailCode, setEmailCode] = useState('')
+  return (
     <StoryFrame width='max-w-md'>
       <EmailVerificationPane
-        emailCode=''
+        emailCode={emailCode}
         emailSent
         handleEmailVerify={() => {}}
         handleResendEmail={() => {}}
         handleSendEmail={() => {}}
         loading={false}
         sentToEmail='cardholder@example.com'
-        setEmailCode={() => {}}
+        setEmailCode={setEmailCode}
       />
     </StoryFrame>
-  ),
+  )
+}
+
+export const EmailCodeSent: Story = {
+  render: () => <SentEmailCode />,
 }
