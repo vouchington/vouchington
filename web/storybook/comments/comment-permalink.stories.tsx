@@ -1,4 +1,3 @@
-import { useLayoutEffect } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { CommentPermalink } from '@/components/comments/comment-permalink'
@@ -69,14 +68,6 @@ type Story = StoryObj<typeof meta>
 function PermalinkPreview({ target }: { target: Post }) {
   const t = useTranslations()
   const html = target.deleted_at ? null : commentHtml
-  useLayoutEffect(() => {
-    const root = document.documentElement
-    const hadDark = root.classList.contains('dark')
-    root.classList.remove('dark')
-    return () => {
-      if (hadDark) root.classList.add('dark')
-    }
-  }, [])
   return (
     <StoryFrame>
       <CommentPermalink

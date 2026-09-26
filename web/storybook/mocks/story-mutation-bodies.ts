@@ -54,10 +54,17 @@ export function purchaseIntent(body: unknown): unknown {
   }
 }
 
+let nextModNote = 0
+
+export function resetModNoteSequence(): void {
+  nextModNote = 0
+}
+
 export function modNote(body: unknown): unknown {
+  nextModNote += 1
   return {
     note: {
-      id: 'mod-note-story',
+      id: `mod-note-story-${nextModNote}`,
       created_at: storyMutationAt,
       target_user_id: 'user-cardholder',
       author_user_id: 'user-cardholder',
