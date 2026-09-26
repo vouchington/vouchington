@@ -1554,7 +1554,7 @@ importers:
         version: 1.0.1
       supertest:
         specifier: ^7.3.0
-        version: 7.3.0
+        version: 7.3.0(supports-color@8.1.1)
 
   backend/config:
     dependencies:
@@ -2306,7 +2306,7 @@ importers:
         version: 2.0.1
       https-proxy-agent:
         specifier: ^9.1.0
-        version: 9.1.0
+        version: 9.1.0(supports-color@8.1.1)
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6626,8 +6626,8 @@ importers:
   backend/services/mcp-tools:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.30.0
-        version: 1.30.0(zod@4.6.5)
+        specifier: ^1.30.1
+        version: 1.30.1(zod@4.6.5)
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -10469,7 +10469,7 @@ importers:
         version: 2.2.2
       supertest:
         specifier: ^7.3.0
-        version: 7.3.0
+        version: 7.3.0(supports-color@8.1.1)
       undici:
         specifier: ^8.11.0
         version: 8.11.0
@@ -12681,7 +12681,7 @@ importers:
         version: 19.3.0(react@19.3.0)
       react-email:
         specifier: ^6.11.0
-        version: 6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)
       vitest:
         specifier: ^5.0.1
         version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.5.0)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -12776,7 +12776,7 @@ importers:
         version: 18.0.0
       '@typescript-eslint/parser':
         specifier: ^8.70.1
-        version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))
+        version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))(supports-color@8.1.1)
       '@vouchington/localization':
         specifier: 0.2.0
         version: 0.2.0
@@ -13109,7 +13109,7 @@ importers:
         version: 10.6.0(@vitest/browser-playwright@4.1.11)(@vitest/browser@4.1.11)(@vitest/runner@4.1.11)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vitest@4.1.11)
       '@storybook/nextjs-vite':
         specifier: ^10.6.0
-        version: 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+        version: 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -14248,12 +14248,6 @@ packages:
 
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
-
-  '@hono/node-server@2.0.12':
-    resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      hono: ^4
 
   '@hono/node-server@2.1.1':
     resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
@@ -19279,10 +19273,6 @@ packages:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
 
-  eventsource-parser@3.1.0:
-    resolution: {integrity: sha512-kJezFj9YFAMLeORyi7aCLxLbD5/qWMQnoMVlVPyHIll7lgRJCc3JVln9Vgl9nwQi0YkMnhdGTMNn7CkRRAptMg==}
-    engines: {node: '>=18.0.0'}
-
   eventsource-parser@3.1.1:
     resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
     engines: {node: '>=18.0.0'}
@@ -19294,12 +19284,6 @@ packages:
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
-
-  express-rate-limit@8.6.1:
-    resolution: {integrity: sha512-0D493aP61w0TJ2A0wy27riRsO7FMQ7FK+KUHOKCSfPvYo0R55aiC6emCVgFUeShH0fq0ICPVzNcgoS+BsbXQCA==}
-    engines: {node: '>= 16'}
-    peerDependencies:
-      express: '>= 4.11'
 
   express-rate-limit@8.7.0:
     resolution: {integrity: sha512-hOwV7WOxXfjRpAM1DSJWZDXx3GhplwD8IfwuwvogD8i1Qnkgosw/H45s4ZnFAUHDAhPjlY9hLBvJhKmGMyY26g==}
@@ -19581,10 +19565,6 @@ packages:
     resolution: {integrity: sha512-Ox1pJVrDCyGHMG9CFg1tmrRUMRPRsAWYc/PinY0XzJU4K7y7vjNoLKIQ7BR5UJMCxNN8EM1MNDmHWA/B3aZUuw==}
     engines: {node: '>=6'}
 
-  hono@4.13.8:
-    resolution: {integrity: sha512-/Gng7NfoykZl2pjukW5Z6+8Yxm3BPRf86GTbQnt0SbySkvax4fyL4H3HhY1cCpBGmiW9XDRFzRV+CXK2W8QudQ==}
-    engines: {node: '>=16.9.0'}
-
   hono@4.13.9:
     resolution: {integrity: sha512-7dMkQmZoC4E6F7AtaQSPhlWAdnBti+j7rreMZl8QB4jFiEhP9TWbGWUMi8WYzBCgmgulxuvLQupKqo+Co6Omyg==}
     engines: {node: '>=16.9.0'}
@@ -19708,10 +19688,6 @@ packages:
   interpret@3.1.1:
     resolution: {integrity: sha512-6xwYfHbajpoF0xLW+iwLkhwgvLoZDfjYfoFNu8ftMoXINzwuymNLd9u/KmwtdT2GbR+/Cz66otEGEVVUHX9QLQ==}
     engines: {node: '>=10.13.0'}
-
-  ip-address@10.4.0:
-    resolution: {integrity: sha512-oSK96Grm3aP6OrS263xVxbNDGVL7rzBtYdpGqlDG8iQdoenDoTs/nkki+DflYbAEE8Xl6o5YxhxlrKvI3nqKXQ==}
-    engines: {node: '>= 12'}
 
   ip-address@10.7.2:
     resolution: {integrity: sha512-7H/2gFSIitxc0hG3nOI1glS8QLo/EHBFFLk8vEUjXY/xu0AdL8jZ9U1IzO2PUm0d2D/ofQcAifb0g6OBkt8U7w==}
@@ -23056,7 +23032,7 @@ snapshots:
       '@babel/parser': 7.29.9
       '@babel/types': 7.29.8
 
-  '@babel/traverse@7.29.0':
+  '@babel/traverse@7.29.0(supports-color@8.1.1)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
@@ -23637,10 +23613,6 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@2.0.12(hono@4.13.8)':
-    dependencies:
-      hono: 4.13.8
-
   '@hono/node-server@2.1.1(hono@4.13.9)':
     dependencies:
       hono: 4.13.9
@@ -23899,17 +23871,17 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.30.0(zod@4.6.5)':
     dependencies:
-      '@hono/node-server': 2.0.12(hono@4.13.8)
+      '@hono/node-server': 2.1.1(hono@4.13.9)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
       eventsource: 3.0.7
-      eventsource-parser: 3.1.0
+      eventsource-parser: 3.1.1
       express: 5.2.1
-      express-rate-limit: 8.6.1(express@5.2.1)
-      hono: 4.13.8
+      express-rate-limit: 8.7.0(express@5.2.1)
+      hono: 4.13.9
       jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -26470,7 +26442,7 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  '@storybook/nextjs-vite@10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))':
+  '@storybook/nextjs-vite@10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))':
     dependencies:
       '@storybook/builder-vite': 10.6.0(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       '@storybook/react': 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))
@@ -26481,7 +26453,7 @@ snapshots:
       storybook: 10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       styled-jsx: 5.1.6(react@19.3.0)
       vite: 8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
-      vite-plugin-storybook-nextjs: 10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      vite-plugin-storybook-nextjs: 10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -26917,11 +26889,11 @@ snapshots:
     dependencies:
       '@types/node': 26.5.0
 
-  '@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))':
+  '@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))(supports-color@8.1.1)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.70.1
       '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@typescript-eslint/visitor-keys': 8.70.1
       debug: 4.4.3(supports-color@8.1.1)
       eslint: 10.5.0(jiti@2.7.0)
@@ -26929,7 +26901,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/project-service@8.70.1(@typescript/typescript6@6.0.2)':
+  '@typescript-eslint/project-service@8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.70.1
@@ -26949,9 +26921,9 @@ snapshots:
 
   '@typescript-eslint/types@8.70.1': {}
 
-  '@typescript-eslint/typescript-estree@8.70.1(@typescript/typescript6@6.0.2)':
+  '@typescript-eslint/typescript-estree@8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)':
     dependencies:
-      '@typescript-eslint/project-service': 8.70.1(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/project-service': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.70.1
       '@typescript-eslint/visitor-keys': 8.70.1
@@ -28286,7 +28258,7 @@ snapshots:
 
   engine.io-parser@5.2.3: {}
 
-  engine.io@6.6.10:
+  engine.io@6.6.10(supports-color@8.1.1):
     dependencies:
       '@types/cors': 2.8.19
       '@types/node': 26.6.2
@@ -28521,23 +28493,13 @@ snapshots:
   events@3.3.0:
     optional: true
 
-  eventsource-parser@3.1.0: {}
-
   eventsource-parser@3.1.1: {}
 
   eventsource@3.0.7:
     dependencies:
-      eventsource-parser: 3.1.0
+      eventsource-parser: 3.1.1
 
   expect-type@1.4.0: {}
-
-  express-rate-limit@8.6.1(express@5.2.1):
-    dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-      express: 5.2.1
-      ip-address: 10.4.0
-    transitivePeerDependencies:
-      - supports-color
 
   express-rate-limit@8.7.0(express@5.2.1):
     dependencies:
@@ -28861,8 +28823,6 @@ snapshots:
 
   hex-rgb@4.3.0: {}
 
-  hono@4.13.8: {}
-
   hono@4.13.9: {}
 
   html-encoding-sniffer@7.0.0(@noble/hashes@2.4.0):
@@ -28937,7 +28897,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@9.1.0:
+  https-proxy-agent@9.1.0(supports-color@8.1.1):
     dependencies:
       agent-base: 9.0.0
       debug: 4.4.3(supports-color@8.1.1)
@@ -28995,8 +28955,6 @@ snapshots:
   internmap@2.0.3: {}
 
   interpret@3.1.1: {}
-
-  ip-address@10.4.0: {}
 
   ip-address@10.7.2: {}
 
@@ -30542,10 +30500,10 @@ snapshots:
       react: 19.3.0
       scheduler: 0.28.0
 
-  react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1):
     dependencies:
       '@babel/parser': 7.29.2
-      '@babel/traverse': 7.29.0
+      '@babel/traverse': 7.29.0(supports-color@8.1.1)
       '@react-email/render': 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       chokidar: 5.0.0
       commander: 13.1.0
@@ -30565,7 +30523,7 @@ snapshots:
       prompts: 2.4.2
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      socket.io: 4.8.3
+      socket.io: 4.8.3(supports-color@8.1.1)
       tailwindcss: 4.3.3
       tsconfig-paths: 4.2.0
     transitivePeerDependencies:
@@ -31012,7 +30970,7 @@ snapshots:
 
   smol-toml@1.9.0: {}
 
-  socket.io-adapter@2.5.8:
+  socket.io-adapter@2.5.8(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       ws: 8.21.3
@@ -31021,22 +30979,22 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  socket.io-parser@4.2.7:
+  socket.io-parser@4.2.7(supports-color@8.1.1):
     dependencies:
       '@socket.io/component-emitter': 3.1.2
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  socket.io@4.8.3:
+  socket.io@4.8.3(supports-color@8.1.1):
     dependencies:
       accepts: 1.3.8
       base64id: 2.0.0
       cors: 2.8.6
       debug: 4.4.3(supports-color@8.1.1)
-      engine.io: 6.6.10
-      socket.io-adapter: 2.5.8
-      socket.io-parser: 4.2.7
+      engine.io: 6.6.10(supports-color@8.1.1)
+      socket.io-adapter: 2.5.8(supports-color@8.1.1)
+      socket.io-parser: 4.2.7(supports-color@8.1.1)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -31203,7 +31161,7 @@ snapshots:
       client-only: 0.0.1
       react: 19.3.0
 
-  superagent@10.4.1:
+  superagent@10.4.1(supports-color@8.1.1):
     dependencies:
       component-emitter: 1.3.1
       cookiejar: 2.1.4
@@ -31217,11 +31175,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  supertest@7.3.0:
+  supertest@7.3.0(supports-color@8.1.1):
     dependencies:
       cookie-signature: 1.2.2
       methods: 1.1.2
-      superagent: 10.4.1
+      superagent: 10.4.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -31565,7 +31523,7 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-plugin-storybook-nextjs@10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
+  vite-plugin-storybook-nextjs@10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
     dependencies:
       '@next/env': 16.3.5
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
@@ -31578,13 +31536,13 @@ snapshots:
       storybook: 10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       ts-dedent: 2.3.0
       vite: 8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
-      vite-tsconfig-paths: 5.1.4(@typescript/typescript6@6.0.2)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      vite-tsconfig-paths: 5.1.4(@typescript/typescript6@6.0.2)(supports-color@8.1.1)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
+  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(supports-color@8.1.1)(vite@8.3.0(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       globrex: 0.1.2
