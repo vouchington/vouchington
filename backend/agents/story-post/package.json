@@ -25,7 +25,7 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/openai-utils": "workspace:^",
     "@services/stories": "workspace:^",
-    "openai": "^7.15.0"
+    "openai": "^7.23.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

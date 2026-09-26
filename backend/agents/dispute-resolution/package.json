@@ -25,7 +25,7 @@
     "@services/moderation": "workspace:^",
     "@services/review-disputes": "workspace:^",
     "@services/topic-claims": "workspace:^",
-    "openai": "^7.15.0"
+    "openai": "^7.23.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",
