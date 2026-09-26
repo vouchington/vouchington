@@ -224,6 +224,11 @@ staff recorded all applicable facts:
 - it identifies the same material; and
 - a CCB filing is a qualifying claim or counterclaim under 17 USC 1507(d).
 
+Until staff record that assessment, an admitted court or CCB filing blocks restoration of every
+target on the case. Recording the assessment ends that case-wide block. A qualifying assessment
+then blocks only the targets it names. A restore intent that delivery already marked blocked is
+reopened for any target that assessment does not still block.
+
 Assess every received filing separately and bind its material scope to the exact notice targets it
 covers. Restoration remains blocked while any qualifying assessment for that target is unresolved.
 When staff record that no qualifying proceeding exists, the assessment carries no proceeding dates

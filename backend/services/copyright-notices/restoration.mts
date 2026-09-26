@@ -3,6 +3,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
+import { noticeHasUnassessedCourtOrCcbFiling } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionIntentRecord, CopyrightLegalHoldAssessmentRecord } from './types.mts'
 
 export type CopyrightRestorationHold = {
@@ -122,6 +123,11 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     locked.resolved_at === null && locked.cancelled_at === null,
     409,
     'Restoration deadline is closed',
+  )
+  assert(
+    !(await noticeHasUnassessedCourtOrCcbFiling(input.noticeId, transaction)),
+    409,
+    'Copyright restoration awaits assessment of a court or CCB filing',
   )
 
   const qualifyingHolds =

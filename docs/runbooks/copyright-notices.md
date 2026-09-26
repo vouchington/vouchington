@@ -72,8 +72,9 @@ restore before enabling intake.
 3. Promptly forward the complete counter-notice to the original claimant using the deterministic
    statutory template and persist the delivery intent.
 4. Review all case correspondence before restoration and record the exact targets each filing
-   covers. A threat, unrelated filing, different claimant, different material, non-commenced matter,
-   or CCB filing outside the qualifying claim and counterclaim categories is not a hold.
+   covers. Restoration of the whole case stays refused while any admitted court or CCB filing has
+   no assessment. A threat, unrelated filing, different claimant, different material, non-commenced
+   matter, or CCB filing outside the qualifying claim and counterclaim categories is not a hold.
 5. Resolve a hold only with an immutable resolution record and staff rationale.
 
 ## Repeat-infringer review
