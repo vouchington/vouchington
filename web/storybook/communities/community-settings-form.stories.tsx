@@ -1,9 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { CommunitySettingsForm } from '@/components/communities/community-settings-form'
+import '@/storybook/mocks/client-api-instance'
+import {
+  clearSlugAvailabilityFixture,
+  setSlugAvailabilityFixture,
+} from '@/storybook/mocks/slug-availability-fixture'
 import {
   clearStoryMutationFixture,
   setStoryMutationFixture,
 } from '@/storybook/mocks/story-mutation-fixture'
-import { CommunitySettingsForm } from '@/components/communities/community-settings-form'
 import type { Community } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
@@ -14,7 +19,11 @@ const meta = {
   component: CommunitySettingsForm,
   beforeEach() {
     setStoryMutationFixture()
-    return () => clearStoryMutationFixture()
+    setSlugAvailabilityFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearSlugAvailabilityFixture()
+    }
   },
 } satisfies Meta<typeof CommunitySettingsForm>
 

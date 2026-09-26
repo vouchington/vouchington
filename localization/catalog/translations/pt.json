@@ -2979,6 +2979,7 @@
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.removeThisPostFromTheCommunity_721fa01a","value":"Remover este artigo da comunidade? O artigo em si não será excluído."},
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublishFromCommunity_a77d2489","value":"Cancelar Publicação da Comunidade"},
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublish_2db04a54","value":"Cancelar Publicação"},
+{"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublished_b6e07310","value":"Retirado"},
 {"id":"copy.extracted.preferences.page.customizeYourBrowsingExperience_99eaeb2e","value":"Personalize sua experiência de navegação"},
 {"id":"copy.extracted.privacy.page.controlWhoCanSeeYourActivity_50daae77","value":"Controle quem pode ver sua atividade e dados de perfil"},
 {"id":"copy.extracted.privacyForm.postDefaultSelect.selectPrivacySetting_4587a12c","value":"Selecionar configuração de privacidade"},

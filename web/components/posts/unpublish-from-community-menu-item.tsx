@@ -40,7 +40,7 @@ export function UnpublishFromCommunityMenuItem({
         data-pw='post-unpublish-from-community-trigger'
       >
         {unpublished
-          ? 'Unpublished'
+          ? t('extracted.posts.unpublishFromCommunityMenuItem.unpublished_b6e07310')
           : t('extracted.posts.unpublishFromCommunityMenuItem.unpublish_2db04a54')}
       </DropdownMenuItem>
       <AlertDialog

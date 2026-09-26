@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PlanCards } from '@/components/memberships/plan-cards'
 import { FeatureFlagsProvider } from '@/lib/feature-flags/context'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import type {
   MembershipBenefitCatalog,
   MembershipPlanSku,
@@ -11,6 +15,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Memberships/Plan Cards',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta

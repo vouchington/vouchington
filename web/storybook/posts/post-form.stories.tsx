@@ -1,6 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostForm } from '@/components/posts/post-form'
 import {
+  clearTopicSearchFixture,
+  setTopicSearchFixture,
+} from '@/storybook/mocks/client-api-instance'
+import {
+  clearImageUploadFixture,
+  setImageUploadFixture,
+} from '@/storybook/mocks/image-upload-fixture'
+import {
+  clearSlugAvailabilityFixture,
+  setSlugAvailabilityFixture,
+} from '@/storybook/mocks/slug-availability-fixture'
+import {
   clearStoryMutationFixture,
   setStoryMutationFixture,
 } from '@/storybook/mocks/story-mutation-fixture'
@@ -12,7 +24,15 @@ const meta = {
   component: PostForm,
   beforeEach() {
     setStoryMutationFixture()
-    return () => clearStoryMutationFixture()
+    setSlugAvailabilityFixture()
+    setTopicSearchFixture()
+    setImageUploadFixture()
+    return () => {
+      clearStoryMutationFixture()
+      clearSlugAvailabilityFixture()
+      clearTopicSearchFixture()
+      clearImageUploadFixture()
+    }
   },
 } satisfies Meta
 
