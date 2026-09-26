@@ -32,7 +32,13 @@ function topicSearchBody(searchParams?: TopicSearchParams): JsonBody {
     searchParams?.spending_category === true || searchParams?.spending_category === 'true'
   const query = typeof searchParams?.q === 'string' ? searchParams.q.trim().toLowerCase() : ''
   const visible = topicCatalog.filter(topic => {
-    if (query && !topic.name.toLowerCase().includes(query)) return false
+    const name = topic.name.toLowerCase()
+    const matchesQuery =
+      query.length === 0 ||
+      name.includes(query) ||
+      topic.topic_type.includes(query) ||
+      name.split(' ').some(word => word.startsWith(query))
+    if (!matchesQuery) return false
     if (spending) return topic.spendingCategory
     if (types.length > 0) return types.includes(topic.topic_type)
     return topic.id === 'topic-1' || topic.id === 'topic-2'
