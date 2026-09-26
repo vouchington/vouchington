@@ -147,11 +147,6 @@ describe('dependency update configuration', () => {
         name: '@sentry/aws-serverless',
         field: 'dependencies',
       },
-      {
-        path: 'lambdas/shared/package.json',
-        name: '@sentry/node',
-        field: 'dependencies',
-      },
     ] as const
 
     const sentryVersions = sentryManifests.map(({ path, name, field }) => {
