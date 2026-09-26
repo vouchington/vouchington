@@ -81,10 +81,12 @@ jobs:
             --strip-components 0
 
       - name: Scan git history
+        env:
+          LOG_OPTS: ${{ steps.gitleaks_scan.outputs.log-opts }}
         run: >-
           gitleaks git
           --config .gitleaks.toml
-          --log-opts "${{ steps.gitleaks_scan.outputs.log-opts }}"
+          --log-opts "$LOG_OPTS"
           --redact=100
           --report-format=json
           --report-path=gitleaks-report.json

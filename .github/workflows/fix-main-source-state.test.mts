@@ -102,7 +102,8 @@ describe('fix-main source state', () => {
     expect(workflowRerunStep?.if).not.toContain('run_attempt')
 
     // A stale source run must also be unable to set should_dispatch=true.
-    expect(triageStep?.run).toContain('"${{ steps.source-state.outputs.current }}" == "true"')
+    expect(triageStep?.env?.['SOURCE_CURRENT']).toBe('${{ steps.source-state.outputs.current }}')
+    expect(triageStep?.run).toContain('"$SOURCE_CURRENT" == "true"')
   })
 
   it('keeps the no-checkout revalidation guard identical across every no-checkout job', () => {

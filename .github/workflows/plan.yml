@@ -217,6 +217,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
       - name: Comment failure on source issue
         env:
@@ -237,7 +238,6 @@ jobs:
             exit 0
           fi
 
-          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
           THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           BODY="/plan run failed — plan generation could not complete.

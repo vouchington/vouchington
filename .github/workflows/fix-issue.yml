@@ -263,6 +263,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       ISSUE_NUMBER: ${{ github.event.issue.number }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
       - name: Comment failure on source issue
         run: |
@@ -281,7 +282,6 @@ jobs:
             exit 0
           fi
 
-          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
           THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           BODY="/fix run failed — auto-fix could not complete.

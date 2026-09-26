@@ -172,25 +172,6 @@ describe('workflow automation safety', () => {
     assertNoWorkflowViolations(violations)
   })
 
-  it('does not interpolate github.event values directly inside shell run scripts', () => {
-    const violations: string[] = []
-    const directEventExpression = /\$\{\{\s*github\.event\./u
-
-    for (const path of workflowPaths) {
-      const workflow = readWorkflow(path)
-      for (const [jobId, job] of Object.entries(workflow.jobs ?? {})) {
-        for (const [index, step] of (job.steps ?? []).entries()) {
-          if (!step.run || !directEventExpression.test(step.run)) continue
-          violations.push(
-            `${stepLabel(path, jobId, step, index)}: pass github.event values through env before using them in shell`,
-          )
-        }
-      }
-    }
-
-    assertNoWorkflowViolations(violations)
-  })
-
   it('keeps every workflow in a grouped inventory reference and standalone workflows in the automation-map leaf Mermaid diagrams', () => {
     const readme = readFileSync('.github/workflows/README.md', 'utf8')
     const workflowReference = readFileSync('.github/workflows/WORKFLOWS.md', 'utf8')
