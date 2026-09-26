@@ -15,13 +15,14 @@ export function storyTail(endpoint: string): string {
 }
 
 export function createdPost(body: unknown): unknown {
-  const postType = storyField(body, 'post_type') === 'comment' ? 'comment' : 'link'
+  const postType = storyText(body, 'post_type') || 'link'
+  const isComment = postType === 'comment'
   return {
     post: {
-      id: postType === 'comment' ? 'comment-story' : 'link-post-story',
+      id: isComment ? 'comment-story' : 'link-post-story',
       post_type: postType,
-      slug: postType === 'comment' ? null : 'link-post-story',
-      title: postType === 'comment' ? null : 'Story link',
+      slug: isComment ? null : 'link-post-story',
+      title: isComment ? null : 'Story link',
       markdown: storyText(body, 'markdown'),
       archived_at: null,
     },
@@ -57,12 +58,19 @@ export function modNote(body: unknown): unknown {
   }
 }
 
+function editedPostType(endpoint: string, body: unknown): string {
+  const explicit = storyText(body, 'post_type')
+  if (explicit) return explicit
+  const id = storyTail(endpoint)
+  return id.startsWith('post-') ? id.slice('post-'.length) : 'discussion'
+}
+
 export function patchedPost(endpoint: string, body: unknown): unknown {
   const markdown = storyField(body, 'markdown')
   return {
     post: {
       id: storyTail(endpoint),
-      post_type: 'discussion',
+      post_type: editedPostType(endpoint, body),
       slug: 'post-story',
       ...(typeof markdown === 'string' ? { markdown } : {}),
       archived_at: storyField(body, 'archive') === true ? storyMutationAt : null,

@@ -5,6 +5,10 @@ import {
   clearMyCommunitiesFixture,
   setMyCommunitiesFixture,
 } from '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { commentPost, electionFor, reviewPost } from './fixtures'
 
@@ -13,7 +17,11 @@ const meta = {
   component: PostDetailActions,
   beforeEach() {
     setMyCommunitiesFixture()
-    return () => clearMyCommunitiesFixture()
+    setStoryMutationFixture()
+    return () => {
+      clearMyCommunitiesFixture()
+      clearStoryMutationFixture()
+    }
   },
 } satisfies Meta
 
