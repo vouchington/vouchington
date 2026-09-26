@@ -10,6 +10,7 @@ import type {
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { replayCopyrightRestoreActionsForRestrictions } from './action-delivery.mts'
+import { replayRestoresAfterCourtFilingAssessment } from './court-hold-restore-replay.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
@@ -115,6 +116,7 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   `)
   await transaction.commit()
   for (const intentId of lateHoldIntentIds) void enqueueApplyCopyrightAction(intentId)
+  await replayRestoresAfterCourtFilingAssessment(submissionRows[0].copyright_notice_id)
   return { ...assessment, target_ids: input.targetIds }
 }
 

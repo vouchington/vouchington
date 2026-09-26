@@ -16,6 +16,9 @@ export async function appendCopyrightNoticeSubmission(input: {
   bodyCiphertext: string
 }): Promise<CopyrightNoticeSubmissionRecord> {
   await using transaction = await beginTransaction()
+  await transaction(sql`/* appendCopyrightNoticeSubmission:lockNotice */
+    SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE
+  `)
   const { rows } =
     await transaction<CopyrightNoticeSubmissionRecord>(sql`/* appendCopyrightNoticeSubmission */
       INSERT INTO copyright_notice_submissions (

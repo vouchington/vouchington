@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionDeliveryOutcome } from './action-delivery-state.mts'
 export type LockedCopyrightActionDelivery = {
   copyright_notice_id: string
@@ -111,32 +112,12 @@ export async function hasCopyrightActionBlocker(
       return true
     }
   }
-  const { rows } = await query<{ blocked: boolean }>(sql`
-    /* hasCopyrightActionBlocker */
-    SELECT EXISTS (
-      SELECT 1
-      FROM copyright_notice_legal_hold_assessments hold
-      JOIN copyright_notice_submissions submission
-        ON submission.id = hold.copyright_notice_submission_id
-      JOIN copyright_notice_legal_hold_assessment_targets hold_target
-        ON hold_target.copyright_notice_legal_hold_assessment_id = hold.id
-      LEFT JOIN copyright_notice_legal_hold_resolutions resolution
-        ON resolution.copyright_notice_legal_hold_assessment_id = hold.id
-      WHERE submission.copyright_notice_id = ${intent.copyright_notice_id}
-        AND hold_target.copyright_notice_target_id = (
-          SELECT copyright_notice_target_id FROM copyright_restrictions
-          WHERE id = ${intent.copyright_restriction_id}
-        )
-        AND resolution.id IS NULL
-        AND hold.from_original_claimant
-        AND hold.same_material
-        AND hold.proceeding_kind IS NOT NULL
-        AND hold.commenced_at IS NOT NULL
-        AND hold.received_by_designated_agent_at IS NOT NULL
-        AND hold.received_by_designated_agent_at <= ${now}
-    ) AS blocked
-  `)
-  return rows[0]?.blocked ?? true
+  return copyrightTargetRestoreIsBlocked(
+    intent.copyright_notice_id,
+    intent.copyright_restriction_id,
+    now,
+    query,
+  )
 }
 export async function hasOtherActiveCopyrightRestrictions(
   intent: LockedCopyrightActionDelivery,

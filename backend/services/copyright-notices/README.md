@@ -58,9 +58,10 @@ member projection.
 - The restoration clock starts at the immutable receipt time of the submission that a compliance
   assessment finds substantially compliant. Parsing and staff-approval time never move that clock.
 - Restoration intent creation cannot occur before business day ten, before that exact restriction's
-  human review, while another restriction is active, or after a target-specific qualifying court/CCB
-  filing is received from the original claimant. Missing day fourteen escalates but does not prohibit
-  an overdue restoration. The media service still performs the authoritative delivery check.
+  human review, while another restriction is active, while the case has an unassessed court or CCB
+  filing, or after a target-specific qualifying court/CCB filing is received from the original
+  claimant. Missing day fourteen escalates but does not prohibit an overdue restoration. The media
+  service still performs the authoritative delivery check.
 - Member responses are built from an explicit allowlist and only for accepted complaints. Callers
   must separately determine whether the viewer may see the target reference.
 - Legal receipts, evidence, assessments, targets, and lifecycle events are immutable. Restriction

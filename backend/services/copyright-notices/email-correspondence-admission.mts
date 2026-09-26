@@ -103,6 +103,11 @@ export async function admitCopyrightEmailCorrespondence(input: {
       isDuplicate: true,
     }
   }
+  if (input.kind === 'court_or_ccb_hold') {
+    await transaction(sql`/* admitCopyrightEmailCorrespondence:lockNotice */
+      SELECT id FROM copyright_notices WHERE id = ${pending.notice_id} FOR UPDATE
+    `)
+  }
   const submissionId = uuidv7()
   const { rows: submissions } = await transaction<{
     id: string
