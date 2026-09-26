@@ -32,7 +32,23 @@ const proMonthly: MembershipPlanSku = {
   stripe_price_id: 'price_pro_monthly',
 }
 
-const plans = { plus: [plusMonthly], pro: [proMonthly] }
+const plusYearly: MembershipPlanSku = {
+  id: 'plus-yearly',
+  plan: 'plus',
+  price: { amount: 5000, currency: 'usd' },
+  interval: 'yearly',
+  stripe_price_id: 'price_plus_yearly',
+}
+
+const proYearly: MembershipPlanSku = {
+  id: 'pro-yearly',
+  plan: 'pro',
+  price: { amount: 12_000, currency: 'usd' },
+  interval: 'yearly',
+  stripe_price_id: 'price_pro_yearly',
+}
+
+const plans = { plus: [plusMonthly, plusYearly], pro: [proMonthly, proYearly] }
 
 const benefitCatalog: MembershipBenefitCatalog = {
   version: 1,

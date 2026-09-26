@@ -2,7 +2,7 @@ import { useLayoutEffect } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { CommentPermalink } from '@/components/comments/comment-permalink'
-import { CommentStoryFrame } from './comment-story-frame'
+import { StoryFrame } from '@/storybook/story-frame'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { Post } from '@/types/posts'
 import {
@@ -70,7 +70,7 @@ function PermalinkPreview({ target }: { target: Post }) {
     }
   }, [])
   return (
-    <CommentStoryFrame>
+    <StoryFrame>
       <CommentPermalink
         targetCommentId={target.id}
         rootPostId={discussionPost.id}
@@ -82,7 +82,7 @@ function PermalinkPreview({ target }: { target: Post }) {
         hideDownCount={false}
         t={t}
       />
-    </CommentStoryFrame>
+    </StoryFrame>
   )
 }
 
