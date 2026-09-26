@@ -43,15 +43,6 @@ describe('EXPLAIN ANALYZE seed maintenance', () => {
     })
   })
 
-  it('analyzes and reports the deterministic support-message thread', () => {
-    expect(ANALYZE_TARGETS).toContain('support_messages')
-    expect(SEEDED_ROW_COUNT_TARGETS).toContainEqual({
-      table: 'support_messages',
-      column: 'support_thread_id',
-      pattern: '019e0000-7c00-7000-8000-000000000000',
-    })
-  })
-
   it('analyzes and reports topic import attempts for retention cleanup', () => {
     expect(ANALYZE_TARGETS).toContain('user_topic_import_attempts')
     expect(SEEDED_ROW_COUNT_TARGETS).toContainEqual({

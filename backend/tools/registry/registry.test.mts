@@ -173,7 +173,7 @@ describe('tool registry', () => {
       function: () => () => Promise.resolve({}),
       meta: {
         surfaces: ['mcp'],
-        requiredScopes: { mcp: ['support-messages:read'] },
+        requiredScopes: { mcp: ['mcp.admin:read'] },
         api: null,
       },
     }

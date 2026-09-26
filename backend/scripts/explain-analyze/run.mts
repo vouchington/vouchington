@@ -17,14 +17,11 @@ import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
-import { runSupportMessageScenarios } from './run-scenarios/support-messages.mts'
-import { assertSeededSupportMessageCounts } from './seed-data/support-messages.mts'
 
 async function main() {
   prepareOutputDir()
   try {
     await assertSeedAnchorMatches()
-    await assertSeededSupportMessageCounts()
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
     await runSearchAndFacetScenarios()
@@ -33,7 +30,6 @@ async function main() {
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()
     await runMembershipRefundScenarios()
-    await runSupportMessageScenarios()
     await runRemoteFollowerScenarios()
     await runReviewSuccessionScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)

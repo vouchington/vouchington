@@ -10,7 +10,7 @@ import {
 import { shouldSkipUnavailableBedrockIntegration } from '../test-availability.mts'
 
 type CreateBedrockEmbeddingOptions = {
-  entityType: 'post' | 'topic' | 'rss_feed_item' | 'crawl_chunk' | 'search' | 'support_message'
+  entityType: 'post' | 'topic' | 'rss_feed_item' | 'crawl_chunk' | 'search'
   abortSignal?: AbortSignal
 }
 

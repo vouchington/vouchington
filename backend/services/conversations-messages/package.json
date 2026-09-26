@@ -20,7 +20,6 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@services/customer-support": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"

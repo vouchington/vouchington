@@ -11,7 +11,6 @@ import { isLocalPrimaryEmailForUser } from '../../../../test-helpers/data-stores
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
 import { buildSystemUserUpsertSQL } from '../utils/system-user-seed.mts'
 import generateSeedAdminUserSQL from '../0010-00-02-seed-admin-user.mts'
-import generateSeedAgentsSQL from '../0010-00-01-seed-agents.mts'
 
 // Any authenticated user can rename themselves via PATCH /api/v1/my/identity (no reserved-name
 // list at that layer), and db:migrate reruns these generators on every deploy, granting
@@ -30,7 +29,7 @@ describe('system-user seed reclaim (real DB)', () => {
 
 INSERT INTO user_roles (user_id, role_type_id)
 SELECT u.id, urt.id FROM users u
-JOIN user_roles_types urt ON urt.slug = 'customer_support'
+JOIN user_roles_types urt ON urt.slug = 'moderator'
 WHERE u.username = '${reservedUsername}' AND u.is_system = TRUE
 ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 
@@ -47,7 +46,7 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
     expect(systemState?.is_system).toBe(true)
     expect(systemState?.id).not.toBe(squatterId)
 
-    const systemRoleCount = await countLocalUserRoleAssignments(systemState!.id, 'customer_support')
+    const systemRoleCount = await countLocalUserRoleAssignments(systemState!.id, 'moderator')
     expect(systemRoleCount).toBe(1)
   })
 
@@ -63,26 +62,5 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 
     const hasPrimaryEmail = await isLocalPrimaryEmailForUser(jong!.id, 'jong@voucha.ai')
     expect(hasPrimaryEmail).toBe(true)
-  })
-
-  // Idempotency of buildSystemUserUpsertSQL is already proven by the lightweight jong generator
-  // test above. This runs the full agents generator only once: it emits ALTER TABLE ... ADD
-  // COLUMN IF NOT EXISTS (ACCESS EXCLUSIVE lock) plus moderator/agent/prompt mutations against
-  // rows shared with sibling test files (e.g. backend/agents/autotagger/run.test.mts); running it
-  // twice here would add lock contention against the full parallel suite for no additional signal.
-  it('runs the real customer-support agent generator to the reclaim-gated end state', async () => {
-    await runConfigDrivenStatementsInTransaction(generateSeedAgentsSQL(), undefined)
-
-    const customerSupport = await getLocalTestUserRawByUsername('customer-support')
-    expect(customerSupport?.is_system).toBe(true)
-
-    const supportRoleCount = await countLocalUserRoleAssignments(
-      customerSupport!.id,
-      'customer_support',
-    )
-    expect(supportRoleCount).toBe(1)
-
-    const adminRoleCount = await countLocalUserRoleAssignments(customerSupport!.id, 'administrator')
-    expect(adminRoleCount).toBe(0)
   })
 })

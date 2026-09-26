@@ -56,7 +56,6 @@
     "@workers/bluesky-follow-propagation": "workspace:^",
     "@workers/cache-purge": "workspace:^",
     "@workers/crawl-embeds": "workspace:^",
-    "@workers/customer-support": "workspace:^",
     "@workers/elections": "workspace:^",
     "@workers/emails": "workspace:^",
     "@workers/entity-listeners": "workspace:^",

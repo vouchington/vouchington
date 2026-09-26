@@ -176,7 +176,5 @@ export function copyExistingLockClause(tableName: EmbeddingTable): string {
       return `AND NOT ${lockExistsClause('rss_feed_items', 'rss_feed_items.id')}`
     case 'crawl_chunks':
       return `AND NOT ${lockExistsClause('crawl_chunks', '(crawl_chunks.crawl_id, crawl_chunks.order_index)')}`
-    case 'support_messages':
-      return ''
   }
 }

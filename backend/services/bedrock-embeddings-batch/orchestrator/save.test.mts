@@ -35,10 +35,6 @@ describe('copyExistingLockClause', () => {
       '(e.crawl_id, e.crawl_order_index) = (crawl_chunks.crawl_id, crawl_chunks.order_index)',
     )
   })
-
-  it('does not add a batch-lock predicate for support messages', () => {
-    expect(copyExistingLockClause('support_messages')).toBe('')
-  })
 })
 
 describe('post embedding batch ban-evasion follow-up', () => {

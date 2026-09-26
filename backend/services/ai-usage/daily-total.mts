@@ -32,7 +32,7 @@ let dailyAiCostTotalRefresh: Pick<DailyAiCostTotalCacheEntry, 'day' | 'promise'>
 /**
  * Sums `cost_microunits` across every agent for the current UTC day. Unlike
  * `getCommunityAiCostTotals` (totals.mts), this has no `communities` join -- so NULL-community_id
- * agents (chat, autotagger, customer-support, ...) are included -- and is windowed to today, not
+ * agents (chat, autotagger, ...) are included -- and is windowed to today, not
  * all-time. Backs the daily spend-ceiling check in the ai-agents worker (spend-cap-config.mts).
  *
  * `ai_usage_records.id` is UUIDv7 with no index on `created_at` (a `GENERATED ... STORED` column)

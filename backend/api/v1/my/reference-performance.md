@@ -37,7 +37,6 @@ Most `/my/*` endpoints follow the same pattern: 2 round trips (auth + single ser
 | GET /api/v1/my/notifications/push-subscriptions        | 2           | None             |                                                                                           |
 | POST /api/v1/my/notifications/push-subscriptions       | 2           | None             |                                                                                           |
 | DELETE /api/v1/my/notifications/push-subscriptions/:id | 2           | None             |                                                                                           |
-| GET /api/v1/my/support-threads/:threadId               | 2           | None             | Latest messages by default; `after` pages older messages                                  |
 | GET /api/v1/my/cards                                   | 2           | None             |                                                                                           |
 | POST /api/v1/my/cards                                  | 2           | None             |                                                                                           |
 | PATCH /api/v1/my/cards/:id                             | 2           | None             |                                                                                           |

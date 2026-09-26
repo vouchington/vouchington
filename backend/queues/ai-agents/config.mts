@@ -16,7 +16,6 @@ export type AIAgentJobName =
   | 'moderation-prompt'
   | 'community-moderation-dispatcher'
   | 'community-moderation-prompt'
-  | 'customer-support'
   | 'report-judgement'
   | 'dispute-resolution'
   | 'appeal-resolution'
@@ -30,14 +29,12 @@ export type AIAgentJobName =
   | 'reconcile-auto-dispatch-judgements'
   | 'reconcile-background-responses'
   | 'reconcile-chat-runtime-generations'
-  | 'reconcile-member-support-agent-intents'
   | 'reconcile-copyright-agent-dispatches'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   chat: 1,
   'moderation-prompt': 3,
   'community-moderation-prompt': 3,
-  'customer-support': 5,
   'moderation-dispatcher': 8,
   'community-moderation-dispatcher': 8,
   'report-judgement': 9,
@@ -55,7 +52,6 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'reconcile-auto-dispatch-judgements': 100,
   'reconcile-background-responses': 100,
   'reconcile-chat-runtime-generations': 100,
-  'reconcile-member-support-agent-intents': 100,
   'reconcile-copyright-agent-dispatches': 100,
 }
 
@@ -99,7 +95,6 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   chat: true,
   'moderation-prompt': true,
   'community-moderation-prompt': true,
-  'customer-support': true,
   'moderation-dispatcher': false,
   'community-moderation-dispatcher': true,
   'report-judgement': true,
@@ -117,6 +112,5 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'reconcile-auto-dispatch-judgements': false,
   'reconcile-background-responses': false,
   'reconcile-chat-runtime-generations': false,
-  'reconcile-member-support-agent-intents': false,
   'reconcile-copyright-agent-dispatches': false,
 }

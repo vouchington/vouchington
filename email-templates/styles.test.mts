@@ -8,7 +8,6 @@ import { renderFollowTopicsEmail } from './follow-topics-renderer.mts'
 import { renderLoginTokenEmail } from './login-token-renderer.mts'
 import { renderPostReferralLinkEmail } from './post-referral-link-renderer.mts'
 import { COPYRIGHT_YEAR, colors } from './styles.mts'
-import { renderSupportReplyEmail } from './support-reply-renderer.mts'
 import { renderWelcomeEmail } from './welcome-renderer.mts'
 
 const templateDefs = [
@@ -93,13 +92,6 @@ const templateDefs = [
             activeMemberRate: 0.32,
           },
         ],
-      }),
-  },
-  {
-    name: 'support-reply',
-    render: () =>
-      renderSupportReplyEmail({
-        bodyText: 'Thank you for reaching out.\n\nWe will follow up shortly.',
       }),
   },
   {

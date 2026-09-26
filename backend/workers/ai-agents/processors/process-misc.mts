@@ -1,6 +1,5 @@
 import type { Job } from 'glide-mq'
-import type { CustomerSupportJobData, StoryClusteringJobData } from '@queues/ai-agents/types'
-import { generateSupportResponse } from '@agents/customer-support'
+import type { StoryClusteringJobData } from '@queues/ai-agents/types'
 import { clusterRssFeedItem } from '@services/stories/cluster'
 import { hasRssFeedItemEmbedding } from '@services/bedrock-embeddings'
 import { enqueueStoryClustering } from '@queues/ai-agents/enqueues/story-clustering'
@@ -8,33 +7,15 @@ import { enqueueStoryClustering } from '@queues/ai-agents/enqueues/story-cluster
 const MAX_EMBEDDING_RETRIES = 10
 
 type ProcessMiscDeps = {
-  generateSupportResponse: typeof generateSupportResponse
   clusterRssFeedItem: typeof clusterRssFeedItem
   hasRssFeedItemEmbedding: typeof hasRssFeedItemEmbedding
   enqueueStoryClustering: typeof enqueueStoryClustering
 }
 
 const defaultDeps: ProcessMiscDeps = {
-  generateSupportResponse,
   clusterRssFeedItem,
   hasRssFeedItemEmbedding,
   enqueueStoryClustering,
-}
-
-export async function processCustomerSupport(
-  job: Job<CustomerSupportJobData>,
-  deps: ProcessMiscDeps = defaultDeps,
-): Promise<unknown> {
-  if (job.data.idempotencyKey) {
-    await deps.generateSupportResponse(job.data.threadId, {
-      idempotencyKey: job.data.idempotencyKey,
-      supportMessageId: job.data.supportMessageId,
-      reclaimLiveLease: job.attemptsMade > 0,
-    })
-  } else {
-    await deps.generateSupportResponse(job.data.threadId)
-  }
-  return { success: true }
 }
 
 export async function processStoryClustering(

@@ -1,6 +1,5 @@
 import { write } from '@data-stores/psql'
 import { CRAWL_SEED_PREFIX, SEED_PREFIX } from './common.mts'
-import { SUPPORT_MESSAGE_SEED } from './support-messages.mts'
 
 interface TableInfo {
   table: string
@@ -59,11 +58,6 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'user_referral_program_links', column: 'referral_program_id' },
   { table: 'facebook_accounts', column: 'facebook_user_id', pattern: 'seed-fb-user-%' },
   { table: 'facebook_friends', column: 'facebook_user_id', pattern: 'seed-fb-user-%' },
-  {
-    table: 'support_messages',
-    column: 'support_thread_id',
-    pattern: SUPPORT_MESSAGE_SEED.threadId,
-  },
 ]
 
 export const ANALYZE_TARGETS = [

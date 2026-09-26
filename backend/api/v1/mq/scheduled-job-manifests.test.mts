@@ -22,7 +22,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileChatRuntimeGenerations',
-  'ai_agents/reconcileMemberSupportAgentIntents',
   'ai_agents/reconcileCopyrightAgentDispatches',
   'bedrock-embeddings-batch/backlog_dispatcher',
   'bedrock-embeddings-batch/creation_dispatcher',
@@ -97,7 +96,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests, including the scheduler tombstone, and 77 live jobs', () => {
+  it('imports the exact 31 manifests, including the scheduler tombstone, and 76 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -147,7 +146,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(61)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(60)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

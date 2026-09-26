@@ -94,7 +94,7 @@ export const operationalDynamicConfigRegistryEntries = [
     label: 'User Import/Export',
     description: 'Runtime bounds for user data import and export workflows.',
     config: userImportExportConfig,
-    access: { update_roles: ['customer_support', 'developer'] },
+    access: { update_roles: ['developer'] },
     fields: {
       sync_export_max_items: {
         description: 'Maximum items allowed in synchronous RSS feed and topic exports.',

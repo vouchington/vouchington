@@ -22,7 +22,6 @@ export const EXPECTED_UNAVAILABLE_ROUTES: readonly string[] = [
   'GET:/api/v1/my/notifications',
   'GET:/api/v1/my/notifications/unread',
   'GET:/api/v1/my/rewards-program-statuses',
-  'GET:/api/v1/my/support-threads',
   'GET:/api/v1/mq/stream',
   'GET:/api/v1/reports',
   'GET:/api/v1/rss-feeds',

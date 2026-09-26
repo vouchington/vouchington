@@ -225,7 +225,6 @@ How the system works — architecture, pipelines, and infrastructure.
 ### Focused architecture references
 
 - [Content Moderation Pipeline](overview/architecture/reference-ai-agents-content-moderation-pipeline.md)
-- [CRM Outreach Agent (`@agents/crm-outreach`)](overview/architecture/reference-ai-agents-crm-outreach-agent-agents-crm-outreach.md)
 - [LLM Agent Conversations](overview/architecture/reference-ai-agents-llm-agent-conversations.md)
 - [Semantic Search (Embeddings)](overview/architecture/reference-ai-agents-semantic-search-embeddings.md)
 - [Systems Overview](overview/architecture/reference-ai-agents-systems-overview.md)
@@ -367,7 +366,6 @@ Feature specifications, rules, and policies.
 - [User Settings](requirements/users/USER_SETTINGS.md) — User preferences and settings
 - [Communities](requirements/community/COMMUNITIES.md) — Community creation, naming/slug rules, and archiving
 - [Community Lists](requirements/community/community-lists.md) — Curated lists of topics, RSS feeds, posts, domains, and URLs; proxy follow/mute
-- [Customer Support](requirements/admin/CUSTOMER-SUPPORT.md) — Support procedures and related agent behavior
 - [RSS Feed Category Aliases](requirements/content/RSS-FEED-CATEGORY-ALIASES.md) — Admin triage tool for unmapped RSS feed item categories
 - [RSS Feed Crawling](requirements/content/RSS-FEED-CRAWLING.md) — Prioritized, tiered crawl scheduling: score formula, tier SLAs, materialized-view tiering refreshed via the psql `refreshMaterializedView` job, DynamicConfig reference
 - [Growth Dashboard](requirements/admin/GROWTH-DASHBOARD.md) — Admin/investor KPI dashboard with user growth, content, engagement, network effects, revenue, and infrastructure metrics
@@ -425,11 +423,6 @@ Feature specifications, rules, and policies.
 
 ### Focused requirements references
 
-- [Customer Support reference](requirements/admin/reference-customer-support-data-model.md)
-- [Customer Support reference](requirements/admin/reference-customer-support-email-flow.md)
-- [Customer Support reference](requirements/admin/reference-customer-support-overview.md)
-- [Customer Support reference](requirements/admin/reference-customer-support-related.md)
-- [Customer Support reference](requirements/admin/reference-customer-support-web-routes.md)
 - [Fediverse Instance Anatomy reference](requirements/anatomy/reference-fediverse-instance-actions.md)
 - [Fediverse Instance Anatomy reference](requirements/anatomy/reference-fediverse-instance-data-model.md)
 - [Fediverse Instance Anatomy reference](requirements/anatomy/reference-fediverse-instance-list-item-card-anatomy.md)
@@ -583,8 +576,6 @@ Feature specifications, rules, and policies.
 - [Scheduled job reference](requirements/reference-scheduledjob.md)
 - [Sources / RSS Feeds](requirements/reference-sources-rss-feeds.md)
 - [Support](requirements/reference-support.md)
-- [Support contact reference](requirements/reference-supportcontact.md)
-- [Support thread reference](requirements/reference-supportthread.md)
 - [Topic Claims](requirements/reference-topic-claims.md)
 - [Topic reference](requirements/reference-topic.md)
 - [Topic recommendation reference](requirements/reference-topicrecommendation.md)

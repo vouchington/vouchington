@@ -19,7 +19,6 @@ import { accountDataRequests } from '@queues/account-data-requests/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
 import { articleSync } from '@queues/article-sync/queues'
-import { customer_support as customerSupportQueue } from '@queues/customer-support/queues'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { followerDistributions } from '@queues/follower-distributions/queues'
@@ -73,7 +72,6 @@ export default [
   bloomFilters,
   adminImports,
   articleSync,
-  customerSupportQueue,
   crawlReferralLinksQueue,
   findYourFriendsQueue,
   followerDistributions,
