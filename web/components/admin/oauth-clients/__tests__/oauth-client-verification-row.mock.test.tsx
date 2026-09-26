@@ -6,11 +6,14 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
 import type { ListResponse } from '@/types/api-responses'
 import type { AdminOAuthClientListItem } from '@/types/oauth-apps'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import { OAuthClientVerificationRow } from '../oauth-client-verification-row'
 import listFixture from '../../../../../api-fixtures/v1/responses/web.admin.oauth-clients.list.json'
 import verifyFixture from '../../../../../api-fixtures/v1/responses/web.admin.oauth-clients.verify.json'
 
 let translate!: (key: MessageKey, params?: Record<string, unknown>) => string
+
+vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => translate,
@@ -47,6 +50,7 @@ import { toast } from 'sonner'
 
 const mockVerify = vi.mocked(verifyOAuthClient)
 const mockUnverify = vi.mocked(unverifyOAuthClient)
+const mockNav = createNavMock()
 const fixtureClient = (listFixture as ListResponse<AdminOAuthClientListItem>).results[0]!
 
 function renderRow(overrides: Partial<AdminOAuthClientListItem> = {}, uiLocale = 'en-US') {
@@ -74,6 +78,7 @@ describe('OAuthClientVerificationRow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockNav.reset()
     mockVerify.mockResolvedValue(verifyFixture as Awaited<ReturnType<typeof verifyOAuthClient>>)
     mockUnverify.mockResolvedValue(undefined as never)
   })
@@ -114,6 +119,7 @@ describe('OAuthClientVerificationRow', () => {
       redirect_uris: ['https://agent.example.com/oauth/callback'],
     })
     expect(toast.success).toHaveBeenCalledWith('App verified')
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
     expect(screen.getByText(/^Verified /)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Remove verification' })).toBeEnabled()
   })
@@ -124,6 +130,7 @@ describe('OAuthClientVerificationRow', () => {
 
     expect(mockUnverify).toHaveBeenCalledWith(fixtureClient.id)
     expect(toast.success).toHaveBeenCalledWith('Verification removed')
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
     expect(screen.getByText('Unverified')).toBeInTheDocument()
   })
 
@@ -133,6 +140,7 @@ describe('OAuthClientVerificationRow', () => {
     await click('Verify')
 
     expect(toast.error).toHaveBeenCalledWith('Failed to update the verification')
+    expect(mockNav.refresh).not.toHaveBeenCalled()
     expect(screen.getByText('Unverified')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Verify' })).toBeEnabled()
   })

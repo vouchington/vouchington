@@ -45,6 +45,8 @@ accept scopes for exactly one user or admin audience, never both, and admin scop
 OAuth access tokens are the alternative MCP credential. Each grant binds to one protected resource,
 so its scopes also belong to that resource's audience; see the
 [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery).
+Only user- and admin-audience scopes accept the `oauth` surface. `rss:read` is API-key only, because
+no OAuth protected resource serves the RSS feeds.
 
 ### Scope catalogue
 

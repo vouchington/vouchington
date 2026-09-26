@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { listScopeCatalog } from '@modules/scopes'
 import { getSiteOrigin } from '@modules/utils'
 import {
   assertScopesMatchResource,
@@ -76,10 +77,16 @@ describe('OAuth protected resources', () => {
       code_challenge_methods_supported: ['S256'],
       authorization_response_iss_parameter_supported: true,
     })
+    // Registration accepts every `oauth`-surface scope, so each must be served by a protected
+    // resource or an app could register a scope it can never be authorized for.
+    expect(metadata.scopes_supported).toEqual(
+      listScopeCatalog()
+        .filter(entry => entry.surfaces.includes('oauth'))
+        .map(entry => entry.scope),
+    )
     expect(metadata.scopes_supported).toEqual(
       expect.arrayContaining(['mcp.user:read', 'mcp.user:write', 'mcp.admin:read']),
     )
-    expect(metadata.scopes_supported).toEqual([...metadata.scopes_supported].sort())
   })
 
   it('publishes protected-resource metadata scoped to one audience', () => {

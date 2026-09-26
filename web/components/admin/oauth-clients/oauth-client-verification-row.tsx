@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { BadgeCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ const CELL_CLASS = 'px-4 py-3 align-top text-sm'
 export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClientListItem }) {
   const t = useTranslations()
   const uiLocale = useUiLocale()
+  const router = useRouter()
   const [verifiedAt, setVerifiedAt] = useState(client.verified_at)
   const [busy, setBusy] = useState(false)
 
@@ -37,6 +39,8 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
         setVerifiedAt(oauth_client.verified_at)
         onSuccess(t('extracted.oauthClients.oauthClientVerificationRow.appVerified_ced56e60'))
       }
+      // The page lists one verification filter, so re-fetch it to drop a row that left it.
+      router.refresh()
     } catch (error) {
       onError(error, {
         fallback: t(

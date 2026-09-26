@@ -92,7 +92,7 @@ describe('toggleScope', () => {
 
 describe('oauthScopeAudiences', () => {
   it('offers admin scopes only to administrators', () => {
-    expect(oauthScopeAudiences(false)).toEqual(['user', 'api'])
-    expect(oauthScopeAudiences(true)).toEqual(['user', 'api', 'admin'])
+    expect(oauthScopeAudiences(false)).toEqual(['user'])
+    expect(oauthScopeAudiences(true)).toEqual(['user', 'admin'])
   })
 })

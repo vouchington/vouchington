@@ -61,31 +61,24 @@ describe('validateScopeSet', () => {
 
   it('allows OAuth grants to combine resource audiences', () => {
     expect(
-      validateScopeSet(['rss:read', 'mcp.user:read'], {
+      validateScopeSet(['mcp.user:read', 'mcp.admin:read'], {
         surface: 'oauth',
         allowMixedAudiences: true,
       }),
     ).toEqual({
       valid: true,
-      scopes: ['mcp.user:read', 'rss:read'],
-      audiences: ['api', 'user'],
+      scopes: ['mcp.admin:read', 'mcp.user:read'],
+      audiences: ['admin', 'user'],
     })
   })
 
   it('rejects a catalogue scope on an unsupported credential surface', () => {
-    const definition = SCOPE_DEFINITIONS['rss:read']
-    const originalSurfaces = definition.surfaces
-    try {
-      Reflect.set(definition, 'surfaces', ['oauth'])
-      expect(
-        validateScopeSet(['rss:read'], {
-          surface: 'api-key',
-          allowMixedAudiences: false,
-        }),
-      ).toEqual({ valid: false, code: 'unsupported-surface', scope: 'rss:read' })
-    } finally {
-      Reflect.set(definition, 'surfaces', originalSurfaces)
-    }
+    expect(
+      validateScopeSet(['rss:read'], {
+        surface: 'oauth',
+        allowMixedAudiences: true,
+      }),
+    ).toEqual({ valid: false, code: 'unsupported-surface', scope: 'rss:read' })
   })
 
   it('declares canonical resource scopes with audience and prerequisites', () => {
