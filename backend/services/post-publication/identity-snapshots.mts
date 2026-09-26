@@ -11,7 +11,6 @@ export {
   isPostPublicationTypedProtocolActive,
   activatePostPublicationTypedProtocol,
 } from './identity-protocol.mts'
-export type { PublicationSnapshotKey } from './identity-source.mts'
 
 export const POST_PUBLICATION_IDENTITY_SNAPSHOT_PAGE_SIZE = 100
 type SnapshotPost = { id: string; eligibility_fingerprint: string; is_public: boolean }
