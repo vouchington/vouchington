@@ -1,4 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 
 const GIT_WORKTREE_OVERRIDE_ENV = new Set([
   'GIT_DIR',
@@ -110,10 +112,10 @@ export function gitHeadPathExists(cwd: string, relativePath: string): boolean {
 // Hook failures are advisory: preserve the existing behavior of warning only when oxfmt ran and
 // reported a non-zero exit status, while ignoring spawn errors.
 export function oxfmtFailure(cwd: string, filePath: string): string | undefined {
-  const result = spawnSync('pnpm', ['exec', 'oxfmt', filePath], {
-    cwd,
-    encoding: 'utf8',
-  })
+  const localBin = join(cwd, 'node_modules', '.bin', 'oxfmt')
+  const result = existsSync(localBin)
+    ? spawnSync('pnpm', ['exec', 'oxfmt', filePath], { cwd, encoding: 'utf8' })
+    : spawnSync('oxfmt', [filePath], { cwd, encoding: 'utf8' })
   return result.error != null || result.status === 0 ? undefined : (result.stderr ?? '').trim()
 }
 

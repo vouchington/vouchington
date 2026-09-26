@@ -10,6 +10,7 @@ import {
   gitHeadPathExists,
   gitIsAncestor,
   gitRemoteVerbose,
+  oxfmtFailure,
 } from '../../codex-hooks/local-process.mts'
 import { git, withRepo } from '../git-remote-repo.mts'
 import { withTestTempDir } from '../test-temp-root.mts'
@@ -61,6 +62,13 @@ describe('codex hook local process boundary', () => {
       git(dir, 'commit', '-q', '-m', 'package')
       expect(gitHeadPathExists(dir, 'package.json')).toBe(true)
       expect(gitHeadPathExists(dir, 'missing.json')).toBe(false)
+    })
+  })
+
+  it('fails open when oxfmt is unavailable', async () => {
+    await withTestTempDir('voucha-local-process-', async dir => {
+      vi.stubEnv('PATH', '')
+      expect(oxfmtFailure(dir, join(dir, 'missing.yml'))).toBeUndefined()
     })
   })
 })
