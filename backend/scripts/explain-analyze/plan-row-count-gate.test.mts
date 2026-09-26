@@ -45,46 +45,6 @@ describe('assertPlanReturnedRows', () => {
     expect(() => assertPlanReturnedRows(populated)).not.toThrow()
   })
 
-  it('allows the unavailable support-draft reservation only with indexed support-message row evidence', () => {
-    const unavailableReservation = result(
-      'support-draft-generation-reservation',
-      'INSERT INTO runs',
-      {
-        Plan: {
-          'Node Type': 'ModifyTable',
-          'Actual Rows': 0,
-          Plans: [
-            {
-              'Node Type': 'Index Scan',
-              'Relation Name': 'support_messages',
-              'Index Name': 'uq_support_messages__thread_id',
-              'Actual Rows': 1,
-            },
-          ],
-        },
-      },
-    )
-    expect(() => assertPlanReturnedRows(unavailableReservation)).not.toThrow()
-  })
-
-  it('rejects an unavailable support-draft reservation without real indexed support-message rows', () => {
-    const noIndexedRows = result('support-draft-generation-reservation', 'INSERT INTO runs', {
-      Plan: {
-        'Node Type': 'ModifyTable',
-        'Actual Rows': 0,
-        Plans: [
-          {
-            'Node Type': 'Index Scan',
-            'Relation Name': 'support_messages',
-            'Index Name': 'uq_support_messages__thread_id',
-            'Actual Rows': 0,
-          },
-        ],
-      },
-    })
-    expect(() => assertPlanReturnedRows(noIndexedRows)).toThrow('no analyzable plan')
-  })
-
   it('allows a RETURNING-bearing write whose root node reports rows written', () => {
     const upsertWithReturning = result('topic-rating-stats', 'INSERT INTO topic_metrics', {
       Plan: {

@@ -147,31 +147,3 @@ export async function clearConversationLastResponseIdIfMatches(
   `)
   return rowCount === 1
 }
-
-export async function getConversationByIdForAgent(
-  id: string,
-  systemUserId: string,
-): Promise<Conversation | null> {
-  const { rows } = await read(sql`/* getConversationByIdForAgent */
-    SELECT
-      c.id,
-      c.channel_type,
-      c.title,
-      c.created_at,
-      c.created_by_id,
-      c.updated_at,
-      c.updated_by_id,
-      c.deleted_at,
-      c.deleted_by_id,
-      c.last_response_id
-    FROM conversations c
-    JOIN conversation_messages cm
-      ON cm.conversation_id = c.id
-      AND cm.created_by_id = ${systemUserId}
-      AND cm.deleted_at IS NULL
-    WHERE c.id = ${id}
-      AND c.deleted_at IS NULL
-    LIMIT 1
-  `)
-  return rows[0] || null
-}

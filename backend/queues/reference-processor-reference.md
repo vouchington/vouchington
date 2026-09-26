@@ -24,8 +24,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | ai_agents                                    | chat                                           | —                                         | 1                |
 | ai_agents                                    | moderation-prompt                              | —                                         | 3                |
 | ai_agents                                    | community-moderation-prompt                    | —                                         | 3                |
-| ai_agents                                    | customer-support                               | —                                         | 5                |
-| ai_agents                                    | reconcile-member-support-agent-intents         | —                                         | 100              |
 | ai_agents                                    | moderation-dispatcher                          | —                                         | 8                |
 | ai_agents                                    | community-moderation-dispatcher                | —                                         | 8                |
 | ai_agents                                    | story-clustering                               | —                                         | 15               |
@@ -68,7 +66,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | emails                                       | processSendPostReferralLinkEmail               | —                                         | 10               |
 | emails                                       | processSendFollowNewsSourcesEmail              | —                                         | 10               |
 | emails                                       | processSendCommunityModerationSummaryEmail     | —                                         | 10               |
-| emails                                       | processSendSupportEmail                        | —                                         | 10               |
 | entity-listeners                             | processUserCreated                             | —                                         | 10               |
 | entity-listeners                             | processAutoFollowReferrer                      | —                                         | 10               |
 | entity-listeners                             | processUserLoggedIn                            | —                                         | 10               |
@@ -163,7 +160,6 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | vote-integrity                               | processVoteIntegrityCheck                      | —                                         | 10               |
 | vote-weight                                  | processRecalculateVoteWeightDispatcher         | —                                         | 100              |
 | vote-weight                                  | processRecalculateUserVoteWeight               | —                                         | 10               |
-| customer_support                             | embedSupportMessage                            | —                                         | 10               |
 | bluesky-follow-propagation                   | reconcileFollow                                | —                                         | 10               |
 | bluesky-follow-propagation                   | backfillBlueskyFollowPropagation               | —                                         | 100              |
 | bluesky-follow-propagation                   | disconnectRequested                            | —                                         | 10               |

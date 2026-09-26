@@ -4,7 +4,6 @@ import { processSendEmailAddressLoginToken } from './authentication.mts'
 import { processSendCommunityInviteEmail } from './community-invite.mts'
 import { processSendDataExportReadyEmail } from './data-export-ready.mts'
 import { processSendEmailVerificationToken } from './email-verification.mts'
-import { processSendSupportEmail } from './support-email.mts'
 
 describe('processSendEmailAddressLoginToken', () => {
   beforeEach(() => {
@@ -106,56 +105,6 @@ describe('processSendDataExportReadyEmail', () => {
         subject: 'Votre export de données est prêt',
         html: expect.stringContaining('Télécharger vos données'),
         text: expect.stringContaining("L'équipe Voucha"),
-      }),
-    )
-  })
-})
-
-describe('processSendSupportEmail', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
-  })
-
-  it('renders support reply email and sends via SES', async () => {
-    await processSendSupportEmail(
-      { emailAddress: 'tests+user@voucha.ai' },
-      { bodyText: 'Thank you for contacting support.' },
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        to: 'tests+user@voucha.ai',
-        subject: expect.any(String),
-        html: expect.any(String),
-        text: expect.any(String),
-      }),
-    )
-  })
-
-  it('uses custom subject when provided', async () => {
-    await processSendSupportEmail(
-      { emailAddress: 'tests+user@voucha.ai' },
-      { bodyText: 'Reply here.', subject: 'Re: Your ticket #42' },
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subject: 'Re: Your ticket #42',
-      }),
-    )
-  })
-
-  it('renders support reply shell copy with the input locale', async () => {
-    await processSendSupportEmail(
-      { emailAddress: 'tests+user@voucha.ai', uiLocale: 'es' },
-      { bodyText: 'Reply here.' },
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subject: 'Re: Tu solicitud de soporte',
-        text: expect.stringContaining('- El equipo de soporte de Voucha'),
       }),
     )
   })

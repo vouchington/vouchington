@@ -20,7 +20,6 @@ export const EMAIL_CLASSIFICATIONS: Record<EmailType, EmailClassificationEntry> 
   processSendEmailAddressLoginToken: { classification: 'transactional' },
   processSendDataExportReadyEmail: { classification: 'transactional' },
   processSendEmailVerificationToken: { classification: 'transactional' },
-  processSendSupportEmail: { classification: 'transactional' },
   processSendWelcomeEmail: { classification: 'transactional' },
   processSendCommunityApplicationDecisionEmail: { classification: 'transactional' },
   processSendCommunityRoleChangeEmail: { classification: 'transactional' },

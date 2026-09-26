@@ -14,7 +14,7 @@ Admin runtime configuration endpoints backed by Valkey `DynamicConfig` namespace
 ## Authorization
 
 Administrators can view and update every namespace. The common viewer roles are `moderator`,
-`developer`, `customer_support`, and `investor`. Namespace entries define `update_roles`; response
+`developer` and `investor`. Namespace entries define `update_roles`; response
 objects expose `can_update` so clients can render the correct read-only or editable surface.
 
 ## PATCH Body

@@ -12,20 +12,15 @@ import { createCriticalModerationAlertNotification } from './create-critical-mod
 import { listNotifications } from './list.mts'
 
 describe('createCriticalModerationAlertNotification', () => {
-  it('notifies all administrators, customer_support, and moderator users', async () => {
-    const [admin, cs, mod, regular, postOwner, reporter] = await Promise.all([
+  it('notifies all administrators and moderator users', async () => {
+    const [admin, mod, regular, postOwner, reporter] = await Promise.all([
       createTestUserDirect({ username: safeUsername('cman-admin') }),
-      createTestUserDirect({ username: safeUsername('cman-cs') }),
       createTestUserDirect({ username: safeUsername('cman-mod') }),
       createTestUserDirect({ username: safeUsername('cman-regular') }),
       createTestUserDirect({ username: safeUsername('cman-owner') }),
       createTestUserDirect({ username: safeUsername('cman-reporter') }),
     ])
-    await Promise.all([
-      addUserRole(admin!.id, 'administrator'),
-      addUserRole(cs!.id, 'customer_support'),
-      addUserRole(mod!.id, 'moderator'),
-    ])
+    await Promise.all([addUserRole(admin!.id, 'administrator'), addUserRole(mod!.id, 'moderator')])
 
     const postId = await insertTestPost({
       createdById: postOwner!.id,
@@ -42,17 +37,13 @@ describe('createCriticalModerationAlertNotification', () => {
 
     await createCriticalModerationAlertNotification(reportId)
 
-    const [adminNotifs, csNotifs, modNotifs, regularNotifs] = await Promise.all([
+    const [adminNotifs, modNotifs, regularNotifs] = await Promise.all([
       listNotifications(admin!.id),
-      listNotifications(cs!.id),
       listNotifications(mod!.id),
       listNotifications(regular!.id),
     ])
 
     const adminAlert = Object.values(adminNotifs.notifications).find(
-      n => n.entity_type === 'critical_moderation_alert' && n.moderation_report_id === reportId,
-    )
-    const csAlert = Object.values(csNotifs.notifications).find(
       n => n.entity_type === 'critical_moderation_alert' && n.moderation_report_id === reportId,
     )
     const modAlert = Object.values(modNotifs.notifications).find(
@@ -63,7 +54,6 @@ describe('createCriticalModerationAlertNotification', () => {
     )
 
     expect(adminAlert).toBeDefined()
-    expect(csAlert).toBeDefined()
     expect(modAlert).toBeDefined()
     expect(regularAlert).toBeUndefined()
 

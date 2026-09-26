@@ -26,7 +26,6 @@ import searchDataPointsTool from '../search-data-points.mts'
 import searchPostsSemanticTool from '../search-posts-semantic.mts'
 import searchPostsTool from '../search-posts.mts'
 import searchRssFeedItemsTool from '../search-rss-feed-items.mts'
-import searchSupportMessagesTool from '../search-support-messages.mts'
 import searchTopicsSemanticTool from '../search-topics-semantic.mts'
 import searchTopicsTextTool from '../search-topics-text.mts'
 import searchTopicsTool from '../search-topics.mts'
@@ -63,7 +62,6 @@ export const ALL_TOOLS: readonly Tool[] = [
   searchPostsSemanticTool,
   searchPostsTool,
   searchRssFeedItemsTool,
-  searchSupportMessagesTool,
   searchTopicsSemanticTool,
   searchTopicsTextTool,
   searchTopicsTool,

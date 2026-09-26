@@ -27,10 +27,10 @@ function makeUser(roles: string[]): DynamicConfigUser {
 }
 
 describe('DYNAMIC_CONFIG_VIEWER_ROLES', () => {
-  it('includes moderator, developer, customer_support, and investor', () => {
+  it('includes moderator, developer, and investor', () => {
     expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('moderator')
     expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('developer')
-    expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('customer_support')
+    expect(DYNAMIC_CONFIG_VIEWER_ROLES).not.toContain('customer_support')
     expect(DYNAMIC_CONFIG_VIEWER_ROLES).toContain('investor')
   })
 })

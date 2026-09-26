@@ -41,18 +41,6 @@ export type CommunityModerationPromptJobData = {
   promptId: string
 }
 
-export type CustomerSupportJobData =
-  | {
-      threadId: string
-      idempotencyKey?: never
-      supportMessageId?: never
-    }
-  | {
-      threadId: string
-      idempotencyKey: string
-      supportMessageId: string
-    }
-
 export type StoryClusteringJobData = {
   rss_feed_item_id: string
   embedding_retries?: number
@@ -115,7 +103,6 @@ export type AIAgentJobData = (
   | ModerationPromptJobData
   | CommunityModerationDispatcherJobData
   | CommunityModerationPromptJobData
-  | CustomerSupportJobData
   | ReportJudgementJobData
   | DisputeResolutionJobData
   | AppealResolutionJobData

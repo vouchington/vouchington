@@ -6,15 +6,8 @@ A development tool for profiling SQL query plans across key service queries.
 
 ### 1. Seed test data
 
-Inserts representative rows across core tables (users, topics, posts, rss_feeds, etc.) plus two
-deterministic support threads with exactly 100,000 alternating inbound/outbound messages each. The
-target thread spaces its UUIDv7 IDs widely; the distractor thread clusters 50,000 IDs at each of
-the target's middle and latest-inbound boundaries, making a primary-key scan discard tens of
-thousands of rows where the target composite `(support_thread_id, id)` index should seek directly.
-Both threads use empty plain text and a minimal valid HTML body, so their generated search vectors
-and GIN entries are empty. Seeded UUIDs use the fixed `019e0000-` prefix for easy identification.
-Idempotent re-runs remove obsolete owned distractor IDs and only rewrite an existing seed row when
-its lean body fields differ.
+Inserts representative rows across core tables (users, topics, posts, rss_feeds, etc.). Seeded UUIDs
+use the fixed `019e0000-` prefix for easy identification.
 
 ```bash
 pnpm run explain:seed
@@ -195,11 +188,6 @@ primary id query — the feed (`GET /api/v1/feeds/posts/:feed_type`), post detai
 - `getUserProfileMetricsByAny` — per-profile metrics; fans out to `getUserMetricsRowByAny` and
   `countUserMemberCommunities` (the post-facet and bookmark-count sub-queries are already covered
   by the search and metrics scenarios)
-
-**Support messages** (`run-scenarios/support-messages.mts`): the newest page, `after` and
-inclusive at-or-before ID boundaries, staff-draft reservation, and keyed agent-run finalization.
-These five scenarios retain only their annotated support-message SQL so incidental thread locks and
-receipt queries do not affect the UUIDv7 index-order gate.
 
 **User search** (`run-scenarios/entities-and-communities.mts`): `searchUsers` / `searchAdminUsers` —
 public and admin user search (prefix match and admin UUID lookup). The two admin scenario

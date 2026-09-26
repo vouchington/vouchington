@@ -8,6 +8,7 @@ const workflowPaths = readdirSync('.github/workflows')
       'fix-dependabot.yml',
       'fix-issue.yml',
       'fix-main.yml',
+      'merge-queue-ejection.yml',
       'plan.yml',
       'scheduled-prompts.yml',
       'shepherd.yml',
@@ -19,7 +20,7 @@ const yamlByPath = new Map(workflowPaths.map(path => [path, readFileSync(path, '
 const outputWriter = readFileSync('ci/write-github-multiline-output.sh', 'utf8')
 
 describe('automation output writers', () => {
-  it('reuses the prompt renderer action at all six render sites', () => {
+  it('reuses the prompt renderer action at all seven render sites', () => {
     const uses = workflowPaths.flatMap(
       path =>
         yamlByPath
@@ -27,7 +28,7 @@ describe('automation output writers', () => {
           ?.match(/uses: jonathanong\/auto-harness\/actions\/harness-render-prompt@/g) ?? [],
     )
 
-    expect(uses).toHaveLength(6)
+    expect(uses).toHaveLength(7)
   })
 
   it('keeps delimiter generation and prompt rendering out of workflow YAML', () => {

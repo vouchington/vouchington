@@ -10,7 +10,6 @@ export * from './follow-topics-renderer.mts'
 export * from './login-token-renderer.mts'
 export * from './post-referral-link-renderer.mts'
 export * from './renewal-price-increase-renderer.mts'
-export * from './support-reply-renderer.mts'
 export * from './welcome-renderer.mts'
 export type {
   CommunityApplicationDecisionEmailProps,
@@ -27,6 +26,5 @@ export type {
   LoginTokenEmailProps,
   PostReferralLinkEmailProps,
   RenewalPriceIncreaseEmailProps,
-  SupportReplyEmailProps,
   WelcomeEmailProps,
 } from './types.mts'

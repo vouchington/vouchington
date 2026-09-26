@@ -86,7 +86,8 @@ describe('POST /api/v1/admin/mcp', () => {
       .expect(200)
 
     const body = response.body as { result?: { tools?: Array<{ name?: string }> } }
-    expect(body.result?.tools?.map(tool => tool.name)).toContain('search_support_messages')
+    expect(body.result?.tools).toBeDefined()
+    expect(body.result?.tools?.map(tool => tool.name)).not.toContain('search_support_messages')
   })
 
   it('accepts a case-insensitive bearer authorization scheme', async () => {

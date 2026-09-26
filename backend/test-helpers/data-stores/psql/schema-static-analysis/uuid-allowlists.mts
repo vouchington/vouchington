@@ -126,30 +126,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Lifecycle ownership FK; survives moderator deletion as audit record.',
   ],
   [
-    'support_message_lifecycle_changes.approved_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
-    'support_message_lifecycle_changes.changed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
-    'support_message_lifecycle_changes.edited_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
-    'support_thread_lifecycle_changes.assigned_to_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
-    'support_thread_lifecycle_changes.changed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
-    'support_thread_lifecycle_changes.resolved_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
-  [
     'user_deletion_audit_logs.requested_by_id',
     'Compliance audit records intentionally survive user deletion.',
   ],

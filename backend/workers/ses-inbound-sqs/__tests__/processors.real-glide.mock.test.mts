@@ -73,11 +73,11 @@ describe('processSesInboundSqsMessage', () => {
 
   it('enqueues the correctly-derived job and acks (deletes) the SQS message', async () => {
     const sesMessageId = `ses-${randomUUID()}`
-    const objectKey = `incoming/${sesMessageId}`
+    const objectKey = `copyright-incoming/${sesMessageId}`
     const jobId = getSesInboundProcessJobOptions({
       sesMessageId,
       objectKey,
-      intakeKind: 'support',
+      intakeKind: 'copyright',
     }).jobId
     createdJobIds.push(jobId)
     const message = s3EventMessage([objectCreatedRecord(objectKey)])
@@ -99,17 +99,17 @@ describe('processSesInboundSqsMessage', () => {
     const job = await sesInboundQueue.getJob(jobId)
     expect(job).toMatchObject({
       name: 'processInboundEmail',
-      data: { sesMessageId, objectKey, intakeKind: 'support' },
+      data: { sesMessageId, objectKey, intakeKind: 'copyright' },
     })
   })
 
   it('deduplicates redelivery of the same message so only one job lands', async () => {
     const sesMessageId = `ses-${randomUUID()}`
-    const objectKey = `incoming/${sesMessageId}`
+    const objectKey = `copyright-incoming/${sesMessageId}`
     const jobId = getSesInboundProcessJobOptions({
       sesMessageId,
       objectKey,
-      intakeKind: 'support',
+      intakeKind: 'copyright',
     }).jobId
     createdJobIds.push(jobId)
     const message = s3EventMessage([objectCreatedRecord(objectKey)])
@@ -154,7 +154,7 @@ describe('processSesInboundSqsMessage', () => {
   it('throws on an unexpected S3 bucket name', async () => {
     await expect(
       processSesInboundSqsMessage(
-        s3EventMessage([objectCreatedRecord('incoming/msg', 'wrong-bucket')]),
+        s3EventMessage([objectCreatedRecord('copyright-incoming/msg', 'wrong-bucket')]),
       ),
     ).rejects.toMatchObject({ status: 422 })
   })

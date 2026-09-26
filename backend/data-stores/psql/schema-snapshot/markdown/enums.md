@@ -152,7 +152,6 @@
 ## `conversation_channel_types`
 
 - `chat`
-- `customer_support`
 - `direct_message`
 - `modmail`
 - `mod_internal`
@@ -646,24 +645,6 @@
 
 - `monthly`
 - `annually`
-
-## `support_message_directions`
-
-- `inbound`
-- `outbound`
-
-## `support_message_lifecycle_change_types`
-
-- `create_draft`
-- `edit_draft`
-- `approve`
-- `send`
-
-## `support_thread_lifecycle_change_types`
-
-- `assign`
-- `resolve`
-- `reopen`
 
 ## `topic_claim_verification_methods`
 

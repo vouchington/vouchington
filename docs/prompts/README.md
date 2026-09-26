@@ -12,7 +12,8 @@ Automation prompt text lives here so workflow YAML stays focused on triggers, pe
 
 Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. Render them with [ci/render-harness-prompt.mts](../../ci/render-harness-prompt.mts), passing short values with `--var NAME=value` and multiline or user-provided values with `--var-file NAME=path`.
 
-The main-branch fix template is [fix-main.md](automation/fix-main.md). Scheduled runs use the
+The main-branch fix template is [fix-main.md](automation/fix-main.md), and merge-queue ejections
+are triaged with [merge-queue-ejection.md](automation/merge-queue-ejection.md). Scheduled runs use the
 [scheduled prompt template](automation/scheduled-prompt.md) or the
 [scheduled issue template](automation/scheduled-issue.md), depending on the selected prompt scope.
 Scheduled prompt references include [supply-chain security](scheduled/supply-chain-security.md)

@@ -170,14 +170,6 @@
     },
     {
       "action": "read",
-      "audience": "admin",
-      "requires": null,
-      "resource": "support-messages",
-      "scope": "support-messages:read",
-      "surfaces": ["api-key", "oauth"]
-    },
-    {
-      "action": "read",
       "audience": "user",
       "requires": null,
       "resource": "topics",

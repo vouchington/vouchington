@@ -41,6 +41,7 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/fix-issue.yml': retained(['event']),
   '.github/workflows/fix-main.yml': cancelling(['event', 'sha']),
   '.github/workflows/fix-main-self-retry.yml': retained(['run']),
+  '.github/workflows/merge-queue-ejection.yml': retained(['pull-request', 'sha']),
   '.github/workflows/plan.yml': retained(['event']),
   '.github/workflows/shepherd.yml': retained(['event']),
   '.github/workflows/scheduled-prompts.yml': retained(['event', 'input-resource', 'sha']),

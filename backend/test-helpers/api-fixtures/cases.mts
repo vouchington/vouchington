@@ -10,14 +10,12 @@ import { nativeSpendingCategoryApiFixtureCases } from './native-spending-categor
 import { nativeRewardsStatusApiFixtureCases } from './native-rewards-status-cases.mts'
 import { nativeHouseholdPaginationApiFixtureCases } from './native-household-pagination-cases.mts'
 import { nativeAccountPaginationApiFixtureCases } from './native-account-pagination-cases.mts'
-import { nativeAgentConversationApiFixtureCases } from './native-agent-conversation-cases.mts'
 import { nativeCommentThreadApiFixtureCases } from './native-comment-thread-cases.mts'
 import { nativeCommentAncestorPaginationApiFixtureCases } from './native-comment-ancestor-pagination-cases.mts'
 import { nativeLandingPageApiFixtureCases } from './native-landing-page-cases.mts'
 import { nativeListApiFixtureCases } from './native-list-cases.mts'
 import { nativeAiCostApiFixtureCases } from './native-ai-cost-cases.mts'
 import { nativeMessageApiFixtureCases } from './native-message-cases.mts'
-import { nativeStaffSupportApiFixtureCases } from './native-staff-support-cases.mts'
 import { nativeMembershipApiFixtureCases } from './native-membership-cases.mts'
 import { nativeImportExportApiFixtureCases } from './native-import-export-cases.mts'
 import { nativeModerationApiFixtureCases } from './native-moderation-cases.mts'
@@ -93,10 +91,6 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ),
   ...fromCaseFile('backend/test-helpers/api-fixtures/web-cases.mts', webApiFixtureCases),
   ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-agent-conversation-cases.mts',
-    nativeAgentConversationApiFixtureCases,
-  ),
-  ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-tags-bookmarks-cases.mts',
     nativeTagsBookmarksApiFixtureCases,
   ),
@@ -121,10 +115,6 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-message-cases.mts',
     nativeMessageApiFixtureCases,
-  ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-staff-support-cases.mts',
-    nativeStaffSupportApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-membership-cases.mts',

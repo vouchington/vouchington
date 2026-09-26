@@ -1,6 +1,5 @@
 export * from './single/request.mts'
 export * from './single/topics.mts'
-export * from './single/support-messages.mts'
 export * from './lookup.mts'
 export * from './single/index.mts'
 export * from './check.mts'

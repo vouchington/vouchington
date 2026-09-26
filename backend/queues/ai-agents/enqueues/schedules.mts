@@ -8,7 +8,6 @@ import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
 import { enqueueReconcileChatRuntimeGenerations } from './reconcile-chat-runtime-generations.mts'
-import { enqueueReconcileMemberSupportAgentIntents } from './reconcile-member-support-agent-intents.mts'
 import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
 
 function reconcilerOptions(name: keyof typeof AGENT_PRIORITY): JobOptions {
@@ -72,24 +71,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
         schedule: '*/5 * * * *',
         description: 'Fail stale hosted-chat generations after an interrupted worker',
         trigger: enqueueReconcileChatRuntimeGenerations,
-      },
-    ],
-  },
-  {
-    schedulerId: 'reconcileMemberSupportAgentIntents',
-    repeat: { pattern: '*/5 * * * *' },
-    template: {
-      name: 'reconcile-member-support-agent-intents',
-      data: {},
-      opts: () => reconcilerOptions('reconcile-member-support-agent-intents'),
-    },
-    operatorSurfaces: [
-      {
-        kind: 'scheduled-jobs',
-        id: 'reconcileMemberSupportAgentIntents',
-        schedule: '*/5 * * * *',
-        description: 'Re-enqueue member-created support drafts after post-commit enqueue failures',
-        trigger: enqueueReconcileMemberSupportAgentIntents,
       },
     ],
   },

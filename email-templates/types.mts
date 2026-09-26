@@ -71,11 +71,6 @@ export type CommunityOwnershipTransferEmailProps = LocalizedEmailProps & {
   recipientRole: 'new_owner' | 'previous_owner'
 }
 
-export type SupportReplyEmailProps = LocalizedEmailProps & {
-  bodyText: string
-  subject?: string
-}
-
 export type FollowTopicsEmailProps = LocalizedEmailProps & {
   userName?: string
   topics: {

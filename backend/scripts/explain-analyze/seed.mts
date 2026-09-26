@@ -61,7 +61,6 @@ import {
   seedUsers,
 } from './seed-data/core.mts'
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
-import { seedSupportMessages } from './seed-data/support-messages.mts'
 import {
   seedMembershipRefunds,
   seedMemberships,
@@ -131,7 +130,6 @@ async function main() {
   await seedAnchorPostReviewTopicRating()
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
-  await seedSupportMessages()
   await checkpointSeed('final writes')
   await runAnalyze()
   await printRowCounts()

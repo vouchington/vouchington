@@ -24,7 +24,6 @@ export type ApiScope =
   | 'rss:read'
   | 'spending:read'
   | 'spending:write'
-  | 'support-messages:read'
   | 'topics:read'
   | 'wikipedia:read'
 
@@ -99,21 +98,10 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     resource: 'rss',
     surfaces: ['api-key', 'oauth'],
   },
-  'support-messages:read': {
-    action: 'read',
-    audience: 'admin',
-    resource: 'support-messages',
-    surfaces: ['api-key', 'oauth'],
-  },
   ...(userResourceDefinitions() as Record<
     Exclude<
       ApiScope,
-      | 'mcp.admin:read'
-      | 'mcp.admin:write'
-      | 'mcp.user:read'
-      | 'mcp.user:write'
-      | 'rss:read'
-      | 'support-messages:read'
+      'mcp.admin:read' | 'mcp.admin:write' | 'mcp.user:read' | 'mcp.user:write' | 'rss:read'
     >,
     ScopeDefinition
   >),

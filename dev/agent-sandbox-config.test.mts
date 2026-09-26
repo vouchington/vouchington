@@ -190,6 +190,14 @@ describe('agent sandbox configuration', () => {
     expect(codexRules).toContain(codexRuleFor(['ps', 'aux']))
   })
 
+  it('grants macOS /tmp and /var write roots under their resolved /private paths too', () => {
+    const allowWrite = claudeSettings.sandbox.filesystem.allowWrite
+    const symlinkedRoots = allowWrite.filter(root => /^\/(?:tmp|var)(?:\/|$)/u.test(root))
+
+    expect(symlinkedRoots).toContain('/tmp')
+    for (const root of symlinkedRoots) expect(allowWrite).toContain(`/private${root}`)
+  })
+
   it('allows the pnpm install and test families across the Claude sandbox and Codex', () => {
     const excludedCommands = claudeSettings.sandbox.excludedCommands
     for (const command of ['pnpm install', 'pnpm test']) {

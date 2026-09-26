@@ -165,7 +165,7 @@ describe('Auto Harness caller secret forwarding', () => {
       path => path !== workflowPath && readFileSync(path, 'utf8').includes(`uses: ${calleeRef}`),
     )
     expect(harnessCallerPaths.sort()).toEqual(textualCallerPaths.sort())
-    expect(harnessCallerPaths.flatMap(callerJobs)).toHaveLength(6)
+    expect(harnessCallerPaths.flatMap(callerJobs)).toHaveLength(7)
   })
 
   it('never forwards secrets via `secrets: inherit` to harness-dispatch.yml', () => {

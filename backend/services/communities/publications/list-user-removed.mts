@@ -14,8 +14,6 @@ import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import { buildUserRemovedPostsQuery } from './list-user-removed-query.mts'
 
-export { buildUserRemovedPostsQuery } from './list-user-removed-query.mts'
-
 export type UserRemovedCommunityPost = {
   post_id: string
   post_title: string | null

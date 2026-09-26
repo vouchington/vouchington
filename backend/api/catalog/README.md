@@ -6,7 +6,6 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../bluesky/README.md`](../bluesky/README.md)
 - [`../v1/admin/growth-metrics/README.md`](../v1/admin/growth-metrics/README.md)
 - [`../v1/admin/rss-feed-categories/README.md`](../v1/admin/rss-feed-categories/README.md)
-- [`../v1/admin/support/README.md`](../v1/admin/support/README.md)
 - [`../v1/appeals/README.md`](../v1/appeals/README.md)
 - [`../v1/availability/README.md`](../v1/availability/README.md)
 - [`../v1/blacklist/README.md`](../v1/blacklist/README.md)

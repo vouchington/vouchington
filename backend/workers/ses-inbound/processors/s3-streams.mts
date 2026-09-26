@@ -1,7 +1,7 @@
 import { Readable, Transform } from 'node:stream'
 import { SesInboundTerminalError } from './mime.mts'
 
-export const MAX_SES_INBOUND_BYTES = 40 * 1024 * 1024
+const MAX_SES_INBOUND_BYTES = 40 * 1024 * 1024
 
 export function boundedBodyStream(body: unknown): Readable {
   if (!isAsyncIterable(body)) {

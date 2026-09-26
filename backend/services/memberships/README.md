@@ -219,7 +219,7 @@ creates a fresh append-only projection and reactivation outbox.
 
 - View: own or admin
 - Grant/history: admin only
-- Refund: admin or customer_support
+- Refund: admin only
 
 ## Related
 

@@ -79,7 +79,6 @@ const expectedParameters = {
   'GET:/api/v1/posts/:id/votes': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/ancestors': ['after', 'limit'],
   'GET:/api/v1/posts/:idOrSlug/descendants': ['after', 'limit'],
-  'GET:/api/v1/posts/:postId/agents/:agentId/responses': ['after', 'limit'],
   'GET:/api/v1/rss-feed-items': [
     'after',
     'category_topic',
@@ -119,10 +118,6 @@ const expectedParameters = {
     'topics',
   ],
   'GET:/api/v1/rss-feeds/:id/crawls': ['after', 'limit'],
-  'GET:/api/v1/support/contacts': ['after', 'limit', 'q'],
-  'GET:/api/v1/support/contacts/:contactId': ['after', 'limit'],
-  'GET:/api/v1/support/threads': ['after', 'limit', 'q', 'status'],
-  'GET:/api/v1/support/threads/:threadId/messages': ['after', 'limit'],
   'GET:/api/v1/topic-recommendations/top-hashtags': ['after', 'limit', 'mapping', 'q'],
   'GET:/api/v1/topics': [
     'after',

@@ -21,20 +21,6 @@ and [Background Response Sweeper](../../queues/ai-agents/README.md#background-re
 terminalizing their matching conversation runs. It contains no standalone agent-response or pub/sub
 path; A6 owns removal once hosted chat is retired.
 
-Keyed inbound-email `customer-support` jobs carry their triggering message ID and claim the unique
-`support_agent_runs.idempotency_key` before model execution. The run's `started_at` is a four-minute
-lease, shorter than the worker lock. A stable retry atomically reclaims failed or expired work with
-the same run ID and cleared failure state; completed runs remain terminal. Draft creation/reuse and
-run completion commit in one PostgreSQL transaction, with the persisted draft body authoritative.
-Keyed failures are rethrown after recording so the configured three GlideMQ attempts execute, and
-the SES reconciler retries matching retained failed jobs from durable PostgreSQL intent.
-
-Member-created `customer-support` drafts also persist a keyed `support_agent_runs` intent before
-their post-commit enqueue. The five-minute `reconcile-member-support-agent-intents` job pages
-unfinished `member_thread` intents and delegates their exact `{ threadId, supportMessageId,
-idempotencyKey }` payload to `enqueueOrRetryBulkCustomerSupport`; GlideMQ deduplication and the
-run's keyed claim make recovery safe after a process crash or retained terminal failure.
-
 Copyright appeal jobs persist bounded `confirm`, `modify`, `reverse`, or `uncertain` advice using
 the immutable appeal receipt and a minimal notice/restriction summary. Their processor has no path
 that changes material availability: a moderator must review the stored recommendation and make any

@@ -10,7 +10,7 @@ import type {
   loadSesInboundObjectVersion,
 } from './s3.mts'
 import { SesInboundTerminalError, type ParsedSesInboundEmail } from './mime.mts'
-import { processSesInboundEmail } from '../processors.mts'
+import { processSesInboundEmail, reconcileSesInboundEmails } from '../processors.mts'
 
 vi.mock<typeof import('mailparser')>(
   import('mailparser'),
@@ -18,6 +18,65 @@ vi.mock<typeof import('mailparser')>(
 )
 
 describe('SES copyright inbound routing', () => {
+  it('reconciles every copyright evidence page while intake is enabled', async () => {
+    const listCopyrightObjects = vi
+      .fn<
+        (
+          continuationToken?: string,
+        ) => Promise<{ objectKeys: string[]; nextContinuationToken?: string }>
+      >()
+      .mockResolvedValueOnce({
+        objectKeys: ['copyright-incoming/ses-copyright-a'],
+        nextContinuationToken: 'next',
+      })
+      .mockResolvedValueOnce({ objectKeys: ['copyright-incoming/ses-copyright-b'] })
+    type ReconcileDependencies = NonNullable<Parameters<typeof reconcileSesInboundEmails>[0]>
+    const enqueueOrRetry = vi
+      .fn<NonNullable<ReconcileDependencies['enqueueOrRetryBulkSesInboundProcess']>>()
+      .mockResolvedValue(0)
+
+    await expect(
+      reconcileSesInboundEmails({
+        isCopyrightIntakeEnabled: () => true,
+        listCopyrightSesInboundObjects: listCopyrightObjects,
+        enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
+      }),
+    ).resolves.toEqual({ enqueued: 2 })
+
+    expect(listCopyrightObjects).toHaveBeenNthCalledWith(1, undefined)
+    expect(listCopyrightObjects).toHaveBeenNthCalledWith(2, 'next')
+    expect(enqueueOrRetry).toHaveBeenNthCalledWith(1, [
+      {
+        sesMessageId: 'ses-copyright-a',
+        objectKey: 'copyright-incoming/ses-copyright-a',
+        intakeKind: 'copyright',
+      },
+    ])
+    expect(enqueueOrRetry).toHaveBeenNthCalledWith(2, [
+      {
+        sesMessageId: 'ses-copyright-b',
+        objectKey: 'copyright-incoming/ses-copyright-b',
+        intakeKind: 'copyright',
+      },
+    ])
+  })
+
+  it('does not scan copyright evidence while intake is disabled', async () => {
+    const listCopyrightObjects = vi.fn<() => Promise<{ objectKeys: string[] }>>()
+    const enqueueOrRetry = vi.fn<() => Promise<number>>().mockResolvedValue(0)
+
+    await expect(
+      reconcileSesInboundEmails({
+        isCopyrightIntakeEnabled: () => false,
+        listCopyrightSesInboundObjects: listCopyrightObjects,
+        enqueueOrRetryBulkSesInboundProcess: enqueueOrRetry,
+      }),
+    ).resolves.toEqual({ enqueued: 0 })
+
+    expect(listCopyrightObjects).not.toHaveBeenCalled()
+    expect(enqueueOrRetry).not.toHaveBeenCalled()
+  })
+
   it('preserves the raw email before source cleanup and awaits agent enqueue', async () => {
     vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
     vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
@@ -43,7 +102,6 @@ describe('SES copyright inbound routing', () => {
     })
     const enqueue = vi.fn<(intakeId: string) => Promise<void>>().mockResolvedValue(undefined)
     const recordParse = vi.fn<typeof recordCopyrightEmailParse>().mockResolvedValue(null)
-    const createSupport = vi.fn<() => Promise<{ is_new: false }>>()
     const parsed: ParsedSesInboundEmail = {
       fromEmail: 'claimant@example.test',
       fromName: 'Copyright claimant',
@@ -64,7 +122,6 @@ describe('SES copyright inbound routing', () => {
     }
 
     await processSesInboundEmail(data, {
-      isInboundSupportEmailComplete: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
@@ -83,7 +140,6 @@ describe('SES copyright inbound routing', () => {
       createCopyrightEmailIntake: createIntake,
       recordCopyrightEmailParse: recordParse,
       enqueueCopyrightEmailIntakeAndWait: enqueue,
-      createInboundSupportEmailMessage: createSupport,
       deleteSesInboundObject: deleteObject,
     })
 
@@ -107,7 +163,6 @@ describe('SES copyright inbound routing', () => {
         attachments: [expect.objectContaining({ filename: 'evidence.pdf' })],
       }),
     )
-    expect(createSupport).not.toHaveBeenCalled()
     expect(deleteObject).toHaveBeenCalledWith(data.objectKey)
     recordParse.mockResolvedValue({
       noticeId: 'notice-id',
@@ -115,7 +170,6 @@ describe('SES copyright inbound routing', () => {
       matchedReference: '<prior@example.test>',
     })
     await processSesInboundEmail(data, {
-      isInboundSupportEmailComplete: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
       parseSesInboundMime: vi.fn<() => Promise<ParsedSesInboundEmail>>().mockResolvedValue(parsed),
       loadSesInboundObjectAndHash: vi.fn<typeof loadSesInboundObjectAndHash>().mockResolvedValue({
         rawMime: Readable.from([Buffer.from('raw')]),
@@ -132,7 +186,6 @@ describe('SES copyright inbound routing', () => {
       createCopyrightEmailIntake: createIntake,
       recordCopyrightEmailParse: recordParse,
       enqueueCopyrightEmailIntakeAndWait: enqueue,
-      createInboundSupportEmailMessage: createSupport,
       deleteSesInboundObject: deleteObject,
     })
     expect(enqueue).toHaveBeenCalledTimes(2)

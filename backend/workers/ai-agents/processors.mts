@@ -14,7 +14,7 @@ import {
   processCommunityModerationDispatcher,
   processCommunityModerationPrompt,
 } from './processors/process-community-moderation.mts'
-import { processCustomerSupport, processStoryClustering } from './processors/process-misc.mts'
+import { processStoryClustering } from './processors/process-misc.mts'
 import { processStoryPost } from './processors/process-story-post.mts'
 import { processReportJudgement } from './processors/process-report-judgement.mts'
 import { processDisputeResolution } from './processors/process-dispute-resolution.mts'
@@ -27,7 +27,6 @@ import { processAutoDispatchJudgement } from './processors/process-auto-dispatch
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
 import { processReconcileChatRuntimeGenerations } from './processors/process-reconcile-chat-runtime-generations.mts'
-import { processReconcileMemberSupportAgentIntents } from './processors/process-reconcile-member-support-agent-intents.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 
 export type ProcessAIAgentDependencies = {
@@ -72,10 +71,6 @@ export function processAIAgent(
       return processCommunityModerationPrompt(
         job as Job<import('@queues/ai-agents/types').CommunityModerationPromptJobData>,
       )
-    case 'customer-support':
-      return processCustomerSupport(
-        job as Job<import('@queues/ai-agents/types').CustomerSupportJobData>,
-      )
     case 'story-clustering':
       return processStoryClustering(
         job as Job<import('@queues/ai-agents/types').StoryClusteringJobData>,
@@ -118,8 +113,6 @@ export function processAIAgent(
       return processReconcileBackgroundResponses()
     case 'reconcile-chat-runtime-generations':
       return dependencies.processReconcileChatRuntimeGenerations()
-    case 'reconcile-member-support-agent-intents':
-      return processReconcileMemberSupportAgentIntents()
     case 'reconcile-copyright-agent-dispatches':
       return processReconcileCopyrightAgentDispatches()
     default:

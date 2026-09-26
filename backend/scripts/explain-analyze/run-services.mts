@@ -68,10 +68,5 @@ export { getHouseholdSpendingCategoriesByUserId } from '@services/individuals-ho
 export { getIndividualRewardsProgramStatuses } from '@services/individuals-households'
 export { getUserPostsCollection } from '@services/entity-fetch/profile-collections'
 export { refreshContributionAdmissionPostResponses } from '@services/contribution-gating/refresh-post-response'
-export {
-  finalizeKeyedSupportAgentRun,
-  getSupportMessagesByThreadId,
-  reserveSupportDraftGeneration,
-} from '@services/customer-support'
 export { listRemoteFollowerInboxPage } from '@services/remote-actors'
 export { getStoryPostRelatedUrlProjectionSourcePage } from '@services/stories/story-post-related-url-projection'

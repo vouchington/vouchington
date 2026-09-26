@@ -199,13 +199,11 @@ config-driven operations, and views. After migration the database contains:
 - **Topics** — fundamental topics (`self-promotion`, `ai-generated`, `political`, `click-bait`,
   `vague-post`, `shit-post`, `buying`, `selling`, `trade`, `for-hire`, `hiring`, `voucha`) seeded by
   [`config-driven/0005-00-01-seed-topics.mts`](config-driven/0005-00-01-seed-topics.mts)
-- **Agents** — `system` user, agent system users (`autotagger`, `customer-support`,
-  `story-teller`, and all moderator slugs including `click-bait`,
+- **Agents** — `system` user, agent system users (`autotagger`, `story-teller`, and all moderator slugs including `click-bait`,
   `vague-post`, and `shit-post`),
   agent rows, `agents__moderators` rows, and active moderator prompts seeded by
   [`config-driven/0010-00-01-seed-agents.mts`](config-driven/0010-00-01-seed-agents.mts).
-  Agent users have **no** `administrator` role; `customer-support` has the least-privilege
-  `customer_support` role.
+  Agent users have **no** `administrator` role.
 - **Admin user** — `jong` user with primary email `jong@voucha.ai` and the `administrator`
   role, seeded by
   [`config-driven/0010-00-02-seed-admin-user.mts`](config-driven/0010-00-02-seed-admin-user.mts).

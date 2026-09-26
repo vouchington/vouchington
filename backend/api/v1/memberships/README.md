@@ -129,7 +129,7 @@ Response: `{ changes: MembershipChange[] }`
 
 ### `GET /api/v1/memberships/refundable-charges`
 
-**Auth**: Admins and customer support
+**Auth**: Administrators only
 
 Returns the list of refundable Stripe charges for a user's active subscription.
 
@@ -143,7 +143,7 @@ Returns an empty array for members with admin-granted memberships (no Stripe sub
 
 ### `POST /api/v1/memberships/refunds`
 
-**Auth**: Admins and customer support
+**Auth**: Administrators only
 
 Creates a durable reconciliation operation for a Stripe refund against a membership charge. The
 request can complete inline, but the PostgreSQL operation remains the source of truth when Stripe

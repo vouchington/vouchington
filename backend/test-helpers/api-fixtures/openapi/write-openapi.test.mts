@@ -164,16 +164,6 @@ describe('openapi document generation', () => {
     expect(schema).toMatchObject({ type: 'object', required: ['note'] })
   })
 
-  it('requires a body_text or body_html field when editing a support message', () => {
-    const schema =
-      doc.paths['/api/v1/support/threads/{threadId}/messages/{messageId}']!.patch!.requestBody!
-        .content['application/json'].schema
-    expect(schema).toEqual({ $ref: '#/components/schemas/SupportMessageUpdateRequest' })
-    expect(doc.components.schemas.SupportMessageUpdateRequest).toMatchObject({
-      anyOf: [{ required: ['body_text'] }, { required: ['body_html'] }],
-    })
-  })
-
   it('spot-checks non-200 status codes for known routes', () => {
     expect(doc.paths['/api/v1/communities']!.post!.responses).toHaveProperty('201')
   })

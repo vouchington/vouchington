@@ -87,12 +87,6 @@ export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
   physicalAddress?: string
 }
 
-export type ProcessSendSupportEmailVariables = {
-  bodyText: string
-  subject?: string
-  uiLocale?: string | null
-}
-
 export type ProcessSendWelcomeEmailVariables = WelcomeEmailProps
 export type ProcessSendCopyrightNoticeEmailVariables =
   | { intentId: string; intakeResponseId?: never }
@@ -115,7 +109,6 @@ export type EmailSendJobs =
   | 'processSendPostReferralLinkEmail'
   | 'processSendFollowNewsSourcesEmail'
   | 'processSendCommunityModerationSummaryEmail'
-  | 'processSendSupportEmail'
   | 'processSendWelcomeEmail'
   | 'processSendCommunityApplicationDecisionEmail'
   | 'processSendCommunityRoleChangeEmail'

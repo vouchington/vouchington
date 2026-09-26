@@ -2,7 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
 
-const ALERT_ROLES = ['administrator', 'customer_support', 'moderator']
+const ALERT_ROLES = ['administrator', 'moderator']
 
 export async function createCriticalModerationAlertNotification(reportId: string): Promise<void> {
   const { rows } = await write<{
