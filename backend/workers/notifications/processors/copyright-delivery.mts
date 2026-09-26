@@ -5,48 +5,77 @@ import {
 import { enqueueDeliverCopyrightNotice } from '@queues/notifications/enqueues'
 import {
   deliverCopyrightInAppNotification,
-  listRecoverableCopyrightDeliveryIntents,
-  listRecoverableCopyrightEmailIntakeResponses,
+  searchRecoverableCopyrightDeliveryIntentIds,
+  searchRecoverableCopyrightEmailIntakeResponseIds,
 } from '@services/copyright-notices'
+import {
+  enqueueEveryCopyrightSweepPage,
+  type CopyrightSweepTally,
+} from './copyright-sweep-walk.mts'
 
-type CopyrightDeliveryProcessorDependencies = {
-  deliverCopyrightInAppNotification: typeof deliverCopyrightInAppNotification
-  listRecoverableCopyrightDeliveryIntents: typeof listRecoverableCopyrightDeliveryIntents
-  listRecoverableCopyrightEmailIntakeResponses: typeof listRecoverableCopyrightEmailIntakeResponses
+type CopyrightDeliveryChannel = Parameters<
+  typeof searchRecoverableCopyrightDeliveryIntentIds
+>[0]['channel']
+
+export type ReconcileCopyrightDeliveryIntentsDeps = {
+  searchDeliveryIntents: typeof searchRecoverableCopyrightDeliveryIntentIds
+  searchEmailIntakeResponses: typeof searchRecoverableCopyrightEmailIntakeResponseIds
   enqueueDeliverCopyrightNotice: typeof enqueueDeliverCopyrightNotice
   enqueueSendCopyrightNoticeEmail: typeof enqueueSendCopyrightNoticeEmail
   enqueueSendCopyrightEmailIntakeResponse: typeof enqueueSendCopyrightEmailIntakeResponse
 }
 
+const defaultDeps: ReconcileCopyrightDeliveryIntentsDeps = {
+  searchDeliveryIntents: searchRecoverableCopyrightDeliveryIntentIds,
+  searchEmailIntakeResponses: searchRecoverableCopyrightEmailIntakeResponseIds,
+  enqueueDeliverCopyrightNotice,
+  enqueueSendCopyrightNoticeEmail,
+  enqueueSendCopyrightEmailIntakeResponse,
+}
+
 export async function processDeliverCopyrightNotice(
   data: { intentId: string },
-  dependencies: Partial<CopyrightDeliveryProcessorDependencies> = {},
+  dependencies: {
+    deliverCopyrightInAppNotification?: typeof deliverCopyrightInAppNotification
+  } = {},
 ): Promise<boolean> {
   const deliver =
     dependencies.deliverCopyrightInAppNotification ?? deliverCopyrightInAppNotification
   return await deliver(data.intentId)
 }
 
+/**
+ * Walks every page of each channel's delivery intents and of the email intake responses together,
+ * enqueueing each row's delivery job. The job's claim, not this sweep, fails a lease-expired row at
+ * the retry cap. A failed page read or enqueue does not stop the rest; the job fails afterwards with
+ * every error so its retry covers what is still pending.
+ */
 export async function processReconcileCopyrightDeliveryIntents(
-  dependencies: Partial<CopyrightDeliveryProcessorDependencies> = {},
+  dependencyOverrides: Partial<ReconcileCopyrightDeliveryIntentsDeps> = {},
 ): Promise<{ enqueued: number }> {
-  const list =
-    dependencies.listRecoverableCopyrightDeliveryIntents ?? listRecoverableCopyrightDeliveryIntents
-  const enqueueInApp = dependencies.enqueueDeliverCopyrightNotice ?? enqueueDeliverCopyrightNotice
-  const enqueueEmail =
-    dependencies.enqueueSendCopyrightNoticeEmail ?? enqueueSendCopyrightNoticeEmail
-  const intents = await list(100)
-  const listResponses =
-    dependencies.listRecoverableCopyrightEmailIntakeResponses ??
-    listRecoverableCopyrightEmailIntakeResponses
-  const enqueueResponse =
-    dependencies.enqueueSendCopyrightEmailIntakeResponse ?? enqueueSendCopyrightEmailIntakeResponse
-  const responses = await listResponses(100)
-  await Promise.all(
-    intents.map(intent =>
-      intent.channel === 'in_app' ? enqueueInApp(intent.id) : enqueueEmail(intent.id),
+  const deps = { ...defaultDeps, ...dependencyOverrides }
+  const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
+  const enqueueByChannel: Record<CopyrightDeliveryChannel, typeof enqueueDeliverCopyrightNotice> = {
+    in_app: intentId => deps.enqueueDeliverCopyrightNotice(intentId),
+    email: intentId => deps.enqueueSendCopyrightNoticeEmail(intentId),
+  }
+  const channels = Object.keys(enqueueByChannel) as CopyrightDeliveryChannel[]
+  await Promise.all([
+    ...channels.map(channel =>
+      enqueueEveryCopyrightSweepPage(
+        tally,
+        page => deps.searchDeliveryIntents({ channel, ...page }),
+        enqueueByChannel[channel],
+      ),
     ),
-  )
-  await Promise.all(responses.map(response => enqueueResponse(response.id)))
-  return { enqueued: intents.length + responses.length }
+    enqueueEveryCopyrightSweepPage(
+      tally,
+      page => deps.searchEmailIntakeResponses(page),
+      responseId => deps.enqueueSendCopyrightEmailIntakeResponse(responseId),
+    ),
+  ])
+  if (tally.errors.length > 0) {
+    throw new AggregateError(tally.errors, 'Copyright delivery reconciliation failed')
+  }
+  return { enqueued: tally.enqueued }
 }

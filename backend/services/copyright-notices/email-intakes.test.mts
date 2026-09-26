@@ -5,21 +5,30 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { expireTestCopyrightEmailIntakeResponseClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
+import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   createCopyrightEmailIntake,
   createCopyrightNoticeAggregate,
-  listRecoverableCopyrightEmailIntakeResponses,
   prepareCopyrightEmailIntakeResponseDelivery,
   promoteCopyrightEmailIntake,
   recordCopyrightEmailParse,
   rejectCopyrightEmailIntake,
+  searchRecoverableCopyrightEmailIntakeResponseIds,
 } from './index.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { getCopyrightEmailIntakeForAgent } from './email-intake-parses.mts'
 import { createParsedCopyrightEmailIntake } from './email-intake-test-fixtures.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+
+function readRecoverableResponseIds(responseId: string) {
+  return readTestOwnedCopyrightSweepIds(
+    searchRecoverableCopyrightEmailIntakeResponseIds,
+    responseId,
+  )
+}
 
 describe('copyright email intake persistence', () => {
   it('keeps the source and advisory recommendation private and replay-safe', async () => {
@@ -131,20 +140,25 @@ describe('copyright email intake persistence', () => {
     ])
     expect(rejected.responseId).toEqual(expect.any(String))
     expect(duplicate).toEqual({ responseId: null })
-    if (!rejected.responseId) throw new Error('Email intake response was not created')
-    await expect(listRecoverableCopyrightEmailIntakeResponses(100)).resolves.toEqual(
-      expect.arrayContaining([{ id: rejected.responseId }]),
-    )
+    const { responseId } = rejected
+    if (!responseId) throw new Error('Email intake response was not created')
+    await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([responseId])
     await expect(
       prepareCopyrightEmailIntakeResponseDelivery('00000000-0000-7000-8000-000000000046'),
     ).rejects.toThrow('Copyright email intake response is not available to send')
-    await expect(
-      prepareCopyrightEmailIntakeResponseDelivery(rejected.responseId),
-    ).resolves.toMatchObject({
+    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).resolves.toMatchObject({
       recipientEmail: expect.stringMatching(/^claimant-/),
       subject: 'More information is needed for your copyright notice',
       text: expect.stringContaining('Please identify the copyrighted work'),
     })
+    await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([])
+
+    await expireTestCopyrightEmailIntakeResponseClaim(responseId, 5)
+    await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([responseId])
+    await expect(prepareCopyrightEmailIntakeResponseDelivery(responseId)).rejects.toThrow(
+      'Copyright email intake response is not available to send',
+    )
+    await expect(readRecoverableResponseIds(responseId)).resolves.toEqual([])
   })
 
   it('does not let a thread-linked email receive an initial-case decision', async () => {

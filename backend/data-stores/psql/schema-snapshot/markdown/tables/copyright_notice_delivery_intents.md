@@ -69,8 +69,8 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_delivery_intents_pkey`: `CREATE UNIQUE INDEX copyright_notice_delivery_intents_pkey ON public.copyright_notice_delivery_intents USING btree (id)`
 - `idx_copyright_delivery_intents__correspondence`: `CREATE INDEX idx_copyright_delivery_intents__correspondence ON public.copyright_notice_delivery_intents USING btree (copyright_notice_correspondence_message_id, copyright_notice_id) WHERE (copyright_notice_correspondence_message_id IS NOT NULL)`
 - `idx_copyright_delivery_intents__notice`: `CREATE INDEX idx_copyright_delivery_intents__notice ON public.copyright_notice_delivery_intents USING btree (copyright_notice_id, id)`
-- `idx_copyright_delivery_intents__pending`: `CREATE INDEX idx_copyright_delivery_intents__pending ON public.copyright_notice_delivery_intents USING btree (next_attempt_at, id) WHERE (state = 'pending'::text)`
 - `idx_copyright_delivery_intents__recipient_user`: `CREATE INDEX idx_copyright_delivery_intents__recipient_user ON public.copyright_notice_delivery_intents USING btree (recipient_user_id) WHERE (recipient_user_id IS NOT NULL)`
+- `idx_copyright_delivery_intents__recoverable`: `CREATE INDEX idx_copyright_delivery_intents__recoverable ON public.copyright_notice_delivery_intents USING btree (channel, id) WHERE (state = ANY (ARRAY['pending'::text, 'claimed'::text]))`
 - `idx_copyright_delivery_intents__ses_message`: `CREATE INDEX idx_copyright_delivery_intents__ses_message ON public.copyright_notice_delivery_intents USING btree (ses_message_id) WHERE (ses_message_id IS NOT NULL)`
 - `idx_copyright_delivery_intents__submission`: `CREATE INDEX idx_copyright_delivery_intents__submission ON public.copyright_notice_delivery_intents USING btree (copyright_notice_submission_id, copyright_notice_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
 
