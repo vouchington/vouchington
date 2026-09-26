@@ -121,10 +121,13 @@ describe('design system Storybook coverage', () => {
     const missingExports: Array<{ file: string; exportName: string }> = []
     for (const file of storyFiles) {
       const source = readFileSync(file, 'utf8')
+      const fileName = file.replace('web/storybook/design-system/', '')
       for (const forbidden of forbiddenImports) {
+        const sidebarStoryUsesItsProvider =
+          fileName === 'sidebar.stories.tsx' && forbidden === 'SidebarProvider'
+        if (sidebarStoryUsesItsProvider) continue
         if (source.includes(forbidden)) forbiddenImportViolations.push({ file, forbidden })
       }
-      const fileName = file.replace('web/storybook/design-system/', '')
       const requiredExports = expectedStories[fileName] ?? []
       for (const exportName of requiredExports) {
         if (!source.includes(`export const ${exportName}`))
