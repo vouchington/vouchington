@@ -16,7 +16,7 @@
     "ajv": "^8.20.0",
     "no-mistakes": "^0.65.0",
     "oxfmt": "^0.70.0",
-    "smol-toml": "^1.8.0",
+    "smol-toml": "^1.9.0",
     "vouchington-tooling": "^0.19.2",
     "yaml": "^2.9.0"
   },
