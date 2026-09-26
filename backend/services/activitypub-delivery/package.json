@@ -30,7 +30,7 @@
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0",
-    "undici": "^8.11.0"
+    "undici": "^8.11.2"
   },
   "devDependencies": {
     "@services/entity-relations": "workspace:^",

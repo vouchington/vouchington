@@ -45,6 +45,6 @@
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.11.0"
+    "undici": "^8.11.2"
   }
 }
