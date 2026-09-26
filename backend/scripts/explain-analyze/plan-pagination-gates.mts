@@ -1,4 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { collectPlanNodes } from './plan-nodes.mts'
+import { isBoundedStoryPresentationSort } from './story-presentation-sort.mts'
 
 const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
   ['direct-message-inbox-page', ['idx_conversations__direct_message_updated']],
@@ -99,43 +101,6 @@ function assertStoryProjectionSourcePagePlan(result: ExplainResult): void {
   }
 }
 
-function isBoundedStoryPresentationSort(node: PlanNode, nodes: PlanNode[]): boolean {
-  const children =
-    (node.Plans as PlanNode[] | undefined)?.filter(
-      child => child['Parent Relationship'] !== 'InitPlan',
-    ) ?? []
-  const input = children.flatMap(child => collectPlanNodes(child))
-  const nativePage = nodes.find(candidate => candidate['Subplan Name'] === 'CTE items')
-  if (!nativePage || !input.some(candidate => candidate['CTE Name'] === 'items')) return false
-  if (
-    input.some(candidate => String(candidate['Relation Name'] ?? '').startsWith('rss_feed_items'))
-  )
-    return false
-  const physicalSourceRows = collectPlanNodes(nativePage)
-    .filter(candidate => String(candidate['Relation Name'] ?? '').startsWith('rss_feed_items'))
-    .reduce(
-      (total, candidate) =>
-        total +
-        (Number(candidate['Actual Rows'] ?? Infinity) +
-          Number(candidate['Rows Removed by Filter'] ?? 0) +
-          Number(candidate['Rows Removed by Index Recheck'] ?? 0)) *
-          Number(candidate['Actual Loops'] ?? 1),
-      0,
-    )
-  return (
-    physicalSourceRows > 0 &&
-    physicalSourceRows <= 100 &&
-    Number(nativePage['Actual Rows'] ?? Infinity) <= 100 &&
-    Number(node['Actual Rows'] ?? Infinity) <= 100 &&
-    children.length > 0 &&
-    children.every(
-      child => Number(child['Actual Rows'] ?? Infinity) * Number(child['Actual Loops'] ?? 1) <= 100,
-    )
-  )
-}
-
-type PlanNode = Record<string, unknown>
-
 function assertRssFeedItemsGlobalCursorPlan(result: ExplainResult): void {
   if (!result.query_text.includes('FROM rss_feed_items')) return
 
@@ -159,16 +124,4 @@ function assertRssFeedItemsGlobalCursorPlan(result: ExplainResult): void {
       `${result.name} must paginate rss_feed_items through ${RSS_FEED_ITEMS_GLOBAL_CURSOR_INDEX} without an rss_feed_items sequential scan`,
     )
   }
-}
-
-function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) return nodes
-  const node = value as PlanNode
-  if (typeof node['Node Type'] === 'string') nodes.push(node)
-  const plans = node['Plans']
-  if (Array.isArray(plans)) {
-    for (const child of plans) collectPlanNodes(child, nodes)
-  }
-  collectPlanNodes(node['Plan'], nodes)
-  return nodes
 }
