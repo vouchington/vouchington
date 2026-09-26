@@ -6,6 +6,7 @@
     "docs-*",
     "storybook-*",
     "next-static-*",
+    "postgresql-snapshot-*",
     "web-build-timings-*",
     "playwright-junit-*",
     "playwright-credentialed-junit",

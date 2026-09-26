@@ -67,7 +67,7 @@
     "db:clean": "./dev/db-clean",
     "db:migrate": "pnpm --dir backend db:migrate",
     "db:seed": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:seed'",
-    "db:snapshot:update": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:snapshot:update'",
+    "db:snapshot:update": "node dev/postgresql-snapshot-update.mts",
     "db:snapshot:check": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:snapshot:check'",
     "db:check-index-renames": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:check-index-renames'",
     "validate-seed-rss-feeds": "bash -c 'if [ -f .env ]; then source .env; fi; node backend/scripts/validate-seed-rss-feeds.mts'",

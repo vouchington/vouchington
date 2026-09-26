@@ -241,6 +241,7 @@ Running `pnpm run db:seed` adds sample data on top of the migrated schema:
 live schema (`schema-snapshot/schema.json` and the focused `schema-snapshot/markdown/` tree) from `pg_catalog`/`information_schema`
 introspection — tables, columns, constraints, indexes, triggers, enums, views, extensions,
 functions, and RLS policies, keyed deterministically by name. After any migration, config-driven
-SQL, or view change, run `pnpm run db:snapshot:update` against PG18 and commit the result;
+SQL, or view change, request `pnpm run db:snapshot:update` from a pushed PR head, then fetch the
+CI-generated snapshot commit;
 `pnpm run db:snapshot:check` (also run in CI) fails when the live schema no longer matches the
 committed snapshot.

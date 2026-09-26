@@ -125,7 +125,8 @@ describe('pnpm install workflow policy', () => {
 
   it('keeps pnpm install owned by setup-node-pnpm', () => {
     // setup-node-pnpm owns the single frozen-lockfile install and the pnpm store cache, so every
-    // other workflow job and composite action delegates to it.
+    // other workflow job and composite action delegates to it. The untrusted snapshot
+    // generator uses pinned public actions and restore-only caching, never candidate composites.
     const directInstalls = stepLists.flatMap(({ owner, steps }) =>
       owner === '.github/actions/setup-node-pnpm/action.yml'
         ? []
@@ -135,7 +136,7 @@ describe('pnpm install workflow policy', () => {
             return bodies.some(runsPnpmInstall) ? [owner] : []
           }),
     )
-    expect(directInstalls).toEqual([])
+    expect(directInstalls).toEqual(['.github/workflows/postgresql-snapshot-update.yml#generate'])
 
     expect([
       runsPnpmInstall('timeout 120 pnpm install --frozen-lockfile'),

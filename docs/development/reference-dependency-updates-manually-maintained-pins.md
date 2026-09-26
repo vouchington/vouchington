@@ -10,6 +10,7 @@ The SOCI index-builder pin and its OpenTofu validation now belong to
 [`vouchington-infra`](https://github.com/vouchington/vouchington-infra).
 
 For `pgvector/pgvector:pg18`, resolve the current multi-architecture OCI digest, update every
-workflow reference together, then run migrations and `pnpm run db:snapshot:update`. Commit the
-digest with the schema snapshot and generated Markdown, and run `pnpm run db:snapshot:check` against
-the same image.
+workflow reference together, then push the PR and request `pnpm run db:snapshot:update`. The
+workflow uses the candidate PR's image digest, runs migrations in a fresh database, and commits the
+schema snapshot and generated Markdown to that PR. Fetch the commit before continuing; ordinary PR
+CI checks it against the same image.

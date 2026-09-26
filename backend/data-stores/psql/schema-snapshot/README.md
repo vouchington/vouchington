@@ -1,6 +1,6 @@
 # Schema Snapshot
 
-This directory generates a committed, human-readable snapshot of the live PostgreSQL schema —
+This directory generates a committed, human-readable snapshot of the PostgreSQL schema —
 `schema.json` and the focused `markdown/` document tree — from `pg_catalog`/`information_schema` introspection. The snapshot
 exists because the schema is assembled from three sources (`../migrations`, `../config-driven`, and
 `../views`) and `pg_dump`/`psql \d` output is unusable as a diffable artifact: it enumerates every
@@ -10,18 +10,24 @@ every DDL-affecting change must regenerate and commit the snapshot alongside it.
 
 ## Update Flow
 
-- After any migration, config-driven SQL, or view change, run `pnpm run db:snapshot:update` against
-  a migrated database.
-- Commit `schema.json` and the generated `markdown/` tree alongside the schema change that produced the diff.
-- Run `pnpm run db:snapshot:check` before pushing — this is also enforced in CI
-  (`tests-postgres-schema.yml`) after the PostgreSQL schema tests, against the same digest-pinned
-  `pgvector/pgvector:pg18` image CI uses. When that digest changes, regenerate the snapshot in the
-  same change so the recorded extension versions match the selected image.
+- Push the migration, config-driven SQL, or view change to an open same-repository PR. Its head
+  must contain the current base branch tip, including for a stacked PR.
+- Request generation by commenting `/postgresql-snapshot-update` on the PR, running
+  `pnpm run db:snapshot:update` from its pushed head, or manually dispatching
+  `postgresql-snapshot-update.yml` from `main` with `pr_number`. The command only dispatches CI;
+  it does not read or change the worktree database.
+- The workflow migrates a fresh PostgreSQL 18 service from the exact PR head and commits only
+  `schema.json` and generated `markdown/` files to that head. An unchanged snapshot creates no
+  commit. Fetch the publisher commit before further local work or rebasing.
+- Ordinary PR CI then migrates its own fresh database and checks the committed snapshot with
+  `generate.mts --check`. Local `pnpm run db:snapshot:check` continues to check the configured
+  worktree database after clean migration.
 
 **PG18 parity matters.** `pg_get_constraintdef`, `pg_get_indexdef`, `pg_get_viewdef`, and
 `pg_get_functiondef` deparse output can shift wording across major PostgreSQL versions. Generate the
-committed snapshot against PostgreSQL 18 (matching CI), not an arbitrary local Postgres version, or
-`db:snapshot:check` will report a spurious diff in CI even though nothing changed.
+committed snapshot against the digest-pinned PostgreSQL 18 image in
+`tests-postgres-schema.yml`; the workflow reads the candidate PR's image pin, so an image update
+and its generated extension versions move together.
 
 ## Architecture
 
@@ -45,7 +51,8 @@ committed snapshot against PostgreSQL 18 (matching CI), not an arbitrary local P
   only resolves a topic-suffixed `<stem>.<topic>.test.mts` back to its `<stem>.mts` source when the
   test lives in a `__tests__/` directory. `generate.test.mts` stays colocated since its name is an
   exact match for `generate.mts` (no suffix, no `__tests__/` needed).
-- `generate.mts` — the CLI (`pnpm run db:snapshot:update` / `--check`). Exports
+- `generate.mts` — the live schema generator used by the snapshot workflow and the `--check` CLI.
+  Exports
   `generateSchemaSnapshot({ check })` and `writeSchemaSnapshot({ snapshot, markdown, check, root })`
   for unit testing against a temp directory; the direct-execution guard at the bottom only runs when
   invoked as a script. It detects missing, changed, legacy, and orphaned generated Markdown files;
@@ -122,7 +129,7 @@ facts.
 ## Determinism and Completeness
 
 - **Deterministic**: catalog-only queries, no `SELECT` of table data, no environment- or
-  date-derived content. Running `db:snapshot:update` twice against an unchanged database produces
+  date-derived content. Generating twice from the same PR revision and PostgreSQL image produces
   byte-identical output.
 - **Complete**: every logical application-DDL dimension (table, column, constraint, index, trigger,
   enum, view, extension, function, RLS policy, and partition policy) is captured, so any schema

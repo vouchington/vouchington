@@ -24,13 +24,15 @@ flowchart LR
         pnpm-dedupe["pnpm-dedupe<br/>(lockfile PR; Sundays 12:00)"]
         scheduled-prompts["scheduled-prompts<br/>(08:00-18:00 every 2 hours)"]
     end
-    subgraph comment-commands["Comment commands from OWNER, COLLABORATOR, or MEMBER"]
+    subgraph comment-commands["Authorized comment commands"]
         fix-issue-comment["/fix on an issue"]
         plan-comment["/plan on an issue"]
         shepherd-comment["/shepherd on a PR"]
+        snapshot-comment["/postgresql-snapshot-update on a PR"]
         fix-issue-comment --> fix-issue["fix-issue"]
         plan-comment --> plan["plan"]
         shepherd-comment --> shepherd["shepherd"]
+        snapshot-comment --> postgresql-snapshot-update["postgresql-snapshot-update<br/>(fresh schema to guarded commit)"]
     end
     harness-dispatch["harness-dispatch<br/>(reusable)"]
     fix-main-ref["fix-main<br/>(see Main)"]
