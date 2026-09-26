@@ -38,15 +38,11 @@ browser-runner or Vite failures.
   component with a `data-pw` attribute has direct Storybook coverage. The exclusions file exists
   only as a zero-length ratchet sentinel; any non-empty entry fails the test. When the coverage
   test fails, it prints the exact key for each missing component.
-- Generated `component-story-ratchet-part-*.stories.tsx` files are mount-smoke stories for the
-  legacy backlog that used to live in the exclusions file. They must instantiate each imported
-  component through `ComponentStoryRatchetGrid`; do not replace focused fixture-backed stories with
-  ratchet-only coverage when you add or change a component. Every `CoveragePartN` story enforces
-  axe checks — when a component needs consumer context for a valid accessible state, add
-  deterministic `props` to its `RatchetedComponent` entry; keep labels, identifiers, and
-  closed-state data stable, and do not add accessibility-off ratchet stories. See
-  [Storybook A11y Exceptions](../../../docs/development/tests.md#storybook-a11y-exceptions) for the
-  narrow suppression policy that applies outside the ratchet.
+- Put focused stories in `web/storybook/<domain>/` and wrap page-level examples in `StoryFrame`.
+  Import the component from its module so the coverage test counts that export. Async server
+  components that cannot render in the browser stay behind the Vite aliases in
+  `web/.storybook/vite-config-helpers.ts`. Do not turn axe off. See
+  [Storybook A11y Exceptions](../../../docs/development/tests.md#storybook-a11y-exceptions).
 
 ## Browser-mode rules
 

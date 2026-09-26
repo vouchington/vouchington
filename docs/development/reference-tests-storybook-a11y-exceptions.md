@@ -2,7 +2,7 @@
 
 [Back to Tests and Checks](tests.md#storybook-a11y-exceptions)
 
-`@storybook/addon-a11y` is enforced at `"error"` level for WCAG 2.0/2.1/2.2 A and AA where supported by the installed axe tags. Fix component semantics, keyboard behavior, and visual styles before considering a suppression. All generated ratchet stories are axe-enforced; components that require consumer context receive deterministic fixture props as described in the [Storybook authoring guidance](../../.agents/skills/storybook-authoring/SKILL.md#coverage-invariants).
+`@storybook/addon-a11y` is enforced at `"error"` level for WCAG 2.0/2.1/2.2 A and AA where supported by the installed axe tags. Fix component semantics, keyboard behavior, and visual styles before considering a suppression. Components that need consumer context get that context from fixture props in a focused story, as described in the [Storybook authoring guidance](../../.agents/skills/storybook-authoring/SKILL.md#coverage-invariants).
 
 ### Pattern
 

@@ -5,10 +5,5 @@
   "similarity": 0.9,
   "minLines": 200,
   "exitCode": 1,
-  "ignore": [
-    "**/migrations/**",
-    "**/fixtures/**",
-    "**/web/storybook/component-story-ratchet-part-*.stories.tsx",
-    "**/route-selectors.generated.mts"
-  ]
+  "ignore": ["**/migrations/**", "**/fixtures/**", "**/route-selectors.generated.mts"]
 }
