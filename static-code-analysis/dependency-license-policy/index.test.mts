@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { PnpmLicenseReport } from 'vouchington-tooling/dependency-license-policy'
+import {
+  collectPnpmLicenseReport,
+  type PnpmLicenseReport,
+} from 'vouchington-tooling/dependency-license-policy'
 
 import { checkDependencyLicensePolicy } from './index.mts'
 
@@ -12,6 +15,10 @@ const insideGitRepoCtx = {
 }
 
 describe('checkDependencyLicensePolicy', () => {
+  it('loads the async license collector published with interrupted-run cleanup', () => {
+    expect(collectPnpmLicenseReport.constructor.name).toBe('AsyncFunction')
+  })
+
   it('returns no errors when the repo root is not a git repository', async () => {
     const result = await checkDependencyLicensePolicy({
       ...insideGitRepoCtx,
