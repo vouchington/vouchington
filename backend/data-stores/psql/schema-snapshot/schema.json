@@ -47781,7 +47781,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": true,
+          "nullable": false,
           "ordinalPosition": 3,
           "type": "text"
         },
