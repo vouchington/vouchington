@@ -138,8 +138,10 @@ describe('PR lifecycle policy drift', () => {
     expect(humanStarting).toContain('~/worktrees/my-feature')
   })
 
+  // The hook reads only the body text; issue lookups belong to the validator. So drift is one-way:
+  // the hook may allow a body the validator rejects, but never block one it accepts.
   it.each(LIFECYCLE_FIXTURES)(
-    'enforces the $name fixture through validator and raw hook',
+    'never blocks the $name fixture in the raw hook when the validator accepts it',
     async fixture => {
       const body = fixture.override === undefined ? PR_BODY : `${PR_BODY}\n${fixture.override}`
       const issue = makeIssue(fixture.issueBody)
@@ -149,13 +151,9 @@ describe('PR lifecycle policy drift', () => {
       const hook = findGitHubWorkflowBlock(
         `gh pr create --draft --title "fix: lifecycle" --body "${body}"`,
         process.cwd(),
-        {
-          resolveClosingIssueReference: () => ({ issue, ok: true }),
-          validateClosingIssueReferences: true,
-        },
       )
       expect(validation.ok).toBe(fixture.ok)
-      expect(hook === null).toBe(fixture.ok)
+      expect(hook === null || !validation.ok).toBe(true)
     },
   )
 
@@ -170,17 +168,13 @@ describe('PR lifecycle policy drift', () => {
     const hook = findGitHubWorkflowBlock(
       `gh pr create --draft --title "fix: lifecycle" --body "${body}"`,
       process.cwd(),
-      {
-        resolveClosingIssueReference: () => ({ issue, ok: true }),
-        validateClosingIssueReferences: true,
-      },
     )
     expect(validation.ok).toBe(false)
     expect(validation.errors.some(e => e.includes('escape comment'))).toBe(true)
     expect(hook?.reason).toContain('escape comment')
   })
 
-  it('accepts the Fix Main no-closing-ref exception through the raw hook when unvalidated', () => {
+  it('accepts the Fix Main no-closing-ref exception through the raw hook', () => {
     const body = FIX_MAIN_NO_CLOSING_REF_PR_BODY
     const hook = findGitHubWorkflowBlock(
       `gh pr create --draft --title "fix: interim classifier" --body "${body}"`,
@@ -190,20 +184,16 @@ describe('PR lifecycle policy drift', () => {
   })
 
   it.each(ROOT_CAUSE_LIFECYCLE_FIXTURES)(
-    'agrees the Fix Main root-cause ref ($name) validates through validator and raw hook',
+    'never blocks the Fix Main root-cause ref ($name) in the raw hook when the validator accepts it',
     async fixture => {
       const body = FIX_MAIN_NO_CLOSING_REF_PR_BODY
       const validation = await validatePrBodyWithIssueReferences(body, async () => fixture.lookup)
       const hook = findGitHubWorkflowBlock(
         `gh pr create --draft --title "fix: interim classifier" --body "${body}"`,
         process.cwd(),
-        {
-          resolveClosingIssueReference: () => fixture.lookup,
-          validateClosingIssueReferences: true,
-        },
       )
       expect(validation.ok).toBe(fixture.ok)
-      expect(hook === null).toBe(fixture.ok)
+      expect(hook === null || !validation.ok).toBe(true)
     },
   )
 

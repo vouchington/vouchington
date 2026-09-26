@@ -123,15 +123,7 @@ describe('Codex hook gh stack init root guard (#11376, #11352)', () => {
     const dir = makeTestTempDirSync('stack-init-on-trunk-')
     try {
       initRepoWithOriginMain(dir)
-      // No open stacks in this fixture — resolveStackTopology stubbed so this test isolates the
-      // root guard from the abandonment guard exercised separately in
-      // codex-hook-gh-stack-abandonment-guard.test.mts.
-      expect(
-        findPreToolUseBlock(
-          { tool_input: { command: 'gh stack init', cwd: dir } },
-          { resolveStackTopology: () => [] },
-        ),
-      ).toBeNull()
+      expect(findPreToolUseBlock({ tool_input: { command: 'gh stack init', cwd: dir } })).toBeNull()
     } finally {
       rmSync(dir, { force: true, recursive: true })
     }
@@ -142,10 +134,7 @@ describe('Codex hook gh stack init root guard (#11376, #11352)', () => {
     try {
       initRepoWithOriginMain(dir)
       expect(
-        findPreToolUseBlock(
-          { tool_input: { command: 'gh stack init --base main', cwd: dir } },
-          { resolveStackTopology: () => [] },
-        ),
+        findPreToolUseBlock({ tool_input: { command: 'gh stack init --base main', cwd: dir } }),
       ).toBeNull()
     } finally {
       rmSync(dir, { force: true, recursive: true })
@@ -160,12 +149,7 @@ describe('Codex hook gh stack init root guard (#11376, #11352)', () => {
         cwd: dir,
         env: isolatedGitEnv(),
       })
-      expect(
-        findPreToolUseBlock(
-          { tool_input: { command: 'gh stack init', cwd: dir } },
-          { resolveStackTopology: () => [] },
-        ),
-      ).toBeNull()
+      expect(findPreToolUseBlock({ tool_input: { command: 'gh stack init', cwd: dir } })).toBeNull()
     } finally {
       rmSync(dir, { force: true, recursive: true })
     }

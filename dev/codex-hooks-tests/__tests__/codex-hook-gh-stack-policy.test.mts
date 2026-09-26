@@ -119,6 +119,31 @@ describe('Codex hook gh stack submit and link policy', () => {
   )
 })
 
+describe('Codex hook gh stack checkout target', () => {
+  it.each([
+    'gh stack checkout 123',
+    'gh-stack checkout 123',
+    'gh extension exec stack checkout 123',
+    'cd /work/tree && gh stack checkout 123 && gh stack rebase',
+  ])('allows exactly one numeric target: %s', command => {
+    expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
+  })
+
+  it.each([
+    'gh stack checkout my-branch',
+    'gh stack checkout',
+    'gh stack checkout 12 34',
+    'gh stack checkout 12a',
+    'gh stack checkout 012',
+    'gh stack checkout 0',
+    'gh-stack checkout my-branch',
+  ])('blocks any other target: %s', command => {
+    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain(
+      'exactly one stack number or PR number',
+    )
+  })
+})
+
 describe('Codex hook hand-rolled stack base policy', () => {
   afterEach(() => {
     vi.unstubAllEnvs()

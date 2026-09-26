@@ -41,25 +41,12 @@ PRs permanently. After a `ci.yml` trigger change lands on `main`, rebase existin
 Use only these non-interactive forms:
 
 - `gh stack init <branch>` — hook-enforced, not just advisory: the pre-tool-use hook hard-blocks
-  `init` when `--base`/`-b` names anything but `main`, when HEAD is not an ancestor of `origin/main`
-  (an off-trunk root), when HEAD is already a layer of an open stack (use `gh stack add` instead), or
-  when any other unfinished open stack exists anywhere in the repo — the last case regardless of who
-  owns it, since "forgot about the old stack" is a cross-session failure (see "Reconcile before
-  starting anything new" below). That last block is a hard stop, not a `confirm` prompt — Codex and
-  Grok render `confirm` as a no-op, so a real block is the only thing that fires in every harness. If
-  the new stack is genuinely deliberate and separate, reconcile first, then re-run with
-  `AGENT_STACK_INIT_CONFIRM_SEPARATE=1` prefixed to acknowledge it.
+  `init` when `--base`/`-b` names anything but `main`, or when HEAD is not an ancestor of
+  `origin/main` (an off-trunk root).
 - `gh stack add <branch>`
 - `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
-  number also works. Run it as the whole command, or as
-  `cd <absolute-worktree-path> && gh stack checkout <stack-number>`. Hook-enforced: it is blocked
-  while any existing local layer branch differs from its PR head, and the block prints the fix for
-  each branch. It is also blocked when the hook cannot read the stack: gh-stack falls back from a
-  failed stack read to PR `<n>`'s stack, so the hook checks every stack the number could import and
-  treats any GitHub API answer other than 200 or 404 as unreadable. The hook reads the repository
-  gh-stack reads (`GH_REPO`, else the first of the `upstream`, `github`, and `origin` remotes; `gh
-repo set-default` does not apply), and blocks when it cannot tell that is one github.com
-  repository. See [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
+  number also works. Hook-enforced: it takes exactly one numeric stack or PR number. See
+  [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `node dev/pr-description.mts update` each
   new PR; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
   does not check that the body update ran.
@@ -77,9 +64,9 @@ repo set-default` does not apply), and blocks when it cannot tell that is one gi
 The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `checkout`, `delete`,
 `down`, `init`, `link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and
 `view` are permitted `gh stack` actions. `merge` requires a numeric PR-number selector, and
-`checkout` requires exactly one stack number or PR number and nothing else in the command. Help
-runs no command, so `gh stack --help`, `gh stack help [<action>]`, and `gh stack <action> --help`
-(or `-h`) for a permitted action pass with nothing else beside them. The hook does not further enforce
+`checkout` requires exactly one stack number or PR number. Help runs no command, so
+`gh stack --help`, `gh stack help [<action>]`, and `gh stack <action> --help` (or `-h`) for a
+permitted action pass with nothing else beside them. The hook does not further enforce
 the exact flag combination shown above — `gh stack merge <pr>` and `gh stack merge <pr> --yes` also
 pass the hook even though neither is the form this page requires. Do not run interactive TUIs:
 `gh stack submit` without `--auto`, `gh stack modify`, bare `gh stack checkout`, `gh stack switch`, or
@@ -104,13 +91,19 @@ record tracks. A stack created from another worktree, session, or machine is not
 Before rebasing or pushing a stack layer, including when a pr-shepherd instruction says to, import
 the stack into its one worktree:
 
-1. `gh stack checkout <stack-number>`, with the number from `pulls/<N>.stack.number`. It fetches,
-   records the stack, and checks out the top-most unmerged layer.
-2. If the hook blocks it, an existing local layer branch differs from its PR head. gh-stack keeps
-   existing local branches as they are, so the next rebase would start from stale commits. Apply the
-   printed fix for each branch, then rerun the checkout. A branch that is only behind gets a
-   fast-forward command. A branch with local-only commits must be reconciled by hand: push commits
-   that belong on the PR, or move the branch once you have confirmed they are superseded.
+1. `gh stack checkout <stack-number>`, with the number from `pulls/<N>.stack.number`. It records
+   the stack and checks out the top-most unmerged layer. When this worktree already tracks a
+   matching stack, it just switches branches, so remote-tracking refs can be stale.
+2. Required: gh-stack keeps existing local layer branches as they are, so a stale one would make
+   the next rebase start from stale commits. Run `git fetch origin` so each `origin/<b>` is the
+   current PR head, then for each unmerged layer branch `<b>`, run
+   `git rev-list --left-right --count <b>...origin/<b>` (left = local-only commits, right = commits
+   only on the PR head):
+   - `0 0` — up to date.
+   - `0 N` (only behind) — fast-forward it: `git merge --ff-only origin/<b>` on the checked-out
+     layer, `git branch -f <b> origin/<b>` on any other.
+   - left count above `0` (ahead or diverged) — reconcile by hand: push commits that belong on the
+     PR, or move the branch once you have confirmed they are superseded.
 
 ### Lower-layer review fix
 

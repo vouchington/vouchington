@@ -13,9 +13,9 @@ export type PreToolUseOptions = {
    * policy.mts. Omitted means unattended, so no silent allow is ever emitted.
    */
   attended?: boolean
-  /** See GitHubWorkflowPolicyOptions.automationContext in policy/github-closing-refs.mts. */
+  /** See GitHubWorkflowPolicyOptions.automationContext in policy/core.mts. */
   automationContext?: boolean
-  /** See GitHubWorkflowPolicyOptions.sessionOwners in policy/github-closing-refs.mts. */
+  /** See GitHubWorkflowPolicyOptions.sessionOwners in policy/core.mts. */
   sessionOwners?: () => ReadonlySet<string> | undefined
 }
 

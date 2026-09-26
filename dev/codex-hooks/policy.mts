@@ -121,7 +121,6 @@ export function isAttendedClaudeSession(env: NodeJS.ProcessEnv = process.env): b
 
 export function preToolUseOutput(payload: HookPayload, options: PreToolUseOptions = {}): string {
   const block = findPreToolUseBlock(payload, {
-    validateClosingIssueReferences: true,
     automationContext: options.automationContext,
     sessionOwners: options.sessionOwners,
   })

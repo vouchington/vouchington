@@ -1,16 +1,15 @@
-import { DEFAULT_AUTOMATION_CONTEXT, type BlockDecision } from './core.mts'
 import {
-  findClosingIssueReferenceBlock,
-  findUnresolvableFixMainExceptionBlock,
+  DEFAULT_AUTOMATION_CONTEXT,
+  type BlockDecision,
   type GitHubWorkflowPolicyOptions,
-} from './github-closing-refs.mts'
+} from './core.mts'
 import { hasClosingIssueReference } from '../../pr-description/closing-refs.mts'
 import { findEscapeCommentClosingKeywordLeaks } from '../../pr-description/escape-comment-leaks.mts'
 import {
   isFixMainInterimClassifierNoClosingRefBody,
   isScheduledPromptNoSourceBody,
 } from '../../pr-description/scheduled-no-source.mts'
-import { commandsToInspectForGitHubPolicy, effectiveGhRepo } from './github-command-context.mts'
+import { commandsToInspectForGitHubPolicy } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
 import { commandPrefixAt } from './github-command-position.mts'
 import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
@@ -40,8 +39,7 @@ export function findGitHubWorkflowBlock(
       if (!mayRunGh(tokens[index])) {
         continue
       }
-      const prefix = commandPrefixAt(tokens, index)
-      if (prefix === null) {
+      if (commandPrefixAt(tokens, index) === null) {
         continue
       }
       const invocation = parseGhOrGhStackInvocation(tokens, index)
@@ -64,7 +62,6 @@ export function findGitHubWorkflowBlock(
               'New PRs must be opened as draft first. Use --draft or `node dev/pr-description.mts create ...`.',
           }
         }
-        const repo = effectiveGhRepo(ghOptions.repo.at(-1), prefix.env)
         const baseBlock = findHandRolledStackBaseBlock(
           action,
           invocation.optionTokens,
@@ -97,9 +94,10 @@ export function findGitHubWorkflowBlock(
           continue
         }
         // The hook enforces draft-first creation and the closing-keyword or scheduled no-source
-        // requirement; the full set of PR body rules (## Related issues heading, Workspace setup:
-        // line, etc.) lives in dev/pr-description/validate.mts. Keep both in sync when changing
-        // PR body policy.
+        // requirement from the body text alone — it never looks the referenced issues up. The full
+        // set of PR body rules (## Related issues heading, Workspace setup: line, linked issue
+        // existence and state, etc.) lives in dev/pr-description/validate.mts. Keep both in sync
+        // when changing PR body policy.
         if (
           !hasClosingIssueReference(body) &&
           !isScheduledPromptNoSourceBody(body) &&
@@ -114,33 +112,9 @@ export function findGitHubWorkflowBlock(
         if (escapeCommentLeaks.length > 0) {
           return { reason: escapeCommentLeaks[0] }
         }
-        const canResolveClosingIssueReferences = invocationCwd !== undefined || repo !== undefined
-        const unresolvableExceptionBlock = findUnresolvableFixMainExceptionBlock(
-          body,
-          canResolveClosingIssueReferences,
-          options.validateClosingIssueReferences === true,
-        )
-        if (unresolvableExceptionBlock !== null) {
-          return unresolvableExceptionBlock
-        }
-        if (canResolveClosingIssueReferences) {
-          const issueRefBlock = findClosingIssueReferenceBlock(
-            body,
-            invocationCwd ?? cwd,
-            options,
-            { env: prefix.env, repo },
-          )
-          if (issueRefBlock !== null) {
-            return issueRefBlock
-          }
-        }
       }
 
-      const stackBlock = findGitHubStackWorkflowBlock(invocation, options, {
-        command,
-        cwd: invocationCwd,
-        env: prefix.env,
-      })
+      const stackBlock = findGitHubStackWorkflowBlock(invocation, invocationCwd)
       if (stackBlock !== null) {
         return stackBlock
       }
