@@ -6,8 +6,7 @@ import {
   type EntityRelationMetadata,
 } from '@services/entity-relations/metadata'
 import type { PrivateUser } from '@services/users/types'
-import { refreshEntityRelationVoteStatsFromPrimaryWithFallback } from '@services/elections-votes/entity-relation/refresh-stats'
-import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
+import { refreshPostCategoryVoteStats } from './category-vote-stats.mts'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
 import { getRemovedPositivePostHashtagRelations } from './hashtag-vote-removals.mts'
@@ -57,8 +56,20 @@ async function finalizePostTopicCategoryVotes(
     postId,
     topicIds,
   )
-  await writeAndRefreshPostRelationVotes(topicCategoryOwnerId, topicRelation, removedRelations, 0)
-  return writeAndRefreshPostRelationVotes(topicCategoryOwnerId, topicRelation, retainedRelations, 1)
+  await writeAndRefreshPostRelationVotes(
+    topicCategoryOwnerId,
+    topicRelation,
+    removedRelations,
+    0,
+    postId,
+  )
+  return writeAndRefreshPostRelationVotes(
+    topicCategoryOwnerId,
+    topicRelation,
+    retainedRelations,
+    1,
+    postId,
+  )
 }
 
 async function getPersistedPostTopicIds(postId: string): Promise<string[]> {
@@ -99,8 +110,8 @@ async function voteAndRefreshPostHashtagRelations(
     activeObjectIds.map(id => ({ id })),
     { enqueueVoteStats: false, vote: true },
   )
-  await writeAndRefreshPostRelationVotes(creator.id, relation, removedRelations, 0)
-  await refreshVoteStats(relation.table_name, relations)
+  await writeAndRefreshPostRelationVotes(creator.id, relation, removedRelations, 0, postId)
+  await refreshPostCategoryVoteStats(postId, relation.table_name, relations)
 }
 
 async function getActivePostHashtagRelationObjectIds(
@@ -155,6 +166,7 @@ async function writeAndRefreshPostRelationVotes(
   relation: EntityRelationMetadata,
   relations: Array<{ id?: string }>,
   score: 0 | 1,
+  postId: string,
 ): Promise<void> {
   const votes = relations.flatMap(relation =>
     relation.id ? [{ entityId: relation.id, score }] : [],
@@ -163,22 +175,5 @@ async function writeAndRefreshPostRelationVotes(
   await upsertEntityRelationElectionVotes(voterId, votes, undefined, relation, {
     enqueueVoteStats: false,
   })
-  await refreshVoteStats(relation.table_name, relations)
-}
-
-async function refreshVoteStats(
-  relationTable: string,
-  relations: Array<{ id?: string }>,
-): Promise<void> {
-  await Promise.all(
-    relations.flatMap(relation =>
-      relation.id
-        ? [
-            refreshEntityRelationVoteStatsFromPrimaryWithFallback(
-              createEntityRelationElectionTarget(relation.id, relationTable),
-            ),
-          ]
-        : [],
-    ),
-  )
+  await refreshPostCategoryVoteStats(postId, relation.table_name, relations)
 }

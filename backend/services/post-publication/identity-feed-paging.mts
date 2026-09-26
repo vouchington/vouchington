@@ -10,17 +10,35 @@ export async function listFeedRows(
   cursor: string | null,
   limit: number,
 ): Promise<SourceRow[]> {
-  const [itemId, feedId] =
-    cursor === null ? [null, null] : (JSON.parse(cursor) as [string, string | null])
-  const itemStatement = sql`/* listPublicationIdentityFeedItem */
-    SELECT item.id FROM posts candidate JOIN post__stories story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
-      JOIN rss_feed_items item ON item.story_id = story.story_id AND item.deleted_at IS NULL
-    WHERE candidate.id = ${postId}
-      AND (item.story_id, item.id) >= (story.story_id, ${itemId ?? '00000000-0000-0000-0000-000000000000'}::uuid)
-      AND item.story_id <= story.story_id ORDER BY item.story_id, item.id LIMIT 1`
-  const { rows: items } = await query<{ id: string }>(itemStatement)
-  const item = items[0]
-  if (!item) return []
+  const [itemId, feedId, itemComplete = false] =
+    cursor === null
+      ? [null, null, false]
+      : (JSON.parse(cursor) as [string, string | null, boolean?])
+  const itemStatement = sql`/* listPublicationIdentityFeedItem */ WITH story_scope AS MATERIALIZED (
+    SELECT story.story_id FROM posts candidate JOIN post__stories story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
+    WHERE candidate.id = ${postId}), items AS MATERIALIZED (
+    SELECT item.id FROM story_scope CROSS JOIN LATERAL (
+      SELECT id FROM rss_feed_items WHERE story_id = story_scope.story_id AND deleted_at IS NULL
+        AND (story_id, id) `
+    .append(itemComplete ? '>' : '>=')
+    .append(
+      sql` (story_scope.story_id, ${itemId ?? '00000000-0000-0000-0000-000000000000'}::uuid)
+      ORDER BY story_id, id LIMIT `,
+    )
+    .append(publicationPageLimit(limit))
+    .append(sql`) item) SELECT items.id, source.rss_feed_id IS NOT NULL AS has_source FROM items
+      LEFT JOIN LATERAL (SELECT rss_feed_id FROM rss_feed_item_sources
+        WHERE rss_feed_item_id = items.id
+          AND (rss_feed_item_id, rss_feed_id) >= (items.id, '00000000-0000-0000-0000-000000000000'::uuid)
+        ORDER BY rss_feed_item_id, rss_feed_id LIMIT 1) source ON TRUE ORDER BY items.id`)
+  const { rows: items } = await query<{ id: string; has_source: boolean }>(itemStatement)
+  const emptyRows: SourceRow[] = []
+  const item = items.find(candidate => candidate.has_source)
+  for (const candidate of items) {
+    if (candidate === item) break
+    emptyRows.push(completedItemRow(candidate.id))
+  }
+  if (!item) return emptyRows
   const sourceStatement = sql`/* listPublicationIdentityFeedSourcePage */ WITH `.append(
     nativeSourceBounds(item.id),
   ).append(sql`
@@ -36,24 +54,18 @@ export async function listFeedRows(
   )
   sourceStatement
     .append(sql` ORDER BY rss_feed_item_id, rss_feed_id LIMIT `)
-    .append(publicationPageLimit(limit))
+    .append(publicationPageLimit(limit - emptyRows.length))
   const { rows } = await query<SourceRow>(sourceStatement)
-  if (rows.length > 0) return rows
-  const { rows: next } = await query<{ id: string }>(sql`/* advancePublicationIdentityFeedItem */
-    SELECT item.id FROM posts candidate JOIN post__stories story ON story.post_id = COALESCE(candidate.root_id, candidate.id)
-      JOIN rss_feed_items item ON item.story_id = story.story_id AND item.deleted_at IS NULL
-    WHERE candidate.id = ${postId} AND (item.story_id, item.id) > (story.story_id, ${item.id}::uuid)
-      AND item.story_id <= story.story_id ORDER BY item.story_id, item.id LIMIT 1`)
-  return next[0]
-    ? [
-        {
-          kind: null,
-          uuidValue: null,
-          textValue: null,
-          postType: null,
-          day: null,
-          cursor: JSON.stringify([next[0].id, null]),
-        },
-      ]
-    : []
+  return [...emptyRows, ...(rows.length > 0 ? rows : [completedItemRow(item.id)])]
+}
+
+function completedItemRow(itemId: string): SourceRow {
+  return {
+    kind: null,
+    uuidValue: null,
+    textValue: null,
+    postType: null,
+    day: null,
+    cursor: JSON.stringify([itemId, null, true]),
+  }
 }

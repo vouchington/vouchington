@@ -11,12 +11,55 @@ import {
   insertTestPublicationTopicSlugFanout,
   insertTestPublicationFeedFanout,
 } from '@voucha/test-helpers/entities/post-publication-snapshots'
-import { insertTestPublicationAdditionalFeedItems } from '@voucha/test-helpers/entities/post-publication-feed-pages'
+import {
+  insertTestPublicationAdditionalFeedItems,
+  insertTestPublicationSourceLessFeedItems,
+} from '@voucha/test-helpers/entities/post-publication-feed-pages'
+import {
+  enableQueryCapture,
+  stopTestQueryCapture,
+  countCapturedQueriesByAnnotation,
+} from '@voucha/test-helpers/query-capture'
 
 describe('native publication identity page progress', () => {
-  it('pages many live items of the single root story without losing duplicate feed sources', async () => {
+  it('skips source-less item pages without per-item roundtrips or losing later sources', async () => {
     const { candidate, user } = await createTestPublicationSnapshotWork()
     const { topicIds } = await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 1)
+    const feedIds = await insertTestPublicationFeedFanout(candidate.id, user.id, topicIds)
+    await insertTestPublicationSourceLessFeedItems(candidate.id, 1001)
+    await insertTestPublicationAdditionalFeedItems(candidate.id, feedIds[0]!, 1)
+    await using query = await beginTransaction()
+    let cursor: string | null = null
+    let complete = false
+    const keys: string[] = []
+    enableQueryCapture()
+    let queries: ReturnType<typeof stopTestQueryCapture>
+    try {
+      for (let page = 0; page < 20 && !complete; page += 1) {
+        const result = await listPublicationIdentitySourcePage(
+          query,
+          candidate.id,
+          'feed',
+          cursor,
+          100,
+        )
+        expect(result.complete || result.cursorValue !== cursor).toBe(true)
+        keys.push(...result.keys.map(key => key.uuidValue!))
+        cursor = result.cursorValue
+        complete = result.complete
+      }
+    } finally {
+      queries = stopTestQueryCapture()
+    }
+    expect(complete).toBe(true)
+    expect(keys).toEqual([feedIds[0], feedIds[0]])
+    expect(
+      countCapturedQueriesByAnnotation(queries, 'listPublicationIdentityFeedItem'),
+    ).toBeLessThanOrEqual(19)
+  })
+  it('pages many live items of the single root story without losing duplicate feed sources', async () => {
+    const { candidate, user } = await createTestPublicationSnapshotWork()
+    const { topicIds } = await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 7)
     const feedIds = await insertTestPublicationFeedFanout(candidate.id, user.id, topicIds)
     await insertTestPublicationAdditionalFeedItems(candidate.id, feedIds[0]!, 11)
     await using query = await beginTransaction()
@@ -24,7 +67,8 @@ describe('native publication identity page progress', () => {
     let cursor: string | null = null
     let complete = false
     const keys: string[] = []
-    for (let page = 0; page < 10 && !complete; page += 1) {
+    const pageBound = Math.ceil((feedIds.length + 2 * 12 + 1) / 3) + 1
+    for (let page = 0; page < pageBound && !complete; page += 1) {
       const result = await listPublicationIdentitySourcePage(query, candidate.id, kind, cursor, 3)
       expect(result.keys.length).toBeLessThanOrEqual(3)
       expect(result.complete || result.cursorValue !== cursor).toBe(true)
@@ -34,12 +78,14 @@ describe('native publication identity page progress', () => {
       complete = result.complete
     }
     expect(complete).toBe(true)
-    expect(keys).toHaveLength(12)
-    expect([...new Set(keys)]).toEqual(feedIds)
+    expect(keys).toHaveLength(feedIds.length + 11)
+    expect([...new Set(keys)].sort()).toEqual([...feedIds].sort())
   })
   it('advances source rows with null mappings without ending or omitting later branches', async () => {
     const { candidate, user } = await createTestPublicationSnapshotWork()
-    const aliasId = await createTestTopicAliasForCategoryMapping({ alias: `null-${candidate.id}` })
+    const aliasId = await createTestTopicAliasForCategoryMapping({
+      alias: `null-${candidate.id}`,
+    })
     await insertTestPostTopicAliasSourceBatch({
       postIds: [candidate.id],
       topicAliasId: aliasId,
@@ -74,7 +120,10 @@ describe('native publication identity page progress', () => {
     const slug = `duplicate-${candidate.id}`
     await seedTestPublicationReceipt(candidate.id, 'ordinal-progress', {
       topicIds: [],
-      identityKeys: Array.from({ length: 5 }, () => ({ kind: 'post_slug', value: slug })),
+      identityKeys: Array.from({ length: 5 }, () => ({
+        kind: 'post_slug',
+        value: slug,
+      })),
       sitemapTargets: [{ postType: 'discussion', day: '2026-01-01' }],
     })
     await using query = await beginTransaction()
@@ -87,7 +136,11 @@ describe('native publication identity page progress', () => {
       2,
     )
     expect(first.keys).toHaveLength(2)
-    expect(first).toMatchObject({ cursorKind: 'identityKeys', cursorValue: '1', complete: false })
+    expect(first).toMatchObject({
+      cursorKind: 'identityKeys',
+      cursorValue: '1',
+      complete: false,
+    })
     const second = await retainStoredPublicationIdentityPage(
       query,
       work.id,
@@ -96,7 +149,11 @@ describe('native publication identity page progress', () => {
       first.cursorValue,
       2,
     )
-    expect(second).toMatchObject({ cursorKind: 'identityKeys', cursorValue: '3', complete: false })
+    expect(second).toMatchObject({
+      cursorKind: 'identityKeys',
+      cursorValue: '3',
+      complete: false,
+    })
     const third = await retainStoredPublicationIdentityPage(
       query,
       work.id,
@@ -105,7 +162,11 @@ describe('native publication identity page progress', () => {
       second.cursorValue,
       2,
     )
-    expect(third).toMatchObject({ cursorKind: 'sitemapTargets', cursorValue: '0', complete: false })
+    expect(third).toMatchObject({
+      cursorKind: 'sitemapTargets',
+      cursorValue: '0',
+      complete: false,
+    })
     const eof = await retainStoredPublicationIdentityPage(
       query,
       work.id,

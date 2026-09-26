@@ -1,6 +1,7 @@
 import { enqueueBulkUpdateEntityRelationElectionVoteStats } from '@queues/elections/enqueues'
 import { write } from '@data-stores/psql'
 import { updateEntityRelationElectionVoteStatsFromPrimary } from './vote-stats.mts'
+import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from './vote-stats-batch.mts'
 import type { EntityRelationElectionTarget } from '@queues/elections/types'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { createEntityRelationElectionTarget } from './target.mts'
@@ -8,6 +9,39 @@ import { createEntityRelationElectionTarget } from './target.mts'
 const electionRelationTables = entityRelationMetadatum.flatMap(metadata =>
   metadata.election ? [metadata.table_name] : [],
 )
+export async function refreshEntityRelationVoteStatsBatchFromPrimaryWithFallback(
+  targets: readonly EntityRelationElectionTarget[],
+): Promise<readonly EntityRelationElectionTarget[] | undefined> {
+  return refreshEntityRelationVoteStatsBatchWithDependencies(targets, {
+    refreshFromPrimary: updateEntityRelationElectionVoteStatsFromPrimaryBatch,
+    enqueueReconciliation: enqueueBulkUpdateEntityRelationElectionVoteStats,
+  })
+}
+
+export async function refreshEntityRelationVoteStatsBatchWithDependencies(
+  targets: readonly EntityRelationElectionTarget[],
+  dependencies: {
+    refreshFromPrimary: (
+      targets: readonly EntityRelationElectionTarget[],
+    ) => Promise<readonly EntityRelationElectionTarget[]>
+    enqueueReconciliation: (targets: EntityRelationElectionTarget[]) => unknown | Promise<unknown>
+  },
+): Promise<readonly EntityRelationElectionTarget[] | undefined> {
+  if (targets.length === 0) return []
+  try {
+    return await dependencies.refreshFromPrimary(targets)
+  } catch (refreshError) {
+    try {
+      await dependencies.enqueueReconciliation([...targets])
+    } catch (enqueueError) {
+      throw new Error(
+        `Primary entity-relation batch vote refresh failed (${refreshError instanceof Error ? refreshError.message : String(refreshError)}) and fallback enqueue also failed`,
+        { cause: enqueueError },
+      )
+    }
+  }
+}
+
 export async function refreshEntityRelationVoteStatsFromPrimaryWithFallback(
   target: EntityRelationElectionTarget,
 ): Promise<void> {

@@ -4,6 +4,11 @@ import { definePlanStatisticsRefresh } from '../query-plans.mts'
 export const analyzePublicationSlugPageForTest = definePlanStatisticsRefresh(async () => {
   await write('/* analyzePublicationSlugPageForTest */ ANALYZE post_slugs')
 })
+export const analyzePublicationFeedItemPageForTest = definePlanStatisticsRefresh(async () => {
+  await write(
+    '/* analyzePublicationFeedItemPageForTest */ ANALYZE posts, post__stories, rss_feed_items, rss_feed_item_sources',
+  )
+})
 export const analyzePublicationSnapshotKeyPageForTest = definePlanStatisticsRefresh(async () => {
   await write(
     '/* analyzePublicationSnapshotKeyPageForTest */ ANALYZE post_publication_identity_snapshot_keys',

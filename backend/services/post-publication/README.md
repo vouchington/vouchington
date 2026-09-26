@@ -39,7 +39,10 @@ previous-receipt retention pages have independent durable cursors on the same at
 [`identity-source-paging.mts`](identity-source-paging.mts) advances one source branch and its native
 indexed row key, limiting physical rows before mapping or filtering identities. Duplicate identities,
 deleted relations and aliases with no topic still advance source progress; relational insertion
-deduplicates their retained keys. Feed progress includes the item and feed keys. Disappearing
+deduplicates their retained keys. Feed progress includes item/feed keys and an exhausted-item marker.
+Native item pages use capped source-existence probes, so source-less stories advance a whole item
+page without a database roundtrip per item; feeds of the first sourced item are exhausted before
+later items advance. Disappearing
 descendant sitemap targets page descendant post IDs before projecting the type/day tuple.
 Native pages preserve the scoped composite index interval. Their positive safe-integer row budgets
 are structural SQL literals so generic prepared plans can cost an early stop; identity and cursor

@@ -26,6 +26,7 @@ The posts service is the core content creation system. It handles multiple post 
 - `content.mts` — Generates content hashes for embeddings and moderation
 - `images.mts` — Validates post image inputs
 - `post-category-finalizations.mts` — Durable, generation-fenced replay of category-vote finalization after a post mutation commits
+- `category-vote-stats.mts` — Primary category-score refresh in atomic bounded chunks, coalescing publication capture per post/chunk. Successful changed chunks publish notification reconciliation; a failed chunk durably queues its full target set, leaving earlier committed chunks' effects intact.
 - `review-successions/` — Exact-topic root-review reconciliation, immutable automatic archive epochs, and read-only historical audit
 
 ### [`search/`](search/)

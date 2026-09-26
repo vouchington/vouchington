@@ -11,9 +11,15 @@ import {
   analyzePublicationSlugPageForTest,
   analyzePublicationSnapshotKeyPageForTest,
   analyzePublicationCleanupPageForTest,
+  analyzePublicationFeedItemPageForTest,
   insertTestPublicationSnapshotHeaderFanout,
 } from '@voucha/test-helpers/entities/post-publication-query-plans'
-import { insertTestPublicationTopicSlugFanout } from '@voucha/test-helpers/entities/post-publication-snapshots'
+import {
+  insertTestPublicationTopicSlugFanout,
+  insertTestPublicationFeedFanout,
+} from '@voucha/test-helpers/entities/post-publication-snapshots'
+import { insertTestPublicationSourceLessFeedItems } from '@voucha/test-helpers/entities/post-publication-feed-pages'
+import { listFeedRows } from './identity-feed-paging.mts'
 import { createTestPublicationSnapshotWork } from './test-fixtures.mts'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
@@ -26,6 +32,7 @@ let slugQuery: CapturedTestQuery
 let snapshotQuery: CapturedTestQuery
 let cleanupQuery: CapturedTestQuery
 let cleanupLockQuery: CapturedTestQuery
+let feedItemQuery: CapturedTestQuery
 
 describe('publication identity physical page query plans', () => {
   beforeAll(async () => {
@@ -96,8 +103,51 @@ describe('publication identity physical page query plans', () => {
         await cleanupPostPublicationIdentitySnapshots(100)
       },
     )
+    const feedFixture = await createTestPublicationSnapshotWork()
+    const { topicIds } = await insertTestPublicationTopicSlugFanout(
+      feedFixture.candidate.id,
+      feedFixture.user.id,
+      1,
+    )
+    await insertTestPublicationFeedFanout(feedFixture.candidate.id, feedFixture.user.id, topicIds)
+    await insertTestPublicationSourceLessFeedItems(feedFixture.candidate.id, 1001)
+    feedItemQuery = await captureAnnotatedQuery('listPublicationIdentityFeedItem', async () => {
+      await using query = await beginTransaction()
+      await listFeedRows(query, feedFixture.candidate.id, null, 100)
+    })
   })
 
+  it.each(['force_custom_plan', 'force_generic_plan'] as const)(
+    'bounds native item candidates and source existence probes in %s',
+    async mode => {
+      const plan = await explainCapturedTestQuery(
+        'publication-feed-item-page',
+        feedItemQuery,
+        mode,
+        analyzePublicationFeedItemPageForTest,
+      )
+      expect(physicalRows(plan, 'rss_feed_items')).toBe(100)
+      expect(physicalRows(plan, 'rss_feed_item_sources')).toBeLessThanOrEqual(100)
+      expect(
+        collectPlanNodes(plan)
+          .filter(node => matchesRelation(node, 'rss_feed_item_sources'))
+          .reduce((probes, node) => probes + Number(node['Actual Loops'] ?? 0), 0),
+      ).toBeLessThanOrEqual(100)
+      for (const [relation, scope] of [
+        ['rss_feed_items', 'story_id'],
+        ['rss_feed_item_sources', 'rss_feed_item_id'],
+      ]) {
+        expect(
+          collectPlanNodes(plan).some(
+            node =>
+              matchesRelation(node, relation!) &&
+              typeof node['Index Name'] === 'string' &&
+              String(node['Index Cond']).includes(scope!),
+          ),
+        ).toBe(true)
+      }
+    },
+  )
   it.each(['force_custom_plan', 'force_generic_plan'] as const)(
     'seeks native slugs before LIMIT in %s',
     async mode => {
@@ -188,7 +238,7 @@ async function captureAnnotatedQuery(
 
 function physicalRows(plan: unknown, relation: string): number {
   return collectPlanNodes(plan)
-    .filter(node => node['Relation Name'] === relation)
+    .filter(node => matchesRelation(node, relation))
     .reduce(
       (rows, node) =>
         rows +
@@ -198,6 +248,11 @@ function physicalRows(plan: unknown, relation: string): number {
           Number(node['Actual Loops'] ?? 1),
       0,
     )
+}
+function matchesRelation(node: Record<string, unknown>, relation: string): boolean {
+  return (
+    node['Relation Name'] === relation || String(node['Relation Name']).startsWith(`${relation}_`)
+  )
 }
 function scanIndexes(plan: unknown, relation: string): unknown[] {
   return collectPlanNodes(plan).flatMap(node =>
