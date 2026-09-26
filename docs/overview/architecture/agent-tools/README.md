@@ -7,6 +7,7 @@ native SDK surfaces.
 See also:
 
 - [Generated tool catalog](catalog.md)
+- [Generated MCP catalog](../../../../api-fixtures/v1/mcp.json)
 - [Tool registry source](../../../../backend/tools/registry/index.mts)
 - [Tool type definitions](../../../../backend/tools/types.mts)
 - [Tool implementation directory](../../../../backend/tools/)
@@ -55,6 +56,28 @@ Every mutating tool currently exposed on the user `mcp` surface (`manage_my_card
 `update_my_financial_profile`) requires `plan: 'plus'`; every user-`mcp` read tool stays
 `'free'`. No production tool requires `'pro'` yet — see the generated
 [tool catalog](catalog.md)'s Plan column for the authoritative per-tool value.
+
+---
+
+## Generated Artifacts
+
+[`build-mcp-catalog.test.mts`](../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts)
+builds every registry-derived artifact and fails when a committed copy is stale. Run
+`pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate
+them:
+
+| Artifact                                                                 | Contents                                                                                                                        |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)       | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool                   |
+| [`catalog.md`](catalog.md)                                               | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                                              |
+| [`backend/tools/manifest.json`](../../../../backend/tools/manifest.json) | `client`-surface tools for first-party native clients — see [iOS Client Implementation Notes](#ios-client-implementation-notes) |
+
+The same test asserts that each server's catalog equals what `tools/list` returns to a caller
+holding every role, the Pro plan, and every scope, and that every `meta.api` route exists in
+`api-fixtures/v1/openapi.json`. The `docs-publish` workflow renders `mcp.json` with
+[`ci/render-mcp-docs.mts`](../../../../ci/render-mcp-docs.mts) onto the credentialed
+[private docs site](../../../operations/private-docs-site.md) at `/mcp/`, next to the OpenAPI
+reference.
 
 ---
 

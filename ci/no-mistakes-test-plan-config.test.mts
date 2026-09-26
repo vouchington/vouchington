@@ -206,11 +206,16 @@ describe('no-mistakes test plan config', () => {
         'web-integration',
       ],
     })
-    expect(config.projects['agent-tools-docs']).toBeUndefined()
-    expect(named['agent-tools-docs']).toEqual({
-      name: 'agent-tools-docs',
-      paths: ['docs/overview/architecture/agent-tools/**'],
-      targets: ['backend-docs-freshness'],
+    expect(config.projects['mcp-catalog']).toBeUndefined()
+    expect(named['mcp-catalog']).toEqual({
+      name: 'mcp-catalog',
+      paths: [
+        'docs/overview/architecture/agent-tools/**',
+        'backend/tools/manifest.json',
+        'api-fixtures/v1/mcp.json',
+        'api-fixtures/v1/openapi.json',
+      ],
+      targets: ['backend-data-stores'],
     })
     expect(config.projects['automation-prompt-docs']).toBeUndefined()
     expect(named['automation-prompt-docs']).toEqual({

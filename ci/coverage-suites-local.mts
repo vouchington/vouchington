@@ -79,7 +79,6 @@ export const SUITES: Suite[] = [
       '.github/actions/**',
       '.github/workflows/**',
       '.husky/**',
-      'backend/tools/registry.docs*',
     ],
   },
   {

@@ -39,7 +39,15 @@ describe('Docs Publish workflow', () => {
     })
 
     expect(workflow.on?.push?.paths).toEqual(
-      expect.arrayContaining(['.github/actions/**', 'package.json', 'pnpm-lock.yaml']),
+      expect.arrayContaining([
+        'api-fixtures/v1/mcp.json',
+        'ci/render-docs-cli.mts',
+        'ci/render-docs-page.mts',
+        'ci/render-mcp-docs.mts',
+        '.github/actions/**',
+        'package.json',
+        'pnpm-lock.yaml',
+      ]),
     )
 
     const checkout = publish?.steps?.find(step => step.uses?.startsWith('actions/checkout@'))
@@ -58,6 +66,9 @@ describe('Docs Publish workflow', () => {
     expect(build?.run).toContain('delivery/docs/psql/index.html')
     expect(build?.run).toContain('delivery/docs/psql/schema.md')
     expect(build?.run).toContain('delivery/docs/psql/schema.json')
+    expect(build?.run).toContain('node ci/render-mcp-docs.mts delivery/docs/mcp')
+    expect(build?.run).toContain('delivery/docs/mcp/index.html')
+    expect(build?.run).toContain('delivery/docs/mcp/mcp.json')
     expect(build?.run).toContain('find delivery -type l')
     expect(build?.run).toContain('find delivery ! -type f ! -type d')
 

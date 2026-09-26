@@ -19,7 +19,7 @@ flowchart LR
 
 - The credential exists only in encrypted Cloudflare bindings. Never put it in OpenTofu, GitHub
   Actions, SSM, an artifact, a command argument, a committed dotenv file, or browser code.
-- `docs.voucha.ai` contains only the landing page, OpenAPI, and PostgreSQL documentation.
+- `docs.voucha.ai` contains only the landing page, OpenAPI, MCP, and PostgreSQL documentation.
 - Storybook stays on `pages.dev`; its public-suffix boundary isolates it from Voucha parent-domain
   cookies.
 - Hosted PR previews are disabled. PR-controlled JavaScript could imitate a credential prompt and

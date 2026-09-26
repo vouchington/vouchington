@@ -59,13 +59,6 @@ export const toolingProjectPolicies = {
     runInToolingWorkflow: true,
     runInDedicatedToolingWorkflow: false,
   },
-  'backend-docs-freshness': {
-    environmentPolicy: 'isolated',
-    runInLocalCoverage: true,
-    runInToolingTest: true,
-    runInToolingWorkflow: true,
-    runInDedicatedToolingWorkflow: false,
-  },
   'i18n-extract-codemod': {
     environmentPolicy: 'isolated',
     runInLocalCoverage: true,
