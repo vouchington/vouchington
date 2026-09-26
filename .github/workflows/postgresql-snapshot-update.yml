@@ -1,0 +1,192 @@
+name: PostgreSQL Snapshot Update
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Open same-repository pull request number
+        required: true
+        type: number
+
+concurrency:
+  group: postgresql-snapshot-update-${{ github.event.issue.number || inputs.pr_number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.pull_request != null
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    outputs:
+      accepted: ${{ steps.request.outputs.accepted }}
+      pr_number: ${{ steps.request.outputs.pr_number }}
+      head_ref: ${{ steps.request.outputs.head_ref }}
+      head_sha: ${{ steps.request.outputs.head_sha }}
+      base_ref: ${{ steps.request.outputs.base_ref }}
+      base_sha: ${{ steps.request.outputs.base_sha }}
+      postgres_image: ${{ steps.request.outputs.postgres_image }}
+      default_branch: ${{ steps.request.outputs.default_branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Authorize request and bind PR revision
+        id: request
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node ci/postgresql-snapshot-update.mts prepare
+
+  generate:
+    needs: [prepare]
+    if: needs.prepare.outputs.accepted == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        # The trusted prepare job validates the exact pg18@sha256 digest from schema CI.
+        image: ${{ needs.prepare.outputs.postgres_image }} # zizmor: ignore[unpinned-images]
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /var/lib/postgresql:rw,size=1g
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Resolve pnpm store
+        id: pnpm-store
+        timeout-minutes: 1
+        run: |
+          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          echo "lockfile-hash=$(shasum -a 256 pnpm-lock.yaml | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Restore pnpm store without saving candidate changes
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 2
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.pnpm-store.outputs.lockfile-hash }}
+      - name: Set fresh PostgreSQL connection
+        timeout-minutes: 1
+        env:
+          POSTGRES_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          postgres_url="postgres://postgres@localhost:$POSTGRES_PORT/postgres"
+          {
+            echo "DATABASE_URL=$postgres_url"
+            echo "READ_DATABASE_URL=$postgres_url"
+          } >> "$GITHUB_ENV"
+      - name: Install candidate dependencies
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile
+      - name: Generate snapshot from fresh PostgreSQL
+        timeout-minutes: 4
+        working-directory: backend
+        env:
+          SNAPSHOT_HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SNAPSHOT_HEAD_SHA"
+          node --input-type=module -e '
+            const { applyAllMigrations } = await import("./data-stores/psql/migrate.mts")
+            const { generateSchemaSnapshot } = await import("./data-stores/psql/schema-snapshot/generate.mts")
+            const { close } = await import("./data-stores/psql/runtime.mts")
+            try {
+              await applyAllMigrations()
+              await generateSchemaSnapshot()
+            } finally {
+              await close()
+            }
+          '
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .trusted-snapshot-tooling
+          persist-credentials: false
+      - name: Package generated snapshot with provenance
+        timeout-minutes: 1
+        env:
+          SNAPSHOT_PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          SNAPSHOT_HEAD_REF: ${{ needs.prepare.outputs.head_ref }}
+          SNAPSHOT_HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+          SNAPSHOT_BASE_REF: ${{ needs.prepare.outputs.base_ref }}
+          SNAPSHOT_BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SNAPSHOT_POSTGRES_IMAGE: ${{ needs.prepare.outputs.postgres_image }}
+          SNAPSHOT_ARTIFACT_DIR: ${{ runner.temp }}/postgresql-snapshot-artifact
+        run: node .trusted-snapshot-tooling/ci/postgresql-snapshot-update.mts manifest
+      - name: Upload generated snapshot
+        timeout-minutes: 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: postgresql-snapshot-pr-${{ needs.prepare.outputs.pr_number }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/postgresql-snapshot-artifact/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  publish:
+    needs: [prepare, generate]
+    if: needs.generate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          path: candidate
+          persist-credentials: false
+      - name: Download exact generated snapshot
+        timeout-minutes: 2
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: postgresql-snapshot-pr-${{ needs.prepare.outputs.pr_number }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/postgresql-snapshot-download
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Validate and publish generated snapshot
+        timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SNAPSHOT_PUBLISH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+          SNAPSHOT_PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          SNAPSHOT_HEAD_REF: ${{ needs.prepare.outputs.head_ref }}
+          SNAPSHOT_HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+          SNAPSHOT_BASE_REF: ${{ needs.prepare.outputs.base_ref }}
+          SNAPSHOT_BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SNAPSHOT_POSTGRES_IMAGE: ${{ needs.prepare.outputs.postgres_image }}
+          SNAPSHOT_DEFAULT_BRANCH: ${{ needs.prepare.outputs.default_branch }}
+          SNAPSHOT_ARTIFACT_DIR: ${{ runner.temp }}/postgresql-snapshot-download
+          SNAPSHOT_CANDIDATE_DIR: ${{ github.workspace }}/candidate
+        run: node ci/postgresql-snapshot-update.mts publish

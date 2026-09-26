@@ -58,6 +58,7 @@ export const concurrencyTopologyPolicy = {
   '.github/workflows/plan-completion.yml': retained(['fixed-resource']),
   '.github/workflows/plan.yml': retained(['event']),
   '.github/workflows/pnpm-dedupe.yml': retained(['fixed-resource']),
+  '.github/workflows/postgresql-snapshot-update.yml': retained(['run', 'event', 'input-resource']),
   '.github/workflows/scheduled-prompts.yml': retained(['event', 'input-resource', 'sha']),
   '.github/workflows/shepherd.yml': retained(['event']),
   '.github/workflows/static.yml': conditional(['event', 'pull-request', 'sha']),

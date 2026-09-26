@@ -48,8 +48,10 @@ setup above) and enforced in CI by `tests-postgres-schema.yml` right after the s
 against a digest-pinned `pgvector/pgvector:pg18` image. The digest and generated extension-version
 snapshot must move together when pgvector is updated, preventing mutable-tag drift across persistent
 Docker hosts. A workflow policy test also requires every service and inline smoke-test reference to
-use the same digest. After any migration, config-driven SQL, or view change, run
-`pnpm run db:snapshot:update` and commit `schema.json` plus the generated `markdown/` tree — see
+use the same digest. After a schema change, push the branch and request
+`/postgresql-snapshot-update` on its PR, or run `pnpm run db:snapshot:update` to dispatch the same
+CI workflow. The workflow commits `schema.json` and the generated `markdown/` tree to the PR head;
+fetch that commit before further edits. The local update command never introspects the worktree DB. See
 [schema-snapshot/README.md](../../backend/data-stores/psql/schema-snapshot/README.md).
 
 Pre-push runs the same freshness check after clean migration and the live schema tests whenever a
