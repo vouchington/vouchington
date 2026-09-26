@@ -24,6 +24,7 @@ import { nativeUserAccountDataApiFixtureCases } from './native-user-account-data
 import { nativeUserProfileApiFixtureCases } from './native-user-profile-cases.mts'
 import { nativeOAuthBrokerApiFixtureCases } from './native-oauth-broker-cases.mts'
 import { oauthAppApiFixtureCases } from './oauth-app-cases.mts'
+import { oauthClientVerificationApiFixtureCases } from './oauth-client-verification-cases.mts'
 import { oauthManagementApiFixtureCases } from './oauth-management-cases.mts'
 import { referralApiFixtureCases } from './referral-cases.mts'
 import { swiftApiFixtureCases } from './swift-cases.mts'
@@ -59,6 +60,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     oauthManagementApiFixtureCases,
   ),
   ...fromCaseFile('backend/test-helpers/api-fixtures/oauth-app-cases.mts', oauthAppApiFixtureCases),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/oauth-client-verification-cases.mts',
+    oauthClientVerificationApiFixtureCases,
+  ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-spending-category-cases.mts',
     nativeSpendingCategoryApiFixtureCases,

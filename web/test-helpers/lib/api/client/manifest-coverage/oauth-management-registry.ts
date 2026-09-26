@@ -1,6 +1,8 @@
 import type { ManifestEndpoint } from './endpoint-registry'
 
 const appPath = '/api/v1/my/oauth-apps/00000000-0000-7000-8000-000000000721'
+const verificationPath =
+  '/api/v1/admin/oauth-clients/00000000-0000-7000-8000-000000000721/verification'
 
 /* c8 ignore next -- manifest-coverage.test asserts these static fixture entries through the aggregate registry. */
 export const oauthManagementEndpointRegistry: Record<string, ManifestEndpoint> = {
@@ -26,4 +28,18 @@ export const oauthManagementEndpointRegistry: Record<string, ManifestEndpoint> =
   },
   'web.my.oauth-apps.revoke': { method: 'DELETE', path: appPath },
   'web.my.oauth-apps.rotate-secret': { method: 'POST', path: `${appPath}/client-secrets` },
+  'web.admin.oauth-clients.list': {
+    method: 'GET',
+    path: '/api/v1/admin/oauth-clients',
+    query: { limit: '1', verification: 'unverified' },
+  },
+  'web.admin.oauth-clients.verify': {
+    method: 'PUT',
+    path: verificationPath,
+    requestBody: {
+      client_name: 'Fixture Agent',
+      redirect_uris: ['https://agent.example.com/oauth/callback'],
+    },
+  },
+  'web.admin.oauth-clients.unverify': { method: 'DELETE', path: verificationPath },
 }

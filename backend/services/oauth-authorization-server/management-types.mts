@@ -42,6 +42,22 @@ export type OAuthGrantView = {
   last_used_at: Date
 }
 
+export type OAuthClientVerificationFilter = 'all' | 'unverified' | 'verified'
+
+/** A dynamically registered client as staff review it for verification. */
+export type AdminOAuthClientView = {
+  id: string
+  client_id: string
+  client_name: string
+  client_type: OAuthClientType
+  redirect_uris: string[]
+  scopes: string[]
+  owner_user_id: string | null
+  verified_at: Date | null
+  verified_by_id: string | null
+  created_at: Date
+}
+
 export type OAuthManagementPage<TItem> = {
   results: TItem[]
   hasNextPage: boolean

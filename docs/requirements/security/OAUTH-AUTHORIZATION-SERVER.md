@@ -47,8 +47,8 @@ OpenID Connect, ID-token, or UserInfo flows.
 Public clients authenticate with their `client_id` and mandatory PKCE. Confidential clients also
 authenticate with HTTP Basic and a generated client secret. B1 implements RFC 7591 registration,
 not the RFC 7592 registration-management protocol, so it does not mint an unused registration
-management credential. Authenticated client and grant management is owned by the API-key and
-OAuth-app management milestone.
+management credential. Signed-in owners and administrators manage clients and grants through the
+first-party routes below instead.
 
 Signed-in users register and manage their own clients through `/api/v1/my/oauth-apps`
 ([OAuth apps](../users/api-keys.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
@@ -59,6 +59,15 @@ secret once, and renaming a client or replacing its redirect URIs clears `verifi
 deletion committed cannot change the app or mint a secret afterwards. Account deletion does not yet
 revoke the apps the account owns; [#710](https://github.com/vouchington/vouchington/issues/710)
 tracks it.
+
+Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
+([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
+`verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
+redirect URIs the administrator reviewed, so an owner's rename or re-pointing between review and
+approval returns 409 instead of verifying what staff never saw.
+Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
+sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
+verification.
 
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
@@ -77,7 +86,7 @@ prunable.
 Clients are retired through `revoked_at` and never deleted, because
 [content provenance](../content/content-provenance.md) references the client that created each
 row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
-name the client; they stay `NULL` until Client ID Metadata Documents and staff verification ship.
+name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents ship.
 
 ## Protected resources and discovery
 

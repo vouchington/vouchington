@@ -1,8 +1,19 @@
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
 import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
 } from '../postgres-lock-wait.mts'
+
+/** Returns the internal row id that management routes address a client by. */
+export async function getTestOAuthClientRowId(clientId: string): Promise<string> {
+  const { rows } = await read<{ id: string }>(
+    `/* getTestOAuthClientRowId */ SELECT id FROM oauth_clients WHERE client_id = $1`,
+    [clientId],
+  )
+  const row = rows[0]
+  if (!row) throw new Error(`OAuth client ${clientId} does not exist`)
+  return row.id
+}
 
 /** Records staff verification directly, for tests that only need a verified client. */
 export async function setTestOAuthClientVerified(id: string, verifiedById: string): Promise<void> {
@@ -86,4 +97,26 @@ async function updateTestOAuthClientWhileWaiting<T>(
     await transaction.commit()
   }
   return operation
+}
+
+export async function revokeTestOAuthClient(id: string): Promise<void> {
+  await write(
+    `/* revokeTestOAuthClient */ UPDATE oauth_clients
+     SET revoked_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [id],
+  )
+}
+
+/** Marks a client as described by a client metadata document rather than registered via DCR. */
+export async function setTestOAuthClientMetadataUrl(
+  id: string,
+  metadataUrl: string,
+): Promise<void> {
+  await write(
+    `/* setTestOAuthClientMetadataUrl */ UPDATE oauth_clients
+     SET metadata_url = $2
+     WHERE id = $1`,
+    [id, metadataUrl],
+  )
 }

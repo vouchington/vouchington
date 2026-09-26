@@ -1,5 +1,9 @@
 {
   "backendResponseContracts": {
+    "DELETE:/api/v1/admin/oauth-clients/:id/verification": {
+      "fixtureIds": ["web.admin.oauth-clients.unverify"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
     "DELETE:/api/v1/auth/bluesky/link": {
       "fixtureIds": ["native.auth.bluesky.unlink.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -75,6 +79,10 @@
     "GET:/api/v1/admin/modlog": {
       "fixtureIds": ["native.moderation.modlog.default"],
       "hash": "0fd39306d16ab2c451fcb06b94ce541bae1823792a5699844617ea5c0b7309e7"
+    },
+    "GET:/api/v1/admin/oauth-clients": {
+      "fixtureIds": ["web.admin.oauth-clients.list"],
+      "hash": "c73761c7afab09c546c566182eb721e09f8942d3f76bcdbd0c1fbdb27e860eb6"
     },
     "GET:/api/v1/admin/users/:userId/landing-pages": {
       "fixtureIds": ["native.admin-user-landing-pages.default"],
@@ -1191,6 +1199,10 @@
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
       "fixtureIds": ["native.moderation.vote-integrity.penalty"],
       "hash": "bda7233f875cee571d2ec5ff966ce2c9c31c5e4859c34acb4da2e0028a5188d5"
+    },
+    "PUT:/api/v1/admin/oauth-clients/:id/verification": {
+      "fixtureIds": ["web.admin.oauth-clients.verify"],
+      "hash": "4b65e296e5e87306946d95d22be5a3863f64b9d6dcda79676bd0a3aaff744b50"
     },
     "PUT:/api/v1/communities/:communitySlug/ai-agents/:agentSlug": {
       "fixtureIds": ["web.communities.ai-agent.default"],
@@ -2361,6 +2373,18 @@
     "web.admin.mq.stats.default": {
       "fixtureIds": ["web.admin.mq.stats.default"],
       "hash": "bace65bcc8c2ffd88be160044b9c2948dcea767b29917454fec0585c972d010f"
+    },
+    "web.admin.oauth-clients.list": {
+      "fixtureIds": ["web.admin.oauth-clients.list"],
+      "hash": "c0c3b9604cd340b524ec0aae8e4f55bd333cec338c6ce73816e18dac4f971c13"
+    },
+    "web.admin.oauth-clients.unverify": {
+      "fixtureIds": ["web.admin.oauth-clients.unverify"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.admin.oauth-clients.verify": {
+      "fixtureIds": ["web.admin.oauth-clients.verify"],
+      "hash": "9eb6a4cb3a4a5d79a64a0f478f54f6d118d8bbac2f124ee809d67fd3fa17651f"
     },
     "web.admin.psql.jobs.default": {
       "fixtureIds": ["web.admin.psql.jobs.default"],
