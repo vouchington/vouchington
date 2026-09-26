@@ -18,6 +18,26 @@ export async function registerOAuthClient(
   ownerUserId: string | null = null,
   query: QueryExecutor = write,
 ): Promise<RegisteredOAuthClient> {
+  const { client, clientSecret } = await insertOAuthClient(input, ownerUserId, query)
+  return {
+    client_id: client.client_id,
+    client_id_issued_at: Math.floor(client.created_at.getTime() / 1000),
+    client_name: client.client_name,
+    ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 as const } : {}),
+    grant_types: client.grant_types,
+    redirect_uris: client.redirect_uris,
+    response_types: client.response_types,
+    scope: client.scopes.join(' '),
+    token_endpoint_auth_method: client.token_endpoint_auth_method,
+  }
+}
+
+/** Validates RFC 7591 metadata and inserts the client, returning its row and one-time secret. */
+export async function insertOAuthClient(
+  input: unknown,
+  ownerUserId: string | null,
+  query: QueryExecutor,
+): Promise<{ client: OAuthClient; clientSecret: string | undefined }> {
   const metadata = validateRegistrationObject(input)
   const clientName = validateClientName(metadata.client_name)
   const redirectUris = validateRedirectUris(metadata.redirect_uris)
@@ -64,18 +84,7 @@ export async function registerOAuthClient(
   )
   const client = result.rows[0]
   if (!client) throw new OAuthProtocolError('server_error', 'client registration failed', 503)
-
-  return {
-    client_id: client.client_id,
-    client_id_issued_at: Math.floor(client.created_at.getTime() / 1000),
-    client_name: client.client_name,
-    ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 as const } : {}),
-    grant_types: client.grant_types,
-    redirect_uris: client.redirect_uris,
-    response_types: client.response_types,
-    scope: client.scopes.join(' '),
-    token_endpoint_auth_method: client.token_endpoint_auth_method,
-  }
+  return { client, clientSecret }
 }
 
 export async function getOAuthClient(

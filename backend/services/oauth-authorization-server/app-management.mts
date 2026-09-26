@@ -1,7 +1,7 @@
-import { beginTransaction, read, write, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import { isApiScope } from '@modules/scopes'
 import { hashToken } from '@modules/token-secrets'
-import { generateOAuthClientSecret, registerOAuthClient, validateClientName } from './clients.mts'
+import { generateOAuthClientSecret, insertOAuthClient, validateClientName } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { invalidClientMetadata } from './errors.mts'
 import { validateRedirectUris } from './redirect-uri-validation.mts'
@@ -61,7 +61,7 @@ export async function createOwnedOAuthApp(
   await query(`/* createOwnedOAuthApp */ SELECT fn_lock_active_user_for_mutation($1)`, [
     currentUserId,
   ])
-  const registered = await registerOAuthClient(
+  const { client, clientSecret } = await insertOAuthClient(
     {
       client_name: input.client_name,
       redirect_uris: input.redirect_uris,
@@ -71,9 +71,22 @@ export async function createOwnedOAuthApp(
     currentUserId,
     query,
   )
-  const app = await getOAuthAppByClientId(registered.client_id, query)
   await query.commit()
-  return { oauth_app: app, client_secret: registered.client_secret ?? null }
+  return {
+    oauth_app: {
+      id: client.id,
+      client_id: client.client_id,
+      client_name: client.client_name,
+      client_type: client.client_type,
+      token_endpoint_auth_method: client.token_endpoint_auth_method,
+      redirect_uris: client.redirect_uris,
+      scopes: client.scopes,
+      verified_at: null,
+      created_at: client.created_at,
+      updated_at: client.updated_at,
+    },
+    client_secret: clientSecret ?? null,
+  }
 }
 
 /**
@@ -162,18 +175,4 @@ export async function revokeOwnedOAuthApp(currentUserId: string, appId: string):
     [appId, currentUserId],
   )
   return result.rowCount === 1
-}
-
-async function getOAuthAppByClientId(
-  clientId: string,
-  query: QueryExecutor,
-): Promise<OAuthAppView> {
-  const { rows } = await query<OAuthAppView>(
-    `/* getOAuthAppByClientId */ SELECT id, client_id, client_name, client_type,
-       token_endpoint_auth_method, redirect_uris, scopes, verified_at, created_at, updated_at
-     FROM oauth_clients
-     WHERE client_id = $1`,
-    [clientId],
-  )
-  return rows[0]!
 }
