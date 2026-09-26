@@ -13,11 +13,12 @@ export async function TrendingTopicsAside() {
     <TrendingTopicsAsideContent
       heading={t('extracted.asides.trendingTopicsAside.trendingTopics_e84e730e')}
       browseLabel={t('extracted.asides.trendingTopicsAside.browseAllTopics_44e4ba00')}
-      topics={topics.flatMap(topic =>
-        topic.slug
-          ? [{ id: topic.id, name: topic.name, topic_type: topic.topic_type, slug: topic.slug }]
-          : [],
-      )}
+      topics={topics.map(topic => ({
+        id: topic.id,
+        name: topic.name,
+        topic_type: topic.topic_type,
+        slug: topic.slug,
+      }))}
     />
   )
 }

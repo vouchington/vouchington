@@ -9,7 +9,7 @@ export function TrendingTopicsAsideContent({
 }: {
   heading: string
   browseLabel: string
-  topics: Array<{ id: string; name: string; topic_type: string; slug: string }>
+  topics: Array<{ id: string; name: string; topic_type: string; slug?: string | null }>
 }) {
   if (topics.length === 0) return null
 

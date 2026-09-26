@@ -11,6 +11,7 @@ const previousPost = ClientRequest.prototype.post
 const previousPatch = ClientRequest.prototype.patch
 const previousDelete = ClientRequest.prototype.delete
 const previousPut = ClientRequest.prototype.put
+const previousGet = ClientRequest.prototype.get
 
 export function setStoryMutationFixture(): void {
   storyMutations = true
@@ -23,6 +24,16 @@ export function clearStoryMutationFixture(): void {
 function respond<T>(response: unknown, fallback: () => Promise<T>): Promise<T> {
   if (response !== undefined) return Promise.resolve(response as T)
   return fallback()
+}
+
+ClientRequest.prototype.get = function storybookMutationGet<T>(
+  endpoint: string,
+  options?: Parameters<ClientRequest['get']>[1],
+): Promise<T> {
+  if (storyMutations && endpoint.startsWith('/api/v1/bookmarks/')) {
+    return Promise.resolve({ bookmarks: {} } as T)
+  }
+  return previousGet.call(this, endpoint, options) as Promise<T>
 }
 
 ClientRequest.prototype.post = function storybookMutationPost<T>(

@@ -1,11 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PostForm } from '@/components/posts/post-form'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import { administrator, communityOptions, discussionCategories, reviewWithBody } from './fixtures'
 
 const meta = {
   title: 'Posts/Post Form',
   component: PostForm,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
