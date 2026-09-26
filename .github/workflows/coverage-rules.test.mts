@@ -55,6 +55,20 @@ describe('.coverage-rules.yml', () => {
     )
   })
 
+  it('exempts storybook helpers before the broader web rule', () => {
+    const rules = load(readFileSync('.coverage-rules.yml', 'utf8')) as CoverageRules
+
+    const storybookRuleIndex = rules.rules.findIndex(rule => rule.paths === 'web/storybook/**')
+    const webRuleIndex = rules.rules.findIndex(rule => rule.paths === 'web/**')
+
+    expect(storybookRuleIndex).toBeGreaterThanOrEqual(0)
+    expect(rules.rules[storybookRuleIndex]).toEqual({
+      paths: 'web/storybook/**',
+      patch_coverage_min: 0,
+    })
+    expect(webRuleIndex).toBeGreaterThan(storybookRuleIndex)
+  })
+
   it('exempts backend scripts before the broader backend rule', () => {
     const rules = load(readFileSync('.coverage-rules.yml', 'utf8')) as CoverageRules
 
