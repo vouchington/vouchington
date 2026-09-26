@@ -92,6 +92,12 @@ describe('merge-queue ejection workflow', () => {
     )
   })
 
+  it('passes the automation:auto-fix label the prompt tells the session to apply', () => {
+    expect(workflow.jobs.dispatch?.with?.['pr-label']).toBe('automation:auto-fix')
+    expect(prompt).toContain('`automation`')
+    expect(prompt).toContain('`automation:auto-fix`')
+  })
+
   it('comments on the pull request when triage cannot start', () => {
     const condition = workflow.jobs.escalate?.if ?? ''
     for (const job of ['render-prompt', 'dispatch']) {
