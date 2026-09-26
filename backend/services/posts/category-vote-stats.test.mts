@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { refreshPostCategoryVoteStats } from './category-vote-stats.mts'
 import { PRIMARY_REFRESH_BATCH_SIZE } from '@services/elections-votes/entity-relation/vote-stats-batch'
-import type { EntityRelationElectionTarget } from '@queues/elections/types'
+import type { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
+
+type EntityRelationElectionTarget = ReturnType<typeof createEntityRelationElectionTarget>
 
 describe('category vote stats committed-chunk effects', () => {
   it('publishes one notification for each successful changed chunk, including aliases', async () => {
