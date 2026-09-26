@@ -1,64 +1,17 @@
-import { execFileSync } from 'node:child_process'
-
+import { gitConfigValue, gitCurrentBranch, gitIsAncestor } from '../local-process.mts'
 import type { BlockDecision } from './core.mts'
 import { lastNamedOption } from './github-option-flags.mts'
-
-const GIT_WORKTREE_OVERRIDE_ENV = new Set([
-  'GIT_DIR',
-  'GIT_WORK_TREE',
-  'GIT_INDEX_FILE',
-  'GIT_PREFIX',
-])
-
-export function gitEnvForCwd(): NodeJS.ProcessEnv {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !GIT_WORKTREE_OVERRIDE_ENV.has(key)),
-  )
-}
-
-function gitText(cwd: string, args: string[]): string | undefined {
-  try {
-    const text = execFileSync('git', args, {
-      cwd,
-      encoding: 'utf8',
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    }).trim()
-    return text === '' ? undefined : text
-  } catch {
-    return undefined
-  }
-}
-
-// `git merge-base --is-ancestor` is exit-code-only: 0 = ancestor, 1 = provably not, anything else
-// (128 for an unknown ref, a timeout, git missing) is indeterminate. gitText can't distinguish "1"
-// from "128" — both throw and both come back undefined — so this fails open on genuine errors
-// while still resolving the true/false case the caller needs to block on.
-function gitIsAncestor(cwd: string, ancestor: string, descendant: string): boolean | undefined {
-  try {
-    execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
-      cwd,
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'ignore', 'ignore'],
-      timeout: 5_000,
-    })
-    return true
-  } catch (error) {
-    return (error as { status?: number | null }).status === 1 ? false : undefined
-  }
-}
 
 /**
  * Effective base `gh pr create` uses when `--base`/`-B` is omitted:
  * `branch.<current>.gh-merge-base`, else undefined (repo default).
  */
 export function configuredPullRequestBase(cwd: string): string | undefined {
-  const branch = gitText(cwd, ['branch', '--show-current'])
+  const branch = gitCurrentBranch(cwd)
   if (branch === undefined) {
     return undefined
   }
-  return gitText(cwd, ['config', '--get', `branch.${branch}.gh-merge-base`])
+  return gitConfigValue(cwd, `branch.${branch}.gh-merge-base`)
 }
 
 /**
