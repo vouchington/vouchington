@@ -23,18 +23,11 @@
   "dependencies": {
     "@agents/_shared": "workspace:^",
     "@agents/classifiers": "workspace:^",
-    "@jongleberry/vurst-prompt": "^0.4.3",
-    "@modules/on-error": "workspace:^",
-    "@modules/openai-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
-    "@services/users": "workspace:^",
-    "@voucha/config": "workspace:^",
-    "@voucha/types": "workspace:^",
-    "openai": "^7.15.0",
-    "p-map": "7.0.8"
+    "@voucha/types": "workspace:^"
   },
   "devDependencies": {
     "@services/rss-feeds": "workspace:^",

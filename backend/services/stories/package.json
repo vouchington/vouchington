@@ -48,6 +48,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@services/classifiers": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

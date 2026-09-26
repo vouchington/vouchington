@@ -775,15 +775,6 @@ importers:
       '@agents/classifiers':
         specifier: workspace:^
         version: link:../classifiers
-      '@jongleberry/vurst-prompt':
-        specifier: ^0.4.3
-        version: 0.4.3
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
-      '@modules/openai-utils':
-        specifier: workspace:^
-        version: link:../../modules/openai-utils
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
@@ -796,21 +787,9 @@ importers:
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
-      '@voucha/config':
-        specifier: workspace:^
-        version: link:../../config
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      openai:
-        specifier: ^7.15.0
-        version: 7.15.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@8.11.0)(ws@8.21.3)(zod@4.6.5)
-      p-map:
-        specifier: 7.0.8
-        version: 7.0.8
     devDependencies:
       '@services/rss-feeds':
         specifier: workspace:^
@@ -9141,6 +9120,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10964,6 +10946,9 @@ importers:
       p-map:
         specifier: 7.0.8
         version: 7.0.8
+      uuid:
+        specifier: ^14.0.2
+        version: 14.0.2
     devDependencies:
       '@services/elections-votes':
         specifier: workspace:^
