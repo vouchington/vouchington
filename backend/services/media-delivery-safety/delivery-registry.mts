@@ -22,6 +22,7 @@ export {
   listRecoverableMediaDeliveryRegistryKeys,
   replayFailedMediaDeliveryRegistryRecords,
   stageAllCurrentImagePlacementDeliveryRecords,
+  stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from './delivery-registry-reconciliation.mts'
 export { reconcileMediaDeliveryRepairMarkers } from './delivery-repair-markers.mts'
 export { processMediaDeliveryRegistryRecord } from './delivery-registry-process.mts'
