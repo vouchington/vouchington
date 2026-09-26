@@ -5,8 +5,8 @@
 Auto Harness dispatch is default-off. When enabled, the selected agent uses host-managed,
 repository-scoped git and `gh` credentials for its prompt's bounded PR or comment completion.
 
-The universal human-only merge guard appended by `ci/render-harness-prompt.mts` remains trusted CI
-guidance. Exact live revalidation and exact-lease pushes constrain publication, while the
+The universal human-only merge guard appended by the
+`jonathanong/auto-harness/actions/harness-render-prompt` action remains trusted CI guidance. Exact live revalidation and exact-lease pushes constrain publication, while the
 [Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md)
 records the accepted direct-host risk. Only the repository owner performs merges.
 Each workflow's `jonathanong/auto-harness/actions/harness-render-prompt` step sets
