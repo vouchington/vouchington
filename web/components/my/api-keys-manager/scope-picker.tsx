@@ -6,6 +6,8 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ScopeCatalogEntry } from '@/types/scopes'
 import type { ScopeResourceRow } from './scope-selection'
 
+const OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE = 'post-relations.owned-private:write'
+
 interface ScopePickerProps {
   idPrefix: string
   rows: ScopeResourceRow[]
@@ -58,6 +60,16 @@ export function ScopePicker({ idPrefix, rows, selected, onToggle }: ScopePickerP
                   ) : null,
                 )}
               </span>
+              {row.write?.scope === OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE && (
+                <p
+                  className='basis-full text-sm text-muted-foreground'
+                  data-pw='scope-private-post-relations-permission'
+                >
+                  {t(
+                    'extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0',
+                  )}
+                </p>
+              )}
             </li>
           )
         })}

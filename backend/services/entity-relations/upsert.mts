@@ -32,6 +32,7 @@ import { runRelationPublicationMutation } from './publication-mutation.mts'
 import { insertBidirectionalRelationRows } from './insert-bidirectional-rows.mts'
 import { runRelationTransaction } from './run-relation-transaction.mts'
 import { lockBidirectionalRelationMutation } from './bidirectional-pair-lock.mts'
+import { lockPostPublicationPostScopes } from '@services/post-publication'
 
 export type { UpsertEntityTypes, EntityIdentifier, EntityRelation, UpsertEntityRelationsOptions }
 export async function assertEntityRelationUpsertAllowed(
@@ -161,6 +162,9 @@ export const upsertEntityRelation = async (
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id, ...objects.map(object => object.id)] : [],
     )
+    if (options?.postMutationGuard?.postIds.length)
+      await lockPostPublicationPostScopes(transactionQuery, options.postMutationGuard.postIds)
+    await options?.postMutationGuard?.assertAllowed(transactionQuery)
     return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(
       transactionQuery,
       query,

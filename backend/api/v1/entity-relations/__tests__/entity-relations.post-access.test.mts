@@ -171,6 +171,27 @@ describe('entity-relations post access', () => {
     expect(Object.values(body.entity_relations).map(r => r.created_by_id)).toEqual([null])
   })
 
+  it('returns suspended and internal-tuple admission errors before malformed JSON diagnostics', async () => {
+    const suspended = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    await suspendTestUser(suspended.id)
+    const suspendedRequest = createRequest()
+    await suspendedRequest.authenticateAs(suspended)
+
+    await suspendedRequest
+      .post(`/api/v1/entity-relations/post/${crypto.randomUUID()}/related/url`)
+      .set('Content-Type', 'application/json')
+      .send('{')
+      .expect(403)
+
+    const authenticated = createRequest()
+    await authenticated.authenticateAs(author)
+    await authenticated
+      .post(`/api/v1/entity-relations/topic_alias/${crypto.randomUUID()}/related/url`)
+      .set('Content-Type', 'application/json')
+      .send('{')
+      .expect(404)
+  })
+
   it('fills each page with readable relations when hidden ones fall between them', async () => {
     const topicId = await insertTopic(author.id)
     const readablePostIds: string[] = []

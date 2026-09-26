@@ -15,6 +15,10 @@ required canonical scopes in registry metadata; the registry validates surface a
 listing and calling enforce the same requirement. `mcp.user:*` and `mcp.admin:*` remain explicit
 compatibility grants for existing keys, while new keys can request a resource scope.
 
+`post-relations.owned-private:write` is an exact, non-inheritable user capability. It requires
+`entity-relations:write` (and therefore read) for API keys and OAuth grants, but broad
+`mcp.user:write` never covers it.
+
 The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and
 `withScopePrerequisites` completes the scope set an MCP `insufficient_scope` challenge asks for.

@@ -4,7 +4,7 @@ import { navigateTo } from '../../helpers/navigate-to.mts'
 import { expect, test } from '../../helpers/test.mts'
 
 const USER_MCP_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource/api/v1/mcp'
-const SCOPES = 'mcp.user:read mcp.user:write'
+const SCOPES = 'entity-relations:read entity-relations:write post-relations.owned-private:write'
 
 test.describe('OAuth consent', () => {
   test.use({ storageState: AUTH_STATE })
@@ -54,8 +54,14 @@ test.describe('OAuth consent', () => {
     await expect(page.getByTestId('oauth-consent-card')).toBeVisible()
     await expect(page.getByTestId('oauth-consent-title')).toContainText(client.client_name)
     await expect(page.getByTestId('oauth-consent-resource')).toHaveText(resource)
-    await expect(page.getByTestId('oauth-consent-scopes')).toContainText('mcp.user:read')
-    await expect(page.getByTestId('oauth-consent-scopes')).toContainText('mcp.user:write')
+    await expect(page.getByTestId('oauth-consent-scopes')).toContainText('entity-relations:read')
+    await expect(page.getByTestId('oauth-consent-scopes')).toContainText('entity-relations:write')
+    await expect(page.getByTestId('oauth-consent-scopes')).toContainText(
+      'post-relations.owned-private:write',
+    )
+    await expect(page.getByTestId('oauth-consent-private-post-relations-permission')).toContainText(
+      'Allow this credential to add relations and tags to your own private posts.',
+    )
 
     const decisionResponse = page.waitForResponse(
       response =>

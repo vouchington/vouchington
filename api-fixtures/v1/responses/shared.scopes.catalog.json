@@ -36,6 +36,22 @@
       "action": "read",
       "audience": "user",
       "requires": null,
+      "resource": "entity-relations",
+      "scope": "entity-relations:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "entity-relations:read",
+      "resource": "entity-relations",
+      "scope": "entity-relations:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
       "resource": "financial-profile",
       "scope": "financial-profile:read",
       "surfaces": ["api-key", "oauth"]
@@ -94,6 +110,14 @@
       "requires": "point-valuations:read",
       "resource": "point-valuations",
       "scope": "point-valuations:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "entity-relations:write",
+      "resource": "post-relations.owned-private",
+      "scope": "post-relations.owned-private:write",
       "surfaces": ["api-key", "oauth"]
     },
     {

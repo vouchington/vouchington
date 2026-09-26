@@ -92,6 +92,12 @@ describe('OAuthConsentPage', () => {
   })
 
   it('renders the client, resource, scopes, and matching decision controls', async () => {
+    mockGetAuthorizationRequest.mockResolvedValue({
+      authorization_request: {
+        ...authorizationRequest.authorization_request,
+        scopes: ['post-relations.owned-private:write'],
+      },
+    })
     const ui = await OAuthConsentPage({
       searchParams: Promise.resolve({ request_id: 'request-1' }),
     })
@@ -99,8 +105,12 @@ describe('OAuthConsentPage', () => {
 
     expect(screen.getByText('Example app wants access to Voucha')).toBeDefined()
     expect(screen.getByText('https://api.voucha.ai/api/v1/mcp')).toBeDefined()
-    expect(screen.getByText('news:read')).toBeDefined()
-    expect(screen.getByText('topics:read')).toBeDefined()
+    expect(screen.getByText('post-relations.owned-private:write')).toBeDefined()
+    expect(
+      screen.getByText(
+        'Allow this credential to add relations and tags to your own private posts.',
+      ),
+    ).toBeInTheDocument()
     expect(screen.getByTestId('consent-actions')).toHaveTextContent('request-1')
   })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { listScopeCatalog } from './catalog.mts'
-import { SCOPE_DEFINITIONS, validateScopeSet } from './scopes.mts'
+import { SCOPE_DEFINITIONS, validateScopeSet, type ApiScope } from './scopes.mts'
+import { withScopePrerequisites } from './authorization.mts'
 
 describe('listScopeCatalog', () => {
   it('lists every canonical scope once, in sorted order', () => {
@@ -28,7 +29,7 @@ describe('listScopeCatalog', () => {
     for (const entry of listScopeCatalog().filter(item => item.action === 'write')) {
       expect(entry.requires).not.toBeNull()
       expect(
-        validateScopeSet([entry.requires!, entry.scope], {
+        validateScopeSet(withScopePrerequisites([entry.scope as ApiScope]), {
           surface: 'api-key',
           allowMixedAudiences: false,
         }).valid,

@@ -1,3 +1,5 @@
+import { userResourceDefinitions } from './user-resource-definitions.mts'
+
 export type ScopeAudience = 'admin' | 'api' | 'user'
 export type ScopeCredentialSurface = 'api-key' | 'oauth'
 export type ScopeAction = 'read' | 'write'
@@ -7,6 +9,8 @@ export type ApiScope =
   | 'cards:write'
   | 'data-points:read'
   | 'domain-ratings:read'
+  | 'entity-relations:read'
+  | 'entity-relations:write'
   | 'financial-profile:read'
   | 'financial-profile:write'
   | 'mcp.admin:read'
@@ -15,6 +19,7 @@ export type ApiScope =
   | 'mcp.user:write'
   | 'point-valuations:read'
   | 'point-valuations:write'
+  | 'post-relations.owned-private:write'
   | 'posts:read'
   | 'profile:read'
   | 'recommendations:read'
@@ -27,43 +32,13 @@ export type ApiScope =
   | 'topics:read'
   | 'wikipedia:read'
 
-type ScopeDefinition = {
+export type ScopeDefinition = {
   action: ScopeAction
   audience: ScopeAudience
   resource: string
   surfaces: readonly ScopeCredentialSurface[]
   requires?: string
-}
-const USER_RESOURCE_SCOPES = {
-  cards: ['read', 'write'],
-  'data-points': ['read'],
-  'domain-ratings': ['read'],
-  'financial-profile': ['read', 'write'],
-  'point-valuations': ['read', 'write'],
-  posts: ['read'],
-  profile: ['read'],
-  recommendations: ['read'],
-  'referral-links': ['read'],
-  'rewards-statuses': ['read', 'write'],
-  spending: ['read', 'write'],
-  topics: ['read'],
-  wikipedia: ['read'],
-} as const
-function userResourceDefinitions(): Record<string, ScopeDefinition> {
-  return Object.fromEntries(
-    Object.entries(USER_RESOURCE_SCOPES).flatMap(([resource, actions]) =>
-      actions.map(action => [
-        `${resource}:${action}`,
-        {
-          action: action as ScopeAction,
-          audience: 'user',
-          ...(action === 'write' ? { requires: `${resource}:read` } : {}),
-          resource,
-          surfaces: ['api-key', 'oauth'],
-        },
-      ]),
-    ),
-  )
+  requiresExactGrant?: boolean
 }
 export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
   'mcp.admin:read': {
@@ -98,10 +73,23 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     resource: 'rss',
     surfaces: ['api-key'],
   },
+  'post-relations.owned-private:write': {
+    action: 'write',
+    audience: 'user',
+    requires: 'entity-relations:write',
+    requiresExactGrant: true,
+    resource: 'post-relations.owned-private',
+    surfaces: ['api-key', 'oauth'],
+  },
   ...(userResourceDefinitions() as Record<
     Exclude<
       ApiScope,
-      'mcp.admin:read' | 'mcp.admin:write' | 'mcp.user:read' | 'mcp.user:write' | 'rss:read'
+      | 'mcp.admin:read'
+      | 'mcp.admin:write'
+      | 'mcp.user:read'
+      | 'mcp.user:write'
+      | 'rss:read'
+      | 'post-relations.owned-private:write'
     >,
     ScopeDefinition
   >),
@@ -138,6 +126,7 @@ export function hasScope(scopes: readonly ApiScope[], requiredScope: ApiScope): 
   if (scopes.includes(requiredScope)) return true
 
   const required = SCOPE_DEFINITIONS[requiredScope]
+  if (required.requiresExactGrant) return false
   if (required.audience === 'user') {
     return scopes.includes(`mcp.user:${required.action}` as ApiScope)
   }

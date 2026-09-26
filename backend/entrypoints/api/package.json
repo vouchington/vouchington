@@ -37,6 +37,7 @@
     "@services/captcha": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
+    "@services/entity-relation-actions": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/localization": "workspace:^",

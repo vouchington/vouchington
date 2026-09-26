@@ -17,7 +17,16 @@ type ToolFunction<
   TArgs = unknown,
   TResult = unknown,
   TCurry extends readonly unknown[] = readonly [],
-> = (currentUser: BasicUser, ...curry: TCurry) => (args: TArgs) => Promise<TResult> | TResult
+> = (
+  currentUser: BasicUser,
+  ...curry: TCurry
+) => (args: TArgs, invocationContext?: ToolInvocationContext) => Promise<TResult> | TResult
+
+// Only trusted MCP dispatch constructs this context. Direct agent/client callers omit it.
+export type ToolInvocationContext = {
+  credentialOwnerId: string
+  grantedScopes: readonly ApiScope[]
+}
 
 // Structural twin of OpenAIFunctionCallOutput — decouples the Tool contract from @services/openai-agents
 export type ToolCallOutput = { type: 'function_call_output'; call_id: string; output: string }

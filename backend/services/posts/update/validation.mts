@@ -22,8 +22,9 @@ export async function assertValidPostUpdate(
   post: Post,
   changes: UpdatePostChanges,
   membershipPlan: ContributionLimitMembershipPlan = null,
+  additiveHashtagIntent = false,
 ) {
-  assertPostUpdatePreflight(creator, post, changes)
+  assertPostUpdatePreflight(creator, post, changes, additiveHashtagIntent)
   if (
     post.post_type === 'review' &&
     changes.markdown !== undefined &&
@@ -52,6 +53,7 @@ export function assertPostUpdatePreflight(
   creator: PrivateUser,
   post: Post,
   changes: UpdatePostChanges,
+  additiveHashtagIntent = false,
 ): void {
   assert(currentUserCanUpdatePost(creator, post), 403, 'Forbidden')
   if (changes.ai_summary_markdown !== undefined) {
@@ -65,7 +67,8 @@ export function assertPostUpdatePreflight(
     changes.title !== undefined ||
     changes.markdown !== undefined ||
     changes.structured_data !== undefined ||
-    changes.categories !== undefined
+    changes.categories !== undefined ||
+    additiveHashtagIntent
   ) {
     if (
       isOfficialAccount(creator) &&

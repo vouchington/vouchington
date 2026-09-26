@@ -132,6 +132,13 @@ exposing separate tools per write operation. The mapping to REST verbs is:
 The `id` parameter is required for `update` and `remove` actions; it is the row UUID
 returned by the matching `get_my_*` tool.
 
+`add_entity_relation` is MCP-only and uses the same relation command as the session REST route.
+REST supplies first-party authority; MCP receives verified delegated credential authority. Public
+relations retain ordinary scope policy. Effectively private post work also requires the exact
+`post-relations.owned-private:write` grant and matching credential ownership of the candidate and
+effective root. Its `add_tag` branch adds one authored `#tag` through the locked PATCH-equivalent
+category path described in [Tags](../../../requirements/content/TAGS.md).
+
 ---
 
 ## Server-Only Tools Rationale

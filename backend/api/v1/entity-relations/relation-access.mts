@@ -1,13 +1,8 @@
 import type { Context } from '@jongleberry/api-server'
 import type { EntityRelationMetadata, EntityRelationViewer } from '@services/entity-relations'
-import { getRelatablePostIds } from '@services/entity-relations/post-access'
-import { isUUID } from '@modules/utils'
+import { assertRelatablePostAccess } from '@services/entity-relations/post-access'
 
-/**
- * 404s unless the viewer may read every post a new relation would name, so relating content
- * cannot confirm that a private or pending post exists. Authors may relate content to their own
- * pending posts. The check uses the same filters as the write's read-back.
- */
+/** Route adapter retained for election-vote access; mutation orchestration uses the shared service. */
 export async function assertCanViewRelatedPosts(
   ctx: Context,
   viewer: EntityRelationViewer,
@@ -17,17 +12,10 @@ export async function assertCanViewRelatedPosts(
 ): Promise<void> {
   const subjectIds = metadata.subject_type === 'post' ? [subjectId] : []
   const objectPostIds = metadata.object_type === 'post' ? objectIds : []
-  if (subjectIds.length === 0 && objectPostIds.length === 0) return
-  ctx.assert(
-    [...subjectIds, ...objectPostIds].every(id => isUUID(id)),
-    404,
-    'Not found',
-  )
-  const relatable = await getRelatablePostIds(viewer, { subjectIds, objectIds: objectPostIds })
-  ctx.assert(
-    subjectIds.every(id => relatable.subjectIds.has(id)) &&
-      objectPostIds.every(id => relatable.objectIds.has(id)),
-    404,
-    'Not found',
-  )
+  try {
+    await assertRelatablePostAccess(viewer, { subjectIds, objectIds: objectPostIds })
+  } catch (error) {
+    if ((error as { statusCode?: number }).statusCode === 404) ctx.throw(404, 'Not found')
+    throw error
+  }
 }

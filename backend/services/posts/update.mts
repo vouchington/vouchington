@@ -7,8 +7,6 @@ import { createPostSlug } from './slugs.mts'
 import { getPostByAny } from './get.mts'
 import createHttpError from 'http-errors'
 import { archivePost, unarchivePost } from './archive.mts'
-import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
-import { normalizeKey } from '@ts-shared/utils/strings'
 import { resetPostClearance } from '@services/post-clearance'
 import { assertValidPostCategoryUpdate, assertValidPostUpdate } from './update/validation.mts'
 import { assertValidAudienceUpdate } from './update/audience.mts'
@@ -25,15 +23,21 @@ import {
   getPreviousPostPublicationTopicIds,
   recordPostUpdatePublicationChanges,
 } from './update/publication-change.mts'
-import { lockPostPublication } from '@services/post-publication'
+import {
+  lockPostUpdatePublicationScopes,
+  prepareLockedAdditiveHashtagChanges,
+  type AdditiveHashtagIntent,
+} from './update/additive-hashtag.mts'
+import { mapPostUpdateError } from './update/post-update-error.mts'
 
 export const updatePost = async (
   creator: PrivateUser,
   post: Post,
-  changes: UpdatePostChanges,
+  requestedChanges: UpdatePostChanges,
   membershipPlan: ContributionLimitMembershipPlan = null,
+  additiveIntent?: AdditiveHashtagIntent,
 ) => {
-  await assertValidPostUpdate(creator, post, changes, membershipPlan)
+  await assertValidPostUpdate(creator, post, requestedChanges, membershipPlan, !!additiveIntent)
 
   let changed = false
   let contentChanged = false
@@ -41,21 +45,32 @@ export const updatePost = async (
   let previousPost = post
   let previousTopicIds: string[] = []
   let postCategoryFinalization: PostCategoryFinalization | undefined
-  const syncHashtagCategories =
-    changes.title !== undefined ||
-    changes.markdown !== undefined ||
-    changes.categories !== undefined
+  let effectiveChanges = requestedChanges
+  let syncHashtagCategories = false
   async function updatePostInTransaction() {
     await using query = await beginTransaction()
     async function updatePostRows(query: TransactionQuery) {
       await query(
         sql`/* updatePost.lockActiveUser */ SELECT fn_lock_active_user_for_mutation(${creator.id})`,
       )
-      await lockPostPublication(query, post.id)
+      await lockPostUpdatePublicationScopes(query, post.id, additiveIntent)
       const options = { query }
       await query(sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`)
       const currentPost = await getPostByAny(post.id, options)
       if (!currentPost) throw createHttpError(404, 'Post not found')
+      if (additiveIntent)
+        effectiveChanges = await prepareLockedAdditiveHashtagChanges(
+          creator,
+          currentPost,
+          requestedChanges,
+          additiveIntent,
+          options,
+        )
+      const changes = effectiveChanges
+      syncHashtagCategories =
+        changes.title !== undefined ||
+        changes.markdown !== undefined ||
+        changes.categories !== undefined
       await assertValidPostCategoryUpdate(creator, currentPost, changes, membershipPlan, options)
       previousPost = currentPost
       previousTopicIds = await getPreviousPostPublicationTopicIds(
@@ -169,20 +184,10 @@ export const updatePost = async (
     await query.commit()
     return result
   }
-  const post2 = await updatePostInTransaction().catch(error => {
-    const pgError = error as { code?: string; constraint?: string }
-    if (pgError.code === '23503' && pgError.constraint === 'post_data_point_topics_topic_id_fkey') {
-      throw createHttpError(422, 'Topic not found')
-    }
-    throw error
-  })
-
-  if (changes.slug && post2!.slug) {
-    entityCacheBloomFilters.posts.add([normalizeKey(post2!.slug)])
-  }
+  const post2 = await updatePostInTransaction().catch(mapPostUpdateError)
 
   return finalizePostUpdateAndDeliver({
-    changes,
+    changes: effectiveChanges,
     contentChanged,
     previousPost,
     shouldEnqueuePostUpdated,

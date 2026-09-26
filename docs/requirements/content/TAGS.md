@@ -58,6 +58,14 @@ On each page, you can select the following tag to add:
 - Relation Type
 - Entity (based on the page) using an autocomplete component
 
+### Authored MCP tags
+
+The MCP-only `add_entity_relation` tool can add one `#tag` to a credential owner's post. It uses
+the same author, edit-window, visibility, final-category-limit, synchronization, and post-commit
+finalization path as a category PATCH. Public posts need ordinary relation scopes. An effectively
+private post also needs the exact `post-relations.owned-private:write` grant and ownership of its
+candidate and effective root; a broad MCP write grant does not imply that consent.
+
 ### Viewing Tags
 
 On each page, show all entities grouped by relation sorted by the election sort score, regardless of the net vote score.

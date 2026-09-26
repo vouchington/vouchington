@@ -157,6 +157,7 @@
     "@services/entity-cache": "workspace:^",
     "@services/entity-fetch": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
+    "@services/entity-relation-actions": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feature-flags": "workspace:^",
     "@services/fediverse-instances": "workspace:^",

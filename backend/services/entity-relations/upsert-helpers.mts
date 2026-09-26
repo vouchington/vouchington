@@ -4,7 +4,7 @@ import type { Post, PostType } from '@voucha/types/entities/post'
 import type { Topic } from '@voucha/types/entities/topic'
 import type { BasicUser, PrivateUser } from '@voucha/types/entities/user' // PrivateUser used in UpsertEntityTypes
 import type { EntityRelationMetadata } from './metadata.mts'
-import type { QueryOptions } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 
 export type UpsertEntityTypes = Post | Topic | PrivateUser
 
@@ -62,6 +62,13 @@ export type UpsertEntityRelationsOptions = QueryOptions & {
   // resendAcceptForDuplicateFollow) — a genuine new write (e.g. a fresh Follow activity) must
   // still resurrect an unrelated prior soft-delete unconditionally.
   skipIfDeleted?: boolean
+  // Trusted commands that need a state-dependent authorization recheck supply their participating
+  // post scopes and callback here. upsert invokes it inside its own mutation transaction, after
+  // canonical locks and before the insert, so post-commit effects never survive a failed guard.
+  postMutationGuard?: {
+    readonly postIds: readonly string[]
+    readonly assertAllowed: (query: TransactionQuery) => Promise<void>
+  }
 }
 
 export async function handleElectionVotes(

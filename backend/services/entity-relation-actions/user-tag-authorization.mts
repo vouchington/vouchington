@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import {
   getPrivateUserByAny,
   getPublicUserByIdOrSlug,
@@ -6,8 +7,8 @@ import {
 } from '@services/users'
 import { isUserTagTopicId } from '@services/topics/user-tag-topics'
 import type { PrivateUser } from '@services/users/types'
-import createHttpError from 'http-errors'
 
+/** Shared domain guard for user-tag relation creation and voting. */
 export async function assertUserTagAllowed(
   currentUser: PrivateUser,
   targetUserIdOrSlug: string,

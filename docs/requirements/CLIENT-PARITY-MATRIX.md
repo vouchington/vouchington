@@ -64,3 +64,12 @@ The tuple is absent while delivery projection is pending or withheld, so clients
 image in that state. The linked `vouchington/vouchington-clients` change must consume the generated
 fixtures and update its DTOs and renderers before native release; it must not treat `image_id` as a
 browser-delivery capability.
+
+### MCP relation and consent disposition
+
+The MCP-only relation/tag tool and hosted own-private consent wording do not change a native REST
+DTO. Native API-key creation sends label and type rather than a scope-picker selection; native
+fixture loaders do not consume `mcp.json` or the scope catalogue; and native OAuth coordinators
+open the hosted browser flow rather than render consent copy. The generated producer diff must stay
+within those boundaries. A discovered native DTO or consumer change requires the normal linked
+client validation PR.
