@@ -5,15 +5,15 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightCounterNotice,
-  createCounterNoticeDeadline,
   createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import {
+  createCompliantCounterNoticeDeadline,
+  createCopyrightRestorationHoldFixture,
+} from './evidence-and-holds-restoration-hold-fixtures.mts'
 
 describe('copyright notice overlapping legal holds', () => {
   it('replays a blocked restore after the final overlapping hold resolves', async () => {
@@ -43,29 +43,12 @@ describe('copyright notice overlapping legal holds', () => {
       }),
     ).resolves.toBe('applied')
 
-    const counterNotice = await createCopyrightCounterNotice(
+    const deadline = await createCompliantCounterNoticeDeadline({
       claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Poster',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Poster',
-        targetIds: [target.id],
-      },
-    )
-    const counterAssessment = await appendCopyrightSubmissionAssessment({
-      submissionId: counterNotice.submission.id,
-      assessedAt: new Date('2026-07-02T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
+      noticeId: notice.id,
+      moderator,
+      targetId: target.id,
     })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
     const restorationAt = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
     const initialRestore = await createEligibleCopyrightRestoreIntent({
       noticeId: notice.id,

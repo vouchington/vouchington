@@ -96,6 +96,23 @@ async function expectNoRecoverableFormReview(intakeId: string): Promise<void> {
   ).resolves.toEqual([])
 }
 
+async function replayRejectedReview(screenFirst: boolean) {
+  const [{ notice }, moderator] = await Promise.all([createClearScreenedForm(), createTestUser()])
+  if (screenFirst) {
+    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
+  }
+  await createTestCopyrightFormIntakeReview({
+    intakeId: notice.intake.id,
+    moderatorId: moderator.id,
+    accepted: false,
+  })
+  await expectRecoverableFormReview(notice.intake.id)
+  await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
+  await expectNoRecoverableFormReview(notice.intake.id)
+  const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+  return { notice, moderator, aggregate }
+}
+
 describe('copyright form-screening recovery', () => {
   it('repairs a saved clear screen through its effect, without another screening run', async () => {
     const { notice } = await createClearScreenedForm()
@@ -176,19 +193,7 @@ describe('copyright form-screening recovery', () => {
   })
 
   it('keeps a rejected review authoritative after its downstream crash window', async () => {
-    const [{ notice }, moderator] = await Promise.all([createClearScreenedForm(), createTestUser()])
-    await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
-    await createTestCopyrightFormIntakeReview({
-      intakeId: notice.intake.id,
-      moderatorId: moderator.id,
-      accepted: false,
-    })
-
-    await expectRecoverableFormReview(notice.intake.id)
-    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
-
-    await expectNoRecoverableFormReview(notice.intake.id)
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const { moderator, aggregate, notice } = await replayRejectedReview(true)
     expect(aggregate?.assessments.at(-1)).toMatchObject({
       assessed_by_id: moderator.id,
       substantially_compliant: false,
@@ -229,18 +234,7 @@ describe('copyright form-screening recovery', () => {
   })
 
   it('recovers a rejection committed before any assessment', async () => {
-    const [{ notice }, moderator] = await Promise.all([createClearScreenedForm(), createTestUser()])
-    await createTestCopyrightFormIntakeReview({
-      intakeId: notice.intake.id,
-      moderatorId: moderator.id,
-      accepted: false,
-    })
-
-    await expectRecoverableFormReview(notice.intake.id)
-    await recoverRejectedCopyrightFormReviewEffect(notice.intake.id)
-
-    await expectNoRecoverableFormReview(notice.intake.id)
-    const aggregate = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const { moderator, aggregate, notice } = await replayRejectedReview(false)
     expect(aggregate?.assessments).toEqual([
       expect.objectContaining({
         assessed_by_id: moderator.id,

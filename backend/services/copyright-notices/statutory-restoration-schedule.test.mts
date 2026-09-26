@@ -4,11 +4,11 @@ import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
   appendCopyrightNoticeSubmission,
-  appendCopyrightSubmissionAssessment,
-  createCopyrightCounterNotice,
-  createCounterNoticeDeadline,
 } from './index.mts'
-import { createCopyrightRestorationHoldFixture } from './evidence-and-holds-restoration-hold-fixtures.mts'
+import {
+  createCompliantCounterNoticeDeadline,
+  createCopyrightRestorationHoldFixture,
+} from './evidence-and-holds-restoration-hold-fixtures.mts'
 import {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchDueStatutoryCopyrightRestorationDeadlineIds,
@@ -25,30 +25,18 @@ async function createCounterNoticedRestriction() {
     imposedAt: new Date('2026-07-01T12:00:00.000Z'),
     imposedById: moderator.id,
   })
-  const counterNotice = await createCopyrightCounterNotice(
-    claimant as never,
-    notice.id,
-    crypto.randomUUID(),
-    {
-      name: 'Poster',
-      address: '1 Main Street',
-      telephone: '555-0100',
-      consentToFederalJurisdiction: true,
-      consentToServiceOfProcess: true,
-      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Poster',
-      targetIds: [target.id],
-    },
-  )
-  const counterAssessment = await appendCopyrightSubmissionAssessment({
-    submissionId: counterNotice.submission.id,
-    assessedAt: new Date('2026-07-02T12:00:00.000Z'),
-    currentUser: moderator,
-    substantiallyCompliant: true,
-    targetIds: [target.id],
+  const deadline = await createCompliantCounterNoticeDeadline({
+    claimant: claimant as never,
+    noticeId: notice.id,
+    moderator,
+    targetId: target.id,
   })
-  const deadline = await createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
   return { deadline, moderator, notice, target }
+}
+
+async function materializeListedDeadline(deadlineId: string, now: Date): Promise<number> {
+  await expect(readDueDeadlineIds(deadlineId, now)).resolves.toEqual([deadlineId])
+  return createDueStatutoryCopyrightRestoreIntentsForDeadline(deadlineId, now)
 }
 
 function readDueDeadlineIds(deadlineId: string, now: Date): Promise<string[]> {
@@ -72,12 +60,7 @@ describe('statutory copyright restoration schedule', () => {
   it('materializes a due restore intent and stops listing its deadline', async () => {
     const { deadline } = await createCounterNoticedRestriction()
     const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-    await expect(readDueDeadlineIds(deadline.id, now)).resolves.toEqual([deadline.id])
-
-    await expect(
-      createDueStatutoryCopyrightRestoreIntentsForDeadline(deadline.id, now),
-    ).resolves.toBe(1)
-
+    await expect(materializeListedDeadline(deadline.id, now)).resolves.toBe(1)
     await expect(readDueDeadlineIds(deadline.id, now)).resolves.toEqual([])
   })
 
@@ -105,10 +88,8 @@ describe('statutory copyright restoration schedule', () => {
       rationale: 'Verified qualifying CCB filing.',
     })
     const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-    await expect(readDueDeadlineIds(deadline.id, now)).resolves.toEqual([deadline.id])
-
-    await expect(
-      createDueStatutoryCopyrightRestoreIntentsForDeadline(deadline.id, now),
-    ).rejects.toThrow(/Failed to materialize one or more due copyright restoration intents/)
+    await expect(materializeListedDeadline(deadline.id, now)).rejects.toThrow(
+      /Failed to materialize one or more due copyright restoration intents/,
+    )
   })
 })

@@ -2,8 +2,7 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recoverMissingDecisionAssessments } from './enforcement-recovery.mts'
 import {
-  parseCopyrightSweepPageOptions,
-  toCopyrightSweepIdPage,
+  queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
@@ -12,22 +11,20 @@ import {
  * Pages the pending and stale claimed enforcement requests, keyed by the immutable assessment ID
  * that `processCopyrightEnforcementRequest` claims.
  */
-export async function searchReconcilableCopyrightEnforcementRequestIds(
+export function searchReconcilableCopyrightEnforcementRequestIds(
   options: CopyrightSweepPageOptions = {},
 ): Promise<CopyrightSweepIdPage> {
-  const { limit, afterId } = parseCopyrightSweepPageOptions(
+  return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright enforcement request cursor',
+    'enforcementAssessment',
+    sql`/* searchReconcilableCopyrightEnforcementRequestIds */
+      SELECT copyright_notice_submission_assessment_id AS id
+      FROM copyright_notice_enforcement_requests
+      WHERE (state = 'pending'
+        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))`,
+    statement => write(statement),
   )
-  const query = sql`/* searchReconcilableCopyrightEnforcementRequestIds */
-    SELECT copyright_notice_submission_assessment_id AS id
-    FROM copyright_notice_enforcement_requests
-    WHERE (state = 'pending'
-      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'))`
-  if (afterId) query.append(sql`\n      AND copyright_notice_submission_assessment_id > ${afterId}`)
-  query.append(sql`\n    ORDER BY copyright_notice_submission_assessment_id LIMIT ${limit + 1}`)
-  const { rows } = await write<{ id: string }>(query)
-  return toCopyrightSweepIdPage(rows, limit)
 }
 
 /**

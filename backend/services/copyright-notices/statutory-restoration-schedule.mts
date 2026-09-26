@@ -2,27 +2,25 @@ import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { createEligibleCopyrightRestoreIntent } from './restoration.mts'
 import {
-  parseCopyrightSweepPageOptions,
-  toCopyrightSweepIdPage,
+  queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 
 /** Pages the deadlines whose day-ten US-DMCA restoration is due at `now` and not yet materialized. */
-export async function searchDueStatutoryCopyrightRestorationDeadlineIds(
+export function searchDueStatutoryCopyrightRestorationDeadlineIds(
   options: CopyrightSweepPageOptions & { now: Date },
 ): Promise<CopyrightSweepIdPage> {
-  const { limit, afterId } = parseCopyrightSweepPageOptions(
-    options,
-    'Invalid copyright restoration deadline cursor',
-  )
   const query = sql`/* searchDueStatutoryCopyrightRestorationDeadlineIds */
     SELECT DISTINCT deadline.id`
   appendDueStatutoryRestorationSource(query, options.now)
-  if (afterId) query.append(sql`\n      AND deadline.id > ${afterId}`)
-  query.append(sql`\n    ORDER BY deadline.id LIMIT ${limit + 1}`)
-  const { rows } = await read<{ id: string }>(query)
-  return toCopyrightSweepIdPage(rows, limit)
+  return queryCopyrightSweepIdPage(
+    options,
+    'Invalid copyright restoration deadline cursor',
+    'restorationDeadline',
+    query,
+    statement => read(statement),
+  )
 }
 
 /** Materializes one deadline's day-ten US-DMCA restoration intents from durable deadline state.

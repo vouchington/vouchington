@@ -2,8 +2,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
 import {
-  parseCopyrightSweepPageOptions,
-  toCopyrightSweepIdPage,
+  queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
@@ -13,14 +12,14 @@ import {
  * post-commit interruption, keyed by the intake ID that `recoverRejectedCopyrightFormReviewEffect`
  * takes.
  */
-export async function searchRecoverableCopyrightFormReviewIntakeIds(
+export function searchRecoverableCopyrightFormReviewIntakeIds(
   options: CopyrightSweepPageOptions = {},
 ): Promise<CopyrightSweepIdPage> {
-  const { limit, afterId } = parseCopyrightSweepPageOptions(
+  return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright form review recovery cursor',
-  )
-  const query = sql`/* searchRecoverableCopyrightFormReviewIntakeIds */
+    'formReviewIntake',
+    sql`/* searchRecoverableCopyrightFormReviewIntakeIds */
     SELECT review.copyright_notice_form_intake_id AS id
     FROM copyright_notice_form_intake_reviews review
     JOIN copyright_notice_form_intakes intake
@@ -67,11 +66,9 @@ export async function searchRecoverableCopyrightFormReviewIntakeIds(
               AND request.state IN ('pending', 'claimed')
           )
         )
-      )`
-  if (afterId) query.append(sql`\n      AND review.copyright_notice_form_intake_id > ${afterId}`)
-  query.append(sql`\n    ORDER BY review.copyright_notice_form_intake_id LIMIT ${limit + 1}`)
-  const { rows } = await write<{ id: string }>(query)
-  return toCopyrightSweepIdPage(rows, limit)
+      )`,
+    statement => write(statement),
+  )
 }
 
 /** Replays the durable effects of one moderator rejection after a post-commit interruption. */

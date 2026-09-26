@@ -1,8 +1,7 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  parseCopyrightSweepPageOptions,
-  toCopyrightSweepIdPage,
+  queryCopyrightSweepIdPage,
   type CopyrightSweepIdPage,
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
@@ -75,27 +74,25 @@ export async function claimCopyrightActionIntent(
 }
 
 /** Pages the action intents that are due for delivery or whose claim lease expired at `now`. */
-export async function searchRecoverableCopyrightActionIntentIds(
+export function searchRecoverableCopyrightActionIntentIds(
   options: CopyrightSweepPageOptions & { now: Date },
 ): Promise<CopyrightSweepIdPage> {
-  const { limit, afterId } = parseCopyrightSweepPageOptions(
+  // `completed_at IS NULL` lets the planner prove the partial pending-intent index predicate.
+  return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright action intent cursor',
+    'rowId',
+    sql`/* searchRecoverableCopyrightActionIntentIds */
+      SELECT id
+      FROM copyright_notice_action_intents
+      WHERE completed_at IS NULL
+        AND (
+          (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${options.now}))
+          OR (state = 'claimed'
+            AND claimed_at <= ${new Date(options.now.getTime() - CLAIM_TIMEOUT_MS)})
+        )`,
+    statement => read(statement),
   )
-  // `completed_at IS NULL` lets the planner prove the partial pending-intent index predicate.
-  const query = sql`/* searchRecoverableCopyrightActionIntentIds */
-    SELECT id
-    FROM copyright_notice_action_intents
-    WHERE completed_at IS NULL
-      AND (
-        (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${options.now}))
-        OR (state = 'claimed'
-          AND claimed_at <= ${new Date(options.now.getTime() - CLAIM_TIMEOUT_MS)})
-      )`
-  if (afterId) query.append(sql`\n      AND id > ${afterId}`)
-  query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
-  const { rows } = await read<{ id: string }>(query)
-  return toCopyrightSweepIdPage(rows, limit)
 }
 
 /** Reopens only retryable terminal actions.  The preceding legal event remains in the append-only

@@ -7,8 +7,10 @@ import {
 } from '@voucha/test-helpers'
 import {
   appendCopyrightSubmissionAssessment,
+  createCopyrightCounterNotice,
   createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
+  createCounterNoticeDeadline,
   createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
 } from './index.mts'
@@ -86,4 +88,35 @@ async function createAssessmentAndReceipt(
     draftedById: null,
   })
   return { assessment, receipt }
+}
+
+export async function createCompliantCounterNoticeDeadline(input: {
+  claimant: Parameters<typeof createCopyrightCounterNotice>[0]
+  noticeId: string
+  moderator: Parameters<typeof appendCopyrightSubmissionAssessment>[0]['currentUser']
+  targetId: string
+}) {
+  const counterNotice = await createCopyrightCounterNotice(
+    input.claimant,
+    input.noticeId,
+    crypto.randomUUID(),
+    {
+      name: 'Poster',
+      address: '1 Main Street',
+      telephone: '555-0100',
+      consentToFederalJurisdiction: true,
+      consentToServiceOfProcess: true,
+      goodFaithMisidentificationUnderPenaltyOfPerjury: true,
+      electronicSignature: 'Poster',
+      targetIds: [input.targetId],
+    },
+  )
+  const counterAssessment = await appendCopyrightSubmissionAssessment({
+    submissionId: counterNotice.submission.id,
+    assessedAt: new Date('2026-07-02T12:00:00.000Z'),
+    currentUser: input.moderator,
+    substantiallyCompliant: true,
+    targetIds: [input.targetId],
+  })
+  return createCounterNoticeDeadline({ assessmentId: counterAssessment.id })
 }
