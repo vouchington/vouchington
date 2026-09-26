@@ -6,6 +6,7 @@ import {
   actionStepBlocks,
   inlineLocalComposites,
   runsPnpmInstall,
+  stepLists,
   workflowYamlPaths as yamlPaths,
   type PolicyStep as CacheStep,
 } from './pnpm-policy.test-helpers.mts'
@@ -139,6 +140,23 @@ describe('CI cache policy', () => {
     expect(buildBackendImagesAction).toContain("DOCKER_BUILD_RECORD_UPLOAD: 'false'")
     expect(explainAnalyzeWorkflow).toContain('name: Upload EXPLAIN ANALYZE results')
     expect(explainAnalyzeWorkflow).toContain('if: always()')
+  })
+
+  it('keeps the buildx provenance object out of every Docker build metadata log', () => {
+    const dockerBuildSteps = stepLists.flatMap(({ owner, steps }) =>
+      steps
+        .filter(step => /^docker\/(?:bake|build-push)-action@/.test(step.uses ?? ''))
+        .map(step => ({
+          owner,
+          step: step.name,
+          provenance: step.env?.BUILDX_METADATA_PROVENANCE,
+        })),
+    )
+
+    expect(dockerBuildSteps.length).toBeGreaterThanOrEqual(3)
+    expect(dockerBuildSteps).toEqual(
+      dockerBuildSteps.map(step => ({ ...step, provenance: 'disabled' })),
+    )
   })
 
   it('deletes inter-job blob artifacts after the tests fan-in consumes them', () => {

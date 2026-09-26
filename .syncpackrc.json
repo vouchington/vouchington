@@ -52,6 +52,7 @@
     {
       "label": "Local workspace packages must use the workspace:^ specifier (replaces normalizeWorkspaceDependencies).",
       "dependencies": ["$LOCAL"],
+      "dependencyTypes": ["!local"],
       "pinVersion": "workspace:^"
     },
     {

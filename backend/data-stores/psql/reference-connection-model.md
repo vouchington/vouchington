@@ -56,6 +56,12 @@ superuser slots. Backend CI workflows explicitly use three workers, so their nor
 [`postgres-image-policy` test](../../../.github/workflows/postgres-image-policy.test.mts) keeps the
 service and initialize-smoke docker paths on that ceiling.
 
+The same `POSTGRES_INITDB_ARGS` set `log_min_messages=log`. Tests trigger `ERROR`s on purpose, and
+PostgreSQL already sends every `ERROR` to the client that caused it, so the server's copy and its
+`STATEMENT` line only flooded the runner's service-container log (about 650 to 1,700 lines per job).
+`LOG` ranks above `ERROR` in `log_min_messages`, so startup, shutdown, checkpoint, and
+"terminated by signal" crash lines, plus every `FATAL` and `PANIC`, still print.
+
 ```mermaid
 flowchart LR
   workers["Vitest forks + globalSetup"] --> pools["read + write + advisory maxima"]
