@@ -4,13 +4,13 @@ Automation prompt text lives here so workflow YAML stays focused on triggers, pe
 
 ## Prompt Surfaces
 
-| Surface                    | Source                                                             | Used by                                                                                                                                                                      |
-| -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers                                         |
-| Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml) and the [workflow inventory](../../.github/workflows/README.md)                                       |
-| Automation templates       | [automation](automation/)                                          | Templates rendered by [ci/render-harness-prompt.mts](../../ci/render-harness-prompt.mts) before calling [harness-dispatch.yml](../../.github/workflows/harness-dispatch.yml) |
+| Surface                    | Source                                                             | Used by                                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers                                          |
+| Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml) and the [workflow inventory](../../.github/workflows/README.md)                                        |
+| Automation templates       | [automation](automation/)                                          | Templates rendered by the `jonathanong/auto-harness/actions/harness-render-prompt` action before calling [harness-dispatch.yml](../../.github/workflows/harness-dispatch.yml) |
 
-Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. Render them with [ci/render-harness-prompt.mts](../../ci/render-harness-prompt.mts), passing short values with `--var NAME=value` and multiline or user-provided values with `--var-file NAME=path`.
+Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. Workflows render them with the `jonathanong/auto-harness/actions/harness-render-prompt` action, passing short values as `vars` lines (`NAME=value`) and multiline or user-provided values as `var-files` lines (`NAME=path`). The action prepends the Auto Harness session preamble and appends the CI merge-authority guard.
 
 The main-branch fix template is [fix-main.md](automation/fix-main.md). Scheduled runs use the
 [scheduled prompt template](automation/scheduled-prompt.md) or the

@@ -30,11 +30,10 @@ describe('automation output writers', () => {
     expect(uses).toHaveLength(6)
   })
 
-  it('keeps delimiter generation and prompt rendering out of workflow YAML', () => {
+  it('keeps delimiter generation out of workflow YAML', () => {
     for (const path of workflowPaths) {
       const text = yamlByPath.get(path) ?? ''
       expect(text).not.toContain('uuidgen')
-      expect(text).not.toContain('ci/render-harness-prompt.mts')
       expect(text).not.toMatch(/echo [^\n]*<</)
     }
   })
