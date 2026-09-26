@@ -5,12 +5,14 @@ import { describe, expect, it } from 'vitest'
 
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any
 // text; a trailing ` *` that is the rule's only wildcard also matches the bare command. The
-// blanket dev/ allow rules skip review for every checked-in dev/ entrypoint, and the `/../`
-// deny rules refuse the plain spelling of a path that escapes dev/. Rationale:
-// docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
+// blanket dev/ allow rules skip review for every checked-in dev/ entrypoint; each dev/ command
+// that leaves the OS sandbox also keeps a narrow allow rule, because auto mode keeps narrow rules
+// and may drop the blanket ones. The `/../` deny rules refuse the plain spelling of a path that
+// escapes dev/. Rationale: docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands.
 
 type ClaudeSettings = {
   permissions: { allow: string[]; deny: string[] }
+  sandbox: { excludedCommands: string[] }
 }
 
 const claudeSettings = JSON.parse(
@@ -38,11 +40,15 @@ const allowPatterns = bashPatterns(claudeSettings.permissions.allow)
 const denyPatterns = bashPatterns(claudeSettings.permissions.deny)
 const isAllowed = (command: string) => allowPatterns.some(p => claudeBashMatches(p, command))
 const isDenied = (command: string) => denyPatterns.some(p => claudeBashMatches(p, command))
+const isDevCommand = (command: string) =>
+  command.startsWith('./dev') || command.startsWith('node dev')
 
 describe('Claude review-skip for dev/ commands', () => {
-  it('pre-approves dev/ commands through the two blanket rules only', () => {
-    const devRules = allowPatterns.filter(p => p.startsWith('./dev') || p.startsWith('node dev'))
-    expect(devRules).toEqual(['./dev/*', 'node dev/*'])
+  it('pre-approves dev/ commands through the blanket rules plus one narrow rule per unsandboxed command', () => {
+    const unsandboxedDevCommands = claudeSettings.sandbox.excludedCommands.filter(isDevCommand)
+    expect(allowPatterns.filter(isDevCommand).toSorted()).toEqual(
+      ['./dev/*', 'node dev/*', ...unsandboxedDevCommands].toSorted(),
+    )
   })
 
   it.each([

@@ -148,19 +148,32 @@ Claude `permissions.allow` pre-approves every `dev/` entrypoint with two blanket
 the whole command text and `*` matches any text, so a new `dev/` script skips the permission prompt
 without a settings change. Grok reuses these allow/deny strings through Claude-compat.
 
+Every `dev/` command in `sandbox.excludedCommands` also keeps a narrow allow entry with the same
+text, such as `Bash(./dev/reset-worktree)` and `Bash(./dev/reset-worktree *)`. Those scripts run
+outside the OS sandbox, and auto mode keeps narrow rules but may drop the blanket ones (below).
+Without the narrow entries, dropping the blanket rules would send them to the classifier in auto
+mode, which they skipped before the blanket rules existed.
+
 Auto-mode behavior is unverified. On entering auto mode, Claude Code drops "broad allow rules that
 grant arbitrary code execution" and gives examples: blanket `Bash(*)`, wildcarded interpreters like
 `Bash(python*)`, package-manager run commands, and `Agent` / `Monitor` rules
 ([permission modes](https://code.claude.com/docs/en/permission-modes)). Neither `dev/` rule matches
 a listed example, but both can run arbitrary code: auto mode auto-approves file edits in the working
 directory, so an agent can write a `dev/` file and then run it. The docs do not say whether Claude
-Code drops blanket script-path rules like these, and no live auto-mode session has checked. If it
-keeps them, `dev/` commands skip the classifier as well as the prompt; if it drops them, auto mode
-still sends `dev/` commands to the classifier and the rules only skip prompts in other modes.
+Code drops blanket script-path rules like these. A live auto-mode session ran sandboxed and
+unsandboxed `dev/` commands without a prompt but could not tell what approved them: Claude Code
+reports classifier denials, not what approved a command. That session's user settings also had
+`sandbox.autoAllowBashIfSandboxed` on and listed `./dev/` tooling as routine in
+`autoMode.environment`, so every run would look the same whichever path approved it. Settling it
+takes someone watching the UI during an unsandboxed `dev/` command outside the narrow entries, or
+Claude Code's decision logs. If Claude Code keeps the blanket rules, `dev/` commands skip the
+classifier as well as the prompt; if it drops them, the narrow entries still skip it for the
+unsandboxed scripts, and other `dev/` commands go to the classifier.
 
 This is review-skip only. OS escalation stays per-script: a `dev/` command that must leave the OS
-sandbox still needs its own `sandbox.excludedCommands` pair and Codex `prefix_rule` (next section).
-A `dev/` script without those entries runs pre-approved but OS-sandboxed.
+sandbox still needs its own `sandbox.excludedCommands` pair, the matching narrow allow pair, and a
+Codex `prefix_rule` (next section). A `dev/` script without those entries runs pre-approved but
+OS-sandboxed.
 
 Two deny rules, `Bash(./dev*/../*)` and `Bash(node dev*/../*)`, refuse the plain spelling of a path
 that climbs out of `dev/`, such as `./dev/../bin/sh`. They are a guardrail, not a boundary: they
@@ -183,8 +196,8 @@ can approve it too. An ask rule for
 would prompt on every unsandboxed retry, including `git push` and `gh`.
 
 [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts) requires
-the two blanket rules to be the only `dev/` allow rules and checks representative commands against
-the allow and deny rules.
+the `dev/` allow rules to be exactly the two blanket rules plus one narrow entry per `dev/` command
+in `sandbox.excludedCommands`, and checks representative commands against the allow and deny rules.
 
 ## Three-surface consistency when the allowlist does change
 
@@ -192,8 +205,8 @@ Adding a new **OS** escalation entry (for a _different_ command than the ones ab
 three surfaces together:
 
 - `sandbox.excludedCommands` in `.claude/settings.json`
-- `permissions.allow` in `.claude/settings.json` (the matching `Bash(...)` entry; a `./dev/` or
-  `node dev/` command is already covered by the [blanket rules](#claude-review-skip-for-dev-commands))
+- `permissions.allow` in `.claude/settings.json` (the matching `Bash(...)` entry, `./dev/` and
+  `node dev/` commands included; see [Claude review-skip for dev/ commands](#claude-review-skip-for-dev-commands))
 - a matching `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/default.rules`
 
 Review-skip breadth is a separate decision from OS escalation. Do not add a Codex `prefix_rule` or
@@ -217,6 +230,6 @@ full decision criteria on when an escalation is a genuine bypass candidate worth
 - [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) — the three-surface
   consistency and narrowness guard.
 - [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts) — the
-  blanket `dev/` allow and `/../` deny guard.
+  `dev/` allow (blanket plus narrow unsandboxed) and `/../` deny guard.
 - [Agent Harness Parity](agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor sandbox and hook reuse.
 - [`.cursor/README.md`](../../.cursor/README.md) — Cursor CLI sandbox, hooks, and worktree setup.

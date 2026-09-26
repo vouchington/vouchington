@@ -56,8 +56,9 @@ function tomlQuotedArray(section: string, key: string): string[] {
 }
 
 describe('agent sandbox configuration', () => {
-  // The Claude review-skip for dev/ commands is the blanket rule pinned in
-  // claude-settings-dev-allow.test.mts; these tests cover only OS escalation and Codex.
+  // The Claude review-skip for dev/ commands (the blanket rules plus a narrow allow rule for each
+  // dev/ entry below) is pinned in claude-settings-dev-allow.test.mts; these tests cover only OS
+  // escalation and Codex.
   it('excludes all official dev/ scripts from the Claude sandbox and pre-approves them in Codex', () => {
     const scripts = [
       './dev/initialize',
