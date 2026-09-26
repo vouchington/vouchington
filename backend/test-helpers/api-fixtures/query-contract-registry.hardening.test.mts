@@ -48,6 +48,7 @@ const expectedParameters = {
   'GET:/api/v1/my/email-addresses': ['after', 'limit'],
   'GET:/api/v1/my/friend-recommendations': ['after', 'limit'],
   'GET:/api/v1/my/notifications/push-subscriptions': ['after', 'limit'],
+  'GET:/api/v1/my/oauth-grants': ['after', 'limit'],
   'GET:/api/v1/my/rewards-program-point-valuations': ['after', 'limit'],
   'GET:/api/v1/my/rewards-program-statuses': ['after', 'limit'],
   'GET:/api/v1/my/spending-categories': ['after', 'limit'],

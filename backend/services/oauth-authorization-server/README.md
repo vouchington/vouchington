@@ -43,6 +43,12 @@ revokes the family and every access token derived from it. Every access token ha
 composite foreign key to the same grant and refresh family, so cross-grant revocation state is
 unrepresentable. Suspended grant owners cannot exchange, refresh, or authenticate credentials.
 
+## Management
+
+`grant-management.mts` lists a user's unrevoked grants on live clients (newest first, keyset paged
+by grant id) and revokes one owner-scoped grant with a single conditional update. Management views
+live in `management-types.mts`.
+
 ## Boundaries
 
 This package exports bearer validation for later protected-resource work. B2 owns well-known

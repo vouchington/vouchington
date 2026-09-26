@@ -75,6 +75,8 @@ Most `/my/*` endpoints follow the same pattern: 2 round trips (auth + single ser
 | GET /api/v1/my/api-keys                                | 2           | None             |                                                                                           |
 | POST /api/v1/my/api-keys                               | 2           | None             |                                                                                           |
 | DELETE /api/v1/my/api-keys/:id                         | 2           | None             |                                                                                           |
+| GET /api/v1/my/oauth-grants                            | 2           | None             | Auth + one grant query with a lateral newest-access-token lookup                          |
+| DELETE /api/v1/my/oauth-grants/:id                     | 2           | None             | Auth + one owner-scoped conditional update                                                |
 | GET /api/v1/my/bans                                    | 2           | None             | Auth + paginated community_bans query                                                     |
 | GET /api/v1/my/removed-posts                           | 2           | None             | Auth + community query; `include_platform=true` uses one bounded indexed union query      |
 | GET /api/v1/my/warnings                                | 2           | None             | Auth + paginated user_warnings query                                                      |

@@ -29,6 +29,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../v1/podcast-episodes/README.md`](../v1/podcast-episodes/README.md)
 - [`../v1/report-integrity/README.md`](../v1/report-integrity/README.md)
 - [`../v1/reports/README.md`](../v1/reports/README.md)
+- [`../v1/scopes/README.md`](../v1/scopes/README.md)
 - [`../v1/search/README.md`](../v1/search/README.md)
 - [`../v1/stories/README.md`](../v1/stories/README.md)
 - [`../v1/trending-communities/README.md`](../v1/trending-communities/README.md)

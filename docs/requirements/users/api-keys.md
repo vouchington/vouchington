@@ -42,8 +42,15 @@ Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited res
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
 duplicate, or write-without-read scope sets are rejected. RSS keys accept only `rss:read`; MCP keys
 accept scopes for exactly one user or admin audience, never both, and admin scopes require an administrator owner.
-OAuth grants may compose scopes from multiple resource audiences when the authorization server is
-added, while API keys remain bound to one audience.
+OAuth grants may compose scopes from multiple resource audiences, while API keys remain bound to one
+audience.
+
+### Scope catalogue
+
+`GET /api/v1/scopes` lists every canonical scope with its resource, action, audience, prerequisite
+(`requires`) and the credential surfaces (`api-key`, `oauth`) that accept it. Web and native pickers
+render this list instead of hard-coding scope strings, so a new scope is a data change for every
+client. See the [Scopes API](../../../backend/api/v1/scopes/README.md).
 
 MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can only be created by administrators.
 
@@ -56,6 +63,21 @@ MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can on
 | `GET`    | `/api/v1/my/api-keys`     | List your API keys   |
 | `POST`   | `/api/v1/my/api-keys`     | Create a new API key |
 | `DELETE` | `/api/v1/my/api-keys/:id` | Revoke an API key    |
+
+### Connected apps
+
+Agents that connect through OAuth rather than a pasted key appear on the user's connected-apps list,
+so AI-agent access stays visible to the user.
+
+| Method   | Path                          | Description                         |
+| -------- | ----------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/my/oauth-grants`     | List the OAuth apps you approved    |
+| `DELETE` | `/api/v1/my/oauth-grants/:id` | Revoke an app's access to your data |
+
+Each grant shows the client name, whether staff verified that name, the protected resource, the
+granted scopes, when consent was given and when the app last used its access. Revoking a grant stops
+its access and refresh tokens on their next use; consenting again creates a new grant. Suspended
+users cannot revoke grants, matching API-key management.
 
 ### RSS Feeds (API key optional)
 

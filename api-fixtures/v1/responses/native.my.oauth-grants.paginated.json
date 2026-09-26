@@ -1,0 +1,22 @@
+{
+  "page_info": {
+    "end_cursor": "fixture-oauth-grant-end-cursor",
+    "has_next_page": true,
+    "start_cursor": "fixture-oauth-grant-start-cursor"
+  },
+  "results": [
+    {
+      "client": {
+        "client_id": "voucha_fixture-client",
+        "client_name": "Fixture Agent",
+        "id": "00000000-0000-7000-8000-000000000712",
+        "verified": true
+      },
+      "consented_at": "2026-09-01T12:00:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000711",
+      "last_used_at": "2026-09-20T08:30:00.000Z",
+      "resource": "https://voucha.ai/api/v1/mcp",
+      "scopes": ["mcp.user:read", "mcp.user:write"]
+    }
+  ]
+}

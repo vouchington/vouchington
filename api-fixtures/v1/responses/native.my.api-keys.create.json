@@ -1,0 +1,15 @@
+{
+  "api_key": {
+    "created_at": "2026-09-01T12:00:00.000Z",
+    "id": "00000000-0000-7000-8000-000000000701",
+    "label": "Coding agent",
+    "last_used_at": null,
+    "permissions": ["mcp.user:read", "mcp.user:write"],
+    "prefix": "voucha_mcp_0000",
+    "revoked_at": null,
+    "type": "mcp",
+    "updated_at": "2026-09-01T12:00:00.000Z",
+    "user_id": "00000000-0000-7000-8000-000000000001"
+  },
+  "raw_key": "fixture-raw-api-key"
+}
