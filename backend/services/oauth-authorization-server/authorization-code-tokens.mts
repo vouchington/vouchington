@@ -91,14 +91,17 @@ async function lockAuthorizationCode(
        oauth_grant.revoked_at AS grant_revoked_at
      FROM oauth_authorization_codes AS code
      JOIN oauth_grants AS oauth_grant ON oauth_grant.id = code.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
      WHERE code.code_hash = $1
+       AND client.revoked_at IS NULL
+       AND code.redirect_uri = ANY(client.redirect_uris)
        AND NOT EXISTS (
          SELECT 1
          FROM user_suspensions AS suspension
          WHERE suspension.user_id = oauth_grant.user_id
            AND suspension.lifted_at IS NULL
        )
-     FOR UPDATE OF code, oauth_grant`,
+     FOR UPDATE OF code, oauth_grant FOR SHARE OF client`,
     [hashToken(OAUTH_SECRET_PURPOSES.authorizationCode, rawCode)],
   )
   return result.rows[0] ?? null
@@ -116,7 +119,6 @@ function assertCodeExchange(
     code.grant_revoked_at ||
     code.expires_at <= new Date() ||
     code.redirect_uri !== input.redirectUri ||
-    !client.redirect_uris.includes(code.redirect_uri) ||
     !pkceMatches(code.code_challenge, verifier)
   ) {
     throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')

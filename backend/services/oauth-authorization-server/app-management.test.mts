@@ -196,9 +196,10 @@ describe('owned OAuth app management', () => {
     const app = owned.results.find(candidate => candidate.client_id === flow.client.client_id)!
 
     await expect(revokeOwnedOAuthApp(stranger.id, app.id)).resolves.toBe(false)
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.not.toBeNull()
     await expect(revokeOwnedOAuthApp(owner.id, app.id)).resolves.toBe(true)
     await expect(revokeOwnedOAuthApp(owner.id, app.id)).resolves.toBe(false)
-    await expect(validateOAuthAccessToken(tokens.access_token)).resolves.toBeNull()
+    await expect(validateOAuthAccessToken(tokens.access_token, 'user')).resolves.toBeNull()
     await expect(
       exchangeOAuthRefreshToken({
         clientId: flow.client.client_id,

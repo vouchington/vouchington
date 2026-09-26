@@ -17,8 +17,9 @@ OpenID Connect, ID-token, or UserInfo flows.
 ## Security invariants
 
 - Redirect URIs must be registered exactly. HTTPS is required except for HTTP loopback clients.
-  The match is rechecked when the user decides on consent and when the code is exchanged, so a URI
-  the owner has since removed receives neither a code nor tokens.
+  The match is rechecked when the user decides on consent and when the code is exchanged, under a
+  share lock on the client row, so a URI the owner has removed, even concurrently, receives neither
+  a code nor tokens.
 - Authorization errors redirect only after the client and redirect URI have both been verified.
 - Codes, access tokens, refresh tokens, and client secrets are stored only as purpose-bound hashes.
   Plaintext credentials are returned once.
