@@ -69,7 +69,6 @@ const DEFAULT_POST_DETAIL_LABELS: NonNullable<PostDetailViewProps['labels']> = {
   dataPoint: { creditCard: 'Credit card data point', bankAccount: 'Bank account data point' },
 }
 
-// oxlint-disable-next-line react-doctor/no-many-boolean-props -- post detail inherits auth/moderation booleans from the route layer; flattening to a role enum would require a larger refactor
 export function PostDetailView({
   post,
   election,

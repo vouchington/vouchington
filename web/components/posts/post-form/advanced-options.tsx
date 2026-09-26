@@ -9,7 +9,6 @@ import { PostArchiveButton } from './post-archive-button'
 import { AudienceField, PostLanguageField, VisibilityField } from './advanced-options-fields'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-// oxlint-disable-next-line react-doctor/no-many-boolean-props -- established component API
 export function AdvancedOptions({
   broadcast,
   isAdvancedOpen,

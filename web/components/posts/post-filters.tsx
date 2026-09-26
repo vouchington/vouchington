@@ -26,7 +26,6 @@ export function PostFilters(props: PostFiltersProps) {
   )
 }
 
-// oxlint-disable-next-line react-doctor/no-many-boolean-props -- established component API
 function PostFiltersContent({
   showSearch = true,
   showSort = true,

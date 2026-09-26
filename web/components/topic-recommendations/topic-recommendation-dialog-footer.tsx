@@ -30,7 +30,6 @@ type FooterProps = Pick<
   onNavigateNext: () => void
 }
 
-// oxlint-disable-next-line react-doctor/no-many-boolean-props -- established component API
 export function TopicRecommendationDialogFooter({
   hasPrevious,
   hasNext,

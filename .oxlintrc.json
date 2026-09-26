@@ -797,7 +797,6 @@
     "react-doctor/js-cache-property-access": "error",
     "react-doctor/js-cache-storage": "error",
     "react-doctor/js-combine-iterations": "error",
-    "react-doctor/js-early-exit": "error",
     "react-doctor/js-flatmap-filter": "error",
     "react-doctor/js-hoist-intl": "error",
     "react-doctor/js-hoist-regexp": "error",
@@ -805,7 +804,6 @@
     "react-doctor/js-length-check-first": "error",
     "react-doctor/js-min-max-loop": "error",
     "react-doctor/js-set-map-lookups": "off", // 68 findings / 49 files on 2026-08-19
-    "react-doctor/js-tosorted-immutable": "error",
     "no-mistakes/await-array-methods": "error",
     "no-mistakes/no-delete-property": "error",
     "no-mistakes/no-import-only-test-files": "error",
