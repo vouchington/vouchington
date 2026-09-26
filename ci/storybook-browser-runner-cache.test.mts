@@ -67,7 +67,7 @@ describe('Storybook browser runner cache policy', () => {
     await expect(result).resolves.toBe(0)
     expect(removed).toContain('/repo/.cache/vite/storybook-browser')
     expect(spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
   })
 
@@ -97,7 +97,7 @@ describe('Storybook browser runner cache policy', () => {
     await expect(result).resolves.toBe(0)
     expect(removed.filter(path => path === '/repo/.cache/vite/storybook-browser')).toHaveLength(1)
     expect(spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
   })
 
@@ -178,7 +178,7 @@ describe('Storybook browser runner cache policy', () => {
 
     await expect(result).resolves.toBe(0)
     expect(spawnCalls[0].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-1',
+      '/runner-temp/vite-storybook-browser-attempt-1',
     )
   })
 
@@ -227,9 +227,7 @@ describe('Storybook browser runner cache policy', () => {
     const first = makeChild(421)
     const second = makeChild(422)
     const { copied, deps, intervals, removed, spawnCalls } = makeDeps([first, second], {
-      exists: path =>
-        path ===
-        '/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-2/deps/_metadata.json',
+      exists: path => path === '/runner-temp/vite-storybook-browser-attempt-2/deps/_metadata.json',
       now: () => now,
     })
     const result = runStorybookBrowserTests(
@@ -257,7 +255,7 @@ describe('Storybook browser runner cache policy', () => {
     expect(removed).toContain('/repo/.cache/vite/storybook-browser')
     expect(copied).toContainEqual({
       dest: '/repo/.cache/vite/storybook-browser',
-      src: '/runner-temp/vite-storybook-browser-27519989871-1-storybook-attempt-2',
+      src: '/runner-temp/vite-storybook-browser-attempt-2',
     })
   })
 

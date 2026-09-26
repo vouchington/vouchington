@@ -76,10 +76,10 @@ describe('runStorybookBrowserTests', () => {
     expect(killed).toContainEqual({ pid: 201, signal: 'SIGTERM' })
     expect(spawnCalls).toHaveLength(2)
     expect(spawnCalls[0].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-3-storybook-attempt-1',
+      '/runner-temp/vite-storybook-browser-attempt-1',
     )
     expect(spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-3-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
     expect(spawnCalls[0].env.VITEST_STORYBOOK_BROWSER_API_PORT).not.toBe(
       spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_API_PORT,
@@ -183,7 +183,7 @@ describe('runStorybookBrowserTests', () => {
       '/repo/.cache/vite/storybook-browser',
     )
     expect(spawnCalls[1].env.VITEST_STORYBOOK_BROWSER_CACHE_DIR).toBe(
-      '/runner-temp/vite-storybook-browser-28703003816-2-storybook-attempt-2',
+      '/runner-temp/vite-storybook-browser-attempt-2',
     )
     expect(removed).toContain('/repo/.cache/vite/storybook-browser')
     expect(stderr.join('')).toContain('retryable=true; stall=false; hang=false; runnerMissing=true')

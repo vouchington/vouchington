@@ -221,7 +221,10 @@ jobs:
           STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}
           # Browser mode remains serial despite the two-worker CI fallback.
           VITEST_MAX_WORKERS: '1'
-        run: pnpm exec ./ci/run-storybook-browser-tests.mts
+        run: |
+          VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 ci/allocate-browser-safe-ports.py 1)
+          export VITEST_STORYBOOK_BROWSER_API_PORT
+          pnpm exec ./ci/run-storybook-browser-tests.mts
         # The runner owns one monotonic 300-second session budget across at most three startup
         # attempts. Semantic module progress disables retry and distinguishes active browser work
         # from a pre-test startup failure. Leave one workflow minute for process-group cleanup.
