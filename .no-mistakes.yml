@@ -1547,7 +1547,7 @@ rules:
       sqlInclude:
         - backend/data-stores/psql/migrations/**/*.sql
       allowedMigrations:
-        - path: backend/data-stores/psql/migrations/0730-00-00-post-publication-identity-snapshots.sql
+        - path: backend/data-stores/psql/migrations/0732-00-00-post-publication-identity-snapshots.sql
           table: post_publication_projection_receipts
           column: applied_snapshot_id
           type: UUID
