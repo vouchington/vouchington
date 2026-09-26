@@ -32,32 +32,33 @@ vi.mock(
 
 vi.mock(import('lucide-react'), () => mockLucideReact({ Loader2: () => <span>loading</span> }))
 
-import { ValkeyHeader } from './valkey-header'
+import { ScheduledJobsHeader } from './scheduled-jobs-header'
 
-describe('ValkeyHeader', () => {
-  it('renders the valkey heading through the shared admin page header', () => {
+describe('ScheduledJobsHeader', () => {
+  it('renders the queues heading through the shared admin page header', () => {
     render(
-      <ValkeyHeader
-        loadData={vi.fn<() => void>()}
+      <ScheduledJobsHeader
         loading={false}
+        onRefresh={vi.fn<() => void>()}
       />,
     )
-    const heading = screen.getByRole('heading', { level: 1, name: 'Valkey' })
+    const heading = screen.getByRole('heading', { level: 1, name: 'Queues' })
     expect(heading).toHaveClass('text-xl', 'font-semibold', 'sm:text-2xl')
     expect(heading).not.toHaveClass('font-bold')
-    expect(screen.getByText('Bloom filter rebuilds and cache management')).toHaveClass(
+    expect(screen.getByText('glide-mq job queue management')).toHaveClass(
       'mt-1',
       'text-sm',
       'text-muted-foreground',
     )
     expect(heading.parentElement?.parentElement).toHaveClass('flex-col', 'gap-3', 'sm:flex-row')
+    expect(screen.getByText('Open GlideMQ Dashboard')).toBeDefined()
   })
 
   it('renders the refresh button in loading state', () => {
     render(
-      <ValkeyHeader
-        loadData={vi.fn<() => void>()}
+      <ScheduledJobsHeader
         loading
+        onRefresh={vi.fn<() => void>()}
       />,
     )
     expect(screen.getByText('Refreshing...')).toBeDefined()
