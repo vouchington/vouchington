@@ -23,8 +23,8 @@ _none_
 - `media_delivery_repair_markers_delivery_key_check`: `CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))`
 - `media_delivery_repair_markers_exact_key`: `CHECK (
 CASE
-WHEN (delivery_key ~ '^image-placement:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(0|[1-9][0-9]{0,9}):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) THEN ((split_part(delivery_key, ':'::text, 3))::bigint <= 2147483647)
-ELSE false
+  WHEN (delivery_key ~ '^image-placement:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(0|[1-9][0-9]{0,9}):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) THEN ((split_part(delivery_key, ':'::text, 3))::bigint <= 2147483647)
+  ELSE false
 END)`
 
 **Foreign keys:**
