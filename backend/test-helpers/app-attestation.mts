@@ -10,8 +10,8 @@ import type {
 } from '@voucha/types/entities/app-attestation'
 import { appAttestationConfig } from '../services/app-attestation/index.mts'
 import {
-  deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
+  snapshotDynamicConfigFieldsForTest,
 } from './dynamic-config.mts'
 
 export const TEST_APP_ATTEST_TEAM_ID = 'TESTTEAM1X'
@@ -21,9 +21,13 @@ export const TEST_APP_ATTEST_BUNDLE_ID = 'io.voucha.test-fixture'
 // each test in the describe block, and restores appAttestationConfig's dynamic fields after each
 // one. Shared by every route's "App Attest bypass" test group (post creation, email-address
 // tokens, ...): a route accepts a valid App Attest assertion in place of a CAPTCHA token only
-// when this bypass is configured on.
+// when this bypass is configured on. The snapshot is taken before either override so restoring it
+// puts back whatever value (or absence of one) preceded this fixture, not the test's own overrides.
 export function useAppAttestBypassConfig(): void {
+  let restoreAppAttestConfig: (() => void) | undefined
+
   beforeEach(() => {
+    restoreAppAttestConfig = snapshotDynamicConfigFieldsForTest([appAttestationConfig])
     vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEST_APP_ATTEST_TEAM_ID)
     vi.stubEnv('APPLE_APP_ATTEST_BUNDLE_ID', TEST_APP_ATTEST_BUNDLE_ID)
     overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })
@@ -33,10 +37,8 @@ export function useAppAttestBypassConfig(): void {
   })
 
   afterEach(() => {
-    deleteDynamicConfigFieldsForTest(
-      appAttestationConfig,
-      Object.keys(appAttestationConfig.fieldTypes),
-    )
+    restoreAppAttestConfig?.()
+    restoreAppAttestConfig = undefined
   })
 }
 

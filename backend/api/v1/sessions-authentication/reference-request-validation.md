@@ -17,28 +17,37 @@ body shape, since `requireAuth` runs first; the schema is never checked before a
 Some routes accept a body where a field group is legitimately absent as a whole (an all-or-nothing
 pair) but must match the generated shape exactly once any of those fields is present. For these, the
 route's manual presence/pairing check runs first and pins its own status code for the absent or
-partial case; the generated schema only runs once that precondition holds, and before any
-format-specific manual check the schema would otherwise preempt. This pattern is used by:
+partial case; the generated schema only runs once that precondition holds. Where the schema runs
+relative to other manual checks (format/value checks, attempt-limit counters) varies by route — see
+each bullet below. This pattern is used by:
 
-- `POST /api/v1/auth/bluesky/link` / `POST /api/v1/auth/bluesky/link-completions` — the schema check
-  runs after `requireAuth`/`assertNotSuspended`, before the manual mode/field pairing checks. See
+- `POST /api/v1/auth/bluesky/link` / `POST /api/v1/auth/bluesky/link-completions` — the manual
+  mode/field pairing checks run first (after `requireAuth`/`assertNotSuspended`); the schema check
+  runs after them, rejecting only unrecognized top-level fields. See
   [Bluesky account linking](reference-bluesky-account-linking.md).
 - `POST /api/v1/auth/oauth/:provider/authorizations` — the same manual-first, schema-once-paired
   ordering as the Bluesky routes above.
 - `POST /api/v1/auth/logout` (in [`../auth/`](../auth/README.md)) — the all-or-nothing web-push
   binding pair is checked for presence first; the schema only runs once both fields are present, so
   the normal no-body logout (and a body with neither field) never reaches a schema built for the
-  fully-supplied pair. `LogoutRequest` keeps both fields non-optional in the generated contract
-  precisely so the pair stays enforced once supplied — do not loosen the type to "fix" a test that
-  expects the schema to run unconditionally; move the call, not the contract.
+  fully-supplied pair. Here the schema runs before the format-specific checks (HTTPS URL, UUID) that
+  follow it, unlike the Bluesky and OAuth-authorizations routes above. `LogoutRequest` keeps both
+  fields non-optional in the generated contract precisely so the pair stays enforced once supplied —
+  do not loosen the type to "fix" a test that expects the schema to run unconditionally; move the
+  call, not the contract.
 - MFA verification routes with an attempt-limit counter (e.g. TOTP, passkey MFA) — the counter check
   runs before the schema check, so a caller that has already exhausted attempts sees the existing
   limit response rather than a schema diagnostic for a request that will be blocked regardless.
 
 ## Endpoints without a request-contract schema
 
-- `GET /api/v1/auth/sessions` and `GET /api/v1/auth/passkeys` carry no JSON body (list endpoints,
-  query/path only) and have no entry in the generated operations map.
+- `GET /api/v1/auth/sessions`, `GET /api/v1/auth/passkeys`, and `GET /api/v1/auth/totp` carry no
+  JSON body (list endpoints, query/path only). Each has a `query`-only entry in the generated
+  operations map (from the route's own `apiQuery(...)` call, for OpenAPI documentation), but no
+  route calls `validateRequestContract` for it — the query is parsed and validated manually
+  (`createPaginationParser`/`totpParser`) instead.
+- `GET /api/v1/auth/mfa/status` carries no JSON body and has no entry in the generated operations
+  map at all.
 - `GET /api/v1/auth/oauth/:provider/broker-callback` and `GET /api/v1/auth/bluesky/callback` are
   redirect-only provider callback targets. The former has only a `path` schema for `:provider`; the
   latter has no generated operation at all. Neither validates a query or body carrier.

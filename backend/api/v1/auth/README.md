@@ -81,10 +81,11 @@ depends on.
 **Response:** `{ "redirect_url": "https://bsky.social/oauth/authorize?..." }`
 Native starts also return `flow_id`.
 
-**Errors:** `422` for an unrecognized field or wrong-typed `handle`/`callback_mode` (checked after
-`requireAuth`/`assertNotSuspended`, before the checks below — see
+**Errors:** `422` for an unrecognized field (checked after `requireAuth`/`assertNotSuspended` and
+after the checks below — see
 [Request Validation](../sessions-authentication/reference-request-validation.md#precondition-then-schema-ordering)).
-`400` if `handle` is missing or blank. `409` if the current user already has a Bluesky
+`400` if `handle` is missing, blank, or wrong-typed, or if `callback_mode` or
+`completion_proof_challenge` is invalid. `409` if the current user already has a Bluesky
 account linked.
 
 ## GET /api/v1/auth/bluesky/callback

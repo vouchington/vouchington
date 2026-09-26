@@ -13,6 +13,7 @@ and expiry are loaded from PostgreSQL, and every later mutation must match that 
 See the [Bluesky account lifecycle threat model](../../../services/bluesky-accounts/README.md#lifecycle-threat-model).
 
 `POST /api/v1/auth/bluesky/link` and `POST /api/v1/auth/bluesky/link-completions` validate their
-request body against the generated contract after `requireAuth`/`assertNotSuspended` and before the
-manual mode/field pairing checks below — see
+request body against the generated contract after `requireAuth`/`assertNotSuspended` and after the
+manual mode/field pairing checks below, which pin their own `400` statuses; the schema check that
+follows only rejects unrecognized top-level fields — see
 [Request Validation](reference-request-validation.md#precondition-then-schema-ordering).
