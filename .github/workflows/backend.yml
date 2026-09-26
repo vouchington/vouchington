@@ -1,0 +1,183 @@
+name: Backend
+
+# Area workflow: when `changes` selects the backend area, its static checks gate the full backend
+# suites. The `backend` job is the required check; it passes when the area is skipped. nightly.yml
+# calls this workflow for the full run. See docs/development/ci.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_call:
+    secrets:
+      AWS_TEST_ROLE_ARN:
+        required: false
+      OPENAI_API_KEY:
+        required: false
+      OPENROUTER_API_KEY:
+        required: false
+      STRIPE_SECRET_KEY:
+        required: false
+  workflow_dispatch:
+
+# A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
+# area calls nightly.yml makes.
+concurrency:
+  group: backend-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  changes:
+    uses: ./.github/workflows/ci-detect-changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  static-backend:
+    needs: [changes]
+    if: needs.changes.outputs.area-backend == 'true'
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      backend: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-backend-modules:
+    needs: [static-backend]
+    uses: ./.github/workflows/tests-backend-modules.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-backend-unit:
+    needs: [static-backend]
+    uses: ./.github/workflows/tests-backend-unit.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-backend-credentialed:
+    needs: [changes, static-backend]
+    if: needs.changes.outputs.trusted-secret-context == 'true'
+    uses: ./.github/workflows/tests-backend-credentialed.yml
+    with:
+      trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
+      publish_coverage: true
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
+      OPENAI_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}
+      OPENROUTER_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}
+      STRIPE_SECRET_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.STRIPE_SECRET_KEY || '' }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  test-postgres-schema:
+    needs: [static-backend]
+    uses: ./.github/workflows/tests-postgres-schema.yml
+    permissions:
+      actions: read
+      contents: read
+
+  backend-smoke:
+    needs: [static-backend]
+    uses: ./.github/workflows/checks-backend-smoke.yml
+    permissions:
+      actions: read
+      contents: read
+
+  test-explain-analyze:
+    needs: [static-backend]
+    uses: ./.github/workflows/explain-analyze.yml
+    permissions:
+      actions: read
+      contents: read
+
+  # Docker image validation. On pull requests it runs only when the image build inputs change; a
+  # merge group builds whenever any source baked into the image changed.
+  build-backend:
+    needs: [changes, static-backend]
+    if: >-
+      needs.changes.outputs.trusted-secret-context == 'true' &&
+      (
+        (github.event_name == 'pull_request' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-backend-infra == 'true')) ||
+        (github.event_name == 'merge_group' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-backend == 'true'))
+      )
+    uses: ./.github/workflows/build-backend.yml
+    with:
+      trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  coverage:
+    needs: [static-backend, test-backend-modules, test-backend-unit, test-backend-credentialed]
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      needs.static-backend.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-area-coverage.yml
+    with:
+      area: backend
+    permissions:
+      actions: read
+      contents: read
+
+  # Informational; the `backend` gate does not wait on it.
+  codecov:
+    needs: [test-backend-modules, test-backend-unit, test-backend-credentialed]
+    if: >-
+      !cancelled() &&
+      contains(needs.*.result, 'success') &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-upload-codecov.yml
+    with:
+      uploads: >-
+        [{"flag":"backend-modules","pattern":"lcov-full-backend-modules*"},{"flag":"backend-unit","pattern":"lcov-full-backend-shard-*"},{"flag":"backend-credentialed","pattern":"lcov-full-backend-credentialed*"}]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  backend:
+    name: backend
+    if: ${{ !cancelled() }}
+    needs:
+      [
+        changes,
+        static-backend,
+        test-backend-modules,
+        test-backend-unit,
+        test-backend-credentialed,
+        test-postgres-schema,
+        backend-smoke,
+        test-explain-analyze,
+        build-backend,
+        coverage,
+      ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASH_ENV: /dev/null
+    permissions:
+      contents: read
+    steps:
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@facde3ea4773a9477411b67574de56f679f984fa # v0.19.2
+        timeout-minutes: 1
+        with:
+          results: >-
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-backend-credentialed":{"result":"${{ needs.test-backend-credentialed.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"build-backend":{"result":"${{ needs.build-backend.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

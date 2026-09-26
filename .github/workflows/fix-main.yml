@@ -6,7 +6,6 @@ on:
       - GitHub Actions Static Analysis
       - Gitleaks
       - Lint Links
-      - Portability Tests
       - 'Main CI (backend)'
       - 'Main CI (checks)'
       - 'Main CI (cloudflare-worker)'
@@ -14,7 +13,6 @@ on:
       - 'Main CI (storybook)'
       - 'Main CI (web)'
       - Plan completion advisory
-      - Static Code Analysis
       - 'Sync Articles'
       - 'Docs Publish'
       - 'Dispatch completed deploy'

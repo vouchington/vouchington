@@ -93,14 +93,10 @@ describe('CI aggregate gates', () => {
     expect(gateScript).toContain('"result":\\s*"(failure|cancelled)"')
   })
 
-  it('runs test-coverage unconditionally on docs-only PRs (vitest:full removed)', () => {
+  it('runs test-coverage and the full static analysis on docs-only PRs', () => {
     expect(workflow.jobs?.['test-coverage']?.if).not.toContain('docs-only')
-    expect(workflow.jobs?.['static-code-analysis']?.if).not.toContain(
-      "needs.detect-changes.outputs.docs-only != 'true'",
-    )
-    expect(workflow.jobs?.['static-code-analysis']?.with).toMatchObject({
-      docs_only: "${{ needs.detect-changes.outputs.docs-only == 'true' }}",
-    })
+    expect(workflow.jobs?.['static-code-analysis']?.if).not.toContain('docs-only')
+    expect(workflow.jobs?.['static-code-analysis']?.with).toBeUndefined()
   })
 
   it('moves expensive report processing behind the reusable processing boundary', () => {

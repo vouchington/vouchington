@@ -1,0 +1,44 @@
+name: Static
+
+# Repository-wide static analysis on every pull request and merge group. It has no `changes` job:
+# no-mistakes' tsconfig-gate-coverage rule counts a typecheck only when this root reaches it
+# provably, and a `needs:` on a reusable job defeats that. The `static` job is the required check.
+# nightly.yml calls this workflow for the full run. See docs/development/ci.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_call:
+  workflow_dispatch:
+
+# A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
+# area calls nightly.yml makes.
+concurrency:
+  group: static-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  static-code-analysis:
+    uses: ./.github/workflows/static-code-analysis.yml
+    permissions:
+      contents: read
+
+  static:
+    name: static
+    if: ${{ !cancelled() }}
+    needs: [static-code-analysis]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASH_ENV: /dev/null
+    permissions:
+      contents: read
+    steps:
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@facde3ea4773a9477411b67574de56f679f984fa # v0.19.2
+        timeout-minutes: 1
+        with:
+          results: >-
+            {"static-code-analysis":{"result":"${{ needs.static-code-analysis.result }}"}}

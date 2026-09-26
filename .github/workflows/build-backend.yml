@@ -15,9 +15,6 @@ permissions:
   actions: read
   contents: read
   id-token: write
-concurrency:
-  group: build-backend-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

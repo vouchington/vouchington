@@ -1,0 +1,195 @@
+name: Web
+
+# Area workflow: when `changes` selects the web area, its static checks gate the full web, Storybook
+# and Playwright suites. The `web` job is the required check; it passes when the area is skipped.
+# nightly.yml calls this workflow for the full run. See docs/development/ci.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_call:
+    secrets:
+      AWS_TEST_ROLE_ARN:
+        required: false
+      S3_BUCKET_IMAGES:
+        required: false
+      S3_BUCKET_IMAGE_UPLOADS:
+        required: false
+  workflow_dispatch:
+
+# A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
+# area calls nightly.yml makes.
+concurrency:
+  group: web-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  changes:
+    uses: ./.github/workflows/ci-detect-changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  # Also builds the shared web runtime that the integration and Playwright suites reuse.
+  static-web:
+    needs: [changes]
+    if: needs.changes.outputs.area-web == 'true'
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      web: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-web:
+    needs: [static-web]
+    uses: ./.github/workflows/tests-web.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-web-api:
+    needs: [static-web]
+    uses: ./.github/workflows/tests-web-api.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-web-integration:
+    needs: [static-web]
+    uses: ./.github/workflows/tests-web-integration.yml
+    with:
+      shared_build_available: true
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  # Same-repository contributors and exact dependency bots only; see storybook.yml.
+  storybook:
+    needs: [changes, static-web]
+    if: >-
+      needs.changes.outputs.trusted-secret-context == 'true' ||
+      needs.changes.outputs.dependency-bot-test-context == 'true'
+    uses: ./.github/workflows/storybook.yml
+    with:
+      cancel_in_progress: ${{ github.event_name == 'pull_request' }}
+      checkout_ref: ${{ github.sha }}
+      # Stable per-PR cancellation key so a new head cancels its stale Storybook build.
+      concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-playwright:
+    needs: [static-web]
+    uses: ./.github/workflows/tests-playwright.yml
+    with:
+      shared_build_available: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-playwright-credentialed:
+    needs: [changes, static-web]
+    if: needs.changes.outputs.trusted-secret-context == 'true'
+    uses: ./.github/workflows/tests-playwright-credentialed.yml
+    with:
+      trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
+      S3_BUCKET_IMAGES: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.S3_BUCKET_IMAGES || '' }}
+      S3_BUCKET_IMAGE_UPLOADS: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.S3_BUCKET_IMAGE_UPLOADS || '' }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  # Docker image validation. On pull requests it runs only when the image build inputs change; a
+  # merge group builds whenever any source baked into the image changed.
+  build-web:
+    needs: [changes, static-web]
+    if: >-
+      needs.changes.outputs.trusted-secret-context == 'true' &&
+      (
+        (github.event_name == 'pull_request' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-web-infra == 'true')) ||
+        (github.event_name == 'merge_group' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-web == 'true'))
+      )
+    uses: ./.github/workflows/build-web.yml
+    with:
+      trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  coverage:
+    needs: [static-web, test-web, test-web-api, test-web-integration, storybook]
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      needs.static-web.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-area-coverage.yml
+    with:
+      area: web
+    permissions:
+      actions: read
+      contents: read
+
+  # Informational; the `web` gate does not wait on it.
+  codecov:
+    needs: [test-web, test-web-api, test-web-integration, storybook]
+    if: >-
+      !cancelled() &&
+      contains(needs.*.result, 'success') &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-upload-codecov.yml
+    with:
+      uploads: >-
+        [{"flag":"web","pattern":"lcov-full-web-shard-*"},{"flag":"web-api","pattern":"lcov-full-web-api-shard-*"},{"flag":"web-integration","pattern":"lcov-full-web-integration-shard-*"},{"flag":"web-storybook","pattern":"lcov-full-web-storybook{,-retry}"},{"flag":"web-storybook-browser","pattern":"lcov-full-web-storybook-browser*"}]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  web:
+    name: web
+    if: ${{ !cancelled() }}
+    needs:
+      [
+        changes,
+        static-web,
+        test-web,
+        test-web-api,
+        test-web-integration,
+        storybook,
+        test-playwright,
+        test-playwright-credentialed,
+        build-web,
+        coverage,
+      ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASH_ENV: /dev/null
+    permissions:
+      contents: read
+    steps:
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@facde3ea4773a9477411b67574de56f679f984fa # v0.19.2
+        timeout-minutes: 1
+        with:
+          results: >-
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-web":{"result":"${{ needs.static-web.result }}"},"test-web":{"result":"${{ needs.test-web.result }}"},"test-web-api":{"result":"${{ needs.test-web-api.result }}"},"test-web-integration":{"result":"${{ needs.test-web-integration.result }}"},"storybook":{"result":"${{ needs.storybook.result }}"},"test-playwright":{"result":"${{ needs.test-playwright.result }}"},"test-playwright-credentialed":{"result":"${{ needs.test-playwright-credentialed.result }}"},"build-web":{"result":"${{ needs.build-web.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

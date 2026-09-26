@@ -1,0 +1,91 @@
+name: Lambdas
+
+# Area workflow: when `changes` selects the Lambdas area, its static checks gate the full Lambdas
+# suite. The `lambdas` job is the required check; it passes when the area is skipped. nightly.yml
+# calls this workflow for the full run. See docs/development/ci.md.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+  workflow_call:
+  workflow_dispatch:
+
+# A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
+# area calls nightly.yml makes.
+concurrency:
+  group: lambdas-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  changes:
+    uses: ./.github/workflows/ci-detect-changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  static-lambdas:
+    needs: [changes]
+    if: needs.changes.outputs.area-lambdas == 'true'
+    uses: ./.github/workflows/checks-static.yml
+    with:
+      lambdas: true
+    permissions:
+      actions: read
+      contents: read
+
+  test-lambdas:
+    needs: [static-lambdas]
+    uses: ./.github/workflows/tests-lambdas.yml
+    with:
+      publish_coverage: true
+    permissions:
+      actions: read
+      contents: read
+
+  coverage:
+    needs: [static-lambdas, test-lambdas]
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group') &&
+      needs.static-lambdas.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/ci-area-coverage.yml
+    with:
+      area: lambdas
+    permissions:
+      actions: read
+      contents: read
+
+  # Informational; the `lambdas` gate does not wait on it.
+  codecov:
+    needs: [test-lambdas]
+    if: ${{ !cancelled() && needs.test-lambdas.result == 'success' }}
+    uses: ./.github/workflows/ci-upload-codecov.yml
+    with:
+      uploads: >-
+        [{"flag":"lambdas","pattern":"lcov-full-lambdas*"}]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+
+  lambdas:
+    name: lambdas
+    if: ${{ !cancelled() }}
+    needs: [changes, static-lambdas, test-lambdas, coverage]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASH_ENV: /dev/null
+    permissions:
+      contents: read
+    steps:
+      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@facde3ea4773a9477411b67574de56f679f984fa # v0.19.2
+        timeout-minutes: 1
+        with:
+          results: >-
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-lambdas":{"result":"${{ needs.static-lambdas.result }}"},"test-lambdas":{"result":"${{ needs.test-lambdas.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

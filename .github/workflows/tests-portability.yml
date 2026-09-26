@@ -4,7 +4,12 @@ on:
   workflow_call:
     inputs:
       publish_coverage:
-        description: 'Whether to publish LCOV for a same-run PR coverage consumer'
+        description: 'Whether to collect coverage and publish the full LCOV for the area coverage gate and Codecov'
+        required: false
+        type: boolean
+        default: false
+      publish_coverage_pair:
+        description: 'Whether to also publish the sparse coverage pair for the ci.yml Patch Coverage consumer'
         required: false
         type: boolean
         default: false
@@ -20,31 +25,6 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-    branches: [main]
-    paths:
-      - '.github/actions/**'
-      - '.github/workflows/tests-portability.yml'
-      - 'ci/curl-to.sh'
-      - 'ci/exec-vouchington-gha.sh'
-      - 'ts-shared/utils/ephemeral-ports.mts'
-      - 'ci/run-vitest-project-group.mts'
-      - 'cloudflare-worker/scripts/wrangler/runtime.mts'
-      - 'cloudflare-worker/scripts/wrangler/runtime.test.mts'
-      - 'lambdas/dev-server.mts'
-      - 'lambdas/dev-server.test.mts'
-      - 'lambdas/image-resize/**'
-      - 'lambdas/playwright-podcast-cover.mts'
-      - 'lambdas/shared/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'test-helpers/vitest-config/**'
-      - 'ts-shared/url-signing/**'
-      - 'vitest.config.mts'
-
-concurrency:
-  group: portability-tests-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -62,7 +42,7 @@ jobs:
         with:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
-        if: ${{ inputs.publish_coverage }}
+        if: ${{ inputs.publish_coverage_pair }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Run portability tests
@@ -74,7 +54,7 @@ jobs:
         run: |
           pnpm run test:portability -- --bail=3
         timeout-minutes: 5
-      - name: Preserve full portability-macos LCOV for Codecov
+      - name: Preserve full portability-macos LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
@@ -85,7 +65,7 @@ jobs:
       - name: Stamp portability-macos coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -146,7 +126,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload portability-macos coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -154,7 +134,7 @@ jobs:
           suite: portability-macos
       - name: Upload portability-macos coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -163,7 +143,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted portability-macos coverage pair
         id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -171,13 +151,33 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload full portability-macos LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+      - name: Upload full portability-macos LCOV to GitHub (attempt 1)
+        id: full-lcov-1
+        if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: portability-macos
+      - name: Upload full portability-macos LCOV to GitHub (attempt 2)
+        id: full-lcov-1-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: portability-macos
+          name-suffix: -retry
+      - name: Require a persisted full portability-macos LCOV
+        id: full-lcov-outcome-1
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: portability-macos
+          FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
 
   portability-linux:
     runs-on: ubuntu-latest
@@ -190,7 +190,7 @@ jobs:
         with:
           fetch-depth: 1
       - uses: ./.github/actions/fetch-base-ref
-        if: ${{ inputs.publish_coverage }}
+        if: ${{ inputs.publish_coverage_pair }}
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
       - name: Run portability tests
@@ -202,7 +202,7 @@ jobs:
         run: |
           pnpm run test:portability -- --bail=3
         timeout-minutes: 5
-      - name: Preserve full portability-linux LCOV for Codecov
+      - name: Preserve full portability-linux LCOV
         if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
@@ -213,7 +213,7 @@ jobs:
       - name: Stamp portability-linux coverage provenance
         id: coverage-stamp-2
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -274,7 +274,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload portability-linux coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-2
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -282,7 +282,7 @@ jobs:
           suite: portability-linux
       - name: Upload portability-linux coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-2
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -291,7 +291,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted portability-linux coverage pair
         id: coverage-outcome-2
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -299,10 +299,30 @@ jobs:
           FIRST_OUTCOME: ${{ steps.coverage-fallback-1-2.outcome }}
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload full portability-linux LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+      - name: Upload full portability-linux LCOV to GitHub (attempt 1)
+        id: full-lcov-2
+        if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov
         with:
           suite: portability-linux
+      - name: Upload full portability-linux LCOV to GitHub (attempt 2)
+        id: full-lcov-2-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-2.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: portability-linux
+          name-suffix: -retry
+      - name: Require a persisted full portability-linux LCOV
+        id: full-lcov-outcome-2
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: portability-linux
+          FIRST_OUTCOME: ${{ steps.full-lcov-2.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-2-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

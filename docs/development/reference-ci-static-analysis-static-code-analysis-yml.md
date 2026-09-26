@@ -12,17 +12,8 @@ test-support sources; its local configuration and command inventory are in
 
 [Back to CI Reference](ci.md)
 
-[Static Code Analysis](../../.github/workflows/static-code-analysis.yml) runs directly on every
-`main` push and remains the reusable PR/manual workflow for cross-repo checks. The reusable
-`workflow_call` input `docs_only` defaults to `false`. Docs-only pull requests pass `true` so the
-lint job keeps checkout, `setup-node-pnpm`, mise, `oxfmt --check` (markdown formatting), and
-`run-node-checks.mts --checks repo-file-policy,targeted-guardrails,config-inventory-policy`
-(Cloudflare Worker doc-sync plus env-var inventory docs), while the `no-mistakes` job still runs
-full `no-mistakes check` (shellcheck via mise). TypeScript, type-aware oxlint, ast-grep, jscpd,
-syncpack, depcruise, knip, selene, localization, the no-write catalog format check, the web route selector-map check, and the
-ownership-table check stay off. Direct
-`push` to `main` has no input and stays full. The jscpd threshold judges the whole tree without a
-base ref, so pull requests, merge groups, and `main` pushes agree; see the
+[Static Code Analysis](../../.github/workflows/static-code-analysis.yml) is a reusable workflow with no inputs, also available by manual dispatch. [`static.yml`](../../.github/workflows/static.yml) calls it on every pull request and merge group, `ci.yml` calls it until the `Main` ruleset requires the area gates, and [`nightly.yml`](../../.github/workflows/nightly.yml) runs it at the `main` tip. Every call runs every check, including on docs-only changes: a docs-only input would need a `changes` job, and a `needs:` on that reusable job hides the typecheck steps from the no-mistakes `tsconfig-gate-coverage` rule. The jscpd threshold judges the whole tree without a
+base ref, so pull requests, merge groups, and nightly runs agree; see the
 [jscpd clone-size threshold](../../static-code-analysis/jscpd/README.md). Workspace-owned
 dependency, type, and SQL checks run in their reusable test workflows so they gate that unit's
 main build or deploy. The static-analysis job runs only the centralized tools listed below. Legacy policy rules that are not backed by
