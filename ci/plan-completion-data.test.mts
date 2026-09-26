@@ -4,11 +4,27 @@ import {
   assertCommentReadback,
   isCurrentOpenPlan,
   markerComment,
+  openPlans,
   pullRequest,
 } from './plan-completion-data.mts'
 import { candidatePullRequestNumbers } from './plan-completion-timeline.mts'
 
 describe('plan completion API parsing', () => {
+  it.each(['plan: lower', 'pLaN: mixed'])(
+    'recognizes %s consistently through discovery and revalidation',
+    title => {
+      const issue = { number: 726, state: 'open', title }
+      expect(
+        openPlans(JSON.stringify([[issue, { ...issue, number: 727, pull_request: {} }]])),
+      ).toEqual([726])
+      expect(isCurrentOpenPlan(JSON.stringify(issue), 726)).toBe(true)
+      expect(isCurrentOpenPlan(JSON.stringify({ ...issue, state: 'closed' }), 726)).toBe(false)
+      expect(
+        isCurrentOpenPlan(JSON.stringify({ ...issue, title: 'Planned: not a Plan' }), 726),
+      ).toBe(false)
+    },
+  )
+
   it('fails closed on invalid current Plan and PR fields while retaining a null PR body', () => {
     expect(() =>
       isCurrentOpenPlan(JSON.stringify({ number: 1, state: 'other', title: 'Plan: x' }), 1),

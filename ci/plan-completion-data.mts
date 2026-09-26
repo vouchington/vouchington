@@ -2,6 +2,7 @@ import type { assessPlanCompletion } from '../dev/pr-description/plan-completion
 
 const MARKER = '<!-- plan-completion-advisory -->'
 const WORKFLOW_BOT = 'github-actions[bot]'
+const PLAN_TITLE = /^Plan:\s*(.*)$/i
 
 type Issue = { number?: unknown; pull_request?: unknown; state?: unknown; title?: unknown }
 type PullRequest = { body?: unknown; merged_at?: unknown; number?: unknown; state?: unknown }
@@ -30,7 +31,7 @@ export function openPlans(json: string): number[] {
     }
     return issue.pull_request === undefined &&
       issue.state === 'open' &&
-      issue.title.startsWith('Plan:')
+      PLAN_TITLE.test(issue.title)
       ? [issue.number]
       : []
   })
@@ -51,7 +52,7 @@ export function isCurrentOpenPlan(json: string, number: number): boolean {
     issue.number === number &&
     issue.state === 'open' &&
     typeof issue.title === 'string' &&
-    issue.title.startsWith('Plan:')
+    PLAN_TITLE.test(issue.title)
   )
 }
 

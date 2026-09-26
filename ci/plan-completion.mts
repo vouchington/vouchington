@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { assessPlanCompletion } from '../dev/pr-description/plan-completion.mts'
+import { mapPlanReads } from './plan-completion-batch.mts'
 import {
   assertCommentReadback,
   commentBody,
@@ -34,42 +35,38 @@ export async function runPlanCompletionSnapshot({
   const issueJson = await runGh([...listArgs(`repos/${repository}/issues`), '-f', 'state=open'])
   const plans = openPlans(issueJson)
   const candidatesByPlan = new Map(
-    await Promise.all(
-      plans.map(
-        async number =>
-          [
-            number,
-            candidatePullRequestNumbers(
-              await runGh(listArgs(`repos/${repository}/issues/${number}/timeline`)),
-              repository,
-            ),
-          ] as const,
-      ),
+    await mapPlanReads(
+      plans,
+      async number =>
+        [
+          number,
+          candidatePullRequestNumbers(
+            await runGh(listArgs(`repos/${repository}/issues/${number}/timeline`)),
+            repository,
+          ),
+        ] as const,
     ),
   )
   const candidateNumbers = new Set([...candidatesByPlan.values()].flat())
   const currentPullRequests = new Map(
-    await Promise.all(
-      [...candidateNumbers].map(
-        async number =>
-          [
-            number,
-            pullRequest(await runGh(readArgs(`repos/${repository}/pulls/${number}`)), number),
-          ] as const,
-      ),
+    await mapPlanReads(
+      [...candidateNumbers],
+      async number =>
+        [
+          number,
+          pullRequest(await runGh(readArgs(`repos/${repository}/pulls/${number}`)), number),
+        ] as const,
     ),
   )
   const activePlans = new Set(
     (
-      await Promise.all(
-        plans.map(async number =>
-          (await isCurrentOpenPlan(
-            await runGh(readArgs(`repos/${repository}/issues/${number}`)),
-            number,
-          ))
-            ? number
-            : undefined,
-        ),
+      await mapPlanReads(plans, async number =>
+        (await isCurrentOpenPlan(
+          await runGh(readArgs(`repos/${repository}/issues/${number}`)),
+          number,
+        ))
+          ? number
+          : undefined,
       )
     ).filter((number): number is number => number !== undefined),
   )
@@ -78,11 +75,10 @@ export async function runPlanCompletionSnapshot({
   )
   // Read every paginated comment list before a write: a partial snapshot must not mutate Plans.
   const markers = new Map(
-    await Promise.all(
-      [...activePlans].map(
-        async number =>
-          [number, markerComment(await runGh(listArgs(commentPaths.get(number)!)))] as const,
-      ),
+    await mapPlanReads(
+      [...activePlans],
+      async number =>
+        [number, markerComment(await runGh(listArgs(commentPaths.get(number)!)))] as const,
     ),
   )
   for (const number of plans) {
