@@ -9,14 +9,9 @@ import {
   getTotpAuthenticatorsByUserId,
   renameTotpAuthenticator,
 } from '@services/totp'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery, apiRequestContract } from '../../response-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
-import {
-  fetchScopedIdPage,
-  requireAuthAndItemId,
-  validateReAuthToken,
-  validateRenameName,
-} from './passkey-totp-route-helpers.mts'
+import { deleteMfaFactor, listMfaFactors, renameMfaFactor } from './passkey-totp-route-helpers.mts'
 
 const totpParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -61,32 +56,28 @@ app.route('/api/v1/auth/totp/setup/verification').post(async (ctx: Context) => {
 
 app.route('/api/v1/auth/totp').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/auth/totp', totpParser)
-  const currentUser = await requireAuth(ctx, 'GET:/api/v1/auth/totp')
-
-  const options = totpParser.parse(ctx.query)
-  ctx.json(await fetchScopedIdPage('totp', currentUser.id, options, getTotpAuthenticatorsByUserId))
+  const operation = 'GET:/api/v1/auth/totp'
+  ctx.json(await listMfaFactors(ctx, operation, totpParser, 'totp', getTotpAuthenticatorsByUserId))
 })
 
 // ─── Management (requires auth) ───────────────────────────────────────────────
 
 app.route('/api/v1/auth/totp/:id').patch(async (ctx: Context) => {
-  const operation = 'PATCH:/api/v1/auth/totp/:id'
-  const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
-  // Inline per-route cast — see passkey-totp-route-helpers.mts's header comment for why.
-  const body = (await ctx.request.json('100kb')) as { name?: string }
-  const name = validateRenameName(ctx, operation, body)
-  await renameTotpAuthenticator(currentUser.id, id, name)
+  apiRequestContract<'PATCH:/api/v1/auth/totp/:id', { name?: string }>(
+    'PATCH:/api/v1/auth/totp/:id',
+  )
+  await renameMfaFactor(ctx, 'PATCH:/api/v1/auth/totp/:id', renameTotpAuthenticator)
   ctx.setStatus(204)
 })
 
 app.route('/api/v1/auth/totp/:id').delete(async (ctx: Context) => {
-  const operation = 'DELETE:/api/v1/auth/totp/:id'
-  const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
-  // Inline per-route cast — see passkey-totp-route-helpers.mts's header comment for why.
-  const body = ctx.request.is('json')
-    ? ((await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string })
-    : undefined
-  const reAuthToken = body === undefined ? undefined : validateReAuthToken(ctx, operation, body)
-  await deleteTotpAuthenticatorWithMfaProtection(currentUser.id, id, reAuthToken)
+  apiRequestContract<'DELETE:/api/v1/auth/totp/:id', { re_auth_token?: string }>(
+    'DELETE:/api/v1/auth/totp/:id',
+  )
+  await deleteMfaFactor(
+    ctx,
+    'DELETE:/api/v1/auth/totp/:id',
+    deleteTotpAuthenticatorWithMfaProtection,
+  )
   ctx.setStatus(204)
 })
