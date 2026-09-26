@@ -41,6 +41,27 @@ function exactPost(endpoint: string, body: unknown): unknown | undefined {
   return undefined
 }
 
+function communityInvite(body: unknown) {
+  const email = storyText(body, 'email')
+  const username = storyText(body, 'username')
+  return {
+    community_invite: {
+      __entity_type: 'community_invite' as const,
+      id: 'invite-story',
+      code: 'STORY1',
+      community_id: 'community-story',
+      invited_user_id: username || null,
+      invited_email: email || null,
+      invited_by_id: 'story-user',
+      accepted_at: null,
+      accepted_by_user_id: null,
+      declined_at: null,
+      revoked_at: null,
+      created_at: storyMutationAt,
+    },
+  }
+}
+
 function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (/^\/api\/v1\/communities\/[^/]+\/posts$/.test(endpoint)) return communityDiscussion(body)
   if (endpoint.endsWith('/automod/simulate')) return automodSimulation(body)
@@ -94,7 +115,7 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint))
     return imageUploadCompletion(endpoint)
   if (endpoint.endsWith('/agent-prompts')) return { prompt: { id: 'prompt-story' } }
-  if (endpoint.endsWith('/invites')) return { community_invite: { id: 'invite-story' } }
+  if (endpoint.endsWith('/invites')) return communityInvite(body)
   if (endpoint.endsWith('/members')) return {}
   if (endpoint.endsWith('/modmail')) return { thread: { id: 'modmail-thread-story' } }
   if (endpoint.endsWith('/mod-notes')) return modNote(body)

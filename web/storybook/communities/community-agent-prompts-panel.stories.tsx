@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAgentPromptsPanel } from '@/components/communities/community-agent-prompts-panel'
 import type { CommunityAgentPrompt } from '@/lib/api/client/community-agent-prompts'
@@ -40,20 +41,37 @@ const prompt: CommunityAgentPrompt = {
   deleted_by_id: null,
 }
 
+function PromptPanelPreview({
+  communitySlug,
+  prompts: initialPrompts,
+}: {
+  communitySlug: string
+  prompts: CommunityAgentPrompt[]
+}) {
+  const [prompts, setPrompts] = useState(initialPrompts)
+  return (
+    <StoryFrame>
+      <CommunityAgentPromptsPanel
+        communitySlug={communitySlug}
+        prompts={prompts}
+        onPromptUpdated={(updated, promptId) => {
+          setPrompts(current =>
+            updated == null
+              ? current.filter(item => item.id !== promptId)
+              : current.map(item => (item.id === updated.id ? updated : item)),
+          )
+        }}
+      />
+    </StoryFrame>
+  )
+}
+
 export const WithPrompt: Story = {
   args: { communitySlug: communities[0]!.slug, prompts: [prompt] },
-  render: args => (
-    <StoryFrame>
-      <CommunityAgentPromptsPanel {...args} />
-    </StoryFrame>
-  ),
+  render: args => <PromptPanelPreview {...args} />,
 }
 
 export const Empty: Story = {
   args: { communitySlug: communities[0]!.slug, prompts: [] },
-  render: args => (
-    <StoryFrame>
-      <CommunityAgentPromptsPanel {...args} />
-    </StoryFrame>
-  ),
+  render: args => <PromptPanelPreview {...args} />,
 }

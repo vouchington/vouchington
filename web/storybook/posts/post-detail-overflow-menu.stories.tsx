@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { userEvent, within } from 'storybook/test'
 import { PostDetailOverflowMenu } from '@/components/posts/post-detail-overflow-menu'
@@ -50,17 +51,23 @@ export const Reader: Story = {
   play: openOverflow,
 }
 
-export const Moderator: Story = {
-  parameters: { auth: { currentUser: postAuthor } },
-  render: () => (
+function ModeratorMenu() {
+  const [isPostPinned, setIsPostPinned] = useState(false)
+  return (
     <StoryFrame width='max-w-sm'>
       <PostDetailOverflowMenu
         post={moderatorPost}
         communitySlug={creditCardCommunity.slug}
         isCommunityMod
-        isPostPinned={false}
+        isPostPinned={isPostPinned}
+        onPinnedChange={setIsPostPinned}
       />
     </StoryFrame>
-  ),
+  )
+}
+
+export const Moderator: Story = {
+  parameters: { auth: { currentUser: postAuthor } },
+  render: () => <ModeratorMenu />,
   play: openOverflow,
 }

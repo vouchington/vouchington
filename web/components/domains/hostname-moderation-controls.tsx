@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { updateHostname } from '@/lib/api/client/hostnames'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useHostnameModerationState } from './use-hostname-moderation-state'
 
 interface Props {
   hostnameId: string
@@ -36,9 +37,8 @@ export function HostnameModerationControls({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false)
-  const [isBlocked, setIsBlocked] = useState(blocked === true)
-  const [isCrawlable, setIsCrawlable] = useState(crawlable === true)
-  const [isLinkFollow, setIsLinkFollow] = useState(linkRelFollow === true)
+  const { isBlocked, isCrawlable, isLinkFollow, setBlocked, setCrawlable, setLinkFollow } =
+    useHostnameModerationState({ hostnameId, blocked, crawlable, linkRelFollow })
   const isBusy = isSubmitting || isPending
 
   async function handleToggle(field: 'crawlable' | 'link_rel_follow', value: boolean) {
@@ -46,8 +46,8 @@ export function HostnameModerationControls({
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { [field]: value })
-      if (field === 'crawlable') setIsCrawlable(value)
-      else setIsLinkFollow(value)
+      if (field === 'crawlable') setCrawlable(value)
+      else setLinkFollow(value)
       startTransition(() => refresh())
       toast.success(t('extracted.domains.hostnameModerationControls.hostnameUpdated_f8ec2f41'))
     } catch {
@@ -62,7 +62,7 @@ export function HostnameModerationControls({
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { blocked: value })
-      setIsBlocked(value)
+      setBlocked(value)
       startTransition(() => refresh())
       toast.success(
         value

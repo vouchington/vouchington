@@ -31,6 +31,7 @@ export function PostDetailOverflowMenu({
   communitySlug,
   isCommunityMod,
   isPostPinned,
+  onPinnedChange,
   className,
 }: PostDetailOverflowMenuProps) {
   const t = useTranslations()
@@ -124,6 +125,7 @@ export function PostDetailOverflowMenu({
               postId={post.id}
               communitySlug={communitySlug}
               isPinned={isPostPinned ?? false}
+              onPinnedChange={onPinnedChange}
             />
           )}
           {showDelete && <DeletePostMenuItem postIdOrSlug={post.slug ?? post.id} />}

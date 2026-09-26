@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import {
   clearStoryMutationFixture,
@@ -49,20 +50,37 @@ const emptyInvites: CommunityInvitesResponseBody = {
   community_invites: {},
 }
 
+function InvitePreview({
+  communitySlug,
+  data: initialData,
+}: {
+  communitySlug: string
+  data: CommunityInvitesResponseBody
+}) {
+  const [data, setData] = useState(initialData)
+  return (
+    <StoryFrame>
+      <InviteManager
+        communitySlug={communitySlug}
+        data={data}
+        onInviteCreated={invite => {
+          setData(current => ({
+            ...current,
+            results: [...current.results, { __entity_type: 'community_invite', id: invite.id }],
+            community_invites: { ...current.community_invites, [invite.id]: invite },
+          }))
+        }}
+      />
+    </StoryFrame>
+  )
+}
+
 export const PendingInvite: Story = {
   args: { communitySlug: communities[0]!.slug, data: withInvite },
-  render: args => (
-    <StoryFrame>
-      <InviteManager {...args} />
-    </StoryFrame>
-  ),
+  render: args => <InvitePreview {...args} />,
 }
 
 export const Empty: Story = {
   args: { communitySlug: communities[0]!.slug, data: emptyInvites },
-  render: args => (
-    <StoryFrame>
-      <InviteManager {...args} />
-    </StoryFrame>
-  ),
+  render: args => <InvitePreview {...args} />,
 }

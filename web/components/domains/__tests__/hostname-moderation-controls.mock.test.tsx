@@ -181,6 +181,26 @@ describe('HostnameModerationControls', () => {
     })
   })
 
+  it('adopts moderation props when the server values change', () => {
+    const view = render(<HostnameModerationControls {...defaultProps()} />)
+    expect(
+      document.querySelector('[data-pw="hostname-crawlable-switch"]')?.getAttribute('data-state'),
+    ).toBe('checked')
+    view.rerender(
+      <HostnameModerationControls
+        {...defaultProps()}
+        blocked
+        crawlable={false}
+      />,
+    )
+    expect(
+      document.querySelector('[data-pw="hostname-blocked-switch"]')?.getAttribute('aria-checked'),
+    ).toBe('true')
+    expect(
+      document.querySelector('[data-pw="hostname-crawlable-switch"]')?.getAttribute('data-state'),
+    ).toBe('unchecked')
+  })
+
   it('calls updateHostname with { blocked: false } after unblock confirmation', async () => {
     render(
       <HostnameModerationControls
