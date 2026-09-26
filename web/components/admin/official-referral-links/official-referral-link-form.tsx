@@ -29,19 +29,37 @@ export function OfficialReferralLinkForm({
   const router = useRouter()
   const [url, setUrl] = useState('')
   const [label, setLabel] = useState('')
+  const [links, setLinks] = useState(initialLinks)
+  const [previousLinks, setPreviousLinks] = useState(initialLinks)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  if (initialLinks !== previousLinks) {
+    setPreviousLinks(initialLinks)
+    setLinks(initialLinks)
+  }
+
   function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
-    if (!url.trim()) return
+    const nextUrl = url.trim()
+    const nextLabel = label.trim() || null
+    if (!nextUrl) return
 
     startTransition(async () => {
       try {
-        await createOfficialReferralLink(referralProgramId, {
-          url: url.trim(),
-          label: label.trim() || null,
+        const created = await createOfficialReferralLink(referralProgramId, {
+          url: nextUrl,
+          label: nextLabel,
         })
+        setLinks(current => [
+          ...current,
+          {
+            id: created.official_referral_link.id,
+            url: nextUrl,
+            label: nextLabel,
+            activated_at: null,
+          },
+        ])
         onSuccess(
           t(
             'extracted.officialReferralLinks.officialReferralLinkForm.officialLinkCreated_1a3da640',
@@ -65,6 +83,7 @@ export function OfficialReferralLinkForm({
     startTransition(async () => {
       try {
         await deleteOfficialReferralLink(linkId)
+        setLinks(current => current.filter(link => link.id !== linkId))
         onSuccess(
           t(
             'extracted.officialReferralLinks.officialReferralLinkForm.officialLinkDeleted_afed9064',
@@ -140,7 +159,7 @@ export function OfficialReferralLinkForm({
       </form>
 
       <OfficialReferralLinksTable
-        links={initialLinks}
+        links={links}
         deletingId={deletingId}
         isPending={isPending}
         onDelete={handleDelete}

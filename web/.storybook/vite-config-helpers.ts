@@ -37,32 +37,28 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         new URL('../storybook/mocks/trending-topics-aside.tsx', import.meta.url),
       ),
     },
+    ...(
+      [
+        ['@/components/asides/contribute-cta-aside', 'contribute-cta-aside.tsx'],
+        ['@/components/asides/upgrade-membership-aside', 'upgrade-membership-aside.tsx'],
+      ] as const
+    ).map(([find, file]) => ({
+      find,
+      replacement: fileURLToPath(new URL(`../storybook/mocks/${file}`, import.meta.url)),
+    })),
     {
-      find: '@/components/asides/contribute-cta-aside',
-      replacement: fileURLToPath(
-        new URL('../storybook/mocks/contribute-cta-aside.tsx', import.meta.url),
-      ),
-    },
-    {
-      find: '@/components/asides/upgrade-membership-aside',
-      replacement: fileURLToPath(
-        new URL('../storybook/mocks/upgrade-membership-aside.tsx', import.meta.url),
-      ),
-    },
-    {
-      // CommunitiesSidebarGroup loads client API data on mount; keep ratchet stories deterministic.
       find: '@/components/communities/communities-sidebar-group',
       replacement: fileURLToPath(
         new URL('../storybook/mocks/communities-sidebar-group.tsx', import.meta.url),
       ),
     },
     {
-      // InboxButton opens live client state and notifications APIs; keep ratchet stories inert.
+      // InboxButton opens live client state and notifications APIs; keep browser stories inert.
       find: '@/components/notifications/inbox-button',
       replacement: fileURLToPath(new URL('../storybook/mocks/inbox-button.tsx', import.meta.url)),
     },
     {
-      // ModmailInbox reaches client APIs on mount; keep ratchet stories inert.
+      // ModmailInbox reaches client APIs on mount; keep browser stories inert.
       find: '@/components/communities/modmail-inbox',
       replacement: fileURLToPath(new URL('../storybook/mocks/modmail-inbox.tsx', import.meta.url)),
     },
@@ -101,26 +97,21 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         new URL('../storybook/mocks/feed-page-header.tsx', import.meta.url),
       ),
     },
-    ...[
-      '@/components/tags/topic-category-tags-aside',
-      '@/components/tags/topic-publisher-types-aside',
-    ].map(find => ({
-      // These async Server Components reach next/headers via server API helpers.
-      find,
-      replacement: fileURLToPath(
-        new URL('../storybook/mocks/topic-tag-asides.tsx', import.meta.url),
-      ),
-    })),
     {
       // EditPostPage is an async Server Component that reaches auth/server API helpers.
       find: '@/components/posts/edit-post-page',
       replacement: fileURLToPath(new URL('../storybook/mocks/edit-post-page.tsx', import.meta.url)),
     },
     {
-      // ManagePostTags imports async tag management internals that reach server API helpers.
-      find: '@/components/tags/manage-post-tags',
+      // PostDetail awaits auth and translations. The fixture renders the same view synchronously.
+      find: '@/components/posts/post-detail',
+      replacement: fileURLToPath(new URL('../storybook/mocks/post-detail.tsx', import.meta.url)),
+    },
+    {
+      // ManageTagsTabs awaits server relations. The fixture renders the same card with empty rows.
+      find: '@/components/tags/manage-tags-tabs',
       replacement: fileURLToPath(
-        new URL('../storybook/mocks/manage-post-tags.tsx', import.meta.url),
+        new URL('../storybook/mocks/manage-tags-tabs.tsx', import.meta.url),
       ),
     },
     {
@@ -191,7 +182,6 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
         ['@/lib/i18n/get-resolved-ui-locale', 'get-resolved-ui-locale.ts'],
       ] as const
     ).map(([find, file]) => ({
-      // These reach next/headers / server-only. Keep them out of the Storybook browser graph.
       find,
       replacement: fileURLToPath(new URL(`../storybook/mocks/${file}`, import.meta.url)),
     })),

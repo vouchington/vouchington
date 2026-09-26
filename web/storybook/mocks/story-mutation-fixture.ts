@@ -3,6 +3,7 @@ import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { resetModNoteSequence } from './story-mutation-bodies'
 import { resetParticipantSequence } from './story-mutation-participant'
 import { resetInviteSequence } from './story-mutation-post-routes'
+import { clearStoryTopicRoutes, setStoryTopicRoutes } from './story-topic-routes'
 import {
   storyMutationDelete,
   storyMutationPatch,
@@ -22,6 +23,7 @@ export function setStoryMutationFixture(): void {
   resetModNoteSequence()
   resetParticipantSequence()
   resetInviteSequence()
+  setStoryTopicRoutes()
 }
 
 export function clearStoryMutationFixture(): void {
@@ -29,6 +31,7 @@ export function clearStoryMutationFixture(): void {
   resetModNoteSequence()
   resetParticipantSequence()
   resetInviteSequence()
+  clearStoryTopicRoutes()
 }
 
 function respond<T>(response: unknown, fallback: () => Promise<T>): Promise<T> {

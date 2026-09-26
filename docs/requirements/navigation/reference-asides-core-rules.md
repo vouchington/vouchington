@@ -112,8 +112,9 @@ visible at all viewports with the same behavior.
 - **Mobile (<lg, non-infinite scroll)**: hides/shows the inline aside via `max-lg:hidden` when
   `desktopAsideOpen` is false.
 
-The toggle button is positioned with `sticky top-14 h-0` (zero height) so it overlays content
-without pushing it down. Its margin-right offset (`lg:mr-[334px]` when aside is open) also
+The toggle sits in a sticky `top-14` row. The row is the button's 44px hit target
+(`min-h-11` with `py-1`), so the control stays clear of the page content. A zero-height
+row fails the target-size check. Its margin-right offset (`lg:mr-[334px]` when aside is open) also
 transitions via `transition-[margin-right] duration-300 ease-in-out` to stay aligned with the
 content column edge as the aside animates.
 

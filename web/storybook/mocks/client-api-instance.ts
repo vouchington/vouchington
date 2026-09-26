@@ -21,6 +21,7 @@ import {
   pinnedPostsResponse,
 } from '@/storybook/mocks/pinned-posts-fixture'
 import { categoryRelationsResponse } from '@/storybook/mocks/category-relations-store'
+import { storyTopicGet } from '@/storybook/mocks/story-topic-routes'
 
 export {
   clearCategoryRelationsFixture,
@@ -192,5 +193,7 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
   }
   const availability = availabilityFixtureBody(endpoint)
   if (availability !== undefined) return Promise.resolve(availability as T)
+  const topicRoute = storyTopicGet(endpoint)
+  if (topicRoute !== undefined) return Promise.resolve(topicRoute as T)
   return clientRequestGet.call(this, endpoint, options) as Promise<T>
 }

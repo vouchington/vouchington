@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import { CommandSearch } from './command-search'
 
 vi.mock(import('next/navigation'), () => navMockModule)
@@ -70,6 +70,7 @@ const mockGetFeatureFlagSnapshot = vi.mocked(getFeatureFlagSnapshot)
 const mockSearchAllProgressive = vi.mocked(searchAllProgressive)
 const mockFetchCombinedSearch = vi.mocked(fetchCombinedSearch)
 const mockFetchFediverseSearch = vi.mocked(fetchFediverseSearch)
+const { push } = createNavMock()
 
 function renderSearch() {
   return render(
@@ -240,6 +241,25 @@ describe('CommandSearch', () => {
       })
 
       expect(mockFetchCombinedSearch).toHaveBeenCalled()
+    })
+
+    it('pushes the selected page shortcut through the router', () => {
+      push.mockClear()
+      const onOpenChange = vi.fn<(open: boolean) => void>()
+      render(
+        <CommandSearch
+          open
+          onOpenChange={onOpenChange}
+          isAdmin={false}
+          isAuthenticated={false}
+        />,
+      )
+
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'plans' } })
+      fireEvent.click(screen.getByText('Plans'))
+
+      expect(push).toHaveBeenCalledWith('/plans')
+      expect(onOpenChange).toHaveBeenCalledWith(false)
     })
 
     it('adds Fediverse results to progressive all search when only fediverse flag is on', async () => {

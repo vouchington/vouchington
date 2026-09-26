@@ -80,6 +80,7 @@ describe('OfficialReferralLinkForm', () => {
         label: null,
       })
     })
+    expect(screen.getByText('https://example.com/ref/new')).toBeInTheDocument()
   })
 
   it('delete handler calls deleteOfficialReferralLink', async () => {
@@ -101,5 +102,6 @@ describe('OfficialReferralLinkForm', () => {
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledWith('link-1')
     })
+    expect(screen.queryByText('https://example.com/ref/1')).not.toBeInTheDocument()
   })
 })

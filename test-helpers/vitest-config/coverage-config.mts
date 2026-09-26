@@ -38,8 +38,6 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
                 ]
               : storybook
                 ? [
-                    'web/storybook/component-story-ratchet-parameters.ts',
-                    'web/storybook/component-story-ratchet-renderer.tsx',
                     'web/storybook/entities/entity-fixtures.ts',
                     'web/storybook/entities/topics-story-recommendations.ts',
                     'web/test-helpers/storybook/component-story-coverage/message.ts',

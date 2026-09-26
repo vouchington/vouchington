@@ -22,7 +22,7 @@ Next.js app-router frontend for Voucha. The Cloudflare Worker is the public entr
 - **Mobile infinite scroll**: `hidden lg:block` inline aside + `AsideDrawer` toggle/Sheet for access.
 - **No aside content**: `AsideColumn` returns null — main content is horizontally centered.
 - **Keyboard shortcut**: `Cmd/Ctrl + \` toggles the right aside. On desktop it collapses the column; on mobile it opens/closes the Sheet drawer. Shortcut is registered in [`web/lib/aside-context.tsx`](lib/aside-context.tsx) and listed in [`web/lib/keyboard-shortcuts.ts`](lib/keyboard-shortcuts.ts).
-- **Toggle button positioning**: `AsideDrawer` renders the button in a `sticky top-14 h-0 pointer-events-none` wrapper so it overlays content without pushing it down.
+- **Toggle button positioning**: `AsideDrawer` renders the button in a `sticky top-14 pointer-events-none` row so its hit target stays clear of the page content.
 
 ## Key Public Routes
 

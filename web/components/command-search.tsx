@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CommandDialog, CommandEmpty, CommandInput, CommandList } from '@/components/ui/command'
+import { CommandDialog, CommandInput, CommandList } from '@/components/ui/command'
 import {
   type SearchTab,
   type SearchResults,
@@ -18,8 +18,10 @@ import {
 } from './command-search-data'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
 import { ResultGroups } from './command-search/result-groups'
+import { hasVisibleSearchResults } from './command-search/visible-results'
 import { SearchTabs } from './command-search/search-tabs'
 import { useSearchEffect } from './command-search/use-search-effect'
+import { useSearchInputFocus } from './command-search/use-search-input-focus'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface CommandSearchProps {
@@ -43,7 +45,7 @@ export function CommandSearch({
   const [loading, setLoading] = useState(false)
   const featureFlags = useFeatureFlags()
   const tabsRef = useRef<HTMLFieldSetElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const { inputRef, setInputNode } = useSearchInputFocus()
 
   const searchTabs = getSearchTabs(featureFlags)
 
@@ -56,17 +58,20 @@ export function CommandSearch({
     setLoading,
   )
 
-  // Reset query and tab when dialog closes
+  // Reset query and tab when dialog closes. Focus the input when it opens.
   useEffect(() => {
     if (!open) {
       queueMicrotask(() => {
         setQuery('')
         setActiveTab('all')
       })
+      return
     }
-  }, [open])
+    inputRef.current?.focus()
+  }, [inputRef, open])
 
   const matchedShortcuts = getMatchingShortcuts(t, query, isAdmin, isAuthenticated, featureFlags)
+  const showResults = hasVisibleSearchResults(activeTab, results, matchedShortcuts.length)
 
   useEffect(() => {
     if (!searchTabs.some(tab => tab.value === activeTab)) {
@@ -134,7 +139,7 @@ export function CommandSearch({
 
     document.addEventListener('keydown', onKeyDown, true)
     return () => document.removeEventListener('keydown', onKeyDown, true)
-  }, [open, searchTabs])
+  }, [inputRef, open, searchTabs])
 
   return (
     <CommandDialog
@@ -143,7 +148,7 @@ export function CommandSearch({
     >
       <div>
         <CommandInput
-          ref={inputRef}
+          ref={setInputNode}
           placeholder={t('extracted.components.commandSearch.search_7f553822')}
           data-pw='search-input'
           value={query}
@@ -156,23 +161,25 @@ export function CommandSearch({
           tabsRef={tabsRef}
           tabs={searchTabs}
         />
-        <CommandList>
-          <CommandEmpty>
+        {showResults ? (
+          <CommandList>
+            <ResultGroups
+              activeTab={activeTab}
+              matchedShortcuts={matchedShortcuts}
+              results={results}
+              onOpenChange={onOpenChange}
+              pushRoute={href => push(href)}
+            />
+          </CommandList>
+        ) : (
+          <output className='block py-6 text-center text-sm'>
             {loading
               ? t('extracted.components.commandSearch.searching_78c9d9f6')
               : query.trim()
                 ? t('extracted.components.commandSearch.noResultsFound_7ecdbfee')
                 : t('extracted.components.commandSearch.typeToSearch_6552c370')}
-          </CommandEmpty>
-
-          <ResultGroups
-            activeTab={activeTab}
-            matchedShortcuts={matchedShortcuts}
-            results={results}
-            onOpenChange={onOpenChange}
-            pushRoute={href => push(href)}
-          />
-        </CommandList>
+          </output>
+        )}
       </div>
     </CommandDialog>
   )
