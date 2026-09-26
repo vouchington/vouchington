@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { updateHostname } from '@/lib/api/client/hostnames'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useHostnameModerationState } from './use-hostname-moderation-state'
 
 interface Props {
   hostnameId: string
@@ -36,14 +37,17 @@ export function HostnameModerationControls({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false)
+  const { isBlocked, isCrawlable, isLinkFollow, setBlocked, setCrawlable, setLinkFollow } =
+    useHostnameModerationState({ hostnameId, blocked, crawlable, linkRelFollow })
   const isBusy = isSubmitting || isPending
-  const isBlocked = blocked === true
 
   async function handleToggle(field: 'crawlable' | 'link_rel_follow', value: boolean) {
     if (isBusy) return
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { [field]: value })
+      if (field === 'crawlable') setCrawlable(value)
+      else setLinkFollow(value)
       startTransition(() => refresh())
       toast.success(t('extracted.domains.hostnameModerationControls.hostnameUpdated_f8ec2f41'))
     } catch {
@@ -58,6 +62,7 @@ export function HostnameModerationControls({
     setIsSubmitting(true)
     try {
       await updateHostname(hostnameId, { blocked: value })
+      setBlocked(value)
       startTransition(() => refresh())
       toast.success(
         value
@@ -156,7 +161,7 @@ export function HostnameModerationControls({
           <dd>
             <Switch
               data-pw='hostname-crawlable-switch'
-              checked={crawlable === true}
+              checked={isCrawlable}
               disabled={isBusy}
               onCheckedChange={v => handleToggle('crawlable', v)}
               aria-label={t('extracted.domains.hostnameModerationControls.crawlable_8e55a03f')}
@@ -170,7 +175,7 @@ export function HostnameModerationControls({
           <dd>
             <Switch
               data-pw='hostname-link-rel-follow-switch'
-              checked={linkRelFollow === true}
+              checked={isLinkFollow}
               disabled={isBusy}
               onCheckedChange={v => handleToggle('link_rel_follow', v)}
               aria-label={t('extracted.domains.hostnameModerationControls.linkRelFollow_da993ba6')}

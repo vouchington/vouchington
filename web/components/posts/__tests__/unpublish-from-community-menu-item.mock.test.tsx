@@ -156,4 +156,17 @@ describe('UnpublishFromCommunityMenuItem', () => {
     fireEvent.click(screen.getByTestId('post-unpublish-from-community-confirm'))
     expect(mockHandleUnpublish).toHaveBeenCalledOnce()
   })
+
+  it('shows Unpublished after the request succeeds', async () => {
+    mockHandleUnpublish.mockResolvedValueOnce(true)
+    render(
+      <UnpublishFromCommunityMenuItem
+        communityId='community-1'
+        postId='post-1'
+      />,
+    )
+    fireEvent.click(screen.getByRole('menuitem'))
+    fireEvent.click(screen.getByTestId('post-unpublish-from-community-confirm'))
+    expect(await screen.findByRole('menuitem', { name: 'Unpublished' })).toBeDefined()
+  })
 })

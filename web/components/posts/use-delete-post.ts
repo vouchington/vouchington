@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deletePost } from '@/lib/api/client/posts'
 import onError, { onSuccess } from '@/lib/on-error'
 
-export function useDeletePost(postIdOrSlug: string) {
+export function useDeletePost(postIdOrSlug: string, onDeleted?: () => void) {
   const { push } = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -15,6 +15,7 @@ export function useDeletePost(postIdOrSlug: string) {
     try {
       await deletePost(postIdOrSlug)
       onSuccess('Post deleted')
+      onDeleted?.()
       push('/')
     } catch (error) {
       /* c8 ignore next 3 -- error path requires injecting a delete failure */

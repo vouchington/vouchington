@@ -9,11 +9,17 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface CommunitySettingsFormProps {
   community: Community
+  onArchived?: () => void
+  onRestored?: () => void
 }
 
-export function CommunitySettingsForm({ community }: CommunitySettingsFormProps) {
+export function CommunitySettingsForm({
+  community,
+  onArchived,
+  onRestored,
+}: CommunitySettingsFormProps) {
   const t = useTranslations()
-  const form = useCommunitySettingsForm(community)
+  const form = useCommunitySettingsForm(community, onArchived, onRestored)
 
   return (
     <div className='space-y-8'>

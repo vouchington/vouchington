@@ -25,12 +25,14 @@ import {
 export interface UseNewsCommunityDiscussionActionProps {
   fixedCommunity?: NewsCommunityDiscussionTarget
   itemTitle?: string | null
+  onCreated?: (href: string) => void
   relatedUrls: NewsCommunityDiscussionUrl[]
 }
 
 export function useNewsCommunityDiscussionAction({
   fixedCommunity,
   itemTitle,
+  onCreated,
   relatedUrls,
 }: UseNewsCommunityDiscussionActionProps) {
   const t = useTranslations()
@@ -97,11 +99,12 @@ export function useNewsCommunityDiscussionAction({
         response.communityPostReview?.approved_at === null &&
         response.communityPostReview.rejected_at === null &&
         response.communityPostReview.unpublished_at === null
-      push(
+      const href =
         selectedCommunity.post_approval_required_at || requiresCommunityReview
           ? communityPendingPostsHref({ slug: communitySlug })
-          : getCanonicalPostPath(response.post),
-      )
+          : getCanonicalPostPath(response.post)
+      onCreated?.(href)
+      push(href)
     } catch (error) {
       if (isEmailVerificationRequired(error)) {
         setIsSubmitting(false)

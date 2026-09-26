@@ -31,6 +31,7 @@ interface PostDetailActionsProps {
   }
   initialSaved?: boolean
   initialHidden?: boolean
+  onDiscussionCreated?: (href: string) => void
 }
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
@@ -113,6 +114,7 @@ export function PostDetailActions(props: PostDetailActionsProps) {
       )}
       {canDiscussInCommunity && props.post.discussionSource && (
         <DiscussInCommunityAction
+          onCreated={props.onDiscussionCreated}
           postId={props.post.id}
           source={props.post.discussionSource}
         />

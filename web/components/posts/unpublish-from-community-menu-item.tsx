@@ -25,19 +25,30 @@ export function UnpublishFromCommunityMenuItem({
   postId,
 }: UnpublishFromCommunityMenuItemProps) {
   const t = useTranslations()
+  const targetKey = `${communityId}:${postId}`
+  const [seenTargetKey, setSeenTargetKey] = useState(targetKey)
   const [open, setOpen] = useState(false)
+  const [unpublished, setUnpublished] = useState(false)
+  if (seenTargetKey !== targetKey) {
+    setSeenTargetKey(targetKey)
+    setOpen(false)
+    setUnpublished(false)
+  }
   const { isUnpublishing, handleUnpublish } = useUnpublishFromCommunity({ communityId, postId })
 
   return (
     <>
       <DropdownMenuItem
+        disabled={unpublished}
         onSelect={e => {
           e.preventDefault()
-          setOpen(true)
+          if (!unpublished) setOpen(true)
         }}
         data-pw='post-unpublish-from-community-trigger'
       >
-        {t('extracted.posts.unpublishFromCommunityMenuItem.unpublish_2db04a54')}
+        {unpublished
+          ? t('extracted.posts.unpublishFromCommunityMenuItem.unpublished_b6e07310')
+          : t('extracted.posts.unpublishFromCommunityMenuItem.unpublish_2db04a54')}
       </DropdownMenuItem>
       <AlertDialog
         open={open}
@@ -62,7 +73,11 @@ export function UnpublishFromCommunityMenuItem({
               disabled={isUnpublishing}
               onClick={e => {
                 e.preventDefault()
-                void handleUnpublish()
+                void handleUnpublish().then(didUnpublish => {
+                  if (!didUnpublish) return
+                  setOpen(false)
+                  setUnpublished(true)
+                })
               }}
               data-pw='post-unpublish-from-community-confirm'
             >

@@ -9,6 +9,7 @@ import { createStoryPostFromStory } from '@/lib/api/client/stories'
 import { createLinkPost } from '@/lib/api/client/posts'
 import { getPostSlugFromType } from '@/lib/route-configs'
 import { getPostPath } from '@/lib/post-helpers'
+import type { Post } from '@/types/posts'
 import {
   isEmailVerificationRequired,
   useEmailVerificationRecovery,
@@ -17,6 +18,7 @@ import {
 export interface StartStoryDiscussionProps {
   storyId: string
   fallbackUrlId: string
+  onCreated?: (href: string) => void
 }
 
 export function useStartStoryDiscussionAction(props: StartStoryDiscussionProps | null) {
@@ -29,12 +31,12 @@ export function useStartStoryDiscussionAction(props: StartStoryDiscussionProps |
     setIsCreating(true)
     try {
       const result = await createStoryPostFromStory(props.storyId)
-      router.push(getPostPath(getPostSlugFromType(result.post.post_type), result.post))
+      publishCreatedPost(result.post)
     } catch (error) {
       if (hasErrorCode(error, 'FEED_NOT_DISCOVERABLE')) {
         try {
           const linkResult = await createLinkPost({ url_id: props.fallbackUrlId })
-          router.push(getPostPath(getPostSlugFromType(linkResult.post.post_type), linkResult.post))
+          publishCreatedPost(linkResult.post)
           return
         } catch (linkError) {
           if (isEmailVerificationRequired(linkError)) {
@@ -50,6 +52,12 @@ export function useStartStoryDiscussionAction(props: StartStoryDiscussionProps |
       }
       setIsCreating(false)
     }
+  }
+
+  function publishCreatedPost(post: Post) {
+    const href = getPostPath(getPostSlugFromType(post.post_type), post)
+    props?.onCreated?.(href)
+    router.push(href)
   }
 
   return { handleStartStoryDiscussion, isCreating }

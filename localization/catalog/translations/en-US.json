@@ -2979,6 +2979,7 @@
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.removeThisPostFromTheCommunity_721fa01a","value":"Remove this post from the community? The post itself will not be deleted."},
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublishFromCommunity_a77d2489","value":"Unpublish from Community"},
 {"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublish_2db04a54","value":"Unpublish"},
+{"id":"copy.extracted.posts.unpublishFromCommunityMenuItem.unpublished_b6e07310","value":"Unpublished"},
 {"id":"copy.extracted.preferences.page.customizeYourBrowsingExperience_99eaeb2e","value":"Customize your browsing experience"},
 {"id":"copy.extracted.privacy.page.controlWhoCanSeeYourActivity_50daae77","value":"Control who can see your activity and profile data"},
 {"id":"copy.extracted.privacyForm.postDefaultSelect.selectPrivacySetting_4587a12c","value":"Select privacy setting"},

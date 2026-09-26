@@ -24,6 +24,7 @@ export function PaidPlanCard({
   billingInterval,
   isCurrent,
   membership,
+  onCheckout,
   planSlug,
   purchaseEnabled = false,
   savingsPct,
@@ -34,6 +35,7 @@ export function PaidPlanCard({
   isCurrent: boolean
   /** undefined = signed-out, null = signed-in without subscription, value = active membership. */
   membership?: SubscriptionMembership | null
+  onCheckout?: (checkoutUrl: string) => void
   planSlug: string
   purchaseEnabled?: boolean
   savingsPct: number | null
@@ -107,6 +109,7 @@ export function PaidPlanCard({
               <SignedOutSubscribeButton planSlug={planSlug} />
             ) : (
               <CheckoutButton
+                onCheckout={onCheckout}
                 planSlug={planSlug}
                 productId={sku.id}
                 planName={planSlug}

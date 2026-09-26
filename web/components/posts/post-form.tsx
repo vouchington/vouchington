@@ -47,6 +47,7 @@ export function PostForm({
   communityPendingRedirectPath,
   initialCommunitySlug,
   communityOptions = emptyCommunityOptions,
+  onSubmitted,
 }: PostFormProps) {
   const { back, push } = useRouter()
   const isEdit = post !== undefined
@@ -103,6 +104,7 @@ export function PostForm({
     isEdit,
     router: { push },
     onCaptchaConsumed: turnstile.reset,
+    onSubmitted,
     submitInput: () => ({
       broadcast,
       cfTurnstileResponse: turnstile.token ?? undefined,

@@ -31,6 +31,8 @@ export function PostDetailOverflowMenu({
   communitySlug,
   isCommunityMod,
   isPostPinned,
+  onDeleted,
+  onPinnedChange,
   className,
 }: PostDetailOverflowMenuProps) {
   const t = useTranslations()
@@ -67,7 +69,7 @@ export function PostDetailOverflowMenu({
 
   return (
     <div className={className}>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             type='button'
@@ -124,9 +126,15 @@ export function PostDetailOverflowMenu({
               postId={post.id}
               communitySlug={communitySlug}
               isPinned={isPostPinned ?? false}
+              onPinnedChange={onPinnedChange}
             />
           )}
-          {showDelete && <DeletePostMenuItem postIdOrSlug={post.slug ?? post.id} />}
+          {showDelete && (
+            <DeletePostMenuItem
+              onDeleted={onDeleted}
+              postIdOrSlug={post.slug ?? post.id}
+            />
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {showShare && currentUserId && (

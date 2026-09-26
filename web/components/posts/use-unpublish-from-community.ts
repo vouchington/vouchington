@@ -15,14 +15,16 @@ export function useUnpublishFromCommunity({
   const { refresh } = useRouter()
   const [isUnpublishing, setIsUnpublishing] = useState(false)
 
-  const handleUnpublish = async () => {
-    if (isUnpublishing) return
+  const handleUnpublish = async (): Promise<boolean> => {
+    if (isUnpublishing) return false
     setIsUnpublishing(true)
     try {
       await unpublishCommunityPost(communityId, postId)
       refresh()
+      return true
     } catch {
       toast.error('Failed to unpublish post. Please try again.')
+      return false
     } finally {
       setIsUnpublishing(false)
     }
