@@ -59,9 +59,11 @@ flowchart TD
     end
 
     always-checks["gitleaks, actionlint, lint-links<br/>(see Always run)"]
+    plan-completion["plan-completion<br/>(advisory only)"]
 
     main-push --> deployables
     main-push --> check-only
+    main-push --> plan-completion
     deployables -. "workflow_run success from push" .-> dispatch-completed-deploy["dispatch-completed-deploy"]
     dispatch-completed-deploy --> infra-receiver["private infrastructure receiver<br/>(one event per deployable)"]
 

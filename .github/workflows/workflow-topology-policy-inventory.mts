@@ -29,6 +29,7 @@ export const jobInventory = {
   ),
   '.github/workflows/merge-queue-ejection.yml': jobs('dispatch escalate render-prompt'),
   '.github/workflows/plan.yml': jobs('dispatch escalate gate render-prompt'),
+  '.github/workflows/plan-completion.yml': jobs('audit'),
   '.github/workflows/shepherd.yml': jobs(
     'checkpoint-dispatch dispatch escalate gate render-prompt',
   ),

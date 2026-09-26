@@ -127,6 +127,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `merge-queue-ejection.yml`          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `merge-queue-ejection.yml`          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `merge-queue-ejection.yml`          | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
+| `plan-completion.yml`               | `audit`                         | job    | `ubuntu-slim`                         | 5             |
 | `plan.yml`                          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `plan.yml`                          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `plan.yml`                          | `gate`                          | job    | `ubuntu-slim`                         | 5             |
