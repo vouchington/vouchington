@@ -13,18 +13,28 @@ const meta = {
 export default meta
 type Story = StoryObj
 
+function previewParagraph(markdown: string): string {
+  const text = markdown.trim()
+  return text ? `<p>${text}</p>` : ''
+}
+
 function ContentEditorStory({
   initialMarkdown,
   initialTab,
-  previewHtml,
 }: {
   initialMarkdown: string
   initialTab: 'write' | 'preview'
-  previewHtml: string
 }) {
   const [markdown, setMarkdown] = useState(initialMarkdown)
   const [activeTab, setActiveTab] = useState(initialTab)
+  const [previewHtml, setPreviewHtml] = useState(
+    initialTab === 'preview' ? previewParagraph(initialMarkdown) : '',
+  )
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const selectTab = (tab: 'write' | 'preview') => {
+    setActiveTab(tab)
+    if (tab === 'preview') setPreviewHtml(previewParagraph(markdown))
+  }
   return (
     <StoryFrame width='max-w-xl'>
       <ContentEditor
@@ -37,7 +47,7 @@ function ContentEditorStory({
         reviewCharCount={markdown.length}
         reviewSentenceCount={countSentences(markdown)}
         reviewWordCount={countWords(markdown)}
-        setActiveTab={setActiveTab}
+        setActiveTab={selectTab}
         setMarkdown={setMarkdown}
         textareaRef={textareaRef}
       />
@@ -50,7 +60,6 @@ export const Write: Story = {
     <ContentEditorStory
       initialMarkdown={reviewMarkdown}
       initialTab='write'
-      previewHtml=''
     />
   ),
 }
@@ -60,7 +69,6 @@ export const Preview: Story = {
     <ContentEditorStory
       initialMarkdown={reviewMarkdown}
       initialTab='preview'
-      previewHtml={`<p>${reviewMarkdown}</p>`}
     />
   ),
 }

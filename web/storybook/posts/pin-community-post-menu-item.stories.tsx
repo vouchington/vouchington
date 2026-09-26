@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PinCommunityPostMenuItem } from '@/components/posts/pin-community-post-menu-item'
+import {
+  clearPinnedPostsFixture,
+  setPinnedPostsFixture,
+} from '@/storybook/mocks/client-api-instance'
 import { StoryFrame } from '@/storybook/story-frame'
 import { creditCardCommunity, discussionPost } from './fixtures'
 import { OpenPostMenu } from './open-post-menu'
@@ -7,6 +11,10 @@ import { OpenPostMenu } from './open-post-menu'
 const meta = {
   title: 'Posts/Pin Community Post Menu Item',
   component: PinCommunityPostMenuItem,
+  beforeEach() {
+    setPinnedPostsFixture()
+    return () => clearPinnedPostsFixture()
+  },
 } satisfies Meta
 
 export default meta
