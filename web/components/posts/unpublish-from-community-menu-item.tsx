@@ -25,8 +25,15 @@ export function UnpublishFromCommunityMenuItem({
   postId,
 }: UnpublishFromCommunityMenuItemProps) {
   const t = useTranslations()
+  const targetKey = `${communityId}:${postId}`
+  const [seenTargetKey, setSeenTargetKey] = useState(targetKey)
   const [open, setOpen] = useState(false)
   const [unpublished, setUnpublished] = useState(false)
+  if (seenTargetKey !== targetKey) {
+    setSeenTargetKey(targetKey)
+    setOpen(false)
+    setUnpublished(false)
+  }
   const { isUnpublishing, handleUnpublish } = useUnpublishFromCommunity({ communityId, postId })
 
   return (

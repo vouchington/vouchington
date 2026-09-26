@@ -16,6 +16,7 @@ export function usePostFormSubmit({
   router,
   submitInput,
   onCaptchaConsumed,
+  onSubmitted,
 }: {
   communityPendingRedirectPath?: string
   communitySlug?: string
@@ -28,6 +29,7 @@ export function usePostFormSubmit({
    * username-required retry path, where the backend rejects before verifying.
    */
   onCaptchaConsumed?: () => void
+  onSubmitted?: (href: string) => void
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [usernameDialogOpen, setUsernameDialogOpen] = useState(false)
@@ -47,14 +49,15 @@ export function usePostFormSubmit({
         saved.communityPostReview?.approved_at === null &&
         saved.communityPostReview.rejected_at === null &&
         saved.communityPostReview.unpublished_at === null
-      router.push(
+      const href =
         !isEdit &&
-          communitySlug &&
-          pendingRedirectPath &&
-          (communityPendingRedirectPath || requiresCommunityReview)
+        communitySlug &&
+        pendingRedirectPath &&
+        (communityPendingRedirectPath || requiresCommunityReview)
           ? pendingRedirectPath
-          : getCanonicalPostPath(saved.post),
-      )
+          : getCanonicalPostPath(saved.post)
+      onSubmitted?.(href)
+      router.push(href)
     } catch (error) {
       shouldResetSubmitting = handleSubmitError(error, router)
     } finally {

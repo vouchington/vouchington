@@ -19,14 +19,22 @@ export function storyTail(endpoint: string): string {
 export function createdPost(body: unknown): unknown {
   const postType = storyText(body, 'post_type') || 'link'
   const isComment = postType === 'comment'
+  const source =
+    posts.find(post => post.post_type === (isComment ? 'comment' : postType)) ??
+    posts.find(post => post.post_type === 'comment')!
+  const markdown = storyText(body, 'markdown')
+  const title = storyText(body, 'title')
   return {
     post: {
+      ...source,
       id: isComment ? 'comment-story' : 'link-post-story',
       post_type: postType,
-      slug: isComment ? null : 'link-post-story',
-      title: isComment ? null : 'Story link',
-      markdown: storyText(body, 'markdown'),
+      slug: isComment ? null : source.slug || 'link-post-story',
+      ...(markdown ? { markdown } : {}),
+      ...(title ? { title } : {}),
+      parent_id: storyText(body, 'parent_id') || source.parent_id,
       archived_at: null,
+      clearance_status: source.clearance_status ?? 'approved',
     },
   }
 }

@@ -2,6 +2,10 @@ import { useLayoutEffect } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { CommentPermalink } from '@/components/comments/comment-permalink'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { Post } from '@/types/posts'
@@ -53,6 +57,10 @@ const emptyPage = {
 
 const meta = {
   title: 'Comments/Comment Permalink',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
