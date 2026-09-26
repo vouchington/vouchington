@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PinCommunityPostMenuItem } from '@/components/posts/pin-community-post-menu-item'
 import {
@@ -20,7 +21,8 @@ const meta = {
 export default meta
 type Story = StoryObj
 
-function PinStory({ isPinned }: { isPinned: boolean }) {
+function PinStory({ initialPinned }: { initialPinned: boolean }) {
+  const [isPinned, setIsPinned] = useState(initialPinned)
   return (
     <StoryFrame width='max-w-sm'>
       <OpenPostMenu>
@@ -28,6 +30,7 @@ function PinStory({ isPinned }: { isPinned: boolean }) {
           postId={discussionPost.id}
           communitySlug={creditCardCommunity.slug}
           isPinned={isPinned}
+          onPinnedChange={setIsPinned}
         />
       </OpenPostMenu>
     </StoryFrame>
@@ -35,9 +38,9 @@ function PinStory({ isPinned }: { isPinned: boolean }) {
 }
 
 export const Unpinned: Story = {
-  render: () => <PinStory isPinned={false} />,
+  render: () => <PinStory initialPinned={false} />,
 }
 
 export const Pinned: Story = {
-  render: () => <PinStory isPinned />,
+  render: () => <PinStory initialPinned />,
 }

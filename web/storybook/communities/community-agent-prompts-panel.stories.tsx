@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityAgentPromptsPanel } from '@/components/communities/community-agent-prompts-panel'
 import type { CommunityAgentPrompt } from '@/lib/api/client/community-agent-prompts'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -8,6 +12,10 @@ import { StoryFrame } from '@/storybook/story-frame'
 const meta = {
   title: 'Communities/Community Agent Prompts Panel',
   component: CommunityAgentPromptsPanel,
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta<typeof CommunityAgentPromptsPanel>
 
 export default meta

@@ -38,6 +38,7 @@ export function storyMutationDelete(endpoint: string): unknown | undefined {
   if (endpoint.includes('/agent-prompts/') || endpoint.includes('/participants/')) return {}
   if (endpoint.endsWith('/escalation') || endpoint.endsWith('/claim')) return {}
   if (endpoint.includes('/ratings/')) return {}
+  if (endpoint.endsWith('/vote') || endpoint.includes('/bookmarks/')) return {}
   return undefined
 }
 
@@ -57,5 +58,6 @@ export function storyMutationPut(endpoint: string): unknown | undefined {
     }
   }
   if (endpoint.endsWith('/images')) return { images: [] }
+  if (endpoint.endsWith('/vote') || endpoint.includes('/bookmarks/')) return {}
   return undefined
 }

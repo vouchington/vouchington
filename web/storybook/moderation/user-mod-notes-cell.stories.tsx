@@ -7,9 +7,21 @@ import {
   clearModerationContextFixture,
   setModerationContextFixture,
 } from '@/storybook/mocks/client-api-instance'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 
 const meta = {
   title: 'Moderation/User Mod Notes Cell',
+  beforeEach() {
+    setModerationContextFixture()
+    setStoryMutationFixture()
+    return () => {
+      clearModerationContextFixture()
+      clearStoryMutationFixture()
+    }
+  },
 } satisfies Meta
 
 export default meta
@@ -38,10 +50,6 @@ function NotesTable({ targetUserId }: { targetUserId: string | null }) {
 }
 
 export const WithMember: Story = {
-  beforeEach: () => {
-    setModerationContextFixture()
-    return () => clearModerationContextFixture()
-  },
   render: () => (
     <StoryFrame>
       <NotesTable targetUserId={publicUsers[0]!.id} />

@@ -10,14 +10,26 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function DangerZoneStory({ error, isArchived }: { error: string | null; isArchived: boolean }) {
+function DangerZoneStory({
+  error,
+  initialArchived,
+}: {
+  error: string | null
+  initialArchived: boolean
+}) {
   const [confirmArchive, setConfirmArchive] = useState(false)
+  const [isArchived, setIsArchived] = useState(initialArchived)
   return (
     <CommunityDangerZone
       confirmArchive={confirmArchive}
       error={error}
       handleArchive={() => {
-        setConfirmArchive(true)
+        if (confirmArchive) {
+          setIsArchived(current => !current)
+          setConfirmArchive(false)
+        } else {
+          setConfirmArchive(true)
+        }
         return Promise.resolve()
       }}
       isArchived={isArchived}
@@ -32,7 +44,7 @@ export const Archive: Story = {
     <StoryFrame>
       <DangerZoneStory
         error={null}
-        isArchived={false}
+        initialArchived={false}
       />
     </StoryFrame>
   ),
@@ -43,7 +55,7 @@ export const Restore: Story = {
     <StoryFrame>
       <DangerZoneStory
         error={null}
-        isArchived
+        initialArchived
       />
     </StoryFrame>
   ),
@@ -54,7 +66,7 @@ export const ArchiveError: Story = {
     <StoryFrame>
       <DangerZoneStory
         error='Credit Cards still has an open modmail thread about a Sapphire Reserve referral.'
-        isArchived={false}
+        initialArchived={false}
       />
     </StoryFrame>
   ),
