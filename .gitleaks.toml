@@ -46,6 +46,14 @@ paths = ['''^backend/api/app\.origin\.test\.mts$''']
 regexes = ['''(SECRET|WORKER_HEADER_VALUE) = '0123456789abcdef0123456789abcdef'$''']
 
 [[allowlists]]
+description = "Global feature-flag origin tests use one deterministic fake worker secret"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^backend/api/app-global-feature-flags\.test\.mts$''']
+regexes = ['''^0123456789abcdef0123456789abcdef$''']
+
+[[allowlists]]
 description = "Email processor tests use fake OTP/login-token fixtures"
 targetRules = ["generic-api-key"]
 condition = "AND"

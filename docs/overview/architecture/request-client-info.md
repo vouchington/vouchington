@@ -42,6 +42,15 @@ verified together with their session token so the edge issuer's configured publi
 stale session token falls back to independent device verification, allowing the normal anonymous
 or session-refresh path while the longer-lived device token remains valid.
 
+The server's global feature-flag read has one separate bootstrap path. An exact, cookie-free
+`GET /api/v1/feature-flags` may mint request-scoped device context only when it carries valid web
+client metadata and the `global-feature-flags` request kind, and the origin guard has verified the
+configured Worker secret for that same request. The Worker strips incoming request-kind headers
+before forwarding public API requests, so a caller cannot claim this internal kind through the
+public edge. Direct requests without the secret, other paths or methods, and requests with cookies
+still require a verified device token. When origin-secret validation is disabled, the marker is not
+set and this bootstrap fails closed. This read does not issue or persist a session.
+
 Exemptions are `OPTIONS`, non-API paths, webhook and MCP/admin-MCP paths, signed
 `/api/v1/email-unsubscribe` callbacks, and edge-authenticated requests marked
 `x-voucha-request-kind: bot` or `cache-fill`. The origin guard runs first, so callers cannot use that

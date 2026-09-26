@@ -13,9 +13,11 @@ import {
   runWithRequestClientInfo,
   type VerifiedDeviceIdentity,
 } from './index.mts'
+import { isAuthenticatedOriginRequest } from './authenticated-origin.mts'
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
 const TRUSTED_REQUEST_KINDS = new Set(['bot', 'cache-fill'])
+const GLOBAL_FEATURE_FLAGS_REQUEST_KIND = 'global-feature-flags'
 const EXEMPT_API_PREFIXES = ['/api/v1/mcp', '/api/v1/admin/mcp', '/api/v1/email-unsubscribe']
 const NATIVE_BOOTSTRAP_PATHS = new Set([
   '/api/v1/auth/email-address/tokens',
@@ -66,7 +68,7 @@ async function handleRequest(
     const requestId = firstInfrastructureHeaderValue(req.headers['x-request-id'])
     const bootstrapDeviceId = deviceToken
       ? undefined
-      : getBootstrapDeviceId(req, path, dependencies)
+      : getBootstrapDeviceId(req, path, headers.client, dependencies)
     if (!deviceToken && !bootstrapDeviceId) {
       throw new ClientInfoValidationError('a verified device token is required')
     }
@@ -90,11 +92,19 @@ async function handleRequest(
 function getBootstrapDeviceId(
   req: IncomingMessage,
   path: string,
+  client: RequestClientInfo['client'],
   dependencies: ListenerDependencies,
 ): string | undefined {
   const isSessionBootstrap = req.method === 'PATCH' && path === '/api/v1/session'
   const isNativeBootstrap = req.method === 'POST' && NATIVE_BOOTSTRAP_PATHS.has(path)
-  if (!isSessionBootstrap && !isNativeBootstrap) return undefined
+  const isGlobalFeatureFlagsRead =
+    req.method === 'GET' &&
+    path === '/api/v1/feature-flags' &&
+    !req.headers.cookie &&
+    client === 'web' &&
+    singleHeader(req.headers[VOUCHA_REQUEST_KIND_HEADER]) === GLOBAL_FEATURE_FLAGS_REQUEST_KIND &&
+    isAuthenticatedOriginRequest(req)
+  if (!isSessionBootstrap && !isNativeBootstrap && !isGlobalFeatureFlagsRead) return undefined
   const deviceId = dependencies.mintDeviceId()
   cacheBootstrapDeviceId(req, deviceId)
   return deviceId
