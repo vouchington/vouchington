@@ -28,18 +28,20 @@ const related = [newsItems[3]!]
 
 function StoryCard({ signedIn }: { signedIn: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [storyPostHref, setStoryPostHref] = useState<string | null>(
+    signedIn
+      ? null
+      : getCanonicalPostPath({
+          id: 'fixture-story',
+          post_type: 'story',
+          slug: 'fixture-story',
+        }),
+  )
   return (
     <NewsItemStoryCard
       story={transferBonus}
-      storyPostHref={
-        signedIn
-          ? null
-          : getCanonicalPostPath({
-              id: 'fixture-story',
-              post_type: 'story',
-              slug: 'fixture-story',
-            })
-      }
+      storyPostHref={storyPostHref}
+      onStoryDiscussionCreated={setStoryPostHref}
       storyItems={related}
       primary={primary}
       view='compact'

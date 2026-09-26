@@ -1,4 +1,5 @@
 import { ClientRequest } from '@/lib/api/client/request'
+import { publicUsers } from '@/storybook/entities/fixtures/users'
 import {
   storyMutationDelete,
   storyMutationPatch,
@@ -32,6 +33,12 @@ ClientRequest.prototype.get = function storybookMutationGet<T>(
 ): Promise<T> {
   if (storyMutations && endpoint.startsWith('/api/v1/bookmarks/')) {
     return Promise.resolve({ bookmarks: {} } as T)
+  }
+  if (storyMutations && endpoint.includes('/users/followers')) {
+    return Promise.resolve({
+      results: [publicUsers[0]!],
+      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+    } as T)
   }
   return previousGet.call(this, endpoint, options) as Promise<T>
 }

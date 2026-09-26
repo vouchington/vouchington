@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth/context'
 interface NewsItemStoryCardProps {
   story?: Story
   storyPostHref: string | null
+  onStoryDiscussionCreated?: (href: string) => void
   storyItems: RssFeedItem[]
   primary: RssFeedItem
   view: FeedStyle
@@ -41,6 +42,7 @@ interface NewsItemStoryCardProps {
 export function NewsItemStoryCard({
   story,
   storyPostHref,
+  onStoryDiscussionCreated,
   storyItems,
   primary,
   view,
@@ -59,7 +61,13 @@ export function NewsItemStoryCard({
   const { isAuthenticated: isLoggedIn } = useAuth()
   const canCreateStoryPost = isLoggedIn && !storyPostHref && storyItems.length > 0 && !!story?.id
   const storyDiscussionAction = useStartStoryDiscussionAction(
-    canCreateStoryPost && story?.id ? { storyId: story.id, fallbackUrlId: primary.url.id } : null,
+    canCreateStoryPost && story?.id
+      ? {
+          storyId: story.id,
+          fallbackUrlId: primary.url.id,
+          onCreated: onStoryDiscussionCreated,
+        }
+      : null,
   )
   const DiscussIcon = EntityActionIcons.startDiscussion
   return (

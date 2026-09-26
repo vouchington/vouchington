@@ -30,6 +30,12 @@ export default function JoinButton({
   const { currentUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [memberOverride, setMemberOverride] = useState<boolean | null>(null)
+  const membershipKey = `${communitySlug}:${membership == null}:${membership?.removed_at ?? ''}`
+  const [seenMembershipKey, setSeenMembershipKey] = useState(membershipKey)
+  if (seenMembershipKey !== membershipKey) {
+    setSeenMembershipKey(membershipKey)
+    setMemberOverride(null)
+  }
 
   if (!currentUser) {
     const loginHref = `/login?next=${encodeURIComponent(pathname)}`
