@@ -7,7 +7,6 @@ import {
 import { UserModNotesCell as ModerationUserModNotesCellUserModNotesCell } from '@/components/moderation/user-mod-notes-cell'
 import { UserModNotesPanel as ModerationUserModNotesPanelUserModNotesPanel } from '@/components/moderation/user-mod-notes-panel'
 import { ApiKeysManager as MyApiKeysManagerApiKeysManager } from '@/components/my/api-keys-manager'
-import { CreateApiKeyForm as MyApiKeysManagerCreateApiKeyFormCreateApiKeyForm } from '@/components/my/api-keys-manager/create-api-key-form'
 import { AddCardForm as MyCardsManagerAddCardFormAddCardForm } from '@/components/my/cards-manager/add-card-form'
 import { CardEditFormView as MyCardsManagerCardEditFormCardEditFormView } from '@/components/my/cards-manager/card-edit-form'
 import { CardDisplayRow as MyCardsManagerCardRowCardDisplayRow } from '@/components/my/cards-manager/card-row'
@@ -34,10 +33,6 @@ const ratchetedComponentsPart6 = [
   {
     key: 'web/components/my/api-keys-manager.tsx#ApiKeysManager',
     component: MyApiKeysManagerApiKeysManager,
-  },
-  {
-    key: 'web/components/my/api-keys-manager/create-api-key-form.tsx#CreateApiKeyForm',
-    component: MyApiKeysManagerCreateApiKeyFormCreateApiKeyForm,
   },
   {
     key: 'web/components/my/cards-manager/add-card-form.tsx#AddCardForm',

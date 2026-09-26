@@ -4,17 +4,20 @@ import { Button } from '@/components/ui/button'
 import { ActiveApiKeysList, RevokedApiKeysList } from './api-keys-manager/api-key-lists'
 import { CreateApiKeyForm } from './api-keys-manager/create-api-key-form'
 import { KeyCreatedAlert } from './api-keys-manager/key-created-alert'
-import {
-  DEFAULT_API_KEY_PRESET_ID,
-  getVisibleApiKeyPresets,
-} from './api-keys-manager/api-key-presets'
 import { useApiKeysManager } from './api-keys-manager/use-api-keys-manager'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ListResponse } from '@/types/api-responses'
 import type { ApiKey } from '@/types/api-keys'
+import type { ScopeCatalogEntry } from '@/types/scopes'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 
-export function ApiKeysManager({ initialData }: { initialData?: ListResponse<ApiKey> }) {
+export function ApiKeysManager({
+  initialData,
+  scopeCatalog,
+}: {
+  initialData?: ListResponse<ApiKey>
+  scopeCatalog: readonly ScopeCatalogEntry[]
+}) {
   const t = useTranslations()
   const {
     isAdmin,
@@ -25,8 +28,8 @@ export function ApiKeysManager({ initialData }: { initialData?: ListResponse<Api
     setCreating,
     newLabel,
     setNewLabel,
-    selectedPresetId,
-    setSelectedPresetId,
+    selection,
+    resetSelection,
     submitting,
     newRawKey,
     setNewRawKey,
@@ -38,7 +41,7 @@ export function ApiKeysManager({ initialData }: { initialData?: ListResponse<Api
     handleRevoke,
     handleCopy,
     pagination,
-  } = useApiKeysManager(initialData)
+  } = useApiKeysManager(scopeCatalog, initialData)
   const handleLoadMore = pagination.loadMore
 
   const activeKeys = keys.filter(k => !k.revoked_at)
@@ -108,16 +111,15 @@ export function ApiKeysManager({ initialData }: { initialData?: ListResponse<Api
             <CreateApiKeyForm
               label={newLabel}
               submitting={submitting}
-              presets={getVisibleApiKeyPresets(isAdmin)}
-              selectedPresetId={selectedPresetId}
+              selection={selection}
+              showAudience={isAdmin}
               onCancel={() => {
                 setCreating(false)
                 setNewLabel('')
-                setSelectedPresetId(DEFAULT_API_KEY_PRESET_ID)
+                resetSelection()
               }}
               onCreate={handleCreate}
               setLabel={setNewLabel}
-              setSelectedPresetId={setSelectedPresetId}
             />
           ) : (
             <Button

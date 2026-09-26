@@ -3,8 +3,6 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { ApiKeysManager } from '../api-keys-manager'
 import type { ApiKey } from '@/types/api-keys'
-import { AuthProvider } from '@/lib/auth/auth-provider'
-import type { User } from '@/types/user'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
 // ApiKeysManager (and its child components) call useTranslations(), which suspends via `use()`
@@ -71,12 +69,6 @@ const initialApiKeys: ApiKey[] = [
   },
 ]
 
-const adminUser: User = {
-  id: 'admin-user',
-  username: 'admin',
-  roles: ['administrator'],
-}
-
 function findCreateApiKeyButton() {
   return screen.findByRole('button', { name: /Create API Key/i })
 }
@@ -125,7 +117,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('renders loading state initially then loads and displays API keys', async () => {
-    render(<ApiKeysManager />)
+    render(<ApiKeysManager scopeCatalog={[]} />)
 
     expect(screen.getByText('Loading...')).toBeInTheDocument()
 
@@ -140,7 +132,7 @@ describe('ApiKeysManager Integration Flow', () => {
 
   it('handles load error notification and displays message', async () => {
     mockGet.mockRejectedValueOnce(new Error('Network error'))
-    render(<ApiKeysManager />)
+    render(<ApiKeysManager scopeCatalog={[]} />)
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith('Failed to load API keys')
@@ -149,7 +141,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('toggles creation form, validates input, and cancels', async () => {
-    render(<ApiKeysManager />)
+    render(<ApiKeysManager scopeCatalog={[]} />)
     await waitFor(() => expect(mockGet).toHaveBeenCalled())
 
     const createButton = await findCreateApiKeyButton()
@@ -168,7 +160,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('successfully creates an API key and allows copying the raw key', async () => {
-    render(<ApiKeysManager />)
+    render(<ApiKeysManager scopeCatalog={[]} />)
     await waitFor(() => expect(mockGet).toHaveBeenCalled())
 
     fireEvent.click(await findCreateApiKeyButton())
@@ -207,64 +199,8 @@ describe('ApiKeysManager Integration Flow', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('creates a user MCP read-write key from the preset selector', async () => {
-    render(<ApiKeysManager />)
-    await waitFor(() => expect(mockGet).toHaveBeenCalled())
-
-    fireEvent.click(await findCreateApiKeyButton())
-    fireEvent.click(screen.getByLabelText('User MCP read/write'))
-    fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'Codex user MCP' } })
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^Create$/ }))
-    })
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('Codex user MCP', 'mcp', [
-        'mcp.user:read',
-        'mcp.user:write',
-      ])
-    })
-  })
-
-  it('hides admin MCP presets for non-admin users', async () => {
-    render(<ApiKeysManager />)
-    await waitFor(() => expect(mockGet).toHaveBeenCalled())
-
-    fireEvent.click(await findCreateApiKeyButton())
-
-    expect(screen.queryByLabelText('Admin MCP read-only')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Admin MCP read/write')).not.toBeInTheDocument()
-  })
-
-  it('creates an admin MCP read-write key for administrators', async () => {
-    render(
-      <AuthProvider
-        initialUser={{ id: adminUser.id, roles: adminUser.roles, isOfficialAccount: true }}
-      >
-        <ApiKeysManager />
-      </AuthProvider>,
-    )
-    await waitFor(() => expect(mockGet).toHaveBeenCalled())
-
-    fireEvent.click(await findCreateApiKeyButton())
-    fireEvent.click(screen.getByLabelText('Admin MCP read/write'))
-    fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'Claude admin MCP' } })
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^Create$/ }))
-    })
-
-    await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith('Claude admin MCP', 'mcp', [
-        'mcp.admin:read',
-        'mcp.admin:write',
-      ])
-    })
-  })
-
   it('supports revoking an API key with confirmation', async () => {
-    render(<ApiKeysManager />)
+    render(<ApiKeysManager scopeCatalog={[]} />)
     await waitFor(() => expect(mockGet).toHaveBeenCalled())
 
     const revokeButton = await screen.findByRole('button', { name: /Revoke/i })

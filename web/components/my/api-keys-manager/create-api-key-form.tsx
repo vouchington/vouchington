@@ -3,66 +3,89 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { cn } from '@/lib/utils'
-
-type ApiKeyPresetOption = {
-  id: string
-  label: string
-}
-
-const EMPTY_PRESETS: ApiKeyPresetOption[] = []
-const NOOP = () => {}
-const NOOP_SET = (_value: string) => {}
+import { ChoiceRadioGroup } from './choice-radio-group'
+import { ScopePicker } from './scope-picker'
+import type { ApiKeyScopeSelection } from './use-api-key-scope-selection'
 
 interface CreateApiKeyFormProps {
-  label?: string
-  presets?: ApiKeyPresetOption[]
-  selectedPresetId?: string
-  submitting?: boolean
-  onCancel?: () => void
-  onCreate?: () => void
-  setLabel?: (label: string) => void
-  setSelectedPresetId?: (presetId: string) => void
+  label: string
+  selection: ApiKeyScopeSelection
+  showAudience: boolean
+  submitting: boolean
+  onCancel: () => void
+  onCreate: () => void
+  setLabel: (label: string) => void
 }
 
 export function CreateApiKeyForm({
-  label = '',
-  presets = EMPTY_PRESETS,
-  selectedPresetId = '',
-  submitting = false,
-  onCancel = NOOP,
-  onCreate = NOOP,
-  setLabel = NOOP_SET,
-  setSelectedPresetId = NOOP_SET,
+  label,
+  selection,
+  showAudience,
+  submitting,
+  onCancel,
+  onCreate,
+  setLabel,
 }: CreateApiKeyFormProps) {
   const t = useTranslations()
+  const canCreate = label.trim() !== '' && selection.permissions.length > 0
   return (
-    <div className='space-y-3 rounded-md border p-4'>
+    <form
+      className='space-y-3 rounded-md border p-4'
+      onSubmit={event => {
+        event.preventDefault()
+        onCreate()
+      }}
+    >
       <p className='text-sm font-medium'>
         {t('extracted.apiKeysManager.createApiKeyForm.createApiKey_950dd00f')}
       </p>
-      <fieldset className='space-y-2'>
-        <legend className='text-sm font-medium'>
-          {t('extracted.apiKeysManager.createApiKeyForm.keyType_7e21c8f4')}
-        </legend>
-        <RadioGroup
-          aria-label={t('extracted.apiKeysManager.createApiKeyForm.keyType_7e21c8f4')}
-          value={selectedPresetId}
-          onValueChange={setSelectedPresetId}
-          className='grid gap-2 sm:grid-cols-2'
-        >
-          {presets.map(preset => (
-            <PresetRadio
-              key={preset.id}
-              preset={preset}
-              selectedPresetId={selectedPresetId}
-              setSelectedPresetId={setSelectedPresetId}
-            />
-          ))}
-        </RadioGroup>
-      </fieldset>
+      <ChoiceRadioGroup
+        idPrefix='api-key-type'
+        legend={t('extracted.apiKeysManager.createApiKeyForm.keyType_7e21c8f4')}
+        options={[
+          {
+            value: 'rss',
+            label: t('extracted.apiKeysManager.createApiKeyForm.rssFeed_8058db69'),
+            dataPw: 'api-keys-create-type-rss',
+          },
+          {
+            value: 'mcp',
+            label: t('extracted.apiKeysManager.createApiKeyForm.mcpServer_d938c816'),
+            dataPw: 'api-keys-create-type-mcp',
+          },
+        ]}
+        value={selection.keyType}
+        onChange={selection.handleKeyTypeChange}
+      />
+      {selection.keyType === 'mcp' && showAudience && (
+        <ChoiceRadioGroup
+          idPrefix='api-key-audience'
+          legend={t('extracted.apiKeysManager.createApiKeyForm.audience_545c0235')}
+          options={[
+            {
+              value: 'user',
+              label: t('extracted.apiKeysManager.createApiKeyForm.yourAccount_dbb5f637'),
+              dataPw: 'api-keys-create-audience-user',
+            },
+            {
+              value: 'admin',
+              label: t('extracted.apiKeysManager.createApiKeyForm.administrator_e7d3e769'),
+              dataPw: 'api-keys-create-audience-admin',
+            },
+          ]}
+          value={selection.audience}
+          onChange={selection.handleAudienceChange}
+        />
+      )}
+      {selection.keyType === 'mcp' && (
+        <ScopePicker
+          idPrefix='api-key'
+          rows={selection.rows}
+          selected={selection.mcpScopes}
+          onToggle={selection.handleScopeToggle}
+        />
+      )}
       <div className='space-y-1'>
         <Label htmlFor='api-key-label'>
           {t('extracted.apiKeysManager.createApiKeyForm.label_0e66373f')}
@@ -77,15 +100,16 @@ export function CreateApiKeyForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          type='submit'
           size='sm'
-          onClick={onCreate}
           loading={submitting}
-          disabled={submitting || !label.trim()}
+          disabled={submitting || !canCreate}
           data-pw='api-keys-create-confirm-button'
         >
           {t('extracted.apiKeysManager.createApiKeyForm.create_4759498a')}
         </Button>
         <Button
+          type='button'
           size='sm'
           variant='outline'
           onClick={onCancel}
@@ -94,38 +118,6 @@ export function CreateApiKeyForm({
           {t('extracted.apiKeysManager.createApiKeyForm.cancel_19766ed6')}
         </Button>
       </div>
-    </div>
-  )
-}
-
-function PresetRadio({
-  preset,
-  selectedPresetId,
-  setSelectedPresetId,
-}: {
-  preset: ApiKeyPresetOption
-  selectedPresetId: string
-  setSelectedPresetId: (presetId: string) => void
-}) {
-  const id = `api-key-preset-${preset.id}`
-  return (
-    <div
-      onPointerDown={() => setSelectedPresetId(preset.id)}
-      className={cn(
-        'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm font-normal transition-colors hover:bg-accent/50',
-        preset.id === selectedPresetId && 'border-primary bg-primary/5 hover:bg-primary/5',
-      )}
-    >
-      <RadioGroupItem
-        id={id}
-        value={preset.id}
-      />
-      <Label
-        htmlFor={id}
-        className='cursor-pointer flex-1'
-      >
-        {preset.label}
-      </Label>
-    </div>
+    </form>
   )
 }
