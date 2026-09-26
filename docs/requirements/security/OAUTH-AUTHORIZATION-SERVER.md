@@ -17,7 +17,14 @@ OpenID Connect, ID-token, or UserInfo flows.
 ## Security invariants
 
 - Redirect URIs must be registered exactly. HTTPS is required except for HTTP loopback clients.
+  The match is rechecked when the user decides on consent and when the code is exchanged, under a
+  share lock on the client row, so a URI the owner has removed, even concurrently, receives neither
+  a code nor tokens.
 - Authorization errors redirect only after the client and redirect URI have both been verified.
+- Code exchange, refresh and revocation authenticate the client against its row under a share lock
+  held until their transaction commits. A secret rotation or client revocation waits for in-flight
+  token requests, and later requests see the new state, so a replaced secret obtains no tokens once
+  rotation returns.
 - Codes, access tokens, refresh tokens, and client secrets are stored only as purpose-bound hashes.
   Plaintext credentials are returned once.
 - Authorization codes are single-use. Their exchange and token issuance share one PostgreSQL
@@ -42,6 +49,16 @@ authenticate with HTTP Basic and a generated client secret. B1 implements RFC 75
 not the RFC 7592 registration-management protocol, so it does not mint an unused registration
 management credential. Authenticated client and grant management is owned by the API-key and
 OAuth-app management milestone.
+
+Signed-in users register and manage their own clients through `/api/v1/my/oauth-apps`
+([OAuth apps](../users/api-keys.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
+and records `owner_user_id`; rotation replaces the stored client-secret hash and returns the new
+secret once, and renaming a client or replacing its redirect URIs clears `verified_at` and
+`verified_by_id` in the same update. Every owner mutation first takes the account-deletion lock
+(`fn_lock_active_user_for_mutation`), so a request that authenticated just before the owner's
+deletion committed cannot change the app or mint a secret afterwards. Account deletion does not yet
+revoke the apps the account owns; [#710](https://github.com/vouchington/vouchington/issues/710)
+tracks it.
 
 Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh

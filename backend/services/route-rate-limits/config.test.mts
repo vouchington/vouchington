@@ -164,6 +164,10 @@ describe('route rate-limit registry', () => {
       'POST:/api/v1/auth/sessions/revocations',
       'POST:/api/v1/my/api-keys',
       'DELETE:/api/v1/my/api-keys/:id',
+      'POST:/api/v1/my/oauth-apps',
+      'PATCH:/api/v1/my/oauth-apps/:id',
+      'DELETE:/api/v1/my/oauth-apps/:id',
+      'POST:/api/v1/my/oauth-apps/:id/client-secrets',
       'DELETE:/api/v1/my/oauth-grants/:id',
     ]
 

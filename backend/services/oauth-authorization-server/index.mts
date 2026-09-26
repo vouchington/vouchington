@@ -1,3 +1,4 @@
+export * from './app-management.mts'
 export * from './authorization.mts'
 export * from './browser-binding.mts'
 export * from './consent.mts'

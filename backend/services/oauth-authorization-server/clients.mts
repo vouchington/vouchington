@@ -1,22 +1,45 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { write, type QueryExecutor } from '@data-stores/psql'
+import { write, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import { hasEveryScope } from '@modules/scopes'
 import { hashToken } from '@modules/token-secrets'
 import { OAuthProtocolError, invalidClientMetadata, invalidRequest } from './errors.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
+import {
+  validateAuthMethod,
+  validateClientName,
+  validateGrantTypes,
+  validateRegistrationObject,
+  validateResponseTypes,
+} from './client-metadata-validation.mts'
 import { validateRedirectUris } from './redirect-uri-validation.mts'
 import { parseOAuthScopes } from './validation.mts'
-import type {
-  OAuthClient,
-  OAuthClientAuthMethod,
-  RegisterOAuthClientInput,
-  RegisteredOAuthClient,
-} from './types.mts'
+import type { OAuthClient, RegisteredOAuthClient } from './types.mts'
 
 export async function registerOAuthClient(
   input: unknown,
   ownerUserId: string | null = null,
+  query: QueryExecutor = write,
 ): Promise<RegisteredOAuthClient> {
+  const { client, clientSecret } = await insertOAuthClient(input, ownerUserId, query)
+  return {
+    client_id: client.client_id,
+    client_id_issued_at: Math.floor(client.created_at.getTime() / 1000),
+    client_name: client.client_name,
+    ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 as const } : {}),
+    grant_types: client.grant_types,
+    redirect_uris: client.redirect_uris,
+    response_types: client.response_types,
+    scope: client.scopes.join(' '),
+    token_endpoint_auth_method: client.token_endpoint_auth_method,
+  }
+}
+
+/** Validates RFC 7591 metadata and inserts the client, returning its row and one-time secret. */
+export async function insertOAuthClient(
+  input: unknown,
+  ownerUserId: string | null,
+  query: QueryExecutor,
+): Promise<{ client: OAuthClient; clientSecret: string | undefined }> {
   const metadata = validateRegistrationObject(input)
   const clientName = validateClientName(metadata.client_name)
   const redirectUris = validateRedirectUris(metadata.redirect_uris)
@@ -32,11 +55,9 @@ export async function registerOAuthClient(
   }
   const clientId = `voucha_${randomBytes(24).toString('base64url')}`
   const clientSecret =
-    tokenEndpointAuthMethod === 'client_secret_basic'
-      ? `voucha_secret_${randomBytes(32).toString('base64url')}`
-      : undefined
+    tokenEndpointAuthMethod === 'client_secret_basic' ? generateOAuthClientSecret() : undefined
 
-  const result = await write<OAuthClient>(
+  const result = await query<OAuthClient>(
     `/* registerOAuthClient */ INSERT INTO oauth_clients (
        client_id,
        owner_user_id,
@@ -65,18 +86,7 @@ export async function registerOAuthClient(
   )
   const client = result.rows[0]
   if (!client) throw new OAuthProtocolError('server_error', 'client registration failed', 503)
-
-  return {
-    client_id: client.client_id,
-    client_id_issued_at: Math.floor(client.created_at.getTime() / 1000),
-    client_name: client.client_name,
-    ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 as const } : {}),
-    grant_types: client.grant_types,
-    redirect_uris: client.redirect_uris,
-    response_types: client.response_types,
-    scope: client.scopes.join(' '),
-    token_endpoint_auth_method: client.token_endpoint_auth_method,
-  }
+  return { client, clientSecret }
 }
 
 export async function getOAuthClient(
@@ -102,7 +112,31 @@ export async function authenticateOAuthClient(
   assertOAuthClientAuthentication(client, clientSecret)
 }
 
-export function assertOAuthClientAuthentication(
+/**
+ * Authenticates a token-endpoint client against its row, share-locked until `query` commits. A
+ * secret rotation or revocation therefore waits for this transaction, or this read waits for it
+ * and rejects the replaced secret, so no token is issued to a secret after its rotation returns.
+ */
+export async function authenticateLockedOAuthClient(
+  clientId: string,
+  clientSecret: string | undefined,
+  query: TransactionQuery,
+): Promise<OAuthClient> {
+  const result = await query<OAuthClient>(
+    `/* authenticateLockedOAuthClient */ SELECT *
+     FROM oauth_clients
+     WHERE client_id = $1
+       AND revoked_at IS NULL
+     FOR SHARE`,
+    [clientId],
+  )
+  const client = result.rows[0]
+  if (!client) throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
+  assertOAuthClientAuthentication(client, clientSecret)
+  return client
+}
+
+function assertOAuthClientAuthentication(
   client: OAuthClient,
   clientSecret: string | undefined,
 ): void {
@@ -139,52 +173,6 @@ export function assertClientAuthorizationRequest(
   }
 }
 
-function validateClientName(value: unknown): string {
-  if (
-    typeof value !== 'string' ||
-    value.trim().length === 0 ||
-    value.length > 120 ||
-    /[\p{Cc}\p{Cf}]/u.test(value)
-  ) {
-    throw invalidClientMetadata('client_name must contain between 1 and 120 characters')
-  }
-  return value.trim()
-}
-
-function validateAuthMethod(value: unknown): OAuthClientAuthMethod {
-  if (value === undefined || value === 'none') return 'none'
-  if (value === 'client_secret_basic') return value
-  throw invalidClientMetadata('token_endpoint_auth_method is not supported')
-}
-
-function validateGrantTypes(value: unknown): Array<'authorization_code' | 'refresh_token'> {
-  const grantTypes = value ?? ['authorization_code', 'refresh_token']
-  if (!Array.isArray(grantTypes) || grantTypes.length === 0) {
-    throw invalidClientMetadata('grant_types is invalid')
-  }
-  const unique = new Set(grantTypes)
-  if (
-    unique.size !== grantTypes.length ||
-    !unique.has('authorization_code') ||
-    !unique.has('refresh_token') ||
-    [...unique].some(type => type !== 'authorization_code' && type !== 'refresh_token')
-  ) {
-    throw invalidClientMetadata('grant_types is not supported')
-  }
-  return [...unique].sort() as Array<'authorization_code' | 'refresh_token'>
-}
-
-function validateResponseTypes(value: unknown): ['code'] {
-  const responseTypes = value ?? ['code']
-  if (!Array.isArray(responseTypes) || responseTypes.length !== 1 || responseTypes[0] !== 'code') {
-    throw invalidClientMetadata('only the code response type is supported')
-  }
-  return ['code']
-}
-
-function validateRegistrationObject(input: unknown): RegisterOAuthClientInput {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    throw invalidClientMetadata('registration metadata must be a JSON object')
-  }
-  return input as RegisterOAuthClientInput
+export function generateOAuthClientSecret(): string {
+  return `voucha_secret_${randomBytes(32).toString('base64url')}`
 }

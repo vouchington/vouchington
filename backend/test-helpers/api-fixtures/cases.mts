@@ -23,6 +23,7 @@ import { nativeTagsBookmarksApiFixtureCases } from './native-tags-bookmarks-case
 import { nativeUserAccountDataApiFixtureCases } from './native-user-account-data-cases.mts'
 import { nativeUserProfileApiFixtureCases } from './native-user-profile-cases.mts'
 import { nativeOAuthBrokerApiFixtureCases } from './native-oauth-broker-cases.mts'
+import { oauthAppApiFixtureCases } from './oauth-app-cases.mts'
 import { oauthManagementApiFixtureCases } from './oauth-management-cases.mts'
 import { referralApiFixtureCases } from './referral-cases.mts'
 import { swiftApiFixtureCases } from './swift-cases.mts'
@@ -57,6 +58,7 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     'backend/test-helpers/api-fixtures/oauth-management-cases.mts',
     oauthManagementApiFixtureCases,
   ),
+  ...fromCaseFile('backend/test-helpers/api-fixtures/oauth-app-cases.mts', oauthAppApiFixtureCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-spending-category-cases.mts',
     nativeSpendingCategoryApiFixtureCases,
