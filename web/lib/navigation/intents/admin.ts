@@ -57,6 +57,11 @@ export const ADMIN_INTENTS: readonly NavIntent[] = [
             href: '/report-integrity/flags',
             dataPw: 'sidebar-link-report-integrity',
           },
+          {
+            label: 'extracted.intents.admin.oauthApps_ed52067f',
+            href: '/admin/oauth-clients',
+            dataPw: 'sidebar-link-oauth-clients',
+          },
         ],
       },
       {

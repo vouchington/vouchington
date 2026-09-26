@@ -76,9 +76,10 @@ test.describe('Settings Nav Tabs', () => {
     )
   })
 
-  test('Advanced dropdown contains API Keys, Your Data', async ({ page }) => {
+  test('Advanced dropdown contains API Keys, Connected Apps, Your Data', async ({ page }) => {
     await page.getByTestId('settings-nav-advanced-tab').click()
     await expect(page.getByTestId('settings-nav-dropdown-api-keys')).toBeVisible()
+    await expect(page.getByTestId('settings-nav-dropdown-connected-apps')).toBeVisible()
     await expect(page.getByTestId('settings-nav-dropdown-find-friends')).toHaveCount(0)
     await expect(page.getByTestId('settings-nav-dropdown-your-data')).toBeVisible()
   })

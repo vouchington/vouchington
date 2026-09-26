@@ -174,7 +174,7 @@ Markdown mention routing requirements:
 - Settings (tab groups: Account, Profile, Advanced)
   - Account: `/my/identity`, `/my/profile`, `/my/privacy`, `/my/membership`
   - Profile: `/my/cards`, `/my/household`, `/my/spending-categories`, `/my/rewards-program-point-valuations`, `/my/rewards-program-statuses`
-  - Advanced: `/my/preferences`, `/my/api-keys`, `/my/friend-recommendations`, `/my/data`
+  - Advanced: `/my/preferences`, `/my/api-keys`, `/my/connected-apps`, `/my/friend-recommendations`, `/my/data`
 - Standalone authenticated pages (no settings nav, accessible via sidebar/dropdown/inbox):
   - `/my/notifications` — entry point: inbox button in navbar
   - `/my/landing-pages` — entry point: sidebar + user dropdown
@@ -251,6 +251,12 @@ Admin-only routes for URLs.
 - `/urls` - search URLs with cursor-based infinite scroll. Search submits through client-side App Router navigation so query changes do not trigger a full document reload.
 - `/url/:id` - view a URL: inline crawl history (cursor-paginated) + trigger a new crawl via the aside
 - `/url/:id/crawls/:crawlId` - view content from a specific crawl
+
+## OAuth Apps
+
+Admin-only route for reviewing self-registered OAuth apps.
+
+- `/admin/oauth-clients` - list apps by verification status (unverified by default), verify an app under the name the administrator reviewed, or remove its verification; see [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md)
 
 ## Queues
 

@@ -145,6 +145,11 @@ export const SETTINGS_INTENT: NavIntent = {
           dataPw: 'settings-sidebar-api-keys',
         },
         {
+          href: '/my/connected-apps',
+          label: 'extracted.intents.productSettings.connectedApps_4d658e7e',
+          dataPw: 'settings-sidebar-connected-apps',
+        },
+        {
           href: '/my/data',
           label: 'extracted.intents.productSettings.yourData_0fdcada4',
           dataPw: 'settings-sidebar-your-data',

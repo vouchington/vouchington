@@ -180,6 +180,10 @@ describe('getActiveIntent', () => {
       expect(getActiveIntent('/admin/moderation-analytics')).toBe('moderation')
     })
 
+    it('resolves /admin/oauth-clients to moderation', () => {
+      expect(getActiveIntent('/admin/oauth-clients')).toBe('moderation')
+    })
+
     it('resolves /vote-integrity/flags to moderation', () => {
       expect(getActiveIntent('/vote-integrity/flags')).toBe('moderation')
     })
