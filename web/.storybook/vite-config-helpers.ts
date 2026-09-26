@@ -148,12 +148,29 @@ export function buildStorybookAliases(workspaceAliases: Alias[]): Alias[] {
       ),
     },
     {
+      // Storybook has no platform authenticator, so passkey ceremonies resolve locally.
+      find: '@simplewebauthn/browser',
+      replacement: fileURLToPath(new URL('../storybook/mocks/webauthn.ts', import.meta.url)),
+    },
+    {
       find: 'next/headers',
       replacement: fileURLToPath(new URL('../storybook/mocks/next-headers.ts', import.meta.url)),
     },
     {
       find: 'next/script',
       replacement: fileURLToPath(new URL('../storybook/mocks/next-script.tsx', import.meta.url)),
+    },
+    {
+      // Provider buttons load Apple, Facebook, and Google scripts when client IDs are set.
+      find: /^@\/hooks\/use-(apple|github|google|linkedin|microsoft|x)-auth$|^@\/hooks\/use-facebook-sdk$/,
+      replacement: fileURLToPath(
+        new URL('../storybook/mocks/oauth-provider-auth.ts', import.meta.url),
+      ),
+    },
+    {
+      // Placement delivery URLs have no Storybook image host, so avatars would stay on initials.
+      find: '@/lib/utils/image-url',
+      replacement: fileURLToPath(new URL('../storybook/mocks/image-url.ts', import.meta.url)),
     },
     ...(
       [

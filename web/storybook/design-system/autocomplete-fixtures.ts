@@ -1,9 +1,58 @@
 type JsonBody = Record<string, unknown>
+type TopicSearchParams = Record<string, string | number | boolean | undefined>
 
-const topicResults = [
-  { id: 'topic-1', name: 'Chase Sapphire Reserve' },
-  { id: 'topic-2', name: 'Airport Lounges' },
+const topicCatalog = [
+  { id: 'topic-1', name: 'Chase Sapphire Reserve', topic_type: 'card', spendingCategory: false },
+  { id: 'topic-2', name: 'Airport Lounges', topic_type: 'topic', spendingCategory: false },
+  {
+    id: 'topic-referral',
+    name: 'Amex Referrals',
+    topic_type: 'referral_program',
+    spendingCategory: false,
+  },
+  {
+    id: 'topic-rewards',
+    name: 'Ultimate Rewards',
+    topic_type: 'rewards_program',
+    spendingCategory: false,
+  },
+  {
+    id: 'topic-status',
+    name: 'Platinum Elite',
+    topic_type: 'rewards_program_status',
+    spendingCategory: false,
+  },
+  { id: 'topic-groceries', name: 'Groceries', topic_type: 'topic', spendingCategory: true },
 ]
+
+function topicSearchBody(searchParams?: TopicSearchParams): JsonBody {
+  const requested = searchParams?.topic_types
+  const types = typeof requested === 'string' ? requested.split(',').filter(Boolean) : []
+  const spending =
+    searchParams?.spending_category === true || searchParams?.spending_category === 'true'
+  const query = typeof searchParams?.q === 'string' ? searchParams.q.trim().toLowerCase() : ''
+  const visible = topicCatalog.filter(topic => {
+    const name = topic.name.toLowerCase()
+    const matchesQuery =
+      query.length === 0 ||
+      name.includes(query) ||
+      topic.topic_type.includes(query) ||
+      name.split(' ').some(word => word.startsWith(query))
+    if (!matchesQuery) return false
+    if (spending) return topic.spendingCategory
+    if (types.length > 0) return types.includes(topic.topic_type)
+    return topic.id === 'topic-1' || topic.id === 'topic-2'
+  })
+  return {
+    topics: Object.fromEntries(
+      visible.map(topic => [
+        topic.id,
+        { id: topic.id, name: topic.name, topic_type: topic.topic_type },
+      ]),
+    ),
+    page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
+  }
+}
 
 const postResults = [
   { id: 'post-1', title: 'My First Post', post_type: 'review' },
@@ -20,13 +69,11 @@ const urlResults = [
   { id: 'url-2', url: 'https://news.example.com/points' },
 ]
 
-export function storybookAutocompleteResponse(pathname: string): JsonBody | null {
-  if (pathname === '/api/v1/topics') {
-    return {
-      topics: Object.fromEntries(topicResults.map(topic => [topic.id, topic])),
-      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-    }
-  }
+export function storybookAutocompleteResponse(
+  pathname: string,
+  searchParams?: TopicSearchParams,
+): JsonBody | null {
+  if (pathname === '/api/v1/topics') return topicSearchBody(searchParams)
 
   if (pathname === '/api/v1/posts') {
     return {
@@ -57,7 +104,8 @@ export function createAutocompleteFetch(originalFetch: typeof fetch = fetch): ty
     const rawUrl =
       typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
     const url = new URL(rawUrl, window.location.origin)
-    const body = storybookAutocompleteResponse(url.pathname)
+    const searchParams = Object.fromEntries(url.searchParams.entries())
+    const body = storybookAutocompleteResponse(url.pathname, searchParams)
 
     if (body) {
       return new Response(JSON.stringify(body), {

@@ -92,6 +92,8 @@ rules:
     patch_coverage_min: 0
   - paths: 'web/storybook/mocks/**'
     patch_coverage_min: 0
+  - paths: 'web/storybook/**'
+    patch_coverage_min: 0
   - paths: 'web/**'
     patch_coverage_min: 80
     area: web

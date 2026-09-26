@@ -32,7 +32,13 @@ const KeyboardShortcutsDialog = dynamic<Parameters<typeof KeyboardShortcutsDialo
   () => import('@/components/keyboard-shortcuts-dialog').then(m => m.KeyboardShortcutsDialog),
 )
 
-export function Navbar({ profileMenuUser }: { profileMenuUser: ProfileMenuUser | null }) {
+export function Navbar({
+  onLoggedOut,
+  profileMenuUser,
+}: {
+  onLoggedOut?: () => void
+  profileMenuUser: ProfileMenuUser | null
+}) {
   // SidebarTrigger visibility is CSS-driven via the sidebar wrapper's data-state attribute so
   // there is no SSR/hydration flip. At >=md viewports with data-state="expanded", the trigger slot
   // animates to zero width so the Voucha logo slides into place instead of jumping.
@@ -48,6 +54,10 @@ export function Navbar({ profileMenuUser }: { profileMenuUser: ProfileMenuUser |
   const pathname = usePathname()
 
   async function handleLogout() {
+    if (onLoggedOut) {
+      onLoggedOut()
+      return
+    }
     try {
       await logout()
     } catch (error) {

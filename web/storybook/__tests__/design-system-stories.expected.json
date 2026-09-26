@@ -104,6 +104,7 @@
   "settings-layout.stories.tsx": ["PageHeader", "CommunitySettings"],
   "sheet.stories.tsx": ["Right", "Left"],
   "shell.stories.ts": ["WithAside"],
+  "sidebar.stories.tsx": ["Expanded"],
   "skeleton.stories.tsx": ["Skeleton", "Spinner"],
   "sonner.stories.tsx": ["Default"],
   "spending-categories-manager.stories.tsx": ["EmptyState", "WithItems"],

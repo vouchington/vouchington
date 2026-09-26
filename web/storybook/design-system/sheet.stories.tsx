@@ -5,10 +5,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
+  SheetOverlay,
+  SheetPortal,
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
@@ -50,9 +53,35 @@ export const Right: Story = {
           </div>
         </div>
         <SheetFooter>
-          <Button type='button'>Save changes</Button>
+          <SheetClose asChild>
+            <Button type='button'>Save changes</Button>
+          </SheetClose>
         </SheetFooter>
       </SheetContent>
+    </Sheet>
+  ),
+}
+
+export const ExplicitChrome: Story = {
+  render: () => (
+    <Sheet defaultOpen>
+      <SheetTrigger asChild>
+        <Button variant='outline'>Open sheet</Button>
+      </SheetTrigger>
+      <SheetPortal>
+        <SheetOverlay />
+        <SheetContent hideOverlay>
+          <SheetHeader>
+            <SheetTitle>Edit profile</SheetTitle>
+            <SheetDescription>Update the name shown on your profile.</SheetDescription>
+          </SheetHeader>
+          <SheetFooter>
+            <SheetClose asChild>
+              <Button type='button'>Done</Button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </SheetPortal>
     </Sheet>
   ),
 }
