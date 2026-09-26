@@ -5,14 +5,14 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestCommunityListItem,
-  insertTestTopic,
-  insertTestRssFeed,
+  insertTestUrlHostname,
+  insertTestUrl,
   createRandomString,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 
-describe('list-items-rss-feeds', () => {
+describe('list-items-urls', () => {
   let owner: PrivateUser
   let member: PrivateUser
   let community: Community
@@ -28,89 +28,54 @@ describe('list-items-rss-feeds', () => {
     ])
   })
 
-  async function createTestFeed(random: string): Promise<string> {
-    const rssTopic = await insertTestTopic({
-      name: `RSS Item Topic ${random}`,
-      slug: `rss-item-topic-${random}`,
-      createdById: owner.id,
-    })
-    return insertTestRssFeed({
-      topicId: rssTopic,
-      title: `RSS Item Feed ${random}`,
-    })
+  async function createTestUrlWithHostname(random: string): Promise<string> {
+    const hostnameId = await insertTestUrlHostname({ hostname: `url-item-${random}.example.com` })
+    return insertTestUrl({ url: `https://url-item-${random}.example.com/page`, hostnameId })
   }
 
-  describe('GET /api/v1/communities/:slug/list-items/rss-feeds', () => {
-    it('returns 200 with rss_feeds map', async () => {
-      const random = createRandomString(8)
-      const rssTopic = await insertTestTopic({
-        name: `RSS Route Topic ${random}`,
-        slug: `rss-route-topic-${random}`,
-        createdById: owner.id,
-      })
-      const feedId = await insertTestRssFeed({
-        topicId: rssTopic,
-        title: `RSS Route Feed ${random}`,
-      })
-      await insertTestCommunityListItem({
-        communityId: community.id,
-        itemType: 'rss_feed',
-        entityId: feedId,
-      })
-
-      const request = createRequest()
-      const response = await request
-        .get(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
-        .expect(200)
-
-      expect(response.body).toHaveProperty('rss_feeds')
-      expect(Array.isArray(response.body.results)).toBe(true)
-    })
-  })
-
-  describe('POST /api/v1/communities/:slug/list-items/rss-feeds', () => {
+  describe('POST /api/v1/communities/:slug/list-items/urls', () => {
     it('returns 401 without auth', async () => {
       const random = createRandomString(8)
-      const feedId = await createTestFeed(`post401${random}`)
+      const urlId = await createTestUrlWithHostname(`post401${random}`)
 
       const request = createRequest()
       await request
-        .post(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
+        .post(`/api/v1/communities/${community.slug}/list-items/urls`)
         .set('Content-Type', 'application/json')
-        .send({ rss_feed_id: feedId })
+        .send({ url_id: urlId })
         .expect(401)
     })
 
     it('returns 403 as non-moderator member', async () => {
       const random = createRandomString(8)
-      const feedId = await createTestFeed(`post403${random}`)
+      const urlId = await createTestUrlWithHostname(`post403${random}`)
 
       const request = createRequest()
       await request.authenticateAs(member)
 
       await request
-        .post(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
+        .post(`/api/v1/communities/${community.slug}/list-items/urls`)
         .set('Content-Type', 'application/json')
-        .send({ rss_feed_id: feedId })
+        .send({ url_id: urlId })
         .expect(403)
     })
 
     it('returns 201 and creates item as owner', async () => {
       const random = createRandomString(8)
-      const feedId = await createTestFeed(`post201${random}`)
+      const urlId = await createTestUrlWithHostname(`post201${random}`)
 
       const request = createRequest()
       await request.authenticateAs(owner)
 
       const response = await request
-        .post(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
+        .post(`/api/v1/communities/${community.slug}/list-items/urls`)
         .set('Content-Type', 'application/json')
-        .send({ rss_feed_id: feedId })
+        .send({ url_id: urlId })
         .expect(201)
 
       expect(response.body.community_list_item).toBeDefined()
-      expect(response.body.community_list_item.entity_id).toBe(feedId)
-      expect(response.body.community_list_item.item_type).toBe('rss_feed')
+      expect(response.body.community_list_item.entity_id).toBe(urlId)
+      expect(response.body.community_list_item.item_type).toBe('url')
     })
 
     it('returns 201 as moderator', async () => {
@@ -121,79 +86,79 @@ describe('list-items-rss-feeds', () => {
         userId: moderator.id,
         role: 'moderator',
       })
-      const feedId = await createTestFeed(`modpost${random}`)
+      const urlId = await createTestUrlWithHostname(`modpost${random}`)
 
       const request = createRequest()
       await request.authenticateAs(moderator)
 
       const response = await request
-        .post(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
+        .post(`/api/v1/communities/${community.slug}/list-items/urls`)
         .set('Content-Type', 'application/json')
-        .send({ rss_feed_id: feedId })
+        .send({ url_id: urlId })
         .expect(201)
 
-      expect(response.body.community_list_item.entity_id).toBe(feedId)
+      expect(response.body.community_list_item.entity_id).toBe(urlId)
     })
 
-    it('returns 422 when rss_feed_id is missing', async () => {
+    it('returns 422 when url_id is missing', async () => {
       const request = createRequest()
       await request.authenticateAs(owner)
 
       await request
-        .post(`/api/v1/communities/${community.slug}/list-items/rss-feeds`)
+        .post(`/api/v1/communities/${community.slug}/list-items/urls`)
         .set('Content-Type', 'application/json')
         .send({})
         .expect(422)
     })
   })
 
-  describe('DELETE /api/v1/communities/:slug/list-items/rss-feeds/:itemId', () => {
+  describe('DELETE /api/v1/communities/:slug/list-items/urls/:itemId', () => {
     it('returns 401 without auth', async () => {
       const random = createRandomString(8)
-      const feedId = await createTestFeed(`del401${random}`)
+      const urlId = await createTestUrlWithHostname(`del401${random}`)
       const item = await insertTestCommunityListItem({
         communityId: community.id,
-        itemType: 'rss_feed',
-        entityId: feedId,
+        itemType: 'url',
+        entityId: urlId,
       })
 
       const request = createRequest()
       await request
-        .delete(`/api/v1/communities/${community.slug}/list-items/rss-feeds/${item.id}`)
+        .delete(`/api/v1/communities/${community.slug}/list-items/urls/${item.id}`)
         .expect(401)
     })
 
     it('returns 403 as non-moderator member', async () => {
       const random = createRandomString(8)
-      const feedId = await createTestFeed(`del403${random}`)
+      const urlId = await createTestUrlWithHostname(`del403${random}`)
       const item = await insertTestCommunityListItem({
         communityId: community.id,
-        itemType: 'rss_feed',
-        entityId: feedId,
+        itemType: 'url',
+        entityId: urlId,
       })
 
       const request = createRequest()
       await request.authenticateAs(member)
 
       await request
-        .delete(`/api/v1/communities/${community.slug}/list-items/rss-feeds/${item.id}`)
+        .delete(`/api/v1/communities/${community.slug}/list-items/urls/${item.id}`)
         .expect(403)
     })
 
     it('returns 204 as owner', async () => {
       const random = createRandomString(8)
-      const feedId = await createTestFeed(`del204${random}`)
+      const urlId = await createTestUrlWithHostname(`del204${random}`)
       const item = await insertTestCommunityListItem({
         communityId: community.id,
-        itemType: 'rss_feed',
-        entityId: feedId,
+        itemType: 'url',
+        entityId: urlId,
       })
 
       const request = createRequest()
       await request.authenticateAs(owner)
 
       await request
-        .delete(`/api/v1/communities/${community.slug}/list-items/rss-feeds/${item.id}`)
+        .delete(`/api/v1/communities/${community.slug}/list-items/urls/${item.id}`)
         .expect(204)
     })
   })

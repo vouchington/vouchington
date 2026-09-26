@@ -5,7 +5,7 @@ import {
   currentUserCanManageCommunityPrompts,
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { getCommunityOrThrow } from './shared.mts'
 
@@ -27,6 +27,10 @@ app.route('/api/v1/communities/:idOrSlug/agent-prompts').post(async (ctx: Contex
     model_name?: string
     model_provider?: string
   }
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/agent-prompts', {
+    path: ctx.params,
+    body,
+  })
   ctx.assert(typeof body.prompt === 'string' && body.prompt, 422, 'prompt is required')
 
   const prompt = await createCommunityAgentPrompt(currentUser.id, community.id, {

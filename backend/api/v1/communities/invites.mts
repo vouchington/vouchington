@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   loadCommunityForModerator,
@@ -19,6 +19,9 @@ app
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/invites', {
+      path: ctx.params,
+    })
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
@@ -46,6 +49,10 @@ app
     const community = await getCommunityOrThrow(idOrSlug)
 
     const body = (await ctx.request.json('1mb')) as CreateInviteInput
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/invites', {
+      path: ctx.params,
+      body,
+    })
     const invite = await createInvite(currentUser.id, community.id, body)
 
     ctx.setStatus(201)
@@ -54,6 +61,9 @@ app
 
 app.route('/api/v1/communities/:idOrSlug/invites/:id').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/communities/:idOrSlug/invites/:id')
+  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/invites/:id', {
+    path: ctx.params,
+  })
 
   const { id } = ctx.params as { idOrSlug: string; id: string }
 
@@ -66,6 +76,7 @@ app.route('/api/v1/communities/invite-redemptions').post(async (ctx: Context) =>
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/invite-redemptions')
 
   const body = (await ctx.request.json('1mb')) as { code: string }
+  validateRequestContract(ctx, 'POST:/api/v1/communities/invite-redemptions', { body })
   ctx.assert(body.code, 422, 'code is required')
 
   const invite = await redeemInviteCode(currentUser.id, body.code)

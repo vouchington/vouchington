@@ -8,7 +8,7 @@ import type { ActiveModeratorConfig } from '@services/moderation/moderation-prom
 import { recordModerationTrainingFeedback } from '@services/moderation-training'
 import { getPromptTestTrainingLabel } from '@services/moderation-training/prompt-test-label'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { getCommunityOrThrow } from './shared.mts'
 
@@ -40,17 +40,12 @@ app
       expected_flagged?: boolean
       expected_reason?: string
     }
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
+      { path: ctx.params, body },
+    )
     ctx.assert(typeof body.text === 'string' && body.text, 422, 'text is required')
-    ctx.assert(
-      body.expected_flagged === undefined || typeof body.expected_flagged === 'boolean',
-      422,
-      'expected_flagged must be boolean',
-    )
-    ctx.assert(
-      body.expected_reason === undefined || typeof body.expected_reason === 'string',
-      422,
-      'expected_reason must be a string',
-    )
 
     const input = prepareModerationInput('', body.text)
     const config: ActiveModeratorConfig = {

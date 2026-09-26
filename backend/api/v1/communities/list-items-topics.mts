@@ -1,7 +1,11 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import createHttpError from 'http-errors'
-import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   loadCommunityForViewer,
@@ -25,6 +29,9 @@ app
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/list-items/topics', {
+      path: ctx.params,
+    })
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
@@ -76,6 +83,10 @@ app
     )
 
     const body = (await ctx.request.json('1mb')) as { topic_id: string }
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/list-items/topics', {
+      path: ctx.params,
+      body,
+    })
     ctx.assert(body.topic_id, 422, 'topic_id is required')
 
     const item = await addCommunityListItem(
@@ -109,6 +120,9 @@ app
       403,
       'Forbidden',
     )
+    validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/list-items/topics/:itemId', {
+      path: ctx.params,
+    })
 
     await removeCommunityListItem(currentUser.id, community.id, itemId, 'topic')
 

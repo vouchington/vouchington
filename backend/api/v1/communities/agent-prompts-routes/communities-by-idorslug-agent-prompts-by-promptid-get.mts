@@ -7,7 +7,7 @@ import {
   updateCommunityAgentPrompt,
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { getCommunityOrThrow } from './shared.mts'
 
@@ -28,6 +28,9 @@ app
       403,
       'Forbidden',
     )
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/agent-prompts/:promptId', {
+      path: ctx.params,
+    })
 
     const prompt = await getCommunityAgentPrompt(promptId)
     ctx.assert(prompt, 404, 'Prompt not found')
@@ -49,9 +52,10 @@ app
     ctx.assert(prompt.community_id === community.id, 404, 'Prompt not found')
 
     const body = (await ctx.request.json('1mb')) as { prompt?: string }
-    if (body.prompt !== undefined) {
-      ctx.assert(typeof body.prompt === 'string', 422, 'prompt must be a string')
-    }
+    validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/agent-prompts/:promptId', {
+      path: ctx.params,
+      body,
+    })
 
     const updated = await updateCommunityAgentPrompt(currentUser, promptId, {
       prompt: body.prompt,
@@ -71,6 +75,9 @@ app
     const prompt = await getCommunityAgentPrompt(promptId)
     ctx.assert(prompt, 404, 'Prompt not found')
     ctx.assert(prompt.community_id === community.id, 404, 'Prompt not found')
+    validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/agent-prompts/:promptId', {
+      path: ctx.params,
+    })
 
     await deleteCommunityAgentPrompt(currentUser, promptId)
 

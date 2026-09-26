@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   currentUserCanModerateCommunity,
   getCommunityMember,
@@ -24,6 +24,9 @@ app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx
   const membership = await getCommunityMember(community.id, currentUser.id)
 
   ctx.assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/automod/recent-actions', {
+    path: ctx.params,
+  })
 
   const { actions, hasNextPage, endCursor, stats } = await searchRecentAutomodActions(
     community.id,
@@ -72,6 +75,11 @@ app
       reason_code?: unknown
       note?: unknown
     }>(ctx)
+    validateRequestContract(
+      ctx,
+      'POST:/api/v1/communities/:idOrSlug/automod/recent-actions/:sourceKey/feedback',
+      { path: ctx.params, body },
+    )
     ctx.assert(isAutomodFeedbackOutcome(body.outcome), 422, 'Invalid outcome')
     ctx.assert(isAutomodFeedbackAction(body.action), 422, 'Invalid action')
     ctx.assert(
