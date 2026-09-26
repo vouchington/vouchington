@@ -1,6 +1,7 @@
 import {
   automodSimulation,
   communityDiscussion,
+  referralValidation,
   createdPost,
   imageUploadCompletion,
   imageUploadUrl,
@@ -98,6 +99,13 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/images/upload-url') return imageUploadUrl(body)
   if (/^\/api\/v1\/images\/[^/]+\/completions$/.test(endpoint))
     return imageUploadCompletion(endpoint)
+  if (endpoint.endsWith('/link-validations')) return {}
+  if (
+    endpoint.endsWith('/referral-program/validations') ||
+    endpoint === '/api/v1/referral-link-validations'
+  ) {
+    return referralValidation(body)
+  }
   if (endpoint.endsWith('/official-referral-links')) {
     return { official_referral_link: { id: 'official-link-story' } }
   }

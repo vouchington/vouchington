@@ -172,6 +172,17 @@ export function imageUploadCompletion(endpoint: string): unknown {
   }
 }
 
+export function referralValidation(body: unknown): unknown {
+  return {
+    validation: {
+      id: 'validation-story',
+      slug: storyText(body, 'slug') || 'validation-story',
+      user_help_text: storyText(body, 'user_help_text'),
+      updated_at: storyMutationAt,
+    },
+  }
+}
+
 export function automodSimulation(body: unknown): unknown {
   return {
     simulation: {

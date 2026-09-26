@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ValidationForm } from '@/components/admin/referral-link-validations/validation-form'
+import {
+  clearStoryMutationFixture,
+  setStoryMutationFixture,
+} from '@/storybook/mocks/story-mutation-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { ReferralLinkValidation } from '@/lib/api/client/referral-link-validations'
 
@@ -15,6 +19,10 @@ const basePath = '/referral-program/amex-referrals/validations'
 
 const meta = {
   title: 'Admin/Validation Form',
+  beforeEach() {
+    setStoryMutationFixture()
+    return () => clearStoryMutationFixture()
+  },
 } satisfies Meta
 
 export default meta
