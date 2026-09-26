@@ -18,24 +18,14 @@ The main-branch fix template is [fix-main.md](automation/fix-main.md). Scheduled
 Scheduled prompt references include [supply-chain security](scheduled/supply-chain-security.md)
 and [UI internationalization](scheduled/ui-internationalization.md).
 
-These templates are Vitest fixtures, not docs-only markdown. Two independent mechanisms cover
-them: `TEST_FIXTURE_DOCS` in
+These templates are Vitest fixtures, not docs-only markdown. `TEST_FIXTURE_DOCS` in
 [`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) keeps a pull request that
 touches any markdown file under this whole tree (`docs/prompts/.+\.mdx?`) from being
-misclassified `docs-only`, which would otherwise skip `select-ci` and `test-tooling` outright; and
-the `tooling` group in
-[`ci-path-filters.yml`](../../.github/ci-path-filters.yml) covers all of `docs/prompts/**` so CI
-dispatches the `tooling` job for any change under this directory. Neither mechanism is
-test-selection coverage on its own. Coverage for Vitest tests that read these templates at
-runtime — regardless of how they read the file (`readFileSync` with a literal path, a wrapped
-`read(path)` helper, or a template-literal/`resolve()`-built path) — comes from
-`.no-mistakes.yml`'s `automation-prompt-docs` named `fullSuiteTriggers` entry
-(`test_plan.vitest.fullSuiteTriggers.triggers`), which force-selects the `github-actions`,
-`ci-tools`, and `dev-tools` Vitest projects whenever a `docs/prompts/**` path changes. A
-literal-path `readFileSync` call can still narrow `no-mistakes`'s single-file dependency-graph
-planning locally, but it does not by itself guarantee CI coverage — see
-[reference-ci-vitest-ci-selection.md](../development/reference-ci-vitest-ci-selection.md) for the
-full mechanism.
+misclassified `docs-only`, which would otherwise skip `test-tooling` outright; and the `tooling`
+group in [`ci-path-filters.yml`](../../.github/ci-path-filters.yml) covers all of `docs/prompts/**`,
+so CI runs the full `test-tooling` suite (the `github-actions`, `ci-tools`, and `dev-tools` Vitest
+projects) for any change under this directory. See
+[area test suites](../development/ci.md#area-test-suites).
 
 ## Agent-Authored PR Feedback Loop
 

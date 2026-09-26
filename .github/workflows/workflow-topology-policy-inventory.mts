@@ -11,10 +11,9 @@ export const jobInventory = {
   ),
   '.github/workflows/checks-backend-smoke.yml': jobs('smoke'),
   '.github/workflows/ci.yml': jobs(
-    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test select-ci static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing upload-codecov',
+    'backend-smoke build build-backend build-web detect-changes initialize-smoke-test static-backend static-cloudflare-worker static-code-analysis static-lambdas static-web storybook test-backend-credentialed test-backend-modules test-backend-unit test-cloudflare-worker test-coverage test-explain-analyze test-lambdas test-playwright test-playwright-credentialed test-portability test-postgres-schema test-tooling test-ts-shared test-web test-web-api test-web-integration tests tests-processing upload-codecov',
   ),
   '.github/workflows/ci-detect-changes.yml': jobs('detect-changes'),
-  '.github/workflows/ci-select-vitest.yml': jobs('select-ci'),
   '.github/workflows/ci-test-coverage.yml': jobs('test-coverage'),
   '.github/workflows/ci-upload-codecov.yml': jobs('upload-codecov'),
   '.github/workflows/ci-tests-processing.yml': jobs('tests-processing'),
@@ -65,7 +64,7 @@ export const jobInventory = {
   '.github/workflows/tests-cloudflare-worker.yml': jobs('cloudflare-worker-tests'),
   '.github/workflows/tests-lambdas.yml': jobs('lambdas-tests'),
   '.github/workflows/tests-playwright-credentialed.yml': jobs('playwright-credentialed-tests'),
-  '.github/workflows/tests-playwright.yml': jobs('playwright-tests select'),
+  '.github/workflows/tests-playwright.yml': jobs('playwright-tests shards'),
   '.github/workflows/tests-portability.yml': jobs('portability-linux portability-macos'),
   '.github/workflows/tests-postgres-schema.yml': jobs('postgres-schema-tests'),
   '.github/workflows/tests-tooling.yml': jobs('i18n-route-bounds tooling'),
@@ -77,7 +76,6 @@ export const jobInventory = {
 
 export const unlockedWorkflowReasons = {
   '.github/workflows/ci-detect-changes.yml': 'short-lived read-only CI classification',
-  '.github/workflows/ci-select-vitest.yml': 'short-lived read-only test selection',
   '.github/workflows/ci-test-coverage.yml': 'short-lived coverage report evaluation',
   '.github/workflows/ci-upload-codecov.yml': 'independent informational coverage upload',
   '.github/workflows/checks-backend-smoke.yml': 'parallel-safe idempotent manual tests',

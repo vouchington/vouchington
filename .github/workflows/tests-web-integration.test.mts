@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
@@ -11,11 +10,9 @@ describe('web integration workflow', () => {
 
   it('keeps full-stack setup while sharding only the web-integration project', () => {
     const workflow = readFileSync('.github/workflows/tests-web-integration.yml', 'utf8')
-    const manualInputs = workflow.slice(workflow.indexOf('workflow_dispatch:'))
 
     expect(workflow).toContain('node ci/vitest/shard-total.mts test-web-integration')
     expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
-    expect(manualInputs).toContain("description: 'Explicit shard count for a selected run'")
     expect(workflow).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(workflow).toContain('runs-on: ubuntu-latest')
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
@@ -42,30 +39,5 @@ describe('web integration workflow', () => {
     expect(readFileSync('.github/workflows/ci.yml', 'utf8')).toContain(
       "shared_build_available: ${{ needs.static-web.result == 'success' }}",
     )
-  })
-
-  it('preserves a narrowed selection as newline-delimited positional arguments', () => {
-    const workflow = readFileSync('.github/workflows/tests-web-integration.yml', 'utf8')
-    const script = workflow
-      .split('      - name: Run web integration tests')[1]
-      ?.split('\n      - name: Download coverage')[0]
-    expect(script).toBeTypeOf('string')
-    const prefix = script?.slice(
-      0,
-      script.indexOf('pnpm exec ./ci/with-node-test-options vitest run'),
-    )
-    const result = spawnSync('bash', ['-c', `${prefix}printf '%s\\n' "\${FILES[@]}"`], {
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        FULL_SUITE: 'false',
-        SELECTED_TEST_FILES: 'web/foo.test.mts\nweb/space path.test.mts',
-      },
-    })
-    expect(result.status).toBe(0)
-    expect(result.stdout.split('\n').filter(Boolean)).toEqual([
-      'web/foo.test.mts',
-      'web/space path.test.mts',
-    ])
   })
 })

@@ -57,19 +57,3 @@ audit above); when the name does not resolve at all, do not defer to it — reco
 recommendation scoped to this repository instead.
 
 If no safe code change is justified, leave the workspace clean and report the owning PR, issue, or catalogued transient with evidence. If multiple materially different approaches remain, stop with `## Problem`, `## Options`, and `## Recommendation` instead of guessing.
-
-## Vitest PR-selection miss investigation
-
-If the failing workflow is a Vitest job, check whether the pull request that most recently merged
-the failing test or the code it covers ran that test under PR-time selection (`select-ci` /
-`ci/vitest/ci-select.mts`; see [Vitest CI Selection](../../development/ci.md#vitest-ci-selection)).
-Selection runs only on pull requests and fails open to the full suite on an error, so a selection
-miss means the planner completed but incorrectly decided the affected test was unrelated.
-
-When selection let the regression reach `main`, fix both the immediate breakage and the miss in the
-same proposed PR. Repair repository-owned configuration, `PROJECT_TO_JOB` routing, or selector logic
-directly and add a focused regression test. If the missing relationship belongs in `no-mistakes`, do
-not patch that external engine here: include a minimal reproduction (changed file,
-expected-but-unselected test, and missing edge type) as an explicit untracked follow-up in
-`## Root cause` and `## Follow-ups`. Skip this investigation when selection did choose the test or
-the failure is unrelated to PR-time selection.

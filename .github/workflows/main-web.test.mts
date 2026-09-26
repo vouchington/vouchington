@@ -15,13 +15,6 @@ function jobSection(workflow: string, jobName: string): string {
 }
 
 describe('main-web workflow', () => {
-  it('leaves the main Playwright suite on the shared hosted-calibrated shard formula', () => {
-    const playwrightTests = jobSection(mainWeb, 'playwright-tests')
-
-    expect(playwrightTests).toContain('uses: ./.github/workflows/tests-playwright.yml')
-    expect(playwrightTests).not.toContain('shard_total_override')
-  })
-
   it('fans out web unit, API, integration, and Playwright test stages directly from static-checks', () => {
     for (const job of [
       'test-web',

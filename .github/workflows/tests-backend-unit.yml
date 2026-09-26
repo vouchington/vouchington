@@ -16,41 +16,13 @@ on:
         required: false
         type: boolean
         default: false
-      full_suite:
-        description: 'Run every shard with no test-file narrowing (default for main and workflow_dispatch)'
-        required: false
-        type: boolean
-        default: true
-      run_tests:
-        description: 'Run Vitest in the backend-unit shard runner'
-        type: boolean
-        default: true
-      shard_total_override:
-        description: 'Explicit shard count for a selected run'
-        required: false
-        type: string
-        default: ''
-      selected_test_files:
-        description: 'Newline-delimited selected test files (vouchington-tooling/gha-selected-files) to run instead of the full project set when full_suite is false'
-        required: false
-        type: string
-        default: ''
   workflow_dispatch:
     inputs:
-      run_tests:
-        description: 'Run Vitest in the backend-unit shard runner'
-        type: boolean
-        default: true
       upload_vitest_blob_artifact:
         description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
         required: false
         type: boolean
         default: false
-      shard_total_override:
-        description: 'Explicit shard count for a selected run'
-        required: false
-        type: string
-        default: ''
 
 permissions:
   contents: read
@@ -73,18 +45,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        if: ${{ inputs.shard_total_override != '' }}
-        with:
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
       - uses: ./.github/actions/setup-node-pnpm
-        if: ${{ inputs.shard_total_override == '' }}
         timeout-minutes: 5
       - name: Resolve backend-unit shard total
         id: shard-total
         env:
-          SHARD_TOTAL_OVERRIDE: ${{ inputs.shard_total_override }}
           FILES_PER_SHARD_OVERRIDE: ${{ vars.TEST_BACKEND_UNIT_FILES_PER_SHARD }}
         run: node ci/vitest/shard-total.mts test-backend-unit
       - uses: ./.github/actions/make-shard-matrix
@@ -149,7 +114,6 @@ jobs:
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
       - name: Run backend tests
-        if: ${{ inputs.run_tests }}
         env:
           GIT_COMMIT: ${{ github.sha }}
           IMAGE_ORIGIN: http://127.0.0.1:3100
@@ -160,30 +124,7 @@ jobs:
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
           VITEST_BLOB_OUTPUT_FILE: .vitest-reports/backend-shard-${{ matrix.shard }}.json
           VITEST_FORK_DIAGNOSTIC_DIR: .vitest-reports/fork-diagnostics-${{ matrix.shard }}
-          FULL_SUITE: ${{ inputs.full_suite }}
-          SELECTED_TEST_FILES: ${{ inputs.selected_test_files }}
-        run: |
-          # A GHA `cond && a || b` ternary silently discards a falsy `a` (e.g. '') and
-          # falls through to `b` — that construct previously ran full_suite pushes with
-          # zero selected files. See the co-located `tests-backend-unit.test.mts` for
-          # the regression test pinning this bash conditional's behavior.
-          #
-          # SELECTED_TEST_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
-          # encodeSelectedFiles). A quoted read loop plus a quoted array expansion below
-          # preserve paths containing spaces or shell glob metacharacters, replacing the
-          # previous unquoted $VAR word-splitting/glob-expansion. This avoids `mapfile`
-          # (bash 4.0+) to stay portable to macOS `/bin/bash` 3.2.
-          FILES=()
-          if [ "${FULL_SUITE:-true}" != "true" ]; then
-            if [ -z "$SELECTED_TEST_FILES" ]; then
-              FILES=("NO_TESTS_MATCHING_SELECTION")
-            else
-              while IFS= read -r file; do
-                if [ -n "$file" ]; then FILES+=("$file"); fi
-              done <<< "$SELECTED_TEST_FILES"
-            fi
-          fi
-          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"
+        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
@@ -207,7 +148,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV for Codecov
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
           if [ -f coverage/lcov.info ]; then
@@ -217,7 +158,7 @@ jobs:
       - name: Stamp backend-shard-${{ matrix.shard }} coverage provenance
         id: coverage-stamp-1
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -225,7 +166,7 @@ jobs:
         run: node ci/coverage-manifest.mts patch "backend-shard-${{ matrix.shard }}" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
       - name: Upload backend-shard-${{ matrix.shard }} vitest blob to GitHub (fallback)
         id: vitest-blob-fallback-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -233,7 +174,7 @@ jobs:
           suite: backend-shard-${{ matrix.shard }}
       - name: Upload backend-shard-${{ matrix.shard }} vitest blob to GitHub (fallback attempt 2)
         id: vitest-blob-fallback-1-retry
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
         timeout-minutes: 3
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -242,7 +183,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted backend-shard-${{ matrix.shard }} vitest blob
         id: vitest-blob-outcome-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-blob
@@ -252,7 +193,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Persist backend-shard-${{ matrix.shard }} Vitest report attempt (attempt 1)
         id: vitest-report-attempt-1
-        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-report-attempt
@@ -260,7 +201,7 @@ jobs:
           suite: backend-shard-${{ matrix.shard }}
       - name: Persist backend-shard-${{ matrix.shard }} Vitest report attempt (attempt 2)
         id: vitest-report-attempt-1-retry
-        if: ${{ always() && inputs.run_tests && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
+        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-report-attempt
@@ -269,7 +210,7 @@ jobs:
           name-suffix: -retry
       - name: Assert backend-shard-${{ matrix.shard }} Vitest report attempt persisted
         id: vitest-report-attempt-1-outcome
-        if: ${{ !cancelled() && inputs.run_tests && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-report-attempt
@@ -279,7 +220,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload backend-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -287,7 +228,7 @@ jobs:
           suite: backend-shard-${{ matrix.shard }}
       - name: Upload backend-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -296,7 +237,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted backend-shard-${{ matrix.shard }} coverage pair
         id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -305,7 +246,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.run_tests && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-1.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov

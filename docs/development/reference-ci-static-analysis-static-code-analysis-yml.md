@@ -32,10 +32,9 @@ CI is the only always-on static-analysis matrix. Workspace typecheck and depende
 
 The root `pnpm run no-mistakes` script is the canonical local full-check entrypoint. Its command
 execution deadline remains 60 seconds and no-mistakes' separate default lock-wait timeout remains
-30 seconds. CI has exactly three production CLI invocations: the static-analysis full check plus the
-centralized Vitest and Playwright selectors. All three disable both no-mistakes' execution deadline
-and its machine-wide lock-wait deadline. Route-selector `--check` is a fourth production consumer
-through the Node `analyzeProject` API. The `no-mistakes` job starts in parallel with the
+30 seconds. CI has exactly one production CLI invocation, the static-analysis full check, which
+disables both no-mistakes' execution deadline and its machine-wide lock-wait deadline.
+Route-selector `--check` is a second production consumer through the Node `analyzeProject` API. The `no-mistakes` job starts in parallel with the
 `static-code-analysis` job; its CLI and route-selector checks share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
 Separate hosted jobs have isolated workspaces, so there is no cross-PR job queue; the
 workflow-level concurrency still cancels a superseded PR run. Both concrete jobs have 30-minute

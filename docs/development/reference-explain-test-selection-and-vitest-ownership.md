@@ -14,18 +14,26 @@ pnpm exec no-mistakes tests why backend/api/v1/admin/article-syncs.test.mts --pl
 pnpm exec no-mistakes tests targets vitest backend/api/v1/admin/article-syncs.test.mts --format commands
 ```
 
-CI invokes no-mistakes only for the static-analysis full check and the centralized Vitest and
-Playwright selectors. Those production invocations disable execution and machine-wide lock-wait
-deadlines so they serialize on no-mistakes' shared lock; existing job timeouts remain global safety
+The planner is a local diagnostic: CI never selects individual test files and instead runs the full
+suite of each touched area ([area test suites](ci.md#area-test-suites)). CI invokes no-mistakes
+only for the static-analysis full check, which disables execution and machine-wide lock-wait
+deadlines so it serializes on no-mistakes' shared lock; existing job timeouts remain global safety
 backstops.
-The two tooling tests that execute the real Vitest and Playwright planner are skipped when
-`CI=true` to avoid competing for that lock, while mocked adapter, configuration, and source
-assertions continue to run. Run those two integration cases locally with their bounded Vitest
-harness when changing planner behavior.
 
-When the plan produces many exact web test paths, preserve that selection with the
-[large exact-file manifest recipe](reference-project-name-reference.md#large-exact-file-manifests) instead of turning the paths into a
-glob or an unquoted string.
+<a id="traceable-vitest-setup-files"></a>The planner traces Vitest `setupFiles` and `globalSetup`
+entries as dependency edges only when each entry is a plain literal relative path, or an
+identifier bound to one. A `CallExpression` such as `resolve(process.cwd(), ...)` sets
+`fallback_triggered` for every project sharing that `vitest.config.mts` and lists all of their
+tests under a `Vitest setup fallback` reason, which makes the plan useless for impact discovery.
+no-mistakes resolves a `setupFiles` literal relative to the repository root, while Vitest resolves
+it relative to the project's own `root:`. `web-storybook-browser` overrides `root: 'web'`, so its
+literals resolve through one-line redirect shims:
+
+- `vitest.config.mts`'s root fake-timer guard resolves for that project to
+  `web/test-helpers/vitest.setup.fake-timer-guard.mts`.
+- Its own Storybook setup literal resolves to `test-helpers/vitest.setup.storybook-browser-guard.mts`
+  for no-mistakes and to `web/test-helpers/vitest.setup.storybook-browser-guard.mts` for Vitest.
+  Both re-export `web/.storybook/vitest.setup.ts`.
 
 For this example, `targets` resolves the test to `vitest.config.mts` project
 `backend-data-stores`. Interpret the plan as follows:

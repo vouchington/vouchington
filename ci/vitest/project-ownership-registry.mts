@@ -1,7 +1,7 @@
 // Derived collections over ci/vitest/project-ownership.mts's raw VITEST_OWNERSHIP data —
 // mirrors the tooling-project-policies.mts / tooling-project-registry.mts split. Consume these
-// instead of walking VITEST_OWNERSHIP directly so ci-select.mts (and any future consumer) reads
-// one computed shape per concern rather than re-deriving it ad hoc.
+// instead of walking VITEST_OWNERSHIP directly so each consumer reads one computed shape per
+// concern rather than re-deriving it ad hoc.
 import { VITEST_OWNERSHIP } from './project-ownership.mts'
 import type { VitestShardPolicy } from './project-ownership-types.mts'
 
@@ -30,16 +30,8 @@ export const projectToJob = memoize((): Record<string, string> => {
   return map
 })
 
-export const shardedJobs = memoize((): string[] => {
-  const jobs: string[] = []
-  for (const job of VITEST_OWNERSHIP) {
-    if (job.sharding !== undefined) jobs.push(job.orchestratorJob)
-  }
-  return jobs
-})
-
-// Per-job sharding policy derived from the ownership registry. This makes a missing selection,
-// matrix, or report configuration an invalid model state rather than an ad-hoc workflow default.
+// Per-job sharding policy derived from the ownership registry. This makes a missing matrix or
+// report configuration an invalid model state rather than an ad-hoc workflow default.
 export const shardedJobPolicies = memoize((): Readonly<Record<string, VitestShardPolicy>> => {
   const policies: Record<string, VitestShardPolicy> = {}
   for (const job of VITEST_OWNERSHIP) {
@@ -48,29 +40,3 @@ export const shardedJobPolicies = memoize((): Readonly<Record<string, VitestShar
   }
   return policies
 })
-
-export const sideDutyJobs = memoize((): Set<string> => {
-  const jobs = new Set<string>()
-  for (const job of VITEST_OWNERSHIP) {
-    if (job.sideDuty) jobs.add(job.orchestratorJob)
-  }
-  return jobs
-})
-
-export const storybookJob = memoize((): string => {
-  const job = VITEST_OWNERSHIP.find(candidate => candidate.invocation === 'storybook')
-  if (!job) throw new Error('No job with invocation "storybook" is registered')
-  return job.orchestratorJob
-})
-
-export const storybookBrowserProject = memoize((): string => {
-  for (const job of VITEST_OWNERSHIP) {
-    const browserProject = job.projects.find(project => project.browserRunner)
-    if (browserProject) return browserProject.project
-  }
-  throw new Error('No project is flagged browserRunner')
-})
-
-export const allOwnedProjects = memoize((): string[] =>
-  VITEST_OWNERSHIP.flatMap(job => job.projects.map(project => project.project)),
-)

@@ -9,12 +9,6 @@ import {
   renderJobsInventoryDoc,
   writeJobsInventoryDoc,
 } from './render-workflow-runner-inventory.mts'
-import { PROJECT_TO_JOB } from './vitest/ci-select.mts'
-import {
-  CI_WORKFLOW_PATH,
-  routeCiTopologyImpact,
-  TOPOLOGY_ROOT_JOB_IDS,
-} from './workflow-topology-impact.mts'
 import { makeCallEdge, makeJob, makeTopology } from './workflow-topology-test-fixtures.mts'
 
 const FIXTURE = [
@@ -71,31 +65,6 @@ describe('workflow job & runner inventory', () => {
       await expect(renderJobsInventoryDoc('# No markers here\n', topology)).rejects.toThrow(
         /BEGIN GENERATED: workflow-job-runner-inventory/,
       )
-    })
-
-    it('is selected when a bounded topology report maps a workflow change to ci-tools', () => {
-      const owningJob = PROJECT_TO_JOB['ci-tools']
-      expect(owningJob).toBeDefined()
-      const rootJobId = `${CI_WORKFLOW_PATH}#${owningJob}`
-      expect(
-        routeCiTopologyImpact(
-          {
-            schemaVersion: 1,
-            baseRevision: 'base',
-            headRevision: 'head',
-            changedPaths: ['.github/workflows/actionlint.yml'],
-            affectedWorkflows: ['.github/workflows/actionlint.yml'],
-            affectedRootJobIds: [rootJobId],
-            diagnostics: [],
-            globalFallback: false,
-          },
-          {
-            input: { base: 'base', head: 'head', entryWorkflow: CI_WORKFLOW_PATH },
-            changedPaths: ['.github/workflows/actionlint.yml'],
-            knownRootJobIds: TOPOLOGY_ROOT_JOB_IDS,
-          },
-        ).affectedRootJobIds,
-      ).toEqual(new Set([rootJobId]))
     })
 
     it('renders a matrix-template job as kind "matrix"', async () => {

@@ -80,7 +80,7 @@ caps failure diagnostics at 4 KiB.
 - Dependencies: depth one, `import` and `workspace` relationships
 - Dependents: depth one, `import` and `workspace` relationships
 - Symbols: imports and exports for every changed source
-- Vitest plan: `prePush` selection for the same changed-file manifest
+- Vitest plan: graph-traced test reasons for the same changed-file manifest
 
 Run these reports together through the private-artifact contract above. The default relationship
 scope avoids constructing unrelated Markdown, CI, route, queue, and native edges for structural
@@ -92,7 +92,8 @@ the matching stderr artifact; do not drop the repository tsconfig as a workaroun
 
 The aggregate driver produces `plan.json` from the same manifest and prepared analysis as the
 structural reports. Summarize selected test commands and warnings rather than ingesting the complete
-plan. Use single-file analysis only after the initial aggregate batch has completed, and pass
+plan. Validation runs the full suites of the touched areas, as CI does. Use single-file analysis
+only after the initial aggregate batch has completed, and pass
 `--plan "$impact_dir/plan.json"` to the explanation command through the same artifact boundary:
 
 ```bash

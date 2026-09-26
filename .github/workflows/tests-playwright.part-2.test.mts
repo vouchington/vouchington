@@ -14,7 +14,7 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 // Split out of tests-playwright.test.mts to stay under the oxlint max-lines cap. Covers the
-// "Run Playwright tests" step's PW_FILES decode/quoting behavior specifically.
+// "Run Playwright tests" step's shard invocation and retry signal specifically.
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
   jobs?: Record<string, { steps?: Array<{ id?: string; name?: string; run?: string }> }>
@@ -27,16 +27,15 @@ const runPlaywrightTestsScript = parsedWorkflow.jobs?.['playwright-tests']?.step
 // which GitHub Actions substitutes before the shell ever sees the script — but which
 // are not valid bash syntax on their own (bash parses `${{` as a bad substitution).
 // Replacing every `${{ ... }}` token with a literal is safe for this test because it
-// only exercises the PW_FILES decode/quoting logic, not the shard arithmetic itself.
+// only exercises the shell script, not the shard arithmetic itself.
 function playwrightRunScript(): string {
   expect(runPlaywrightTestsScript).toBeTypeOf('string')
   return (runPlaywrightTestsScript ?? '').replaceAll(/\$\{\{[^}]*\}\}/g, '1')
 }
 
-// Stubs `pnpm` on PATH to capture the argv it would have received (NUL-delimited, so
-// selected paths containing spaces or newlines round-trip exactly) instead of actually
-// invoking Playwright.
-function runPlaywrightPnpmArgs(env: { PW_FULL_SUITE: string; PW_FILES: string }): string[] {
+// Stubs `pnpm` on PATH to capture the argv it would have received (NUL-delimited) instead
+// of actually invoking Playwright.
+function runPlaywrightPnpmArgs(env: { CI_SHARD: string }): string[] {
   const directory = mkdtempSync(join(tmpdir(), 'run-playwright-tests-'))
   const argsPath = join(directory, 'pnpm-args')
   const pnpmStubPath = join(directory, 'pnpm')
@@ -78,8 +77,7 @@ function runPlaywrightTestsStep({
     cwd,
     env: {
       ...process.env,
-      PW_FULL_SUITE: 'true',
-      PW_FILES: '',
+      CI_SHARD: '1/1',
       GITHUB_OUTPUT: githubOutputPath,
       PATH: `${cwd}:${process.env['PATH'] ?? ''}`,
     },
@@ -109,64 +107,15 @@ describe('tests-playwright.yml retry/flake signal (issue #51)', () => {
   })
 })
 
-describe('tests-playwright.yml PW_FILES selection', () => {
-  it('runs unfiltered when full-suite, ignoring any stray PW_FILES value', () => {
-    const args = runPlaywrightPnpmArgs({ PW_FULL_SUITE: 'true', PW_FILES: '' })
+describe('tests-playwright.yml shard invocation', () => {
+  it('runs the whole suite for the matrix shard', () => {
+    const args = runPlaywrightPnpmArgs({ CI_SHARD: '2/6' })
     expect(args).toEqual([
       'exec',
       './ci/with-node-test-options',
       'playwright',
       'test',
-      '--shard=1/1',
-    ])
-  })
-
-  it('runs unfiltered when PW_FILES is empty even if full-suite is false (fail-open)', () => {
-    const args = runPlaywrightPnpmArgs({ PW_FULL_SUITE: 'false', PW_FILES: '' })
-    expect(args).toEqual([
-      'exec',
-      './ci/with-node-test-options',
-      'playwright',
-      'test',
-      '--shard=1/1',
-    ])
-  })
-
-  it('passes through an explicit narrowed selection as positional args before the shard flag', () => {
-    const args = runPlaywrightPnpmArgs({
-      PW_FULL_SUITE: 'false',
-      PW_FILES: 'playwright/tests/foo.spec.mts\nplaywright/tests/bar.spec.mts',
-    })
-    expect(args).toEqual([
-      'exec',
-      './ci/with-node-test-options',
-      'playwright',
-      'test',
-      'playwright/tests/foo.spec.mts',
-      'playwright/tests/bar.spec.mts',
-      '--shard=1/1',
-    ])
-  })
-
-  it('preserves selected file paths containing spaces or shell glob metacharacters', () => {
-    // PW_FILES is newline-delimited (vouchington-tooling/gha-selected-files's encodeSelectedFiles);
-    // a space or a glob metacharacter (*, ?, [) inside a single path must survive the
-    // quoted read-loop decode unchanged, not be word-split or glob-expanded the way an
-    // unquoted $PW_FILES previously was.
-    const args = runPlaywrightPnpmArgs({
-      PW_FULL_SUITE: 'false',
-      PW_FILES:
-        'playwright/tests/[id]/foo.spec.mts\nplaywright/tests/needs space/bar.spec.mts\nplaywright/tests/glob-*-star.spec.mts',
-    })
-    expect(args).toEqual([
-      'exec',
-      './ci/with-node-test-options',
-      'playwright',
-      'test',
-      'playwright/tests/[id]/foo.spec.mts',
-      'playwright/tests/needs space/bar.spec.mts',
-      'playwright/tests/glob-*-star.spec.mts',
-      '--shard=1/1',
+      '--shard=2/6',
     ])
   })
 

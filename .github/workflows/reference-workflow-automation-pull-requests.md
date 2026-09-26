@@ -2,13 +2,14 @@
 
 [Back to Workflow automation map](reference-workflow-automation-map.md) · [Back to Workflow Reference](README.md)
 
-`ci.yml` orchestrates pull requests and merge groups. Every gated job needs `detect-changes` and
-`select-ci`, and `static-code-analysis` gates all of them plus both Docker validation builds
-(`backend-smoke` through `static-backend`), so those edges are drawn once to the group. Its reusable
-workflow runs the `no-mistakes` job in parallel with the static checks. Docs-only changes skip the
-gated jobs. `select-ci` can skip, shard, or narrow a job on a pull request and selects the full
-suite for merge groups. No test or Docker build waits on another test: each starts once its static
-gates pass or intentionally skip, and both Playwright suites wait on all four area static checks.
+`ci.yml` orchestrates pull requests and merge groups. Every gated job needs `detect-changes`, and
+`static-code-analysis` gates all of them plus both Docker validation builds (`backend-smoke` through
+`static-backend`), so those edges are drawn once to the group. Its reusable workflow runs the
+`no-mistakes` job in parallel with the static checks. Docs-only changes skip the gated jobs.
+`detect-changes` path filters decide which jobs start, each started job runs its full suite, and
+merge groups start every Vitest job. No test or Docker build waits on another test: each starts
+once its static gates pass or intentionally skip, and both Playwright suites wait on all four area
+static checks.
 See the semantic CI DAG in [CLAUDE.md](CLAUDE.md). For the exact job graph, run
 `pnpm run ci:topology --format mermaid --workflow .github/workflows/ci.yml`.
 
@@ -19,7 +20,6 @@ flowchart TD
     pr-trigger --> label-pr["label-pr<br/>(PR labeling; pull requests only)"]
     ci --> detect-changes["detect-changes"]
     detect-changes --> static-code-analysis["static-code-analysis<br/>(cross-repo lint + policy; no-mistakes in parallel)"]
-    detect-changes --> select-ci["select-ci<br/>(PR selection; full suite for merge groups)"]
 
     subgraph gated["Gated jobs"]
         static-backend["static-backend<br/>(area static)"]
@@ -41,10 +41,10 @@ flowchart TD
     end
 
     static-code-analysis --> gated
-    select-ci -. "skip / shard / narrow" .-> gated
+    detect-changes -. "area path filters" .-> gated
     static-backend -- "trusted secrets, image changes" --> build-backend["build-backend<br/>(api + worker images)"]
     static-web -- "trusted secrets, image changes" --> build-web["build-web<br/>(web image)"]
-    select-ci -. "full-ci / run-build-*" .-> build-backend & build-web
+    detect-changes -. "image path filters" .-> build-backend & build-web
     gated -- "Vitest, Storybook, tooling, portability" --> test-coverage["test-coverage<br/>(Patch Coverage gate)"]
     gated -. "pull requests only" .-> upload-codecov["upload-codecov<br/>(OIDC; informational)"]
     gated -- "directly or through test-coverage" --> tests-processing["tests-processing<br/>(report merge + fan-in)"]

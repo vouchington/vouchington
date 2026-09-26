@@ -1,13 +1,8 @@
-import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 const workflow = readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')
 const stepsWorkflow = load(workflow) as {
-  on?: {
-    workflow_call?: { inputs?: Record<string, { default?: boolean | string; type?: string }> }
-    workflow_dispatch?: { inputs?: Record<string, { default?: boolean | string; type?: string }> }
-  }
   jobs?: Record<
     string,
     {
@@ -18,26 +13,6 @@ const stepsWorkflow = load(workflow) as {
 const runBackendTestsScript = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
   step => step.name === 'Run backend tests',
 )?.run
-// Isolates the FILES-array-computation prefix of the "Run backend tests" step
-// (everything before the `pnpm exec ... vitest run` invocation) so it can be exercised
-// directly, without actually running Vitest.
-function filesArrayScript(): string {
-  expect(runBackendTestsScript).toBeTypeOf('string')
-  const script = runBackendTestsScript ?? ''
-  const pnpmLineIndex = script.indexOf('pnpm exec ./ci/with-node-test-options vitest run')
-  expect(pnpmLineIndex).toBeGreaterThan(0)
-  return script.slice(0, pnpmLineIndex)
-}
-
-function runFilesArray(env: { FULL_SUITE: string; SELECTED_TEST_FILES: string }): string[] {
-  const script = `${filesArrayScript()}printf '%s\\n' "\${FILES[@]}"`
-  const result = spawnSync('bash', ['-c', script], {
-    encoding: 'utf8',
-    env: { ...process.env, ...env },
-  })
-  expect(result.status).toBe(0)
-  return result.stdout.split('\n').filter(line => line.length > 0)
-}
 const vitestConfig = [
   'vitest.config.mts',
   'test-helpers/vitest-config/backend-core-projects.mts',
@@ -58,20 +33,6 @@ function jobSection(jobName: string): string {
   return next === -1 ? rest : rest.slice(0, next)
 }
 describe('backend uncredentialed Docker test workflow', () => {
-  it('runs tests by default for reusable and manual invocations', () => {
-    expect(stepsWorkflow.on?.workflow_call?.inputs?.run_tests).toMatchObject({
-      type: 'boolean',
-      default: true,
-    })
-    expect(stepsWorkflow.on?.workflow_dispatch?.inputs?.run_tests).toMatchObject({
-      type: 'boolean',
-      default: true,
-    })
-    expect(stepsWorkflow.on?.workflow_dispatch?.inputs?.shard_total_override).toMatchObject({
-      type: 'string',
-      default: '',
-    })
-  })
   it('leaves Docker-free static checks to the backend module workflow', () => {
     const backendJob = jobSection('backend-tests')
     expect(workflow).toContain('name: Backend Uncredentialed Docker Tests')
@@ -114,7 +75,7 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }} --passWithNoTests "${FILES[@]}"'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
     expect(workflow).toContain(backendCommand)
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
@@ -244,47 +205,5 @@ describe('backend uncredentialed Docker test workflow', () => {
     // The repository cache policy permits only the pnpm store and Playwright browsers; a
     // remote Vite cache round-trip once consumed a job's entire timeout budget.
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
-  })
-
-  it('resolves an unfiltered run for full_suite even when selected_test_files is unset', () => {
-    // Regression test: a `full_suite && '' || (selected || sentinel)` GHA expression
-    // here previously discarded the intentional empty string (falsy in GHA, same as
-    // JS) and fell through to the sentinel — every full_suite=true push (the default,
-    // used by every main push) silently selected zero test files. This exercises the
-    // real bash conditional that replaced it, not just the YAML text.
-    expect(runFilesArray({ FULL_SUITE: 'true', SELECTED_TEST_FILES: '' })).toEqual([])
-  })
-
-  it('passes through an explicit narrowed selection', () => {
-    expect(
-      runFilesArray({
-        FULL_SUITE: 'false',
-        SELECTED_TEST_FILES: 'backend/foo.test.mts\nbackend/bar.test.mts',
-      }),
-    ).toEqual(['backend/foo.test.mts', 'backend/bar.test.mts'])
-  })
-
-  it('falls back to a non-matching sentinel when narrowed with no selection', () => {
-    expect(runFilesArray({ FULL_SUITE: 'false', SELECTED_TEST_FILES: '' })).toEqual([
-      'NO_TESTS_MATCHING_SELECTION',
-    ])
-  })
-
-  it('preserves selected file paths containing spaces or shell glob metacharacters', () => {
-    // SELECTED_TEST_FILES is newline-delimited (vouchington-tooling/gha-selected-files's
-    // encodeSelectedFiles); a space or a glob metacharacter (*, ?, [) inside a single
-    // path must survive the quoted read-loop decode unchanged, not be word-split or
-    // glob-expanded the way an unquoted $VAR previously was.
-    expect(
-      runFilesArray({
-        FULL_SUITE: 'false',
-        SELECTED_TEST_FILES:
-          'backend/services/[id]/foo.test.mts\nbackend/needs space/bar.test.mts\nbackend/glob-*-star.test.mts',
-      }),
-    ).toEqual([
-      'backend/services/[id]/foo.test.mts',
-      'backend/needs space/bar.test.mts',
-      'backend/glob-*-star.test.mts',
-    ])
   })
 })

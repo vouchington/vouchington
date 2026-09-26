@@ -21,9 +21,9 @@ Use this suite (not Playwright) for: status codes, redirects, route existence, h
 
 CI keeps this full-stack project separate from `web-api`. `tests-web-api.yml` needs only
 Postgres/Valkey and backend setup; it does not build Next.js or the Worker. `tests-web-integration.yml`
-retains the built Worker → Next.js → backend contract and its CPU runner. Both accept selected files
-and matrix/report identities independently; integration stays at one shard by default because its
-build/setup is the dominant cost.
+retains the built Worker → Next.js → backend contract and its CPU runner. Both keep independent
+matrix/report identities; integration stays at one shard because its build/setup is the dominant
+cost.
 
 Global setup clears Vitest's inherited `VITEST` marker for the standalone Next.js child. In-process
 Vitest may read catalog JSON, but the live test server fetches copy from the backend; the OAuth

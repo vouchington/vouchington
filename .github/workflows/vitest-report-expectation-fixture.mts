@@ -8,8 +8,6 @@ import {
 export interface ExpectationOptions {
   readonly attempts?: Readonly<Record<string, number>>
   readonly shardTotals?: Partial<Record<string, string>>
-  readonly runnable?: Partial<Record<string, boolean>>
-  readonly storybookBrowserMode?: string
   readonly portabilityMacosEnabled?: boolean
 }
 

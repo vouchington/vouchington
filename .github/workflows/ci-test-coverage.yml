@@ -3,24 +3,6 @@ name: CI test coverage
 on:
   workflow_call:
     inputs:
-      select-vitest-outputs-run-tests-test-web:
-        required: true
-        type: string
-      select-vitest-outputs-run-tests-test-web-api:
-        required: true
-        type: string
-      select-vitest-outputs-run-tests-test-backend-unit:
-        required: true
-        type: string
-      select-vitest-outputs-run-tests-test-backend-modules:
-        required: true
-        type: string
-      select-vitest-outputs-run-tests-test-cloudflare-worker:
-        required: true
-        type: string
-      select-vitest-outputs-run-tests-test-lambdas:
-        required: true
-        type: string
       test-backend-unit-shard-total:
         required: true
         type: string
@@ -31,9 +13,6 @@ on:
         required: true
         type: string
       test-web-integration-shard-total:
-        required: true
-        type: string
-      select-vitest-outputs-storybook-browser-mode:
         required: true
         type: string
       test-ts-shared-result:
@@ -119,17 +98,10 @@ jobs:
         id: vitest-report-expectation
         if: '!cancelled()'
         env:
-          RUN_WEB_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-web != 'false' }}
-          RUN_WEB_API_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-web-api != 'false' }}
-          RUN_BACKEND_UNIT_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-backend-unit != 'false' }}
-          RUN_BACKEND_MODULE_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-backend-modules != 'false' }}
-          RUN_CLOUDFLARE_WORKER_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-cloudflare-worker != 'false' }}
-          RUN_LAMBDA_TESTS: ${{ inputs.select-vitest-outputs-run-tests-test-lambdas != 'false' }}
           BACKEND_UNIT_SHARD_TOTAL: ${{ inputs.test-backend-unit-shard-total }}
           WEB_SHARD_TOTAL: ${{ inputs.test-web-shard-total }}
           WEB_API_SHARD_TOTAL: ${{ inputs.test-web-api-shard-total }}
           WEB_INTEGRATION_SHARD_TOTAL: ${{ inputs.test-web-integration-shard-total }}
-          STORYBOOK_BROWSER_MODE: ${{ inputs.select-vitest-outputs-storybook-browser-mode || 'full' }}
           PORTABILITY_MACOS_ENABLED: ${{ vars.CI_PORTABILITY_MACOS_ENABLED == 'true' }}
           VITEST_REPORT_ATTEMPTS_DIR: ./vitest-report-attempts
           RESULTS: |-
@@ -157,13 +129,6 @@ jobs:
             --arg web_total "$WEB_SHARD_TOTAL" \
             --arg web_api_total "$WEB_API_SHARD_TOTAL" \
             --arg web_integration_total "$WEB_INTEGRATION_SHARD_TOTAL" \
-            --arg web "$RUN_WEB_TESTS" \
-            --arg web_api "$RUN_WEB_API_TESTS" \
-            --arg backend "$RUN_BACKEND_UNIT_TESTS" \
-            --arg modules "$RUN_BACKEND_MODULE_TESTS" \
-            --arg worker "$RUN_CLOUDFLARE_WORKER_TESTS" \
-            --arg lambdas "$RUN_LAMBDA_TESTS" \
-            --arg storybook "$STORYBOOK_BROWSER_MODE" \
             --arg portability_macos "$PORTABILITY_MACOS_ENABLED" \
             '
               def ran($job):
@@ -187,16 +152,16 @@ jobs:
               [
                 if ran("test-ts-shared") then suite("test-ts-shared"; "ts-shared") else empty end,
                 if ran("test-tooling") then suite("test-tooling"; "tooling") else empty end,
-                if ran("test-backend-modules") and $modules == "true" then suite("test-backend-modules"; "backend-modules") else empty end,
-                if ran("test-backend-unit") and $backend == "true" then shards("test-backend-unit"; "backend-shard-"; $backend_total)[] else empty end,
+                if ran("test-backend-modules") then suite("test-backend-modules"; "backend-modules") else empty end,
+                if ran("test-backend-unit") then shards("test-backend-unit"; "backend-shard-"; $backend_total)[] else empty end,
                 if ran("test-backend-credentialed") then suite("test-backend-credentialed"; "backend-credentialed") else empty end,
-                if ran("test-web") and $web == "true" then shards("test-web"; "web-shard-"; $web_total)[] else empty end,
-                if ran("test-web-api") and $web_api == "true" then shards("test-web-api"; "web-api-shard-"; $web_api_total)[] else empty end,
+                if ran("test-web") then shards("test-web"; "web-shard-"; $web_total)[] else empty end,
+                if ran("test-web-api") then shards("test-web-api"; "web-api-shard-"; $web_api_total)[] else empty end,
                 if ran("storybook") then suite("storybook"; "web-storybook") else empty end,
-                if ran("storybook") and $storybook != "empty" then suite("storybook"; "web-storybook-browser") else empty end,
+                if ran("storybook") then suite("storybook"; "web-storybook-browser") else empty end,
                 if ran("test-web-integration") then shards("test-web-integration"; "web-integration-shard-"; $web_integration_total)[] else empty end,
-                if ran("test-cloudflare-worker") and $worker == "true" then suite("test-cloudflare-worker"; "cloudflare-worker") else empty end,
-                if ran("test-lambdas") and $lambdas == "true" then suite("test-lambdas"; "lambdas") else empty end,
+                if ran("test-cloudflare-worker") then suite("test-cloudflare-worker"; "cloudflare-worker") else empty end,
+                if ran("test-lambdas") then suite("test-lambdas"; "lambdas") else empty end,
                 if ran("test-portability") then suite("test-portability"; "portability-linux") else empty end,
                 if ran("test-portability") and $portability_macos == "true" then suite("test-portability"; "portability-macos") else empty end
               ] | unique_by(.suite) | {
@@ -235,15 +200,9 @@ jobs:
           COVERAGE_ARTIFACTS_DIR: ./coverage-artifacts
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          STORYBOOK_BROWSER_MODE: ${{ inputs.select-vitest-outputs-storybook-browser-mode || 'full' }}
           CI_PORTABILITY_MACOS_ENABLED: ${{ vars.CI_PORTABILITY_MACOS_ENABLED == 'true' }}
-          # Built from each job's `.result` directly instead of `toJSON(needs)`: that dumps every
-          # job's full outputs, including select-vitest's files-test-* lists, which can be large
-          # enough on big PRs that GitHub Actions fails to spawn this step's shell ("Argument list
-          # too long") before any script line (including a `jq del(...)` on $RESULTS) can run.
-          # select-vitest (must fail OPEN so producers still run the full suite; see
-          # ci/vitest/ci-select.mts) is omitted rather than included-then-deleted, for the same
-          # reason it was excluded before this change.
+          # Built from each job's `.result` directly instead of `toJSON(needs)`, so the step
+          # environment carries only the producer results this gate checks.
           RESULTS: |-
             {
               "detect-changes": {"result": "${{ inputs.detect-changes-result }}"},

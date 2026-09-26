@@ -42,14 +42,6 @@ function resolveContext(results: Record<string, ProducerResult>): {
           ]),
         ),
       ),
-      COVERAGE_PLAN: '{}',
-      STORYBOOK_BROWSER_MODE: 'full',
-      RUN_WEB_TESTS: 'false',
-      RUN_WEB_API_TESTS: 'false',
-      RUN_BACKEND_UNIT_TESTS: 'false',
-      RUN_BACKEND_MODULE_TESTS: 'false',
-      RUN_CLOUDFLARE_WORKER_TESTS: 'false',
-      RUN_LAMBDA_TESTS: 'false',
     },
   })
   const output = existsSync(outputPath) ? readFileSync(outputPath, 'utf8').trim() : ''
@@ -130,10 +122,7 @@ describe('Vitest report expectation preservation and workflow contracts', () => 
     expect(result.output).toBe('')
   })
 
-  it('lets selected credentialed tests bypass only the coarse path filter', () => {
-    expect(credentialedGate).toContain(
-      "needs.select-ci.outputs.files-test-backend-credentialed != ''",
-    )
+  it('gates credentialed tests on the trusted secret context and static analysis', () => {
     expect(credentialedGate).toContain(
       "needs.detect-changes.outputs.trusted-secret-context == 'true'",
     )

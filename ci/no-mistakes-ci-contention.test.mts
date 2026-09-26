@@ -5,9 +5,6 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
-import { playwrightPlanOptions } from './playwright/ci-select.mts'
-import { vitestPlanOptions } from './vitest/ci-select.mts'
-
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const repoFileCache = new Map<string, string>()
 let cachedPolicySubjectFiles: string[] | undefined
@@ -48,8 +45,7 @@ const LIVE_ANALYSIS_IMPORTS = new Set([
   'validateMermaidMarkdown',
 ])
 
-const LIVE_ADAPTER_CALLS =
-  /\b(?:selectTopology|planTests|ciTopologyImpact|validatePlanMermaidMarkdown)\(/u
+const LIVE_ADAPTER_CALLS = /\bvalidatePlanMermaidMarkdown\(/u
 
 function liveAnalysisImportNames(source: string): string[] {
   if (!source.includes('no-mistakes')) return []
@@ -90,7 +86,7 @@ function spawnsNoMistakesCli(source: string): boolean {
 }
 
 describe('no-mistakes CI contention policy', () => {
-  it('limits real invocations to static analysis and centralized test selection', () => {
+  it('limits real invocations to static analysis', () => {
     const workflowCommands = readdirSync(`${repoRoot}/.github/workflows`)
       .filter(path => path.endsWith('.yml') || path.endsWith('.yaml'))
       .flatMap(path =>
@@ -98,7 +94,7 @@ describe('no-mistakes CI contention policy', () => {
           .split('\n')
           .map(line => line.trim())
           .filter(line =>
-            /^(?:run:\s*)?(?:pnpm (?:run|exec) no-mistakes\b.*|node ci\/(?:vitest|playwright)\/ci-select\.mts|node ci\/check-live-workflow-topology\.mts)$/.test(
+            /^(?:run:\s*)?(?:pnpm (?:run|exec) no-mistakes\b.*|node ci\/check-live-workflow-topology\.mts)$/.test(
               line,
             ),
           )
@@ -107,7 +103,6 @@ describe('no-mistakes CI contention policy', () => {
       .toSorted((a, b) => a.path.localeCompare(b.path))
 
     expect(workflowCommands).toEqual([
-      { path: 'ci-select-vitest.yml', command: 'run: node ci/vitest/ci-select.mts' },
       {
         path: 'static-code-analysis.yml',
         command:
@@ -117,17 +112,7 @@ describe('no-mistakes CI contention policy', () => {
         path: 'static-code-analysis.yml',
         command: 'run: node ci/check-live-workflow-topology.mts',
       },
-      { path: 'tests-playwright.yml', command: 'run: node ci/playwright/ci-select.mts' },
     ])
-  })
-
-  it('disables execution and lock deadlines for centralized test selection', () => {
-    expect(vitestPlanOptions(process.cwd(), 'main')).toEqual(
-      expect.objectContaining({ lockTimeout: 0, timeout: 0 }),
-    )
-    expect(playwrightPlanOptions(process.cwd(), 'main')).toEqual(
-      expect.objectContaining({ lockTimeout: 0, timeout: 0 }),
-    )
   })
 
   it('keeps route-selector unit tests off the live graph', () => {

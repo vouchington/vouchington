@@ -70,12 +70,12 @@ export default defineConfig({
     // `extends: true`, they are never replaced) — a test that leaves fake timers installed
     // corrupts state shared with later tests regardless of pool/isolate settings. Must stay a
     // literal relative path (no `resolve(process.cwd(), ...)`) so `no-mistakes` can trace this
-    // as a static `vitest-setup` dependency edge instead of falling back to a global full-suite
-    // selection. Vitest resolves setupFiles per-project against that project's own `root:`;
+    // as a static `vitest-setup` dependency edge instead of falling back to selecting every
+    // test. Vitest resolves setupFiles per-project against that project's own `root:`;
     // web-storybook-browser overrides `root: 'web'` (see storybook-browser-project.mts), so this
     // same literal resolves there to web/test-helpers/vitest.setup.fake-timer-guard.mts — a
     // redirect shim that re-imports this file for its side effects. See that shim's comment and
-    // docs/development/ci.md for why the indirection exists.
+    // docs/development/reference-explain-test-selection-and-vitest-ownership.md#traceable-vitest-setup-files.
     setupFiles: ['./test-helpers/vitest.setup.fake-timer-guard.mts'],
     coverage: coverageConfig(),
     ...(reporters ? { reporters } : {}),

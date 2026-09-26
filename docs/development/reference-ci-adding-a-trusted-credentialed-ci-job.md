@@ -17,7 +17,7 @@ Every reusable workflow must declare its own `concurrency.group`. The group name
 
 There are two distinct filter locations, both must be updated:
 
-**Primary filter** (`ci.yml` → `detect-changes` job → `dorny/paths-filter` step `id: filter`): add a named entry listing source paths that should trigger the job. Example: `playwright-credentialed` lists its config and the web/backend source paths that exercise the credentialed features. Do not add workflow or local-action paths: PR callers come from `select-ci`'s topology report, preserving narrow routing.
+**Primary filter** (`ci.yml` → `detect-changes` job → `dorny/paths-filter` step `id: filter`): add a named entry listing source paths that should trigger the job. Example: `playwright-credentialed` lists its config and the web/backend source paths that exercise the credentialed features. Do not add workflow or local-action paths: the `workflow-action-changes` filter already starts every area job for those edits.
 
 **Fan-in `if:` condition** (`ci.yml` → the new job): gate the job on `needs.detect-changes.outputs.<filter-name> == 'true'`. A filter that exists in the `filter` step but is **not** referenced in the job's `if:` means the job never runs on path-matched PRs. The `tests-playwright-credentialed.test.mts` workflow consistency test (`github-actions` Vitest project) catches this: it asserts that every credentialed job's `if:` references a filter name that exists in the `detect-changes` step.
 
@@ -47,7 +47,3 @@ The `__tests__/secret-context.permissions.test.mts` and `__tests__/secret-contex
 ### 4. CORS origin exactness
 
 CORS `Access-Control-Allow-Origin` entries require the exact scheme + host + port. `http://localhost:8787` and `https://localhost:8787` are different origins. Locally wrangler dev defaults to HTTP; use `http://` in test CORS configs.
-
-### 5. Pre-push test-plan exclusion (already declarative)
-
-The `.no-mistakes.yml` `test_plan.playwright.environments` block uses declarative `exclude:` glob lists to carve out directories from local and PR percentage-sampling selection. `playwright/credentialed/**` is already excluded from both `prePush` and `pullRequest` environments because the suite runs as its own CI job. New credentialed suites added under `playwright/credentialed/` are automatically excluded — no per-suite code change needed.

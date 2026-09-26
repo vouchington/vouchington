@@ -128,7 +128,7 @@ describe('makeAttemptEnv', () => {
 })
 
 describe('vitestArgs', () => {
-  it('runs the full project with no positional filter when no files are selected', () => {
+  it('runs the full project with coverage by default', () => {
     expect(vitestArgs({})).toEqual([
       'exec',
       './ci/with-node-test-options',
@@ -141,43 +141,7 @@ describe('vitestArgs', () => {
     ])
   })
 
-  it('appends selected story files as a positional filter', () => {
-    const args = vitestArgs({
-      VITEST_SELECTED_FILES: 'web/components/Button.stories.tsx\nweb/components/Card.stories.tsx',
-    })
-
-    expect(args.slice(-2)).toEqual([
-      'web/components/Button.stories.tsx',
-      'web/components/Card.stories.tsx',
-    ])
-  })
-
-  it('preserves story paths containing spaces or shell glob metacharacters', () => {
-    const args = vitestArgs({
-      VITEST_SELECTED_FILES:
-        'web/components/[id]/foo.stories.tsx\nweb/components/needs space/bar.stories.tsx',
-    })
-
-    expect(args.slice(-2)).toEqual([
-      'web/components/[id]/foo.stories.tsx',
-      'web/components/needs space/bar.stories.tsx',
-    ])
-  })
-
   it('omits --coverage when STORYBOOK_BROWSER_COVERAGE is 0', () => {
     expect(vitestArgs({ STORYBOOK_BROWSER_COVERAGE: '0' })).not.toContain('--coverage')
-  })
-
-  it('ignores a blank or whitespace-only selected-files value', () => {
-    expect(vitestArgs({ VITEST_SELECTED_FILES: '   ' })).toEqual([
-      'exec',
-      './ci/with-node-test-options',
-      'vitest',
-      'run',
-      '--bail=3',
-      '--project',
-      'web-storybook-browser',
-      '--coverage',
-    ])
   })
 })

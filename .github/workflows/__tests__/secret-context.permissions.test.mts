@@ -58,13 +58,10 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(filters).toContain("- '.github/workflows/**/*.test.mts'")
     expect(filters).not.toContain("- '.github/workflows/tests-backend-untrusted.yml'")
     expect(toolingWorkflow).toContain(
-      'node ci/tooling-test-runner.mts --workflow-projects --bail=3 "${FILES[@]}"',
+      'node ci/tooling-test-runner.mts --workflow-projects --bail=3',
     )
     expect(toolingWorkflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
-    )
-    expect(toolingWorkflow).toContain(
-      "VITEST_SELECTED_FILES: ${{ !inputs.full_suite && inputs.selected_test_files || '' }}",
     )
     expect(packageJson.scripts.test).toContain('pnpm run test:tooling')
     expect(packageJson.scripts['test:tooling']).toBe('node ci/tooling-test-runner.mts')
@@ -152,7 +149,7 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(runtimeFilters).toContain('vitest.config.mts')
     expect(runtimeFilters).toContain('package.json')
     expect(runtimeFilters).toContain('pnpm-lock.yaml')
-    expect(storybookJob).toContain('needs: [detect-changes, static-code-analysis, select-ci]')
+    expect(storybookJob).toContain('needs: [detect-changes, static-code-analysis]')
     expect(storybookJob).toContain("needs.detect-changes.outputs.storybook == 'true'")
     expect(storybookJob).toContain(
       "needs.detect-changes.outputs.trusted-secret-context == 'true' || needs.detect-changes.outputs.dependency-bot-test-context == 'true'",

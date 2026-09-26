@@ -58,14 +58,7 @@ function runExpectationResolver(
       WEB_SHARD_TOTAL: options.shardTotals?.['test-web'] ?? '',
       WEB_API_SHARD_TOTAL: options.shardTotals?.['test-web-api'] ?? '',
       WEB_INTEGRATION_SHARD_TOTAL: options.shardTotals?.['test-web-integration'] ?? '',
-      STORYBOOK_BROWSER_MODE: options.storybookBrowserMode ?? 'full',
       PORTABILITY_MACOS_ENABLED: String(options.portabilityMacosEnabled ?? false),
-      RUN_WEB_TESTS: String(options.runnable?.['test-web'] ?? false),
-      RUN_WEB_API_TESTS: String(options.runnable?.['test-web-api'] ?? false),
-      RUN_BACKEND_UNIT_TESTS: String(options.runnable?.['test-backend-unit'] ?? false),
-      RUN_BACKEND_MODULE_TESTS: String(options.runnable?.['test-backend-modules'] ?? false),
-      RUN_CLOUDFLARE_WORKER_TESTS: String(options.runnable?.['test-cloudflare-worker'] ?? false),
-      RUN_LAMBDA_TESTS: String(options.runnable?.['test-lambdas'] ?? false),
     },
   })
   const output = existsSync(outputPath) ? readFileSync(outputPath, 'utf8').trim() : ''
@@ -110,10 +103,10 @@ function runMergeExpectationResolver(
 }
 
 describe('Vitest report expectation fan-in', () => {
-  it('emits exact runnable suite expectations before producer failure handling', () => {
+  it('emits exact suite expectations before producer failure handling', () => {
     const resolution = runExpectationResolver(
       { 'test-backend-unit': { result: 'failure' }, 'test-tooling': { result: 'success' } },
-      { runnable: { 'test-backend-unit': true }, shardTotals: { 'test-backend-unit': '2' } },
+      { shardTotals: { 'test-backend-unit': '2' } },
     )
     expect(resolution.status).toBe(1)
     expect(JSON.parse(resolution.output.slice('context='.length))).toEqual({
@@ -126,7 +119,7 @@ describe('Vitest report expectation fan-in', () => {
     )
   })
 
-  it('expands dynamic shards, Storybook mode, and PostgreSQL execution', () => {
+  it('expands dynamic shards, both Storybook suites, and PostgreSQL execution', () => {
     const base = resolveContext(
       {
         'test-backend-unit': { result: 'success' },
@@ -134,12 +127,10 @@ describe('Vitest report expectation fan-in', () => {
         storybook: { result: 'success' },
       },
       {
-        runnable: { 'test-backend-unit': true, 'test-web': true },
         shardTotals: {
           'test-backend-unit': '2',
           'test-web': '1',
         },
-        storybookBrowserMode: 'empty',
       },
     )
     expect(base.suites.map(expectation => expectation.suite)).toEqual([
@@ -147,6 +138,7 @@ describe('Vitest report expectation fan-in', () => {
       'backend-shard-2',
       'web-shard-1',
       'web-storybook',
+      'web-storybook-browser',
     ])
 
     const result = runMergeExpectationResolver(base, { result: 'failure', vitestRan: true })
@@ -166,11 +158,6 @@ describe('Vitest report expectation fan-in', () => {
         'test-web-integration': { result: 'success' },
       },
       {
-        runnable: {
-          'test-backend-unit': true,
-          'test-web': true,
-          'test-web-api': true,
-        },
         attempts: {
           'web-api-shard-3': 2,
           'web-integration-shard-2': 2,
@@ -200,7 +187,6 @@ describe('Vitest report expectation fan-in', () => {
         'test-web-integration': { result: 'success' },
       },
       {
-        runnable: { 'test-web-api': true },
         attempts: {
           'web-api-shard-3': 2,
           'web-integration-shard-2': 2,
@@ -226,28 +212,18 @@ describe('Vitest report expectation fan-in', () => {
     expect(result.stderr).toContain('running sharded producer has no exact shard total')
   })
 
-  it('does not expect blobs from successful side-duty-only jobs', () => {
+  it('expects blobs from every producer that ran and none from skipped producers', () => {
     expect(
       resolveContext({
         'test-backend-modules': { result: 'success' },
         'test-cloudflare-worker': { result: 'success' },
         'test-lambdas': { result: 'success' },
       }).suites.map(expectation => expectation.suite),
-    ).toEqual([])
-  })
-
-  it('expects blobs when an actual successful producer ran tests', () => {
+    ).toEqual(['backend-modules', 'cloudflare-worker', 'lambdas'])
     expect(
-      resolveContext(
-        { 'test-backend-modules': { result: 'success' } },
-        { runnable: { 'test-backend-modules': true } },
-      ).suites.map(expectation => expectation.suite),
-    ).toEqual(['backend-modules'])
-    expect(
-      resolveContext(
-        { 'test-web': { result: 'skipped' } },
-        { runnable: { 'test-web': true } },
-      ).suites.map(expectation => expectation.suite),
+      resolveContext({ 'test-web': { result: 'skipped' } }).suites.map(
+        expectation => expectation.suite,
+      ),
     ).toEqual([])
     const p: ProducerResults = { 'test-portability': { result: 'success' } }
     const withMacos = resolveContext(p, { portabilityMacosEnabled: true })
@@ -266,7 +242,6 @@ describe('Vitest report expectation fan-in', () => {
             'backend-shard-3': 1,
             'backend-shard-4': 1,
           },
-          runnable: { 'test-backend-unit': true },
           shardTotals: { 'test-backend-unit': '4' },
         },
       )
@@ -290,7 +265,7 @@ describe('Vitest report expectation fan-in', () => {
   it.each(['failure', 'cancelled'])('fails aggregation for a %s producer', result => {
     const resolution = runExpectationResolver(
       { 'test-backend-unit': { result } },
-      { runnable: { 'test-backend-unit': true }, shardTotals: { 'test-backend-unit': '1' } },
+      { shardTotals: { 'test-backend-unit': '1' } },
     )
     expect(resolution.status).toBe(1)
     expect(resolution.stdout).toContain(

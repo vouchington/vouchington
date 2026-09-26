@@ -36,17 +36,6 @@ on:
         required: false
         type: boolean
         default: false
-      selected_test_files:
-        description: >-
-          Newline-delimited (vouchington-tooling/gha-selected-files) web-storybook-browser story files to
-          run instead of the full project; empty runs every story (fail-open default)
-        required: false
-        type: string
-        default: ''
-      browser_test_mode:
-        description: 'Browser Vitest mode: full, selected, or empty'
-        type: string
-        default: full
   workflow_dispatch:
     inputs:
       publish_prefix:
@@ -218,14 +207,11 @@ jobs:
         with:
           suite: web-storybook
       - name: Install Playwright Chromium
-        if: ${{ inputs.browser_test_mode != 'empty' }}
         uses: ./.github/actions/setup-playwright
         timeout-minutes: 5
       - name: Clear stale coverage before browser run
-        if: ${{ inputs.browser_test_mode != 'empty' }}
         run: rm -f coverage/lcov.info .vitest-reports/*.json
       - name: Run Storybook browser tests
-        if: ${{ inputs.browser_test_mode != 'empty' }}
         env:
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: storybook-browser-test-report.junit.xml
@@ -235,14 +221,13 @@ jobs:
           STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}
           # Browser mode remains serial despite the two-worker CI fallback.
           VITEST_MAX_WORKERS: '1'
-          VITEST_SELECTED_FILES: ${{ inputs.selected_test_files }}
         run: pnpm exec ./ci/run-storybook-browser-tests.mts
         # The runner owns one monotonic 300-second session budget across at most three startup
         # attempts. Semantic module progress disables retry and distinguishes active browser work
         # from a pre-test startup failure. Leave one workflow minute for process-group cleanup.
         timeout-minutes: 6
       - name: Upload bounded Storybook browser diagnostics
-        if: ${{ failure() && inputs.browser_test_mode != 'empty' }}
+        if: ${{ failure() }}
         timeout-minutes: 1
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -252,7 +237,7 @@ jobs:
           retention-days: 1
           if-no-files-found: ignore
       - name: Preserve full web-storybook-browser LCOV for Codecov
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage }}
         shell: bash
         run: |
           if [ -f coverage/lcov.info ]; then
@@ -262,14 +247,14 @@ jobs:
       - name: Stamp web-storybook-browser coverage provenance
         id: coverage-stamp-2
         timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage }}
+        if: ${{ !cancelled() && inputs.publish_coverage }}
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node ci/coverage-manifest.mts patch "web-storybook-browser" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
       - name: Upload web-storybook-browser vitest blob to GitHub (fallback)
         id: vitest-blob-fallback-2
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -277,7 +262,7 @@ jobs:
           suite: web-storybook-browser
       - name: Upload web-storybook-browser vitest blob to GitHub (fallback attempt 2)
         id: vitest-blob-fallback-2-retry
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-2.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-2.outcome == 'failure' }}
         timeout-minutes: 3
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-blob
@@ -286,7 +271,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted web-storybook-browser vitest blob
         id: vitest-blob-outcome-2
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-blob
@@ -296,7 +281,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Persist web-storybook-browser Vitest report attempt (attempt 1)
         id: vitest-report-attempt-2
-        if: ${{ always() && inputs.browser_test_mode != 'empty' && inputs.upload_vitest_blob_artifact }}
+        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-report-attempt
@@ -304,7 +289,7 @@ jobs:
           suite: web-storybook-browser
       - name: Persist web-storybook-browser Vitest report attempt (attempt 2)
         id: vitest-report-attempt-2-retry
-        if: ${{ always() && inputs.browser_test_mode != 'empty' && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-2.outcome == 'failure' }}
+        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-2.outcome == 'failure' }}
         timeout-minutes: 1
         continue-on-error: true
         uses: ./.github/actions/upload-vitest-report-attempt
@@ -313,7 +298,7 @@ jobs:
           name-suffix: -retry
       - name: Assert web-storybook-browser Vitest report attempt persisted
         id: vitest-report-attempt-2-outcome
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.upload_vitest_blob_artifact }}
+        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
         timeout-minutes: 1
         env:
           FAMILY: vitest-report-attempt
@@ -323,7 +308,7 @@ jobs:
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload web-storybook-browser coverage pair to GitHub (fallback attempt 1)
         id: coverage-fallback-1-2
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -331,7 +316,7 @@ jobs:
           suite: web-storybook-browser
       - name: Upload web-storybook-browser coverage pair to GitHub (fallback attempt 2)
         id: coverage-fallback-2-2
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-coverage-pair
@@ -340,7 +325,7 @@ jobs:
           name-suffix: -retry
       - name: Require a persisted web-storybook-browser coverage pair
         id: coverage-outcome-2
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
         timeout-minutes: 1
         env:
           FAMILY: coverage-pair
@@ -349,7 +334,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload full web-storybook-browser LCOV to GitHub (informational)
-        if: ${{ !cancelled() && inputs.browser_test_mode != 'empty' && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
+        if: ${{ !cancelled() && inputs.publish_coverage && steps.coverage-stamp-2.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 3
         uses: ./.github/actions/upload-full-lcov

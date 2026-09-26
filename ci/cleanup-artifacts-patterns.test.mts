@@ -28,7 +28,6 @@ const DELETE_NAMES = [
   'vitest-blob-web',
   'coverage-web',
   'playwright-otel-output-shard-2',
-  'playwright-test-plan',
   'browser-debug-log-storybook',
   'web-integration-artifacts',
   'web-integration-shard-2-artifacts',

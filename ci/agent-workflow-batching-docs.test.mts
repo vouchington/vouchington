@@ -60,7 +60,7 @@ describe('agent workflow batching documentation', () => {
     expect(start).toContain('JSON.parse(source)')
   })
 
-  it('keeps consumer no-mistakes examples batched without banning focused diagnostics', () => {
+  it('keeps no-mistakes examples batched and validation on full area suites', () => {
     const impactRecipes = normalizedMarkdown('.agents/skills/agent-workflow/impact-recipes.md')
     const packageLegalityStart = impactRecipes.indexOf('## Proposed Import And Package Legality')
     const packageLegalityEnd = impactRecipes.indexOf('## Queue And Worker Impact')
@@ -76,40 +76,26 @@ describe('agent workflow batching documentation', () => {
     )
     const nativeClients = normalizedMarkdown('docs/overview/architecture/native-clients.md')
 
+    const fullSuites = 'pnpm exec vitest run --project <project-a> --project <project-b>'
     expect(impactRecipes).toContain('dependencies <source-file-a> <source-file-b> --format paths')
     expect(impactRecipes).toContain('dependents <source-file-a> <source-file-b> --format paths')
-    expect(impactRecipes).toContain(
-      'tests plan vitest --changed-file <typescript-source-file-a> --changed-file <typescript-source-file-b> --format paths',
-    )
+    expect(impactRecipes).toContain(fullSuites)
+    expect(impactRecipes).not.toContain('tests plan vitest')
     expect(packageLegality).toContain('resolve-check <source-file> --format human')
     expect(packageLegality).toContain('dependencies <source-file-a> <source-file-b> --format paths')
-    expect(packageLegality).toContain(
-      'tests plan vitest --changed-file <source-file-a> --changed-file <source-file-b> --format paths',
-    )
+    expect(packageLegality).toContain(fullSuites)
     expect(packageLegality).not.toContain('dependencies <source-file> --format paths')
-    expect(packageLegality).not.toContain(
-      'tests plan vitest --changed-file <source-file> --format paths',
-    )
     expect(web).toContain(
       '[canonical before-push recipe](../docs/checklists/commit.md#before-pushing)',
     )
     expect(web).not.toContain('pnpm exec no-mistakes tests plan vitest')
     expect(tests).toContain('[E2E and Visual](reference-tests-e2e-and-visual.md)')
-    expect(e2eAndVisual).toContain(
-      'tests plan playwright --environment pullRequest --changed-file web/components/sidebar-site-footer.tsx --changed-file web/app/layout.tsx --format json',
-    )
-    expect(e2eAndVisual).toContain(
-      'tests why playwright/tests/navigation/sidebar.spec.mts --plan plan.json --format json',
-    )
-    expect(e2eAndVisual).not.toContain(
-      'tests plan playwright --environment pullRequest --changed-file web/components/footer.tsx --format json',
-    )
-    expect(commit).toContain(
-      'tests plan vitest --environment prePush --changed-file <source-file-a> --changed-file <source-file-b> --format paths',
-    )
-    expect(commit).not.toContain(
-      'tests plan vitest --environment prePush --changed-file <source-file> --format paths',
-    )
+    expect(e2eAndVisual).toContain('`pnpm run test:playwright`')
+    expect(e2eAndVisual).toContain('[area test suites](ci.md#area-test-suites)')
+    expect(e2eAndVisual).not.toContain('tests plan playwright')
+    expect(commit).toContain(fullSuites)
+    expect(commit).toContain('[area test suites](../development/ci.md#area-test-suites)')
+    expect(commit).not.toContain('tests plan')
     expect(firstPush).not.toContain('tests plan swift')
     expect(firstPush).not.toContain('tests plan dotnet')
     expect(nativeClients).toContain('https://github.com/vouchington/vouchington-clients')
