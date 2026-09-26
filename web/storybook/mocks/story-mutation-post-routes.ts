@@ -6,12 +6,19 @@ import {
   imageUploadUrl,
   modNote,
   communityAgentPrompt,
-  purchaseIntent,
   storyMutationAt,
   storyText,
 } from './story-mutation-bodies'
 import { categoryRelationPost } from './category-relations-store'
+import { applyListMembership } from './list-membership-fixture'
+import { purchaseIntent } from './story-mutation-purchase'
 import { conversationParticipant } from './story-mutation-participant'
+
+let nextInvite = 0
+
+export function resetInviteSequence(): void {
+  nextInvite = 0
+}
 
 function exactPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/markdown/preview') {
@@ -47,10 +54,11 @@ function exactPost(endpoint: string, body: unknown): unknown | undefined {
 function communityInvite(body: unknown) {
   const email = storyText(body, 'email')
   const username = storyText(body, 'username')
+  nextInvite += 1
   return {
     community_invite: {
       __entity_type: 'community_invite' as const,
-      id: 'invite-story',
+      id: `invite-story-${nextInvite}`,
       code: 'STORY1',
       community_id: 'community-story',
       invited_user_id: username || null,
@@ -81,7 +89,10 @@ function patternPost(endpoint: string, body: unknown): unknown | undefined {
     return conversationParticipant(endpoint, body)
   }
   if (endpoint.startsWith('/api/v1/entity-relations/')) return categoryRelationPost(body)
-  if (endpoint.endsWith('/items/posts') || endpoint.endsWith('/lock')) return {}
+  if (endpoint.endsWith('/items/posts') || endpoint.endsWith('/lock')) {
+    applyListMembership(endpoint, true)
+    return {}
+  }
   if (endpoint.endsWith('/allocations') || endpoint.endsWith('/escalation')) return {}
   if (endpoint.endsWith('/ratings') || endpoint.endsWith('/import')) {
     return endpoint.endsWith('/import') ? { posts: 1, items: 1 } : {}

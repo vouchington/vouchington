@@ -24,11 +24,17 @@ const ZERO = BigInt(ZERO_NUMBER)
 
 interface PlanCardsProps {
   benefitCatalog?: MembershipBenefitCatalog | null
+  onCheckout?: (checkoutUrl: string) => void
   plans: Record<string, MembershipPlanSku[]>
   membership?: SubscriptionMembership | null
 }
 
-export function PlanCards({ benefitCatalog = null, plans, membership }: PlanCardsProps) {
+export function PlanCards({
+  benefitCatalog = null,
+  onCheckout,
+  plans,
+  membership,
+}: PlanCardsProps) {
   const t = useTranslations()
   const featureFlags = useFeatureFlags()
   const purchaseEnabled =
@@ -114,6 +120,7 @@ export function PlanCards({ benefitCatalog = null, plans, membership }: PlanCard
               billingInterval={billingInterval}
               isCurrent={isCurrent}
               membership={membership}
+              onCheckout={onCheckout}
               planSlug={planSlug}
               purchaseEnabled={purchaseEnabled}
               savingsPct={savingsPct}

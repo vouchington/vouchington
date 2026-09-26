@@ -27,6 +27,7 @@ export function useHostnameModerationState(input: HostnameModerationInput) {
   const next = moderationSnapshot(input)
   const [state, setState] = useState(next)
   const current = state.key === next.key ? state : next
+  if (state.key !== next.key) setState(next)
 
   return {
     isBlocked: current.isBlocked,

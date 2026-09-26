@@ -16,6 +16,16 @@ export function storyTail(endpoint: string): string {
   return endpoint.split('/').pop() ?? 'story'
 }
 
+let nextModNote = 0
+let nextComment = 0
+let nextPrompt = 0
+
+export function resetModNoteSequence(): void {
+  nextModNote = 0
+  nextComment = 0
+  nextPrompt = 0
+}
+
 export function createdPost(body: unknown): unknown {
   const postType = storyText(body, 'post_type') || 'link'
   const isComment = postType === 'comment'
@@ -27,7 +37,7 @@ export function createdPost(body: unknown): unknown {
   return {
     post: {
       ...source,
-      id: isComment ? 'comment-story' : 'link-post-story',
+      id: isComment ? `comment-story-${(nextComment += 1)}` : 'link-post-story',
       post_type: postType,
       slug: isComment ? null : source.slug || 'link-post-story',
       ...(markdown ? { markdown } : {}),
@@ -37,27 +47,6 @@ export function createdPost(body: unknown): unknown {
       clearance_status: source.clearance_status ?? 'approved',
     },
   }
-}
-
-export function purchaseIntent(body: unknown): unknown {
-  return {
-    purchase_intent: {
-      id: 'intent-story',
-      provider: 'stripe',
-      product_id: storyText(body, 'product_id') || 'plus-monthly',
-      launch: {
-        kind: 'stripe_checkout',
-        checkout_url: 'https://checkout.stripe.com/c/pay/cs_storybook',
-      },
-      replayed: false,
-    },
-  }
-}
-
-let nextModNote = 0
-
-export function resetModNoteSequence(): void {
-  nextModNote = 0
 }
 
 export function modNote(body: unknown): unknown {
@@ -114,7 +103,7 @@ export function patchedPost(endpoint: string, body: unknown): unknown {
 export function communityAgentPrompt(body: unknown): unknown {
   return {
     community_agent_prompt: {
-      id: 'prompt-story',
+      id: `prompt-story-${(nextPrompt += 1)}`,
       community_id: 'community-credit-cards',
       created_by_id: 'user-cardholder',
       agent_id: 'agent-community-mod',

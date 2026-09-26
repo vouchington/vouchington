@@ -16,6 +16,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 interface NewsCommunityDiscussionActionProps {
   fixedCommunity?: NewsCommunityDiscussionTarget
   itemTitle?: string | null
+  onCreated?: (href: string) => void
   relatedUrls: NewsCommunityDiscussionUrl[]
   variant: 'button' | 'menu-item'
 }
@@ -23,6 +24,7 @@ interface NewsCommunityDiscussionActionProps {
 export function NewsCommunityDiscussionAction({
   fixedCommunity,
   itemTitle,
+  onCreated,
   relatedUrls,
   variant,
 }: NewsCommunityDiscussionActionProps) {
@@ -42,7 +44,7 @@ export function NewsCommunityDiscussionAction({
     handleUsernameSet,
     handleUsernameClose,
     submit,
-  } = useNewsCommunityDiscussionAction({ fixedCommunity, itemTitle, relatedUrls })
+  } = useNewsCommunityDiscussionAction({ fixedCommunity, itemTitle, onCreated, relatedUrls })
   const StartDiscussionIcon = EntityActionIcons.startDiscussion
 
   const usernameDialog = (

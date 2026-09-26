@@ -17,13 +17,14 @@ import { useDeletePost } from './use-delete-post'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface DeletePostMenuItemProps {
+  onDeleted?: () => void
   postIdOrSlug: string
 }
 
-export function DeletePostMenuItem({ postIdOrSlug }: DeletePostMenuItemProps) {
+export function DeletePostMenuItem({ onDeleted, postIdOrSlug }: DeletePostMenuItemProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  const { isDeleting, handleDelete } = useDeletePost(postIdOrSlug)
+  const { isDeleting, handleDelete } = useDeletePost(postIdOrSlug, onDeleted)
 
   return (
     <>

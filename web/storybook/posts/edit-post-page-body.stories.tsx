@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { EditPostPageBody } from '@/components/posts/edit-post-page-body'
 import { PostForm } from '@/components/posts/post-form'
@@ -41,22 +42,32 @@ const meta = {
 export default meta
 type Story = StoryObj
 
+function EditReviewForm() {
+  const [href, setHref] = useState<string | null>(null)
+  return (
+    <StoryFrame width='max-w-5xl'>
+      {href ? (
+        <p>Saved {href}</p>
+      ) : (
+        <EditPostPageBody
+          title='Edit review'
+          officialGateMessage={null}
+        >
+          <PostForm
+            onSubmitted={setHref}
+            postType='review'
+            post={reviewWithBody}
+            isAdmin
+          />
+        </EditPostPageBody>
+      )}
+    </StoryFrame>
+  )
+}
+
 export const EditReview: Story = {
   parameters: { auth: { currentUser: administrator } },
-  render: () => (
-    <StoryFrame width='max-w-5xl'>
-      <EditPostPageBody
-        title='Edit review'
-        officialGateMessage={null}
-      >
-        <PostForm
-          postType='review'
-          post={reviewWithBody}
-          isAdmin
-        />
-      </EditPostPageBody>
-    </StoryFrame>
-  ),
+  render: () => <EditReviewForm />,
 }
 
 function OfficialAccountGate() {

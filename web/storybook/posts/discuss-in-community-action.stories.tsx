@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DiscussInCommunityAction } from '@/components/posts/discuss-in-community-action'
 import { getCanonicalPostPath } from '@/lib/post-helpers'
@@ -28,16 +29,26 @@ const meta = {
 export default meta
 type Story = StoryObj
 
-export const Discussion: Story = {
-  render: () => (
+function StartedDiscussion() {
+  const [href, setHref] = useState<string | null>(null)
+  return (
     <StoryFrame width='max-w-sm'>
-      <DiscussInCommunityAction
-        postId={discussionPost.id}
-        source={{
-          title: discussionPost.title,
-          canonicalPath: getCanonicalPostPath(discussionPost),
-        }}
-      />
+      {href ? (
+        <p>Discussion started at {href}</p>
+      ) : (
+        <DiscussInCommunityAction
+          onCreated={setHref}
+          postId={discussionPost.id}
+          source={{
+            title: discussionPost.title,
+            canonicalPath: getCanonicalPostPath(discussionPost),
+          }}
+        />
+      )}
     </StoryFrame>
-  ),
+  )
+}
+
+export const Discussion: Story = {
+  render: () => <StartedDiscussion />,
 }

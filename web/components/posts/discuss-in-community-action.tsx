@@ -17,11 +17,16 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import { DiscussInCommunityActionDialog } from './discuss-in-community-action-dialog'
 
 interface DiscussInCommunityActionProps {
+  onCreated?: (href: string) => void
   postId: string
   source: { title?: string | null; canonicalPath: string }
 }
 
-export function DiscussInCommunityAction({ postId, source }: DiscussInCommunityActionProps) {
+export function DiscussInCommunityAction({
+  onCreated,
+  postId,
+  source,
+}: DiscussInCommunityActionProps) {
   const t = useTranslations()
   const { push } = useRouter()
   const [open, setOpen] = useState(false)
@@ -91,11 +96,12 @@ export function DiscussInCommunityAction({ postId, source }: DiscussInCommunityA
         response.community_post_review?.approved_at === null &&
         response.community_post_review.rejected_at === null &&
         response.community_post_review.unpublished_at === null
-      push(
+      const href =
         selectedCommunity?.post_approval_required_at || requiresCommunityReview
           ? communityPendingPostsHref({ slug: communitySlug })
-          : getCanonicalPostPath(discussion),
-      )
+          : getCanonicalPostPath(discussion)
+      onCreated?.(href)
+      push(href)
     } catch (error) {
       // The token was consumed by the backend's verification; get a fresh one.
       turnstile.reset()

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PlanCards } from '@/components/memberships/plan-cards'
 import { FeatureFlagsProvider } from '@/lib/feature-flags/context'
@@ -100,13 +101,19 @@ const plusMembership: SubscriptionMembership = {
 }
 
 function Cards(props: { membership?: SubscriptionMembership | null }) {
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   return (
     <FeatureFlagsProvider globalFlags={{ memberships: true, membershipStripeBilling: true }}>
-      <PlanCards
-        benefitCatalog={benefitCatalog}
-        plans={plans}
-        membership={props.membership}
-      />
+      {checkoutUrl ? (
+        <p>Checkout started at {checkoutUrl}</p>
+      ) : (
+        <PlanCards
+          benefitCatalog={benefitCatalog}
+          onCheckout={setCheckoutUrl}
+          plans={plans}
+          membership={props.membership}
+        />
+      )}
     </FeatureFlagsProvider>
   )
 }

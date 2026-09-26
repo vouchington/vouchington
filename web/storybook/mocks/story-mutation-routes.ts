@@ -6,6 +6,7 @@ import {
   storyText,
 } from './story-mutation-bodies'
 import { storyMutationPost } from './story-mutation-post-routes'
+import { applyListMembership } from './list-membership-fixture'
 
 export { storyMutationPost }
 
@@ -34,7 +35,10 @@ export function storyMutationDelete(endpoint: string): unknown | undefined {
   if (endpoint.includes('/mod-notes/')) return { ok: true }
   if (endpoint.includes('/invites/') || endpoint.endsWith('/members')) return {}
   if (/^\/api\/v1\/posts\/[^/]+$/.test(endpoint)) return {}
-  if (endpoint.endsWith('/lock') || endpoint.includes('/items/posts/')) return {}
+  if (endpoint.endsWith('/lock') || endpoint.includes('/items/posts/')) {
+    applyListMembership(endpoint, false)
+    return {}
+  }
   if (endpoint.includes('/agent-prompts/') || endpoint.includes('/participants/')) return {}
   if (endpoint.endsWith('/escalation') || endpoint.endsWith('/claim')) return {}
   if (endpoint.includes('/ratings/')) return {}

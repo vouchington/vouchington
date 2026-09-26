@@ -8,6 +8,7 @@ import type {
   UserModerationContextResponse,
 } from '@/types/api-responses'
 import { storybookAutocompleteResponse } from '@/storybook/design-system/autocomplete-fixtures'
+import { containedListIds, resetListMembership } from '@/storybook/mocks/list-membership-fixture'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import {
@@ -75,10 +76,12 @@ export function setMyCommunitiesFixture(): void {
 }
 
 export function clearMyListsFixture(): void {
+  resetListMembership()
   myListsFixture = undefined
 }
 
 export function setMyListsFixture(): void {
+  resetListMembership()
   const listId = 'list-card-reviews'
   myListsFixture = {
     results: [{ __entity_type: 'list', id: listId }],
@@ -171,7 +174,7 @@ ClientRequest.prototype.get = function storybookClientRequestGet<T>(
     return Promise.resolve(myListsFixture as T)
   }
   if (endpoint === '/api/v1/lists/contains' && myListsFixture !== undefined) {
-    return Promise.resolve({ list_ids: Object.keys(myListsFixture.lists) } as T)
+    return Promise.resolve({ list_ids: containedListIds(Object.keys(myListsFixture.lists)) } as T)
   }
   const relations = categoryRelationsResponse(endpoint)
   if (relations !== undefined) return Promise.resolve(relations as T)

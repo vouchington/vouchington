@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,15 +36,24 @@ const fixedCommunity = {
 }
 const relatedUrls = [article.url]
 
+function DiscussionAction({ variant }: { variant: 'button' | 'menu-item' }) {
+  const [href, setHref] = useState<string | null>(null)
+  if (href) return <p>Discussion started at {href}</p>
+  return (
+    <NewsCommunityDiscussionAction
+      variant={variant}
+      fixedCommunity={fixedCommunity}
+      itemTitle={article.data.title ?? 'Bank launches transfer bonus'}
+      onCreated={setHref}
+      relatedUrls={relatedUrls}
+    />
+  )
+}
+
 export const DiscussButton: Story = {
   render: () => (
     <StoryFrame width='max-w-md'>
-      <NewsCommunityDiscussionAction
-        variant='button'
-        fixedCommunity={fixedCommunity}
-        itemTitle={article.data.title ?? 'Bank launches transfer bonus'}
-        relatedUrls={relatedUrls}
-      />
+      <DiscussionAction variant='button' />
     </StoryFrame>
   ),
 }
@@ -65,12 +75,7 @@ export const MenuItem: Story = {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <NewsCommunityDiscussionAction
-            variant='menu-item'
-            fixedCommunity={fixedCommunity}
-            itemTitle={article.data.title ?? 'Bank launches transfer bonus'}
-            relatedUrls={relatedUrls}
-          />
+          <DiscussionAction variant='menu-item' />
         </DropdownMenuContent>
       </DropdownMenu>
     </StoryFrame>

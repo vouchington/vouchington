@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DeletePostMenuItem } from '@/components/posts/delete-post-menu-item'
 import {
@@ -20,12 +21,24 @@ const meta = {
 export default meta
 type Story = StoryObj
 
-export const Review: Story = {
-  render: () => (
+function DeleteReview() {
+  const [deleted, setDeleted] = useState(false)
+  return (
     <StoryFrame width='max-w-sm'>
-      <OpenPostMenu>
-        <DeletePostMenuItem postIdOrSlug={reviewPost.slug ?? reviewPost.id} />
-      </OpenPostMenu>
+      {deleted ? (
+        <p>Post deleted</p>
+      ) : (
+        <OpenPostMenu>
+          <DeletePostMenuItem
+            onDeleted={() => setDeleted(true)}
+            postIdOrSlug={reviewPost.slug ?? reviewPost.id}
+          />
+        </OpenPostMenu>
+      )}
     </StoryFrame>
-  ),
+  )
+}
+
+export const Review: Story = {
+  render: () => <DeleteReview />,
 }
