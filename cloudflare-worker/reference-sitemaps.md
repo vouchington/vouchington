@@ -4,6 +4,8 @@
 
 Caches sitemap responses from the sitemap CloudFront origin for `/sitemap.xml` and supported `/sitemaps/*` XML paths for a configurable time (1 day). Unsupported sitemap paths, including paths that contain URL-encoded dot, slash, or backslash octets, are rejected at the edge and are not fetched from the origin.
 
+[`src/sitemap-routing.mts`](src/sitemap-routing.mts) owns sitemap route recognition, canonical URL cleanup, date validation, and origin-path overrides. [`src/routing.mts`](src/routing.mts) re-exports those entry points so existing Worker callers keep one routing API.
+
 Supported sitemap route overrides:
 
 - `/sitemap.xml` -> `/sitemaps/root.xml`
