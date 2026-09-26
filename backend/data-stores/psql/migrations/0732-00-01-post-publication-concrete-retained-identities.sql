@@ -85,6 +85,7 @@ COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.family IS 'C
 COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.cursor_identity_id IS 'Deletion-stable last raw candidate key, not an entity relationship.';
 COMMENT ON COLUMN post_publication_identity_bridge_cleanup_progress.updated_at IS 'Last committed bounded bridge sweep.';
 
+-- squawk-ignore renaming-column -- Pre-launch ownership now references the concrete post bridge; all receipt readers and writers use this FK name together.
 ALTER TABLE post_publication_projection_receipts RENAME COLUMN post_id TO post_identity_id;
 ALTER TABLE post_publication_projection_receipts ADD CONSTRAINT fk_post_publication_projection_receipts__post_identity FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID; -- fk-index-guard-allow: RENAME COLUMN preserves the existing leading PRIMARY KEY on parent and leaves; real catalog regression verifies it, SQL analyzer does not propagate renames.
 ALTER TABLE post_publication_projection_receipts VALIDATE CONSTRAINT fk_post_publication_projection_receipts__post_identity;
@@ -93,6 +94,7 @@ ALTER TABLE post_publication_identity_snapshots ADD CONSTRAINT fk_post_publicati
 ALTER TABLE post_publication_identity_snapshots VALIDATE CONSTRAINT fk_post_publication_identity_snapshots__post_identity;
 COMMENT ON COLUMN post_publication_identity_snapshots.post_identity_id IS 'Concrete durable post identity FK; live post access follows the bridge post_id FK.';
 
+-- squawk-ignore ban-drop-column -- Pre-launch concrete payload columns replace polymorphic storage; incompatible disposable databases require explicit recreation.
 ALTER TABLE post_publication_dirty_work_keys DROP COLUMN kind, DROP COLUMN uuid_value, DROP COLUMN text_value;
 ALTER TABLE post_publication_dirty_work_keys ADD COLUMN impact_post_identity_id UUID;
 COMMENT ON COLUMN post_publication_dirty_work_keys.impact_post_identity_id IS 'Concrete durable repair identity relationship.';
@@ -125,10 +127,10 @@ ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publica
 CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work_keys__impact_post_identity_id ON post_publication_dirty_work_keys (impact_post_identity_id) WHERE impact_post_identity_id IS NOT NULL;
 ALTER TABLE post_publication_dirty_work_keys ADD CONSTRAINT fk_post_publication_dirty_work_keys__community_identity FOREIGN KEY (impact_community_identity_id) REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publication_dirty_work_keys__community_identity;
-CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work_keys__impact_community_identity_id ON post_publication_dirty_work_keys (impact_community_identity_id) WHERE impact_community_identity_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_pub_dirty_work_keys__impact_community_identity_id ON post_publication_dirty_work_keys (impact_community_identity_id) WHERE impact_community_identity_id IS NOT NULL;
 ALTER TABLE post_publication_dirty_work_keys ADD CONSTRAINT fk_post_publication_dirty_work_keys__rss_feed_item_identity FOREIGN KEY (impact_rss_feed_item_identity_id) REFERENCES post_publication_rss_feed_item_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work_keys VALIDATE CONSTRAINT fk_post_publication_dirty_work_keys__rss_feed_item_identity;
-CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work_keys__impact_rss_feed_item_identity_id ON post_publication_dirty_work_keys (impact_rss_feed_item_identity_id) WHERE impact_rss_feed_item_identity_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_pub_dirty_work_keys__impact_rss_feed_item_identity_id ON post_publication_dirty_work_keys (impact_rss_feed_item_identity_id) WHERE impact_rss_feed_item_identity_id IS NOT NULL;
 
 ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__post_identity FOREIGN KEY (post_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__post_identity;

@@ -55,7 +55,9 @@ CREATE TABLE IF NOT EXISTS post_publication_identity_snapshot_keys (
 );
 
 ALTER TABLE post_publication_projection_receipts
+  -- squawk-ignore adding-required-field -- Pre-launch receipts require a real snapshot; incompatible disposable databases must be recreated explicitly, not backfilled.
   ADD COLUMN applied_snapshot_id UUID NOT NULL;
+-- squawk-ignore ban-drop-column -- Pre-launch snapshot-only receipts replace JSON entirely; no mixed-version compatibility path is retained.
 ALTER TABLE post_publication_projection_receipts DROP COLUMN applied_identity;
 
 CREATE INDEX IF NOT EXISTS idx_post_publication_projection_receipts__applied_snapshot_id
