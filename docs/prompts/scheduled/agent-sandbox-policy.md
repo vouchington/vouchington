@@ -38,7 +38,9 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   `.codex/agents/*.toml` model, reasoning-effort, and sandbox settings against the agent-workflow
   routing table — do not re-own per-agent `.toml` drift here. `security.md` is application-layer
   only. [`dev/agent-sandbox-config.test.mts`](../../../dev/agent-sandbox-config.test.mts) already
-  guards Grok's writable-root parity against Codex, requires the remaining git/gh
+  guards every Codex allow prefix as a subset of Claude `sandbox.excludedCommands` using
+  trailing-wildcard matches; the [workspace sandbox guard](../../../dev/agent-workspace-sandbox-config.test.mts)
+  guards Grok's writable-root parity against Codex. The command guard requires the remaining git/gh
   prefixes (`git log`/`fetch`/`show`/`diff`/`status`/`rev-parse`/`merge-base`/`rev-list`/`branch`,
   `gh pr`, `gh issue`) plus the pnpm approval prefixes in `.codex/rules/default.rules` and two
   agent-workflow docs, and **forbids** those six review-bypass families in `.codex/rules/default.rules`
@@ -90,8 +92,10 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
 - Check `.claude/settings.json`'s `sandbox.excludedCommands` and `.codex/rules/default.rules` for an
   entry naming a script, path, or npx tool invocation that no longer exists in the repo, or that has
   moved and left a stale prefix behind.
-- Re-verify the three-surface consistency rule itself still holds for every existing escalation
-  entry, but per
+- Re-verify that every Codex allow prefix is covered by a Claude `sandbox.excludedCommands`
+  trailing wildcard. Both controls run matched commands outside the OS sandbox; Codex
+  additionally skips approval. For every existing escalation entry, check three-surface consistency,
+  but per
   [Claude and Codex sandbox semantics are different, not
   parallel](../../development/agent-sandbox.md#claude-and-codex-sandbox-semantics-are-different-not-parallel),
   do not require identical command-family breadth across all three, and do not require
@@ -112,8 +116,9 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   questions to the human-run `sandbox-audit.md` process instead of guessing.
   Across harnesses, a narrower Codex `.codex/rules/default.rules` `prefix_rule` for the same family (e.g.
   broad `git *`/`gh *` excluded on Claude, only specific subcommands prefix-approved on Codex) is
-  often intentional: a Claude exclusion removes OS containment entirely, while a Codex prefix rule
-  only skips the confirmation prompt and the command stays fully sandboxed. Flag a cross-harness gap
+  often intentional: both remove OS containment for matched commands, but the Codex allow also
+  skips the confirmation prompt. A Codex allow without a covering Claude exclusion is a parity
+  violation; the test already owns that subset gate. Flag other cross-harness gaps
   only when the breadth difference contradicts the documented rationale for that specific command
   family, not merely because the prefixes differ.
 - Do not propose broadening a sandbox boundary to work around a specific command failure; narrow the

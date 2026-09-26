@@ -162,7 +162,6 @@
       "Glob(*)",
       "Read(*)",
       "Edit(*)",
-      "Write(*)",
       "Bash(gh pr comment *)",
       "Bash(gh pr ready *)",
       "Bash(gh pr edit *)",

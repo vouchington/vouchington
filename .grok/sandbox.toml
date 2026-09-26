@@ -6,7 +6,7 @@
 #   grok --sandbox workspace-write
 #   GROK_SANDBOX=workspace-write
 #
-# This is not Claude's OS-sandbox bypass list. Prefixes stay sandboxed, like Codex.
+# Grok's sandbox is process-wide; Claude exclusions and Codex allow rules bypass theirs per command.
 
 [profiles.workspace-write]
 extends = "workspace"

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // This test is the mechanical guard (three-surface consistency + narrowness). For the rationale
@@ -16,46 +16,97 @@ const codexRules = repoFile('.codex/rules/default.rules')
 const agentWorkflowBeforePushing = repoFile('.agents/skills/agent-workflow/before-pushing.md')
 const agentWorkflowStartOfWork = repoFile('.agents/skills/agent-workflow/start-of-work.md')
 const impactDiscovery = repoFile('.agents/skills/planning/references/impact-discovery.md')
-const workspaceWriteCacheRoots = [
-  '~/Library/Caches/no-mistakes',
-  '~/Library/Caches/pnpm',
-  '~/.pnpm-state',
-  '~/.cache/no-mistakes',
-  '~/.cache/pnpm',
-  '~/.local/state/pnpm',
-]
 
 const codexRuleFor = (pattern: string[]) =>
   `prefix_rule(pattern=${JSON.stringify(pattern).replaceAll(',', ', ')}, decision="allow")`
 
-function tomlSection(source: string, heading: string): string {
-  const lines = source.split('\n')
-  const start = lines.findIndex(line => line.trim() === heading)
-  if (start < 0) return ''
-  const body: string[] = []
-  for (const line of lines.slice(start + 1)) {
-    if (line.trim().startsWith('[')) break
-    body.push(line)
-  }
-  return body.join('\n')
+function codexAllowPrefixes(source: string): string[] {
+  return source.split('\n').flatMap(line => {
+    if (!line.trim() || line.trim().startsWith('#')) return []
+    const rule =
+      /^\s*prefix_rule\(\s*pattern\s*=\s*(\[.*\])\s*,\s*decision\s*=\s*"([^"]+)"\s*\)\s*(?:#.*)?$/u.exec(
+        line,
+      )
+    if (!rule) throw new Error(`Unparsed Codex rule: ${line}`)
+    const pattern: unknown = JSON.parse(rule[1])
+    if (
+      !Array.isArray(pattern) ||
+      !pattern.length ||
+      !pattern.every(token => typeof token === 'string' && token.length > 0 && !/\s/u.test(token))
+    ) {
+      throw new Error(`Invalid Codex prefix: ${rule[1]}`)
+    }
+    return rule[2] === 'allow' ? [pattern.join(' ')] : []
+  })
 }
 
-// Only multiline `key = [` arrays. Inline `key = ["…"]` is not parsed.
-function tomlQuotedArray(section: string, key: string): string[] {
-  const heading = `${key} = [`
-  const lines = section.split('\n')
-  const start = lines.findIndex(line => line.trim() === heading)
-  if (start < 0) return []
-  const values: string[] = []
-  for (const line of lines.slice(start + 1)) {
-    if (line.includes(']')) break
-    const match = /^\s*"([^"]+)"\s*,?\s*$/.exec(line)
-    if (match) values.push(match[1])
+function claudeExclusionCoversPrefix(exclusion: string, prefix: string): boolean {
+  if (exclusion.endsWith(' *')) {
+    const command = exclusion.slice(0, -2)
+    return !command.includes('*') && (prefix === command || prefix.startsWith(`${command} `))
   }
-  return values
+  // A Codex prefix also allows appended arguments. Claude's exact entry covers only the bare
+  // command, so the corresponding trailing-wildcard exclusion must exist for full containment.
+  return false
+}
+
+function unmatchedCodexAllows(source: string, excludedCommands: string[]): string[] {
+  return codexAllowPrefixes(source).filter(
+    prefix => !excludedCommands.some(exclusion => claudeExclusionCoversPrefix(exclusion, prefix)),
+  )
 }
 
 describe('agent sandbox configuration', () => {
+  it('keeps one mechanically guarded Codex rules source', () => {
+    const ruleFiles = readdirSync(new URL('../.codex/rules/', import.meta.url))
+      .filter(path => path.endsWith('.rules'))
+      .toSorted()
+    expect(ruleFiles).toEqual(['default.rules'])
+  })
+
+  it('covers every Codex unsandboxed allow with a Claude sandbox exclusion', () => {
+    expect(codexAllowPrefixes(codexRules).length).toBeGreaterThan(0)
+    expect(unmatchedCodexAllows(codexRules, claudeSettings.sandbox.excludedCommands)).toEqual([])
+  })
+
+  it('rejects a deliberate Codex-only sandbox bypass', () => {
+    const rules = `${codexRuleFor(['pnpm', 'exec'])}\n${codexRuleFor(['pnpm', 'dlx'])}`
+    expect(unmatchedCodexAllows(rules, ['pnpm exec *'])).toEqual(['pnpm dlx'])
+  })
+
+  it('requires trailing wildcards at command boundaries', () => {
+    const rules = [
+      ['node', 'dev/example.mts'],
+      ['git', 'log'],
+      ['git-log'],
+      ['pnpm', 'exec'],
+      ['pnpm', 'execute'],
+      ['npx', 'vitest'],
+    ]
+      .map(codexRuleFor)
+      .join('\n')
+    expect(
+      unmatchedCodexAllows(rules, ['node dev/example.mts', 'git *', 'pnpm exec *', 'npx *test']),
+    ).toEqual(['node dev/example.mts', 'git-log', 'pnpm execute', 'npx vitest'])
+  })
+
+  it('parses every rule and fails closed on unsupported prefix syntax', () => {
+    expect(
+      codexAllowPrefixes(
+        '# comment\n prefix_rule( pattern = ["git", "log"], decision = "allow" ) # comment\nprefix_rule(pattern=["git"], decision="forbidden")\n',
+      ),
+    ).toEqual(['git log'])
+    expect(() =>
+      codexAllowPrefixes('prefix_rule(pattern=["git"], decision="allow", example=[])'),
+    ).toThrow('Unparsed Codex rule')
+    expect(() => codexAllowPrefixes('prefix_rule(pattern=[], decision="allow")')).toThrow(
+      'Invalid Codex prefix',
+    )
+    expect(() => codexAllowPrefixes('prefix_rule(pattern=["git log"], decision="allow")')).toThrow(
+      'Invalid Codex prefix',
+    )
+  })
+
   // The Claude review-skip for dev/ commands (the blanket rules plus a narrow allow rule for each
   // dev/ entry below) is pinned in claude-settings-dev-allow.test.mts; these tests cover only OS
   // escalation and Codex.
@@ -210,87 +261,5 @@ describe('agent sandbox configuration', () => {
     ]) {
       expect(codexRules).toContain(codexRuleFor(pattern))
     }
-  })
-})
-
-describe('Cursor workspace-write sandbox roots', () => {
-  it('includes every Codex workspace-write writable root', () => {
-    const sandbox = JSON.parse(repoFile('.cursor/sandbox.json')) as {
-      additionalReadwritePaths: string[]
-      networkPolicy: { default: string }
-      type: string
-    }
-    const codexRoots = tomlQuotedArray(
-      tomlSection(repoFile('.codex/config.toml'), '[sandbox_workspace_write]'),
-      'writable_roots',
-    )
-
-    expect(sandbox.type).toBe('workspace_readwrite')
-    expect(sandbox.networkPolicy.default).toBe('allow')
-    expect(codexRoots.length).toBeGreaterThan(0)
-    expect(sandbox.additionalReadwritePaths).toEqual(codexRoots)
-    const cli = JSON.parse(repoFile('.cursor/cli.json')) as { permissions: { allow: string[] } }
-    expect(cli.permissions.allow).toContain('Shell(no-mistakes)')
-    expect(cli.permissions.allow).toContain('Shell(pr-shepherd)')
-  })
-
-  it('does not clone Claude excludedCommands into the Cursor sandbox', () => {
-    const source = repoFile('.cursor/sandbox.json')
-    expect(source).not.toContain('excludedCommands')
-    expect(source).not.toContain('pnpm exec')
-    expect(source).not.toContain('git *')
-  })
-
-  it('ignores Cursor worktree runtime state', () => {
-    expect(repoFile('.gitignore')).toContain('.cursor/worktrees')
-  })
-})
-
-describe('Cursor worktrees config', () => {
-  it('uses a setup-worktree command array, not a unix script-path array', () => {
-    const config = JSON.parse(repoFile('.cursor/worktrees.json')) as {
-      'setup-worktree'?: unknown
-      'setup-worktree-unix'?: unknown
-    }
-
-    expect(config['setup-worktree-unix']).toBeUndefined()
-    expect(config['setup-worktree']).toEqual(['./dev/initialize monorepo'])
-  })
-})
-
-// Cursor and Grok load .claude/settings.json through Claude-compat; a native hook file double-fires.
-describe('agent hook sources', () => {
-  it.each(['.cursor/hooks.json', '.grok/hooks'])('has no native %s', hookSource => {
-    expect(existsSync(new URL(`../${hookSource}`, import.meta.url))).toBe(false)
-  })
-})
-
-describe('Grok workspace-write sandbox roots', () => {
-  it('includes every Codex workspace-write writable root', () => {
-    const grokSection = tomlSection(repoFile('.grok/sandbox.toml'), '[profiles.workspace-write]')
-    const grokRoots = tomlQuotedArray(grokSection, 'read_write')
-    const codexRoots = tomlQuotedArray(
-      tomlSection(repoFile('.codex/config.toml'), '[sandbox_workspace_write]'),
-      'writable_roots',
-    )
-
-    expect(grokSection).toMatch(/^extends\s*=\s*"workspace"\s*$/m)
-    expect(codexRoots.length).toBeGreaterThan(0)
-    expect(grokRoots).toEqual(codexRoots)
-    expect(codexRoots).not.toContain('~/Library/Caches')
-    for (const root of workspaceWriteCacheRoots) {
-      expect(codexRoots).toContain(root)
-    }
-    const allowWrite = claudeSettings.sandbox.filesystem.allowWrite
-    for (const root of codexRoots) {
-      expect(allowWrite).toContain(root)
-    }
-  })
-
-  it('does not clone Claude excludedCommands into the Grok profile', () => {
-    const grokSource = repoFile('.grok/sandbox.toml')
-    expect(grokSource).not.toContain('excludedCommands')
-    expect(grokSource).not.toContain('pnpm exec')
-    expect(grokSource).not.toContain('git *')
   })
 })

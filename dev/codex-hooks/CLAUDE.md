@@ -14,6 +14,8 @@ Before adding or changing a Vitest test, fixture, or mock for these hooks, load 
   executables, reordered gh options, wrapper grammars). Close such reports as out of scope.
 - Native harness config first: `.claude/settings.json` permissions (Grok applies them through
   Claude-compat; Cursor does too), `.codex/rules/default.rules`, `.cursor/cli.json`.
+  Codex allow prefixes run outside its OS sandbox; every allow must be covered by Claude
+  `sandbox.excludedCommands` (enforced by `dev/agent-sandbox-config.test.mts`).
   `.claude/settings.json` is the sole Claude/Cursor/Grok hook source: never add `.cursor/hooks.json`
   or `.grok/hooks/`. Hook code holds only what none of them can express. Every Claude deny must
   hold under Grok's prefix matcher (`dev/claude-settings-grok-bash-deny.test.mts`).
