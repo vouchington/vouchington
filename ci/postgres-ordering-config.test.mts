@@ -88,8 +88,6 @@ describe('PostgreSQL ordering guard config', () => {
       'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
       'backend/services/communities/list-items/add.mts:1',
       'backend/services/crawl-chunks/create.mts:1',
-      'backend/services/customer-support/create-idempotent-support-draft-message.mts:1',
-      'backend/services/customer-support/draft-generation-reservation.mts:1',
       'backend/services/identity-verification/attempts.mts:1',
       'backend/services/individuals-households/households/spending-categories.mts:1',
       'backend/services/lists/items.mts:1',
