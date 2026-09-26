@@ -15,9 +15,9 @@ export function gitEnvForCwd(): NodeJS.ProcessEnv {
   )
 }
 
-function gitText(cwd: string, args: string[]): string | undefined {
+export function gitCurrentBranch(cwd: string): string | undefined {
   try {
-    const text = execFileSync('git', args, {
+    const text = execFileSync('git', ['branch', '--show-current'], {
       cwd,
       encoding: 'utf8',
       env: gitEnvForCwd(),
@@ -30,12 +30,19 @@ function gitText(cwd: string, args: string[]): string | undefined {
   }
 }
 
-export function gitCurrentBranch(cwd: string): string | undefined {
-  return gitText(cwd, ['branch', '--show-current'])
-}
-
 export function gitConfigValue(cwd: string, key: string): string | undefined {
-  return gitText(cwd, ['config', '--get', key])
+  try {
+    const text = execFileSync('git', ['config', '--get', key], {
+      cwd,
+      encoding: 'utf8',
+      env: gitEnvForCwd(),
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5_000,
+    }).trim()
+    return text === '' ? undefined : text
+  } catch {
+    return undefined
+  }
 }
 
 // `git merge-base --is-ancestor` is exit-code-only: 0 = ancestor, 1 = provably not, anything else
