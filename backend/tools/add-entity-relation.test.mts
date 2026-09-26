@@ -59,6 +59,31 @@ describe('add_entity_relation', () => {
     expect(await getEntityRelation('relation__post__related__url', post.id, urlId)).toHaveLength(0)
   })
 
+  it('rejects a delegated context owned by someone other than the tool user', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const credentialOwner = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const post = await createTestPost({ user })
+    const urlId = await createTestUrlWithHostname()
+
+    await expect(
+      addEntityRelationTool.function(user)(
+        {
+          action: 'add_relation',
+          entity_type: 'post',
+          entity_id: post.id,
+          predicate: 'related',
+          object_type: 'url',
+          object_id: urlId,
+        },
+        {
+          credentialOwnerId: credentialOwner.id,
+          grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+        },
+      ),
+    ).rejects.toMatchObject({ status: 403 })
+    expect(await getEntityRelation('relation__post__related__url', post.id, urlId)).toHaveLength(0)
+  })
+
   it('keeps add_tag on the authored PATCH-equivalent boundary', async () => {
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const otherUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)

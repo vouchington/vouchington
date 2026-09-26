@@ -80,6 +80,50 @@ describe('createEntityRelationAction post mutation guard', () => {
     },
   )
 
+  it('rolls back both directions when a public post relation becomes private while locked', async () => {
+    const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
+    const subject = await createTestPost({ user: owner })
+    const object = await createTestPost({ user: owner })
+    const locked = Promise.withResolvers<number>()
+    const release = Promise.withResolvers<void>()
+    const holder = holdPublicationLockThenMutate(subject.id, locked, release, query =>
+      query(`UPDATE posts SET privacy = 'private', broadcast = 'followers' WHERE id = $1`, [
+        subject.id,
+      ]),
+    )
+    const holderPid = await locked.promise
+
+    const creating = createEntityRelationAction(
+      owner,
+      {
+        kind: 'delegated',
+        credentialOwnerId: owner.id,
+        grantedScopes: ['entity-relations:read', 'entity-relations:write'],
+      },
+      {
+        entityType: 'post',
+        entityId: subject.id,
+        predicate: 'related',
+        objectType: 'post',
+        objectId: object.id,
+      },
+    ).catch(error => error)
+    try {
+      await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
+    } finally {
+      release.resolve()
+    }
+    await holder
+
+    await expect(creating).resolves.toMatchObject({ statusCode: 403 })
+    await expect(
+      getEntityRelation('relation__post__related__post', subject.id, object.id),
+    ).resolves.toEqual([])
+    await expect(
+      getEntityRelation('relation__post__related__post', object.id, subject.id),
+    ).resolves.toEqual([])
+  })
+
   it('fails closed when a participant effective root changes while waiting for publication', async () => {
     const owner = (await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)) as PrivateUser
     const firstRoot = await createTestPost({ user: owner })
