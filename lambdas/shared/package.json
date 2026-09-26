@@ -25,8 +25,8 @@
     "@aws-sdk/client-ssm": "^3.1139.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
     "@opentelemetry/sdk-trace-base": "^2.11.0",
-    "@sentry/aws-serverless": "10.75.2",
-    "@sentry/node": "10.75.2",
+    "@sentry/aws-serverless": "11.0.0",
+    "@sentry/node": "11.0.0",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/utils": "workspace:^"
   },

@@ -43,7 +43,7 @@
     "@modules/structured-decisions": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@sentry/node": "10.75.2",
+    "@sentry/node": "11.0.0",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.2",
     "@voucha/api-fixtures": "workspace:^",
