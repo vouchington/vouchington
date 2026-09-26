@@ -41,25 +41,19 @@ export function storybookBrowserAttemptCacheDir(
   attempt: number,
   cwd: string,
 ): string {
-  const runKey = [env.GITHUB_RUN_ID, env.GITHUB_RUN_ATTEMPT, env.GITHUB_JOB]
-    .filter(Boolean)
-    .join('-')
   if (!env.CI && !env.RUNNER_TEMP) {
     return resolve(cwd, `node_modules/.vite/storybook-browser-attempt-${attempt}`)
   }
   return resolve(
     env.RUNNER_TEMP || env.TMPDIR || tmpdir(),
-    `vite-storybook-browser-${runKey || process.pid}-attempt-${attempt}`,
+    `vite-storybook-browser-attempt-${attempt}`,
   )
 }
 
 function storybookBrowserApiPort(env: NodeJS.ProcessEnv, attempt: number): number {
   const explicitPort = parsePositiveInteger(env.VITEST_STORYBOOK_BROWSER_API_PORT, 0)
   if (explicitPort) return explicitPort + (attempt - 1) * 137
-  const runNumber = Number(env.GITHUB_RUN_ID?.slice(-6))
-  const baseSeed = Number.isSafeInteger(runNumber) ? runNumber : process.pid
-  const attemptOffset = (Number(env.GITHUB_RUN_ATTEMPT || 1) - 1) * 1000 + (attempt - 1) * 137
-  return 45_000 + ((baseSeed + attemptOffset) % 10_000)
+  return 45_000 + ((process.pid + (attempt - 1) * 137) % 10_000)
 }
 
 function appendDebugNamespace(value: string | undefined, namespace: string): string {

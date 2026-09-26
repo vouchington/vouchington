@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, extname, join } from 'node:path'
 import ts from 'typescript'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { storybookBrowserOptimizeDeps } from '../test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
 import { permanentReleaseAgePackageNames } from './no-mistakes-config.mts'
@@ -18,6 +18,7 @@ const importEnvironmentModule = (
 
 describe('Storybook browser Vitest environment overrides', () => {
   afterEach(() => {
+    vi.unstubAllEnvs()
     process.env = { ...originalEnv }
   })
 
@@ -37,27 +38,28 @@ describe('Storybook browser Vitest environment overrides', () => {
     expect(envConfig.parseStorybookBrowserConnectTimeout()).toBe(150_000)
   })
 
-  it('falls back to run-scoped browser cache and derived API port', async () => {
-    process.env = {
-      ...originalEnv,
-      CI: 'true',
-      GITHUB_JOB: 'storybook',
-      GITHUB_RUN_ATTEMPT: '2',
-      GITHUB_RUN_ID: '27519989871',
-      RUNNER_TEMP: '/runner-temp',
-    }
-    delete process.env.VITEST_STORYBOOK_BROWSER_API_PORT
-    delete process.env.VITEST_STORYBOOK_BROWSER_CACHE_DIR
-    delete process.env.STORYBOOK_BROWSER_HANG_MS
+  it.each(['1', '27519989871'])(
+    'uses a fixed CI cache and no implicit API port for run %s',
+    async run => {
+      process.env = {
+        ...originalEnv,
+        CI: 'true',
+        GITHUB_JOB: `job-${run}`,
+        GITHUB_RUN_ATTEMPT: run,
+        GITHUB_RUN_ID: run,
+        RUNNER_TEMP: '/runner-temp',
+      }
+      delete process.env.VITEST_STORYBOOK_BROWSER_API_PORT
+      delete process.env.VITEST_STORYBOOK_BROWSER_CACHE_DIR
+      delete process.env.STORYBOOK_BROWSER_HANG_MS
 
-    const envConfig = await importEnvironmentModule('storybook-browser-derived')
+      const envConfig = await importEnvironmentModule(`storybook-browser-fixed-${run}`)
 
-    expect(envConfig.storybookBrowserCacheDir).toBe(
-      '/runner-temp/vite-storybook-browser-27519989871-2-storybook',
-    )
-    expect(envConfig.parseStorybookBrowserApiPort()).toBe(45_871)
-    expect(envConfig.parseStorybookBrowserConnectTimeout()).toBe(120_000)
-  })
+      expect(envConfig.storybookBrowserCacheDir).toBe('/runner-temp/vite-storybook-browser')
+      expect(envConfig.parseStorybookBrowserApiPort()).toBeUndefined()
+      expect(envConfig.parseStorybookBrowserConnectTimeout()).toBe(120_000)
+    },
+  )
 
   it('falls back to OS temp when CI RUNNER_TEMP is blank', async () => {
     process.env = {
@@ -73,9 +75,17 @@ describe('Storybook browser Vitest environment overrides', () => {
 
     const envConfig = await importEnvironmentModule('storybook-browser-blank-runner-temp')
 
-    expect(envConfig.storybookBrowserCacheDir).toBe(
-      `${tmpdir()}/vite-storybook-browser-27519989871-2-storybook`,
+    expect(envConfig.storybookBrowserCacheDir).toBe(`${tmpdir()}/vite-storybook-browser`)
+  })
+
+  it.each(['invalid', '0', '1.5'])('leaves an invalid explicit API port %s unset', async port => {
+    vi.stubEnv('CI', 'true')
+    vi.stubEnv('GITHUB_RUN_ID', '123')
+    vi.stubEnv('VITEST_STORYBOOK_BROWSER_API_PORT', port)
+    const envConfig = await importEnvironmentModule(
+      `storybook-browser-invalid-${port.replace('.', '-')}`,
     )
+    expect(envConfig.parseStorybookBrowserApiPort()).toBeUndefined()
   })
 
   it('strips JSON import attributes for browser-story dependencies', async () => {
