@@ -894,6 +894,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../modules/scheduled-job-manifest
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../modules/scopes
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../modules/search-utils
@@ -10410,6 +10413,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../modules/pagination
+      '@modules/scopes':
+        specifier: workspace:^
+        version: link:../modules/scopes
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../modules/search-utils

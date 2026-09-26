@@ -96,6 +96,22 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "DELETE:/api/v1/my/oauth-grants/:id": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/my/oauth-grants/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-grants.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
+    },
     "DELETE:/api/v1/my/rewards-program-point-valuations/:id": {
       "bodyKind": "none",
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
@@ -27233,6 +27249,159 @@
       "source": "backend/api/v1/my/notifications.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/my/oauth-grants": {
+      "bodyKind": "content",
+      "hash": "7cf36211537e0ca3b3ef9816cf8794d744bad1d36944896030ac9c0f0565592b",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/oauth-grants",
+      "schema": {
+        "definitions": {
+          "OAuthGrantClientView": {
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "client_name": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verified": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "OAuthGrantView": {
+            "additionalProperties": false,
+            "properties": {
+              "client": {
+                "required": true,
+                "schema": {
+                  "name": "OAuthGrantClientView",
+                  "type": "ref"
+                }
+              },
+              "consented_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "last_used_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "resource": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "scopes": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "OAuthGrantView",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/oauth-grants.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/my/profile": {
       "bodyKind": "content",
       "hash": "412d652309f73aa0940aef35c31df16b2fbb8c5339873ca944c2c17706ff3120",
@@ -37015,6 +37184,135 @@
         }
       },
       "source": "backend/api/v1/rss-feeds/rss-feed.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/scopes": {
+      "bodyKind": "content",
+      "hash": "724e3ca8c762bc413c108c4df41e5256be0c1faab2862992a980f01d58487917",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/scopes",
+      "schema": {
+        "definitions": {
+          "ScopeAction": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "read"
+              },
+              {
+                "type": "literal",
+                "value": "write"
+              }
+            ]
+          },
+          "ScopeAudience": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "admin"
+              },
+              {
+                "type": "literal",
+                "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "user"
+              }
+            ]
+          },
+          "ScopeCatalogEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "required": true,
+                "schema": {
+                  "name": "ScopeAction",
+                  "type": "ref"
+                }
+              },
+              "audience": {
+                "required": true,
+                "schema": {
+                  "name": "ScopeAudience",
+                  "type": "ref"
+                }
+              },
+              "requires": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resource": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "scope": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "surfaces": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "name": "ScopeCredentialSurface",
+                    "type": "ref"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ScopeCredentialSurface": {
+            "type": "union",
+            "variants": [
+              {
+                "type": "literal",
+                "value": "api-key"
+              },
+              {
+                "type": "literal",
+                "value": "oauth"
+              }
+            ]
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "scopes": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "ScopeCatalogEntry",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/scopes/scopes.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/support/contacts": {
@@ -64090,6 +64388,135 @@
       "source": "backend/api/v1/mq/scheduled-jobs.mts",
       "statusKnowledge": "default"
     },
+    "POST:/api/v1/my/api-keys": {
+      "bodyKind": "content",
+      "hash": "3cb127ed0ee4eb47c392a6535100bbcb0de6c5d341c3f006d0c94628f9c2a53a",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/api-keys",
+      "schema": {
+        "definitions": {
+          "ApiKey": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "label": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "last_used_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "permissions": {
+                "required": true,
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "prefix": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "revoked_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "type": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "mcp"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rss"
+                    }
+                  ]
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "api_key": {
+              "required": true,
+              "schema": {
+                "name": "ApiKey",
+                "type": "ref"
+              }
+            },
+            "raw_key": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/api-keys.mts",
+      "statusCodes": [201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/my/cards": {
       "bodyKind": "content",
       "hash": "740e553e66b12087d8c40da38e544a00160e9c0779a6eada7944d852ed317c4e",
@@ -68778,6 +69205,102 @@
         "caseFile": "backend/test-helpers/api-fixtures/native-oauth-broker-cases.mts"
       },
       "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "GET:/api/v1/scopes",
+      "bodyFile": "responses/shared.scopes.catalog.json",
+      "consumers": ["swift-core", "dotnet-core"],
+      "id": "shared.scopes.catalog",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/scopes/scopes.test.mts"],
+      "path": "/api/v1/scopes",
+      "responseSchema": {
+        "hash": "76b746c906a967497e3d77be854caf5990f6569cef818033215dfadfdee0a5e6",
+        "key": "shared.scopes.catalog"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/scopes"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/api-keys",
+      "bodyFile": "responses/native.my.api-keys.create.json",
+      "consumers": ["swift-core", "dotnet-core"],
+      "id": "native.my.api-keys.create",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/my/api-keys.test.mts"],
+      "path": "/api/v1/my/api-keys",
+      "requestBody": {
+        "label": "Coding agent",
+        "permissions": ["mcp.user:read", "mcp.user:write"],
+        "type": "mcp"
+      },
+      "responseSchema": {
+        "hash": "bdbe64147a2c7801b0cc7c80c4cf900b8c1b66cd427cdcacefa6b06f9ccea090",
+        "key": "native.my.api-keys.create"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/api-keys"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/oauth-grants",
+      "bodyFile": "responses/native.my.oauth-grants.paginated.json",
+      "consumers": ["swift-core", "dotnet-core"],
+      "id": "native.my.oauth-grants.paginated",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/my/oauth-grants.test.mts"],
+      "path": "/api/v1/my/oauth-grants",
+      "query": {
+        "after": "fixture-owner-scoped-oauth-grant-cursor",
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "f61b2931e7a25a33e30b15b4c973904a279886d9319673d1e329cab7fe888839",
+        "key": "native.my.oauth-grants.paginated"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/oauth-grants"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "DELETE:/api/v1/my/oauth-grants/:id",
+      "bodyFile": "responses/native.my.oauth-grants.revoke.json",
+      "consumers": ["swift-core", "dotnet-core"],
+      "id": "native.my.oauth-grants.revoke",
+      "method": "DELETE",
+      "migratedFrom": ["backend/api/v1/my/oauth-grants.test.mts"],
+      "path": "/api/v1/my/oauth-grants/00000000-0000-7000-8000-000000000711",
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "native.my.oauth-grants.revoke"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000711"
+        },
+        "routeTemplate": "/api/v1/my/oauth-grants/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/oauth-management-cases.mts"
+      },
+      "status": 204
     },
     {
       "auth": "fixture-user",

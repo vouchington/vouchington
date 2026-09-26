@@ -9759,6 +9759,53 @@
       "required": ["email_address", "id", "name"],
       "type": "object"
     },
+    "OAuthGrantClientView": {
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "verified": {
+          "type": "boolean"
+        }
+      },
+      "required": ["client_id", "client_name", "id", "verified"],
+      "type": "object"
+    },
+    "OAuthGrantView": {
+      "additionalProperties": false,
+      "properties": {
+        "client": {
+          "$ref": "#/components/schemas/OAuthGrantClientView"
+        },
+        "consented_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_used_at": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["client", "consented_at", "id", "last_used_at", "resource", "scopes"],
+      "type": "object"
+    },
     "OAuthProvider": {
       "enum": ["apple", "facebook", "github", "google", "linkedin", "microsoft", "x"],
       "type": "string"
@@ -16035,6 +16082,53 @@
       "required": ["amount", "currency", "scale"],
       "type": "object"
     },
+    "ScopeAction": {
+      "enum": ["read", "write"],
+      "type": "string"
+    },
+    "ScopeAudience": {
+      "enum": ["admin", "api", "user"],
+      "type": "string"
+    },
+    "ScopeCatalogEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/components/schemas/ScopeAction"
+        },
+        "audience": {
+          "$ref": "#/components/schemas/ScopeAudience"
+        },
+        "requires": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resource": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "surfaces": {
+          "items": {
+            "$ref": "#/components/schemas/ScopeCredentialSurface"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["action", "audience", "requires", "resource", "scope", "surfaces"],
+      "type": "object"
+    },
+    "ScopeCredentialSurface": {
+      "enum": ["api-key", "oauth"],
+      "type": "string"
+    },
     "SearchReviewQueueResult": {
       "additionalProperties": false,
       "properties": {
@@ -21017,6 +21111,17 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/my/oauth-grants/:id": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "DELETE:/api/v1/my/profile/links/:id": {
       "path": {
         "properties": {
@@ -22740,6 +22845,22 @@
       }
     },
     "GET:/api/v1/my/notifications/push-subscriptions": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/oauth-grants": {
       "query": {
         "properties": {
           "after": {

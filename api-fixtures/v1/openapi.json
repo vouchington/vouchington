@@ -9787,6 +9787,53 @@
         "required": ["email_address", "id", "name"],
         "type": "object"
       },
+      "OAuthGrantClientView": {
+        "additionalProperties": false,
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": ["client_id", "client_name", "id", "verified"],
+        "type": "object"
+      },
+      "OAuthGrantView": {
+        "additionalProperties": false,
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/OAuthGrantClientView"
+          },
+          "consented_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["client", "consented_at", "id", "last_used_at", "resource", "scopes"],
+        "type": "object"
+      },
       "OAuthProvider": {
         "enum": ["apple", "facebook", "github", "google", "linkedin", "microsoft", "x"],
         "type": "string"
@@ -16068,6 +16115,53 @@
         },
         "required": ["amount", "currency", "scale"],
         "type": "object"
+      },
+      "ScopeAction": {
+        "enum": ["read", "write"],
+        "type": "string"
+      },
+      "ScopeAudience": {
+        "enum": ["admin", "api", "user"],
+        "type": "string"
+      },
+      "ScopeCatalogEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ScopeAction"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/ScopeAudience"
+          },
+          "requires": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "surfaces": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeCredentialSurface"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["action", "audience", "requires", "resource", "scope", "surfaces"],
+        "type": "object"
+      },
+      "ScopeCredentialSurface": {
+        "enum": ["api-key", "oauth"],
+        "type": "string"
       },
       "SearchReviewQueueResult": {
         "additionalProperties": false,
@@ -50663,6 +50757,83 @@
         }
       }
     },
+    "/api/v1/my/oauth-grants": {
+      "get": {
+        "operationId": "get_api_v1_my_oauth-grants",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "results": {
+                      "items": {
+                        "$ref": "#/components/schemas/OAuthGrantView"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/my/oauth-grants/{id}": {
+      "delete": {
+        "operationId": "delete_api_v1_my_oauth-grants_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/my/profile": {
       "get": {
         "operationId": "get_api_v1_my_profile",
@@ -57640,6 +57811,36 @@
                     }
                   },
                   "required": ["ok"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/scopes": {
+      "get": {
+        "operationId": "get_api_v1_scopes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "scopes": {
+                      "items": {
+                        "$ref": "#/components/schemas/ScopeCatalogEntry"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["scopes"],
                   "type": "object"
                 }
               }
