@@ -222,8 +222,11 @@ then format and compile.
   fast instead of leaking generated resource keys. User and server copy must cross
   the explicit `UiText.Verbatim` boundary.
 - Visible counts and other UI-owned numbers must be formatted with the resolved
-  UI locale through shared format helpers. Server-rendered numbers must not use
-  browser-only locale detection, because it can produce hydration mismatches.
+  UI locale through shared format helpers. UI-owned dates, including dates
+  interpolated into translated chrome, use `formatUtcDate` from
+  `@ts-shared/utils/format` with that same locale. Server-rendered numbers and
+  dates must not use browser-only locale detection, because it can produce
+  hydration mismatches.
 - Anonymous SSR that varies by UI locale must either partition the Cloudflare
   Worker cache key by UI locale or keep the SSR response non-varying. The worker
   implements the former via `ctx.props.lang` on the `CachedOrigin` dispatch (see

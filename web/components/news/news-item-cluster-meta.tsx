@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { Story } from '@/types/rss-feed-items'
+import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function StoryMeta({ story }: { story?: Story }) {
   const t = useTranslations()
+  const uiLocale = useUiLocale()
   if (!story) return null
   const hasContent = story.published_at != null || story.cluster_reason != null
   if (!hasContent) return null
@@ -18,7 +20,7 @@ export function StoryMeta({ story }: { story?: Story }) {
       {story.published_at && (
         <span className='block'>
           {t('extracted.news.newsItemClusterMeta.eventDate_edd33a99', {
-            date: formatUtcDate(story.published_at),
+            date: formatUtcDate(story.published_at, uiLocale),
           })}
         </span>
       )}
