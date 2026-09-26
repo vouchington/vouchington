@@ -33,6 +33,6 @@
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {
-    "undici": "^8.11.0"
+    "undici": "^8.11.2"
   }
 }
