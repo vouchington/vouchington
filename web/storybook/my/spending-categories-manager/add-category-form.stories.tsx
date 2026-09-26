@@ -2,11 +2,19 @@ import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AddCategoryForm } from '@/components/my/spending-categories-manager/add-category-form'
 import type { SpendingFrequency } from '@/components/my/spending-categories-manager/frequency-select'
-import { StoryFrame } from '@/storybook/story-frame'
 import type { CurrencyCode } from '@ts-shared/money'
+import {
+  clearTopicSearchFixture,
+  setTopicSearchFixture,
+} from '@/storybook/mocks/client-api-instance'
+import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'My/Add Category Form',
+  beforeEach() {
+    setTopicSearchFixture()
+    return () => clearTopicSearchFixture()
+  },
 } satisfies Meta
 
 export default meta

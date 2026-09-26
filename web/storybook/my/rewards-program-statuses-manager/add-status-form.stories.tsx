@@ -1,11 +1,19 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AddStatusForm } from '@/components/my/rewards-program-statuses-manager/add-status-form'
-import { StoryFrame } from '@/storybook/story-frame'
 import { topics } from '@/storybook/entities/fixtures/topics'
+import {
+  clearTopicSearchFixture,
+  setTopicSearchFixture,
+} from '@/storybook/mocks/client-api-instance'
+import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'My/Add Status Form',
+  beforeEach() {
+    setTopicSearchFixture()
+    return () => clearTopicSearchFixture()
+  },
 } satisfies Meta
 
 export default meta
