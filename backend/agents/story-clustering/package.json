@@ -26,6 +26,7 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/rss-feed-items": "workspace:^",

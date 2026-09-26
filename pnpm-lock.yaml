@@ -784,6 +784,9 @@ importers:
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
+      '@modules/structured-decisions':
+        specifier: workspace:^
+        version: link:../../modules/structured-decisions
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
