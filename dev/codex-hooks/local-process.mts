@@ -114,7 +114,10 @@ export function gitHeadPathExists(cwd: string, relativePath: string): boolean {
 export function oxfmtFailure(cwd: string, filePath: string): string | undefined {
   const localBin = join(cwd, 'node_modules', '.bin', 'oxfmt')
   const result = existsSync(localBin)
-    ? spawnSync('pnpm', ['exec', 'oxfmt', filePath], { cwd, encoding: 'utf8' })
+    ? spawnSync(join(cwd, 'node_modules', '.bin', 'oxfmt'), [filePath], {
+        cwd,
+        encoding: 'utf8',
+      })
     : spawnSync('oxfmt', [filePath], { cwd, encoding: 'utf8' })
   return result.error != null || result.status === 0 ? undefined : (result.stderr ?? '').trim()
 }

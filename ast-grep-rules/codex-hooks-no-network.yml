@@ -23,7 +23,7 @@ rule:
         - kind: call_expression
         - has:
             field: function
-            regex: ^(?:import|require)$
+            regex: ^(?:import|require|process\.getBuiltinModule)$
         - has:
             field: arguments
             has:
@@ -58,6 +58,10 @@ examples:
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |
       const childProcess = await import(`node:child_process`)
+    isValid: false
+    file: 'dev/codex-hooks/policy/core.mts'
+  - code: |
+      const childProcess = process.getBuiltinModule('node:child_process')
     isValid: false
     file: 'dev/codex-hooks/policy/core.mts'
   - code: |

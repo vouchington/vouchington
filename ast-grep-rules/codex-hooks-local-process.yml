@@ -71,7 +71,7 @@ rule:
         - kind: call_expression
         - has:
             field: function
-            regex: ^(?:import|require)$
+            regex: ^(?:import|require|process\.getBuiltinModule)$
         - has:
             field: arguments
             has:
@@ -92,7 +92,7 @@ rule:
                   $$$OPTIONS)
               - pattern: execFileSync('git', ['show', $HEAD_PATH], $$$OPTIONS)
               - pattern: >-
-                  spawnSync('pnpm', ['exec', 'oxfmt', $FILE_PATH], $$$OPTIONS)
+                  spawnSync(join($CWD, 'node_modules', '.bin', 'oxfmt'), [$FILE_PATH], $$$OPTIONS)
               - pattern: spawnSync('oxfmt', [$FILE_PATH], $$$OPTIONS)
               - pattern: >-
                   spawnSync('grep', ['-rlF', '--', $VALUE, 'playwright/tests'], $$$OPTIONS)
@@ -211,7 +211,11 @@ examples:
       execFileSync('git', ['remote', '-v'], { cwd })
       execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], { cwd })
       spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], { cwd })
-      spawnSync('pnpm', ['exec', 'oxfmt', filePath], { cwd })
+      spawnSync(join(cwd, 'node_modules', '.bin', 'oxfmt'), [filePath], { cwd })
       spawnSync('oxfmt', [filePath], { cwd })
     isValid: true
+    file: 'dev/codex-hooks/local-process.mts'
+  - code: |
+      const childProcess = process.getBuiltinModule(`node:child_process`)
+    isValid: false
     file: 'dev/codex-hooks/local-process.mts'
