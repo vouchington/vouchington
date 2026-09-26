@@ -19,7 +19,8 @@ copied hooks, skills, or permission allowlists.
 - Session id: hook processes see `GROK_SESSION_ID`; the main shell usually does not. Claude-compat
   SessionStart/PreToolUse persist `.local/grok-session-id` (gitignored). With `GROK_AGENT` set,
   journal and retro CLIs resolve that file without `--session-id` and label the session `grok`.
-  `./dev/reset-worktree` deletes the persist file. Do not add copied `.grok/hooks`.
+  `./dev/reset-worktree` deletes the persist file. Do not add a `.grok/hooks/` tree: a second hook
+  source double-fires.
 - Project Grok workflows live in [`.grok/workflows/`](workflows/). They orchestrate skills; they
   do not copy hooks or skills. Staging QA: [`workflows/staging-qa.rhai`](workflows/staging-qa.rhai).
 

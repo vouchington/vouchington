@@ -66,7 +66,7 @@ describe('Grok PreToolUse runtime', () => {
     expect(resolvePreToolUseRuntime('claude', {})).toBe('claude')
   })
 
-  it('denies a Grok-native run_terminal_command force-push payload', () => {
+  it('exits 2 for a Grok-native run_terminal_command force-push payload', () => {
     const output = preToolUseOutput(
       {
         toolName: 'run_terminal_command',
@@ -74,10 +74,8 @@ describe('Grok PreToolUse runtime', () => {
       },
       { automationContext: false, runtime: 'grok' },
     )
-    expect(JSON.parse(output)).toEqual({
-      decision: 'deny',
-      reason: expect.stringContaining('Force pushes are banned'),
-    })
+    expect(output.exitCode).toBe(2)
+    expect(output.stderr).toContain('Force pushes are banned')
   })
 
   it('lists Grok tool names on the shipped PreToolUse matcher', () => {
@@ -86,47 +84,6 @@ describe('Grok PreToolUse runtime', () => {
     ) as { hooks: { PreToolUse: Array<{ matcher: string }> } }
     expect(settings.hooks.PreToolUse[0].matcher).toContain('run_terminal_command')
     expect(settings.hooks.PreToolUse[0].matcher).toContain('search_replace')
-  })
-
-  it('denies a force-push for grok runtime instead of emitting block', () => {
-    const output = preToolUseOutput(
-      { toolInput: { command: 'git push --force origin main' } },
-      { automationContext: false, runtime: 'grok' },
-    )
-    expect(JSON.parse(output)).toEqual({
-      decision: 'deny',
-      reason: expect.stringContaining('Force pushes are banned'),
-    })
-  })
-
-  it('still blocks a Claude force-push with decision block', () => {
-    const output = preToolUseOutput(
-      { tool_input: { command: 'git push --force origin main' } },
-      { automationContext: false, runtime: 'claude' },
-    )
-    expect(JSON.parse(output)).toEqual({
-      decision: 'block',
-      reason: expect.stringContaining('Force pushes are banned'),
-    })
-  })
-
-  it('emits nothing for an interactive Grok merge confirm, even with attended inherited', () => {
-    const output = preToolUseOutput(
-      { toolInput: { command: 'gh pr merge 123 --squash' } },
-      { attended: true, automationContext: false, runtime: 'grok' },
-    )
-    expect(output).toBe('')
-  })
-
-  it('denies an automated Grok merge instead of emitting block', () => {
-    const output = preToolUseOutput(
-      { toolInput: { command: 'gh pr merge 123 --squash' } },
-      { automationContext: true, runtime: 'grok' },
-    )
-    expect(JSON.parse(output)).toEqual({
-      decision: 'deny',
-      reason: expect.stringContaining('never delegated to an agent'),
-    })
   })
 
   it('blocks a Grok edit of a .claire path', () => {

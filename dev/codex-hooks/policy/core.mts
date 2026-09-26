@@ -4,10 +4,10 @@ import { hookToolInput } from '../hook-payload.mts'
 export type BlockDecision = {
   reason: string
   /**
-   * 'block' (the default when omitted) rejects the tool call outright — both Claude Code and
-   * Codex understand `{decision:'block'}`. 'confirm' marks an interactive lone merge, which
-   * pre-tool-use-confirm-output.mts renders as a silent allow only in an attended Claude session
-   * (see docs/development/merge-authority.md). findInteractiveMergeConfirm in
+   * 'block' (the default when omitted) rejects the tool call outright: pre-tool-use.mts exits 2
+   * with the reason (PreToolUseResult in policy.mts). 'confirm' marks an interactive lone merge,
+   * which pre-tool-use-confirm-output.mts renders as a silent allow only in an attended Claude
+   * session (see docs/development/merge-authority.md). findInteractiveMergeConfirm in
    * github-merge-authority.mts is the only source of 'confirm', and policy.mts consults it after
    * every block, so a block anywhere in the command always wins.
    */

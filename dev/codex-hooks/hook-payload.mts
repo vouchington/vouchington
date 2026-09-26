@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import type { HookPayload } from './types.mts'
+import { isCursorHookProcess, normalizeCursorShellPayload } from './cursor-payload.mts'
 
-export type PreToolUseRuntime = 'claude' | 'codex' | 'grok'
+export type PreToolUseRuntime = 'claude' | 'codex' | 'cursor' | 'grok'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -12,24 +13,27 @@ export function readHookPayload(stdin = readFileSync(0, 'utf8')): HookPayload {
     return {}
   }
 
+  let parsed: unknown
   try {
-    return JSON.parse(stdin) as HookPayload
+    parsed = JSON.parse(stdin)
   } catch {
     return {}
   }
+  return isRecord(parsed) ? normalizeCursorShellPayload(parsed) : {}
 }
-
 export function isGrokHookProcess(env: NodeJS.ProcessEnv = process.env): boolean {
   // GROK_AGENT is deliberately not a signal here: it is a shell-level marker that could be
-  // exported in a Claude or Codex session, where {decision: deny} has no defined meaning.
+  // exported in a Claude or Codex session.
   return Boolean(env.GROK_SESSION_ID || env.GROK_HOOK_EVENT)
 }
 
 export function resolvePreToolUseRuntime(
   argvRuntime: string | undefined,
   env: NodeJS.ProcessEnv = process.env,
+  payload: HookPayload = {},
 ): PreToolUseRuntime | undefined {
   if (isGrokHookProcess(env)) return 'grok'
+  if (isCursorHookProcess(argvRuntime, env, payload)) return 'cursor'
   if (argvRuntime === 'claude' || argvRuntime === 'codex' || argvRuntime === 'grok') {
     return argvRuntime
   }
@@ -57,7 +61,7 @@ export function hookToolName(payload: HookPayload): string {
 }
 
 export function hookSessionId(payload: HookPayload): string {
-  for (const value of [payload.session_id, payload.sessionId]) {
+  for (const value of [payload.session_id, payload.sessionId, payload.conversation_id]) {
     if (typeof value === 'string' && value.trim() !== '') return value.trim()
   }
   return ''

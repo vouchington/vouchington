@@ -43,7 +43,7 @@ export function findPreToolUseBlock(
     return {
       reason:
         'Cannot Edit/Write/apply_patch the permission-enforcement hooks (dev/codex-hooks/**, ' +
-        'dev/cursor-hooks/**, dev/agent-session-id/**), the modules they statically import (dev/pr-description/**, ' +
+        'dev/agent-session-id/**), the modules they statically import (dev/pr-description/**, ' +
         'dev/plan-issue/**), or execpolicy configuration (.codex/config.toml, .codex/rules/**, ' +
         '.cursor/*.json) ' +
         'during an autonomous CI run. This closes the mid-session self-mutation gap a pre-dispatch ' +
@@ -119,21 +119,32 @@ export function isAttendedClaudeSession(env: NodeJS.ProcessEnv = process.env): b
   return env.CLAUDE_CODE_SESSION_ATTENDED === '1'
 }
 
-export function preToolUseOutput(payload: HookPayload, options: PreToolUseOptions = {}): string {
+/**
+ * What pre-tool-use.mts writes and exits with. Every runtime reads this one contract: exit 2 is the
+ * block Claude, Codex, Cursor, and Grok all honor. Claude, Codex, and Grok surface the stderr
+ * reason; Cursor surfaces the stdout JSON. Exit 0 with empty stdio is no opinion.
+ */
+export type PreToolUseResult = { exitCode: 0 | 2; stderr: string; stdout: string }
+
+export function preToolUseOutput(
+  payload: HookPayload,
+  options: PreToolUseOptions = {},
+): PreToolUseResult {
   const block = findPreToolUseBlock(payload, {
     automationContext: options.automationContext,
     sessionOwners: options.sessionOwners,
   })
   if (block === null) {
-    return ''
+    return { exitCode: 0, stderr: '', stdout: '' }
   }
 
   if (block.disposition === 'confirm') {
-    return renderConfirmDisposition(options)
+    return { exitCode: 0, stderr: '', stdout: renderConfirmDisposition(options) }
   }
 
-  return JSON.stringify({
-    decision: options.runtime === 'grok' ? 'deny' : 'block',
-    reason: block.reason,
-  })
+  return {
+    exitCode: 2,
+    stderr: `${block.reason}\n`,
+    stdout: JSON.stringify({ decision: 'deny', reason: block.reason }),
+  }
 }

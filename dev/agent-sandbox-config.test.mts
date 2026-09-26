@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // This test is the mechanical guard (three-surface consistency + narrowness). For the rationale
@@ -255,6 +255,13 @@ describe('Cursor worktrees config', () => {
 
     expect(config['setup-worktree-unix']).toBeUndefined()
     expect(config['setup-worktree']).toEqual(['./dev/initialize monorepo'])
+  })
+})
+
+// Cursor and Grok load .claude/settings.json through Claude-compat; a native hook file double-fires.
+describe('agent hook sources', () => {
+  it.each(['.cursor/hooks.json', '.grok/hooks'])('has no native %s', hookSource => {
+    expect(existsSync(new URL(`../${hookSource}`, import.meta.url))).toBe(false)
   })
 })
 

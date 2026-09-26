@@ -13,9 +13,12 @@ Before adding or changing a Vitest test, fixture, or mock for these hooks, load 
   parsing for obfuscated or indirect forms (nested shells, `xargs` placeholders, `eval`, variable
   executables, reordered gh options, wrapper grammars). Close such reports as out of scope.
 - Native harness config first: `.claude/settings.json` permissions (Grok applies them through
-  Claude-compat; never copy into `.grok/`), `.codex/rules/default.rules`, `.cursor/cli.json`.
-  Hook code holds only what none of them can express. Every Claude deny must hold under Grok's
-  prefix matcher (`dev/claude-settings-grok-bash-deny.test.mts`).
+  Claude-compat; Cursor does too), `.codex/rules/default.rules`, `.cursor/cli.json`.
+  `.claude/settings.json` is the sole Claude/Cursor/Grok hook source: never add `.cursor/hooks.json`
+  or `.grok/hooks/`. Hook code holds only what none of them can express. Every Claude deny must
+  hold under Grok's prefix matcher (`dev/claude-settings-grok-bash-deny.test.mts`).
+- A PreToolUse block exits 2 with the reason on stderr. Cursor also needs the deny JSON on stdout;
+  keep both streams in the shared result instead of adding a runtime-specific hook entrypoint.
 - Block coarsely, allow precisely. Any block in the command beats an allow. The only allow is a
   single plain merge in an attended Claude session; it needs a positive attended signal, never
   merely the absence of `CI`.

@@ -23,6 +23,21 @@ describe('extractToolOutcome', () => {
     })
   })
 
+  it('classifies a nonzero exit_code object (Grok, normalized Cursor) as failure', () => {
+    expect(extractToolOutcome({ tool_response: { exit_code: 1, stdout: 'boom' } })).toEqual({
+      kind: 'failure',
+      message: 'Error: Exit code 1\nboom',
+    })
+  })
+
+  it('classifies a zero exit_code object as success', () => {
+    expect(extractToolOutcome({ tool_response: { exit_code: 0, stdout: 'ok' } })).toEqual({
+      kind: 'success',
+      stderr: '',
+      stdout: 'ok',
+    })
+  })
+
   it('classifies a non-"Error: Exit code" string as Codex output', () => {
     expect(extractToolOutcome({ tool_response: 'ok' })).toEqual({ kind: 'output', text: 'ok' })
   })

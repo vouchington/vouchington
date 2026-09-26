@@ -25,9 +25,9 @@ spellings, so it also blocks `git merge` beside `gh`, merge `--help`, and prose 
 (`gh api graphql -F query=@file`), or a heredoc script behind an unmodeled wrapper
 (`timeout 5 bash <<'EOF'`); see the [hook threat model](agent-sandbox.md#hook-threat-model).
 Interactively, only a lone `gh pr merge` or numeric `gh stack merge` in an attended Claude session
-gets the silent allow. Every other interactive merge gets no hook opinion. The Cursor adapter has no
-attended signal, so it answers `permission: ask` for a lone merge and, as for every command the hook
-does not block, `permission: allow` for any other interactive merge. Every other hook policy
+gets the silent allow. Every other interactive merge gets no hook opinion. Cursor and Grok run the
+same Claude-compat hook but resolve as their own runtimes, so a lone merge there gets no hook
+opinion even when they inherit `CLAUDE_CODE_SESSION_ATTENDED=1`. Every other hook policy
 (force-push, `--amend`, dev-server launches, hook-bypass flags, PR draft-first, closing-ref
 validation) is unrelated to merge authority and blocks the same way in automation and interactive
 sessions, and those blocks win over the merge allow. The PR and issue content rules (draft-first,
@@ -48,9 +48,10 @@ but that confirmation is inherited from session config, not guaranteed by the ho
 Implementation:
 
 - `dev/codex-hooks/pre-tool-use.mts` reads a `runtime` arg (`claude` or `codex`, set by
-  `.claude/settings.json` and `.codex/config.toml` respectively). It computes `automationContext`
-  (`isAutomationContext`) and `attended` (`isAttendedClaudeSession`) once and threads them through
-  `preToolUseOutput()`.
+  `.claude/settings.json` and `.codex/config.toml` respectively). `resolvePreToolUseRuntime` turns
+  `claude` into `grok` or `cursor` when that harness's markers are present. It computes
+  `automationContext` (`isAutomationContext`) and `attended` (`isAttendedClaudeSession`) once and
+  threads them through `preToolUseOutput()`, whose exit code and stdio it writes: a block exits 2.
 - The automation merge block is `findAutomationMergeBlock` in
   `dev/codex-hooks/policy/github-merge-authority.mts`. It is the final return of
   `findGitHubWorkflowBlock` in `github-workflow.mts`, so a more specific gh block in the same

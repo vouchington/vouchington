@@ -166,7 +166,7 @@ These are invoked by agent hooks, tests, CI, or higher-level scripts rather than
 commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
 `dev/blackboard-mcp` (the `agent-blackboard` MCP server entrypoint registered in `.mcp.json` and
 `.codex/config.toml`; launched by the agent runtime, not run directly),
-`node dev/codex-hooks/persist-grok-session-id.mts`,
+`node dev/codex-hooks/persist-session-id.mts claude`,
 `node dev/journal-checkpoint.mts compact [claude|codex]`,
 `node dev/codex-hooks/post-tool-use-command.mts <claude|codex>`,
 `node dev/session-friction/record.mts [permission-request]`,

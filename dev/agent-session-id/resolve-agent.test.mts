@@ -24,6 +24,11 @@ describe('defaultBlackboardAgent hints', () => {
     expect(defaultBlackboardAgent({}, cwd, { runtime: 'claude' })).toBe('claude-code')
   })
 
+  it('selects Cursor from a resolved cursor runtime', async () => {
+    const cwd = await makeTempDir()
+    expect(defaultBlackboardAgent({}, cwd, { runtime: 'cursor' })).toBe('cursor')
+  })
+
   it('keeps Grok hook env ahead of a Claude-compat runtime argv', async () => {
     const cwd = await makeTempDir()
     expect(defaultBlackboardAgent({ GROK_SESSION_ID: 'g' }, cwd, { runtime: 'claude' })).toBe(

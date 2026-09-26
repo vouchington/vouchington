@@ -38,10 +38,11 @@ function paneTitle(tmuxPane: string): string {
 // `jq -r '.tool_response.exit_code // .toolResult.exit_code // 0'` — checking Grok's
 // `toolResult.exit_code` shape as a fallback alongside `tool_response.exit_code`. Claude's
 // `tool_response` object and Codex's merged-output string never carry an exit code, so this stays
-// a no-op for both (mirrors the bash default of 0 when the field is absent). Cursor's remapped
-// payload (`remapCursorPostToolPayload`) and Grok's own `run_terminal_command` payload are the two
-// shapes that provide a real exit code — for those runtimes this restores the original gate
-// exactly, so a failed `gh pr create`/`git push` no longer reminds on a stale `->` line.
+// a no-op for both (mirrors the bash default of 0 when the field is absent). Cursor's payload
+// (normalized from `Shell`/`tool_output` in readHookPayload) and Grok's own `run_terminal_command`
+// payload are the two shapes that provide a real exit code — for those runtimes this restores the
+// original gate exactly, so a failed `gh pr create`/`git push` no longer reminds on a stale `->`
+// line.
 function toolExitCode(payload: HookPayload): number | undefined {
   for (const raw of [payload.tool_response, payload.toolResponse, payload.toolResult]) {
     if (isRecord(raw) && typeof raw.exit_code === 'number') return raw.exit_code
@@ -63,7 +64,7 @@ export function renderPostToolReminder(payload: HookPayload, tmuxPane: string): 
     return '[tmux-window-name] Plan accepted — refine window name if scope shifted. ./dev/tmux-name <name>  (dangerouslyDisableSandbox: true)'
   }
 
-  if (toolName !== 'Bash' && toolName !== 'Shell' && toolName !== 'run_terminal_command') {
+  if (toolName !== 'Bash' && toolName !== 'run_terminal_command') {
     return null
   }
 

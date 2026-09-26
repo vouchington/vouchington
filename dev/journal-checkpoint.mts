@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   if (hookSessionId(payload) === '') return
   if (!isCompactRestart(payload)) return
 
-  const runtime = resolvePreToolUseRuntime(process.argv[3])
+  const runtime = resolvePreToolUseRuntime(process.argv[3], process.env, payload)
   const { runCompactCheckpoint } = await import('./journal-checkpoint/compact.mts')
   await runCompactCheckpoint(payload, process.env, {}, runtime)
 }

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import { readHookPayload } from './codex-hooks/hook-payload.mts'
 import type { HookPayload } from './codex-hooks/types.mts'
 import { renderPostToolReminder } from './tmux-reminder-post-tool.mts'
 
@@ -50,10 +51,9 @@ describe('renderPostToolReminder', () => {
   })
 
   it('reads Cursor Shell post-tool payloads for reset-worktree', () => {
-    const payload: HookPayload = {
-      command: './dev/reset-worktree',
-      tool_name: 'Shell',
-    }
+    const payload = readHookPayload(
+      JSON.stringify({ tool_input: { command: './dev/reset-worktree' }, tool_name: 'Shell' }),
+    )
     const reminder = withFakeTmux('old-task', () => renderPostToolReminder(payload, '%1'))
     expect(reminder).toContain('./dev/tmux-name ""')
   })
@@ -133,7 +133,7 @@ describe('renderPostToolReminder', () => {
     expect(renderPostToolReminder(payload, '%1')).toBeNull()
   })
 
-  it('ignores tools other than Bash/Shell/run_terminal_command/ExitPlanMode', () => {
+  it('ignores tools other than Bash/run_terminal_command/ExitPlanMode', () => {
     const payload: HookPayload = { tool_input: { command: 'x' }, tool_name: 'Read' }
     expect(renderPostToolReminder(payload, '%1')).toBeNull()
   })
