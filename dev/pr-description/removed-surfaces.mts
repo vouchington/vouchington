@@ -1,4 +1,4 @@
-import { parseRemovedExports, addNamedExportNames, collectExportNames } from './removed-exports.mts'
+import { parseRemovedExports } from './removed-exports.mts'
 // One parser serves both `validate <pr>` (`gh pr diff`) and `create` (`git diff origin/main...HEAD`)
 // so the supersession search vocabulary always reflects what the diff deletes, not what it adds.
 
@@ -14,11 +14,15 @@ const DELETED_FILE_MODE_RE = /^deleted file mode \d+$/m
 const RENAME_FROM_RE = /^rename from (?<path>.+)$/m
 // The segment/slash pair is optional so this also matches the root `web/app/page.tsx`.
 const ROUTE_FILE_RE = /^web\/app\/(?:(?<segments>.+)\/)?(?:page|route)\.tsx?$/
-const EXPORT_STAR_RE = /^export\s+(?:type\s+)?\*\s+from\s+['"](?<spec>[^'"]+)['"]/
-const EXPORT_NAMED_RE = /^export\s+(?:type\s+)?\{\s*(?<names>[^}]+)\}/
-const EXPORT_NAMED_OPEN_RE = /^export\s*(?:type\s+)?\{\s*$/
-const EXPORT_DECL_RE =
-  /^export\s+(?:default\s+)?(?:async\s+)?(?:function|class|const|let|var|type|interface|enum)\s+(?<name>[A-Za-z_$][\w$]*)/
+const UBIQUITY_STOPLIST = new Set(
+  'base common config constants core helper helpers index main shared types util utils'.split(' '),
+)
+const TYPE_PRIORITY: Record<RemovedSurface['type'], number> = {
+  'deleted-file': 0,
+  'removed-export': 1,
+  'removed-route': 2,
+  'removed-script': 3,
+}
 
 export function parseRemovedSurfaces(patch: string): RemovedSurface[] {
   const surfaces: RemovedSurface[] = []
@@ -84,7 +88,8 @@ function parseRouteFromPath(path: string): string | undefined {
   return kept.length > 0 ? `/${kept.join('/')}` : '/'
 }
 
-// Tracks a multiline `export { ... }` block; entry is sign-agnostic since the opener may be context.
+// Bounds and orders the search vocabulary as quoted phrase terms (a quoted path outranked the bare
+// filename against the live API), dropping sub-4-char/stoplist terms; excluded terms land in `dropped`.
 export function buildRemovalVocabulary(
   surfaces: RemovedSurface[],
   limit = 12,

@@ -1,6 +1,5 @@
 import { findEmbeddedExecCommands } from './codex-embedded-exec.mts'
 import { asRecord } from './compute-shared.mts'
-import { extractCommandArg } from './exec-program-args.mts'
 
 function directCommand(payload: Record<string, unknown>): string | undefined {
   if (!['exec_command', 'bash', 'shell', 'Bash'].includes(String(payload.name))) return undefined

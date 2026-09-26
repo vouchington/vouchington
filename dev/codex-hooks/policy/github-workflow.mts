@@ -1,19 +1,8 @@
 import { DEFAULT_AUTOMATION_CONTEXT, type BlockDecision } from './core.mts'
-import {
-  findClosingIssueReferenceBlock,
-  findUnresolvableFixMainExceptionBlock,
-  type GitHubWorkflowPolicyOptions,
-} from './github-closing-refs.mts'
-import { hasClosingIssueReference } from '../../pr-description/closing-refs.mts'
-import { findEscapeCommentClosingKeywordLeaks } from '../../pr-description/escape-comment-leaks.mts'
-import {
-  isFixMainInterimClassifierNoClosingRefBody,
-  isScheduledPromptNoSourceBody,
-} from '../../pr-description/scheduled-no-source.mts'
-import { commandsToInspectForGitHubPolicy, effectiveGhRepo } from './github-command-context.mts'
+import { type GitHubWorkflowPolicyOptions } from './github-closing-refs.mts'
+import { commandsToInspectForGitHubPolicy } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
 import { commandPrefixAt } from './github-command-position.mts'
-import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
 import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
@@ -21,7 +10,6 @@ import { findRawIssueCreateBlock } from './github-issue-create-policy.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
 import { githubPrBodyDecision } from './github-workflow-pr-body.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
-import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
 export function findGitHubWorkflowBlock(
   command: string,

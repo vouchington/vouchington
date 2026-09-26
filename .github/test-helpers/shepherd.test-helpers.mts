@@ -87,7 +87,7 @@ export function executeGateWithTitle(
         ...options.prFields,
         head: {
           ref: 'fix/pr-title-output',
-          sha: '1111111111111111111111111111111111111111',
+          sha: '1'.repeat(40),
           repo: { full_name: options.headRepo ?? 'vouchington/vouchington' },
         },
         html_url: trustedPrUrl,

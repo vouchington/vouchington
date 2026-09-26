@@ -2,17 +2,8 @@ import {
   isShadowedAtUse,
   isThenBoundaryParameter,
 } from './post-publication-reader-inventory-public-boundary-then.mts'
-import {
-  isFunctionLike,
-  isNode,
-  parseSource,
-  propertyName,
-  walk,
-} from '../targeted-guardrails/ast-utils.mts'
-import {
-  canonicalCallNames,
-  importedCanonicalBindings,
-} from './post-publication-reader-inventory-source-helpers.mts'
+import { isNode, parseSource, propertyName, walk } from '../targeted-guardrails/ast-utils.mts'
+import { importedCanonicalBindings } from './post-publication-reader-inventory-source-helpers.mts'
 import {
   isSetHasCall,
   walkWithAncestors,

@@ -1,4 +1,4 @@
-import { isNode, propertyName, walk } from '../targeted-guardrails/ast-utils.mts'
+import { isNode, propertyName } from '../targeted-guardrails/ast-utils.mts'
 type Node = import('../targeted-guardrails/ast-utils.mts').UnknownNode
 
 export function staticSqlTemplateText(node: Node | undefined): string | null {

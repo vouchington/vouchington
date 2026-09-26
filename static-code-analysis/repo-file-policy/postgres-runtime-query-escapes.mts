@@ -33,7 +33,7 @@ export function markDynamic(
   }
 }
 
-function markExportedDeclaration(
+export function markExportedDeclaration(
   declaration: QueryNode,
   scopes: Array<Map<string, ScopeBinding>>,
 ): void {

@@ -1,8 +1,5 @@
-import { isFunctionLike, isNode, propertyName } from '../targeted-guardrails/ast-utils.mts'
-import {
-  containsNode,
-  walkWithAncestors,
-} from './post-publication-reader-inventory-public-boundary-ast.mts'
+import { isNode, propertyName } from '../targeted-guardrails/ast-utils.mts'
+import { walkWithAncestors } from './post-publication-reader-inventory-public-boundary-ast.mts'
 type Node = import('../targeted-guardrails/ast-utils.mts').UnknownNode
 
 export function derivedBindingIsConsumed(ast: Node, name: string, declaredAt: number): boolean {

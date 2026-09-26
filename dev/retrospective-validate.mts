@@ -14,7 +14,7 @@ export const ROOT_DIAGNOSTIC_LINE = /^ {2}- Root diagnostic: .*[^\s]$/
 export const DISPOSITION_LINE = /^ {2}- Disposition: .*[^\s]$/
 export const BLANK_LINE = /^\s*$/
 const UNAVAILABLE_STATUS = /^Status: unavailable \(.*\)$/
-const GROUP_STATUS_ERRORS: readonly [string, string] = [
+export const GROUP_STATUS_ERRORS: readonly [string, string] = [
   'failure-group entries are present but Status is not "failures observed"',
   '"Status: failures observed" requires at least one failure-group entry',
 ]

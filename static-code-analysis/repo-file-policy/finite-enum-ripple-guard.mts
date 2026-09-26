@@ -4,18 +4,13 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import {
-  parsePostDetailRouteFactoryArgs,
-  parsePostRouteConfigEntries,
-  parsePostSlugToType,
-  parsePostTypeUnion,
-  parseTopicRouteFactoryArgs,
-  parseTopicRouteConfigEntries,
-  parseTopicTypeEntries,
-} from './finite-enum-ripple-parsers.mts'
+import type {
+  FiniteEnumFiles,
+  ReadTrackedFile,
+  RoutedPage,
+} from './finite-enum-ripple-post-types.mts'
 
 const CHECKLIST = 'docs/development/finite-enum-ripple-checklist.md'
-const INTERNAL_POST_TYPES = new Set(['comment', 'topic_recommendation'])
 const NON_TOPIC_ENTITY_ROUTE_SLUGS = new Set(['domain', 'url'])
 const NON_TOPIC_COLLECTION_ROUTE_SLUGS = new Set(['domains', 'urls', 'web-search'])
 const NON_POST_COLLECTION_ROUTE_SLUGS = new Set(['test-markdown-html'])
@@ -31,6 +26,7 @@ export function checkFiniteEnumRippleGuard(
   checkPostTypes(errors, files, readTracked)
 }
 
+/** Classifies the already-existing tracked inventory once for every enum ripple check. */
 export function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]): FiniteEnumFiles {
   const files: FiniteEnumFiles = {
     existingFileSet: new Set(existingTrackedFiles),
