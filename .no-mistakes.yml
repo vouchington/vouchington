@@ -2334,9 +2334,10 @@ rules:
         # pre-revert coverage-transport budget.
         - job: '.github/workflows/tests-cloudflare-worker.yml#cloudflare-worker-tests'
           maxMinutes: 17
-        # Step budgets sum ~27m; real max 2.72m (n=30), cap must cover the steps. See #8078.
+        # Step budgets sum 28m plus 2m provisioning/drain headroom. Measured healthy jobs:
+        # main 48s, coverage PR 75s. See docs/development/reference-ci-ci-job-timeout-budgets.md.
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
-          maxMinutes: 37
+          maxMinutes: 30
         # Fail-safe for backend/browser setup plus the bounded 13m web build before the sharded browser runtime begins.
         - job: '.github/workflows/tests-playwright.yml#playwright-tests'
           maxMinutes: 30
