@@ -121,7 +121,11 @@ include the directories those tools actually write, matching across `.codex/conf
 Claude's OS sandbox already writes the project root. `filesystem.allowWrite` is only needed for
 additional paths outside that root; in-project build and state output needs no separate grant.
 Claude also grants `~/.local/state/mise`, because mise records the repo's `.mise.toml` there on
-every shell invocation. Claude's `sandbox.network.allowedDomains` adds `registry.npmjs.org` and
+every shell invocation. Claude grants `/tmp` together with `/private/tmp`, as it does `/var/folders`
+with `/private/var/folders`: macOS resolves `/tmp` to `/private/tmp` and the sandbox checks the
+resolved path, so `/tmp` alone grants nothing there. pnpm 12 keeps its store operation lock in
+`/tmp/pnpm-store-operation-locks-<uid>`, so without the `/private` spelling a sandboxed `pnpm exec`
+(one piped into `tail`, for example) fails with `Failed to open the store operation lock`. Claude's `sandbox.network.allowedDomains` adds `registry.npmjs.org` and
 `github.com` for commands that stay sandboxed, such as package metadata lookups or a compound
 command that does not match an `excludedCommands` pattern. Direct `git *` and `gh *` commands
 already run outside the sandbox and do not depend on this list.
@@ -218,7 +222,8 @@ lists.
 [`dev/agent-sandbox-config.test.mts`](../../dev/agent-sandbox-config.test.mts) enforces
 narrowness (it fails on a bare `git`/`gh`/`rtk`/`npx` prefix), requires the remaining
 git/gh prefixes, forbids the six review-bypass families in `.codex/rules/default.rules`,
-and requires Codex `writable_roots` to be a subset of Claude `sandbox.filesystem.allowWrite`. See
+requires Codex `writable_roots` to be a subset of Claude `sandbox.filesystem.allowWrite`, and
+requires every Claude `/tmp` or `/var` write root to be granted under its `/private` spelling too. See
 [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#decision-criteria) for the
 full decision criteria on when an escalation is a genuine bypass candidate worth adding.
 

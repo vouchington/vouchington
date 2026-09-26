@@ -510,6 +510,7 @@
     "filesystem": {
       "allowWrite": [
         "/tmp",
+        "/private/tmp",
         ".pnpm-store",
         "~/.local/share/pnpm",
         "~/.local/share/pnpm/store",
