@@ -15,6 +15,7 @@ import type { ClassifierModelProvider } from '@voucha/types'
 import { getAutotaggerClassifierSystemUserId } from '@services/users/system-users'
 import { executeAndPersistAutotaggerDecision } from './dispatch-classifier-execute.mts'
 import { buildAutotaggerClassifierBindingsAndDigest } from './dispatch-classifier-bindings.mts'
+import { createAutotaggerStructuredDecisionHooks } from './structured-decision-attempt-hooks.mts'
 
 const TAGGING_CLASSIFIER_SLUG = 'tagging'
 
@@ -39,12 +40,11 @@ export function resolveStructuredDecisionApiKey(transport: ClassifierModelProvid
   )
 }
 
-// The structured-decision client's own retry budget is 3 attempts with sleeps capped at 5s
-// between them (backend/modules/structured-decisions/client.mts); it has no per-request timeout
-// of its own, so the dispatch AbortSignal (dispatch-classifier-execute.mts) is the only thing
-// bounding a stalled provider call. 60s covers that worst case with headroom; the dispatch signal
-// fires 5s early so an aborted request still leaves room to record the failure before the lease
-// itself would expire.
+// The structured-decision client makes exactly one attempt per `decide()` call (no retries) and
+// has no per-request timeout of its own, so the dispatch AbortSignal
+// (dispatch-classifier-execute.mts) is the only thing bounding a stalled provider call. 60s covers
+// that worst case with headroom; the dispatch signal fires 5s early so an aborted request still
+// leaves room to record the failure before the lease itself would expire.
 export const AUTOTAGGER_CLASSIFIER_LEASE_SECONDS = 60
 
 export type AutotaggerClassifierCandidate = { topicId: string; name: string }
@@ -106,6 +106,7 @@ export async function dispatchAutotaggerClassifier(
   const baseClient = buildClient({
     transport: configuration.modelProvider,
     apiKey: resolveStructuredDecisionApiKey(configuration.modelProvider),
+    hooks: createAutotaggerStructuredDecisionHooks(input.subject),
   })
   // Independent of one another (neither reads the other's result), so they run concurrently
   // rather than as a third sequential await.

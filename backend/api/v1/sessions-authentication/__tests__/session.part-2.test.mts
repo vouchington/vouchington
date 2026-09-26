@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 
@@ -12,30 +12,13 @@ import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   SESSION_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
-import {
-  closeScopedDynamicConfigContext,
-  overrideDynamicConfigFieldsForTest,
-} from '@voucha/test-helpers/dynamic-config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { useRouteRateLimitConfigSnapshot } from '@voucha/test-helpers/api/route-rate-limit-config-snapshot'
 
 import { v7 } from 'uuid'
 
 describe('Session Routes', () => {
-  let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
-
-  beforeAll(async () => {
-    await routeRateLimitConfig.waitForInitialization()
-    routeRateLimitConfig.unsubscribe()
-    originalRouteRateLimitConfig = routeRateLimitConfig.getFields()
-  }, 30_000)
-
-  afterEach(async () => {
-    overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
-  })
-
-  afterAll(async () => {
-    overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
-    await closeScopedDynamicConfigContext([routeRateLimitConfig])
-  })
+  useRouteRateLimitConfigSnapshot()
 
   describe('PATCH /api/v1/session', () => {
     it('rotates a revoked authenticated session even when its refresh check is still hot', async () => {

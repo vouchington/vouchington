@@ -95,6 +95,15 @@ older page before the existing messages.
 | POST   | `/api/v1/my/notifications/push-subscriptions`     | Required       | Create or update a browser push endpoint         |
 | DELETE | `/api/v1/my/notifications/push-subscriptions/:id` | Required       | Revoke a browser push endpoint                   |
 
+### Connected Apps
+
+| Method | Route                         | Authentication | Description                                   |
+| ------ | ----------------------------- | -------------- | --------------------------------------------- |
+| GET    | `/api/v1/my/oauth-grants`     | Required       | List the OAuth apps the current user approved |
+| DELETE | `/api/v1/my/oauth-grants/:id` | Required       | Revoke an app's access (suspended users: 403) |
+
+See [API keys and connected apps](../../../../docs/requirements/users/api-keys.md#connected-apps).
+
 ### Referral Clicks
 
 | Method | Route                        | Authentication | Description                                       |

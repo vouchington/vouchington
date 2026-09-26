@@ -82,8 +82,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          MATCHED_RULE: ${{ steps.decide.outputs.matched_rule }}
         run: |
-          echo "Matched rule: ${{ steps.decide.outputs.matched_rule }}"
+          echo "Matched rule: $MATCHED_RULE"
           gh run rerun --repo "$GITHUB_REPOSITORY" "$WORKFLOW_RUN_ID"
       - name: Set should_dispatch output
         id: triage
@@ -93,8 +94,10 @@ jobs:
           # second gate lets retries run with Harness dispatch to a new PR/issue
           # kept off, or vice versa.
           HARNESS_AGENT_DISPATCH_ENABLED: ${{ vars.HARNESS_AGENT_DISPATCH_ENABLED }}
+          SOURCE_CURRENT: ${{ steps.source-state.outputs.current }}
+          DECISION: ${{ steps.decide.outputs.decision }}
         run: |
-          if [[ "${{ steps.source-state.outputs.current }}" == "true" && "${{ steps.decide.outputs.decision }}" == "dispatch" && "$HARNESS_AGENT_DISPATCH_ENABLED" == "true" ]]; then
+          if [[ "$SOURCE_CURRENT" == "true" && "$DECISION" == "dispatch" && "$HARNESS_AGENT_DISPATCH_ENABLED" == "true" ]]; then
             echo "should_dispatch=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
@@ -159,7 +162,7 @@ jobs:
       - name: Render prompt
         id: render
         if: steps.source-state.outputs.current == 'true'
-        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
           template: docs/prompts/automation/fix-main.md
           vars: |
@@ -278,6 +281,7 @@ jobs:
       FAILED_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
       RENDER_PROMPT_RESULT: ${{ needs.render-prompt.result }}
       DISPATCH_RESULT: ${{ needs.dispatch.result }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
       - name: Revalidate source run
         id: source-state
@@ -351,7 +355,6 @@ jobs:
           WORKFLOW_NAME="$FAILED_WORKFLOW_NAME"
           RUN_URL="$FAILED_RUN_URL"
           COMMIT_SHA="$FAILED_COMMIT_SHA"
-          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
           THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           if [[ "$RENDER_PROMPT_RESULT" == "failure" || "$RENDER_PROMPT_RESULT" == "cancelled" ]]; then

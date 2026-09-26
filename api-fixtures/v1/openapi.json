@@ -5233,10 +5233,24 @@
             "type": "string"
           },
           "uiLocale": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "ui_locale": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           }
         },
         "type": "object"
@@ -8184,6 +8198,152 @@
         "enum": ["inbound", "outbound"],
         "type": "string"
       },
+      "MfaVerificationResponseBody": {
+        "additionalProperties": false,
+        "properties": {
+          "dt": {
+            "additionalProperties": false,
+            "properties": {
+              "payload": {
+                "additionalProperties": false,
+                "properties": {
+                  "dc": {
+                    "const": "attested"
+                  },
+                  "did": {
+                    "type": "string"
+                  }
+                },
+                "required": ["did"],
+                "type": "object"
+              },
+              "token": {
+                "type": "string"
+              }
+            },
+            "required": ["payload", "token"],
+            "type": "object"
+          },
+          "session": {
+            "additionalProperties": false,
+            "properties": {
+              "did": {
+                "type": "string"
+              },
+              "mpl": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "rca": {
+                "type": "number"
+              },
+              "rol": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "sca": {
+                "type": "number"
+              },
+              "sid": {
+                "type": "string"
+              },
+              "tt": {
+                "type": "number"
+              },
+              "uid": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": ["did", "sid", "uid"],
+            "type": "object"
+          },
+          "st": {
+            "additionalProperties": false,
+            "properties": {
+              "payload": {
+                "additionalProperties": false,
+                "properties": {
+                  "did": {
+                    "type": "string"
+                  },
+                  "mpl": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "rca": {
+                    "type": "number"
+                  },
+                  "rol": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "sca": {
+                    "type": "number"
+                  },
+                  "sid": {
+                    "type": "string"
+                  },
+                  "tt": {
+                    "type": "number"
+                  },
+                  "uid": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "required": ["did", "sid", "uid"],
+                "type": "object"
+              },
+              "token": {
+                "type": "string"
+              }
+            },
+            "required": ["payload", "token"],
+            "type": "object"
+          },
+          "user": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": ["id"],
+            "type": "object"
+          }
+        },
+        "required": ["dt", "session", "st", "user"],
+        "type": "object"
+      },
       "MicrosoftStoreServiceTickets": {
         "additionalProperties": false,
         "properties": {
@@ -9785,6 +9945,53 @@
           }
         },
         "required": ["email_address", "id", "name"],
+        "type": "object"
+      },
+      "OAuthGrantClientView": {
+        "additionalProperties": false,
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": ["client_id", "client_name", "id", "verified"],
+        "type": "object"
+      },
+      "OAuthGrantView": {
+        "additionalProperties": false,
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/OAuthGrantClientView"
+          },
+          "consented_at": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["client", "consented_at", "id", "last_used_at", "resource", "scopes"],
         "type": "object"
       },
       "OAuthProvider": {
@@ -16069,6 +16276,53 @@
         "required": ["amount", "currency", "scale"],
         "type": "object"
       },
+      "ScopeAction": {
+        "enum": ["read", "write"],
+        "type": "string"
+      },
+      "ScopeAudience": {
+        "enum": ["admin", "api", "user"],
+        "type": "string"
+      },
+      "ScopeCatalogEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ScopeAction"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/ScopeAudience"
+          },
+          "requires": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "resource": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "surfaces": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeCredentialSurface"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["action", "audience", "requires", "resource", "scope", "surfaces"],
+        "type": "object"
+      },
+      "ScopeCredentialSurface": {
+        "enum": ["api-key", "oauth"],
+        "type": "string"
+      },
       "SearchReviewQueueResult": {
         "additionalProperties": false,
         "properties": {
@@ -16210,6 +16464,18 @@
           }
         },
         "required": ["dte", "secure", "ste"],
+        "type": "object"
+      },
+      "SessionTokenBody": {
+        "additionalProperties": false,
+        "properties": {
+          "dt": {
+            "type": "string"
+          },
+          "st": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "SessionTokenPayload": {
@@ -25593,150 +25859,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "dt": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "dc": {
-                              "const": "attested"
-                            },
-                            "did": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["did"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "session": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "did": {
-                          "type": "string"
-                        },
-                        "mpl": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "rca": {
-                          "type": "number"
-                        },
-                        "rol": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "sca": {
-                          "type": "number"
-                        },
-                        "sid": {
-                          "type": "string"
-                        },
-                        "tt": {
-                          "type": "number"
-                        },
-                        "uid": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["did", "sid", "uid"],
-                      "type": "object"
-                    },
-                    "st": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "did": {
-                              "type": "string"
-                            },
-                            "mpl": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "rca": {
-                              "type": "number"
-                            },
-                            "rol": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "sca": {
-                              "type": "number"
-                            },
-                            "sid": {
-                              "type": "string"
-                            },
-                            "tt": {
-                              "type": "number"
-                            },
-                            "uid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["did", "sid", "uid"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "user": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id"],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["dt", "session", "st", "user"],
-                  "type": "object"
+                  "$ref": "#/components/schemas/MfaVerificationResponseBody"
                 }
               }
             },
@@ -25946,150 +26069,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "dt": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "dc": {
-                              "const": "attested"
-                            },
-                            "did": {
-                              "type": "string"
-                            }
-                          },
-                          "required": ["did"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "session": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "did": {
-                          "type": "string"
-                        },
-                        "mpl": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "rca": {
-                          "type": "number"
-                        },
-                        "rol": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "sca": {
-                          "type": "number"
-                        },
-                        "sid": {
-                          "type": "string"
-                        },
-                        "tt": {
-                          "type": "number"
-                        },
-                        "uid": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["did", "sid", "uid"],
-                      "type": "object"
-                    },
-                    "st": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "payload": {
-                          "additionalProperties": false,
-                          "properties": {
-                            "did": {
-                              "type": "string"
-                            },
-                            "mpl": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "rca": {
-                              "type": "number"
-                            },
-                            "rol": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "sca": {
-                              "type": "number"
-                            },
-                            "sid": {
-                              "type": "string"
-                            },
-                            "tt": {
-                              "type": "number"
-                            },
-                            "uid": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["did", "sid", "uid"],
-                          "type": "object"
-                        },
-                        "token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["payload", "token"],
-                      "type": "object"
-                    },
-                    "user": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id"],
-                      "type": "object"
-                    }
-                  },
-                  "required": ["dt", "session", "st", "user"],
-                  "type": "object"
+                  "$ref": "#/components/schemas/MfaVerificationResponseBody"
                 }
               }
             },
@@ -26561,34 +26541,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "page_info": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "end_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "has_next_page": {
-                          "type": "boolean"
-                        },
-                        "start_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["end_cursor", "has_next_page", "start_cursor"],
-                      "type": "object"
+                      "$ref": "#/components/schemas/PageInfo"
                     },
                     "results": {
                       "items": {
@@ -27154,34 +27107,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "page_info": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "end_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "has_next_page": {
-                          "type": "boolean"
-                        },
-                        "start_cursor": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["end_cursor", "has_next_page", "start_cursor"],
-                      "type": "object"
+                      "$ref": "#/components/schemas/PageInfo"
                     },
                     "results": {
                       "items": {
@@ -50663,6 +50589,83 @@
         }
       }
     },
+    "/api/v1/my/oauth-grants": {
+      "get": {
+        "operationId": "get_api_v1_my_oauth-grants",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/components/schemas/PageInfo"
+                    },
+                    "results": {
+                      "items": {
+                        "$ref": "#/components/schemas/OAuthGrantView"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/my/oauth-grants/{id}": {
+      "delete": {
+        "operationId": "delete_api_v1_my_oauth-grants_id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/my/profile": {
       "get": {
         "operationId": "get_api_v1_my_profile",
@@ -57652,6 +57655,36 @@
         }
       }
     },
+    "/api/v1/scopes": {
+      "get": {
+        "operationId": "get_api_v1_scopes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "scopes": {
+                      "items": {
+                        "$ref": "#/components/schemas/ScopeCatalogEntry"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["scopes"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/search": {
       "get": {
         "operationId": "get_api_v1_search",
@@ -57684,6 +57717,15 @@
     "/api/v1/session": {
       "delete": {
         "operationId": "delete_api_v1_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionTokenBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -57709,6 +57751,15 @@
       },
       "patch": {
         "operationId": "patch_api_v1_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionTokenBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

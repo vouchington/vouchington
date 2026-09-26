@@ -1,9 +1,15 @@
 # @services/ai-usage
 
-Records and aggregates OpenAI token usage and cost across **every** agent call site, not only
-per-community moderation. The full pricing matrix, the production forecast, and the statement of
-what this ledger does and doesn't cover live in the private `vouchington/vouchington-docs`
-repository.
+Records and aggregates token usage and cost across **every** agent call site, not only
+per-community moderation. Despite the OpenAI-branded names throughout this service
+(`OpenAiSpendCapBreachError`, `getOpenAiSpendCapFields`, ...), the same ledger and daily cap also
+cover the C6 tagging autotagger's OpenRouter/Jev spend: `@modules/structured-decisions` never
+imports this service, so `@agents/autotagger/structured-decision-attempt-hooks.mts` wires the
+client's `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks to
+`assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty` from the
+agent layer instead (issue #616). The full pricing matrix, the production forecast, and the
+statement of what this ledger does and doesn't cover live in the private
+`vouchington/vouchington-docs` repository.
 
 ## Data Model
 
@@ -70,8 +76,11 @@ stays on the existing `trackAIModerationCall` analytics path — by design, not 
   failures are reported and retain the source job's midnight fallback rather than consuming its
   ordinary processing attempts.
 - `latchAccountingUncertainty({ requestDay, source })` / `getAccountingUncertaintySource(requestDay)` —
-  set and read the primary-Valkey, per-UTC-day fail-closed latch used when billed OpenAI usage may
-  be missing from the ledger. The first source (`ledger_write_failed` or `unknown_billed_attempt`)
+  set and read the primary-Valkey, per-UTC-day fail-closed latch used when billed usage may be
+  missing from the ledger. The first source (`ledger_write_failed` or `unknown_billed_attempt`)
   remains diagnostic state until the request day's boundary; past-day writes are no-ops. The
   physical Responses API attempt hooks write `unknown_billed_attempt` before an ambiguous create
-  or foreground-stream error can escape; known-unbilled flex capacity failures do not set it.
+  or foreground-stream error can escape; known-unbilled flex capacity failures do not set it. The
+  structured-decision client's `onUnknownBilledAttempt` hook writes the same source for the C6
+  autotagger path on a network error, an ambiguous HTTP status, or unreadable usage on an
+  otherwise-2xx OpenRouter/Jev response.

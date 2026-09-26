@@ -32,7 +32,6 @@ Reporter policy:
 | `github-actions`                   | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `git-hooks`                        | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `playwright-helpers`               | `tests-tooling.yml`              | `tooling`                         | None                     |
-| `backend-docs-freshness`           | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `i18n-extract-codemod`             | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `docker-deploy`                    | `tests-tooling.yml`              | `tooling`                         | None                     |
 | `i18n-route-bounds`                | `tests-tooling.yml`              | `i18n-route-bounds`               | None                     |

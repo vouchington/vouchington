@@ -5,6 +5,7 @@ Session token management, passkey registration, passkey management, and discover
 ## Contents
 
 - <a id="endpoints"></a>[Endpoints](reference-endpoints.md)
+- <a id="request-validation"></a>[Request Validation](reference-request-validation.md)
 - <a id="bluesky-account-linking"></a>[Bluesky account linking](reference-bluesky-account-linking.md)
 - <a id="security-checklist"></a>[Security Checklist](reference-security-checklist.md)
 - <a id="patch-apiv1session"></a>[PATCH /api/v1/session](reference-patch-api-v1-session.md)

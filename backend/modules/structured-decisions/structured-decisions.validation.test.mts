@@ -87,7 +87,6 @@ describe('structured-decision response validation edges', () => {
         transport: 'openrouter',
         apiKey: 'test-key',
         fetch,
-        sleep: async () => undefined,
       }).decide(request),
     ).rejects.toMatchObject({ code: 'invalid-response' })
   })

@@ -24,6 +24,10 @@
       "fixtureIds": ["native.messages.participant-remove.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "DELETE:/api/v1/my/oauth-grants/:id": {
+      "fixtureIds": ["native.my.oauth-grants.revoke"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
     "DELETE:/api/v1/my/rewards-program-point-valuations/:id": {
       "fixtureIds": ["native.point-valuations.delete.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -514,6 +518,10 @@
       "fixtureIds": ["native.my.push-subscriptions.paginated"],
       "hash": "92d8ef479a566a03f959f26efba9cc03d7233a11e6dee6c2cd4a86d88a26dd62"
     },
+    "GET:/api/v1/my/oauth-grants": {
+      "fixtureIds": ["native.my.oauth-grants.paginated"],
+      "hash": "7cf36211537e0ca3b3ef9816cf8794d744bad1d36944896030ac9c0f0565592b"
+    },
     "GET:/api/v1/my/profile": {
       "fixtureIds": ["swift.my.profile.default"],
       "hash": "412d652309f73aa0940aef35c31df16b2fbb8c5339873ca944c2c17706ff3120"
@@ -667,6 +675,10 @@
     "GET:/api/v1/rss-feeds/:id/crawls/:crawlId#privileged": {
       "fixtureIds": ["web.admin.rss-feed-crawl.default"],
       "hash": "fb57a6c281e407e32fb6aa6f04e058e65ba2736b4320f7babfe2220a9e021d44"
+    },
+    "GET:/api/v1/scopes": {
+      "fixtureIds": ["shared.scopes.catalog"],
+      "hash": "724e3ca8c762bc413c108c4df41e5256be0c1faab2862992a980f01d58487917"
     },
     "GET:/api/v1/support/contacts": {
       "fixtureIds": ["native.staff-support.contacts.default"],
@@ -1103,6 +1115,10 @@
     "POST:/api/v1/mq/scheduled-jobs/:id/runs": {
       "fixtureIds": ["web.admin.mq.scheduled-jobs.trigger.default"],
       "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
+    },
+    "POST:/api/v1/my/api-keys": {
+      "fixtureIds": ["native.my.api-keys.create"],
+      "hash": "3cb127ed0ee4eb47c392a6535100bbcb0de6c5d341c3f006d0c94628f9c2a53a"
     },
     "POST:/api/v1/my/cards": {
       "fixtureIds": ["native.cards.create.default"],
@@ -2038,6 +2054,10 @@
       "fixtureIds": ["native.moderation.vote-integrity.resolved"],
       "hash": "c5a8f75975cfa585052faf27270a6e35e9756ca94baa3f76f1b1109614d524d3"
     },
+    "native.my.api-keys.create": {
+      "fixtureIds": ["native.my.api-keys.create"],
+      "hash": "bdbe64147a2c7801b0cc7c80c4cf900b8c1b66cd427cdcacefa6b06f9ccea090"
+    },
     "native.my.api-keys.paginated": {
       "fixtureIds": ["native.my.api-keys.paginated"],
       "hash": "6215a0600f43cf36468de822d664bd3783bfb6a5e48b2c7640f2c8e39ad61ec4"
@@ -2057,6 +2077,14 @@
     "native.my.email-preferences.default": {
       "fixtureIds": ["native.my.email-preferences.default"],
       "hash": "ab3b28b9184b5aa35ffb267565dcf10fe42be614a6cf30059f1c376e7022be62"
+    },
+    "native.my.oauth-grants.paginated": {
+      "fixtureIds": ["native.my.oauth-grants.paginated"],
+      "hash": "f61b2931e7a25a33e30b15b4c973904a279886d9319673d1e329cab7fe888839"
+    },
+    "native.my.oauth-grants.revoke": {
+      "fixtureIds": ["native.my.oauth-grants.revoke"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
     },
     "native.my.push-subscriptions.paginated": {
       "fixtureIds": ["native.my.push-subscriptions.paginated"],
@@ -2381,6 +2409,10 @@
     "shared.currencies.list.default": {
       "fixtureIds": ["shared.currencies.list.default"],
       "hash": "703ae6e0bfab27a594de57fef893707566935aae601f69ab79edffc2a9236cb1"
+    },
+    "shared.scopes.catalog": {
+      "fixtureIds": ["shared.scopes.catalog"],
+      "hash": "76b746c906a967497e3d77be854caf5990f6569cef818033215dfadfdee0a5e6"
     },
     "swift.integration.rss-feed-items.audio": {
       "fixtureIds": ["swift.integration.rss-feed-items.audio"],

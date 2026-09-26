@@ -24,11 +24,12 @@ const requestCarriers: readonly RequestCarrier[] = ['body', 'header', 'path', 'q
 
 /**
  * Compiles the generated contract bundle once. Route families opt in after their standard
- * authentication/authorization preamble, so this boundary cannot disclose schemas to an
- * anonymous caller.
+ * preamble — authentication/authorization for authenticated routes, or rate-limiting and any
+ * honeypot/attempt-counter checks for public routes — so this boundary cannot disclose schemas,
+ * or let a shape probe skip a counter, ahead of that existing gate.
  */
 export class RuntimeRequestValidatorRegistry {
-  /** Shared generated registry for route-family adoption after authentication and authorization. */
+  /** Shared generated registry for route-family adoption after that existing preamble. */
   static readonly shared = new RuntimeRequestValidatorRegistry(
     runtimeContracts as RuntimeRequestContractsBundle,
   )

@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, parseJsonBody } from '../../response-helpers.mts'
+import { requireAuth, parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users/suspension'
 import { getSiteUrl, isUUID } from '@modules/utils'
 import {
@@ -64,6 +64,10 @@ app.route('/api/v1/auth/bluesky/link').post(async (ctx: Context) => {
       'completion_proof_challenge is native-only',
     )
   }
+  // The manual asserts above already pin 400 statuses/messages for missing, blank, or
+  // mistyped fields (see auth-bluesky.mock.test.mts), so the schema check runs last, against
+  // the raw body, purely to reject unrecognized top-level fields the manual checks don't.
+  validateRequestContract(ctx, 'POST:/api/v1/auth/bluesky/link', { body: rawBody })
   const requestBody: BeginBlueskyLinkRequest = {
     handle,
     ...(rawBody.callback_mode !== undefined && { callback_mode: callbackMode }),
@@ -151,6 +155,9 @@ app.route('/api/v1/auth/bluesky/link-completions').post(async (ctx: Context) => 
     400,
     'completion_token is required',
   )
+  // Same rationale as POST /link: the manual asserts above already pin the 400/404 behavior
+  // this route's tests rely on, so the schema check only adds an unrecognized-field guard.
+  validateRequestContract(ctx, 'POST:/api/v1/auth/bluesky/link-completions', { body: rawBody })
   const requestBody: CompleteNativeBlueskyLinkRequest = {
     flow_id: rawBody.flow_id,
     completion_token: rawBody.completion_token,

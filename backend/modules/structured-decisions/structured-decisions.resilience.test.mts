@@ -2,9 +2,9 @@ import { Response } from 'undici'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createStructuredDecisionClient,
+  type StructuredDecisionAttemptHooks,
   type StructuredDecisionFetch,
   type StructuredDecisionRequest,
-  type StructuredDecisionSleep,
 } from './structured-decisions.mts'
 
 const request: StructuredDecisionRequest = {
@@ -14,48 +14,26 @@ const request: StructuredDecisionRequest = {
 const success = {
   model: 'typesafe/jev-1.13-20260917',
   provider: 'TypeSafe',
+  usage: { input_tokens: 4, output_tokens: 1, cost: 0.00005 },
   answers: { food: { type: 'noul', noul: 0.9 } },
 }
-function response(body: unknown, status = 200, retryAfter?: string): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: retryAfter ? { 'retry-after': retryAfter } : undefined,
-  })
+function response(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status })
 }
-function client(fetch: StructuredDecisionFetch, sleep: StructuredDecisionSleep = async () => {}) {
+function onUnknownBilledAttemptMock() {
+  return vi.fn<NonNullable<StructuredDecisionAttemptHooks['onUnknownBilledAttempt']>>()
+}
+function client(fetch: StructuredDecisionFetch, hooks?: StructuredDecisionAttemptHooks) {
   return createStructuredDecisionClient({
     transport: 'openrouter',
     apiKey: 'test-key',
     fetch,
-    sleep,
+    hooks,
   })
 }
 
 describe('structured-decision resilience', () => {
-  it('retries nested Undici network failures and preserves the exhausted cause', async () => {
-    const cause = Object.assign(new Error('reset'), { code: 'ECONNRESET' })
-    const failure = new TypeError('fetch failed', { cause })
-    const fetch = vi.fn<StructuredDecisionFetch>().mockRejectedValue(failure)
-    const sleep = vi.fn<StructuredDecisionSleep>().mockResolvedValue(undefined)
-
-    await expect(client(fetch, sleep).decide(request)).rejects.toMatchObject({
-      code: 'provider-error',
-      cause: failure,
-    })
-    expect(fetch).toHaveBeenCalledTimes(3)
-    expect(sleep).toHaveBeenCalledTimes(2)
-  })
-
-  it('retries a response-body timeout but rejects malformed JSON without retrying', async () => {
-    const timedOut = response(success)
-    vi.spyOn(timedOut, 'json').mockRejectedValueOnce(new DOMException('timed out', 'TimeoutError'))
-    const fetch = vi
-      .fn<StructuredDecisionFetch>()
-      .mockResolvedValueOnce(timedOut)
-      .mockResolvedValueOnce(response(success))
-    await expect(client(fetch).decide(request)).resolves.toMatchObject({ provider: 'TypeSafe' })
-    expect(fetch).toHaveBeenCalledTimes(2)
-
+  it('rejects malformed JSON on a 2xx response without retrying', async () => {
     const malformedFetch = vi
       .fn<StructuredDecisionFetch>()
       .mockResolvedValue(new Response('{', { status: 200 }))
@@ -63,24 +41,6 @@ describe('structured-decision resilience', () => {
       code: 'invalid-response',
     })
     expect(malformedFetch).toHaveBeenCalledOnce()
-  })
-
-  it.each([
-    ['delta seconds', '2'],
-    ['HTTP date', new Date(Date.now() + 2_000).toUTCString()],
-  ])('honors %s Retry-After and cancels the rejected body', async (_name, retryAfter) => {
-    const rejected = response({ error: 'busy' }, 429, retryAfter)
-    const cancel = vi.spyOn(rejected.body!, 'cancel')
-    const fetch = vi
-      .fn<StructuredDecisionFetch>()
-      .mockResolvedValueOnce(rejected)
-      .mockResolvedValueOnce(response(success))
-    const sleep = vi.fn<StructuredDecisionSleep>().mockResolvedValue(undefined)
-
-    await client(fetch, sleep).decide(request)
-    expect(cancel).toHaveBeenCalledOnce()
-    expect(sleep.mock.calls[0]?.[0]).toBeGreaterThan(0)
-    expect(sleep.mock.calls[0]?.[0]).toBeLessThanOrEqual(5_000)
   })
 
   it('does not retry ordinary 4xx responses or caller cancellation', async () => {
@@ -95,59 +55,6 @@ describe('structured-decision resilience', () => {
       'caller cancelled',
     )
     expect(fetch).not.toHaveBeenCalled()
-  })
-
-  it('propagates caller cancellation during a retry delay', async () => {
-    const controller = new AbortController()
-    const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(response({}, 529))
-    const sleep = vi.fn<StructuredDecisionSleep>().mockImplementation(
-      (_duration, signal) =>
-        new Promise((_resolve, reject) => {
-          signal?.addEventListener('abort', () => reject(signal.reason), { once: true })
-          queueMicrotask(() => controller.abort(new Error('cancelled during retry delay')))
-        }),
-    )
-    await expect(client(fetch, sleep).decide(request, controller.signal)).rejects.toThrow(
-      'cancelled during retry delay',
-    )
-    expect(fetch).toHaveBeenCalledOnce()
-  })
-
-  it('supports completion and cancellation with the default retry delay', async () => {
-    vi.useFakeTimers()
-    try {
-      const completes = vi
-        .fn<StructuredDecisionFetch>()
-        .mockResolvedValueOnce(response({}, 529))
-        .mockResolvedValueOnce(response(success))
-      const completion = createStructuredDecisionClient({
-        transport: 'openrouter',
-        apiKey: 'test-key',
-        fetch: completes,
-      }).decide(request)
-      await vi.advanceTimersByTimeAsync(100)
-      await expect(completion).resolves.toMatchObject({ provider: 'TypeSafe' })
-
-      const controller = new AbortController()
-      const cancelled = vi.fn<StructuredDecisionFetch>().mockResolvedValue(response({}, 529))
-      const cancellation = createStructuredDecisionClient({
-        transport: 'openrouter',
-        apiKey: 'test-key',
-        fetch: cancelled,
-      })
-        .decide(request, controller.signal)
-        .then(
-          () => ({ error: null }),
-          (error: unknown) => ({ error }),
-        )
-      await vi.advanceTimersByTimeAsync(0)
-      controller.abort(new Error('default delay cancelled'))
-      const { error } = await cancellation
-      expect(error).toEqual(new Error('default delay cancelled'))
-      expect(cancelled).toHaveBeenCalledOnce()
-    } finally {
-      vi.useRealTimers()
-    }
   })
 
   it.each([
@@ -234,5 +141,84 @@ describe('structured-decision resilience', () => {
       client(fetch).decide(malformed as unknown as StructuredDecisionRequest),
     ).rejects.toMatchObject({ code: 'invalid-request' })
     expect(fetch).not.toHaveBeenCalled()
+  })
+})
+
+describe('ambiguous-billed-attempt latching', () => {
+  it('latches an unknown billed attempt on a network error, and never retries', async () => {
+    const cause = Object.assign(new Error('reset'), { code: 'ECONNRESET' })
+    const failure = new TypeError('fetch failed', { cause })
+    const fetch = vi.fn<StructuredDecisionFetch>().mockRejectedValue(failure)
+    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
+
+    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
+      code: 'provider-error',
+      cause: failure,
+    })
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
+    expect(onUnknownBilledAttempt).toHaveBeenCalledWith(expect.objectContaining({ error: failure }))
+  })
+
+  it.each([
+    ['408 request timeout', 408],
+    ['409 conflict', 409],
+    ['429 rate limit', 429],
+    ['500 server error', 500],
+    ['529 overloaded', 529],
+  ])('latches an unknown billed attempt on %s, and never retries', async (_name, status) => {
+    const fetch = vi
+      .fn<StructuredDecisionFetch>()
+      .mockResolvedValue(response({ error: 'x' }, status))
+    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
+
+    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
+      code: 'provider-error',
+      status,
+    })
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
+  })
+
+  it('latches an unknown billed attempt on malformed JSON in an otherwise-2xx response', async () => {
+    const fetch = vi
+      .fn<StructuredDecisionFetch>()
+      .mockResolvedValue(new Response('{', { status: 200 }))
+    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
+
+    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
+      code: 'invalid-response',
+    })
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(onUnknownBilledAttempt).toHaveBeenCalledOnce()
+  })
+
+  it('does not latch on an explicit caller abort', async () => {
+    const controller = new AbortController()
+    controller.abort(new Error('caller cancelled'))
+    const fetch = vi.fn<StructuredDecisionFetch>()
+    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
+
+    await expect(
+      client(fetch, { onUnknownBilledAttempt }).decide(request, controller.signal),
+    ).rejects.toThrow('caller cancelled')
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
+  })
+
+  it('does not latch on an ordinary non-ambiguous 4xx response', async () => {
+    const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(response({}, 400))
+    const onUnknownBilledAttempt = onUnknownBilledAttemptMock().mockResolvedValue(undefined)
+
+    await expect(client(fetch, { onUnknownBilledAttempt }).decide(request)).rejects.toMatchObject({
+      status: 400,
+    })
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 })

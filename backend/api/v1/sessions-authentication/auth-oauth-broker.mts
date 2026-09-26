@@ -1,5 +1,9 @@
 import app from '../../app.mts'
-import { getOptionalAuthAndRateLimit, parseJsonBody } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  parseJsonBody,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { apiRequest, apiResponse } from '../../response-contract.mts'
 import { COOKIE_OPTIONS, getExpectedOrigin } from '@modules/api-utils'
 import {
@@ -33,13 +37,16 @@ app.route('/api/v1/auth/oauth/providers').get(async (ctx: Context) => {
   )
 })
 
+// This is a public route: getOptionalAuthAndRateLimit() (rate limit + optional auth) runs before
+// assertBrokerOAuthProvider() so probing an invalid :provider segment can't skip the rate limiter
+// (issue #322) — mirroring GET broker-callback below, which already rate-limits first.
 app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Context) => {
-  const provider = assertBrokerOAuthProvider(ctx.params.provider ?? '')
   const currentUser = await getOptionalAuthAndRateLimit(
     ctx,
     'POST:/api/v1/auth/oauth/:provider/authorizations',
   )
   if (currentUser) assertNotSuspended(currentUser)
+  const provider = assertBrokerOAuthProvider(ctx.params.provider ?? '')
   const body = apiRequest(
     'POST:/api/v1/auth/oauth/:provider/authorizations',
     await parseJsonBody<BeginOAuthAuthorizationBody>(ctx),
@@ -54,6 +61,10 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
     422,
     'callback_mode must be web or native',
   )
+  // Manual asserts above pin the specific 422 messages this route's tests rely on for an
+  // invalid purpose/callback_mode value; the schema check runs after them, against the same
+  // body, to add the unrecognized-field and completion_proof_challenge type guard.
+  validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/authorizations', { body })
   const sessionData = await ctx.getSessionTokenData()
   const result = await beginOAuthAuthorization({
     provider,

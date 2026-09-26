@@ -38,10 +38,8 @@ export {
   processDeliverCopyrightNotice,
   processReconcileCopyrightDeliveryIntents,
 } from './processors/copyright-delivery.mts'
-export {
-  processApplyCopyrightAction,
-  processReconcileCopyrightActionIntents,
-} from './processors/copyright-action.mts'
+export { processApplyCopyrightAction } from './processors/copyright-action.mts'
+export { processReconcileCopyrightActionIntents } from './processors/copyright-action-reconcile.mts'
 export {
   processApplyMediaDeliveryRegistryRecord,
   processReconcileMediaDeliveryRegistry,

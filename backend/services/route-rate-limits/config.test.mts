@@ -164,6 +164,7 @@ describe('route rate-limit registry', () => {
       'POST:/api/v1/auth/sessions/revocations',
       'POST:/api/v1/my/api-keys',
       'DELETE:/api/v1/my/api-keys/:id',
+      'DELETE:/api/v1/my/oauth-grants/:id',
     ]
 
     for (const route of routes) {

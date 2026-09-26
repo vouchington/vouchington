@@ -9,7 +9,7 @@ const YAML_RE = /\.ya?ml$/i
 const LITERAL_ASSIGNMENT_FILE_RE = /(?:^|\/)\.env(?:\.[^/]*)?$|\.(?:bash|md|sh|txt|zsh)$/i
 const GENERIC_S3_BUCKET_RE =
   /^(?:\*|\.\.\.|bucket|example(?:-bucket)?|test(?:-bucket)?|test-images|developer-image-uploads|placeholder)$/i
-const INJECTED_S3_BUCKET_RE = /^(?:[<$\{]|\\+\(\$)/
+const INJECTED_S3_BUCKET_RE = /^(?:[<${]|\\+\(\$)/
 const SYNTHETIC_HOME_USERS = 'dev|developer|user|runner|tester|someone|redacted|example'
 const LINUX_HOME_APPLICATION_SEGMENTS = 'settings'
 const LINUX_HOME_USERS = `${SYNTHETIC_HOME_USERS}|node|ubuntu|debian|www-data|nobody|linuxbrew|ec2-user|${LINUX_HOME_APPLICATION_SEGMENTS}`
@@ -47,7 +47,7 @@ const PATTERNS: readonly LiteralPattern[] = [
   {
     category: 'Sentry configuration identifier',
     expression:
-      /(?:\bSENTRY_(?:ORG|PROJECT(?:_ID)?)\b["']?\s*:\s*["'](?!(?:<|\$))[A-Za-z0-9][A-Za-z0-9_-]*["']|\bSENTRY_(?:ORG|PROJECT(?:_ID)?)\b\s*=\s*(?:["'](?!(?:<|\$|\{))[A-Za-z0-9][A-Za-z0-9_-]*["']|\d+(?=$|[\s#;,\)\]}])|[A-Za-z0-9_]+-[A-Za-z0-9_-]*(?=$|[\s#;,\)\]}])))/i,
+      /(?:\bSENTRY_(?:ORG|PROJECT(?:_ID)?)\b["']?\s*:\s*["'](?!(?:<|\$))[A-Za-z0-9][A-Za-z0-9_-]*["']|\bSENTRY_(?:ORG|PROJECT(?:_ID)?)\b\s*=\s*(?:["'](?!(?:<|\$|\{))[A-Za-z0-9][A-Za-z0-9_-]*["']|\d+(?=$|[\s#;,)\]}])|[A-Za-z0-9_]+-[A-Za-z0-9_-]*(?=$|[\s#;,)\]}])))/i,
   },
   {
     category: 'Sentry configuration identifier',

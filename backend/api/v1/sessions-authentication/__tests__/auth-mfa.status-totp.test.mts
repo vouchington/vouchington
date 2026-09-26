@@ -8,7 +8,7 @@ import {
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
-import { createLoginAttempt } from '@services/mfa/login-attempt'
+import { createTotpMfaLoginAttempt } from '@voucha/test-helpers/services/mfa/totp-login-attempt'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 import {
@@ -122,16 +122,7 @@ describe('MFA API Routes', () => {
     })
 
     it('returns 401 for invalid TOTP code', async () => {
-      // Create a real user with a TOTP authenticator
-      const mfaUser = await createTestUser()
-      const suffix = `mfa-totp-verify-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await insertTestTotpAuthenticator(mfaUser.id, suffix)
-
-      const attemptId = await createLoginAttempt({
-        userId: mfaUser.id,
-        deviceId: v7(),
-        sessionId: v7(),
-      })
+      const { attemptId } = await createTotpMfaLoginAttempt('verify')
 
       const req = createRequest()
       // '000000' is almost certainly the wrong code
@@ -142,15 +133,7 @@ describe('MFA API Routes', () => {
     }, 20_000)
 
     it('rejects valid TOTP codes after the MFA failure threshold is reached', async () => {
-      const mfaUser = await createTestUser()
-      const suffix = `mfa-totp-limited-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await insertTestTotpAuthenticator(mfaUser.id, suffix)
-
-      const attemptId = await createLoginAttempt({
-        userId: mfaUser.id,
-        deviceId: v7(),
-        sessionId: v7(),
-      })
+      const { attemptId } = await createTotpMfaLoginAttempt('limited')
 
       for (const expectedStatus of [401, 401, 401, 401, 401, 429]) {
         await createRequest()
@@ -167,15 +150,7 @@ describe('MFA API Routes', () => {
     }, 20_000)
 
     it('returns 403 for a suspended user with a valid TOTP code', async () => {
-      const mfaUser = await createTestUser()
-      const suffix = `mfa-totp-susp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await insertTestTotpAuthenticator(mfaUser.id, suffix)
-
-      const attemptId = await createLoginAttempt({
-        userId: mfaUser.id,
-        deviceId: v7(),
-        sessionId: v7(),
-      })
+      const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('susp')
 
       // Suspend after the login attempt is created to simulate the race window
       await suspendTestUser(mfaUser.id)
@@ -193,15 +168,7 @@ describe('MFA API Routes', () => {
     }, 20_000)
 
     it('returns 200 and mints tokens for a valid TOTP code', async () => {
-      const mfaUser = await createTestUser()
-      const suffix = `mfa-totp-success-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await insertTestTotpAuthenticator(mfaUser.id, suffix)
-
-      const attemptId = await createLoginAttempt({
-        userId: mfaUser.id,
-        deviceId: v7(),
-        sessionId: v7(),
-      })
+      const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('success')
 
       const code = generateTestTotpCode()
       const req = createRequest()
@@ -219,16 +186,7 @@ describe('MFA API Routes', () => {
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {
       // deviceClass is captured on the LoginAttempt at creation time (from the device/session
       // that initiated the login), not re-derived from whatever request later completes MFA.
-      const mfaUser = await createTestUser()
-      const suffix = `mfa-totp-attested-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await insertTestTotpAuthenticator(mfaUser.id, suffix)
-
-      const attemptId = await createLoginAttempt({
-        userId: mfaUser.id,
-        deviceId: v7(),
-        sessionId: v7(),
-        deviceClass: 'attested',
-      })
+      const { attemptId } = await createTotpMfaLoginAttempt('attested', { deviceClass: 'attested' })
 
       const code = generateTestTotpCode()
       const req = createRequest()
@@ -247,15 +205,7 @@ describe('MFA API Routes', () => {
       // starting the login) must not be upgraded to an attested 30-day session just because
       // whatever device/browser completes the MFA step happens to carry attested dt/st
       // cookies of its own -- that device may not be the one that owns the login attempt.
-      const mfaUser = await createTestUser()
-      const suffix = `mfa-totp-cross-device-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      await insertTestTotpAuthenticator(mfaUser.id, suffix)
-
-      const attemptId = await createLoginAttempt({
-        userId: mfaUser.id,
-        deviceId: v7(),
-        sessionId: v7(),
-      })
+      const { attemptId } = await createTotpMfaLoginAttempt('cross-device')
 
       const attestedDid = v7()
       const deviceToken = await signDeviceJwt(

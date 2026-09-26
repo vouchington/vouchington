@@ -318,11 +318,14 @@ test_plan:
             - backend-openrouter
             - web-api
             - web-integration
-        - name: agent-tools-docs
+        - name: mcp-catalog
           paths:
             - docs/overview/architecture/agent-tools/**
+            - backend/tools/manifest.json
+            - api-fixtures/v1/mcp.json
+            - api-fixtures/v1/openapi.json
           targets:
-            - backend-docs-freshness
+            - backend-data-stores
         - name: automation-prompt-docs
           paths:
             - docs/prompts/**
@@ -1516,7 +1519,7 @@ rules:
         api-contracts: [backend]
         workspace-package-boundaries: [tooling]
         postgres-resources: [backend, postgres-schema, backend-credentialed, web-integration]
-        agent-tools-docs: [tooling]
+        mcp-catalog: [backend]
         automation-prompt-docs: [tooling]
         agent-skill-docs: [tooling]
         ci-inventory-config: [tooling]
@@ -1529,7 +1532,6 @@ rules:
         github-actions: [tooling]
         git-hooks: [tooling]
         playwright-helpers: [tooling]
-        backend-docs-freshness: [tooling]
         i18n-extract-codemod: [tooling]
         i18n-route-bounds: [tooling]
         docker-deploy: [tooling]

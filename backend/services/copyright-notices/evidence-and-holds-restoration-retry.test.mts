@@ -10,15 +10,16 @@ import {
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
-  createCopyrightCounterNotice,
   createCopyrightDeliveryIntent,
   createCopyrightNoticeAggregate,
-  createCounterNoticeDeadline,
   createOutboundCopyrightCorrespondence,
-  createEligibleCopyrightRestoreIntent,
   getCopyrightNoticePrivateAggregate,
   processCopyrightActionIntent,
 } from './index.mts'
+import {
+  createCounterNoticeRestoreIntent,
+  deliverInitialCopyrightWithhold,
+} from './evidence-and-holds-restoration-hold-fixtures.mts'
 
 async function createFixture() {
   const [claimant, moderatorRecord] = await Promise.all([
@@ -101,46 +102,14 @@ describe('copyright notice restoration retries', () => {
       imposedAt: new Date('2026-07-01T12:00:00.000Z'),
       imposedById: moderator.id,
     })
-    const initialWithhold = (
-      await getCopyrightNoticePrivateAggregate(notice.id)
-    )?.actionIntents.find(intent => intent.action === 'withhold')
-    if (!initialWithhold) throw new Error('initial withhold intent disappeared')
-    await expect(
-      processCopyrightActionIntent(initialWithhold.id, new Date('2026-07-01T12:01:00.000Z'), {
-        publishImagePlacementDeliveryRecord: async () => undefined,
-      }),
-    ).resolves.toBe('applied')
-    const counterNotice = await createCopyrightCounterNotice(
+    await deliverInitialCopyrightWithhold(notice.id, async () => undefined)
+    const { now: restorationAt, restore } = await createCounterNoticeRestoreIntent({
       claimant,
-      notice.id,
-      crypto.randomUUID(),
-      {
-        name: 'Poster',
-        address: '1 Main Street',
-        telephone: '555-0100',
-        consentToFederalJurisdiction: true,
-        consentToServiceOfProcess: true,
-        goodFaithMisidentificationUnderPenaltyOfPerjury: true,
-        electronicSignature: 'Poster',
-        targetIds: [target.id],
-      },
-    )
-    const assessment = await appendCopyrightSubmissionAssessment({
-      submissionId: counterNotice.submission.id,
-      assessedAt: new Date('2026-07-02T12:00:00.000Z'),
-      currentUser: moderator,
-      substantiallyCompliant: true,
-      targetIds: [target.id],
-    })
-    const deadline = await createCounterNoticeDeadline({ assessmentId: assessment.id })
-    const restorationAt = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
-    const restore = await createEligibleCopyrightRestoreIntent({
       noticeId: notice.id,
+      moderator,
       targetId: target.id,
       restrictionId: restriction.id,
-      deadlineId: deadline.id,
-      expectedPlacementRevision: target.placement_revision,
-      now: restorationAt,
+      placementRevision: target.placement_revision,
     })
     let rejectFirstAllow = true
     const publishedStates: string[] = []

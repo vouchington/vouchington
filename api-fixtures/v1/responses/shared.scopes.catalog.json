@@ -1,0 +1,196 @@
+{
+  "scopes": [
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "cards",
+      "scope": "cards:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "cards:read",
+      "resource": "cards",
+      "scope": "cards:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "data-points",
+      "scope": "data-points:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "domain-ratings",
+      "scope": "domain-ratings:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "financial-profile",
+      "scope": "financial-profile:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "financial-profile:read",
+      "resource": "financial-profile",
+      "scope": "financial-profile:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "requires": null,
+      "resource": "mcp.admin",
+      "scope": "mcp.admin:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "admin",
+      "requires": "mcp.admin:read",
+      "resource": "mcp.admin",
+      "scope": "mcp.admin:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "mcp.user",
+      "scope": "mcp.user:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "mcp.user:read",
+      "resource": "mcp.user",
+      "scope": "mcp.user:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "point-valuations",
+      "scope": "point-valuations:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "point-valuations:read",
+      "resource": "point-valuations",
+      "scope": "point-valuations:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "posts",
+      "scope": "posts:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "profile",
+      "scope": "profile:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "recommendations",
+      "scope": "recommendations:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "referral-links",
+      "scope": "referral-links:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "rewards-statuses",
+      "scope": "rewards-statuses:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "rewards-statuses:read",
+      "resource": "rewards-statuses",
+      "scope": "rewards-statuses:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "api",
+      "requires": null,
+      "resource": "rss",
+      "scope": "rss:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "spending",
+      "scope": "spending:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "requires": "spending:read",
+      "resource": "spending",
+      "scope": "spending:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "admin",
+      "requires": null,
+      "resource": "support-messages",
+      "scope": "support-messages:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "topics",
+      "scope": "topics:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
+      "requires": null,
+      "resource": "wikipedia",
+      "scope": "wikipedia:read",
+      "surfaces": ["api-key", "oauth"]
+    }
+  ]
+}

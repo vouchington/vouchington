@@ -1,10 +1,15 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
+import {
+  queryCopyrightSweepIdPage,
+  type CopyrightSweepIdPage,
+  type CopyrightSweepPageOptions,
+} from './sweep-id-pages.mts'
 
 type CopyrightEmailIntakeResponse = {
   id: string
@@ -92,25 +97,26 @@ export async function prepareCopyrightEmailIntakeResponseDelivery(responseId: st
   }
 }
 
-export async function listRecoverableCopyrightEmailIntakeResponses(
-  limit: number,
-): Promise<Array<{ id: string }>> {
-  const { rows } = await write<{
-    id: string
-  }>(sql`/* listRecoverableCopyrightEmailIntakeResponses */
-    WITH exhausted AS (
-      UPDATE copyright_notice_email_intake_responses
-      SET state = 'failed', claimed_at = NULL, failed_at = CURRENT_TIMESTAMP, next_attempt_at = NULL
-      WHERE state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'
-        AND delivery_attempt_count >= 5
-    )
-    SELECT id FROM copyright_notice_email_intake_responses
-    WHERE (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
-      OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'
-        AND delivery_attempt_count < 5)
-    ORDER BY id LIMIT ${limit}
-  `)
-  return rows
+/**
+ * Pages the email intake responses that are due or whose claim lease expired. Expired claims at the
+ * retry cap stay listed: `prepareCopyrightEmailIntakeResponseDelivery` fails them when their job runs.
+ */
+export function searchRecoverableCopyrightEmailIntakeResponseIds(
+  options: CopyrightSweepPageOptions,
+): Promise<CopyrightSweepIdPage> {
+  return queryCopyrightSweepIdPage(
+    options,
+    'Invalid copyright email intake response cursor',
+    'rowId',
+    sql`/* searchRecoverableCopyrightEmailIntakeResponseIds */
+      SELECT id
+      FROM copyright_notice_email_intake_responses
+      WHERE (
+        (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP))
+        OR (state = 'claimed' AND claimed_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes')
+      )`,
+    statement => read(statement),
+  )
 }
 
 export async function markCopyrightEmailIntakeResponseBouncedBySesMessageId(

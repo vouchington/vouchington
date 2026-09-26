@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { validateRequestContract } from '../../response-helpers.mts'
 import { getExpectedOrigin } from '@modules/api-utils'
 import { assertNotSuspended } from '@services/users/suspension'
 import {
@@ -10,12 +10,9 @@ import {
   verifyPasskeyRegistration,
 } from '@services/passkeys'
 import { deletePasskeyWithMfaProtection } from '@services/mfa'
-import { apiQuery } from '../../response-contract.mts'
-import {
-  createPaginationParser,
-  decodeScopedUuidCursor,
-  encodeScopedUuidCursor,
-} from '@modules/pagination'
+import { apiQuery, apiRequestContract } from '../../response-contract.mts'
+import { createPaginationParser } from '@modules/pagination'
+import { deleteMfaFactor, listMfaFactors, renameMfaFactor } from './passkey-totp-route-helpers.mts'
 
 const passkeysParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -46,6 +43,7 @@ app.route('/api/v1/auth/passkeys/registration/verify').post(async (ctx: Context)
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/registration/verify')
 
   const body = (await ctx.request.json('100kb')) as { response?: unknown; name?: string }
+  validateRequestContract(ctx, 'POST:/api/v1/auth/passkeys/registration/verify', { body })
   ctx.assert(body.response, 422, 'response is required')
   const expectedOrigin = getExpectedOrigin(ctx.req)
   const passkey = await verifyPasskeyRegistration(
@@ -62,55 +60,22 @@ app.route('/api/v1/auth/passkeys/registration/verify').post(async (ctx: Context)
 
 app.route('/api/v1/auth/passkeys').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/auth/passkeys', passkeysParser)
-  const currentUser = await requireAuth(ctx, 'GET:/api/v1/auth/passkeys')
-
-  const options = passkeysParser.parse(ctx.query)
-  const scope = `passkeys:${currentUser.id}:created-at-asc-id-asc`
-  const afterId = options.after
-    ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format').id
-    : undefined
-  const { results, hasNextPage } = await getPasskeysByUserId(currentUser.id, {
-    limit: options.limit,
-    after: afterId ? { id: afterId } : undefined,
-  })
-  ctx.json({
-    results,
-    page_info: {
-      has_next_page: hasNextPage,
-      start_cursor: results[0] ? encodeScopedUuidCursor(results[0].id, scope) : null,
-      end_cursor:
-        hasNextPage && results.at(-1) ? encodeScopedUuidCursor(results.at(-1)!.id, scope) : null,
-    },
-  })
+  const operation = 'GET:/api/v1/auth/passkeys'
+  ctx.json(await listMfaFactors(ctx, operation, passkeysParser, 'passkeys', getPasskeysByUserId))
 })
 
 app.route('/api/v1/auth/passkeys/:id').patch(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/auth/passkeys/:id')
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.params.id, 400, 'id required')
-
-  const body = (await ctx.request.json('100kb')) as { name?: string }
-  const name = (body.name ?? '').trim()
-  ctx.assert(name.length > 0 && name.length <= 100, 422, 'name must be 1–100 characters')
-
-  await renamePasskey(currentUser.id, ctx.params.id, name)
+  apiRequestContract<'PATCH:/api/v1/auth/passkeys/:id', { name?: string }>(
+    'PATCH:/api/v1/auth/passkeys/:id',
+  )
+  await renameMfaFactor(ctx, 'PATCH:/api/v1/auth/passkeys/:id', renamePasskey)
   ctx.setStatus(204)
 })
 
 app.route('/api/v1/auth/passkeys/:id').delete(async (ctx: Context) => {
-  const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/passkeys/:id')
-  assertNotSuspended(currentUser)
-  ctx.assert(ctx.params.id, 400, 'id required')
-  const passkeyId = ctx.params.id
-
-  // Treat a missing or unparseable body as an absent re_auth_token so clients
-  // reliably receive MFA_REAUTH_REQUIRED rather than a 400 JSON parse error.
-  let reAuthToken: string | undefined
-  if (ctx.request.is('json')) {
-    const body = (await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string }
-    reAuthToken = body.re_auth_token
-  }
-
-  await deletePasskeyWithMfaProtection(currentUser.id, passkeyId, reAuthToken)
+  apiRequestContract<'DELETE:/api/v1/auth/passkeys/:id', { re_auth_token?: string }>(
+    'DELETE:/api/v1/auth/passkeys/:id',
+  )
+  await deleteMfaFactor(ctx, 'DELETE:/api/v1/auth/passkeys/:id', deletePasskeyWithMfaProtection)
   ctx.setStatus(204)
 })

@@ -76,5 +76,15 @@ describe('OpenRouter Decisions', () => {
       probabilities: score.probabilities,
     })
     expect(score.raw).not.toHaveProperty('id')
+
+    // The Decisions API reference requires a top-level `id` string and `usage.cost` (USD) is
+    // documented for every Jev response (see the evidence links in issue #616's PR); these back
+    // the ledger row `@agents/autotagger/structured-decision-attempt-hooks.mts` writes for real.
+    const raw = result.raw as { id?: unknown }
+    expect(typeof raw.id).toBe('string')
+    expect((raw.id as string).length).toBeGreaterThan(0)
+    const usage = result.usage as { cost?: unknown } | null
+    expect(typeof usage?.cost).toBe('number')
+    expect(Number.isFinite(usage?.cost)).toBe(true)
   })
 })

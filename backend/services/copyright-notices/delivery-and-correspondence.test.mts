@@ -5,6 +5,8 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
+import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   appendCopyrightNoticeSubmission,
   appendCopyrightSubmissionAssessment,
@@ -16,12 +18,19 @@ import {
   prepareCopyrightEmailDelivery,
   createOutboundCopyrightCorrespondence,
   getCopyrightNoticePrivateAggregate,
-  listRecoverableCopyrightDeliveryIntents,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
   markCopyrightDeliveryIntentFailed,
   markCopyrightDeliveryIntentSent,
+  searchRecoverableCopyrightDeliveryIntentIds,
 } from './index.mts'
 import { resolveCopyrightEmailRecipient } from './delivery-transport.mts'
+
+function readRecoverableDeliveryIntentIds(channel: 'in_app' | 'email', intentId: string) {
+  return readTestOwnedCopyrightSweepIds(
+    options => searchRecoverableCopyrightDeliveryIntentIds({ ...options, channel }),
+    intentId,
+  )
+}
 
 async function createFixture() {
   const [claimant, moderatorRecord] = await Promise.all([
@@ -86,9 +95,8 @@ describe('copyright delivery and correspondence persistence', () => {
     )
   })
 
-  it('replays a matching delivery key and lists recoverable delivery work', async () => {
+  it('replays a delivery key and sweeps the intent on its channel until the retry cap fails it', async () => {
     const { claimant, notice } = await createFixture()
-    const idempotencyKey = `copyright-replay-${crypto.randomUUID()}`
     const input = {
       noticeId: notice.id,
       submissionId: null,
@@ -97,12 +105,26 @@ describe('copyright delivery and correspondence persistence', () => {
       recipientRole: 'claimant' as const,
       deliveryKind: 'claimant_receipt' as const,
       channel: 'in_app' as const,
-      idempotencyKey,
+      idempotencyKey: `copyright-replay-${crypto.randomUUID()}`,
     }
     const first = await createCopyrightDeliveryIntent(input)
 
     await expect(createCopyrightDeliveryIntent(input)).resolves.toMatchObject({ id: first.id })
-    await expect(listRecoverableCopyrightDeliveryIntents(1)).resolves.toEqual(expect.any(Array))
+    await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([first.id])
+    await expect(readRecoverableDeliveryIntentIds('email', first.id)).resolves.toEqual([])
+    expect((await claimCopyrightDeliveryIntent(first.id))?.state).toBe('claimed')
+    await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([])
+    await expireTestCopyrightDeliveryIntentClaim(first.id, 1)
+    await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([first.id])
+    expect((await claimCopyrightDeliveryIntent(first.id))?.state).toBe('claimed')
+    await expireTestCopyrightDeliveryIntentClaim(first.id, 5)
+    await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([first.id])
+    await expect(claimCopyrightDeliveryIntent(first.id)).resolves.toBeNull()
+    const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+    expect(aggregate?.deliveryIntents).toContainEqual(
+      expect.objectContaining({ id: first.id, state: 'failed' }),
+    )
+    await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([])
   })
 
   it('fails closed for unavailable or private-recipient-less delivery intents', async () => {

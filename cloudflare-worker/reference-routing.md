@@ -4,11 +4,13 @@
 
 ### Private docs environment
 
-The private-infrastructure-managed docs Worker serves the private docs landing page, OpenAPI reference, and
-PostgreSQL schema from the `DOCS_BUCKET` R2 binding. It does not serve Storybook. The private
-infrastructure source `deploy/docs/index.html`, in the private `vouchington-infra` repository,
-creates the root landing page; `vouchington/vouchington`'s [`ci/render-psql-docs.mts`](../ci/render-psql-docs.mts)
-renders the PostgreSQL documentation beneath its supplied output directory.
+The private-infrastructure-managed docs Worker serves the private docs landing page, OpenAPI reference,
+MCP server catalog, and PostgreSQL schema from the `DOCS_BUCKET` R2 binding. It does not serve
+Storybook. The private infrastructure source `deploy/docs/index.html`, in the private
+`vouchington-infra` repository, creates the root landing page; `vouchington/vouchington`'s
+[`ci/render-mcp-docs.mts`](../ci/render-mcp-docs.mts) and
+[`ci/render-psql-docs.mts`](../ci/render-psql-docs.mts) render the MCP and PostgreSQL documentation
+beneath their supplied output directories.
 
 The Worker requires HTTP Basic Auth before reading R2. Store the comma-separated
 `BASIC_AUTH_CREDENTIALS` list only as an encrypted Cloudflare secret with

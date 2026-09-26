@@ -3,6 +3,7 @@ import { DEVICE_EXPIRATION_SECONDS, sessionExpirySecondsFor } from '@ts-shared/s
 import { refreshSessionState, resetSessionState } from '@services/jwt-session'
 import { setAuthenticationCookies, COOKIE_OPTIONS } from '@modules/api-utils'
 import { getPrivateUserByAny } from '@services/users/get'
+import { validateRequestContract } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
 
 const isTest = process.env.NODE_ENV === 'test'
@@ -24,24 +25,32 @@ interface SessionBody {
 }
 
 interface SessionTokenBody {
-  dt?: unknown
-  st?: unknown
+  dt?: string
+  st?: string
 }
 
 // NOTE: this route should only ever be called from Next.js or from the app, never from the web
 app
   .route('/api/v1/session')
   .patch(async (ctx: Context) => {
-    const { dt, st } = await parseSessionJsonBody(ctx, 'PATCH:/api/v1/session')
-    await applySessionBodyRateLimit(ctx, 'PATCH:/api/v1/session', { dt, st })
-    ctx.assert(!dt || typeof dt === 'string', 422, 'Invalid Device Token')
-    ctx.assert(!st || typeof st === 'string', 422, 'Invalid Session Token')
-    const deviceToken = typeof dt === 'string' ? dt : undefined
-    const sessionToken = typeof st === 'string' ? st : undefined
+    const routeKey = 'PATCH:/api/v1/session'
+    // The parse-and-cast below must stay lexically inside each route's own handler: the OpenAPI
+    // request-contract harvester statically attributes a `ctx.request.json(...) as T` cast to
+    // exactly one route, so it can't live in a helper this route shares with DELETE's JSON
+    // branch. `rateLimitAndValidateSessionBody` covers everything after the cast, which has no
+    // such restriction.
+    let rawBody: SessionTokenBody
+    try {
+      rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
+    } catch {
+      await ctx.applyRouteRateLimit(routeKey)
+      ctx.throw(422, 'Invalid body')
+    }
+    const { dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
 
     const sessionState = await refreshSessionState({
-      deviceToken,
-      sessionToken,
+      deviceToken: dt,
+      sessionToken: st,
       fetchUser: getPrivateUserByAny,
       verifyRevocationOnHotPath: true,
     })
@@ -72,10 +81,17 @@ app
     // the Lua script updates both records atomically).
     let dt, st
     if (ctx.request.is('json')) {
-      const body = await parseSessionJsonBody(ctx, 'DELETE:/api/v1/session')
-      await applySessionBodyRateLimit(ctx, 'DELETE:/api/v1/session', body)
-      dt = typeof body.dt === 'string' ? body.dt : undefined
-      st = typeof body.st === 'string' ? body.st : undefined
+      const routeKey = 'DELETE:/api/v1/session'
+      // See the PATCH handler above: this cast must stay inline here, not in a shared helper —
+      // the OpenAPI request-contract harvester can't attribute a cast shared by two routes.
+      let rawBody: SessionTokenBody
+      try {
+        rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
+      } catch {
+        await ctx.applyRouteRateLimit(routeKey)
+        ctx.throw(422, 'Invalid body')
+      }
+      ;({ dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody))
     } else {
       await ctx.applyRouteRateLimit('DELETE:/api/v1/session')
       dt = ctx.cookies.get('dt')
@@ -107,15 +123,27 @@ app
     ctx.json({ session: body })
   })
 
-async function parseSessionJsonBody(ctx: Context, routeKey: string): Promise<SessionTokenBody> {
-  try {
-    const body = await ctx.request.json('100kb')
-    if (!body || typeof body !== 'object') return {}
-    return body as SessionTokenBody
-  } catch {
-    await ctx.applyRouteRateLimit(routeKey)
-    ctx.throw(422, 'Invalid body')
-  }
+// A JSON body that parsed successfully but isn't a plain object (null, an array, a string, a
+// number) has no dt/st to read — treat it the same as an empty body for rate-limiting purposes.
+// `validateRequestContract` is given the raw, un-defaulted value separately so it can reject the
+// malformed shape with a 422 instead of silently falling back to `{}`.
+function toTokenBody(body: SessionTokenBody): SessionTokenBody {
+  const isPlainObject = body !== null && typeof body === 'object' && !Array.isArray(body)
+  return isPlainObject ? body : {}
+}
+
+// Shared by the PATCH and DELETE JSON-body branches, once each has already parsed its own body
+// (see the inline comment at each call site for why the parse itself isn't shared): rate-limit on
+// the tokens the body names, then validate it against the request contract.
+async function rateLimitAndValidateSessionBody(
+  ctx: Context,
+  routeKey: string,
+  rawBody: SessionTokenBody,
+): Promise<SessionTokenBody> {
+  const tokenBody = toTokenBody(rawBody)
+  await applySessionBodyRateLimit(ctx, routeKey, tokenBody)
+  validateRequestContract(ctx, routeKey, { body: rawBody })
+  return tokenBody
 }
 
 async function applySessionBodyRateLimit(

@@ -110,7 +110,7 @@ test.describe('OAuth consent', () => {
     await navigateTo(page, `/authorize?${authorize.toString()}`)
 
     await page.getByTestId('oauth-consent-deny').click()
-    await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(redirectUri)}\?`))
+    await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(redirectUri)}\\?`))
     const callback = new URL(page.url())
     expect(callback.searchParams.get('error')).toBe('access_denied')
     expect(callback.searchParams.get('code')).toBeNull()

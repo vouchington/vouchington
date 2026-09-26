@@ -44,6 +44,18 @@ export const isRetryableError = (error: unknown, status?: number): boolean => {
 }
 
 /**
+ * True for HTTP statuses where the provider may have already billed the request despite the
+ * response failing: 408 (request timeout) and 409 (conflict, often a racing/duplicate write) can
+ * both follow a request the provider still processed; 429 (rate limit) and every 5xx can too.
+ * Shared by the OpenAI response-retry loop (`@modules/openai-utils/response-retry.mts`) and the
+ * structured-decision client (`@modules/structured-decisions/client.mts`) so both classify "was
+ * this attempt possibly billed" identically instead of hand-copying the status list.
+ */
+export function isAmbiguousBilledHttpStatus(status: number): boolean {
+  return status === 408 || status === 409 || status === 429 || status >= 500
+}
+
+/**
  * Simple fetch with timeout (no tracking or special error handling).
  * Useful for simple requests like robots.txt.
  *

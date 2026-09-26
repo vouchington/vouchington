@@ -21,4 +21,5 @@ export const resourceEndpointRegistry: Record<string, ManifestEndpoint> = {
   },
   'native.url-crawl.default': { method: 'GET', path: '/api/v1/urls/url-1/crawls/crawl-1' },
   'native.url-crawl-trigger.default': { method: 'POST', path: '/api/v1/urls/url-1/crawl' },
+  'shared.scopes.catalog': { method: 'GET', path: '/api/v1/scopes' },
 }

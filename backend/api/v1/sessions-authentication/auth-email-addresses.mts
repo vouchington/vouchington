@@ -7,6 +7,7 @@ import { setAuthenticationCookies } from '@modules/api-utils'
 import { isHoneypotTriggered } from '@services/honeypot'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { getDeviceContext } from './device-context.mts'
+import { validateRequestContract } from '../../response-helpers.mts'
 
 import type { Context } from '@jongleberry/api-server'
 
@@ -17,8 +18,8 @@ type EmailAddressTokenBody = {
   cf_turnstile_response?: string
   dt?: string
   st?: string
-  uiLocale?: string
-  ui_locale?: string
+  uiLocale?: string | null
+  ui_locale?: string | null
   hp_website?: string
   hp_phone?: string
 }
@@ -51,14 +52,10 @@ app.route('/api/v1/auth/email-address/tokens').post(async (ctx: Context) => {
     return
   }
 
+  validateRequestContract(ctx, routeKey, { body })
   const emailAddress = body.emailAddress || body.email_address
   ctx.assert(emailAddress, 422, 'emailAddress is required')
   const rawUiLocale = body.uiLocale ?? body.ui_locale
-  ctx.assert(
-    rawUiLocale === undefined || rawUiLocale === null || typeof rawUiLocale === 'string',
-    422,
-    'ui_locale must be a string or null',
-  )
 
   // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
   await verifyCaptchaOrAttestation(ctx, body, {
@@ -93,6 +90,7 @@ app.route('/api/v1/auth/email-address/login').post(async (ctx: Context) => {
     ctx.throw(401, 'Invalid email address or one-time password')
   }
 
+  validateRequestContract(ctx, routeKey, { body })
   const emailAddress = body.emailAddress || body.email_address
   const token = body.token || body.otp
   ctx.assert(emailAddress, 422, 'emailAddress is required')

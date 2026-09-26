@@ -1,12 +1,26 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { reverseAutomatedCopyrightRestrictions } from './form-reviews-reversal.mts'
+import {
+  queryCopyrightSweepIdPage,
+  type CopyrightSweepIdPage,
+  type CopyrightSweepPageOptions,
+} from './sweep-id-pages.mts'
 
-/** Replays the durable effects of a moderator rejection after a post-commit interruption. */
-export async function recoverRejectedCopyrightFormReviewEffects(): Promise<void> {
-  const { rows } = await write<{ intake_id: string }>(sql`
-    /* recoverRejectedCopyrightFormReviewEffects:list */
-    SELECT review.copyright_notice_form_intake_id AS intake_id
+/**
+ * Pages the form intakes whose rejected review still has durable effects to replay after a
+ * post-commit interruption, keyed by the intake ID that `recoverRejectedCopyrightFormReviewEffect`
+ * takes.
+ */
+export function searchRecoverableCopyrightFormReviewIntakeIds(
+  options: CopyrightSweepPageOptions = {},
+): Promise<CopyrightSweepIdPage> {
+  return queryCopyrightSweepIdPage(
+    options,
+    'Invalid copyright form review recovery cursor',
+    'formReviewIntake',
+    sql`/* searchRecoverableCopyrightFormReviewIntakeIds */
+    SELECT review.copyright_notice_form_intake_id AS id
     FROM copyright_notice_form_intake_reviews review
     JOIN copyright_notice_form_intakes intake
       ON intake.id = review.copyright_notice_form_intake_id
@@ -52,17 +66,13 @@ export async function recoverRejectedCopyrightFormReviewEffects(): Promise<void>
               AND request.state IN ('pending', 'claimed')
           )
         )
-      )
-    ORDER BY review.copyright_notice_form_intake_id
-    LIMIT 100
-  `)
-  for (const row of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- each intake owns an advisory lock.
-    await recoverRejectedCopyrightFormReviewEffect(row.intake_id)
-  }
+      )`,
+    statement => write(statement),
+  )
 }
 
-async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promise<void> {
+/** Replays the durable effects of one moderator rejection after a post-commit interruption. */
+export async function recoverRejectedCopyrightFormReviewEffect(intakeId: string): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* recoverRejectedCopyrightFormReviewEffect:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${intakeId}`}, 0))

@@ -39,6 +39,7 @@
     "@modules/agents": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/pagination": "workspace:^",
+    "@modules/scopes": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@modules/token-secrets": "workspace:^",
@@ -54,6 +55,7 @@
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
     "supertest": "^7.3.0",
+    "undici": "^8.11.0",
     "uuid": "^14.0.2",
     "vouchington-tooling": "^0.19.2"
   },

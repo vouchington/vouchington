@@ -85,13 +85,16 @@ a second Git diff, so the safety routing and test selection cannot disagree abou
    it does not activate configured projects. This is safe because `root-config` is production test
    configuration, `api-contracts` is dynamically consumed contract input, `workspace-package-boundaries`
    excludes tests in its underlying boundary rule, `postgres-resources` is SQL resource input, and
-   `agent-tools-docs` is dynamically read documentation. A future trigger that consumes test files
+   `mcp-catalog` is dynamically read generated catalog input. A future trigger that consumes test files
    must revisit this framework-wide policy; the safer per-trigger/default API is tracked in
    [no-mistakes#811](https://github.com/jonathanong/no-mistakes/issues/811). SQL
    migration/config-driven resources and the dynamically consumed API contract inputs use 0.34+'s
-   target-scoped triggers, selecting only their named Vitest projects. Agent-tools markdown under
-   `docs/overview/architecture/agent-tools/**` uses the same shape (`agent-tools-docs` →
-   `backend-docs-freshness`) because `catalog.md` is read with `readFileSync`, not an import.
+   target-scoped triggers, selecting only their named Vitest projects. The generated MCP catalog
+   artifacts (`docs/overview/architecture/agent-tools/**`, `backend/tools/manifest.json`,
+   `api-fixtures/v1/mcp.json`) and the `api-fixtures/v1/openapi.json` its REST-equivalent check
+   reads use the same shape (`mcp-catalog` → `backend-data-stores`) because
+   `backend/services/mcp-tools/catalog/build-mcp-catalog.test.mts` reads them from disk, not by
+   import.
    Semantic
    `.no-mistakes.yml` comparison invalidates only a framework whose effective test-plan
    configuration changed; formatting-only changes select nothing. Other API fixture JSON is

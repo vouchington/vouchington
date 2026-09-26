@@ -521,7 +521,7 @@
     "typescript/no-unnecessary-type-conversion": "error",
     "typescript/restrict-template-expressions": "off",
     "unicorn/no-new-array": "off",
-    "no-useless-escape": "off",
+    "no-useless-escape": "error",
     "no-ex-assign": "error",
     "oxc/approx-constant": "error",
     "oxc/bad-bitwise-operator": "error",
@@ -628,7 +628,8 @@
           "expectApiKeyPagination",
           "expectPendingReportsPagination",
           "assertReason",
-          "assertScoresAllowed"
+          "assertScoresAllowed",
+          "postLogoutExpectingRejection"
         ]
       }
     ],
@@ -718,7 +719,8 @@
           "expectApiKeyPagination",
           "expectPendingReportsPagination",
           "assertReason",
-          "assertScoresAllowed"
+          "assertScoresAllowed",
+          "postLogoutExpectingRejection"
         ]
       }
     ],

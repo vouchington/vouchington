@@ -111,18 +111,6 @@ export const toolingProjects = [
     extends: true,
     test: {
       ...toolingTestBudget,
-      pool: 'forks',
-      isolate: false,
-      name: 'backend-docs-freshness',
-      include: ['backend/tools/registry.docs.test.mts'],
-      exclude: defaultExcludes,
-      setupFiles: [isolatedSetupFile],
-    },
-  },
-  {
-    extends: true,
-    test: {
-      ...toolingTestBudget,
       // no-mistakes analyzeProject / invocation.lock cannot be SIGKILLed on the
       // tooling threads pool (#11686); keep isolate: true from toolingTestBudget.
       pool: 'forks',

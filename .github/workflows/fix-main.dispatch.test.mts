@@ -227,7 +227,8 @@ describe('fix-main workflow', () => {
 
     const triageStep = triageJob?.steps?.find(s => s.id === 'triage')
     expect(triageStep).toBeDefined()
-    expect(triageStep?.run).toContain('steps.decide.outputs.decision')
+    expect(triageStep?.env?.['DECISION']).toBe('${{ steps.decide.outputs.decision }}')
+    expect(triageStep?.run).toContain('"$DECISION" == "dispatch"')
     expect(triageStep?.run).toContain('should_dispatch=true')
     expect(triageStep?.run).toContain('should_dispatch=false')
 

@@ -58,7 +58,7 @@ stale (a script renamed or removed since the session ran).
 **Genuine bypass candidate, and you judge it read-only/safe:** add it to the escalation allowlist across **all three surfaces** that must stay consistent:
 
 - `sandbox.excludedCommands` in `.claude/settings.json`
-- `permissions.allow` in `.claude/settings.json` (the `Bash(...)` entry; a `./dev/` or `node dev/` command is already covered by the [blanket dev/ rules](../../../docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands))
+- `permissions.allow` in `.claude/settings.json` (the matching `Bash(...)` entry, `./dev/` and `node dev/` commands included; see [Claude review-skip for dev/ commands](../../../docs/development/agent-sandbox.md#claude-review-skip-for-dev-commands))
 - a matching `prefix_rule(pattern=[...], decision="allow")` in `.codex/rules/default.rules`
 
 `dev/agent-sandbox-config.test.mts` enforces this three-surface consistency and also asserts narrowness — it must keep failing on broad prefixes like `git` or `gh` alone. Any addition must be a specific command family (e.g. `git log`, not `git`), and the test must still pass after the change.

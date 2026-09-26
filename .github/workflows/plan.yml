@@ -164,7 +164,7 @@ jobs:
 
       - name: Render prompt
         id: render
-        uses: jonathanong/auto-harness/actions/harness-render-prompt@9bda991f8251decdbe683a6ce3badaa8717d4c14 # v1.0.0
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
         with:
           template: docs/prompts/automation/plan.md
           vars: |
@@ -217,6 +217,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
+      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
       - name: Comment failure on source issue
         env:
@@ -237,7 +238,6 @@ jobs:
             exit 0
           fi
 
-          SESSION_ID="${{ needs.dispatch.outputs.session-id }}"
           THIS_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           BODY="/plan run failed — plan generation could not complete.

@@ -43,6 +43,12 @@ not the RFC 7592 registration-management protocol, so it does not mint an unused
 management credential. Authenticated client and grant management is owned by the API-key and
 OAuth-app management milestone.
 
+Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
+([connected apps](../users/api-keys.md#connected-apps)). A revoked grant fails the bearer, refresh
+and code paths on their next use because each requires an unrevoked grant. The listed `verified`
+flag reflects the client's `verified_at`, and `last_used_at` is the later of the grant's own
+timestamp and its newest access-token use.
+
 ## Persistence and retention
 
 Durable clients, grants, and append-only authorization lifecycle events are separate from short-lived

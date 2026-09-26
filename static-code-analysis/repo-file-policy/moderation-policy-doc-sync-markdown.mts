@@ -96,7 +96,7 @@ export function extractBareTokenList(section: string): string[] {
   const prose = section
     .replace(BARE_TOKEN_PATTERN, '')
     .replaceAll(/\b(?:and|or)\b/g, '')
-    .replaceAll(/[`*,.;:\s/()\[\]"']/g, '')
+    .replaceAll(/[`*,.;:\s/()[\]"']/g, '')
   return prose === '' ? tokens : []
 }
 

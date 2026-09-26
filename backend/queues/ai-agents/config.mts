@@ -80,18 +80,16 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // `moderatorSlug === AI_GENERATED_MODERATOR_SLUG` prompt jobs for the reason above.
 // `autotagger-post` and `autotagger-rss-feed-item` (C6) dispatch through the classifier path
 // (`@agents/autotagger/dispatch-classifier.mts`), which calls the seeded `tagging` classifier over
-// OpenRouter/Noul via `createStructuredDecisionClient`, never through the shared `runToolLoop`
+// OpenRouter/Jev via `createStructuredDecisionClient`, never through the shared `runToolLoop`
 // harness (`backend/agents/_shared/run-tool-loop.mts`) the pre-C6 autotagger used
-// (`openai-autotagger.mts`, no longer wired into dispatch). That harness is what records usage to
-// `ai_usage_records` and enforces the OpenAI daily spend cap on every iteration, regardless of
-// provider -- C6's direct dispatch calls neither `recordAgentResponseUsage`/`recordAiUsage` nor
-// `assertOpenAiSpendCapNotBreached`, so its OpenRouter/Noul spend is unrecorded and uncapped today;
-// it is not "tracked and capped separately" anywhere in this codebase. Plan #317
-// (vouchington#317) explicitly scopes this as "remove C6 from OpenAI-only spend gate", with no
-// replacement gate described -- this gap matches that stated scope, though it is a real reduction
-// in spend-cap coverage versus the pre-C6 tool loop. Whether C6 needs its own Noul/OpenRouter
-// spend cap is a follow-up decision, not one #219/#317 make. `story-post` is necessary but not
-// sufficient, the same shape as `chat`/`moderation-prompt` above: a non-force retry against a post
+// (`openai-autotagger.mts`, no longer wired into dispatch). Both are gated here anyway:
+// `createAutotaggerStructuredDecisionHooks` (`@agents/autotagger/structured-decision-attempt-hooks.mts`)
+// wires the client's `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks to
+// `assertOpenAiSpendCapNotBreached`/`recordAgentResponseUsage`/`latchAccountingUncertainty`
+// (issue #616), so C6's OpenRouter/Jev spend is recorded to `ai_usage_records` and subject to the
+// same daily cap as every other job type below, despite never calling OpenAI itself. `story-post`
+// is necessary but not sufficient, the same shape as `chat`/`moderation-prompt` above: a
+// non-force retry against a post
 // that already has `ai_summary_markdown` set only re-persists the existing summary to re-trigger
 // the downstream moderation/spam/embedding jobs (`updateStoryPostAgentResult`) -- it never calls
 // `callStoryPostAgent`. Blocking that recovery path on the cap would delay it until midnight even
@@ -112,8 +110,8 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'copyright-appeal-recommendation': true,
   'story-post': true,
   'story-clustering': true,
-  'autotagger-post': false,
-  'autotagger-rss-feed-item': false,
+  'autotagger-post': true,
+  'autotagger-rss-feed-item': true,
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,

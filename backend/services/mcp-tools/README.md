@@ -4,14 +4,17 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 
 ## Modules
 
-| File                            | Description                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| `config.mts`                    | User/admin MCP server names, routes, and surfaces                                    |
-| `list-tools.mts`                | Filter registered tools by configured surface, role, plan, and API key permissions   |
-| `call-tool.mts`                 | Execute a tool call with full authorization enforcement                              |
-| `serialize-mcp-tool-result.mts` | Bounded JSON serializer for MCP tool results                                         |
-| `handle-request.mts`            | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport` |
-| `index.mts`                     | Barrel: exports request handlers, helpers, and user/admin MCP configs                |
+| File                                 | Description                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `config.mts`                         | User/admin MCP server names, routes, and surfaces                                            |
+| `list-tools.mts`                     | Filter registered tools by configured surface, role, plan, and API key permissions           |
+| `call-tool.mts`                      | Execute a tool call with full authorization enforcement                                      |
+| `serialize-mcp-tool-result.mts`      | Bounded JSON serializer for MCP tool results                                                 |
+| `handle-request.mts`                 | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport`         |
+| `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                        |
+| `catalog/build-mcp-catalog.mts`      | Build the `api-fixtures/v1/mcp.json` catalog and find `meta.api` routes missing from OpenAPI |
+| `catalog/agent-tool-catalog.mts`     | Render the agent-tools catalog table and the native-client `manifest.json`                   |
+| `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; `pnpm run mcp:catalog` regenerates them           |
 
 ## Authorization
 
