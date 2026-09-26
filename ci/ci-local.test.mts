@@ -143,7 +143,18 @@ describe('ci-local', () => {
       const commands = getCiLocalTargets().static.commands.map(command => command.command)
 
       expect(commands).toContain('pnpm run no-mistakes')
+      expect(commands).toContain('pnpm run selene')
+      expect(commands).not.toContainEqual(expect.stringContaining('selene --config'))
       expect(commands).not.toContainEqual(expect.stringContaining('no-mistakes playwright check'))
+    })
+
+    it('prints the tracked Lua Selene script in the static dry run', async () => {
+      const { stdout } = await execFileAsync('node', [scriptPath, 'static', '--dry-run'])
+
+      expect(stdout).toContain('pnpm run selene')
+      expect(stdout).not.toContain(
+        'selene --config selene.toml backend/services/jwt-session/scripts',
+      )
     })
 
     it('keeps command metadata available for all targets', () => {

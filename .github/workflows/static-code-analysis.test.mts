@@ -21,6 +21,17 @@ describe('static-code-analysis workflow', () => {
     expect(steps.some(step => step.uses === './.github/actions/fetch-base-ref')).toBe(false)
   })
 
+  it('runs the tracked Lua Selene script on every call within its two-minute timeout', () => {
+    type Step = { run?: string; if?: string; 'timeout-minutes'?: number }
+    const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
+    const steps = parsed.jobs['static-code-analysis']?.steps ?? []
+    const selene = steps.filter(step => step.run === 'pnpm run selene')
+
+    expect(selene).toHaveLength(1)
+    expect(selene[0]?.if).toBeUndefined()
+    expect(selene[0]?.['timeout-minutes']).toBe(2)
+  })
+
   it("runs only when called or dispatched, under its caller's concurrency", () => {
     const parsed = load(workflow) as { on: Record<string, unknown>; concurrency?: unknown }
 
