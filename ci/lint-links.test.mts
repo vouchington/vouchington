@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawnSync } from 'node:child_process'
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -112,6 +112,73 @@ exit 0
   it('does not cache transient server errors', async () => {
     await expect(readFile('lychee.toml', 'utf8')).resolves.toContain(
       'cache_exclude_status = "500.."',
+    )
+  })
+
+  it('excludes only intended hosts, private addresses, and the exact Sentry endpoint', async () => {
+    const excludedUrls = [
+      'https://voucha.ai',
+      'https://voucha.ai:8443/path?view=1#section',
+      'https://localhost:3000/path',
+      'https://127.0.0.1:8080/path',
+      'https://0.0.0.0/',
+      'https://10.1.2.3/path',
+      'https://172.16.1.2/path',
+      'https://172.31.255.254/path',
+      'https://192.168.1.2/path',
+      'https://169.254.1.2/path',
+      'https://[::1]:443/path',
+      'https://[fc00::1]:8443/path',
+      'https://[fd12:3456::1]/path',
+      'https://[fe80::1]/path',
+      'https://[febf::1]/path',
+      'https://docs.google.com:443/document/d/123',
+      'https://drive.google.com/file/d/123',
+      'https://sentry.io/settings/account/api/auth-tokens',
+      'https://sentry.io/settings/account/api/auth-tokens/?tab=1#tokens',
+    ]
+    const unexcludedUrls = [
+      'https://voucha.ai.evil.com/path',
+      'https://not-voucha.ai/path',
+      'https://localhost.evil.com/path',
+      'https://localhostx.com/path',
+      'https://127.0.0.2/path',
+      'https://127.0.0.1.evil.com/path',
+      'https://10.evil.com/path',
+      'https://10.1.2.3.example.com/path',
+      'https://172.16.evil.com/path',
+      'https://172.32.1.2/path',
+      'https://192.168.evil.com/path',
+      'https://192.169.1.2/path',
+      'https://169.254.evil.com/path',
+      'https://169.255.1.2/path',
+      'https://11.0.0.1/path',
+      'https://[2001:4860:4860::8888]/path',
+      'https://[2001:db8::1]/path',
+      'https://docs.google.com.evil.com/document/d/123',
+      'https://drive.google.com.evil.com/file/d/123',
+      'https://sentry.io/settings/account/api/auth-tokens-evil',
+      'https://sentry.io/settings/account/api/auth-tokens/other',
+      'https://sentry.io/settings/account/other',
+    ]
+    const fixtureDir = await mkdtemp(join(tmpdir(), 'voucha-lychee-matcher-'))
+    testDirs.push(fixtureDir)
+    const fixturePath = join(fixtureDir, 'matcher-input.md')
+    const markdown = [...excludedUrls, ...unexcludedUrls]
+      .map((url, index) => `[probe ${index + 1}](${url})`)
+      .join('\n')
+    await writeFile(fixturePath, `${markdown}\n`)
+
+    const result = spawnSync(
+      'lychee',
+      ['--dump', '--cache=false', '--config', 'lychee.toml', fixturePath],
+      { encoding: 'utf8' },
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.status).toBe(0)
+    expect(result.stdout.trim().split('\n').filter(Boolean).sort()).toEqual(
+      [...unexcludedUrls].sort(),
     )
   })
 
