@@ -1,8 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import * as fsPromises from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { Readable } from 'node:stream'
-import { access, readFile } from 'node:fs/promises'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { gunzipBytes, gzipBytes } from '@modules/utils/compression'
-import { uploadCrawlHtmlToS3, downloadCrawlHtmlToTempFile } from './s3.mts'
+import { downloadCrawlHtmlToTempFile, uploadCrawlHtmlFileToS3, uploadCrawlHtmlToS3 } from './s3.mts'
+
+const recordedGzipDirectories = vi.hoisted(() => ({ paths: [] as string[] }))
+
+vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async importOriginal => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...actual,
+    mkdtemp: (async (...args: Parameters<typeof actual.mkdtemp>) => {
+      const directory = await actual.mkdtemp(...args)
+      recordedGzipDirectories.paths.push(directory)
+      return directory
+    }) as typeof actual.mkdtemp,
+  }
+})
 
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => {
   const mockSend = vi.fn<VitestLooseMock>()
@@ -70,10 +87,10 @@ describe('s3', () => {
       const result = await downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef')
 
       expect(result).not.toBeNull()
-      expect((await readFile(result!.filePath)).toString()).toBe(html)
+      expect((await fsPromises.readFile(result!.filePath)).toString()).toBe(html)
       expect(result!.byteLength).toBe(Buffer.byteLength(html))
       await result!.cleanup()
-      await expect(access(result!.filePath)).rejects.toThrow(/ENOENT/)
+      await expect(fsPromises.access(result!.filePath)).rejects.toThrow(/ENOENT/)
       await expect(result!.cleanup()).resolves.toBeUndefined()
 
       const command = mockSend.mock.calls[0]![0] as unknown as { input: Record<string, unknown> }
@@ -92,7 +109,7 @@ describe('s3', () => {
       const result = await downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef')
 
       expect(result).not.toBeNull()
-      expect((await readFile(result!.filePath)).toString()).toBe(html)
+      expect((await fsPromises.readFile(result!.filePath)).toString()).toBe(html)
       await result!.cleanup()
     })
 
@@ -132,7 +149,90 @@ describe('s3', () => {
         downloadCrawlHtmlToTempFile('example.com', 'url-123', 'deadbeef', 1024),
       ).rejects.toThrow('exceeds 1024 bytes')
     })
+
+    it('destroys an unread buffer upload stream when send resolves without reading', async () => {
+      const captured = captureUnreadBody(false)
+      await uploadCrawlHtmlToS3(
+        'example.com',
+        'url-123',
+        'deadbeef',
+        Buffer.from('<html>closed</html>'),
+      )
+      expectUnreadBodyClosed(captured)
+      await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
+    })
+
+    it('destroys an unread buffer upload stream when send rejects without reading', async () => {
+      const captured = captureUnreadBody(true)
+      await expect(
+        uploadCrawlHtmlToS3(
+          'example.com',
+          'url-123',
+          'deadbeef',
+          Buffer.from('<html>closed</html>'),
+        ),
+      ).rejects.toThrow('upload failed')
+      expectUnreadBodyClosed(captured)
+      await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
+    })
+
+    it('destroys an unread file upload stream when send resolves without reading', async () => {
+      const source = createSourceHtmlFile()
+      try {
+        const captured = captureUnreadBody(false)
+        await uploadCrawlHtmlFileToS3('example.com', 'url-123', 'deadbeef', source.filePath)
+        expectUnreadBodyClosed(captured)
+        await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
+        await expect(fsPromises.access(source.filePath)).resolves.toBeUndefined()
+      } finally {
+        await fsPromises.rm(source.directory, { recursive: true, force: true })
+      }
+    })
+
+    it('destroys an unread file upload stream when send rejects without reading', async () => {
+      const source = createSourceHtmlFile()
+      try {
+        const captured = captureUnreadBody(true)
+        await expect(
+          uploadCrawlHtmlFileToS3('example.com', 'url-123', 'deadbeef', source.filePath),
+        ).rejects.toThrow('upload failed')
+        expectUnreadBodyClosed(captured)
+        await expect(fsPromises.access(recordedGzipDirectories.paths[0]!)).rejects.toThrow(/ENOENT/)
+        await expect(fsPromises.access(source.filePath)).resolves.toBeUndefined()
+      } finally {
+        await fsPromises.rm(source.directory, { recursive: true, force: true })
+      }
+    })
+
+    function captureUnreadBody(rejectSend: boolean): { errors: unknown[]; body?: Readable } {
+      recordedGzipDirectories.paths.length = 0
+      const captured: { errors: unknown[]; body?: Readable } = { errors: [] }
+      mockSend.mockImplementationOnce(async command => {
+        const body = (command as { input: { Body: Readable } }).input.Body
+        captured.body = body
+        body.on('error', error => {
+          captured.errors.push(error)
+        })
+        if (rejectSend) throw new Error('upload failed')
+        return {} as never
+      })
+      return captured
+    }
+
+    function expectUnreadBodyClosed(captured: { errors: unknown[]; body?: Readable }): void {
+      expect(captured.errors).toEqual([])
+      expect(captured.body).toBeInstanceOf(Readable)
+      expect(captured.body?.destroyed).toBe(true)
+      expect(recordedGzipDirectories.paths).toHaveLength(1)
+    }
   })
+
+  function createSourceHtmlFile(): { directory: string; filePath: string } {
+    const directory = mkdtempSync(path.join(os.tmpdir(), 'crawl-html-source-'))
+    const filePath = path.join(directory, 'page.html')
+    writeFileSync(filePath, '<html>file</html>')
+    return { directory, filePath }
+  }
 
   async function collectReadable(stream: Readable): Promise<Buffer> {
     const chunks: Buffer[] = []

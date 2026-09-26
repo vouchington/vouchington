@@ -33,6 +33,7 @@ older crawl rows. It runs daily at 03:30 UTC.
 - Batch HTML lookups spool decompressed S3 bodies sequentially to private operating-system temp files, skip missing, corrupt, or oversized bodies per page, and transfer cleanup ownership to the boilerplate worker.
 - Raw crawl HTML snapshots in S3 are 7-day ephemeral inputs for boilerplate extraction; parsed crawl rows and crawl history keep the existing database retention policy.
 - Snapshot PUTs are hash-keyed by `hostname/urlId/htmlSha256`; unchanged pages reuse the existing object only while `html_snapshot_uploaded_at` is inside the 7-day S3 lifecycle window. Expired snapshots are refreshed with a new PUT so boilerplate extraction never points at lifecycle-deleted objects.
+- Snapshot uploads gzip the HTML to a private temp file, open that file before `PutObject`, and close the handle before deleting the temp directory, including when S3 `send` never reads the body.
 - Conditional request metadata (`ETag`, `Last-Modified`) is sent only while the previous HTML snapshot is reusable; stale snapshots force a full-body fetch so the S3 object can be recreated.
 
 Triggered Crawls:

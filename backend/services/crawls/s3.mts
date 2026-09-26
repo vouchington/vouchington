@@ -1,6 +1,6 @@
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { createReadStream, createWriteStream } from 'node:fs'
-import { mkdtemp, rm, stat } from 'node:fs/promises'
+import { mkdtemp, open, rm, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Readable, Transform } from 'node:stream'
@@ -24,7 +24,6 @@ function buildS3Key(hostname: string, urlId: string, htmlSha256Hex: string): str
   return `${hostname}/${urlId}/${htmlSha256Hex}`
 }
 
-/* no-mistakes: integration=aws */
 export async function uploadCrawlHtmlToS3(
   hostname: string,
   urlId: string,
@@ -32,25 +31,9 @@ export async function uploadCrawlHtmlToS3(
   htmlBuffer: Buffer,
 ): Promise<void> {
   const gzipFile = await createTemporaryGzipFile(htmlBuffer)
-
-  try {
-    await S3ImagesClient.send(
-      new PutObjectCommand({
-        Bucket: S3Buckets.crawls,
-        Key: buildS3Key(hostname, urlId, htmlSha256Hex),
-        Body: createReadStream(gzipFile.filePath),
-        ContentLength: gzipFile.byteLength,
-        ContentType: 'text/html',
-        ContentEncoding: 'gzip',
-        StorageClass: 'REDUCED_REDUNDANCY',
-      }),
-    )
-  } finally {
-    await rm(gzipFile.tempDir, { recursive: true, force: true })
-  }
+  await uploadTemporaryGzipFile(hostname, urlId, htmlSha256Hex, gzipFile)
 }
 
-/* no-mistakes: integration=aws */
 export async function uploadCrawlHtmlFileToS3(
   hostname: string,
   urlId: string,
@@ -58,12 +41,23 @@ export async function uploadCrawlHtmlFileToS3(
   filePath: string,
 ): Promise<void> {
   const gzipFile = await createTemporaryGzipFileFromPath(filePath)
+  await uploadTemporaryGzipFile(hostname, urlId, htmlSha256Hex, gzipFile)
+}
+
+/* no-mistakes: integration=aws */
+async function uploadTemporaryGzipFile(
+  hostname: string,
+  urlId: string,
+  htmlSha256Hex: string,
+  gzipFile: { filePath: string; byteLength: number; tempDir: string },
+): Promise<void> {
   try {
+    await using gzipHandle = await open(gzipFile.filePath, 'r')
     await S3ImagesClient.send(
       new PutObjectCommand({
         Bucket: S3Buckets.crawls,
         Key: buildS3Key(hostname, urlId, htmlSha256Hex),
-        Body: createReadStream(gzipFile.filePath),
+        Body: gzipHandle.createReadStream(),
         ContentLength: gzipFile.byteLength,
         ContentType: 'text/html',
         ContentEncoding: 'gzip',
