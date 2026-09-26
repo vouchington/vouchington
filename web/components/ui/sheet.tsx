@@ -64,13 +64,17 @@ function SheetContent({
   side = 'right',
   className,
   children,
+  hideOverlay,
   ref,
   ...props
-}: SheetContentProps & { ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Content>> }) {
+}: SheetContentProps & {
+  ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Content>>
+  hideOverlay?: boolean
+}) {
   const t = useTranslations()
   return (
     <SheetPortal>
-      <SheetOverlay />
+      {hideOverlay ? null : <SheetOverlay />}
       <SheetPrimitive.Content
         ref={ref}
         className={cn(sheetVariants({ side }), className)}
@@ -78,7 +82,7 @@ function SheetContent({
       >
         <SheetPrimitive.Close
           data-pw='sheet-close-button'
-          className='absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary'
+          className='absolute right-4 top-4 z-10 inline-flex h-6 w-6 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary'
         >
           <X className='h-4 w-4' />
           <span className='sr-only'>{t('extracted.ui.sheet.close_7d9eb7ac')}</span>

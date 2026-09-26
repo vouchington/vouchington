@@ -1,0 +1,45 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { IdentityProfileImageSection } from '@/components/my/identity-profile-image-section'
+import { StoryFrame } from '@/storybook/story-frame'
+import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
+
+const meta = {
+  title: 'My/Identity Profile Image Section',
+} satisfies Meta
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+const username = storyCurrentUser.username ?? 'cardholder'
+
+export const WithImage: Story = {
+  render: () => (
+    <StoryFrame width='max-w-xl'>
+      <IdentityProfileImageSection
+        handleImageUploadEnd={() => {}}
+        handleImageUploadStart={() => {}}
+        handleImageUploaded={async () => {}}
+        handleRemoveImage={async () => {}}
+        imageLoading={false}
+        profileImageId='profile-image-cardholder'
+        username={username}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const NoImage: Story = {
+  render: () => (
+    <StoryFrame width='max-w-xl'>
+      <IdentityProfileImageSection
+        handleImageUploadEnd={() => {}}
+        handleImageUploadStart={() => {}}
+        handleImageUploaded={async () => {}}
+        handleRemoveImage={async () => {}}
+        imageLoading={false}
+        profileImageId={null}
+        username={username}
+      />
+    </StoryFrame>
+  ),
+}

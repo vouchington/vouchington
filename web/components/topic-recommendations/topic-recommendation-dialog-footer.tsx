@@ -54,8 +54,10 @@ export function TopicRecommendationDialogFooter({
 
   return (
     <div
-      className='flex items-center gap-1 overflow-x-auto border-t pt-3 pb-1'
+      className='flex items-center gap-1 overflow-x-auto border-t pt-3 pb-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring'
       data-pw='topic-recommendation-dialog-footer'
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- WCAG 2.1.1 requires keyboard access to the scrollable region itself.
+      tabIndex={0}
     >
       <Button
         ref={previousRef}
