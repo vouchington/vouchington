@@ -21,3 +21,8 @@ COMMENT ON COLUMN post_locks.locked_by_id IS 'Moderator or author who locked the
 COMMENT ON COLUMN post_locks.reason IS 'Optional reason for the lock.';
 COMMENT ON COLUMN post_locks.lifted_at IS 'When the lock was lifted. NULL means still active.';
 COMMENT ON COLUMN post_locks.lifted_by_id IS 'Who lifted the lock.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_post_locks__post_id
+  ON post_locks (post_id)
+  WHERE post_id IS NOT NULL;

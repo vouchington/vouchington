@@ -254,3 +254,12 @@ COMMENT ON COLUMN post_dispute_annotations.body_text IS 'The human-authored, mod
 COMMENT ON COLUMN post_dispute_annotations.created_by_id IS 'The moderator who created the annotation.';
 COMMENT ON COLUMN post_dispute_annotations.removed_at IS 'When the annotation was retracted.';
 COMMENT ON COLUMN post_dispute_annotations.removed_by_id IS 'Moderator who retracted the annotation.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__post_id
+  ON post_dispute_annotations (post_id)
+  WHERE post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__review_dispute_id
+  ON post_dispute_annotations (review_dispute_id)
+  WHERE review_dispute_id IS NOT NULL;

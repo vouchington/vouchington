@@ -36,22 +36,20 @@ describe('PostgreSQL Schema Tests workflow', () => {
     )
   })
 
-  it('checks the schema snapshot after schema tests, even when Vitest is skipped, before index renames and uploads', () => {
+  it('checks the schema snapshot after schema tests, even when Vitest is skipped, before uploads', () => {
     const tests = workflow.indexOf(
       'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
     )
     const snapshotCheck = workflow.indexOf(
       '      - name: Check PostgreSQL schema snapshot is up to date',
     )
-    const indexRenames = workflow.indexOf('      - name: Check for renamed PostgreSQL indexes')
     const upload = workflow.indexOf(
       '      - name: Upload postgres-schema vitest blob to GitHub (fallback)',
     )
 
     expect(snapshotCheck).toBeGreaterThan(tests)
-    expect(indexRenames).toBeGreaterThan(snapshotCheck)
     expect(upload).toBeGreaterThan(snapshotCheck)
-    expect(workflow.slice(snapshotCheck, indexRenames)).toContain('if: ${{ !cancelled() }}')
+    expect(workflow.slice(snapshotCheck, upload)).toContain('if: ${{ !cancelled() }}')
     expect(workflow).toContain('node data-stores/psql/schema-snapshot/generate.mts --check')
   })
 })

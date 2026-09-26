@@ -8,10 +8,8 @@ export type VoteSchemaConfig = {
   voteAdditionalColumns?: string[] // extra columns on vote table (e.g. for composite FK)
   voteTableConstraints?: string[] // extra constraints (e.g. composite FK)
   voteScoreConstraint?: string // nullable score-domain CHECK
-  tracksNeutralScore?: boolean // marks new sentiment score-zero ballots; old writers default to Clear
-  tracksSemanticScore?: boolean // preserves semantic +/-1 intent; old writers default to Vouch/Disavow
-  preservesOutboundActivityPubLike?: boolean // carries the current Like identity across semantic Vouch repair
-  legacySentimentEntityFilter?: { field: string; excludedValues: string[] }
+  tracksNeutralScore?: boolean
+  tracksSemanticScore?: boolean
   deletedAtFilter?: boolean // when true, votes_score_sort indexes exclude deleted_at IS NOT NULL rows
 }
 
@@ -29,8 +27,6 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
     voteScoreConstraint: 'CHECK (score IS NULL OR score BETWEEN -2 AND 2)',
     tracksNeutralScore: true,
     tracksSemanticScore: true,
-    preservesOutboundActivityPubLike: true,
-    legacySentimentEntityFilter: { field: 'post_type', excludedValues: ['topic_recommendation'] },
   },
   {
     entityType: 'topic',

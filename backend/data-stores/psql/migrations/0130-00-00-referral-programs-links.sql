@@ -224,3 +224,16 @@ WHERE referral_program_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__created_via_oauth_client_id
   ON user_referral_program_links (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__referral_program_id__fk
+  ON user_referral_program_links (referral_program_id)
+  WHERE referral_program_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__url_id__fk
+  ON user_referral_program_links (url_id)
+  WHERE url_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_referral_program_links__user_id__fk
+  ON user_referral_program_links (user_id)
+  WHERE user_id IS NOT NULL;

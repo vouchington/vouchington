@@ -2,10 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { ELECTION_VOTE_POLICY_SCORES } from '@voucha/types/entities/election'
 import idempotent from '../0000-00-00-entity-elections.mts'
 import generateEntityRelationsSql from '../0000-00-01-entity-relations.mts'
-import {
-  buildVoteTableConstraintName,
-  buildVoteTableConstraintReferencedTable,
-} from '../utils/catalog-guarded-ddl.mts'
 import { VOTE_SCHEMA_CONFIGS } from '../utils/election-schema-config.mts'
 
 describe('0000-00-00-entity-elections', () => {
@@ -13,52 +9,20 @@ describe('0000-00-00-entity-elections', () => {
     const sql = idempotent()
 
     expect(sql).toContain('outbound_ap_like_activity_id UUID')
-    expect(sql).toContain('ADD COLUMN outbound_ap_like_activity_id UUID;')
+    expect(sql).not.toContain('ADD COLUMN outbound_ap_like_activity_id')
   })
 
-  it('should generate catalog-guarded repair SQL for each entity table', () => {
+  it('builds current indexes without repairing entity or vote tables', () => {
     const sql = idempotent()
 
-    expect(sql).toContain('ALTER TABLE posts')
-    expect(sql).toContain('ALTER TABLE topics')
-    expect(sql).toContain('ALTER TABLE url_hostnames')
-    expect(sql).toContain('ALTER TABLE rss_feed_items')
-    expect(sql).toContain('ALTER TABLE agent_moderations')
-    expect(sql).toContain('ALTER TABLE users')
+    expect(sql).not.toContain('ALTER TABLE')
+    expect(sql).not.toContain('ADD COLUMN')
+    expect(sql).not.toContain('pg_attribute')
+    expect(sql).not.toContain('election_vote_migration_claims')
     expect(sql).not.toContain('user_bot_elections')
     expect(sql).not.toContain('user_vouch_elections')
-
-    expect(sql).toContain('DO $$ BEGIN')
-    expect(sql).toContain(
-      "IF NOT EXISTS (\n    SELECT 1\n    FROM pg_attribute\n    WHERE attrelid = 'posts'::regclass",
-    )
-    expect(sql).toContain(
-      "  ) THEN\n    LOCK TABLE posts IN SHARE ROW EXCLUSIVE MODE;\n    IF NOT EXISTS (\n      SELECT 1\n      FROM pg_attribute\n      WHERE attrelid = 'posts'::regclass",
-    )
-    expect(sql).toContain('FROM pg_attribute')
-    expect(sql).toContain('ADD COLUMN votes_score_up DOUBLE PRECISION NOT NULL DEFAULT 0')
-    expect(sql).toContain('ADD COLUMN votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS')
-    expect(sql).toContain('CHECK (votes_score_up >= 0) NOT VALID')
-    expect(sql).toContain('VALIDATE CONSTRAINT chk_posts_votes_score_up')
-    expect(sql).toContain('ADD CONSTRAINT post_votes_user_agent_id_fkey')
-    expect(sql).toContain(
-      "IF NOT EXISTS (\n    SELECT 1\n    FROM pg_constraint\n    WHERE conname = 'post_votes_user_agent_id_fkey'",
-    )
-    expect(sql).toContain(
-      "  ) THEN\n    LOCK TABLE vote_user_agents IN SHARE ROW EXCLUSIVE MODE;\n    LOCK TABLE post_votes IN SHARE ROW EXCLUSIVE MODE;\n    IF NOT EXISTS (\n      SELECT 1\n      FROM pg_constraint\n      WHERE conname = 'post_votes_user_agent_id_fkey'",
-    )
-    expect(sql).toContain(
-      'LOCK TABLE agent_moderations IN SHARE ROW EXCLUSIVE MODE;\n    LOCK TABLE agent_moderation_votes IN SHARE ROW EXCLUSIVE MODE;',
-    )
-    expect(sql).toContain(
-      'FOREIGN KEY (user_agent_id) REFERENCES vote_user_agents ON DELETE SET NULL NOT VALID',
-    )
-    expect(sql).toContain('VALIDATE CONSTRAINT post_votes_user_agent_id_fkey')
-    expect(sql).not.toContain(
-      'LOCK TABLE vote_user_agents IN SHARE ROW EXCLUSIVE MODE;\n    ALTER TABLE post_votes\n      VALIDATE CONSTRAINT post_votes_user_agent_id_fkey;',
-    )
-    expect(sql).not.toContain('ADD COLUMN IF NOT EXISTS')
-    expect(sql).toContain('fn_wilson_score_lower_bound')
+    expect(sql).toContain('idx_posts__votes_score_sort__id')
+    expect(sql).toContain('CONSTRAINT chk_post_votes_score_domain')
   })
 
   it('should generate vote tables for each entity type', () => {
@@ -73,14 +37,14 @@ describe('0000-00-00-entity-elections', () => {
     expect(sql).toContain('session_id UUID')
   })
 
-  it('preserves historic binary-policy Neutral audit rows without rewriting them', () => {
+  it('keeps the binary moderation vote domain', () => {
     const sql = idempotent()
 
     expect(sql).not.toContain('UPDATE agent_moderation_votes SET score = NULL')
     expect(sql).toContain('CHECK (score IS NULL OR score IN (-1, 0, 1))')
   })
 
-  it('adds old-writer-safe semantic provenance to every sentiment vote table', () => {
+  it('creates semantic provenance on every sentiment vote table', () => {
     const sql = idempotent()
     const sentimentVoteTables = VOTE_SCHEMA_CONFIGS.filter(config => config.tracksSemanticScore)
 
@@ -88,21 +52,9 @@ describe('0000-00-00-entity-elections', () => {
     for (const config of sentimentVoteTables) {
       expect(sql).toContain(`CREATE TABLE IF NOT EXISTS ${config.voteTable}`)
       expect(sql).toContain('score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE')
-      expect(sql).toContain(`ADD COLUMN score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE;`)
+      expect(sql).not.toContain('ADD COLUMN score_is_semantic')
       expect(sql).toContain(`chk_${config.voteTable}_score_is_semantic`)
     }
-  })
-
-  it('marks appended legacy sentiment repairs as non-semantic', () => {
-    const sql = idempotent()
-
-    expect(sql).toContain(
-      'INSERT INTO post_votes (id, user_id, post_id, score, score_is_semantic, outbound_ap_like_activity_id)',
-    )
-    expect(sql).toContain(
-      "uuidv7(uuid_extract_timestamp(current_votes.id) + INTERVAL '1 millisecond' - clock_timestamp())",
-    )
-    expect(sql).toContain('CASE current_votes.score WHEN 1 THEN 2 ELSE -2 END, FALSE')
   })
 
   it('covers every public semantic score in the generated table-domain checks', () => {
@@ -150,34 +102,12 @@ describe('0000-00-00-entity-elections', () => {
     }
   })
 
-  it('should keep additional vote column repairs nullable for existing rows', () => {
+  it('creates required additional vote columns directly', () => {
     const sql = idempotent()
 
     expect(sql).toContain('post_id UUID NOT NULL,')
     expect(sql).toContain('agent_moderation_id UUID NOT NULL,')
-    expect(sql).toContain('ADD COLUMN post_id UUID;')
-    expect(sql).toContain('ADD COLUMN agent_moderation_id UUID;')
-  })
-
-  it('should derive vote constraint names across foreign key spacing variants', () => {
-    expect(
-      buildVoteTableConstraintName('post_votes', 'FOREIGN KEY(post_id) REFERENCES posts'),
-    ).toBe('post_votes_post_id_fkey')
-    expect(
-      buildVoteTableConstraintName(
-        'post_votes',
-        'FOREIGN   KEY  (post_id, user_id) REFERENCES posts',
-      ),
-    ).toBe('post_votes_post_id_user_id_fkey')
-    expect(
-      buildVoteTableConstraintReferencedTable(
-        'post_votes',
-        'FOREIGN KEY ("post_id") REFERENCES "posts"',
-      ),
-    ).toBe('posts')
-    expect(() => buildVoteTableConstraintName('post_votes', 'CHECK (score >= 0)')).toThrow(
-      'unsupported vote table constraint for post_votes',
-    )
+    expect(sql).not.toContain('ADD COLUMN')
   })
 
   it('excludes soft-deleted rows from votes_score_sort indexes exactly where deletedAtFilter is set', () => {

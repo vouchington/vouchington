@@ -13,9 +13,6 @@ CREATE TABLE copyright_notice_enforcement_requests (
   CHECK ((state = 'claimed') = (claimed_at IS NOT NULL))
 );
 
-CREATE INDEX idx_copyright_notice_enforcement_requests__pending
-ON copyright_notice_enforcement_requests (updated_at, copyright_notice_submission_assessment_id)
-WHERE state = 'pending';
 
 CREATE INDEX idx_copyright_notice_enforcement_requests__notice
 ON copyright_notice_enforcement_requests (copyright_notice_id);
@@ -39,12 +36,17 @@ COMMENT ON COLUMN copyright_notice_enforcement_requests.completed_at IS 'Time al
 COMMENT ON COLUMN copyright_notice_enforcement_requests.claimed_at IS 'Time the current worker claim began.';
 
 CREATE TABLE copyright_legal_hold_restrictions (
-  copyright_restriction_id uuid PRIMARY KEY REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   copyright_notice_legal_hold_assessment_id uuid NOT NULL REFERENCES copyright_notice_legal_hold_assessments(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (copyright_restriction_id, copyright_notice_legal_hold_assessment_id),
   UNIQUE (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)
 );
 
-COMMENT ON TABLE copyright_legal_hold_restrictions IS 'Typed provenance binding for restrictions reactivated by qualifying legal holds.';
-COMMENT ON COLUMN copyright_legal_hold_restrictions.copyright_restriction_id IS 'Restriction reactivated because a qualifying legal hold requires it to remain active.';
+COMMENT ON TABLE copyright_legal_hold_restrictions IS 'Typed provenance bindings between restriction records and qualifying legal-hold assessments.';
+COMMENT ON COLUMN copyright_legal_hold_restrictions.copyright_restriction_id IS 'Restriction with immutable provenance from a qualifying legal-hold assessment.';
 COMMENT ON COLUMN copyright_legal_hold_restrictions.copyright_notice_legal_hold_assessment_id IS 'Legal-hold assessment that established this immutable restriction provenance binding.';
+
+CREATE INDEX IF NOT EXISTS idx_copyright_notice_enforcement_requests__reconcilable
+  ON copyright_notice_enforcement_requests (copyright_notice_submission_assessment_id)
+  WHERE state IN ('pending', 'claimed');

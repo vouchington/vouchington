@@ -21,7 +21,6 @@ const AGENT_SYSTEM_USERS = [
 export default function generateSeedAgentsSQL(): string {
   const parts: string[] = [
     '-- Ensure agent system users, agent rows, and moderator prompts during db:migrate',
-    'ALTER TABLE agents__moderators ADD COLUMN IF NOT EXISTS is_baseline boolean NOT NULL DEFAULT FALSE;',
   ]
 
   // 1. Upsert the system user (needed as created_by_id for agents).
@@ -78,10 +77,6 @@ ON CONFLICT (system_user_id) DO UPDATE SET
   activated_at = COALESCE(agents.activated_at, CURRENT_TIMESTAMP),
   deactivated_at = NULL,
   deleted_at = NULL;`)
-
-  parts.push(`ALTER TABLE agents__moderators
-  ADD COLUMN IF NOT EXISTS is_baseline BOOLEAN NOT NULL DEFAULT FALSE;
-COMMENT ON COLUMN agents__moderators.is_baseline IS 'When true, this moderator runs on every approved post regardless of community opt-in (baseline safety net).';`)
 
   // 5. Upsert agents__moderators rows.
   for (const config of MODERATOR_CONFIGS) {

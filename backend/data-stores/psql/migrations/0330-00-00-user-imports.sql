@@ -183,3 +183,20 @@ COMMENT ON COLUMN user_rss_feed_import_rows.rss_feed_id IS 'RSS feed resolved or
 COMMENT ON COLUMN user_rss_feed_import_rows.completed_at IS 'When this row completed with a non-error outcome.';
 COMMENT ON COLUMN user_rss_feed_import_rows.failed_at IS 'When this row reached a terminal error outcome.';
 COMMENT ON COLUMN user_rss_feed_import_rows.error_message IS 'Most recent row processing error, terminal only when outcome is error.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_user_import_requests__rss_feed_id
+  ON user_import_requests (rss_feed_id)
+  WHERE rss_feed_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_id
+  ON user_import_requests (topic_id)
+  WHERE topic_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_recommendation_post_id
+  ON user_import_requests (topic_recommendation_post_id)
+  WHERE topic_recommendation_post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__rss_feed_id
+  ON user_rss_feed_import_rows (rss_feed_id)
+  WHERE rss_feed_id IS NOT NULL;

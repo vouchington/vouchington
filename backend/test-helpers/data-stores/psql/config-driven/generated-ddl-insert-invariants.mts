@@ -9,11 +9,7 @@ import { isConvergentOnConflict, isGuardedSelect } from './on-conflict-convergen
 import { nonExecutingWrapperChildren } from './query-wrapper-executability.mts'
 import { hasGeneratedArbiterViolation, hasReplayUnsafeTrigger } from './schema-snapshot-facts.mts'
 import { maskDoubleQuotedIdentifiers } from './sql-quoted-identifier-mask.mts'
-import {
-  findDominantClaimGuardMatch,
-  maskSqlLiterals,
-  stripSqlComments,
-} from './sql-text-scanner-helpers.mts'
+import { maskSqlLiterals, stripSqlComments } from './sql-text-scanner-helpers.mts'
 
 /**
  * Flags INSERT statements with neither a convergent ON CONFLICT nor a conjunctive NOT EXISTS, at
@@ -34,13 +30,7 @@ export function findFirstUnguardedInsertViolation(sql: string): string | null {
 
   for (const { body } of extractDoBlocks(executableSql)) {
     const strippedBody = stripSqlComments(body)
-    const maskedBody = maskSqlLiterals(strippedBody)
-    const dominantGuardMatch = findDominantClaimGuardMatch(maskedBody)
-    const scannedBody = dominantGuardMatch
-      ? strippedBody.slice(0, dominantGuardMatch.index + dominantGuardMatch[0].length)
-      : strippedBody
-
-    const bodyViolation = findFirstUnguardedInsertStatement(scannedBody)
+    const bodyViolation = findFirstUnguardedInsertStatement(strippedBody)
     if (bodyViolation) return bodyViolation
   }
 

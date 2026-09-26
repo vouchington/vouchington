@@ -45,3 +45,12 @@ COMMENT ON COLUMN moderation_media_reveals.surface IS 'Queue surface where the r
 COMMENT ON COLUMN moderation_media_reveals.revealed_at IS 'When the moderator clicked to reveal the media. Real column (not virtual) for time-window range queries.';
 
 COMMENT ON COLUMN moderation_media_reveals.metadata IS 'Structured context (e.g. community_id, image_id).';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__post_id
+  ON moderation_media_reveals (post_id)
+  WHERE post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__report_id
+  ON moderation_media_reveals (report_id)
+  WHERE report_id IS NOT NULL;

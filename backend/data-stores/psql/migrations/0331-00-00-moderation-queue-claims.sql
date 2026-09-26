@@ -51,3 +51,16 @@ DO $$ BEGIN
   END IF;
 END $$;
 ALTER TABLE conversations VALIDATE CONSTRAINT fk_conversations_moderation_report_id;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__claimed_by_id
+  ON moderation_queue_claims (claimed_by_id)
+  WHERE claimed_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__post_id
+  ON moderation_queue_claims (post_id)
+  WHERE post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_claims__report_id
+  ON moderation_queue_claims (report_id)
+  WHERE report_id IS NOT NULL;

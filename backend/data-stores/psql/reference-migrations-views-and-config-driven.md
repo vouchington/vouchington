@@ -6,11 +6,11 @@
 
 ### Schema Object Buckets
 
-| Bucket           | What belongs here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Runs                                       |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `migrations/`    | Canonical fixed schema: `CREATE TABLE`, `CREATE INDEX`, `CREATE TYPE`, structural DDL. Edit its owning creator before launch; rebuild disposable databases after edits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Once per fresh database, tracked in ledger |
-| `config-driven/` | Seeds (`INSERT … ON CONFLICT`/`WHERE NOT EXISTS`, and `ON CONFLICT DO UPDATE` only when convergent — self-references shielded by `COALESCE`/`GREATEST`/`LEAST`, never a bare accumulating `col = col + 1`, and never a bare volatile/current-time value such as `gen_random_uuid()` or `CURRENT_TIMESTAMP` unless it is a `COALESCE` fallback after a self-reference, never replay-unsafe against a row-level trigger on an assigned column unless that trigger's function is on the replay-safe allowlist or the `WHERE` clause proves the assignment is a no-op, and never an assignment to a source column of a `GENERATED ... STORED` arbiter column unless that assignment is a bare self-reference) and functions (`CREATE OR REPLACE FUNCTION`) driven by config. `.mts` generators for entity relations, partitions, and elections. **No structural DDL.** | Every bootstrap or replay                  |
-| `views/`         | Managed `CREATE OR REPLACE VIEW` statements.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Every bootstrap or replay                  |
+| Bucket           | What belongs here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Runs                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `migrations/`    | Canonical fixed schema: `CREATE TABLE`, `CREATE INDEX`, `CREATE TYPE`, structural DDL. Edit its owning creator before launch; rebuild disposable databases after edits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Once per fresh database, tracked in ledger |
+| `config-driven/` | Seeds (`INSERT … ON CONFLICT`/`WHERE NOT EXISTS`, and `ON CONFLICT DO UPDATE` only when convergent — self-references shielded by `COALESCE`/`GREATEST`/`LEAST`, never a bare accumulating `col = col + 1`, and never a bare volatile/current-time value such as `gen_random_uuid()` or `CURRENT_TIMESTAMP` unless it is a `COALESCE` fallback after a self-reference, never replay-unsafe against a row-level trigger on an assigned column unless that trigger's function is on the replay-safe allowlist or the `WHERE` clause proves the assignment is a no-op, and never an assignment to a source column of a `GENERATED ... STORED` arbiter column unless that assignment is a bare self-reference) and functions (`CREATE OR REPLACE FUNCTION`) driven by config. `.mts` generators own current entity relations, vote tables, indexes, and partitions; replayed DDL must be idempotent. | Every bootstrap or replay                  |
+| `views/`         | Managed `CREATE OR REPLACE VIEW` statements.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Every bootstrap or replay                  |
 
 [migrations/](migrations/), [views/](views/), and [config-driven/](config-driven/) are the three
 package directories backing the buckets above; `config-driven/` is also updated in place as config
@@ -31,34 +31,9 @@ together. The runner applies `PG_MIGRATION_LOCK_TIMEOUT_MS` (default `5000`) and
 `PG_MIGRATION_STATEMENT_TIMEOUT_MS` (default `900000`) while it owns that client, then restores the
 client's original session settings before returning it to the pool.
 
-Concurrent index work must opt into online mode and remain safe after a process dies between the
-DDL and ledger insert:
-
-```sql
--- migration-mode: online
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_things__created_at ON things (created_at);
-```
-
-Online migrations may contain only `CREATE [UNIQUE] INDEX CONCURRENTLY IF NOT EXISTS` and
-`DROP INDEX CONCURRENTLY IF EXISTS` statements. Do not put `BEGIN`, `COMMIT`, or other manual
-transaction control in managed migrations; the runner owns transaction boundaries.
-
-Before replaying an unledgered online `CREATE INDEX`, the runner resolves the target table and
-inspects the same-schema, same-name relation. It preserves only an exact, healthy ordinary index.
-An exact invalid index left by an interrupted build is dropped concurrently and rebuilt only when
-it is live, inactive, and not owned by a constraint, replica identity, partition, or extension.
-Mismatched, protected, active, non-live, or otherwise ambiguous objects fail closed without a
-ledger entry. Explicit `TABLESPACE`, opclass, and collation clauses are also rejected before DDL
-because PostgreSQL can omit equivalent defaults from its deparsed index definition. Resolve those
-clauses manually before retrying the migration. Predicate verification uses a transaction-local
-temporary view, so the migration role must retain the database's `TEMPORARY` privilege.
-
-Every create or repair receives a second catalog check before its ledger row is written. This
-closes the failed-build retry path but does not make external DDL transactional: the advisory lock
-coordinates Voucha migration runners, not DBA sessions. Do not run manual DDL against the same
-index while migrations are active. If a conflict error names an unexpected definition or protected
-object, inspect and reconcile that object before retrying. Already-ledgered schema drift remains the
-responsibility of post-migration schema verification rather than this recovery path.
+Indexes belong in their canonical table creators and execute inside the same transaction as the
+creator's ledger insert. Do not add online index-upgrade files, historical drops, or manual
+`BEGIN`/`COMMIT` statements. The schema snapshot verifies the resulting current definitions.
 
 Admin endpoints for operating this machinery are documented in
 [../../api/v1/psql/README.md](../../api/v1/psql/README.md).
@@ -125,9 +100,9 @@ development tables cannot establish fresh-install equivalence.
   a migration's filename already has a ledger row but the file's current content hash does not match
   the recorded hash, the run fails immediately -- it neither silently skips the edited file nor
   re-applies it. This is exactly the incident scenario: a migration was edited in place after staging
-  had already run the old version. Ledger rows written before this check existed have no stored
-  checksum. Historical pre-checksum ledger rows still have a compatibility path in the current
-  runner; remove that path in the bootstrap cleanup after disposable databases are rebuilt.
+  had already run the old version. The external `@vouchington/postgres` package still contains a
+  pre-checksum ledger compatibility path; removing it requires a separately scoped platform package
+  change. Fresh databases record checksums from their first migration.
 - **Post-migration schema verification** (`verifyLiveSchemaMatchesSnapshot`,
   `schema-snapshot/verify-live-schema.mts`): after every migration run, the live PostgreSQL catalog is
   compared structurally against the committed schema snapshot (`schema-snapshot/schema.json`). This
@@ -148,8 +123,7 @@ re-review the edited file, to find and fix the drifted object(s) by hand.
 
 The migration task reports these phases separately. If application has not completed, its error
 says that earlier schema changes may already have committed and the ledger needs inspection. Once
-application completes, a failed post-commit hook reports that the hook did not complete. A rejected
-catalog read or schema mismatch reports that migrations committed but verification did not succeed,
+application completes, a rejected catalog read or schema mismatch reports that migrations committed but verification did not succeed,
 with the original error as its cause. All paths exit nonzero;
 neither logs `Migrations complete!`. An unrelated idle connection loss is reported through
 `onError` but does not fail a verification whose catalog reads and comparison succeed. See the

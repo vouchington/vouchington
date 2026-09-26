@@ -5,8 +5,6 @@ import {
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
 import type { EntityRelationEntityType } from '@voucha/types/entities/entity-relations-config'
-import { buildConstraintAddAndValidateSql } from './utils/catalog-guarded-ddl.mts'
-import { buildCatalogGuardedNullableColumnRepairSql } from './utils/nullable-column-repair.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 
 export default () => {
@@ -15,32 +13,7 @@ export default () => {
   const relationVoteParent = createEntityRelationVoteParentTable()
   const relationVoteTables = electionRelations.map(createEntityRelationVoteTable).join('\n\n')
   const integrityTargets = createEntityRelationVoteIntegrityTargets(electionRelations)
-  const relationVoteRepairs = [
-    buildCatalogGuardedNullableColumnRepairSql('entity_relation_votes', 'score', 'SMALLINT', null),
-    `DO $$ BEGIN
-  IF EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conrelid = 'entity_relation_votes'::regclass
-      AND conname = 'entity_relation_votes_relation_table_user_id_entity_relatio_key'
-  ) THEN
-    LOCK TABLE entity_relation_votes IN SHARE ROW EXCLUSIVE MODE;
-    ALTER TABLE entity_relation_votes
-      DROP CONSTRAINT entity_relation_votes_relation_table_user_id_entity_relatio_key;
-  END IF;
-END $$;`,
-    ...buildConstraintAddAndValidateSql(
-      'entity_relation_votes',
-      'chk_entity_relation_votes_score_domain',
-      'CHECK (score IS NULL OR score IN (-1, 0, 1))',
-    ),
-  ].join('\n\n')
-  return [
-    tableCreation,
-    relationVoteParent,
-    relationVoteRepairs,
-    relationVoteTables,
-    integrityTargets,
-  ].join('\n\n')
+  return [tableCreation, relationVoteParent, relationVoteTables, integrityTargets].join('\n\n')
 }
 
 function createEntityRelationTable(metadata: EntityRelationMetadata) {
@@ -114,15 +87,7 @@ function createEntityRelationTable(metadata: EntityRelationMetadata) {
 
   query += `;\n\n`
 
-  const repair = storesOutboundFollowActivityId
-    ? buildCatalogGuardedNullableColumnRepairSql(
-        metadata.table_name,
-        'outbound_ap_follow_activity_id',
-        'UUID',
-        'uuidv7()',
-      )
-    : ''
-  return `${query.trim()}\n${repair}`
+  return query.trim()
 }
 
 function createEntityRelationVoteTable(metadata: EntityRelationMetadata): string {
@@ -146,6 +111,7 @@ function createEntityRelationVoteParentTable(): string {
   entity_relation_id UUID NOT NULL,
   id UUID DEFAULT uuidv7() NOT NULL,
   score SMALLINT,
+  CONSTRAINT chk_entity_relation_votes_score_domain CHECK (score IS NULL OR score IN (-1, 0, 1)),
   ip_address INET,
   device_id UUID,
   session_id UUID,

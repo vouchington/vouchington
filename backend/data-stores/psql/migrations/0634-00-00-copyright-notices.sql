@@ -738,3 +738,7 @@ COMMENT ON COLUMN copyright_notice_action_intents.copyright_notice_deadline_id I
 COMMENT ON COLUMN copyright_notice_action_intents.expected_placement_revision IS 'Revision fence that must still match before delivery state changes.';
 COMMENT ON COLUMN copyright_notice_action_intents.action IS 'Requested reversible delivery transition: withhold or restore.';
 COMMENT ON COLUMN copyright_notice_action_intents.completed_at IS 'One-way timestamp set only after the fenced delivery transition is durably confirmed.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_copyright_notices__received_id
+  ON copyright_notices (received_at, id);

@@ -232,3 +232,28 @@ CREATE OR REPLACE TRIGGER trigger_user_landing_page_group_members_updated_at
 BEFORE UPDATE ON user_landing_page_group_members
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_group_members__referral_link_id
+  ON user_landing_page_group_members (referral_link_id)
+  WHERE referral_link_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_group_members__review_id
+  ON user_landing_page_group_members (review_id)
+  WHERE review_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__profile_link_id
+  ON user_landing_page_items (profile_link_id)
+  WHERE profile_link_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__referral_link_id
+  ON user_landing_page_items (referral_link_id)
+  WHERE referral_link_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__review_id
+  ON user_landing_page_items (review_id)
+  WHERE review_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_landing_page_items__topic_id
+  ON user_landing_page_items (topic_id)
+  WHERE topic_id IS NOT NULL;

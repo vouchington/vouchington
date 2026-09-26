@@ -2,8 +2,6 @@
 -- before an intent is created and again by the worker against the authoritative placement.
 
 
-CREATE INDEX idx_copyright_notice_action_intents__recoverable
-  ON copyright_notice_action_intents (next_attempt_at, id) WHERE state = 'pending';
 
 CREATE OR REPLACE FUNCTION fn_guard_copyright_action_intent()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
