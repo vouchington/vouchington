@@ -35,8 +35,6 @@ describe('schema growth classification', () => {
     expect(tables.get('community_members')).toContain('Relationship edges')
     expect(tables.get(EXTRA_UNBOUNDED_TABLES[0]!)).toContain('owning entity or workflow')
     expect(tables.get('relation__user__category__topic')).toContain('Config-generated')
-    expect(tables.get('support_agent_runs')).toContain('Support automation')
-    expect(tables.get('support_messages')).toContain('Support correspondence')
   })
 
   it('omits config-generated relations that are already partitioned', () => {

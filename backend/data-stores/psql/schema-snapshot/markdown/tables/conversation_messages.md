@@ -6,38 +6,37 @@ Individual messages within a conversation, range-partitioned by conversation UUI
 
 RANGE partitioned on `conversation_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column               | Type                              | Nullable | Default                              | Identity | Generated | Collation | Comment                                                                                            |
-| -------------------- | --------------------------------- | -------- | ------------------------------------ | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`                 | `uuid`                            | no       | `uuidv7()`                           |          |           |           |                                                                                                    |
-| `conversation_id`    | `uuid`                            | no       |                                      |          |           |           | The conversation this message belongs to; also the partition key.                                  |
-| `created_at`         | `timestamp with time zone`        | yes      | `uuid_extract_timestamp(id)`         |          | virtual   |           |                                                                                                    |
-| `created_by_id`      | `uuid`                            | yes      |                                      |          |           |           | The registered user who sent this message. Mutually exclusive with support_contact_id.             |
-| `support_contact_id` | `uuid`                            | yes      |                                      |          |           |           | The email-identified support contact who sent this message. Mutually exclusive with created_by_id. |
-| `updated_at`         | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP`                  |          |           |           |                                                                                                    |
-| `updated_by_id`      | `uuid`                            | yes      |                                      |          |           |           |                                                                                                    |
-| `deleted_at`         | `timestamp with time zone`        | yes      |                                      |          |           |           |                                                                                                    |
-| `deleted_by_id`      | `uuid`                            | yes      |                                      |          |           |           |                                                                                                    |
-| `kind`               | `conversation_message_kinds`      | no       | `'chat'::conversation_message_kinds` |          |           |           | Message kind: chat, email, or internal note.                                                       |
-| `direction`          | `conversation_message_directions` | yes      |                                      |          |           |           | Email/note direction. inbound = external contact, outbound = internal/admin authored.              |
-| `content`            | `jsonb`                           | yes      |                                      |          |           |           | Message content stored as JSONB. Used for chat messages.                                           |
-| `body_text`          | `text`                            | yes      |                                      |          |           |           | Plain text message body. Used for email-channel messages.                                          |
-| `body_html`          | `text`                            | yes      |                                      |          |           |           | HTML message body. Used for email-channel messages.                                                |
-| `email_message_id`   | `text`                            | yes      |                                      |          |           |           | Email Message-ID header for threading inbound replies.                                             |
-| `email_subject`      | `text`                            | yes      |                                      |          |           |           | Subject line from the email.                                                                       |
-| `email_from`         | `text`                            | yes      |                                      |          |           |           | Sender address from the email.                                                                     |
-| `email_to`           | `text`                            | yes      |                                      |          |           |           | Recipient address from the email.                                                                  |
-| `delivered_at`       | `timestamp with time zone`        | yes      |                                      |          |           |           | When delivery was confirmed by the provider.                                                       |
-| `bounced_at`         | `timestamp with time zone`        | yes      |                                      |          |           |           | When a bounce notification was received.                                                           |
-| `received_at`        | `timestamp with time zone`        | yes      |                                      |          |           |           | When an inbound message was received.                                                              |
-| `discarded_at`       | `timestamp with time zone`        | yes      |                                      |          |           |           | When a draft was discarded. Mutually exclusive with sent_at.                                       |
-| `ai_prompt`          | `text`                            | yes      |                                      |          |           |           | The prompt used to generate this message draft, if AI-assisted.                                    |
-| `ai_generated_at`    | `timestamp with time zone`        | yes      |                                      |          |           |           | When the AI draft was generated.                                                                   |
-| `drafted_at`         | `timestamp with time zone`        | yes      |                                      |          |           |           | Set when message was AI-generated as a draft. NULL until admin approves and sends.                 |
-| `edited_at`          | `timestamp with time zone`        | yes      |                                      |          |           |           | When the draft was last edited by a human.                                                         |
-| `edited_by_id`       | `uuid`                            | yes      |                                      |          |           |           | The user who last edited the draft.                                                                |
-| `approved_at`        | `timestamp with time zone`        | yes      |                                      |          |           |           | Set when an admin approves the draft for sending.                                                  |
-| `approved_by_id`     | `uuid`                            | yes      |                                      |          |           |           | The admin who approved the draft.                                                                  |
-| `sent_at`            | `timestamp with time zone`        | yes      |                                      |          |           |           | Set when the message is actually sent to the recipient.                                            |
+| Column             | Type                              | Nullable | Default                              | Identity | Generated | Collation | Comment                                                                               |
+| ------------------ | --------------------------------- | -------- | ------------------------------------ | -------- | --------- | --------- | ------------------------------------------------------------------------------------- |
+| `id`               | `uuid`                            | no       | `uuidv7()`                           |          |           |           |                                                                                       |
+| `conversation_id`  | `uuid`                            | no       |                                      |          |           |           | The conversation this message belongs to; also the partition key.                     |
+| `created_at`       | `timestamp with time zone`        | yes      | `uuid_extract_timestamp(id)`         |          | virtual   |           |                                                                                       |
+| `created_by_id`    | `uuid`                            | yes      |                                      |          |           |           | The registered user who sent this message. NULL when the sender is unavailable.       |
+| `updated_at`       | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP`                  |          |           |           |                                                                                       |
+| `updated_by_id`    | `uuid`                            | yes      |                                      |          |           |           |                                                                                       |
+| `deleted_at`       | `timestamp with time zone`        | yes      |                                      |          |           |           |                                                                                       |
+| `deleted_by_id`    | `uuid`                            | yes      |                                      |          |           |           |                                                                                       |
+| `kind`             | `conversation_message_kinds`      | no       | `'chat'::conversation_message_kinds` |          |           |           | Message kind: chat, email, or internal note.                                          |
+| `direction`        | `conversation_message_directions` | yes      |                                      |          |           |           | Email/note direction. inbound = external contact, outbound = internal/admin authored. |
+| `content`          | `jsonb`                           | yes      |                                      |          |           |           | Message content stored as JSONB. Used for chat messages.                              |
+| `body_text`        | `text`                            | yes      |                                      |          |           |           | Plain text message body. Used for email-channel messages.                             |
+| `body_html`        | `text`                            | yes      |                                      |          |           |           | HTML message body. Used for email-channel messages.                                   |
+| `email_message_id` | `text`                            | yes      |                                      |          |           |           | Email Message-ID header for threading inbound replies.                                |
+| `email_subject`    | `text`                            | yes      |                                      |          |           |           | Subject line from the email.                                                          |
+| `email_from`       | `text`                            | yes      |                                      |          |           |           | Sender address from the email.                                                        |
+| `email_to`         | `text`                            | yes      |                                      |          |           |           | Recipient address from the email.                                                     |
+| `delivered_at`     | `timestamp with time zone`        | yes      |                                      |          |           |           | When delivery was confirmed by the provider.                                          |
+| `bounced_at`       | `timestamp with time zone`        | yes      |                                      |          |           |           | When a bounce notification was received.                                              |
+| `received_at`      | `timestamp with time zone`        | yes      |                                      |          |           |           | When an inbound message was received.                                                 |
+| `discarded_at`     | `timestamp with time zone`        | yes      |                                      |          |           |           | When a draft was discarded. Mutually exclusive with sent_at.                          |
+| `ai_prompt`        | `text`                            | yes      |                                      |          |           |           | The prompt used to generate this message draft, if AI-assisted.                       |
+| `ai_generated_at`  | `timestamp with time zone`        | yes      |                                      |          |           |           | When the AI draft was generated.                                                      |
+| `drafted_at`       | `timestamp with time zone`        | yes      |                                      |          |           |           | Set when message was AI-generated as a draft. NULL until admin approves and sends.    |
+| `edited_at`        | `timestamp with time zone`        | yes      |                                      |          |           |           | When the draft was last edited by a human.                                            |
+| `edited_by_id`     | `uuid`                            | yes      |                                      |          |           |           | The user who last edited the draft.                                                   |
+| `approved_at`      | `timestamp with time zone`        | yes      |                                      |          |           |           | Set when an admin approves the draft for sending.                                     |
+| `approved_by_id`   | `uuid`                            | yes      |                                      |          |           |           | The admin who approved the draft.                                                     |
+| `sent_at`          | `timestamp with time zone`        | yes      |                                      |          |           |           | Set when the message is actually sent to the recipient.                               |
 
 **Primary key:** `PRIMARY KEY (conversation_id, id)`
 
@@ -51,7 +50,6 @@ _none_
 - `chk_conversation_messages__discarded`: `CHECK (((sent_at IS NULL) OR (discarded_at IS NULL)))`
 - `chk_conversation_messages__edited`: `CHECK ((((edited_at IS NULL) AND (edited_by_id IS NULL)) OR ((edited_at IS NOT NULL) AND (edited_by_id IS NOT NULL))))`
 - `chk_conversation_messages__kind_content`: `CHECK ((((kind = 'chat'::conversation_message_kinds) AND (content IS NOT NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (body_text IS NOT NULL))))`
-- `chk_conversation_messages__sender`: `CHECK ((num_nonnulls(created_by_id, support_contact_id) <= 1))`
 
 **Foreign keys:**
 
@@ -60,7 +58,6 @@ _none_
 - `conversation_messages_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `conversation_messages_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `conversation_messages_edited_by_id_fkey`: `FOREIGN KEY (edited_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `conversation_messages_support_contact_id_fkey`: `FOREIGN KEY (support_contact_id) REFERENCES support_contacts(id) ON DELETE SET NULL`
 - `conversation_messages_updated_by_id_fkey`: `FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -68,7 +65,6 @@ _none_
 - `conversation_messages_pkey`: `CREATE UNIQUE INDEX conversation_messages_pkey ON ONLY public.conversation_messages USING btree (conversation_id, id)`
 - `idx_conv_messages__created_by_id`: `CREATE INDEX idx_conv_messages__created_by_id ON ONLY public.conversation_messages USING btree (created_by_id) WHERE (created_by_id IS NOT NULL)`
 - `idx_conv_messages__email_message_id`: `CREATE INDEX idx_conv_messages__email_message_id ON ONLY public.conversation_messages USING btree (email_message_id) WHERE (email_message_id IS NOT NULL)`
-- `idx_conv_messages__support_contact_id`: `CREATE INDEX idx_conv_messages__support_contact_id ON ONLY public.conversation_messages USING btree (support_contact_id) WHERE (support_contact_id IS NOT NULL)`
 
 **Triggers:**
 

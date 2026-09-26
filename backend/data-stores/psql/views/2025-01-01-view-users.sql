@@ -63,7 +63,6 @@ CREATE OR REPLACE VIEW view_embedded_users AS
       users.username IN (
         'system',
         'autotagger',
-        'customer-support',
         'rss-feed-auto-updater',
         'story-teller',
         'voucha'
@@ -73,7 +72,7 @@ CREATE OR REPLACE VIEW view_embedded_users AS
         FROM user_roles
         LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
         WHERE user_roles.user_id = users.id
-          AND user_roles_types.slug IN ('administrator', 'investor', 'customer_support')
+          AND user_roles_types.slug IN ('administrator', 'investor')
       )
       OR EXISTS (
         SELECT 1

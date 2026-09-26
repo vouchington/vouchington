@@ -1,9 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import {
-  createTestUser,
-  insertTestSupportContact,
-  insertTestSupportThread,
-} from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import {
   currentUserCanDeleteConversation,
@@ -16,50 +12,68 @@ import type { Conversation } from './types.mts'
 describe('conversation authorization', () => {
   let administrator: PrivateUser
   let owner: PrivateUser
-  let unlinkedConversation: Conversation
-  let supportLinkedConversation: Conversation
+  let otherUser: PrivateUser
+  let conversation: Conversation
 
   beforeAll(async () => {
     administrator = await createTestUser({ administrator: true })
     owner = await createTestUser()
-    const suffix = crypto.randomUUID().slice(0, 8)
+    otherUser = await createTestUser()
 
-    unlinkedConversation = await createConversation(owner.id, `Unlinked conversation ${suffix}`)
-    supportLinkedConversation = await createConversation(
-      owner.id,
-      `Support linked conversation ${suffix}`,
-    )
-    const contact = await insertTestSupportContact({
-      emailAddress: `conversation-authorization-${suffix}@example.test`,
-      userId: owner.id,
+    conversation = await createConversation(owner.id, `Conversation ${crypto.randomUUID()}`)
+  })
+
+  describe('currentUserCanViewConversation', () => {
+    it('returns false for null user', async () => {
+      expect(await currentUserCanViewConversation(null, conversation)).toBe(false)
     })
-    await insertTestSupportThread({
-      supportContactId: contact.id,
-      conversationId: supportLinkedConversation.id,
+
+    it('returns true for the owner', async () => {
+      expect(await currentUserCanViewConversation(owner, conversation)).toBe(true)
+    })
+
+    it('returns false for a non-admin other user', async () => {
+      expect(await currentUserCanViewConversation(otherUser, conversation)).toBe(false)
+    })
+
+    it('returns false for an administrator who does not own the conversation', async () => {
+      expect(await currentUserCanViewConversation(administrator, conversation)).toBe(false)
     })
   })
 
-  it('restricts administrator update and delete access to support-linked conversations', async () => {
-    await expect(
-      currentUserCanUpdateConversation(administrator, unlinkedConversation),
-    ).resolves.toBe(false)
-    await expect(
-      currentUserCanDeleteConversation(administrator, unlinkedConversation),
-    ).resolves.toBe(false)
-    await expect(
-      currentUserCanUpdateConversation(administrator, supportLinkedConversation),
-    ).resolves.toBe(true)
-    await expect(
-      currentUserCanDeleteConversation(administrator, supportLinkedConversation),
-    ).resolves.toBe(true)
+  describe('currentUserCanUpdateConversation', () => {
+    it('returns false for null user', async () => {
+      expect(await currentUserCanUpdateConversation(null, conversation)).toBe(false)
+    })
+
+    it('returns true for the owner', async () => {
+      expect(await currentUserCanUpdateConversation(owner, conversation)).toBe(true)
+    })
+
+    it('returns false for a non-admin other user', async () => {
+      expect(await currentUserCanUpdateConversation(otherUser, conversation)).toBe(false)
+    })
+
+    it('returns false for an administrator who does not own the conversation', async () => {
+      expect(await currentUserCanUpdateConversation(administrator, conversation)).toBe(false)
+    })
   })
 
-  it('restricts administrator view access to support-linked conversations', async () => {
-    await expect(currentUserCanViewConversation(administrator, unlinkedConversation)).resolves.toBe(
-      false,
-    )
-    await expect(
-      currentUserCanViewConversation(administrator, supportLinkedConversation),
-    ).resolves.toBe(true)
+  describe('currentUserCanDeleteConversation', () => {
+    it('returns false for null user', async () => {
+      expect(await currentUserCanDeleteConversation(null, conversation)).toBe(false)
+    })
+
+    it('returns true for the owner', async () => {
+      expect(await currentUserCanDeleteConversation(owner, conversation)).toBe(true)
+    })
+
+    it('returns false for a non-admin other user', async () => {
+      expect(await currentUserCanDeleteConversation(otherUser, conversation)).toBe(false)
+    })
+
+    it('returns false for an administrator who does not own the conversation', async () => {
+      expect(await currentUserCanDeleteConversation(administrator, conversation)).toBe(false)
+    })
   })
 })
