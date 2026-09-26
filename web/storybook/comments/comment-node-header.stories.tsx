@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommentNodeHeader } from '@/components/comments/comment-node-header'
-import { CommentStoryFrame } from './comment-story-frame'
+import { StoryFrame } from '@/storybook/story-frame'
 import { commentNode, commentPermalink, deletedCommentNode } from './comment-story-data'
 
 const meta = {
@@ -12,7 +12,7 @@ type Story = StoryObj<typeof meta>
 
 export const Author: Story = {
   render: () => (
-    <CommentStoryFrame>
+    <StoryFrame>
       <CommentNodeHeader
         childrenCount={0}
         hideDownCount={false}
@@ -24,13 +24,13 @@ export const Author: Story = {
         permalink={commentPermalink}
         username={commentNode.post.created_by?.username ?? 'alex'}
       />
-    </CommentStoryFrame>
+    </StoryFrame>
   ),
 }
 
 export const Deleted: Story = {
   render: () => (
-    <CommentStoryFrame>
+    <StoryFrame>
       <CommentNodeHeader
         childrenCount={1}
         hideDownCount={false}
@@ -42,6 +42,6 @@ export const Deleted: Story = {
         permalink={commentPermalink}
         username='deleted'
       />
-    </CommentStoryFrame>
+    </StoryFrame>
   ),
 }

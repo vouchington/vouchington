@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommentNodeActions } from '@/components/comments/comment-node-actions'
-import { CommentStoryFrame } from './comment-story-frame'
+import { StoryFrame } from '@/storybook/story-frame'
 import { commentAuthor, commentNode, commentPermalink } from './comment-story-data'
 
 const meta = {
@@ -12,7 +12,7 @@ type Story = StoryObj<typeof meta>
 
 function ActionsPreview() {
   return (
-    <CommentStoryFrame>
+    <StoryFrame>
       <CommentNodeActions
         hideDownCount={false}
         isAdmin={false}
@@ -25,7 +25,7 @@ function ActionsPreview() {
         replyToId={null}
         isThreadLocked={false}
       />
-    </CommentStoryFrame>
+    </StoryFrame>
   )
 }
 

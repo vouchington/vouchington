@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommentNode } from '@/components/comments/comment-node'
-import { CommentStoryFrame } from './comment-story-frame'
+import { StoryFrame } from '@/storybook/story-frame'
 import {
   commentAuthor,
   commentNode,
@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 
 function NodePreview({ node }: { node: typeof commentNode }) {
   return (
-    <CommentStoryFrame>
+    <StoryFrame>
       <CommentNode
         node={node}
         depth={0}
@@ -33,7 +33,7 @@ function NodePreview({ node }: { node: typeof commentNode }) {
         isAdmin={false}
         isThreadLocked={false}
       />
-    </CommentStoryFrame>
+    </StoryFrame>
   )
 }
 

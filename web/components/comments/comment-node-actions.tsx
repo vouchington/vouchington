@@ -79,7 +79,7 @@ export function CommentNodeActions({
             type='button'
             variant='ghost'
             onClick={() => onToggleReply(replyToId === post.id ? null : post.id)}
-            className='h-auto w-auto p-0 text-xs text-muted-foreground hover:text-foreground'
+            className='inline-flex min-h-6 min-w-6 items-center p-0 text-xs text-muted-foreground hover:text-foreground'
             data-pw='comment-reply-button'
           >
             <ReplyIcon
@@ -92,7 +92,7 @@ export function CommentNodeActions({
             type='button'
             variant='ghost'
             onClick={() => onQuote(post)}
-            className='h-auto w-auto p-0 text-xs text-muted-foreground hover:text-foreground'
+            className='inline-flex min-h-6 min-w-6 items-center p-0 text-xs text-muted-foreground hover:text-foreground'
           >
             <QuoteIcon
               data-icon='inline-start'
@@ -105,7 +105,7 @@ export function CommentNodeActions({
       <Link
         prefetch={false}
         href={permalink}
-        className='text-xs text-muted-foreground hover:text-foreground'
+        className='inline-flex min-h-6 items-center text-xs text-muted-foreground hover:text-foreground'
       >
         {t('extracted.comments.commentNodeActions.permalink_273a12af')}
       </Link>
@@ -122,7 +122,7 @@ export function CommentNodeActions({
           type='button'
           variant='ghost'
           onClick={onStartEdit}
-          className='h-auto w-auto p-0 text-xs text-muted-foreground hover:text-foreground'
+          className='inline-flex min-h-6 min-w-6 items-center p-0 text-xs text-muted-foreground hover:text-foreground'
           data-pw='comment-edit-button'
         >
           <EditIcon

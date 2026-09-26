@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommentTree } from '@/components/comments/comment-tree'
-import { CommentStoryFrame } from './comment-story-frame'
+import { StoryFrame } from '@/storybook/story-frame'
 import {
   commentAuthor,
   commentTreeData,
@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 
 function TreePreview({ empty }: { empty?: boolean }) {
   return (
-    <CommentStoryFrame>
+    <StoryFrame>
       <CommentTree
         data={empty ? emptyCommentTreeData : commentTreeData}
         rootPostId={discussionPost.id}
@@ -26,7 +26,7 @@ function TreePreview({ empty }: { empty?: boolean }) {
         isAdmin={false}
         hideDownCount={false}
       />
-    </CommentStoryFrame>
+    </StoryFrame>
   )
 }
 
