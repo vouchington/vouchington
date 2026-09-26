@@ -22,7 +22,8 @@ export async function seedRewardsProgramStatuses(
       contentHash(`seed-rewards-status-${index}`),
     ])
     const topicRows = statusIds.map(
-      (_, index) => `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4}, 'system')`,
+      (_, index) =>
+        `($${index * 4 + 1}, $${index * 4 + 2}, $${index * 4 + 3}, $${index * 4 + 4}, 'system')`,
     )
     await query(
       `/* seedExplainData */ INSERT INTO topics

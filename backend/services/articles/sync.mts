@@ -140,8 +140,8 @@ async function syncArticleFiles<T extends ArticleSyncFile>(
           }
         }
       } else {
-        // oxlint-disable-next-line no-await-in-loop -- duplicate slugs require creation to finish before processing the next file
         // Articles are platform-authored from the repository, whichever job or script syncs them.
+        // oxlint-disable-next-line no-await-in-loop -- duplicate slugs require creation to finish before processing the next file
         const post = await createPost(SYSTEM_PROVENANCE, currentUser, {
           post_type: postType,
           title,
