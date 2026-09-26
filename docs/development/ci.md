@@ -121,6 +121,11 @@ marker means only that the snapshot found no current warning, so planned-but-uno
 needs a human audit. GitHub suppresses downstream pushes made with `GITHUB_TOKEN`; supported human
 and interactive merges already produce the required main-push event.
 
+A failure whose only failed job is `audit`, and whose terminal step is `actions/setup-node`
+after the node-versions download while adding Node to the tool cache, is catalogued as
+`plan-completion-setup-node-tool-cache-timeout` (`maxAttempts: 1`). Markers and look-alikes are in
+[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
+
 ## CI behavior references
 
 - <a id="dependency-bot-review-and-main-push-ci"></a>[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)
