@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PageList } from '@/components/my/landing-pages-manager/page-list'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -22,17 +23,23 @@ const travelPage = {
   subtitle: 'Flights and hotels I book with points.',
 }
 
-export const WithPages: Story = {
-  render: () => (
+function Pages() {
+  const pages = [landingPageWithItems, travelPage]
+  const [selectedId, setSelectedId] = useState(landingPageWithItems.id)
+  return (
     <StoryFrame width='max-w-xl'>
       <PageList
-        pages={[landingPageWithItems, travelPage]}
-        selectedPage={landingPageWithItems}
+        pages={pages}
+        selectedPage={pages.find(page => page.id === selectedId) ?? null}
         username={username}
-        onSelectPage={() => {}}
+        onSelectPage={setSelectedId}
       />
     </StoryFrame>
-  ),
+  )
+}
+
+export const WithPages: Story = {
+  render: () => <Pages />,
 }
 
 export const Empty: Story = {

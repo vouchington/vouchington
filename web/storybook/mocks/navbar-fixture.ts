@@ -37,6 +37,40 @@ const searchPages: Record<string, unknown> = {
   },
 }
 
+const searchMapKey: Record<string, string> = {
+  '/api/v1/topics': 'topics',
+  '/api/v1/posts': 'posts',
+  '/api/v1/hostnames': 'hostnames',
+  '/api/v1/rss-feed-items': 'rss_feed_items',
+  '/api/v1/communities': 'communities',
+}
+
+function searchQuery(options?: Parameters<ClientRequest['get']>[1]): string {
+  const query = options?.searchParams?.q
+  return typeof query === 'string' ? query.trim().toLowerCase() : ''
+}
+
+function filterSearchPage(body: unknown, mapKey: string, query: string): unknown {
+  if (!query || typeof body !== 'object' || body === null) return body
+  const record = body as Record<string, unknown>
+  const entities = record[mapKey]
+  if (typeof entities !== 'object' || entities === null) return body
+  const kept = Object.entries(entities as Record<string, unknown>).filter(([, entity]) =>
+    JSON.stringify(entity).toLowerCase().includes(query),
+  )
+  const ids = new Set(kept.map(([id]) => id))
+  const results = Array.isArray(record.results)
+    ? record.results.filter(
+        result =>
+          typeof result === 'object' &&
+          result !== null &&
+          'id' in result &&
+          ids.has(String(result.id)),
+      )
+    : record.results
+  return { ...record, results, [mapKey]: Object.fromEntries(kept) }
+}
+
 export function setNavbarFixture(): void {
   navbarFixture = true
 }
@@ -50,7 +84,12 @@ ClientRequest.prototype.get = function storybookNavbarGet<T>(
   options?: Parameters<ClientRequest['get']>[1],
 ): Promise<T> {
   const pageBody = navbarFixture ? searchPages[endpoint] : undefined
-  if (pageBody !== undefined) return Promise.resolve(pageBody as T)
+  if (pageBody !== undefined) {
+    const mapKey = searchMapKey[endpoint]
+    return Promise.resolve(
+      (mapKey ? filterSearchPage(pageBody, mapKey, searchQuery(options)) : pageBody) as T,
+    )
+  }
   return previousGet.call(this, endpoint, options) as Promise<T>
 }
 

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Navbar } from '@/components/navbar'
 import { SidebarProvider } from '@/components/ui/sidebar'
@@ -17,14 +18,22 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const SignedIn: Story = {
-  render: () => (
+function SignedInNavbar() {
+  const [signedOut, setSignedOut] = useState(false)
+  return (
     <StoryFrame width='max-w-6xl'>
       <SidebarProvider>
-        <Navbar profileMenuUser={toProfileMenuUser(storyCurrentUser)} />
+        <Navbar
+          onLoggedOut={() => setSignedOut(true)}
+          profileMenuUser={signedOut ? null : toProfileMenuUser(storyCurrentUser)}
+        />
       </SidebarProvider>
     </StoryFrame>
-  ),
+  )
+}
+
+export const SignedIn: Story = {
+  render: () => <SignedInNavbar />,
 }
 
 export const SignedOut: Story = {

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CardDisplayRow } from '@/components/my/cards-manager/card-row'
 import { StoryFrame } from '@/storybook/story-frame'
@@ -46,19 +47,30 @@ const freedom: IndividualCard = {
   card: { id: 'topic-freedom-flex', name: 'Freedom Flex', slug: 'freedom-flex' },
 }
 
+function CardRow({ card }: { card: IndividualCard }) {
+  const [editing, setEditing] = useState(false)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [removed, setRemoved] = useState(false)
+  if (removed) return <p>Removed {card.card.name}</p>
+  if (editing) return <p>Editing {card.card.name}</p>
+  return (
+    <CardDisplayRow
+      card={card}
+      cards={[reserve, freedom]}
+      confirmingDeleteId={confirmingDeleteId}
+      loading={false}
+      onEdit={() => setEditing(true)}
+      onConfirmDelete={() => setRemoved(true)}
+      onCancelDelete={() => setConfirmingDeleteId(null)}
+      onStartDelete={() => setConfirmingDeleteId(card.id)}
+    />
+  )
+}
+
 export const ActiveCard: Story = {
   render: () => (
     <StoryFrame>
-      <CardDisplayRow
-        card={reserve}
-        cards={[reserve, freedom]}
-        confirmingDeleteId={null}
-        loading={false}
-        onEdit={() => {}}
-        onConfirmDelete={() => {}}
-        onCancelDelete={() => {}}
-        onStartDelete={() => {}}
-      />
+      <CardRow card={reserve} />
     </StoryFrame>
   ),
 }
@@ -66,16 +78,7 @@ export const ActiveCard: Story = {
 export const AuthorizedUser: Story = {
   render: () => (
     <StoryFrame>
-      <CardDisplayRow
-        card={freedom}
-        cards={[reserve, freedom]}
-        confirmingDeleteId={null}
-        loading={false}
-        onEdit={() => {}}
-        onConfirmDelete={() => {}}
-        onCancelDelete={() => {}}
-        onStartDelete={() => {}}
-      />
+      <CardRow card={freedom} />
     </StoryFrame>
   ),
 }
