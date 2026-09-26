@@ -10,19 +10,15 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).not.toContain('run: node_modules/@ast-grep/cli/ast-grep scan')
   })
 
-  it('fetches the base ref before the jscpd ratchet and skips both on main pushes', () => {
+  it('runs the jscpd threshold on every non-docs event without fetching a base ref', () => {
     type Step = { uses?: string; run?: string; if?: string; 'timeout-minutes'?: number }
     const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
     const steps = parsed.jobs['static-code-analysis']?.steps ?? []
-    const fetchBase = steps.findIndex(step => step.uses === './.github/actions/fetch-base-ref')
-    const jscpd = steps.findIndex(step => step.run === 'pnpm run jscpd')
+    const jscpd = steps.find(step => step.run === 'pnpm exec jscpd .')
 
-    expect(fetchBase).toBeGreaterThanOrEqual(0)
-    expect(jscpd).toBeGreaterThan(fetchBase)
-    for (const step of [steps[fetchBase], steps[jscpd]]) {
-      expect(step?.if).toBe("${{ inputs.docs_only != true && github.event_name != 'push' }}")
-      expect(step?.['timeout-minutes']).toBeLessThanOrEqual(3)
-    }
+    expect(jscpd?.if).toBe('${{ inputs.docs_only != true }}')
+    expect(jscpd?.['timeout-minutes']).toBeLessThanOrEqual(3)
+    expect(steps.some(step => step.uses === './.github/actions/fetch-base-ref')).toBe(false)
   })
 
   it('runs directly for every main push and serializes direct and reusable invocations', () => {

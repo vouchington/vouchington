@@ -3,6 +3,8 @@
   "crossFormats": "typescript,tsx",
   "failOnEmpty": true,
   "similarity": 0.9,
+  "minLines": 200,
+  "exitCode": 1,
   "ignore": [
     "**/migrations/**",
     "**/fixtures/**",

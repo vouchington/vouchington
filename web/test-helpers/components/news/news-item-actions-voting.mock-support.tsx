@@ -1,14 +1,14 @@
-import { mockLucideReact } from '@/test-helpers/lucide-icons'
-import { describe, expect, it, vi } from 'vitest'
-
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+import { render } from '@testing-library/react'
+import type { ComponentProps, ReactNode } from 'react'
+import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
-
-import { render, screen, waitFor } from '@testing-library/react'
-
-import type { ReactNode } from 'react'
-
+import { mockLucideReact } from '@/test-helpers/lucide-icons'
+import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import type { RssFeedItem } from '@/types/rss-feed-items'
+// Imported after the mock helpers above so the mock factories can reference them.
+import { Button } from '@/components/ui/button'
+import { NewsItemActions } from '@/components/news/news-item-actions'
 
 vi.mock(
   import('next/navigation'),
@@ -24,14 +24,13 @@ vi.mock(
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
-const mockNav = createNavMock()
-
-mockNav.setPathname('/news')
+createNavMock().setPathname('/news')
 
 const nextDynamicMock = vi.hoisted(() => {
   const React = require('react')
   return {
     default: (loader: () => Promise<unknown>) =>
+      // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
       function MockDynamic(props: Record<string, unknown>) {
         const [dynamicComponent, setDynamicComponent] = React.useState(null)
         React.useEffect(() => {
@@ -64,7 +63,6 @@ vi.mock(
         existingVoteChoice,
         entityType,
         electionId,
-
         submitVote,
         'data-pw': dataPw,
       }: {
@@ -83,7 +81,6 @@ vi.mock(
           <span data-testid='signed-out'>{String(signedOut)}</span>
           <span data-testid='existing-vote-choice'>{String(existingVoteChoice)}</span>
           <span data-testid='entity-type'>{String(entityType)}</span>
-
           <button
             type='button'
             aria-label='Submit vote'
@@ -100,45 +97,34 @@ vi.mock(import('@/components/news/news-discuss-menu'), () => ({
 }))
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
-  HideButton: ({
-    initialActive,
-  }: {
-    entityType: string
-    entityId: string
-    initialActive?: boolean
-  }) => (
-    <button
+  HideButton: ({ initialActive }: { initialActive?: boolean }) => (
+    <Button
       data-testid='hide-button'
       data-active={initialActive}
       type='button'
     >
       {initialActive ? 'Unhide' : 'Hide'}
-    </button>
+    </Button>
   ),
   HideMenuItem: () => <div data-testid='hide-menu-item' />,
 }))
 
 vi.mock(import('@/components/shared/save-button'), () => ({
-  SaveButton: ({
-    initialActive,
-  }: {
-    entityType: string
-    entityId: string
-    initialActive?: boolean
-  }) => (
-    <button
+  SaveButton: ({ initialActive }: { initialActive?: boolean }) => (
+    <Button
       data-testid='save-button'
       data-active={initialActive}
       type='button'
     >
       {initialActive ? 'Saved' : 'Save'}
-    </button>
+    </Button>
   ),
   SaveMenuItem: () => <div data-testid='save-menu-item' />,
 }))
 
+const mockSubmitRssFeedItemVote = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock(import('@/lib/api/client/elections'), () => ({
-  submitRssFeedItemVote: vi.fn<VitestLooseMock>(),
+  submitRssFeedItemVote: mockSubmitRssFeedItemVote,
 }))
 
 vi.mock(
@@ -178,9 +164,10 @@ vi.mock(import('@/lib/rss-item-nav-context'), () => ({
   useRssItemNav: () => null,
 }))
 
-import { NewsItemActions } from '../news-item-actions'
+// vi.hoisted bindings cannot be exported from their declarations.
+export { mockAuthState, mockSubmitRssFeedItemVote }
 
-const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
+export const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
   id: 'item-1',
   data: { link: 'https://example.com', guid: 'g1', title: 'Article' },
   url: { id: 'url-1', url: 'https://example.com' },
@@ -199,33 +186,14 @@ const MOCK_ELECTION = {
   votes_count_down: 2,
 }
 
-describe('NewsItemActions voting', () => {
-  it('passes existingVoteChoice=undefined when electionVote is null', async () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        election={MOCK_ELECTION}
-        electionVote={null}
-        relatedPosts={[]}
-      />,
-    )
-
-    await waitFor(() => {
-      expect(screen.getByTestId('existing-vote-choice').textContent).toBe('undefined')
-    })
-  })
-
-  it("passes entityType='rss_feed_item' to ScoreVote", async () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        election={MOCK_ELECTION}
-        relatedPosts={[]}
-      />,
-    )
-
-    await waitFor(() => {
-      expect(screen.getByTestId('entity-type').textContent).toBe('rss_feed_item')
-    })
-  })
-})
+/** Renders `NewsItemActions` for `MOCK_ITEM` with a 5-up/2-down election unless overridden. */
+export function renderNewsItemActions(props: Partial<ComponentProps<typeof NewsItemActions>> = {}) {
+  return render(
+    <NewsItemActions
+      item={MOCK_ITEM}
+      election={MOCK_ELECTION}
+      relatedPosts={[]}
+      {...props}
+    />,
+  )
+}

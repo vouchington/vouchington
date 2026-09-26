@@ -100,6 +100,46 @@ export async function runInitializeHelperStatus({
   return { ...result, stderr: result.stderr.trim(), stdout: result.stdout.trim() }
 }
 
+// Runs `script` via dev/initialize's bash entry point under a fixture HOME, returning trimmed
+// stdout and rejecting when the script exits non-zero.
+export async function runInitializeScript({
+  cwd,
+  script,
+  env = {},
+}: {
+  cwd: string
+  script: string
+  env?: NodeJS.ProcessEnv
+}): Promise<string> {
+  const result = await execFileAsync('bash', initializeBashArgs(script), {
+    cwd,
+    env: { ...process.env, ...env, HOME: dirname(cwd) },
+  })
+  return result.stdout.trim()
+}
+
+// Shell assignments for the ports, Valkey container, and secrets write_worktree_env writes to .env.
+export function worktreeEnvAssignments(worktreeDir: string): string {
+  return [
+    'VALKEY_PORT=6379',
+    `WORKTREE_DIR=${worktreeDir}`,
+    'BACKEND_PORT=3001',
+    'VALKEY_CONTAINER=voucha-valkey-test',
+    'WORKER_PORT=8788',
+    'IMAGE_LAMBDA_PORT=4001',
+    'NEXT_PORT=3002',
+    'STORYBOOK_PORT=6006',
+    'INSPECTOR_PORT=9229',
+    'CF_WORKER_SECRET=secret',
+    'API_KEY_CHECKSUM_SECRET=checksum',
+    'VOUCHA_OTP_TOKEN_HASH_SECRET=otp',
+    'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS=keys',
+    'FINAL_WEB_PUSH_PUBLIC_KEY=public',
+    'FINAL_WEB_PUSH_PRIVATE_KEY=private',
+    'FINAL_WEB_PUSH_SUBJECT=mailto:tests+db-url@voucha.ai',
+  ].join('\n')
+}
+
 export async function makeWorktreeDir(...parts: string[]) {
   const root = await mkdtemp(join(tmpdir(), 'voucha-dev-initialize-'))
   const dir = join(root, ...parts)
