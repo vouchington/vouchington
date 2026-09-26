@@ -4,22 +4,24 @@ Implements the MCP (Model Context Protocol) server logic: listing tools, executi
 
 ## Modules
 
-| File                                  | Description                                                                                  |
-| ------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `config.mts`                          | User/admin MCP server names, routes, surfaces, and OAuth audiences                           |
-| `authenticate.mts`                    | Verify a bearer OAuth access token or MCP API key for the route's audience                   |
-| `challenge.mts`                       | Build RFC 6750 and RFC 9728 `WWW-Authenticate` challenges                                    |
-| `resolve-tool-call.mts`               | The ordered role, plan, and scope policy, plus step-up scope discovery                       |
-| `list-tools.mts`                      | Filter registered tools by configured surface and `resolve-tool-call.mts` policy             |
-| `call-tool.mts`                       | Execute a tool call with full authorization enforcement                                      |
-| `serialize-mcp-tool-result.mts`       | Bounded JSON serializer for MCP tool results                                                 |
-| `handle-request.mts`                  | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport`         |
-| `instructions.mts`                    | Per-surface server `instructions` sent on `initialize`                                       |
-| `index.mts`                           | Barrel: exports request handlers, helpers, and user/admin MCP configs                        |
-| `catalog/build-mcp-catalog.mts`       | Build the `api-fixtures/v1/mcp.json` catalog and find `meta.api` routes missing from OpenAPI |
-| `catalog/agent-tool-catalog.mts`      | Render the agent-tools catalog table and the native-client `manifest.json`                   |
-| `catalog/find-api-hint-conflicts.mts` | Find tools whose MCP hints disagree with the REST operations in `meta.api`                   |
-| `catalog/build-mcp-catalog.test.mts`  | Snapshot every generated catalog artifact; `pnpm run mcp:catalog` regenerates them           |
+| File                                 | Description                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `config.mts`                         | User/admin MCP server names, routes, surfaces, and OAuth audiences                           |
+| `authenticate.mts`                   | Verify a bearer OAuth access token or MCP API key for the route's audience                   |
+| `challenge.mts`                      | Build RFC 6750 and RFC 9728 `WWW-Authenticate` challenges                                    |
+| `resolve-tool-call.mts`              | The ordered role, plan, and scope policy, plus step-up scope discovery                       |
+| `list-tools.mts`                     | Filter registered tools by configured surface and `resolve-tool-call.mts` policy             |
+| `call-tool.mts`                      | Execute a tool call with full authorization enforcement                                      |
+| `serialize-mcp-tool-result.mts`      | Bounded JSON serializer for MCP tool results                                                 |
+| `handle-request.mts`                 | Stateless per-request MCP transport using `WebStandardStreamableHTTPServerTransport`         |
+| `instructions.mts`                   | Per-surface server `instructions` sent on `initialize`                                       |
+| `index.mts`                          | Barrel: exports request handlers, helpers, and user/admin MCP configs                        |
+| `catalog/build-mcp-catalog.mts`      | Build the `api-fixtures/v1/mcp.json` catalog and find `meta.api` routes missing from OpenAPI |
+| `catalog/agent-tool-catalog.mts`     | Render the agent-tools catalog table and the native-client `manifest.json`                   |
+| `catalog/build-mcp-catalog.test.mts` | Snapshot every generated catalog artifact; `pnpm run mcp:catalog` regenerates them           |
+
+`catalog/find-api-hint-conflicts.mts` finds tools whose MCP hints disagree with the REST operations
+in `meta.api`; see [MCP Metadata](../../../docs/overview/architecture/agent-tools/README.md#mcp-metadata).
 
 ## Authorization
 

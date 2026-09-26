@@ -166,6 +166,6 @@ scopes; `parameters` is always `null`. The iOS Swift agent should:
 
 ## External Content
 
-A tool result that includes member-authored or third-party text marks that text with
-`wrapExternalContent()` from `@jongleberry/vurst-prompt` before returning it to a model, as
-`get_topic_details` does for topic markdown and `search_posts` does for post content.
+A tool result that includes member-authored or third-party text must mark that text with
+`wrapExternalContent()` from `@jongleberry/vurst-prompt` before returning it to a model; for
+example, `get_topic_details` marks topic markdown and `search_posts` marks post content.
