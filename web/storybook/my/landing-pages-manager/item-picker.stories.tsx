@@ -2,6 +2,16 @@ import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { LandingPageItemEditor } from '@/components/my/landing-pages-manager/item-picker'
 import {
+  addFreeformLinkItem,
+  addSingleLandingPageItem,
+  addTopicGroupLandingPageItem,
+} from '@/components/my/landing-pages-manager/controller-add-items'
+import {
+  moveDraftGroupEntry,
+  moveDraftItem,
+  removeDraftGroupEntry,
+} from '@/components/my/landing-pages-manager/draft-item-actions'
+import {
   useLandingPageItemOptions,
   type LandingPageAddType,
 } from '@/components/my/landing-pages-manager/options'
@@ -21,12 +31,13 @@ const sapphire = topics[1]!
 
 function Editor({
   addType,
-  draftItems,
+  initialItems,
 }: {
   addType: LandingPageAddType
-  draftItems: LandingPageItem[]
+  initialItems: LandingPageItem[]
 }) {
   const [type, setType] = useState(addType)
+  const [items, setItems] = useState(initialItems)
   const [candidateId, setCandidateId] = useState(landingPageCandidates.reviews[0]?.id ?? '')
   const [topicId, setTopicId] = useState(sapphire.id)
   const [reviewIds, setReviewIds] = useState<string[]>([])
@@ -35,7 +46,42 @@ function Editor({
   const [linkUrl, setLinkUrl] = useState(
     addType === 'link' ? '' : 'https://wallet.example/cardholder',
   )
-  const options = useLandingPageItemOptions(landingPageCandidates, draftItems, topicId)
+  const options = useLandingPageItemOptions(landingPageCandidates, items, topicId)
+
+  function addItem() {
+    if (type === 'link') {
+      const added = addFreeformLinkItem({ label: linkLabel, url: linkUrl, setDraftItems: setItems })
+      if (added) {
+        setLinkLabel('')
+        setLinkUrl('')
+      }
+      return
+    }
+    if (type !== 'topic_group') {
+      addSingleLandingPageItem({
+        addType: type,
+        candidates: landingPageCandidates,
+        selectedCandidateId: candidateId,
+        setDraftItems: setItems,
+      })
+      setCandidateId('')
+      return
+    }
+    addTopicGroupLandingPageItem({
+      candidates: landingPageCandidates,
+      itemOptions: options,
+      onAdded: () => {
+        setTopicId('')
+        setReviewIds([])
+        setReferralIds([])
+      },
+      selectedGroupReferralIds: referralIds,
+      selectedGroupReviewIds: reviewIds,
+      selectedTopicId: topicId,
+      setDraftItems: setItems,
+    })
+  }
+
   return (
     <LandingPageItemEditor
       loading={false}
@@ -54,13 +100,17 @@ function Editor({
       setSelectedGroupReferralIds={setReferralIds}
       setLinkLabel={setLinkLabel}
       setLinkUrl={setLinkUrl}
-      onAddItem={() => {}}
+      onAddItem={addItem}
       onSaveItems={() => {}}
-      draftItems={draftItems}
-      moveItem={() => {}}
-      removeItem={() => {}}
-      moveGroupEntry={() => {}}
-      removeGroupEntry={() => {}}
+      draftItems={items}
+      moveItem={(index, direction) => setItems(prev => moveDraftItem(prev, index, direction))}
+      removeItem={index => setItems(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+      moveGroupEntry={(itemIndex, entryIndex, direction) =>
+        setItems(prev => moveDraftGroupEntry(prev, itemIndex, entryIndex, direction))
+      }
+      removeGroupEntry={(itemIndex, entryIndex) =>
+        setItems(prev => removeDraftGroupEntry(prev, itemIndex, entryIndex))
+      }
     />
   )
 }
@@ -70,7 +120,7 @@ export const WithItems: Story = {
     <StoryFrame>
       <Editor
         addType='review'
-        draftItems={landingPageWithItems.items}
+        initialItems={landingPageWithItems.items}
       />
     </StoryFrame>
   ),
@@ -81,7 +131,7 @@ export const Empty: Story = {
     <StoryFrame>
       <Editor
         addType='link'
-        draftItems={[]}
+        initialItems={[]}
       />
     </StoryFrame>
   ),

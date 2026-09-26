@@ -56,12 +56,19 @@ function passkeyPost(endpoint: string, body: unknown): unknown | undefined {
   return undefined
 }
 
+let pendingTotpName = 'Authenticator'
+
+export function resetPendingTotpName(): void {
+  pendingTotpName = 'Authenticator'
+}
+
 function totpPost(endpoint: string, body: unknown): unknown | undefined {
   if (endpoint === '/api/v1/auth/totp') {
+    pendingTotpName = textField(body, 'name') || 'Authenticator'
     return {
       authenticator: {
         id: 'totp-story',
-        name: textField(body, 'name') || 'Authenticator',
+        name: pendingTotpName,
         created_at: storyTimestamp,
       },
       secret: 'STORYBOOKSECRET',
@@ -72,7 +79,7 @@ function totpPost(endpoint: string, body: unknown): unknown | undefined {
     return {
       authenticator: {
         id: textField(body, 'authenticator_id') || 'totp-story',
-        name: 'Authenticator',
+        name: pendingTotpName,
         created_at: storyTimestamp,
       },
     }

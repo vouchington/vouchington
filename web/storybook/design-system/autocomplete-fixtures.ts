@@ -30,7 +30,9 @@ function topicSearchBody(searchParams?: TopicSearchParams): JsonBody {
   const types = typeof requested === 'string' ? requested.split(',').filter(Boolean) : []
   const spending =
     searchParams?.spending_category === true || searchParams?.spending_category === 'true'
+  const query = typeof searchParams?.q === 'string' ? searchParams.q.trim().toLowerCase() : ''
   const visible = topicCatalog.filter(topic => {
+    if (query && !topic.name.toLowerCase().includes(query)) return false
     if (spending) return topic.spendingCategory
     if (types.length > 0) return types.includes(topic.topic_type)
     return topic.id === 'topic-1' || topic.id === 'topic-2'
@@ -96,7 +98,8 @@ export function createAutocompleteFetch(originalFetch: typeof fetch = fetch): ty
     const rawUrl =
       typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
     const url = new URL(rawUrl, window.location.origin)
-    const body = storybookAutocompleteResponse(url.pathname)
+    const searchParams = Object.fromEntries(url.searchParams.entries())
+    const body = storybookAutocompleteResponse(url.pathname, searchParams)
 
     if (body) {
       return new Response(JSON.stringify(body), {

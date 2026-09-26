@@ -1,6 +1,10 @@
 import { ClientRequest } from '@/lib/api/client/request'
 import { updatedLandingPage } from '@/storybook/mocks/my-account-landing'
-import { accountImageState, accountPost } from '@/storybook/mocks/my-account-routes'
+import {
+  accountImageState,
+  accountPost,
+  resetPendingTotpName,
+} from '@/storybook/mocks/my-account-routes'
 
 let myAccountFixture = false
 const previousGet = ClientRequest.prototype.get
@@ -13,10 +17,12 @@ const previousAnchorClick = HTMLAnchorElement.prototype.click
 
 export function setMyAccountFixture(): void {
   myAccountFixture = true
+  resetPendingTotpName()
 }
 
 export function clearMyAccountFixture(): void {
   myAccountFixture = false
+  resetPendingTotpName()
 }
 
 function requestUrl(input: RequestInfo | URL): string {
