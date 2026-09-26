@@ -12,7 +12,6 @@ import { StoryFrame } from '@/storybook/story-frame'
 
 const meta = {
   title: 'Communities/Community Agent Prompt Item',
-  component: CommunityAgentPromptItem,
   beforeEach() {
     setStoryMutationFixture()
     return () => clearStoryMutationFixture()
