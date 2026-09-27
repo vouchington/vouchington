@@ -47,10 +47,7 @@ describe('validateOAuthRedirectUris', () => {
   })
 
   it('preserves redirect URI strings when serialization is disabled', () => {
-    const redirectUris = [
-      'https://EXAMPLE.com:443/callback',
-      'https://example.com/callback',
-    ]
+    const redirectUris = ['https://EXAMPLE.com:443/callback', 'https://example.com/callback']
 
     expect(validateOAuthRedirectUris(redirectUris, { serialize: false })).toEqual({
       valid: true,
