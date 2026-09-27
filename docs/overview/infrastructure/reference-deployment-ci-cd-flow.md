@@ -14,7 +14,7 @@ flowchart TD
     Materialize --> Providers["provider image/package update"]
 ```
 
-The [area workflows](../../../.github/workflows/reference-workflow-automation-pull-requests.md)
+The [area workflows](../../development/ci/workflows/reference-workflow-automation-pull-requests.md)
 run on pull requests and merge groups. Their backend and web image jobs validate without publishing
 runtime artifacts; trusted main workflows own publication.
 

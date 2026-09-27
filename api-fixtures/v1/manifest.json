@@ -75984,7 +75984,7 @@
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
       "id": "web.growth-metrics.default",
       "method": "GET",
-      "migratedFrom": ["backend/api/v1/admin/growth-metrics/README.md"],
+      "migratedFrom": ["docs/requirements/api/v1/admin/growth-metrics/README.md"],
       "path": "/api/v1/growth-metrics",
       "query": {
         "range": "30d"
@@ -81573,7 +81573,7 @@
       "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.url-crawl-trigger.default",
       "method": "POST",
-      "migratedFrom": ["backend/api/v1/urls/README.md"],
+      "migratedFrom": ["docs/requirements/api/v1/urls/README.md"],
       "path": "/api/v1/urls/url-1/crawl",
       "responseSchema": {
         "hash": "d897db0f9a2eda987e8f560f968e69c873fcccf3359cc79ca566d6270e711998",

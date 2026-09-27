@@ -4,7 +4,7 @@
 
 The production migration task checks the live schema after applying migrations. Its committed
 versus unverified failure reporting and connection-loss behavior are documented in
-[Migrations, Views, and Config-Driven](../../backend/data-stores/psql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
+[Migrations, Views, and Config-Driven](postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
 
 PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vitest project:
 `pnpm run test:backend:postgres-schema` after `./dev/initialize web`, `source .env`, and
@@ -13,7 +13,7 @@ PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vi
 `backend-postgres-schema` runs in its own CI job (`tests-postgres-schema.yml`), invoked without
 `--coverage` and outside the backend area's coverage producer set. Real tests in this project pass
 and genuinely exercise their target function against a live database, but they never contribute
-LCOV to the backend patch-coverage gate ([Coverage](../../.github/workflows/COVERAGE.md)). Source
+LCOV to the backend patch-coverage gate ([Coverage](ci/workflows/COVERAGE.md)). Source
 whose only non-mocked call site is a `backend-postgres-schema` test (for example
 `backend/data-stores/psql/schema-snapshot/verify-live-schema.mts` and the `catalog-queries.mts` /
 `generate.mts` live-DB helpers it sits alongside) must be wrapped in `/* v8 ignore start -- ... */`
@@ -54,7 +54,7 @@ use the same digest. After a schema change, push the branch and request
 `pnpm run db:snapshot:update -- --pr <number>` to dispatch the same CI workflow. The workflow commits
 `schema.json` and the generated `markdown/` tree to the PR head;
 fetch that commit before further edits. The local update command never introspects the worktree DB. See
-[schema-snapshot/README.md](../../backend/data-stores/psql/schema-snapshot/README.md).
+[schema-snapshot/README.md](postgresql/schema-snapshot/README.md).
 
 Pre-push runs the same freshness check after clean migration and the live schema tests whenever a
 migration, config-driven schema generator, view, schema-growth input, snapshot catalog/builder/type,

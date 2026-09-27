@@ -19,7 +19,7 @@ This is the shared workflow for Claude Code, Codex, Grok, Cursor, and OpenCode a
 Related local instructions:
 
 - Root entrypoint: [AGENTS.md](../../../AGENTS.md)
-- Cursor CLI config: [`.cursor/README.md`](../../../.cursor/README.md)
+- Cursor CLI config: [`.cursor/README.md`](../../../docs/development/harnesses/cursor.md)
 - Worktree and local services: [dev/AGENTS.md](../../../dev/AGENTS.md)
 - Before-push commands: [before-pushing.md](before-pushing.md)
 - Git hooks: [`.husky/AGENTS.md`](../../../.husky/AGENTS.md)

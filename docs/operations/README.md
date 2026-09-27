@@ -24,3 +24,23 @@ Keep each runbook or finding current with the implementation it describes. When 
 secret format, wrangler/Cloudflare commands, exempt paths, telemetry paths, or config constants
 change, update the operational doc in the same commit or PR. The `## Stale-Doc Sync Notes` section
 in each doc lists the specific source files and constants to watch.
+
+## Reference index
+
+- [Compatibility Matrix](reference-fediverse-staging-interop-compatibility-matrix.md)
+- [Configurable Inputs](reference-fediverse-staging-interop-configurable-inputs.md)
+- [Prerequisites](reference-fediverse-staging-interop-prerequisites.md)
+- [Procedure](reference-fediverse-staging-interop-procedure.md)
+- [Scope](reference-fediverse-staging-interop-scope.md)
+- [See Also](reference-fediverse-staging-interop-see-also.md)
+- [Source Of Truth](reference-fediverse-staging-interop-source-of-truth.md)
+- [Stale-Doc Sync Notes](reference-fediverse-staging-interop-stale-doc-sync-notes.md)
+- [Verify](reference-fediverse-staging-interop-verify.md)
+- [Disable](reference-private-docs-site-disable.md)
+- [Enable](reference-private-docs-site-enable.md)
+- [Required GitHub configuration](reference-private-docs-site-required-github-configuration.md)
+- [Rotation and recovery](reference-private-docs-site-rotation-and-recovery.md)
+- [Security boundaries](reference-private-docs-site-security-boundaries.md)
+- [See also](reference-private-docs-site-see-also.md)
+- [Source of truth](reference-private-docs-site-source-of-truth.md)
+- [Verify](reference-private-docs-site-verify.md)

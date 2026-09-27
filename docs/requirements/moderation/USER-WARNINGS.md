@@ -26,4 +26,4 @@ User warnings let moderators record a formal warning without removing the user o
 
 Warnings do not automatically change trust tier, vote weight, or account status.
 
-See also: [Reporting](./REPORTING.md), [Modlog](./MODLOG.md).
+See also: [Reporting](REPORTING.md), [Modlog](MODLOG.md).

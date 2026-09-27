@@ -84,7 +84,7 @@ Human-entered major-unit values are parsed from plain decimal strings with integ
 - no acceptance followed by silent database rounding.
 
 UI layers localize input and display around this exact boundary. Shared TypeScript parsing and
-validation live in [`ts-shared/money/`](../../../ts-shared/money/), which configures
+validation live in [`ts-shared/money/`](../../../ts-shared/money), which configures
 `@vouchington/utils/money` with Voucha's catalog and translates catalog metadata to the public
 `minor_unit_exponent` shape. Controlled web money inputs
 normalize the active locale's decimal separator to the canonical dot before exact parsing, while
@@ -151,6 +151,6 @@ currency association, and old or storage-shaped first-party public fields.
 - [Membership requirements](../../requirements/users/memberships.md)
 - [Data point requirements](../../requirements/platform/data-points-spec.md)
 - [Growth dashboard requirements](../../requirements/admin/GROWTH-DASHBOARD.md)
-- [PostgreSQL data store](../../../backend/data-stores/psql/README.md)
+- [PostgreSQL data store](../../development/postgresql/README.md)
 - [Web workspace rules](../../../web/AGENTS.md)
 - [Native client workspace rules](https://github.com/vouchington/vouchington-clients)

@@ -81,6 +81,6 @@ vote-weight penalty.
 
 ## Related
 
-- [domain](./domain.md) — hostname trust badge shown on URL cards
-- [post](./post.md) — posts that attach URLs as related links
-- [source-item](./source-item.md) — RSS items whose article links resolve to these URLs
+- [domain](domain.md) — hostname trust badge shown on URL cards
+- [post](post.md) — posts that attach URLs as related links
+- [source-item](source-item.md) — RSS items whose article links resolve to these URLs

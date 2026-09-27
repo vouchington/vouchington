@@ -5,9 +5,9 @@ policy runner. `.claude/settings.json` is the only hook source for Claude, Curso
 and Grok; `.codex/config.toml` is Codex's. Grok does not get a copied `.grok/hooks`,
 `.grok/skills`, or permission allowlist, and Cursor does not get a `.cursor/hooks.json`:
 both run the Claude hooks through Claude-compat. Cursor keeps native `.cursor/` config
-for its sandbox, MCP, permissions, and worktrees. See [`.grok/README.md`](../../.grok/README.md),
-[`.cursor/README.md`](../../.cursor/README.md),
-[`.opencode/README.md`](../../.opencode/README.md), and
+for its sandbox, MCP, permissions, and worktrees. See [`.grok/README.md`](harnesses/grok.md),
+[`.cursor/README.md`](harnesses/cursor.md),
+[`.opencode/README.md`](harnesses/opencode.md), and
 [agent-workflow](../../.agents/skills/agent-workflow/SKILL.md).
 
 ## Reusable domain skills
@@ -171,7 +171,7 @@ not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would doubl
   hook, so it gets no tmux nudge on prompt submit. SessionStart context and the PostToolUse
   reminders still run.
 
-Native files under [`.cursor/`](../../.cursor/README.md) own everything else:
+Native files under [`.cursor/`](harnesses/cursor.md) own everything else:
 
 - `sandbox.json` — Codex-equivalent `workspace_readwrite` extra roots and `networkPolicy.default: allow`
 - `mcp.json` — Agent Blackboard local wrapper; `cli.json` / `permissions.json` own its exact tool allowlists
@@ -187,7 +187,7 @@ installed `vouchington-tooling` package.
 
 OpenCode is a first-class local assistant. It reads nested `AGENTS.md` files.
 `OPENCODE_DISABLE_CLAUDE_CODE` disables Claude-compat skills, not `AGENTS.md`. Do not copy
-hooks or skills into [`.opencode/`](../../.opencode/README.md), and do not add `CLAUDE.md`.
+hooks or skills into [`.opencode/`](harnesses/opencode.md), and do not add `CLAUDE.md`.
 
 - Config: [`opencode.json`](../../opencode.json) (`autoupdate: false`) uses its V1 `mcp` object for
   Agent Blackboard and exact `agent-blackboard_<tool>` allow permissions. Leave the local model unset;
@@ -204,8 +204,8 @@ the same privacy-mode rule as Cursor, Codex, and Claude Code.
 - [Agent Blackboard](agent-blackboard.md)
 - [Merge Authority](merge-authority.md)
 - [`.claude/README.md`](../../.claude/README.md)
-- [`.cursor/README.md`](../../.cursor/README.md)
-- [`.opencode/README.md`](../../.opencode/README.md)
+- [`.cursor/README.md`](harnesses/cursor.md)
+- [`.opencode/README.md`](harnesses/opencode.md)
 - [`.codex/README.md`](../../.codex/README.md)
 - [`.codex/config.toml`](../../.codex/config.toml)
-- Project Grok workflows: [`.grok/workflows/`](../../.grok/workflows/) (orchestrators, not copied skills)
+- Project Grok workflows: [`.grok/workflows/`](../../.grok/workflows) (orchestrators, not copied skills)

@@ -1,6 +1,6 @@
 # Scheduled Prompts
 
-Rotating maintenance prompts selected from [scheduled/](scheduled/) by
+Rotating maintenance prompts selected from [scheduled/](scheduled) by
 [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml).
 The workflow renders the selected prompt through
 [scheduled-prompt.md](automation/scheduled-prompt.md) before calling
@@ -63,7 +63,7 @@ issue from its supplied page whose metadata or comments changed during the run.
 
 ## Update Checklist
 
-- Add new prompts as standalone Markdown files in [scheduled/](scheduled/).
+- Add new prompts as standalone Markdown files in [scheduled/](scheduled).
 - Link every prompt from the table above so the rotation set stays reviewable.
 - Keep the table in sync with `docs/prompts/scheduled/*.md`; `automation-prompts-scheduled.test.mts`
   checks that every prompt appears exactly once and every link resolves.

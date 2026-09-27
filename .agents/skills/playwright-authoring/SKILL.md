@@ -13,7 +13,7 @@ Claude Code and Codex load `vouchington-testing:playwright-authoring`; Grok, Cur
 ## Vouchington additions
 
 Read [`playwright/AGENTS.md`](../../../playwright/AGENTS.md) for scope, then use
-[`playwright/README.md`](../../../playwright/README.md) for authentication, locator, waiting,
+[`playwright/README.md`](../../../docs/development/testing/playwright/README.md) for authentication, locator, waiting,
 fixture, viewport, hydration, and debugging examples.
 
 1. Confirm the assertion requires a browser. Put status, redirect, header, metadata, and static-HTML
@@ -69,7 +69,7 @@ page.goto(url)` when the response object is needed.
 
 Three patterns — pick by what the spec needs. Full explanation, code examples, the seeded user's
 activity profile, and banned activity-blind assertions:
-[README.md § Authentication](../../../playwright/README.md#authentication).
+[README.md § Authentication](../../../docs/development/testing/playwright/README.md#authentication).
 
 - **`AUTH_STATE`** — default choice; the ~134 specs that only need the fixed shared seeded user
   (admin-capable). `test.use({ storageState: AUTH_STATE })`.

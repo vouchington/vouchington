@@ -14,4 +14,4 @@ Claude Code and Codex load `vouchington-workflow:github-actions-checklist`; Grok
 Read [the GitHub Actions checklist](../../../docs/checklists/github-actions.md) and the scoped
 [workflow instructions](../../../.github/workflows/AGENTS.md). Keep workflow YAML, runner policy,
 workflow docs, and validation synchronized. Use
-[AUTHORING.md](../../../.github/workflows/AUTHORING.md) for workflow PR splitting.
+[AUTHORING.md](../../../docs/development/ci/workflows/AUTHORING.md) for workflow PR splitting.

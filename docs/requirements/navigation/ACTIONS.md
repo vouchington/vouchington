@@ -1,6 +1,6 @@
 # Action Buttons
 
-Action buttons let users interact with topics, posts, and other users. This document defines the principles, placement rules, and tooltip requirements. Canonical icons for icon-bearing action controls live in [Entity × Action Icons](./ENTITY-ACTION-ICONS.md).
+Action buttons let users interact with topics, posts, and other users. This document defines the principles, placement rules, and tooltip requirements. Canonical icons for icon-bearing action controls live in [Entity × Action Icons](ENTITY-ACTION-ICONS.md).
 
 ## Contents
 

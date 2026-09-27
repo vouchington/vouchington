@@ -20,7 +20,7 @@ All error responses (from backend and CF Worker) follow this JSON shape:
 - `request_id` enables admin debugging without leaking internals.
 
 For generated API request validation, the canonical ordering and carrier guidance lives in
-[API Route Helpers](../../../backend/api/README.md#route-helpers). Authentication, private-resource
+[API Route Helpers](../../requirements/api/README.md#route-helpers). Authentication, private-resource
 visibility, suspension, and ownership preflights take precedence over detailed schema diagnostics:
 a caller who cannot access a resource receives that authorization or absence result rather than a
 body/query validation detail. Once admission is allowed, malformed typed path, body, and query
@@ -68,7 +68,7 @@ Web ApiError
 ```
 
 Routes that catch errors to change the response shape, such as
-[`GET /api/v1/auth/bluesky/callback`](../../../backend/api/v1/auth/README.md#get-apiv1authblueskycallback),
+[`GET /api/v1/auth/bluesky/callback`](../../requirements/api/v1/auth/README.md#get-apiv1authblueskycallback),
 must still call `onError` from `@modules/on-error`. A user-facing 302 with `bluesky_error` does not
 replace reporting: `onError` ignores 4xx and captures 5xx and unstatused failures.
 

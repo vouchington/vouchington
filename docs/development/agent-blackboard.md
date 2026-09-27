@@ -251,8 +251,8 @@ noise, a blocked tool call, or a nonzero exit. An agent-initiated
 outbox and exposes pending delivery. A
 silently-skipped checkpoint is not a bug to chase; it means a credential, network, or session
 precondition wasn't met for that one hook invocation. See
-[reference-agent-session-hooks.md](../../dev/reference-agent-session-hooks.md) for the hook wiring
-and [reference-command-catalog.md](../../dev/reference-command-catalog.md) for the entrypoint.
+[reference-agent-session-hooks.md](local-development/reference-agent-session-hooks.md) for the hook wiring
+and [reference-command-catalog.md](local-development/reference-command-catalog.md) for the entrypoint.
 Automatic checkpoints are a safety net, not a substitute for an agent writing its own thoughtful
 journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md).
 

@@ -19,4 +19,4 @@ System users are seeded by `backend/data-stores/psql/config-driven/0010-00-01-se
 - Do not invent per-detector users unless a UI or query has a distinct product need.
 - Tables without actor columns, such as AI judgement tables, rely on structural attribution instead.
 
-See also: [Modlog](./MODLOG.md).
+See also: [Modlog](MODLOG.md).

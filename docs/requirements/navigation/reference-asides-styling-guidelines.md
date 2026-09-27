@@ -12,8 +12,8 @@
 
 ## Related Documentation
 
-- [Sidebar](./SIDEBAR.md) — main left navigation
-- [UI Components](./COMPONENTS.md) — design system and patterns
-- [Routes](./ROUTES.md) — all pages and their routes
+- [Sidebar](SIDEBAR.md) — main left navigation
+- [UI Components](COMPONENTS.md) — design system and patterns
+- [Routes](ROUTES.md) — all pages and their routes
 - [Web rules](../../../web/AGENTS.md) — aside layout primitives and page-with-aside conventions
-- [Mobile Responsiveness](./MOBILE.md)
+- [Mobile Responsiveness](MOBILE.md)

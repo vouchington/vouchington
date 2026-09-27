@@ -11,3 +11,7 @@ event types are processed or ignored.
 
 **When you add or remove a `case`, update [`docs/checklists/stripe-events.md`](../../../docs/checklists/stripe-events.md)
 in the same commit.**
+
+## Relocated reference navigation
+
+- [README.md](../../../docs/overview/architecture/services/stripe-event-processing/README.md)

@@ -53,3 +53,8 @@ workspace as `<top-level>/test-helpers/**`; nested or alternate helper-directory
 - [.opencode/README.md](.opencode/README.md)
 - [seed/README.md](seed/README.md)
 - [dev/AGENTS.md](dev/AGENTS.md)
+
+## Relocated reference navigation
+
+- [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md)
+- [.agents/skills/AGENTS.md](.agents/skills/AGENTS.md)

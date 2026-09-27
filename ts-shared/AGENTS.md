@@ -16,7 +16,7 @@ Agent-specific rules:
   migration is explicitly in scope.
 - Prefer env-agnostic helpers that accept bindings/options instead of reading globals at every call
   site.
-- When auth/session key handling changes, update both [`backend/`](../backend/) and [`cloudflare-worker/`](../cloudflare-worker/) docs and
+- When auth/session key handling changes, update both [`backend/`](../backend) and [`cloudflare-worker/`](../cloudflare-worker) docs and
   tests in the same change.
 - `utm` is universal — no Node.js-specific APIs.
 - `utils` contains pure formatting, trust-tier, and URL manipulation logic — no framework dependencies.
@@ -29,3 +29,8 @@ Agent-specific rules:
   Enforced by the `workspace-package-boundary-*` rules in
   [`backend/dependency-cruiser-rules/workspace-package-relative-import-boundaries.cjs`](../backend/dependency-cruiser-rules/workspace-package-relative-import-boundaries.cjs),
   run via `pnpm run dep-cruise:backend` (CI: `static-backend`).
+
+## Relocated reference navigation
+
+- [package inventory](../docs/overview/architecture/typescript-shared/README.md)
+- [`env-contract`](../docs/overview/architecture/typescript-shared/env-contract/README.md)

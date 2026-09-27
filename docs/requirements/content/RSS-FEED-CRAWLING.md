@@ -102,8 +102,8 @@ crawl row inside the retention window.
 
 ## Related
 
-- Queue configuration: [../../backend/queues/rss-feeds/README.md](../../../backend/queues/rss-feeds/README.md)
-- psql maintenance queue: [../../backend/queues/psql/README.md](../../../backend/queues/psql/README.md)
+- Queue configuration: [../../backend/queues/rss-feeds/README.md](../../overview/architecture/queues/rss-feeds/README.md)
+- psql maintenance queue: [../../backend/queues/psql/README.md](../../overview/architecture/queues/psql/README.md)
 - Partition drop retention: [../../overview/architecture/partitioning-strategy.md](../../overview/architecture/partitioning-strategy.md)
-- Service: [../../backend/services/rss-feeds/README.md](../../../backend/services/rss-feeds/README.md)
+- Service: [../../backend/services/rss-feeds/README.md](../../overview/architecture/services/rss-feeds/README.md)
 - Implementation: `backend/services/rss-feeds/crawl-config.mts`, `backend/services/rss-feeds/get-to-fetch.mts`

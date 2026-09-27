@@ -1,7 +1,7 @@
 # Tools
 
 LLM tool definitions for agents. Each tool has a `schema` (passed to the LLM), a `function`
-(the implementation), and optional `roles` (access control). Full inventory and examples: check agent README files in [../agents/](../agents/).
+(the implementation), and optional `roles` (access control). Full inventory and examples: check agent README files in [../agents/](../agents).
 
 ## Rules
 
@@ -20,3 +20,7 @@ LLM tool definitions for agents. Each tool has a `schema` (passed to the LLM), a
 - Agents: [../agents/AGENTS.md](../agents/AGENTS.md)
 - Tool inventory: [../../docs/overview/architecture/agent-tools/README.md](../../docs/overview/architecture/agent-tools/README.md)
 - Backend context: [../AGENTS.md](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [agent docs](../agents/)

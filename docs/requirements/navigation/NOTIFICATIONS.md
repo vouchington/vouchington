@@ -114,5 +114,5 @@
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [Routes](./ROUTES.md)
-- [Topbar & Search](./TOPBAR-SEARCH.md)
+- [Routes](ROUTES.md)
+- [Topbar & Search](TOPBAR-SEARCH.md)

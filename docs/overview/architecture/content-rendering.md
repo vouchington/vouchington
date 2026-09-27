@@ -13,7 +13,7 @@ route. Post editors retain the successfully uploaded selected `File` and preview
 with an object URL; replacement, removal, failed decoding and unmount revoke it. Unsupported browser
 formats retain their upload ID and show the localized preview-unavailable status. Submission sends
 image IDs, ordering and captions, never local files. Saved rendering uses the authoritative returned
-placement descriptor. See [delivery authority](../../../backend/services/media-delivery-safety/README.md).
+placement descriptor. See [delivery authority](services/media-delivery-safety/README.md).
 
 All browser-facing external `http(s)://` image URLs are rewritten to
 `${IMAGE_ORIGIN}/sideload/{base64url}?w=1200&sig={hmac}`. Browsers therefore request the dedicated
@@ -200,10 +200,10 @@ All RSS feed `<description>` content is wrapped in CDATA by the `feed` library, 
 
 ## Related
 
-- [AI Agents](./ai-agents.md)
-- [Auth Overview](./auth-overview.md)
-- [HTML And Markdown Rendering Passes](./html-markdown-rendering-passes.md)
-- [Markdown service](../../../backend/services/markdown/README.md) — Rust-backed markdown rendering pipeline
+- [AI Agents](ai-agents.md)
+- [Auth Overview](auth-overview.md)
+- [HTML And Markdown Rendering Passes](html-markdown-rendering-passes.md)
+- [Markdown service](services/markdown/README.md) — Rust-backed markdown rendering pipeline
 - [Backend rules](../../../backend/AGENTS.md) — Rust NAPI usage, banned packages
 - [Web rules](../../../web/AGENTS.md) — content rendering components
 

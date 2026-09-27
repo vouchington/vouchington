@@ -51,7 +51,7 @@ URL slug for `rss_feed` topics is `source` (not `rss-feed`).
 | Active   | `is_enabled = true`  | Feed is actively crawled             |
 | Disabled | `is_enabled = false` | Crawling paused; items still visible |
 
-Sources also inherit topic lifecycle states (Active / Merged / Soft-deleted); see [topic.md](./topic.md#states).
+Sources also inherit topic lifecycle states (Active / Merged / Soft-deleted); see [topic.md](topic.md#states).
 
 ## Surfaces
 
@@ -106,6 +106,6 @@ Muting a source implicitly removes any active follow on that entity.
 
 ## Related
 
-- [topic](./topic.md) — base entity; sources inherit topic lifecycle and actions
-- [source-item](./source-item.md) — individual items published by this source
-- [domain](./domain.md) — hostname trust badge shown in source list rows
+- [topic](topic.md) — base entity; sources inherit topic lifecycle and actions
+- [source-item](source-item.md) — individual items published by this source
+- [domain](domain.md) — hostname trust badge shown in source list rows

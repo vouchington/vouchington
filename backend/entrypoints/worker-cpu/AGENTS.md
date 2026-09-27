@@ -4,4 +4,8 @@ CPU-intensive workers plus all IO-capable queues in local development. Rust NAPI
 
 Queue placement source: [../../modules/worker-queue-inventory/worker-queue-policy.json](../../modules/worker-queue-inventory/worker-queue-policy.json). CPU-only queues can only run here; all worker queues must be runnable here.
 
-See [../../worker-runtime/](../../worker-runtime/) for the shared worker framework.
+See [../../worker-runtime/](../../worker-runtime) for the shared worker framework.
+
+## Relocated reference navigation
+
+- [worker-runtime](../../worker-runtime/)

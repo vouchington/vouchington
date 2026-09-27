@@ -19,5 +19,5 @@ render the existing post, author, root-thread, provider-neutral disposition, sta
 and media reveal context. They support refresh, cursor pagination, approve, reject, and re-review through the clearance API. The native
 queue acts on `rejected` and `in_review` records and filters unexpected `approved` or `pending`
 records from the queue response. Other native moderation queues have separate capability
-boundaries in [Moderation Flows](./MODERATION-FLOWS.md#native-client-capability-boundary-pipeline-diagram-and-post-clearance-gate) and the
+boundaries in [Moderation Flows](MODERATION-FLOWS.md#native-client-capability-boundary-pipeline-diagram-and-post-clearance-gate) and the
 [Client Parity Matrix](../CLIENT-PARITY-MATRIX.md).

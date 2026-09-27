@@ -103,7 +103,7 @@ Creating a story post from a story:
 4. Forwards RSS feed item category topics as `post → category → topic` entity relations
 5. The post's autotagger agent adds additional topic categories downstream
 
-See [news-story-clusters.md](./news-story-clusters.md) for how users trigger story-post creation from the news feed UI (cluster-level "Discuss the full story" CTA).
+See [news-story-clusters.md](news-story-clusters.md) for how users trigger story-post creation from the news feed UI (cluster-level "Discuss the full story" CTA).
 
 ## Feed Deduplication
 

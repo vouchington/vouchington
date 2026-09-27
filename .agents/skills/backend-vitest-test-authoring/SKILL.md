@@ -16,7 +16,7 @@ Read the nearest backend `AGENTS.md`, then
 [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the shared mock-boundary and
 naming contract, and [`docs/development/tests.md`](../../../docs/development/tests.md) for project
 selection, parallel safety, and validation commands. Use
-[`backend/test-helpers/README.md`](../../../backend/test-helpers/README.md) for entity-listener,
+[`backend/test-helpers/README.md`](../../../docs/development/testing/backend/helpers.md) for entity-listener,
 fixture, and dirty-database patterns.
 
 1. Add test-case stubs first and select the exact owning Vitest project from the documented project

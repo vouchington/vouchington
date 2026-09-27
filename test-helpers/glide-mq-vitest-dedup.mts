@@ -43,7 +43,7 @@ function isReferencedJobNonTerminal(queue: TestQueue<any, any>, jobId: string | 
  * stored dedup entry is non-terminal. Production's `debounce` additionally cancels and replaces a
  * referenced job that is `'delayed'`/`'prioritized'`, but that branch is unreachable here — TestQueue
  * never produces those states (delay is accepted but ignored, and there is no priority-based
- * scheduling in testing mode; see backend/test-helpers/examples.glide-mq-testing.md). So `debounce`
+ * scheduling in testing mode; see docs/development/testing/backend/glide-mq-testing.md). So `debounce`
  * degenerates to `simple`'s pure state-gating.
  *
  * `throttle` ignores job state entirely and only compares elapsed time against `ttl` — this is

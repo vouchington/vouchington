@@ -5,3 +5,7 @@ index for CI helper contracts and operational guidance.
 
 Before adding or changing a Vitest test, fixture, or mock here, load the
 [vitest-test-authoring skill](../.agents/skills/vitest-test-authoring/SKILL.md).
+
+## Relocated reference navigation
+
+- [CI helper contracts](../docs/development/ci/tooling/README.md)

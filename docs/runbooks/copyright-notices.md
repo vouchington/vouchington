@@ -120,7 +120,7 @@ worker's durable exact-key repair reconciliation. A wakeup references an already
 row through a restrictive foreign key; repair joins its typed tuple and rechecks committed binding
 authority before publishing recovery. A first registry insert that rolls back leaves no prior allow
 or repair marker. Never manufacture an allow or manually advance a generation. See the
-[media-delivery safety protocol](../../backend/services/media-delivery-safety/README.md) for the
+[media-delivery safety protocol](../overview/architecture/services/media-delivery-safety/README.md) for the
 publication fence, repair markers, and bounded reconciliation contract.
 
 The same protocol describes abandoned final claims: reconciliation marks them failed while

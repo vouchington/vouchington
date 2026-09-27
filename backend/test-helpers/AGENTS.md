@@ -2,12 +2,12 @@
 
 Load [backend-vitest-test-authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md)
 before changing a backend test helper. Full helper APIs, entity-listener waits, fixture selection,
-and dirty-database patterns live in [README.md](README.md).
+and dirty-database patterns live in [Backend test helpers](README.md).
 
 ## Scoped invariants
 
 - Backend tests run against a dirty, parallel database and do not clean up shared rows. Use the
-  randomized, ownership-scoped fixture patterns in [README.md](README.md).
+  randomized, ownership-scoped fixture patterns in [Backend test helpers](README.md).
 - Tests must not import raw PostgreSQL helpers or `sql-template-strings`; expose focused setup and
   assertion functions here without re-exporting SQL methods.
 - Keep backend helpers under this first-layer root; do not recreate feature-local helper
@@ -17,5 +17,11 @@ and dirty-database patterns live in [README.md](README.md).
 
 ## See Also
 
-- Helper APIs and examples: [README.md](README.md)
+- Helper APIs and examples: [Backend test helpers](README.md)
 - [Backend context](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [Test helpers](../../docs/development/testing/backend/helpers.md)
+
+- [API fixture entrypoint](api-fixtures/README.md).

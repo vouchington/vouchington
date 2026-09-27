@@ -79,7 +79,7 @@ fraud, or incitement"). There is no `recall` row; that runbook is anticipatory.
 - Update this table to match any registry changes.
 - Keep ToS §4 and `articles/how-moderation-works.md` in sync with both.
 - Paid transparency aggregates are not policy entries. Their 48-hour delay, cohort suppression,
-  and rounding boundary is defined in [Moderation Analytics](./MODERATION-ANALYTICS.md).
+  and rounding boundary is defined in [Moderation Analytics](MODERATION-ANALYTICS.md).
 
 ## Related Issues
 

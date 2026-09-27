@@ -37,7 +37,7 @@ Hidden form fields that bots fill but humans never see. Implemented as a zero-fr
 
 ### Backend behavior
 
-See [`backend/services/honeypot/README.md`](../../../backend/services/honeypot/README.md) for service documentation.
+See [`backend/services/honeypot/README.md`](../../overview/architecture/services/honeypot/README.md) for service documentation.
 
 ---
 
@@ -122,7 +122,7 @@ Before deploying to production, verify:
 - [Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) —
   credential-shaped URL discovery and exact-host security review
 - [Networking](../../overview/infrastructure/networking.md) — audited external API IPv6 support and direct-call decisions
-- [Next.js CVE tracking](./SECURITY-NEXTJS-CVES.md) — patch floor, per-CVE status, and edge mitigation reference for Next.js advisories
+- [Next.js CVE tracking](SECURITY-NEXTJS-CVES.md) — patch floor, per-CVE status, and edge mitigation reference for Next.js advisories
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 

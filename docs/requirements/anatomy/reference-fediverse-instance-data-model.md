@@ -5,7 +5,7 @@
 ## Data Model
 
 A fediverse instance is a topic with `topic_type = 'fediverse_instance'` plus a 1:1 extension row
-in `topics__fediverse_instances`. It mirrors the existing `rss_feed`/[source](./source.md) pattern:
+in `topics__fediverse_instances`. It mirrors the existing `rss_feed`/[source](source.md) pattern:
 `topic_type` + extension table, voted the same way a source is.
 
 **`topics` row (shared with all topic types):**

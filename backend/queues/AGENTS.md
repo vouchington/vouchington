@@ -26,7 +26,11 @@ and follow the canonical [backend queue checklist](../../docs/checklists/backend
 
 ## See Also
 
-- Queue package catalog: [../catalogs/README.md#queues](../catalogs/README.md#queues)
+- Queue package catalog: [../catalogs/README.md#queues](../../docs/overview/architecture/backend/catalogs/README.md#queues)
 - Queue inventory: [README.md](README.md)
 - [Worker packages](../workers/AGENTS.md)
 - [Backend context](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [queue inventory](../../docs/overview/architecture/queues/README.md)

@@ -45,3 +45,8 @@ runbooks for staging operations. Before adding or changing a Vitest test, fixtur
   psql schema from R2 behind required Basic Auth. Its credentials are an encrypted Cloudflare
   binding managed outside GitHub Actions; see `src/docs.mts` and the
   [private docs site runbook](../docs/operations/private-docs-site.md).
+
+## Relocated reference navigation
+
+- [Worker docs](../docs/overview/infrastructure/cloudflare-worker/README.md)
+- [script/runbook index](../docs/overview/infrastructure/cloudflare-worker/scripts/README.md)

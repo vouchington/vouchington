@@ -110,9 +110,9 @@ overall coverage regression.
 
 Code entry points:
 
-- [`ts-shared/request-client-info`](../../../ts-shared/request-client-info/) defines the public
+- [`ts-shared/request-client-info`](../../../ts-shared/request-client-info) defines the public
   header contract.
-- [`backend/modules/request-client-info`](../../../backend/modules/request-client-info/) owns
+- [`backend/modules/request-client-info`](../../../backend/modules/request-client-info) owns
   parsing integration and request-scoped storage.
-- [`backend/services/request-client-info`](../../../backend/services/request-client-info/) owns
+- [`backend/services/request-client-info`](../../../backend/services/request-client-info) owns
   runtime enforcement configuration.

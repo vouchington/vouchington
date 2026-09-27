@@ -17,10 +17,17 @@ the same crawl IDs for the full run.
 ## Scope
 
 - **Playwright**: rendered UI behavior, layout geometry, responsive overflow, localStorage/cookie behavior, focus, keyboard/pointer interaction, client-side navigation, hydration warnings, console/page errors, browser network observations.
-- **Not Playwright**: status codes, redirects, headers/cache, `robots.txt`, metadata, canonical links, JSON-LD, static copy → use [`integration-tests/web/`](../integration-tests/web/) instead.
+- **Not Playwright**: status codes, redirects, headers/cache, `robots.txt`, metadata, canonical links, JSON-LD, static copy → use [`integration-tests/web/`](../integration-tests/web) instead.
 
 ## See Also
 
 - Test suite reference: [tests/README.md](tests/README.md)
 - Patterns for authentication, waiting, locator strategy, mobile viewports, hydration, CF Worker logs, CAPTCHA, async work: [README.md](README.md)
 - Helper functions: [helpers/README.md](helpers/README.md)
+
+## Relocated reference navigation
+
+- [Suite docs](../docs/development/testing/playwright/README.md)
+- [spec inventory](../docs/development/testing/playwright/tests/README.md)
+- [helpers](../docs/development/testing/playwright/helpers/README.md)
+- [web integration tests](../integration-tests/web/)

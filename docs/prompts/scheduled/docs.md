@@ -1,4 +1,4 @@
-Review [AGENTS.md](../../../AGENTS.md), [README.md](../../../README.md), [docs/\*\*](../../), and `**/*.md`. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review [AGENTS.md](../../../AGENTS.md), [README.md](../../../README.md), [docs/\*\*](../..), and `**/*.md`. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
 
 Rules:
 

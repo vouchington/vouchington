@@ -11,7 +11,7 @@ import type { Community } from '@services/communities/types'
 // Covers the post-auth runtime request-contract validation added for issue #295. The authenticated
 // 422 case for this operation is already covered by modmail-thread.test.mts's "returns 422 when
 // body is null JSON" test; this file adds the unauthenticated companion case (see
-// backend/api/v1/communities/reference-request-validation.md).
+// docs/requirements/api/v1/communities/reference-request-validation.md).
 describe('POST /api/v1/communities/:idOrSlug/modmail/:conversationId/messages - request contract validation', () => {
   let member: PrivateUser
   let community: Community

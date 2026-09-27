@@ -1,6 +1,6 @@
 /**
  * Regenerates the workflow -> job -> runner -> timeout table in
- * .github/workflows/JOBS.md from the live `no-mistakes` workflow topology (`loadRepoTopology()`)
+ * docs/development/ci/workflows/JOBS.md from the live `no-mistakes` workflow topology (`loadRepoTopology()`)
  * -- never by parsing workflow YAML directly, so this inventory can never drift out of sync with
  * the same source no-mistakes's own CI policies use (see
  * .github/workflows/workflow-topology-policy-inventory.mts for a sibling consumer). Mirrors
@@ -32,7 +32,7 @@ import { loadRepoTopology } from './repo-topology.mts'
 
 const __filename = fileURLToPath(import.meta.url)
 const ROOT = path.join(import.meta.dirname, '..')
-const DEFAULT_DOC_PATH = path.join(ROOT, '.github/workflows/JOBS.md')
+const DEFAULT_DOC_PATH = path.join(ROOT, 'docs/development/ci/workflows/JOBS.md')
 
 const BEGIN = '<!-- BEGIN GENERATED: workflow-job-runner-inventory -->'
 const END = '<!-- END GENERATED -->'

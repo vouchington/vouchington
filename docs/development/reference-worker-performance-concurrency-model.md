@@ -3,7 +3,7 @@
 [Back to Worker Performance](worker-performance.md#concurrency-model)
 
 Every worker is constructed with `concurrency: getWorkerConcurrency(name, { baseline })` from
-[`@modules/queue-config`](../../backend/modules/queue-config/README.md). The helper resolves
+[`@modules/queue-config`](../overview/architecture/backend/modules/queue-config/README.md). The helper resolves
 concurrency in this order:
 
 1. `WORKER_CONCURRENCY_<NAME>` env override (clamped by max).

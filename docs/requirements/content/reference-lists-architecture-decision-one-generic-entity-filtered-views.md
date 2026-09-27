@@ -7,7 +7,7 @@
 A list is a named mixed-media container. The three "kinds" (Reading/Watch/Listen) are **filtered
 views over `rss_feed_items.media_type`**, not three distinct entity types. There is no `kind`
 discriminator on the list row itself. This mirrors the approach in
-[PODCASTS.md](./PODCASTS.md#architecture-decision-facet-not-a-new-topic-type) (facet, not type)
+[PODCASTS.md](PODCASTS.md#architecture-decision-facet-not-a-new-topic-type) (facet, not type)
 and avoids three schemas for what is functionally one UI pattern.
 
 ## Schema

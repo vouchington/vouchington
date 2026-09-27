@@ -234,5 +234,5 @@ Post moderation (delete, unpublish from community, archive, clearance, pin, and 
 - [Web rules](../../../web/AGENTS.md) — post components and UI conventions
 - [News component rules](../../../web/components/news/AGENTS.md) — Discuss button bifurcation
 - [Stories service rules](../../../backend/services/stories/AGENTS.md) — discoverability gate and story-post pipeline
-- [Posts service](../../../backend/services/posts/README.md) — business logic and lifecycle
+- [Posts service](../../overview/architecture/services/posts/README.md) — business logic and lifecycle
 - [Posts service rules](../../../backend/services/posts/AGENTS.md) — service-specific coding rules

@@ -35,3 +35,9 @@ Before adding or changing a Vitest test, fixture, or mock here, load the
 
 Use [local web validation recovery](../docs/development/tests.md#local-web-validation-recovery) only
 after the supported initialization path fails.
+
+## Relocated reference navigation
+
+- [command catalog](../docs/development/local-development/README.md)
+
+- [Plan helper reference](reference-plan-issue-helper.md).

@@ -41,3 +41,9 @@ Run production Next and Storybook builds through the package scripts (`next buil
 
 Workspace catalogs, requirement-doc cross-references, and entity matrices are indexed in
 [README.md](README.md).
+
+## Relocated reference navigation
+
+- [web docs](../docs/overview/architecture/web/README.md)
+
+- [API response test helpers](test-helpers/api-responses/README.md).

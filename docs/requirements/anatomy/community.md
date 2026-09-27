@@ -94,6 +94,6 @@ The root `/communities/:slug` renders the community's post feed (not a separate 
 
 ## Related
 
-- [post](./post.md) — community-scoped posts
-- [source-item](./source-item.md) — community news tab shows RSS items
-- [topic](./topic.md) — topics listed in community curated lists
+- [post](post.md) — community-scoped posts
+- [source-item](source-item.md) — community news tab shows RSS items
+- [topic](topic.md) — topics listed in community curated lists

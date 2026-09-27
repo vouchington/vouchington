@@ -86,5 +86,5 @@ expiry, exchange schedule, completion proof, legacy routes, or data-retention be
 ## See Also
 
 - [Login flows](../overview/architecture/reference-auth-overview-login-flows.md)
-- [OAuth exchange queue](../../backend/queues/oauth-authorization-exchange/README.md)
+- [OAuth exchange queue](../overview/architecture/queues/oauth-authorization-exchange/README.md)
 - [User settings](../requirements/users/USER_SETTINGS.md)

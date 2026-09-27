@@ -15,3 +15,7 @@ through this package.
 - Parent services: [../AGENTS.md](../AGENTS.md)
 - Data store: [../../data-stores/analytics/AGENTS.md](../../data-stores/analytics/AGENTS.md)
 - Analytics pipeline: [../../../docs/overview/architecture/analytics-pipeline.md](../../../docs/overview/architecture/analytics-pipeline.md)
+
+## Relocated reference navigation
+
+- [domain wrappers](../../../docs/overview/architecture/services/analytics/README.md)

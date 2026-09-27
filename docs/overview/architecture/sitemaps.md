@@ -76,11 +76,11 @@ To add a new public page to the static sitemap, append its path to `STATIC_PAGE_
 
 ## Related
 
-- Cloudflare Worker routing: [cloudflare-worker/README.md](../../../cloudflare-worker/README.md)
+- Cloudflare Worker routing: [cloudflare-worker/README.md](../infrastructure/cloudflare-worker/README.md)
 - SEO requirements: [../../requirements/seo/SEO.md](../../requirements/seo/SEO.md)
 - Post visibility rules: [../../requirements/content/POSTS.md](../../requirements/content/POSTS.md)
-- [Sitemap service](../../../backend/services/sitemaps/README.md) — Sitemap generation logic
-- [PostgreSQL system](../../../backend/queues/psql/README.md) — Nightly job that triggers sitemap generation
+- [Sitemap service](services/sitemaps/README.md) — Sitemap generation logic
+- [PostgreSQL system](queues/psql/README.md) — Nightly job that triggers sitemap generation
 - [SEO requirements](../../requirements/seo/SEO.md) — Sitemap eligibility tied to indexability rules
 - [Backend rules](../../../backend/AGENTS.md) — service and caching conventions
 - [Web rules](../../../web/AGENTS.md) — SEO metadata and sitemap-linked indexability rules

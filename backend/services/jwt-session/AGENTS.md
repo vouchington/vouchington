@@ -14,6 +14,10 @@ Agent-specific rules:
 - Preserve the strict `dt` + `st` pairing guarantee. Do not reintroduce any `st`-only fallback.
 - Per-request auth must verify `dt`/`st` pairing and Valkey revocation before authenticating a
   uid-bearing session. The request cache and hot/warm/cold refresh paths are canonical in
-  [JWT session architecture](reference-architecture.md#hot--warm--cold-paths-patch-apiv1session).
+  [JWT session architecture](../../../docs/overview/architecture/services/jwt-session/reference-architecture.md#hot--warm--cold-paths-patch-apiv1session).
 - Call `markJwtStale(userId)` after any change to user roles or membership plan so the next
   PATCH /api/v1/session forces a cold-path DB reload.
+
+## Relocated reference navigation
+
+- [README.md](../../../docs/overview/architecture/services/jwt-session/README.md)

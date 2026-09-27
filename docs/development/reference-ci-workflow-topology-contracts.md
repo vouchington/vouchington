@@ -93,7 +93,7 @@ labeled dotted job-to-job edges. The runtime index keeps control flow separate f
 artifact-edge snapshots. Add durable artifact contracts to the central workflow topology policy
 rather than scattering graph assertions across workflow-specific tests. Authoring and rerun
 safety requirements are in
-[Artifact Rerun Safety](../../.github/workflows/reference-artifact-rerun-safety.md).
+[Artifact Rerun Safety](ci/workflows/reference-artifact-rerun-safety.md).
 
 `on.workflow_run.workflows` entries resolve case-insensitively against workflow display names after
 all workflow files are parsed. The schema-version-1 `workflow-run` edge points from the source
@@ -125,5 +125,5 @@ families, reusable caller drift, required or forbidden routes, exact aggregate f
 eligibility ordering. Workflow-specific tests retain conditions, inputs,
 outputs, secrets, permissions, runners, scripts, and runtime mechanics instead of duplicating graph
 assertions. See
-[GitHub Actions Concurrency Locks](../../.github/workflows/reference-github-actions-concurrency-locks.md)
+[GitHub Actions Concurrency Locks](ci/workflows/reference-github-actions-concurrency-locks.md)
 for authoring guidance.

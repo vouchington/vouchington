@@ -93,6 +93,6 @@ cross-repository closes are `Closes owner/repo#N`.
 
 ## Batch preflight
 
-The [batch manifest](../../../dev/agent-issue-labels/README.md#batch-github-issue-preflight) exposes only the read-only
+The [batch manifest](../../../docs/development/local-development/agent-issue-labels/README.md#batch-github-issue-preflight) exposes only the read-only
 `preflight` mode. Perform every authorized write and its read-back through the canonical workflow
 one issue at a time.

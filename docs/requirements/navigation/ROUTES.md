@@ -119,8 +119,8 @@ See also: [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — maps each ro
   - `/feed/news/friends` - show RSS feed items shared by people you follow
   - `/feed/news/sources` - show news from sources you follow
   - `/feed/news/topics` - show news from topics you follow
-  - Feed pages use breadcrumbs, a borderless title dropdown for post/news feed switching, a filter-row dropdown for All/Friends/Sources/Topics that defaults to All on `/feed/posts` and `/feed/news`, and no global community dropdown filter. Community-specific feeds remain available from `/communities/:slug` and `/communities/:slug/news`. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
-  - Feed, post/news, topic-scoped, and community-scoped list searches use `Search by text or #topic`; unresolved hashtag topics return a frontend-visible backend payload shaped as `{ error }`. See [Feed And List Filters](./FEED-LIST-FILTERS.md).
+  - Feed pages use breadcrumbs, a borderless title dropdown for post/news feed switching, a filter-row dropdown for All/Friends/Sources/Topics that defaults to All on `/feed/posts` and `/feed/news`, and no global community dropdown filter. Community-specific feeds remain available from `/communities/:slug` and `/communities/:slug/news`. See [Feed And List Filters](FEED-LIST-FILTERS.md).
+  - Feed, post/news, topic-scoped, and community-scoped list searches use `Search by text or #topic`; unresolved hashtag topics return a frontend-visible backend payload shaped as `{ error }`. See [Feed And List Filters](FEED-LIST-FILTERS.md).
 - Users
   - `/users` - search users
   - `/user/:idOrUsername` - canonical, indexable profile overview page
@@ -314,6 +314,6 @@ Admin-only routes for infrastructure operations.
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)
+- [docs/requirements/navigation/ACCESSIBILITY.md](ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - [Admin Navigation Matrix](../ADMIN-NAVIGATION-MATRIX.md) — admin entity pages, actions, and navigation paths

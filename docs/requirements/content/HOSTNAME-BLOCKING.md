@@ -69,6 +69,6 @@ This penalty stacks: three attempts result in three separate penalty rows.
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- Service docs: [backend/services/hostname-blocking/README.md](../../../backend/services/hostname-blocking/README.md)
+- Service docs: [backend/services/hostname-blocking/README.md](../../overview/architecture/services/hostname-blocking/README.md)
 - API docs: [backend/api/v1/hostnames/README.md](../../../backend/api/v1/hostnames/README.md)
-- Vote integrity: [backend/services/vote-integrity/README.md](../../../backend/services/vote-integrity/README.md)
+- Vote integrity: [backend/services/vote-integrity/README.md](../../overview/architecture/services/vote-integrity/README.md)

@@ -138,6 +138,6 @@ Blocking a user implicitly removes any active follow on that user.
 
 ## Related
 
-- [post](./post.md) — posts authored by this user
-- [community](./community.md) — communities the user belongs to
-- [referral-link](./referral-link.md) — referral links owned by this user
+- [post](post.md) — posts authored by this user
+- [community](community.md) — communities the user belongs to
+- [referral-link](referral-link.md) — referral links owned by this user

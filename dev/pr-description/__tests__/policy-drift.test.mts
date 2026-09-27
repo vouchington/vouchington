@@ -142,7 +142,10 @@ describe('PR lifecycle policy drift', () => {
     const root = readFileSync('AGENTS.md', 'utf8')
     const gettingStarted = readFileSync('docs/development/README.md', 'utf8')
     const backendSetup = readFileSync('docs/development/BACKEND-SETUP.md', 'utf8')
-    const humanStarting = readFileSync('dev/reference-starting-services.md', 'utf8')
+    const humanStarting = readFileSync(
+      'docs/development/local-development/reference-starting-services.md',
+      'utf8',
+    )
     expect(start).toContain('git worktree add')
     expect(start).toContain('mktemp -d')
     expect(start).toContain('./dev/teardown --yes --remove')

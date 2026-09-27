@@ -10,7 +10,7 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'AWS_RESPONSE_CHECKSUM_VALIDATION',
   // Git commit identity — consumed by git directly, not by TypeScript code.
   // Set in commit-creating workflows such as pnpm-dedupe.
-  // Enforced pattern documented in .github/workflows/AUTHORING.md § Fixed-Branch Automation PRs.
+  // Enforced pattern documented in docs/development/ci/workflows/AUTHORING.md § Fixed-Branch Automation PRs.
   'GIT_AUTHOR_EMAIL',
   'GIT_AUTHOR_NAME',
   'GIT_COMMITTER_EMAIL',

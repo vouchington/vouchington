@@ -36,7 +36,7 @@ design choices:
   **Shipped** (C5): `cloudflare-worker/src/routing.mts` forwards these prefixes to the backend, with a
   dedicated routing integration test.
 - Remote HTTP-signature keys use a fixed two-window cache policy. **Shipped** (C2): the
-  [remote-actor cache service](../../../backend/services/remote-actors/README.md) treats a key younger
+  [remote-actor cache service](services/remote-actors/README.md) treats a key younger
   than one hour as fresh; from one hour through less than seven days, transport and non-2xx refresh
   failures may use the cached key without changing `fetched_at`; at seven days a successful refresh
   is mandatory. Only typed transport/non-2xx availability errors, bounded DNS-resolution
@@ -85,7 +85,7 @@ reverifying; an inactive checkpointed actor is a terminal rejection without netw
 applies the sender limit once through a per-delivery Valkey decision preserved for the active
 window. A closed typed lifecycle facade owns every timestamp transition and fencing-token rotation;
 the canonical state model is documented in
-[`backend/services/ap-inbox-activities/README.md`](../../../backend/services/ap-inbox-activities/README.md#durable-delivery-lifecycle).
+[`backend/services/ap-inbox-activities/README.md`](services/ap-inbox-activities/README.md#durable-delivery-lifecycle).
 The activity-id reservation, core database effect, and fenced envelope completion commit in one
 transaction. Duplicate Follow recovery performs its guarded relation replay in that transaction,
 while only the Accept enqueue is post-commit. A five-minute reconciler recovers lost or stale jobs;

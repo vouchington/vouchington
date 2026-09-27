@@ -1,6 +1,6 @@
 # Feed Components
 
-Agent rules for [`web/components/feed/`](./). Layout contracts and call-site narrative live in
+Agent rules for [`web/components/feed/`](.). Layout contracts and call-site narrative live in
 [NEWS-DISCUSSIONS.md § News Item Cards](../../../docs/requirements/content/NEWS-DISCUSSIONS.md#news-item-cards).
 
 ## Rules

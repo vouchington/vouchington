@@ -148,4 +148,4 @@ Allow users to add links to their profile:
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
-- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](./ACCOUNT-DELETION-DATA-REQUEST.md)
+- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](ACCOUNT-DELETION-DATA-REQUEST.md)

@@ -64,7 +64,7 @@ flowchart TD
   scope. For News Feed, the community's active RSS feed and topic lists replace the viewer's followed
   source/topic scope. The dropdown is populated from communities the viewer is an active member of
   or proxy-follows and only includes communities that can source the selected feed.
-- **RSS suppression (global feed only)**: Items whose every source feed is globally suppressed — either by admin flag or because the owning topic's `votes_score_net` is below the global threshold — are hidden from the global feed. Personal feeds are **not** filtered this way: users who follow a suppressed feed still see items in their personal feed. See [Admin Suppression](../../../backend/services/rss-feeds/README.md) for threshold configuration.
+- **RSS suppression (global feed only)**: Items whose every source feed is globally suppressed — either by admin flag or because the owning topic's `votes_score_net` is below the global threshold — are hidden from the global feed. Personal feeds are **not** filtered this way: users who follow a suppressed feed still see items in their personal feed. See [Admin Suppression](services/rss-feeds/README.md) for threshold configuration.
 
 ## Share Actions
 
@@ -85,7 +85,7 @@ share because the share cutoff uses delivery time rather than target creation ti
 ## Post Feed Sort Options
 
 - `sort=new` (default) — chronological descending. Cursor encodes `{ timestamp: number, id: string }`.
-- `sort=hot` — exponential time-decay ranking with a 3-day half-life. Higher-scored recent posts rank above older high-score posts. Cursor encodes `{ score: number, id: string }`. Search, feeds, and trending posts share the canonical [hot-score builder](../../../backend/modules/feed-query-builders/README.md#hot-score), including its future-timestamp handling.
+- `sort=hot` — exponential time-decay ranking with a 3-day half-life. Higher-scored recent posts rank above older high-score posts. Cursor encodes `{ score: number, id: string }`. Search, feeds, and trending posts share the canonical [hot-score builder](backend/modules/feed-query-builders/README.md#hot-score), including its future-timestamp handling.
 
 ## Pagination
 
@@ -109,10 +109,10 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 
 - Feed queries generate 600+ plan nodes due to CTE chains, broadcast/privacy subqueries, and partition scans.
 - PostgreSQL JIT compilation can dominate execution time at these plan sizes (JIT is disabled during profiling).
-- `relation__user__*` tables use plain B-tree indexes, so privacy filter lookups hit a single index scan. They were previously hash-partitioned (HASH partitioning is now forbidden repo-wide) and de-partitioned after this caused broadcast checks to fan out across all 8 partitions — see [entity-relations.md](entity-relations.md#table-structure), [partitioning-strategy.md](partitioning-strategy.md), and the measured incident in [feeds/README.md#performance](../../../backend/services/feeds/README.md#performance).
+- `relation__user__*` tables use plain B-tree indexes, so privacy filter lookups hit a single index scan. They were previously hash-partitioned (HASH partitioning is now forbidden repo-wide) and de-partitioned after this caused broadcast checks to fan out across all 8 partitions — see [entity-relations.md](entity-relations.md#table-structure), [partitioning-strategy.md](partitioning-strategy.md), and the measured incident in [feeds/README.md#performance](services/feeds/README.md#performance).
 - The post feed composes viewer-aware publication eligibility once per candidate and resolved root.
 - Post feeds reuse one eligibility builder for direct candidates and distinct share targets; the
-  [EXPLAIN gates](../../../backend/scripts/explain-analyze/README.md) bound target probes and
+  [EXPLAIN gates](../../development/postgresql/explain-analyze/README.md) bound target probes and
   reject delivery joins that repeatedly rescan the eligible-target spool.
 - RSS feed pagination uses the `LIMIT + 1` pattern instead of a full-window row count so `has_next_page` does not require counting the full candidate set.
 
@@ -120,15 +120,15 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 
 RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The `@story-teller` agent decides whether to cluster using heuristics (e.g., rumors ≠ announcements). Eligibility filters run before selecting one direct representative: official first, then highest vote score, then ID. Share deliveries remain independent events. The resulting canonical rows are cursor-filtered and paginated, so a story cannot recur on a later page. See [stories.md](../../requirements/content/stories.md) for full details.
 
-The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) uses `DISTINCT ON (story_id)` over the materialized eligible cohort. An official item that fails a request filter cannot displace an eligible sibling; a deleted story does not confer official priority. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../../backend/scripts/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
+The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) uses `DISTINCT ON (story_id)` over the materialized eligible cohort. An official item that fails a request filter cannot displace an eligible sibling; a deleted story does not confer official priority. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../development/postgresql/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
 
 ## Related Services
 
-- [backend/services/feeds/README.md](../../../backend/services/feeds/README.md) -- feed query logic and share actions
-- [backend/modules/feed-query-builders/README.md](../../../backend/modules/feed-query-builders/README.md) -- shared visibility, filtering, and hot-score SQL fragments
+- [backend/services/feeds/README.md](services/feeds/README.md) -- feed query logic and share actions
+- [backend/modules/feed-query-builders/README.md](backend/modules/feed-query-builders/README.md) -- shared visibility, filtering, and hot-score SQL fragments
 - `backend/services/posts/privacy-filter.mts` -- generic `buildPrivacyFilter` SQL builder
-- [backend/services/entity-relations/README.md](../../../backend/services/entity-relations/README.md) -- follow/mute/block relationships that drive feed filtering
-- [backend/api/v1/feeds/README.md](../../../backend/api/v1/feeds/README.md) -- API route handlers
+- [backend/services/entity-relations/README.md](services/entity-relations/README.md) -- follow/mute/block relationships that drive feed filtering
+- [backend/api/v1/feeds/README.md](../../requirements/api/v1/feeds/README.md) -- API route handlers
 - [docs/requirements/community/community-lists.md](../../requirements/community/community-lists.md) -- community list feed scopes
 - [Backend rules](../../../backend/AGENTS.md) -- pagination, transaction, and service conventions
 - [Web rules](../../../web/AGENTS.md) -- feed list components and infinite-scroll patterns

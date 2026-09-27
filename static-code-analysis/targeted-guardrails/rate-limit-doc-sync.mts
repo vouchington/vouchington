@@ -1,5 +1,6 @@
 export const RATE_LIMIT_SOURCE_FILE = 'cloudflare-worker/src/types.mts'
-export const RATE_LIMIT_DOC_FILE = 'cloudflare-worker/reference-rate-limiting.md'
+export const RATE_LIMIT_DOC_FILE =
+  'docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md'
 
 const RATE_LIMIT_BINDING_RE = /^\s*(RATE_LIMITER_[A-Z0-9_]+)\??:/gm
 // Exact backticked mentions anywhere in the reference are enough for this guard; table

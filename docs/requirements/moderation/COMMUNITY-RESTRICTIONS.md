@@ -38,4 +38,4 @@ stateDiagram-v2
 3. Suggestions can propose restrictions, but activation remains a moderator action.
 4. Moderator lifts the restriction or it expires.
 
-See also: `backend/services/communities/restrictions/README.md`, [Modlog](./MODLOG.md).
+See also: `backend/services/communities/restrictions/README.md`, [Modlog](MODLOG.md).

@@ -415,8 +415,8 @@ rules:
       - '**/__testcases__/**/*.md'
     options:
       rootFilenames: [AGENTS.md]
-      indexFilenames: [README.md]
-      maxDepth: 2
+      indexFilenames: [README.md, SCHEDULED.md]
+      maxDepth: 3
 
   - name: scheduled job manifests are registered in the API catalog
     rule: required-entrypoint-reachability

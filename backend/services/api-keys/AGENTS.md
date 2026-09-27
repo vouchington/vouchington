@@ -17,3 +17,7 @@ Requirements: [../../../docs/requirements/users/api-keys.md](../../../docs/requi
 - Parent services: [../AGENTS.md](../AGENTS.md)
 - Requirements: [../../../docs/requirements/users/api-keys.md](../../../docs/requirements/users/api-keys.md)
 - Service reference: [README.md](README.md)
+
+## Relocated reference navigation
+
+- [README.md](../../../docs/overview/architecture/services/api-keys/README.md)

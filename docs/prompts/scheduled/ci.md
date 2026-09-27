@@ -27,7 +27,7 @@ Review the latest CI runs. Pick exactly one concrete, bounded improvement that i
   The sweep cadence means this is not a grace period measured from cancellation: eligibility is based
   on the artifact's `created_at`, and deletion waits for the next sweep. Account for classification,
   producing workflow, and conclusion when estimating storage cost. Preserve the detailed rerun
-  contract in [Artifact Rerun Safety](../../../.github/workflows/reference-artifact-rerun-safety.md)
+  contract in [Artifact Rerun Safety](../../development/ci/workflows/reference-artifact-rerun-safety.md)
   instead of restating it in a workflow change.
 
 - A new or renamed artifact name must land deliberately in the `keep` or `delete` list in
@@ -48,7 +48,7 @@ Review the latest CI runs. Pick exactly one concrete, bounded improvement that i
   (e.g. `parse as load` for the `yaml` package). Prefer extending or reusing that existing idiom;
   only introduce new machinery when the existing idiom is demonstrably insufficient, and state why.
 - Preserve the rerun-safety contract from
-  [Artifact Rerun Safety](../../../.github/workflows/reference-artifact-rerun-safety.md)
+  [Artifact Rerun Safety](../../development/ci/workflows/reference-artifact-rerun-safety.md)
   (`overwrite: true`, sweep only `success`/`cancelled`-concluded runs, never `failure`) — extend it,
   do not restate its rules inline.
 - Use `pnpm run ci:topology --format json` or `--format mermaid` when a change depends on

@@ -145,8 +145,8 @@ Accessible from the intent sidebars (requires auth).
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
-- [My API import/export contract](../../../backend/api/v1/my/reference-post-api-v1-my-import-rss-feeds.md)
-- [User import/export service](../../../backend/services/user-import-export/README.md)
+- [My API import/export contract](../api/v1/my/reference-post-api-v1-my-import-rss-feeds.md)
+- [User import/export service](../../overview/architecture/services/user-import-export/README.md)
 - [Native client architecture](../../overview/architecture/native-clients.md)
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)

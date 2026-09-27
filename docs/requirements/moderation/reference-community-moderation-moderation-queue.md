@@ -33,11 +33,11 @@ This happens asynchronously (fire-and-forget) after the membership removal.
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
-- [Moderation Flows](./MODERATION-FLOWS.md) — full end-to-end moderation pipeline including global clearance and site-wide LLM agents
+- [Moderation Flows](MODERATION-FLOWS.md) — full end-to-end moderation pipeline including global clearance and site-wide LLM agents
 
-- Service: [backend/services/community-agent-prompts/README.md](../../../backend/services/community-agent-prompts/README.md)
+- Service: [backend/services/community-agent-prompts/README.md](../../overview/architecture/services/community-agent-prompts/README.md)
 - Agent runner: `backend/agents/community-moderation/run.mts`
-- Queue system: [backend/queues/ai-agents/README.md](../../../backend/queues/ai-agents/README.md)
+- Queue system: [backend/queues/ai-agents/README.md](../../overview/architecture/queues/ai-agents/README.md)
 - API routes: `backend/api/v1/communities/agent-prompts.mts`, `backend/api/v1/communities/moderation-results.mts`
-- OpenAI moderation storage: [backend/services/openai-moderation/README.md](../../../backend/services/openai-moderation/README.md)
+- OpenAI moderation storage: [backend/services/openai-moderation/README.md](../../overview/architecture/services/openai-moderation/README.md)
 - Slot limits: [memberships.md](../users/memberships.md#refunds-renewal-notifications-admin-grants-feature-flag-and-agent-prompt-slots)

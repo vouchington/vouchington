@@ -92,7 +92,7 @@ Consent uses a reviewed display name only when the exact document URL is in
 apply the same reviewed-name-or-hostname policy instead of exposing a document's mutable name.
 
 Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
-([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
+([Admin API](../api/v1/admin/README.md)). Verification records `verified_at` and
 `verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
 redirect URIs the administrator reviewed, so an owner's rename or re-pointing between review and
 approval returns 409 instead of verifying what staff never saw. The staff UI refreshes that
@@ -194,6 +194,6 @@ The MCP routes accept an OAuth access token or an MCP API key as the bearer cred
 ## Related
 
 - [Authentication architecture](../../overview/architecture/auth-overview.md)
-- [Security requirements](./SECURITY.md)
-- [API routes](../../../backend/api/oauth/README.md)
-- [Authorization-server service](../../../backend/services/oauth-authorization-server/README.md)
+- [Security requirements](SECURITY.md)
+- [API routes](../api/oauth/README.md)
+- [Authorization-server service](../../overview/architecture/services/oauth-authorization-server/README.md)

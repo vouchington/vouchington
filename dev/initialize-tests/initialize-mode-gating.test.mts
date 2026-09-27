@@ -11,7 +11,7 @@ const MODES = ['monorepo', 'backend', 'web'] as const
 // Functions that must run only for the strictly-web rung, never for a bare
 // `mode_at_least "$MODE" backend` match. Each is expected to appear as a call
 // site exactly once, nested inside a `[ "$MODE" = web ]` guard — see
-// dev/reference-initialization-modes.md's ladder description.
+// docs/development/local-development/reference-initialization-modes.md's ladder description.
 const WEB_ONLY_CALLS = [
   'clear_dev_caches',
   'validate_s3_credentials',

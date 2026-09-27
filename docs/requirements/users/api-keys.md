@@ -59,7 +59,7 @@ keys. Each client resolves those keys through its typed localization catalogue i
 the audience label or rendering server-owned English copy. Web and native pickers consume this
 catalogue rather than hard-coding scope strings; see the
 [client parity matrix](../CLIENT-PARITY-MATRIX.md#api-key-and-connected-app-contract-handoff).
-See the [Scopes API](../../../backend/api/v1/scopes/README.md).
+See the [Scopes API](../api/v1/scopes/README.md).
 
 MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can only be created by administrators.
 The own-private relation capability is visible as a separate picker permission, not part of Standard
@@ -162,7 +162,7 @@ Append `apikey=YOUR_KEY` to the query string:
 
 ## Related
 
-- [backend/services/api-keys/README.md](../../../backend/services/api-keys/README.md) — service implementation and key hashing
+- [backend/services/api-keys/README.md](../../overview/architecture/services/api-keys/README.md) — service implementation and key hashing
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [Backend rules](../../../backend/AGENTS.md) — workspace service and API conventions
 - [API keys service rules](../../../backend/services/api-keys/AGENTS.md) — service-specific coding rules

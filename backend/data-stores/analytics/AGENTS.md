@@ -12,7 +12,11 @@ Architecture and environment variables: [../../../docs/overview/architecture/ana
 
 ## See Also
 
-- Typed emit wrappers: [`../../services/analytics/`](../../services/analytics/)
+- Typed emit wrappers: [`../../services/analytics/`](../../services/analytics)
 - Graceful shutdown: [../../../docs/overview/architecture/graceful-shutdown.md](../../../docs/overview/architecture/graceful-shutdown.md)
 - Analytics pipeline: [../../../docs/overview/architecture/analytics-pipeline.md](../../../docs/overview/architecture/analytics-pipeline.md)
 - Backend context: [../../AGENTS.md](../../AGENTS.md)
+
+## Relocated reference navigation
+
+- [README.md](../../../docs/overview/architecture/backend/data-stores/analytics/README.md)

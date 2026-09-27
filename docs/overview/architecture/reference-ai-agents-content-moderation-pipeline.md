@@ -88,4 +88,4 @@ Moderators are config-driven (database records), not code-driven. New moderators
 `ai-generated` currently uses the local Rust `is-it-slop` detector rather than an
 OpenAI call. Its confidence score and threshold are stored in `agent_moderations.results`.
 
-Full flow details: [backend/queues/ai-agents/README.md](../../../backend/queues/ai-agents/README.md)
+Full flow details: [backend/queues/ai-agents/README.md](queues/ai-agents/README.md)

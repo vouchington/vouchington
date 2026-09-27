@@ -1,6 +1,6 @@
 # Privacy Settings
 
-Users can control who sees their activity and profile data through granular audience-based privacy settings. The cross-feature coverage source of truth is the [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md).
+Users can control who sees their activity and profile data through granular audience-based privacy settings. The cross-feature coverage source of truth is the [User Privacy Feature Matrix](USER-PRIVACY-MATRIX.md).
 
 ## Always-Public Data
 
@@ -55,7 +55,7 @@ surfaces remain owner/admin-only unless a separate product change adds public pr
   proxy follows, proxy mutes, and recently viewed history are private to the owner and admins for
   viewing. Only the owner gets relation action buttons because relation mutations act on the
   signed-in user's own bookmarks.
-  See [User Relation Matrix](./USER-RELATION-MATRIX.md).
+  See [User Relation Matrix](USER-RELATION-MATRIX.md).
 - **Follow-context (votes)**: Users with `likes_visibility` set to a restrictive level are excluded from follow-context vote results for unauthorized viewers
 - **Follow-context (topic follows)**: Users with `topic_follows_visibility` set to a restrictive level are excluded from follow-context topic results for unauthorized viewers
 - **Community memberships**: Community member rosters enforce each regular member's
@@ -77,8 +77,8 @@ Administrators can always view all user content regardless of privacy settings.
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
-- [User Relation Matrix](./USER-RELATION-MATRIX.md)
-- [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
+- [User Relation Matrix](USER-RELATION-MATRIX.md)
+- [User Privacy Feature Matrix](USER-PRIVACY-MATRIX.md)
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
-- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](./ACCOUNT-DELETION-DATA-REQUEST.md)
+- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](ACCOUNT-DELETION-DATA-REQUEST.md)

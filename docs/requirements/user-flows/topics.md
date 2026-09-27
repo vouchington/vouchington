@@ -1,6 +1,6 @@
 # Topics — User Flow Matrix
 
-[← User Flows](./README.md)
+[← User Flows](README.md)
 
 Authorization: all management (create / edit / merge / aliases / domains) is **admin-only** (`requireAdmin()`, `TOPICS.md:5`). SM has no elevated topic powers. Delete is intentionally unsupported — merge instead.
 

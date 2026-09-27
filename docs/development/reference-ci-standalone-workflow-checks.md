@@ -64,7 +64,7 @@ organization-wide `HARNESS_TARGET` and `HARNESS_FALLBACKS` variables — rather 
 lookup: _which_ provider or command to route to is fixed by these variables, not decided
 dynamically per request. (A name-based `HARNESS_TARGET`/`HARNESS_FALLBACKS` value is still resolved
 to an id via a runtime catalog call — see
-[`reference-harness-automation.md`](../../.github/workflows/reference-harness-automation.md) — but
+[`reference-harness-automation.md`](ci/workflows/reference-harness-automation.md) — but
 that resolves the name string the variables already contain, it doesn't choose the route.) The
 client races each request against a bounded timeout (30s default, capped at 300s) and
 raises a typed `AutoHarnessError`/`AutoHarnessRequestTimeoutError` on failure; it does not itself
@@ -128,7 +128,7 @@ The selected provider runs on a trusted host with repository-scoped git and `gh`
 Prompts treat GitHub content as untrusted evidence, revalidate authorization and exact target state
 immediately before mutation, use exact branch leases, and prohibit merge and auto-merge. The
 complete contract and accepted residual risk are in
-[Auto Harness automation security boundary](../../.github/workflows/reference-harness-automation-accepted-risk.md).
+[Auto Harness automation security boundary](ci/workflows/reference-harness-automation-accepted-risk.md).
 
 Interactive Codex tooling and Codex Cloud Security remain intentionally provider-specific and are
 not part of repository automation dispatch.

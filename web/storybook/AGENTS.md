@@ -10,3 +10,7 @@ commands and the CI runbook.
 
 - CI-failure diagnosis runbook and key files reference: [README.md](README.md)
 - Web-wide rules: [../AGENTS.md](../AGENTS.md)
+
+## Relocated reference navigation
+
+- [README.md](../../docs/development/testing/storybook/README.md)

@@ -26,4 +26,4 @@ Each row stores an actor, action type, optional community/post/user/report/dispu
 - Reports: `resolve_report`, `dismiss_report`
 - Platform enforcement: `suspend`, `unsuspend`, `tag`
 
-See also: [Moderation System Users](./MODERATION-SYSTEM-USERS.md).
+See also: [Moderation System Users](MODERATION-SYSTEM-USERS.md).

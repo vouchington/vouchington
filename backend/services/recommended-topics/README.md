@@ -1,15 +1,3 @@
 # @services/recommended-topics
 
-Generates personalized topic recommendations for users based on configurable search options.
-
-## Key exports
-
-- `getRecommendations(currentUserId, options): Promise<RecommendedTopicsResponse>` — returns a list of recommended topics
-- `RecommendedTopicsResponse` — `{ results: RecommendedTopicResult[], page_info }`
-- `RecommendedTopicResult` — the topic object with a recommendation score
-- `RecommendedTopicsOptions` / `RecommendedTopicsSearchOptions` — option types
-
-## Related
-
-- Parent: [../AGENTS.md](../AGENTS.md)
-- Topics service: [../topics/README.md](../topics/README.md)
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/recommended-topics/README.md).

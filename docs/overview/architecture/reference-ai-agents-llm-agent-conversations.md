@@ -77,7 +77,7 @@ an unrelated error, or any already-emitted text/tool/subagent event prevents rec
 OpenAI's documented recovery semantics while avoiding duplicate output or tool execution; see the
 [conversation-state guide](https://developers.openai.com/api/docs/guides/conversation-state), the
 [data-retention policy](https://developers.openai.com/api/docs/guides/your-data#default-usage-policies-by-endpoint),
-and the [chat agent implementation guide](../../../backend/agents/chat/README.md#openai-continuation-recovery).
+and the [chat agent implementation guide](ai-agents/chat/README.md#openai-continuation-recovery).
 
 Native clients can default to local device models when supported. Those responses are generated on
 device, then persisted through `POST /api/v1/conversations/:conversationId/client-generated-chat`

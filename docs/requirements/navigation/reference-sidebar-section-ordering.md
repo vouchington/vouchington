@@ -42,6 +42,6 @@ These pages remain accessible via their URLs and through the `/topics` page filt
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)
+- [docs/requirements/navigation/ACCESSIBILITY.md](ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - [Admin Navigation Matrix](../ADMIN-NAVIGATION-MATRIX.md) — admin entity pages, actions, and navigation paths
