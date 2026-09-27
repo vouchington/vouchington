@@ -56251,6 +56251,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_oauth_clients__verified_active_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_clients__verified_active_id ON public.oauth_clients USING btree (id DESC) WHERE ((metadata_url IS NULL) AND (revoked_at IS NULL) AND (verified_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((metadata_url IS NULL) AND (revoked_at IS NULL) AND (verified_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_oauth_clients__verified_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
