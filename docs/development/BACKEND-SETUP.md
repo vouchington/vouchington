@@ -75,7 +75,7 @@ If a PostgreSQL view change cannot be applied with `CREATE OR REPLACE VIEW` alon
 pnpm --dir backend db:migrate -- --forced
 ```
 
-That forced mode drops all managed ordinary and materialized views first, then recreates them from `backend/data-stores/psql/views/` in dependency-safe passes. It uses restricted drops, so an unmanaged dependent stops the rebuild instead of being removed.
+That forced mode drops all managed ordinary and materialized views first, then recreates them from `backend/data-stores/psql/views/` in dependency-safe passes. Its restricted teardown is atomic, so an unmanaged dependent stops the rebuild without removing managed objects.
 
 For browser push notifications, `./dev/initialize web` reuses `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, and `WEB_PUSH_SUBJECT` from `~/voucha.env` when present. Otherwise it generates a local VAPID keypair automatically and defaults `WEB_PUSH_SUBJECT` to `mailto:team@voucha.ai`. The subject is the app/operator contact URI, not the user receiving a notification.
 

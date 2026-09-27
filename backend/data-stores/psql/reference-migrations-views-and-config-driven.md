@@ -18,8 +18,8 @@ grows (entity relations, partitions, seed topics, seed agents).
 
 Forced view rebuilding drops only the managed ordinary and materialized declarations with PostgreSQL's
 default `RESTRICT` behavior. The runner retries dependency failures after another managed drop makes
-progress, then recreates the files in dependency-safe passes. It never uses `CASCADE`, so an unmanaged
-dependent blocks the rebuild instead of being removed.
+progress, then recreates the files in dependency-safe passes. Its teardown is one server-side command,
+so an unmanaged dependent blocks the rebuild without removing any managed object. It never uses `CASCADE`.
 
 Voucha has not launched. Add columns in the owning migration's original `CREATE TABLE`, then
 rebuild disposable databases, including staging through its operator runbook. Do not add a forward

@@ -10,16 +10,24 @@ export type ForcedViewGraph = {
   unmanagedView: string
 }
 
-export function createForcedViewGraph(): ForcedViewGraph {
+export function createForcedViewGraph({
+  quoted = false,
+}: { quoted?: boolean } = {}): ForcedViewGraph {
   const suffix = randomUUID().replaceAll('-', '')
+  const name = (kind: string) =>
+    quoted ? quoteIdentifier(`fv'\\$tag$-${kind}-${suffix}`) : `forced_${kind}_${suffix}`
   return {
-    baseTable: `forced_base_${suffix}`,
-    baseView: `forced_base_view_${suffix}`,
-    dependentView: `forced_dependent_${suffix}`,
-    materializedView: `forced_materialized_${suffix}`,
-    materializedIndex: `forced_index_${suffix}`,
-    unmanagedView: `forced_unmanaged_${suffix}`,
+    baseTable: name('base'),
+    baseView: name('base_view'),
+    dependentView: name('dependent'),
+    materializedView: name('materialized'),
+    materializedIndex: name('index'),
+    unmanagedView: name('unmanaged'),
   }
+}
+
+function quoteIdentifier(identifier: string): string {
+  return `"${identifier.replaceAll('"', '""')}"`
 }
 
 export async function createForcedViewGraphBase(graph: ForcedViewGraph): Promise<void> {
