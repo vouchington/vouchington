@@ -106,8 +106,10 @@ test.describe('News Page', () => {
     await resetAnonymousBrowserStateBeforeNavigation(page, ['feed-style'])
     await navigateTo(page, '/news?topics=doctor-of-credit-news')
 
-    // Toggle must be visible to anonymous users
-    await expect(page.getByTestId('feed-view-toggle-trigger')).toBeVisible()
+    // The shared feed trigger waits for hydration before its first pointer interaction.
+    const feedViewToggle = page.getByTestId('feed-view-toggle-trigger')
+    await expect(feedViewToggle).toBeVisible()
+    await expect(feedViewToggle).toBeEnabled()
 
     // In summary (card) mode seeded articles with excerpts should show excerpt text
     await expect
@@ -117,12 +119,12 @@ test.describe('News Page', () => {
       .toBeGreaterThan(0)
 
     // Switch to compact — excerpts should disappear
-    await page.getByTestId('feed-view-toggle-trigger').click()
+    await feedViewToggle.click()
     await page.getByTestId('feed-view-toggle-compact').click()
     await expect(page.getByTestId('news-item-excerpt')).toHaveCount(0)
 
     // Switch back to card — excerpts should reappear (option value is 'summary')
-    await page.getByTestId('feed-view-toggle-trigger').click()
+    await feedViewToggle.click()
     await page.getByTestId('feed-view-toggle-summary').click()
     await expect.poll(() => page.getByTestId('news-item-excerpt').count()).toBeGreaterThan(0)
   })
