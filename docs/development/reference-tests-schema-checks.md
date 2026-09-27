@@ -59,12 +59,6 @@ migration, config-driven schema generator, view, schema-growth input, snapshot c
 or committed `schema.json` changes. This ordering matters because snapshot-backed repository guards
 read the committed artifact before the database-backed phase verifies it against PostgreSQL 18.
 
-Immediately after the snapshot check, `tests-postgres-schema.yml` runs
-`pnpm run db:check-index-renames`, comparing the committed snapshot at `git merge-base(<PR base>,
-HEAD)` against HEAD to catch an index renamed in source (old name dropped, new name added) whose
-already-migrated old-named index is never dropped from a live database. Reproduce locally with
-`pnpm run db:check-index-renames` (no database needed, but the repository must not be a shallow
-clone — see the checkout step in `tests-postgres-schema.yml`). See
-[schema-snapshot/README.md § Cross-Revision Index-Rename Detection](../../backend/data-stores/psql/schema-snapshot/README.md#cross-revision-index-rename-detection)
-and [postgres-schema-rules.md § Renaming a deployed index requires an explicit drop](postgres-schema-rules.md#renaming-a-deployed-index-requires-an-explicit-drop)
-for what it catches, the remediation, and its scope limits.
+The schema snapshot and PostgreSQL catalog checks verify the current index definitions on a fresh
+database. Prelaunch index changes belong in their canonical creators; there is no cross-revision
+index-rename deployment check.

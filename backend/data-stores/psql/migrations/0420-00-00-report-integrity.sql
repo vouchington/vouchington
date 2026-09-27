@@ -133,3 +133,8 @@ COMMENT ON COLUMN report_abuse_penalties.reason IS 'Human-readable explanation o
 COMMENT ON COLUMN report_abuse_penalties.source_flag_id IS 'The report integrity flag that triggered this penalty.';
 COMMENT ON COLUMN report_abuse_penalties.revoked_at IS 'When the penalty was revoked.';
 COMMENT ON COLUMN report_abuse_penalties.revoked_by_id IS 'Moderator who revoked the penalty.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__user_id
+  ON report_abuse_penalties (user_id)
+  WHERE user_id IS NOT NULL;

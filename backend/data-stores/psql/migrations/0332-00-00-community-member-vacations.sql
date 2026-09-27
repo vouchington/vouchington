@@ -15,3 +15,8 @@ COMMENT ON COLUMN community_member_vacations.community_id IS 'The community this
 COMMENT ON COLUMN community_member_vacations.user_id IS 'The moderator on vacation.';
 COMMENT ON COLUMN community_member_vacations.starts_at IS 'When this vacation period began. Reset to now() on each upsert (re-enable resets the clock).';
 COMMENT ON COLUMN community_member_vacations.ends_at IS 'When this vacation ends. NULL means indefinite (until explicitly cleared).';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_community_member_vacations__user_id
+  ON community_member_vacations (user_id)
+  WHERE user_id IS NOT NULL;

@@ -140,31 +140,8 @@ they stay in `extraGeneratedColumns`.
 
 Tracked by #7359.
 
-## Renaming a deployed index requires an explicit drop
-
-An index renamed in generator/migration source (old name deleted, new name added) is not the same as
-dropping it: a generator's per-index `DROP INDEX IF EXISTS <name>` only ever names indexes present in
-_current_ source, so an already-migrated database keeps the old-named index forever — a duplicate
-that costs write throughput and disk with nothing left to report it. `postgres-redundant-index` cannot
-catch this: it only compares indexes that both exist **right now**, and the retired one no longer
-does.
-
-`check-index-renames.mts` (`pnpm run db:check-index-renames`, wired into `tests-postgres-schema.yml`)
-closes this gap by comparing the committed schema snapshot at `git merge-base(<base>, HEAD)` against
-HEAD: a retired index name whose _shape_ — the `pg_get_indexdef` text minus the name — reappears
-under a new name on the same table is flagged as an unacknowledged rename unless this branch also
-adds a migration with `DROP INDEX [CONCURRENTLY] IF EXISTS <old name>` (the same remediation
-`backend/data-stores/psql/CLAUDE.md` already sanctions for deployed indexes), or the retired name is
-added to `retired-index-allowlist.mts` for a genuine false positive (e.g. a PRIMARY KEY/UNIQUE
-constraint reshuffle rendering as a rename with no drop of its own). See
-[schema-snapshot/README.md § Cross-Revision Index-Rename Detection](../../backend/data-stores/psql/schema-snapshot/README.md#cross-revision-index-rename-detection)
-for the full scope, including what it deliberately does not catch (a rename that also changes shape,
-and orphans already live before this check existed).
-
-Tracked by #8697.
-
 ## Related
 
 - [backend/data-stores/psql/CLAUDE.md](../../backend/data-stores/psql/CLAUDE.md) — authoritative schema rules
 - [Partitioning strategy](../overview/architecture/partitioning-strategy.md)
-- [Schema Checks](reference-tests-schema-checks.md) — CI enforcement for the schema snapshot and index-rename checks
+- [Schema Checks](reference-tests-schema-checks.md) — CI enforcement for the schema snapshot

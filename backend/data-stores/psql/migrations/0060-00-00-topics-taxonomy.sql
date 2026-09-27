@@ -48,6 +48,14 @@ CREATE TABLE IF NOT EXISTS topics (
 
   votes_snapshot_xmax XID8,
   votes_snapshot_xip_count INTEGER,
+  votes_score_up DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_topics_votes_score_up CHECK (votes_score_up >= 0),
+  votes_score_none DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_topics_votes_score_none CHECK (votes_score_none >= 0),
+  votes_score_down DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_topics_votes_score_down CHECK (votes_score_down >= 0),
+  votes_count_up INT NOT NULL DEFAULT 0 CONSTRAINT chk_topics_votes_count_up CHECK (votes_count_up >= 0),
+  votes_count_none INT NOT NULL DEFAULT 0 CONSTRAINT chk_topics_votes_count_none CHECK (votes_count_none >= 0),
+  votes_count_down INT NOT NULL DEFAULT 0 CONSTRAINT chk_topics_votes_count_down CHECK (votes_count_down >= 0),
+  votes_score_sort DOUBLE PRECISION GENERATED ALWAYS AS (fn_wilson_score_lower_bound(votes_score_up, votes_score_up + votes_score_none + votes_score_down)) STORED,
+  votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (votes_score_up - votes_score_down) STORED,
   CONSTRAINT chk_topics_votes_snapshot_complete CHECK (
     (votes_snapshot_xmax IS NULL AND votes_snapshot_xip_count IS NULL)
     OR (votes_snapshot_xmax IS NOT NULL AND votes_snapshot_xip_count IS NOT NULL AND votes_snapshot_xip_count >= 0)

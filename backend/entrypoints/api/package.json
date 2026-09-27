@@ -35,7 +35,6 @@
     "@services/bluesky-accounts": "workspace:^",
     "@services/bluesky-follows": "workspace:^",
     "@services/captcha": "workspace:^",
-    "@services/elections-votes": "workspace:^",
     "@services/entity-listener-reconciliation": "workspace:^",
     "@services/entity-relation-actions": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
@@ -52,9 +51,6 @@
     "glide-mq": "^0.15.5"
   },
   "devDependencies": {
-    "@services/entity-cache": "workspace:^",
-    "@services/entity-fetch": "workspace:^",
-    "@services/topics": "workspace:^",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",
     "@voucha/test-helpers": "workspace:^",

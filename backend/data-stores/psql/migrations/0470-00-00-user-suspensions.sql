@@ -38,3 +38,8 @@ ALTER TABLE moderation_appeals
 
 ALTER TABLE moderation_appeals
   VALIDATE CONSTRAINT fk_moderation_appeals__user_suspension_id;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_user_suspensions__user_id
+  ON user_suspensions (user_id)
+  WHERE user_id IS NOT NULL;

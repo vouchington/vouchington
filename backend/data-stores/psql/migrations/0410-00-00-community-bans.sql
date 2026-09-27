@@ -39,3 +39,12 @@ COMMENT ON COLUMN community_bans.expires_at IS 'When the ban expires. NULL means
 COMMENT ON COLUMN community_bans.lifted_at IS 'When a moderator manually lifted the ban early. NULL means the ban was never manually lifted (it may still be active, or may have expired naturally via expires_at).';
 COMMENT ON COLUMN community_bans.lifted_by_id IS 'Who lifted the ban early.';
 COMMENT ON COLUMN community_bans.case_id IS 'The moderation case this ban belongs to.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_community_bans__community_id
+  ON community_bans (community_id)
+  WHERE community_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_community_bans__user_id
+  ON community_bans (user_id)
+  WHERE user_id IS NOT NULL;

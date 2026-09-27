@@ -8,7 +8,6 @@ import {
   hasStructuralDdl,
   isAlwaysForbiddenDrop,
   isDestructiveAlterTable,
-  isMixedAlterTableStatement,
   isRepairAlterTable,
   isSelectIntoTableCreation,
   isUnclassifiedCreateDdl,
@@ -124,6 +123,9 @@ function findFirstStatementViolation(
     if (isUnclassifiedCreateDdl(ddlStatement)) {
       return 'config-driven generators must not emit unclassified CREATE DDL'
     }
+    if (/\bALTER\s+TABLE\b[\s\S]*?\bADD\s+(?:COLUMN\b|IF\s+NOT\s+EXISTS\b)/is.test(ddlStatement)) {
+      return 'config-driven generators must not emit ALTER TABLE ADD COLUMN'
+    }
     if (insideDoBlock) {
       const executableViolation = findExecutableStatementViolation(statement, activePrecheckStack)
       if (executableViolation) return executableViolation
@@ -167,7 +169,6 @@ function hasDoBlockPrecheck(
   hasAbsencePrecheck: boolean,
   hasExistencePrecheck: boolean,
 ): boolean {
-  if (isMixedAlterTableStatement(statement)) return hasAbsencePrecheck
   if (isDestructiveAlterTable(statement)) {
     return hasExistencePrecheck || /\bIF\s+EXISTS\b/is.test(statement)
   }
@@ -181,18 +182,5 @@ function findTopLevelAlterViolation(statement: string): string | null {
   if (!/\bALTER\s+TABLE\b/is.test(statement)) {
     return 'config-driven generators must not emit non-table ALTER DDL'
   }
-  if (isMixedAlterTableStatement(statement)) {
-    return 'ALTER TABLE outside a DO block must only use ADD COLUMN IF NOT EXISTS actions'
-  }
-  if (
-    /\bADD\s+(?:COLUMN\s+(?!IF\s+NOT\s+EXISTS\b)|(?!COLUMN\b|IF\s+NOT\s+EXISTS\b))/is.test(
-      statement,
-    )
-  ) {
-    return 'ALTER TABLE ADD COLUMN must use IF NOT EXISTS'
-  }
-  if (!/\bADD\s+(?:COLUMN\s+)?IF\s+NOT\s+EXISTS\b/is.test(statement)) {
-    return 'ALTER TABLE outside a DO block must be guarded'
-  }
-  return null
+  return 'ALTER TABLE outside a DO block must be guarded'
 }

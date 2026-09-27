@@ -29,7 +29,7 @@ export {
 }
 
 export async function runMigrations() {
-  await psql.runMigrations(path.resolve(__dirname, 'migrations'), console)
+  await psql.runMigrations(path.resolve(__dirname, 'migrations'), { logger: console })
 }
 
 export async function runViews(options: RunViewsOptions = {}) {
@@ -41,19 +41,15 @@ export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {
   await runConfigDrivenFromFolder(__dirname, { logger: console, ...options })
 }
 
-export type PostCommitMigrationHook = () => Promise<void>
-
 export async function applyAllMigrations(
   rootDir = __dirname,
   options: {
     forced?: boolean
     logger?: Pick<Console, 'error' | 'log'>
-    afterCommit?: PostCommitMigrationHook
   } = {},
 ): Promise<void> {
   const logger = options.logger ?? console
   await applyMigrationsInSession(rootDir, options.forced, logger)
-  await options.afterCommit?.()
 }
 
 async function applyMigrationsInSession(
@@ -78,12 +74,11 @@ async function applyMigrationsInSession(
 }
 
 export type VerifySchemaAfterMigration = () => Promise<void>
-type MigrationPhase = 'application' | 'post-commit' | 'verification'
+type MigrationPhase = 'application' | 'verification'
 
 export async function runAllMigrations(
   options: {
     apply?: typeof applyAllMigrations
-    afterCommit?: PostCommitMigrationHook
     exit?: typeof process.exit
     logger?: Pick<Console, 'error' | 'log'>
     verifySchema?: VerifySchemaAfterMigration
@@ -97,10 +92,6 @@ export async function runAllMigrations(
   try {
     const applyOptions: Parameters<typeof apply>[1] = {
       forced: process.argv.includes('--forced'),
-      afterCommit: async () => {
-        state.phase = 'post-commit'
-        await options.afterCommit?.()
-      },
     }
     await apply(__dirname, applyOptions)
     state.phase = 'verification'
@@ -115,9 +106,7 @@ export async function runAllMigrations(
     const message =
       state.phase === 'verification'
         ? 'Migrations committed, but schema verification did not complete successfully.'
-        : state.phase === 'post-commit'
-          ? 'Migrations committed, but the post-commit hook did not complete successfully.'
-          : 'Migration application did not complete; previously applied schema changes may have committed.'
+        : 'Migration application did not complete; previously applied schema changes may have committed.'
     const failure = new Error(message, { cause: err })
     logger.error(failure)
     onError(failure)

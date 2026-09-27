@@ -31,3 +31,8 @@ COMMENT ON COLUMN user_mod_notes.author_user_id IS 'Moderator who wrote the note
 COMMENT ON COLUMN user_mod_notes.community_id IS 'Community scope; NULL means a global/site-level note visible only to site moderation staff.';
 COMMENT ON COLUMN user_mod_notes.body IS 'Note text, max 2000 chars.';
 COMMENT ON COLUMN user_mod_notes.deleted_at IS 'When set, the note is soft-deleted.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_user_mod_notes__target_user_id
+  ON user_mod_notes (target_user_id)
+  WHERE target_user_id IS NOT NULL;

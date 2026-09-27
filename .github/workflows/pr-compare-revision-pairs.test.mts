@@ -151,20 +151,6 @@ describe('PR compare revision pairs', () => {
     }
   })
 
-  it('compares postgres index renames against origin/<base_ref>, not pull_request.base.sha', () => {
-    const workflow = load(
-      readFileSync('.github/workflows/tests-postgres-schema.yml', 'utf8'),
-    ) as WorkflowFile
-    const step = requiredNamedStep(
-      workflow.jobs?.['postgres-schema-tests'],
-      'Check for renamed PostgreSQL indexes',
-    )
-    expect(step.env?.['PR_BASE_SHA']).toBe(
-      "${{ github.base_ref && format('origin/{0}', github.base_ref) || 'origin/main' }}",
-    )
-    expect(step.env?.['PR_BASE_SHA']).not.toContain('pull_request.base.sha')
-  })
-
   it('keeps gitleaks PR scans on pair 1', () => {
     const workflow = load(readFileSync('.github/workflows/gitleaks.yml', 'utf8')) as WorkflowFile
     const step = requiredNamedStep(workflow.jobs?.['gitleaks'], 'Determine Gitleaks scan range')

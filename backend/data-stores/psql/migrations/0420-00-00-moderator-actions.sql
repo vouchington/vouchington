@@ -90,3 +90,24 @@ COMMENT ON COLUMN moderator_actions.community_application_id IS 'Target communit
 COMMENT ON COLUMN moderator_actions.reason IS 'Optional free-text reason for the action.';
 
 COMMENT ON COLUMN moderator_actions.metadata IS 'Structured context snapshot (e.g. role change target role, topic slugs for tags).';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__community_application_id
+  ON moderator_actions (community_application_id)
+  WHERE community_application_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__post_id
+  ON moderator_actions (post_id)
+  WHERE post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__report_id
+  ON moderator_actions (report_id)
+  WHERE report_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__review_dispute_id
+  ON moderator_actions (review_dispute_id)
+  WHERE review_dispute_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderator_actions__target_user_id
+  ON moderator_actions (target_user_id)
+  WHERE target_user_id IS NOT NULL;

@@ -94,3 +94,8 @@ END $$;
 
 
 ALTER TABLE rss_feed_items VALIDATE CONSTRAINT fk_rss_feed_items_story_id;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_post__stories__initiated_by_id
+  ON post__stories (initiated_by_id)
+  WHERE initiated_by_id IS NOT NULL;

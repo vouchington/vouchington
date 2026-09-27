@@ -32,16 +32,9 @@ describe('0000-00-01b-entity-relation-indexes', () => {
   it('generates active subject-scoped best and newest indexes for election relations', () => {
     const sql = idempotent()
 
-    expect(sql).toContain("indexname = 'idx_relation__post__category__topic__subject__best'")
-    expect(sql).toContain("lower(indexdef) NOT LIKE '%object_id desc%'")
-    expect(sql).toContain('DROP INDEX IF EXISTS idx_relation__post__category__topic__subject__best')
     expect(sql).toContain('idx_relation__post__category__topic__subject__best')
     expect(sql).toContain(
       'ON "relation__post__category__topic" (subject_id, votes_score_sort DESC, created_at DESC, object_id DESC)',
-    )
-    expect(sql).toContain("indexname = 'idx_relation__post__category__topic__subject__newest'")
-    expect(sql).toContain(
-      'DROP INDEX IF EXISTS idx_relation__post__category__topic__subject__newest',
     )
     expect(sql).toContain('idx_relation__post__category__topic__subject__newest')
     expect(sql).toContain(
@@ -97,10 +90,7 @@ describe('0000-00-01b-entity-relation-indexes', () => {
   })
 
   it('rejects a previous and current index with an equivalent shape but different names', () => {
-    // Simulates the PR #8189 near-incident: a bare rename (old name -> new name, identical
-    // body) leaves both names live on an already-migrated database. The generator's
-    // per-index `DROP INDEX IF EXISTS <name>` never targets the old name, so this must be
-    // caught structurally, not by trusting the rename to clean up after itself.
+    // A renamed duplicate in current generator output must fail structurally.
     const sql = `
       CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best_old ON "relation__post__category__topic" (subject_id) WHERE deleted_at IS NULL;
       CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best ON "relation__post__category__topic" (subject_id) WHERE deleted_at IS NULL;

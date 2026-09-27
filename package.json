@@ -69,7 +69,6 @@
     "db:seed": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:seed'",
     "db:snapshot:update": "node dev/postgresql-snapshot-update.mts",
     "db:snapshot:check": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:snapshot:check'",
-    "db:check-index-renames": "bash -c 'if [ -f .env ]; then source .env; fi; pnpm --dir backend db:check-index-renames'",
     "validate-seed-rss-feeds": "bash -c 'if [ -f .env ]; then source .env; fi; node backend/scripts/validate-seed-rss-feeds.mts'",
     "squawk": "squawk 'backend/data-stores/psql/migrations/*.sql' 'backend/data-stores/psql/config-driven/*.sql' 'backend/data-stores/psql/views/*.sql'",
     "lint": "pnpm run oxlint && pnpm run ast-grep && pnpm run jscpd && pnpm run oxfmt && pnpm run selene && pnpm run no-mistakes && pnpm run repo-file-policy && pnpm run typecheck",

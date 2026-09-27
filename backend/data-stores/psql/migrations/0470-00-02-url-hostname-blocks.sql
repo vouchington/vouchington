@@ -44,3 +44,8 @@ COMMENT ON COLUMN url_hostname_blocks.blocked_source IS 'Who initiated the block
 COMMENT ON COLUMN url_hostname_blocks.lifted_at IS 'When the block was lifted. NULL means still active.';
 COMMENT ON COLUMN url_hostname_blocks.reason IS 'Optional reason for the block.';
 COMMENT ON COLUMN url_hostname_blocks.lifted_by_id IS 'Who lifted the block.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__url_hostname_id
+  ON url_hostname_blocks (url_hostname_id)
+  WHERE url_hostname_id IS NOT NULL;

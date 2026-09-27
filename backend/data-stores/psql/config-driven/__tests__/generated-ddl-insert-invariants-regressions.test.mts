@@ -70,36 +70,13 @@ END $$;`),
       ),
     ).toBeNull()
     expect(
-      // The claims-ledger idiom: a claim row is inserted with ON CONFLICT DO NOTHING and
-      // the block returns early when the claim already existed, so every statement after
-      // the guard converges after one successful run and needs no guard of its own.
+      // A claim row does not exempt a following unguarded insert in config-driven SQL.
       findFirstUnguardedInsertViolation(`DO $$ BEGIN
-  INSERT INTO election_vote_migration_claims (migration_id) VALUES ('repair-x') ON CONFLICT DO NOTHING;
-  IF NOT FOUND THEN RETURN; END IF;
-  INSERT INTO prompts (body) VALUES ('hi');
-END $$;`),
-    ).toBeNull()
-    expect(
-      // A claim key built from a computed expression (uuidv7()) produces a different
-      // value on every retry, so ON CONFLICT never matches and the guard never actually
-      // short-circuits — this must not be treated as a dominant claim guard.
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
-  INSERT INTO election_vote_migration_claims (migration_id) VALUES (uuidv7()) ON CONFLICT DO NOTHING;
+  INSERT INTO migration_claims (migration_id) VALUES ('seed-x') ON CONFLICT DO NOTHING;
   IF NOT FOUND THEN RETURN; END IF;
   INSERT INTO prompts (body) VALUES ('hi');
 END $$;`),
     ).toBe("INSERT INTO prompts (body) VALUES ('hi')")
-    expect(
-      // The claim-guard exemption must not swallow an unguarded INSERT that runs
-      // *before* the claim row is inserted — only what follows the guard converges
-      // after one successful run.
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
-  INSERT INTO prompts (body) VALUES ('unrelated');
-  INSERT INTO election_vote_migration_claims (migration_id) VALUES ('repair-x') ON CONFLICT DO NOTHING;
-  IF NOT FOUND THEN RETURN; END IF;
-  INSERT INTO other_table (body) VALUES ('hi');
-END $$;`),
-    ).toBe("INSERT INTO prompts (body) VALUES ('unrelated')")
     expect(
       // A guard on one CTE's own INSERT must not mask an unguarded INSERT in a
       // sibling CTE of the same compound statement.
@@ -132,30 +109,6 @@ END $$;`),
   EXECUTE 'INSERT INTO prompts (body) VALUES (''hi'') ON CONFLICT DO NOTHING';
 END $$;`),
     ).toBeNull()
-    expect(
-      // The claim-guard exemption must not fire when the guard itself is nested inside a
-      // conditional branch that can be skipped — the final INSERT is not actually reachable
-      // only after the guard converges, since `should_claim` can be false.
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
-  IF should_claim THEN
-    INSERT INTO election_vote_migration_claims (migration_id) VALUES ('repair-x') ON CONFLICT DO NOTHING;
-    IF NOT FOUND THEN RETURN; END IF;
-  END IF;
-  INSERT INTO prompts (body) VALUES ('hi');
-END $$;`),
-    ).toBe("INSERT INTO prompts (body) VALUES ('hi')")
-    expect(
-      // A skippable loop is just as unreachable-guaranteeing as a skippable IF: a claim guard
-      // nested inside a WHILE/FOR/LOOP whose body can run zero times must not be treated as
-      // dominant either.
-      findFirstUnguardedInsertViolation(`DO $$ BEGIN
-  FOR i IN 1..0 LOOP
-    INSERT INTO election_vote_migration_claims (migration_id) VALUES ('repair-x') ON CONFLICT DO NOTHING;
-    IF NOT FOUND THEN RETURN; END IF;
-  END LOOP;
-  INSERT INTO prompts (body) VALUES ('hi');
-END $$;`),
-    ).toBe("INSERT INTO prompts (body) VALUES ('hi')")
     expect(
       // "NOT EXISTS" appearing as a computed boolean VALUE, not as a WHERE/AND-scoped
       // condition restricting the INSERT's source rows, must not be mistaken for a guard —

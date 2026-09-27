@@ -10,7 +10,6 @@ import {
   applyAllMigrations,
   runAllMigrations,
   runMigrations,
-  type PostCommitMigrationHook,
   type VerifySchemaAfterMigration,
 } from './migrate.mts'
 
@@ -26,7 +25,6 @@ describe('applyAllMigrations', () => {
       await runAllMigrations({ apply, exit, logger, verifySchema })
       expect(apply).toHaveBeenCalledWith(expect.any(String), {
         forced: true,
-        afterCommit: expect.any(Function),
       })
       expect(verifySchema).toHaveBeenCalledTimes(1)
       expect(exit).toHaveBeenNthCalledWith(1, 0)
@@ -90,29 +88,6 @@ describe('applyAllMigrations', () => {
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
         message: expect.stringContaining('Migration application did not complete'),
-        cause: failure,
-      }),
-    )
-    expect(logger.log).not.toHaveBeenCalledWith('Migrations complete!')
-    expect(exit).toHaveBeenCalledExactlyOnceWith(1)
-  })
-
-  it('reports a failed post-commit hook after migration application committed', async () => {
-    const failure = new Error('post-commit enqueue failed')
-    const apply = vi.fn<typeof applyAllMigrations>(async (_rootDir, options) => {
-      await options?.afterCommit?.()
-    })
-    const afterCommit = vi.fn<PostCommitMigrationHook>().mockRejectedValue(failure)
-    const exit = vi.fn<typeof process.exit>()
-    const logger = { error: vi.fn<(error: unknown) => void>(), log: vi.fn<() => void>() }
-    const verifySchema = vi.fn<VerifySchemaAfterMigration>().mockResolvedValue(undefined)
-
-    await runAllMigrations({ apply, afterCommit, exit, logger, verifySchema })
-
-    expect(verifySchema).not.toHaveBeenCalled()
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('post-commit hook did not complete'),
         cause: failure,
       }),
     )
@@ -212,38 +187,6 @@ describe('applyAllMigrations', () => {
       await write(`/* cleanupAllMigrationRunnerState */ DELETE FROM migrations WHERE id = $1`, [
         migration,
       ])
-      await rm(root, { force: true, recursive: true })
-    }
-  })
-
-  it('runs the post-commit hook only after the migration transaction commits', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'voucha-post-commit-migrations-'))
-    const suffix = randomUUID().replaceAll('-', '')
-    const table = `post_commit_migrations_${suffix}`
-
-    try {
-      await mkdir(join(root, 'migrations'), { recursive: true })
-      await Promise.all([
-        mkdir(join(root, 'config-driven'), { recursive: true }),
-        mkdir(join(root, 'views'), { recursive: true }),
-      ])
-      await writeFile(
-        join(root, 'migrations', `9999-${suffix}.sql`),
-        `CREATE TABLE ${table} (id integer PRIMARY KEY);`,
-      )
-
-      await applyAllMigrations(root, {
-        afterCommit: async () => {
-          const { rows } = await read<{ committed: boolean }>(
-            `/* verifyPostCommitMigrationHook */ SELECT to_regclass($1) IS NOT NULL AS committed`,
-            [table],
-          )
-          expect(rows).toEqual([{ committed: true }])
-        },
-        logger: { error: () => {}, log: () => {} },
-      })
-    } finally {
-      await write(`/* cleanupPostCommitMigrationHook */ DROP TABLE IF EXISTS ${table}`)
       await rm(root, { force: true, recursive: true })
     }
   })

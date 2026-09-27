@@ -308,8 +308,7 @@ This handles cases where:
 
 ### Database
 
-- `backend/data-stores/psql/migrations/0040-00-00-images.sql` - Image lifecycle, staging-source columns, and completed-image hash constraint
-- `backend/data-stores/psql/migrations/0625-00-00-image-upload-staged-source-cleanup-index.sql` - Partial index for staged-source cleanup
+- `backend/data-stores/psql/migrations/0040-00-00-images.sql` - Image lifecycle, staging-source columns, completed-image hash constraint, and staged-source cleanup index
 
 ## Testing
 

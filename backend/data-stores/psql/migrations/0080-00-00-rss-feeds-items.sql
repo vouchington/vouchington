@@ -233,6 +233,14 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_ids (
 CREATE TABLE IF NOT EXISTS rss_feed_items (
   -- Shared with rss_feed_item_ids; the identity row is inserted first.
   id UUID PRIMARY KEY REFERENCES rss_feed_item_ids (id) ON DELETE CASCADE,
+  votes_score_up DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_score_up CHECK (votes_score_up >= 0),
+  votes_score_none DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_score_none CHECK (votes_score_none >= 0),
+  votes_score_down DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_score_down CHECK (votes_score_down >= 0),
+  votes_count_up INT NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_count_up CHECK (votes_count_up >= 0),
+  votes_count_none INT NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_count_none CHECK (votes_count_none >= 0),
+  votes_count_down INT NOT NULL DEFAULT 0 CONSTRAINT chk_rss_feed_items_votes_count_down CHECK (votes_count_down >= 0),
+  votes_score_sort DOUBLE PRECISION GENERATED ALWAYS AS (fn_wilson_score_lower_bound(votes_score_up, votes_score_up + votes_score_none + votes_score_down)) STORED,
+  votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (votes_score_up - votes_score_down) STORED,
 
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE, -- as defined by the RSS feed
   data JSONB NOT NULL, -- dump of the data
@@ -377,12 +385,7 @@ WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__url_id
 ON rss_feed_items (url_id);
 
--- for finding items in a story
-CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id
-ON rss_feed_items (story_id)
-WHERE story_id IS NOT NULL AND deleted_at IS NULL;
-
--- RI-usable index for the story_id FK (the index above also filters deleted_at, so it isn't RI-usable)
+-- RI-usable index for the story_id FK
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__ri
 ON rss_feed_items (story_id)
 WHERE story_id IS NOT NULL;
@@ -643,3 +646,23 @@ ON rss_feed_item_sources (rss_feed_item_id, rss_feed_id);
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__created_via_oauth_client_id
   ON rss_feeds (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__feed_published_item
+  ON rss_feed_item_sources (rss_feed_id, published_at DESC, rss_feed_item_id DESC)
+  WHERE published_at IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_sources__missing_published_at
+  ON rss_feed_item_sources (rss_feed_id, rss_feed_item_id)
+  WHERE published_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS rss_feed_items_default_story_id_id_url_id_idx
+  ON rss_feed_items_default (story_id, id) INCLUDE (url_id)
+  WHERE story_id IS NOT NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_rss_feed_items__story_id__id__url_id
+  ON ONLY rss_feed_items (story_id, id) INCLUDE (url_id)
+  WHERE story_id IS NOT NULL AND deleted_at IS NULL;
+
+ALTER INDEX idx_rss_feed_items__story_id__id__url_id
+  ATTACH PARTITION rss_feed_items_default_story_id_id_url_id_idx;

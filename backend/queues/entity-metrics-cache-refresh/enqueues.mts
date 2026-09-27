@@ -22,26 +22,14 @@ function makeEnqueueBulkRefresh(processorName: EntityMetricsCacheRefreshJobs) {
     }),
   })
 
-  const enqueueJobsWithPriority = (ids: string[], priority?: number) => {
-    return enqueue(ids, {
+  return (ids: string[], priority?: number): EnqueueReturnType =>
+    enqueue(ids, {
       priority: priority ?? PRIORITY_DEFAULT,
     } satisfies Partial<JobOptions>)
-  }
-
-  return {
-    enqueue: (ids: string[], priority?: number): EnqueueReturnType =>
-      enqueueJobsWithPriority(ids, priority),
-    enqueueAndWait: (ids: string[], priority?: number): Promise<void> =>
-      enqueueJobsWithPriority(ids, priority).then(() => undefined),
-  }
 }
 
-const topicMetricsRefresh = makeEnqueueBulkRefresh('processRefreshTopicMetrics')
-export const enqueueBulkRefreshTopicMetricsById = topicMetricsRefresh.enqueue
-export const enqueueBulkRefreshTopicMetricsByIdAndWait = topicMetricsRefresh.enqueueAndWait
-const postMetricsRefresh = makeEnqueueBulkRefresh('processRefreshPostMetrics')
-export const enqueueBulkRefreshPostMetricsById = postMetricsRefresh.enqueue
-export const enqueueBulkRefreshPostMetricsByIdAndWait = postMetricsRefresh.enqueueAndWait
-const userMetricsRefresh = makeEnqueueBulkRefresh('processRefreshUserMetrics')
-export const enqueueBulkRefreshUserMetricsById = userMetricsRefresh.enqueue
-export const enqueueBulkRefreshUserMetricsByIdAndWait = userMetricsRefresh.enqueueAndWait
+export const enqueueBulkRefreshTopicMetricsById = makeEnqueueBulkRefresh(
+  'processRefreshTopicMetrics',
+)
+export const enqueueBulkRefreshPostMetricsById = makeEnqueueBulkRefresh('processRefreshPostMetrics')
+export const enqueueBulkRefreshUserMetricsById = makeEnqueueBulkRefresh('processRefreshUserMetrics')

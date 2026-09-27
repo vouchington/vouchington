@@ -78,3 +78,8 @@ COMMENT ON COLUMN api_keys.label IS 'User-provided label to identify the key''s 
 COMMENT ON COLUMN api_keys.permissions IS 'Canonical scope set granted to this key; validated against the application scope catalogue.';
 COMMENT ON COLUMN api_keys.last_used_at IS 'When this API key was last used for authentication.';
 COMMENT ON COLUMN api_keys.revoked_at IS 'When this API key was revoked; revoked keys cannot authenticate.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_api_keys__user_id__fk
+  ON api_keys (user_id)
+  WHERE user_id IS NOT NULL;

@@ -1570,8 +1570,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: 0.0.9
-        version: 0.0.9
+        specifier: 0.0.10
+        version: 0.0.10
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -1709,9 +1709,6 @@ importers:
       '@services/captcha':
         specifier: workspace:^
         version: link:../../services/captcha
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../../services/elections-votes
       '@services/entity-listener-reconciliation':
         specifier: workspace:^
         version: link:../../services/entity-listener-reconciliation
@@ -1755,15 +1752,6 @@ importers:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
     devDependencies:
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../../services/entity-cache
-      '@services/entity-fetch':
-        specifier: workspace:^
-        version: link:../../services/entity-fetch
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
@@ -5452,9 +5440,6 @@ importers:
       '@queues/elections':
         specifier: workspace:^
         version: link:../../queues/elections
-      '@queues/entity-metrics-cache-refresh':
-        specifier: workspace:^
-        version: link:../../queues/entity-metrics-cache-refresh
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12663,8 +12648,8 @@ importers:
         specifier: 0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: 0.0.9
-        version: 0.0.9
+        specifier: 0.0.10
+        version: 0.0.10
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -18099,8 +18084,8 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.9':
-    resolution: {integrity: sha512-0TLKFmnd0okidSPHiR8fLR2iYlvhr3zmJKngGPBVsZqtAYRyt/8kueBCvIParmYWIXAiBSnArxcBlmBB5KRV/w==}
+  '@vouchington/postgres@0.0.10':
+    resolution: {integrity: sha512-Oa+85WehxEWenJuOUsC9cYjzpf8BgZEBdt38Iijt29Ce7/k71gPIerAPwh4hhnVQLgY+yC7TEvCgYWV1dT0ZGg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.1':
@@ -27159,7 +27144,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.9':
+  '@vouchington/postgres@0.0.10':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.0

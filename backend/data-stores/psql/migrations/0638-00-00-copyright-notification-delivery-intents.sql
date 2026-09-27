@@ -52,8 +52,6 @@ CREATE TABLE copyright_notice_delivery_intents (
   CHECK (ses_message_id IS NULL OR channel = 'email')
 );
 
-CREATE INDEX idx_copyright_delivery_intents__pending
-  ON copyright_notice_delivery_intents (next_attempt_at, id) WHERE state = 'pending';
 CREATE INDEX idx_copyright_delivery_intents__notice
   ON copyright_notice_delivery_intents (copyright_notice_id, id);
 CREATE INDEX idx_copyright_delivery_intents__submission
@@ -125,3 +123,8 @@ COMMENT ON COLUMN copyright_notice_delivery_intents.next_attempt_at IS 'Earliest
 COMMENT ON COLUMN copyright_notice_delivery_intents.bounced_at IS 'Time SES reported a bounce or complaint for an accepted email.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.ses_message_id IS 'SES provider identifier used to correlate delivery feedback.';
 COMMENT ON COLUMN copyright_notice_delivery_intents.failure_ciphertext IS 'Encrypted bounded transport failure visible to staff; retries retain the failure history through lifecycle events.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_copyright_delivery_intents__recoverable
+  ON copyright_notice_delivery_intents (channel, id)
+  WHERE state IN ('pending', 'claimed');

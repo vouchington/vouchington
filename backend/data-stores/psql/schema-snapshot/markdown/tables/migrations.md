@@ -8,7 +8,7 @@ Not partitioned — growth: bounded.
 | ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------- |
 | `id`         | `text`                     | no       |                     |          |           |           |         |
 | `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |         |
-| `checksum`   | `text`                     | yes      |                     |          |           |           |         |
+| `checksum`   | `text`                     | no       |                     |          |           |           |         |
 
 **Primary key:** `PRIMARY KEY (id)`
 

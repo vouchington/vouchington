@@ -112,10 +112,6 @@ CREATE OR REPLACE TRIGGER trigger_individual_cards_fn_update_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
--- find a user's cards
-CREATE INDEX IF NOT EXISTS individual_cards__individual_id
-ON individual_cards (individual_id);
-
 -- find a card's users
 CREATE INDEX IF NOT EXISTS individual_cards__card_id
 ON individual_cards (card_id);
@@ -155,10 +151,6 @@ CREATE OR REPLACE TRIGGER trigger_individual_rewards_program_statuses_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
--- find a user's rewards program statuses
-CREATE INDEX IF NOT EXISTS individual_rewards_program_statuses__individual_id
-ON individual_rewards_program_statuses (individual_id);
-
 -- find a rewards program status's users
 CREATE INDEX IF NOT EXISTS individual_rewards_program_statuses__rewards_program_status_id
 ON individual_rewards_program_statuses (rewards_program_status_id);
@@ -191,15 +183,6 @@ CREATE TABLE IF NOT EXISTS spending_entries (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- find a household's spending categories
-CREATE INDEX IF NOT EXISTS spending_entries__household_id
-ON spending_entries (household_id);
-
--- find a user's spending categories
-CREATE INDEX IF NOT EXISTS spending_entries__individual_id
-ON spending_entries (individual_id)
-WHERE individual_id IS NOT NULL;
 
 -- calculate metrics for a spending category
 CREATE INDEX IF NOT EXISTS spending_entries__spending_category_id
@@ -642,3 +625,29 @@ EXECUTE FUNCTION fn_create_user_metrics_on_insert();
 CREATE INDEX IF NOT EXISTS idx_github_accounts__orphan_retention_cleanup
 ON github_accounts (created_at, github_user_id)
 WHERE user_id IS NULL;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_individual_cards__authorized_user_of_id
+  ON individual_cards (authorized_user_of_id)
+  WHERE authorized_user_of_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_profile_links__image_id
+  ON user_profile_links (image_id)
+  WHERE image_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_individual_cards__individual_id_id
+  ON individual_cards (individual_id, id);
+
+CREATE INDEX IF NOT EXISTS idx_ind_rp_point_valuations__individual_id_id
+  ON individual_rewards_program_point_valuations (individual_id, id);
+
+CREATE INDEX IF NOT EXISTS idx_ind_rp_statuses__individual_id_id
+  ON individual_rewards_program_statuses (individual_id, id);
+
+CREATE INDEX IF NOT EXISTS idx_spending_entries__individual_id_id
+  ON spending_entries (individual_id, id)
+  WHERE individual_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_spending_entries__household_id_id
+  ON spending_entries (household_id, id)
+  WHERE household_id IS NOT NULL;
