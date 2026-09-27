@@ -8,7 +8,7 @@ wrapper invocation through the [web fixture declarations](../../../web/test-help
 
 ## Real Backend Program Contract Tests
 
-`backend-program.test.mts`, `openapi/write-openapi.test.mts`, `query-contract-registry.hardening.test.mts`,
+`backend-program.test.mts`, `openapi/write-openapi.test.mts`, `backend-contract-catalog.hardening.test.mts`,
 and `native-moderation-optional-contracts.test.mts` are the only test files that call the real loaders
 (`loadBackendProgram()`, `loadBackendResponseContracts()`, `loadBackendRequestContracts()`,
 `loadBackendQueryContracts()`, `loadRegisteredRouteCatalog()`) against the actual `backend/tsconfig.json`
