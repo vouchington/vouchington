@@ -19,6 +19,14 @@ import {
   validateTopicTypes,
 } from './filters.mts'
 
+class InvalidCursorParameterError extends Error {
+  readonly status = 400
+
+  constructor() {
+    super('Invalid cursor parameter')
+  }
+}
+
 export class PaginationParser<TConfig extends PaginationConfig> {
   readonly queryContract: PaginationQueryContract<TConfig>
   readonly #core: PlatformPaginationParser<PlatformPaginationConfig>
@@ -52,7 +60,7 @@ export class PaginationParser<TConfig extends PaginationConfig> {
 
   parse(query: Record<string, unknown>): ParsedOptions<TConfig> {
     if (this.#cursorParamName !== 'cursor' && 'cursor' in query) {
-      throw Object.assign(new Error('Invalid cursor parameter'), { status: 400 })
+      throw new InvalidCursorParameterError()
     }
     const { limit, ...cursorQuery } = query
     const { after } = this.#core.parse(cursorQuery)

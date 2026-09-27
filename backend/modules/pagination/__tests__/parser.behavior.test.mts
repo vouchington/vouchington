@@ -106,10 +106,14 @@ describe('PaginationParser — cursor', () => {
 
   it('rejects the retired cursor alias even alongside after', () => {
     const parser = new PaginationParser({ cursor: { type: 'simple' } })
-    expect(() => parser.parse({ cursor: 'legacy-cursor' })).toThrow('Invalid cursor parameter')
-    expect(() => parser.parse({ after: 'canonical-cursor', cursor: 'legacy-cursor' })).toThrow(
-      'Invalid cursor parameter',
-    )
+    for (const query of [
+      { cursor: 'legacy-cursor' },
+      { after: 'canonical-cursor', cursor: 'legacy-cursor' },
+    ]) {
+      expect(() => parser.parse(query)).toThrow(
+        expect.objectContaining({ message: 'Invalid cursor parameter', status: 400 }),
+      )
+    }
   })
 
   it('throws 400 for non-string cursor value', () => {
