@@ -8,18 +8,20 @@ import {
 } from './delivery-registry-staging.mts'
 import type { ImageDeliveryRecord } from './delivery-registry-types.mts'
 
-const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
-
 export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   actorUserId?: string
+  deliveryKeys?: readonly string[]
 }): Promise<number> {
+  if (input?.deliveryKeys?.length === 0) return 0
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ delivery_key: string; placement_id: string | null }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords */
     UPDATE media_delivery_registry_records
     SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL, completed_at = NULL,
       next_attempt_at = NULL, failure_message = 'Reopened by media delivery reconciliation.'
-    WHERE state = 'failed' RETURNING delivery_key, placement_id
+    WHERE state = 'failed'
+      AND (${input?.deliveryKeys ?? null}::text[] IS NULL OR delivery_key = ANY(${input?.deliveryKeys ?? null}::text[]))
+    RETURNING delivery_key, placement_id
   `)
   if (input?.actorUserId) {
     for (const record of rows) {
@@ -36,21 +38,6 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   }
   await transaction.commit()
   return rows.length
-}
-
-export async function listRecoverableMediaDeliveryRegistryKeys(
-  limit: number,
-  now: Date,
-): Promise<string[]> {
-  const { rows } = await read<{
-    delivery_key: string
-  }>(sql`/* listRecoverableMediaDeliveryRegistryKeys */
-    SELECT delivery_key FROM media_delivery_registry_records
-    WHERE (state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${now}))
-      OR (state = 'claimed' AND claimed_at <= ${new Date(now.getTime() - CLAIM_TIMEOUT_MS)})
-    ORDER BY COALESCE(next_attempt_at, claimed_at, created_at), delivery_key LIMIT ${limit}
-  `)
-  return rows.map(row => row.delivery_key)
 }
 
 export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(

@@ -28,6 +28,21 @@ periodic staging use the same proof. Periodic staging selects a bounded batch of
 records and stages each in its own authority transaction, avoiding registry lock cycles with owner
 triggers. Registry and edge activation must both be enabled before a legal action mutates authority.
 
+Recovery uses the shared [claim policy](delivery-registry-policy.mts). An abandoned final claim
+becomes a terminal, replayable failure without changing its generation or attempt history. Cleanup
+is bounded per page; exhausted claims are excluded from dispatch immediately, including records
+left for a later cleanup pass. Only the existing operator replay reopens terminal failures.
+Ordinary same-state staging leaves the entire persisted record unchanged, including retry timing
+and failure evidence; authority changes and explicit forced generations restart publication.
+
+The root reconciler repairs markers and stages authority once, then captures an exact cutoff from
+the primary database. Recovery pages use opaque scoped cursors in immutable delivery-key order,
+with creation and retry eligibility bounded by that cutoff. This replaces oldest-first preference
+with complete traversal. Each queue continuation follows successful child enqueues and retains the
+same cutoff; later admissions or eligibility changes wait for the next root sweep. The primary
+pool preserves visibility of staging and cleanup writes. Internal exact-key scopes support owned
+recovery and replay; an empty supplied scope does no work, while omitted scope covers the registry.
+
 New binding admissions and unsafe image mutations first acquire the same immutable batch of
 canonical UUID asset-admission roots, before image rows, owners, or placement discovery. PostgreSQL
 transaction-local state permits subset reentry but rejects additional roots after that initial

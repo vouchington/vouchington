@@ -38,12 +38,13 @@ describe('media delivery registry processors', () => {
   })
 
   it('stages current placements then re-enqueues only recoverable registry keys', async () => {
-    const list = vi
-      .fn<typeof listRecoverableMediaDeliveryRegistryKeys>()
-      .mockResolvedValue([
+    const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryKeys>().mockResolvedValue({
+      results: [
         'image-placement:00000000-0000-7000-8000-000000000001:1:asset',
         'legacy-image:00000000-0000-7000-8000-000000000002',
-      ])
+      ],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
     const enqueue = vi
       .fn<typeof enqueueApplyMediaDeliveryRegistryRecord>()
       .mockResolvedValue(undefined)
@@ -52,17 +53,26 @@ describe('media delivery registry processors', () => {
     const now = new Date('2026-07-01T12:00:00.000Z')
 
     await expect(
-      processReconcileMediaDeliveryRegistry({
-        listRecoverableMediaDeliveryRegistryKeys: list,
-        enqueueApplyMediaDeliveryRegistryRecord: enqueue,
-        stageAllCurrentImagePlacementDeliveryRecords: stage,
-        reconcileMediaDeliveryRepairMarkers: repair,
-        now: () => now,
-      }),
+      processReconcileMediaDeliveryRegistry(
+        {},
+        {
+          listRecoverableMediaDeliveryRegistryKeys: list,
+          enqueueApplyMediaDeliveryRegistryRecord: enqueue,
+          stageAllCurrentImagePlacementDeliveryRecords: stage,
+          reconcileMediaDeliveryRepairMarkers: repair,
+          now: () => now,
+          getMediaDeliveryRegistryScanBefore: async () => now.toISOString(),
+          failExpiredExhaustedMediaDeliveryRegistryRecords: async () => 0,
+        },
+      ),
     ).resolves.toEqual({ enqueued: 2 })
     expect(stage).toHaveBeenCalledOnce()
     expect(repair).toHaveBeenCalledWith(100)
-    expect(list).toHaveBeenCalledWith(100, now)
+    expect(list).toHaveBeenCalledWith({
+      limit: 100,
+      scanBefore: now.toISOString(),
+      after: undefined,
+    })
     expect(enqueue).toHaveBeenCalledTimes(2)
   })
 })

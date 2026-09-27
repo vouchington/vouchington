@@ -19,10 +19,14 @@ export {
 } from './delivery-denials.mts'
 export { compensateFailedImageDeliveryMutation } from './delivery-registry-recovery.mts'
 export {
-  listRecoverableMediaDeliveryRegistryKeys,
   replayFailedMediaDeliveryRegistryRecords,
   stageAllCurrentImagePlacementDeliveryRecords,
   stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from './delivery-registry-reconciliation.mts'
+export {
+  listRecoverableMediaDeliveryRegistryKeys,
+  getMediaDeliveryRegistryScanBefore,
+  failExpiredExhaustedMediaDeliveryRegistryRecords,
+} from './delivery-registry-recovery-scan.mts'
 export { reconcileMediaDeliveryRepairMarkers } from './delivery-repair-markers.mts'
 export { processMediaDeliveryRegistryRecord } from './delivery-registry-process.mts'

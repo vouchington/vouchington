@@ -18,6 +18,22 @@ Recovery scans use a fixed cursor snapshot. The worker enqueues each delivery be
 continuation; the integration regression covers a 101-intent backlog and manually drains that
 equal-priority FIFO order because the test queue shim does not schedule by priority.
 
+Media-registry root reconciliation repairs markers and stages current authority before capturing a
+primary-database cutoff. Root and continuation jobs terminalize a bounded set of abandoned final
+claims, then dispatch one recovery page. Continuations retain an opaque delivery-key cursor and
+cutoff, omit root staging, and are enqueued only after all child enqueues succeed. Failed pages
+retry from the same cursor; the next scheduled root covers later eligibility changes. See the
+[media-delivery safety protocol](../../services/media-delivery-safety/README.md).
+
+```mermaid
+flowchart LR
+  root[Root: repair and stage] --> cutoff[Primary cutoff]
+  cutoff --> page[Terminal repair and recovery page]
+  page --> children[Await delivery enqueues]
+  children --> next[Cursor continuation]
+  next --> page
+```
+
 ## Exports
 
 - `notificationsWorker` - worker instance for the `notifications` queue.

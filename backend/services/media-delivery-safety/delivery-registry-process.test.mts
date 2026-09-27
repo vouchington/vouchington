@@ -5,6 +5,7 @@ import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
   getTestMediaDeliveryRecord,
+  getTestMediaDeliveryRecordSnapshot,
   getTestPostImagePlacement,
   insertTestImage,
   insertTestPost,
@@ -72,8 +73,13 @@ describe('media delivery registry processor', () => {
       desired_state: 'withheld',
       state: 'pending',
     })
+    await expect(processMediaDeliveryRegistryRecord(deliveryKey)).resolves.toBe('not_claimed')
+    expect(put).toHaveBeenCalledTimes(2)
+    const retry = await getTestMediaDeliveryRecordSnapshot(deliveryKey)
+    if (typeof retry?.next_attempt_at !== 'string')
+      throw new Error('Missing persisted retry due time')
     await expect(
-      processMediaDeliveryRegistryRecord(deliveryKey, new Date(Date.now() + 2 * 60 * 1000)),
+      processMediaDeliveryRegistryRecord(deliveryKey, new Date(retry.next_attempt_at)),
     ).resolves.toBe('completed')
     expect(put).toHaveBeenCalledTimes(3)
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
