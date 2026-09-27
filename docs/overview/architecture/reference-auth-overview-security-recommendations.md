@@ -25,7 +25,9 @@ a factor — the `userHasMfa` check in `authentication-flows.mts` reads `user_pa
 
 The discoverable passkey sign-in flow (`verifyDiscoverablePasskeyAuthentication` in
 `backend/services/passkeys/discoverable-flows.mts`) rejects unknown credentials with 401 and
-**never** creates a new account. This prevents two classes of attack:
+**never** creates a new account. After a credential verifies,
+`issueDiscoverablePasskeyLogin` still refuses to mint a session unless the loaded user is that
+credential's account. This prevents two classes of attack:
 
 - **Silent account creation via stolen credentials** — an attacker who captures a credential
   response cannot create an account for a user who has not previously registered.

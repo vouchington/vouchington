@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { createTestUser, insertTestPasskey } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getTestPrivateUserById,
+  insertTestPasskey,
+  suspendTestUser,
+  unsuspendTestUser,
+} from '@voucha/test-helpers'
 import {
   getDiscoverablePasskeyAuthenticationOptions,
+  issueDiscoverablePasskeyLogin,
   verifyDiscoverablePasskeyAuthentication,
 } from './discoverable-flows.mts'
 import { getAndDeleteChallenge } from './challenges.mts'
@@ -84,6 +91,64 @@ describe('discoverable passkey flows', () => {
       verifyDiscoverable(`guard-device-${suffix}`, { id: 'fake' }, ''),
     ).rejects.toMatchObject({ status: 400, message: 'Session ID is required' })
   })
+
+  it('refuses to mint a session when the passkey account no longer exists', async () => {
+    const passkeyUser = await createTestUser()
+    const device = await createTestUser()
+
+    await expect(
+      issueDiscoverablePasskeyLogin({
+        userId: passkeyUser.id,
+        user: null,
+        deviceId: device.id,
+      }),
+    ).rejects.toMatchObject({ status: 401, message: 'Passkey sign-in failed' })
+  }, 20_000)
+
+  it('refuses to mint a session when the loaded account is not the passkey user', async () => {
+    const passkeyUser = await createTestUser()
+    const loadedUser = await createTestUser()
+    const device = await createTestUser()
+
+    await expect(
+      issueDiscoverablePasskeyLogin({
+        userId: passkeyUser.id,
+        user: loadedUser,
+        deviceId: device.id,
+      }),
+    ).rejects.toMatchObject({ status: 401, message: 'Passkey sign-in failed' })
+  }, 20_000)
+
+  it('mints a session for the loaded passkey account', async () => {
+    const user = await createTestUser()
+    const device = await createTestUser()
+
+    const result = await issueDiscoverablePasskeyLogin({
+      userId: user.id,
+      user,
+      deviceId: device.id,
+    })
+
+    expect(result.userId).toBe(user.id)
+    expect(result.sessionToken.payload.uid).toBe(user.id)
+  }, 20_000)
+
+  it('throws 403 when the loaded passkey account is suspended', async () => {
+    const user = await createTestUser()
+    await suspendTestUser(user.id)
+    const suspendedUser = (await getTestPrivateUserById(user.id))!
+    const device = await createTestUser()
+
+    await expect(
+      issueDiscoverablePasskeyLogin({
+        userId: user.id,
+        user: suspendedUser,
+        deviceId: device.id,
+      }),
+    ).rejects.toMatchObject({ status: 403, message: 'Account suspended' })
+
+    await unsuspendTestUser(user.id)
+  }, 20_000)
 
   it('returns 401 when verifyAuthenticationResponse throws (malformed assertion)', async () => {
     const user = await createTestUser()

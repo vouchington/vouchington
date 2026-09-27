@@ -40,21 +40,24 @@ export async function completeMfaLoginWithContext(
   user: PrivateUser | null,
   deviceContext?: DeviceContext,
 ): Promise<CompletedMfaLogin> {
-  const claims = user ? await getEnrichedSessionClaims(user) : null
-  if (claims?.suspended) throw createHttpError(403, 'Account suspended')
+  if (!user || user.id !== attempt.userId) {
+    throw createHttpError(401, 'Login attempt expired or invalid')
+  }
+  const claims = await getEnrichedSessionClaims(user)
+  if (claims.suspended) throw createHttpError(403, 'Account suspended')
   const tokens = await createDeviceAndSessionTokens({
     did: attempt.deviceId,
-    uid: attempt.userId,
-    roles: claims?.roles,
-    membershipPlan: claims?.membershipPlan,
-    membershipExpiresAt: claims?.membershipExpiresAt,
-    trustTier: claims?.trustTier,
-    uiLocale: claims?.uiLocale,
+    uid: user.id,
+    roles: claims.roles,
+    membershipPlan: claims.membershipPlan,
+    membershipExpiresAt: claims.membershipExpiresAt,
+    trustTier: claims.trustTier,
+    uiLocale: claims.uiLocale,
     deviceClass: attempt.deviceClass,
     deviceContext,
   })
   return {
-    userId: attempt.userId,
+    userId: user.id,
     deviceClass: tokens.deviceToken.payload.dc,
     deviceToken: tokens.deviceToken,
     sessionToken: tokens.sessionToken,

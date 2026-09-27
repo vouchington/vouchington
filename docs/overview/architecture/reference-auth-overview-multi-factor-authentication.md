@@ -16,7 +16,9 @@ When a user who has MFA enrolled completes primary authentication (email OTP or 
 2. A `login_attempt_id` (UUID) is returned in the response body instead of tokens.
 3. The client shows the MFA step, presenting passkey and/or TOTP options.
 4. The client submits the `login_attempt_id` along with the MFA credential to one of the MFA verification endpoints.
-5. On success, the server atomically consumes the login attempt and issues `dt`/`st` tokens.
+5. On success, the server atomically consumes the login attempt and issues `dt`/`st` tokens
+   only when the loaded user is that attempt's account. A missing or different account is
+   rejected with the same invalid-attempt response and does not receive a session.
 
 ### Login Attempt Storage
 

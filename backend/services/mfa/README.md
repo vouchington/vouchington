@@ -24,6 +24,8 @@ All reads use the shared Valkyries atomic get-and-delete primitive to prevent re
 3. `attemptId` is sent to the client (e.g. in a short-lived cookie or response body).
 4. Client completes MFA (passkey assertion or TOTP verify) and submits `attemptId`.
 5. Server calls `getAndDeleteLoginAttempt(attemptId)` — returns the attempt once, then deletes it.
+   `completeMfaLoginWithContext` then issues `dt`/`st` only when the loaded user is that attempt's
+   account. A missing or different account is rejected before any session is minted.
 
 ## MFA Status
 
