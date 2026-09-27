@@ -30,7 +30,7 @@ describe('dev/pr-description.mts create with an unpushed head branch', () => {
     await mkdir(binDir)
     await writeFile(
       bodyPath,
-      `## Summary\n\nSafe CLI parsing.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
+      `## Summary\n\nSafe CLI parsing.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
     )
     const ghPath = join(binDir, 'gh')
     await writeFakeGh(

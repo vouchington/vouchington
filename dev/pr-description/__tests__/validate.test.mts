@@ -6,22 +6,12 @@ import {
   type ReferencedIssue,
 } from '../closing-refs.mts'
 import { formatReferencedIssueSummary } from '../referenced-issue-summary.mts'
-import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
+import {
+  VALID_PR_BODY,
+  VALID_PROVENANCE_BLOCK,
+} from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { type PullRequestIdentity, validatePrBodyWithIssueReferences } from '../validate.mts'
-const VALID_BODY = `## Summary
-
-Brief summary.
-
-## Related issues
-
-Closes #123
-
-Workspace setup: ./dev/initialize monorepo
-${VALID_PROVENANCE_BLOCK}
-## Test plan
-
-- Ran \`pnpm exec vitest run --project dev-tools\`
-`
+const VALID_BODY = VALID_PR_BODY
 
 const MERGED_TARGET: PullRequestIdentity = {
   mergeCommitOid: 'merge-77',
@@ -236,6 +226,10 @@ describe('validatePrBodyWithIssueReferences', () => {
     const body = `## Summary
 
 Closes #999
+
+## Impact
+
+Developers receive clearer workflow feedback; product behavior is unchanged.
 
 ## Related issues
 

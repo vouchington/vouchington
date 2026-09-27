@@ -65,7 +65,7 @@ describe('dev/pr-description.mts CLI argument validation', () => {
     await mkdir(binDir)
     await writeFile(
       bodyPath,
-      `## Summary\n\nSafe CLI parsing.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
+      `## Summary\n\nSafe CLI parsing.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
     )
     const ghPath = join(binDir, 'gh')
     await writeFakeGh(
@@ -124,7 +124,7 @@ describe('dev/pr-description.mts CLI argument validation', () => {
     )
     await writeFakeGit(join(binDir, 'git'))
     const env = { ...process.env, GH_CALLS_PATH: callsPath, PATH: `${binDir}:${process.env.PATH}` }
-    const body = `## Summary\n\nRead stdin.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`
+    const body = `## Summary\n\nRead stdin.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`
 
     const validate = spawnSync(process.execPath, [scriptPath, 'validate', '--body-file', '-'], {
       encoding: 'utf8',
@@ -159,7 +159,7 @@ describe('dev/pr-description.mts CLI argument validation', () => {
     await mkdir(binDir)
     await writeFile(
       bodyPath,
-      `## Summary\n\nUpdated summary.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
+      `## Summary\n\nUpdated summary.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
     )
     const liveBody = [
       '## Summary',
@@ -209,7 +209,7 @@ describe('dev/pr-description.mts CLI argument validation', () => {
     await mkdir(binDir)
     await writeFile(
       bodyPath,
-      `## Summary\n\nx.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
+      `## Summary\n\nx.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
     )
     const ghPath = join(binDir, 'gh')
     await writeFakeGh(
@@ -244,6 +244,7 @@ describe('dev/pr-description.mts CLI argument validation', () => {
         '',
         'Updated summary.',
         '',
+        '## Impact\n\nReviewers receive the updated explanation.\n',
         '## Shepherd Journal',
         '',
         '- Only kept this one entry.',

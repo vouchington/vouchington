@@ -13,7 +13,7 @@
 - Review the PR diff and all issues or PRs linked from the PR body, including `Closes #N`, `Fixes #N`, `Resolves #N`, and `Refs #N` entries.
 - Treat timestamps as part of the context. The source issue usually predates the accepted plan issue, and the plan issue usually predates the PR implementation.
 - Verify that the implementation satisfies linked requirements according to the feedback hierarchy: human intervention, accepted plan, GitHub issues, then AI reviewers. If a linked requirement is intentionally deferred, require the PR body to explain the deferral and link a follow-up issue.
-- Verify the PR body against the diff: flag claims the diff does not support, description text a later scope change left stale, and substantial scope the description never mentions. These are advisory findings, not blockers.
+- Apply the [PR-description standard](../pr-description/SKILL.md), including conditional impact and Harness gaps evidence. Verify the PR body against the diff: flag claims the diff does not support, description text a later scope change left stale, and substantial scope the description never mentions. These are advisory findings, not blockers.
 - Check that plan changes after acceptance are recorded as comments on the plan issue with the reason for the change.
 - Check that material implementation, scope, validation, or review-resolution decisions follow the shared feedback hierarchy: human intervention, accepted plan, GitHub issues, then AI reviewers.
 - Check that material decisions are recorded on the accepted plan issue when one exists, and in the shepherd journal when the PR is being managed through `pr-shepherd`. If neither record exists yet, they should be captured in the saved plan or PR notes.

@@ -12,6 +12,10 @@ const BASE_BODY = `## Summary
 
 Brief summary.
 
+## Impact
+
+Developers receive clearer workflow feedback; product behavior is unchanged.
+
 ## Related issues
 
 Closes #123

@@ -26,7 +26,7 @@ describe('dev/pr-description.mts canonical Shepherd Journal update', () => {
     await mkdir(binDir)
     await writeFile(
       bodyPath,
-      `## Summary\n\nUpdated.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
+      `## Summary\n\nUpdated.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
     )
     const journal = '<details>\n<summary>Shepherd Journal</summary>\n\n- Preserved.\n</details>'
     const ghPath = join(binDir, 'gh')

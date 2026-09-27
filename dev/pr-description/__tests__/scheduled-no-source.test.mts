@@ -24,6 +24,10 @@ const VALID_SCHEDULED_NO_SOURCE_BODY = `## Summary
 
 Scheduled maintenance.
 
+## Impact
+
+Developers receive clearer workflow feedback; product behavior is unchanged.
+
 ## Related issues
 
 No source issue; scheduled prompt run.
@@ -32,9 +36,6 @@ No source issue; scheduled prompt run.
 Workspace setup: Auto Harness scheduled prompt
 ${VALID_PROVENANCE_BLOCK}
 
-## Test plan
-
-- Automated validation
 `
 
 describe('scheduled no-source PR validation', () => {

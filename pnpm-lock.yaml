@@ -170,8 +170,8 @@ importers:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.22.0
-        version: 0.22.0(typescript@7.0.2)(vitest@5.0.2)
+        specifier: ^0.23.0
+        version: 0.23.0(typescript@7.0.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1614,8 +1614,8 @@ importers:
         version: 2.2.2
     devDependencies:
       vouchington-tooling:
-        specifier: ^0.22.0
-        version: 0.22.0(typescript@7.0.2)(vitest@5.0.2)
+        specifier: ^0.23.0
+        version: 0.23.0(typescript@7.0.2)(vitest@5.0.2)
 
   backend/data-stores/valkey:
     dependencies:
@@ -10470,8 +10470,8 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
       vouchington-tooling:
-        specifier: ^0.22.0
-        version: 0.22.0(typescript@7.0.2)(vitest@5.0.2)
+        specifier: ^0.23.0
+        version: 0.23.0(typescript@7.0.2)(vitest@5.0.2)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -12534,8 +12534,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.22.0
-        version: 0.22.0(typescript@7.0.2)(vitest@5.0.2)
+        specifier: ^0.23.0
+        version: 0.23.0(typescript@7.0.2)(vitest@5.0.2)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -12767,8 +12767,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
       vouchington-tooling:
-        specifier: ^0.22.0
-        version: 0.22.0(typescript@7.0.2)(vitest@5.0.2)
+        specifier: ^0.23.0
+        version: 0.23.0(typescript@7.0.2)(vitest@5.0.2)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -22009,8 +22009,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.22.0:
-    resolution: {integrity: sha512-KJXECJrRcpF4TUwn4+pWNjk6O9zFlKHTmiNSy9g9F4m/BvC1dXzO3QIBnxDQ3pH+eqqxSZzcd9gkgW6aSTQxqA==}
+  vouchington-tooling@0.23.0:
+    resolution: {integrity: sha512-RPpNaM3SlNI6+q4iISzW7TrQu/5IkNDCZvpONDr/qaCfAVyXMXhHyaSoz0ngoef31ByZEhjU8snE/inBKqacbw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -31384,7 +31384,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.22.0(typescript@7.0.2)(vitest@5.0.2):
+  vouchington-tooling@0.23.0(typescript@7.0.2)(vitest@5.0.2):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3

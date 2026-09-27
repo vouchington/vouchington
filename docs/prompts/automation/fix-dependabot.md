@@ -24,3 +24,12 @@ remote head, then push with an exact lease. Add or update the PR body with `## A
 `## Root cause`, `## Implementation choice`, and `## Options considered`, including implementation
 details and the pros and cons of viable options. Never create a second pull request, merge, or arm
 auto-merge.
+
+For any PR body this workflow is authorized to create or update, follow the
+[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
+and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
+Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
+headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
+approved description helper and retain established gaps after green checks. Do not add routine
+successful local-check lists. This standard does not expand this workflow's mutation authority.

@@ -13,6 +13,10 @@ export const VALID_PR_BODY = `## Summary
 
 Brief summary.
 
+## Impact
+
+Developers get actionable PR descriptions; product behavior is unchanged.
+
 ## Related issues
 
 Closes #123
@@ -26,6 +30,10 @@ export const VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY = `## Summary
 
 Interim transient-retry classifier for a not-yet-durably-classified CI failure.
 
+## Impact
+
+CI operators can retry the narrowly classified failure while its root cause remains tracked.
+
 ## Related issues
 
 Refs #456
@@ -34,8 +42,4 @@ No closing reference; root-cause issue tracked via the Refs entry above.
 
 Workspace setup: Automation fix-main run
 ${VALID_PROVENANCE_BLOCK}
-
-## Test plan
-
-- Automated validation
 `

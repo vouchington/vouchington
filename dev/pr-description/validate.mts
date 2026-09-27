@@ -14,6 +14,7 @@ import {
   validateFixMainRootCauseRef,
 } from './scheduled-no-source.mts'
 import { githubBodyLengthError } from '../github-body-length.mts'
+import { validatePrDescriptionContent } from './content-policy.mts'
 
 export type PrBodyValidationResult = {
   advisories: string[]
@@ -60,7 +61,6 @@ export type IssueReferenceValidationOptions = {
   targetPullRequest?: PullRequestIdentity
 }
 
-const RELATED_ISSUES_RE = /^##\s+Related\s+issues\s*$/im
 const WORKSPACE_SETUP_RE = /^\s*Workspace\s+setup\s*:/im
 const PROVENANCE_RULES = [
   { label: 'Agent:', re: /^\s*Agent\s*:\s*\S/im },
@@ -68,28 +68,14 @@ const PROVENANCE_RULES = [
   { label: 'Worktree:', re: /^\s*Worktree\s*:\s*\S/im },
 ] as const
 
-/** Split body by top-level headings and return the Related issues section content. */
-function extractRelatedIssuesSection(body: string): string {
-  const sections = body.split(/^(?=##\s)/m)
-  return sections.find(s => RELATED_ISSUES_RE.test(s.split('\n')[0])) ?? ''
-}
-
 export function validatePrBody(body: string): PrBodyValidationResult {
   const bodyLengthError = githubBodyLengthError(body)
   if (bodyLengthError)
     return { advisories: [], errors: [bodyLengthError], ok: false, referencedIssues: [] }
 
-  const errors: string[] = []
-
-  if (!RELATED_ISSUES_RE.test(body)) {
-    errors.push(
-      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123"). See .agents/skills/agent-workflow/git-and-prs.md.',
-    )
-  }
-
-  const relatedIssuesSection = extractRelatedIssuesSection(body)
+  const { errors, relatedIssuesSection } = validatePrDescriptionContent(body)
   if (
-    relatedIssuesSection &&
+    relatedIssuesSection !== undefined &&
     !hasClosingIssueReference(relatedIssuesSection) &&
     !isScheduledPromptNoSourceBody(body) &&
     !isFixMainInterimClassifierNoClosingRefBody(body)
