@@ -40,13 +40,15 @@ source files.
    identity-only references as evidence-backed non-consumers rather than changing them by string
    resemblance.
 
-2. Prove compatibility rather than assuming deploy order. Record old/new reader and writer
-   behavior, each independent deploy order, and rollback behavior. Link the evidence to
+2. Verify the current interface and consumer lifetime rather than assuming deploy order. For this
+   unlaunched app, update current producers and consumers together; do not add readers for historical
+   application versions. Account for independently deployed current artifacts, already-issued URLs,
+   external protocols, key rotation, and rollback where applicable. Link the evidence to
    [Networking](../../../docs/overview/infrastructure/networking.md),
    [Security](../../../docs/requirements/security/SECURITY.md), and
    [Deployment decoupling](../../../docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
-   The migration is complete only when old and new readers/writers remain safe through the chosen
-   rollout and rollback window.
+   The endpoint change is complete only when its actual current consumers remain safe through the
+   chosen rollout and rollback window.
 
 3. Before the first commit or push that changes endpoint or credential-shaped literals, run this
    exact local scan, classify any finding without exposing secret material, and record the result:

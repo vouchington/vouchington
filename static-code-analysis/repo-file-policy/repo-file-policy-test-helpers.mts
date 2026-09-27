@@ -76,6 +76,10 @@ export function setupRepoFilePolicyTest() {
     trackedFilesByRepo.get(repoRoot)?.add(path)
   }
 
+  function setSnapshotTable(repoRoot: string, tableName: string, table: unknown) {
+    snapshotTablesByRepo.get(repoRoot)![tableName] = table
+  }
+
   const trackSyncedModerationDocs = (
     repoRoot: string,
     overrides?: ModerationDocsOverrides,
@@ -160,6 +164,7 @@ export function setupRepoFilePolicyTest() {
   return {
     makeRepo,
     run,
+    setSnapshotTable,
     topicRouteConfigSource,
     track,
     trackPath,

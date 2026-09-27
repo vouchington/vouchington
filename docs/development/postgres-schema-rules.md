@@ -4,6 +4,37 @@ Defect classes surfaced by SQL review that are easy to reintroduce. These are au
 rules; the terse pointer lives in [backend/data-stores/psql/CLAUDE.md](../../backend/data-stores/psql/CLAUDE.md).
 Each rule links the tracking issue for its static-analysis guard / fix.
 
+## Prelaunch relational storage
+
+Voucha has not launched. Change the canonical schema creators and current callers together, then
+rebuild disposable databases. Migrations still provide deterministic fresh installation, a ledger,
+checksum verification, transactional execution, and current seeds/views. They are not a sequence of
+upgrade deployments to preserve historical app contracts. Do not add backfills, dual writes,
+compatibility readers, or activation stages for old application versions. Keep external protocols,
+security key rotation, and exact replay envelopes where those contracts actually require them.
+
+Application-owned business facts belong in typed columns or child tables. Every internal entity
+reference needs a concrete foreign key and supporting index, including references stored in a
+primary/unique key or in audit and recovery records. Live references point to live entity tables.
+Historical identity that must survive deletion points to an entity-specific retained identity row;
+it cannot authorize operations on a deleted live entity. Keep only the identity/lifecycle fields
+required by existing retention and recovery behavior. Model alternatives as per-entity FK columns
+with an exact-one-target constraint or as typed child rows. Do not use JSON, UUID arrays, type/id
+pairs, generic attribute/value tables, or encoded string keys as relationship storage.
+
+JSON storage is for exact reviewed opaque provider documents, external protocol payloads, and
+replay envelopes. Queryable application-owned fields and relationships must be extracted into typed
+storage even when the original external document is also retained. The
+[relational-storage catalog](../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
+records exact allowed columns; the
+[remediation inventory](../../static-code-analysis/repo-file-policy/relational-storage-debt.mts)
+records existing prelaunch defects. The
+[schema guard](../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) runs on the
+committed PostgreSQL-generated snapshot: a new undeclared column fails, and a removed catalog entry
+is stale. Naming checks catch reference-like UUIDs and scoped encoded keys, but semantic ownership
+also requires review of the producer, consumer, and lifecycle. Generated aliases derived from
+foreign-key columns and valid composite or partition FKs are accepted.
+
 ## Index every foreign key with a referential-integrity-usable leading index
 
 PostgreSQL does **not** auto-index FK columns. An unindexed FK makes every parent `DELETE` — and
@@ -27,10 +58,10 @@ Named `ALTER TABLE … ADD CONSTRAINT … NOT VALID` statements must have a matc
 and `postgres-require-fk-on-delete` requires explicit deletion behavior. no-mistakes recovers `NOT VALID` adds inside `DO $$` `IF NOT EXISTS` wrappers
 so they pair with top-level `VALIDATE CONSTRAINT`.
 
-`postgres-no-add-column` requires new columns to be folded into the original pre-launch
-`CREATE TABLE`. The small set of repairs for schemas that were already deployed is declared as
-exact path/table/column/type/nullability/default tuples in [`.no-mistakes.yml`](../../.no-mistakes.yml);
-the rule rejects both mismatched operations and stale exceptions.
+`postgres-no-add-column` requires new columns to be folded into the original prelaunch
+`CREATE TABLE`. Existing exact path/table/column/type/nullability/default exceptions in
+[`.no-mistakes.yml`](../../.no-mistakes.yml) are cleanup debt from earlier staging repairs;
+do not add new ones. The rule rejects mismatched operations and stale exceptions.
 
 ## No strict-prefix-redundant indexes
 
