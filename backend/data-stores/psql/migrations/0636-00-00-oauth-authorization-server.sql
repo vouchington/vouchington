@@ -48,6 +48,10 @@ CREATE INDEX IF NOT EXISTS idx_oauth_clients__owner
 ON oauth_clients (owner_user_id, id)
 WHERE owner_user_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_oauth_clients__verified_active_id
+ON oauth_clients (id DESC)
+WHERE metadata_url IS NULL AND revoked_at IS NULL AND verified_at IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   client_id UUID NOT NULL REFERENCES oauth_clients ON DELETE CASCADE,

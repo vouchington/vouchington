@@ -25,6 +25,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'modmail-inbox-page',
   'notifications',
   'notifications-unread-summary',
+  'oauth-client-verification-verified-page',
   'platform-stats',
   'post-admission-response-refresh',
   'post-by-slug',

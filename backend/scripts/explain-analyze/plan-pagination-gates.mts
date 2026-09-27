@@ -18,8 +18,13 @@ const RSS_FEED_ITEMS_GLOBAL_CURSOR_INDEX = 'idx_rss_feed_items__published_at__id
 const RSS_FEED_ITEMS_CHILD_INDEX_SUFFIX = '_published_at_id_idx'
 const STORY_PROJECTION_SOURCE_INDEX = 'idx_rss_feed_items__story_id__id__url_id'
 const STORY_PROJECTION_SOURCE_CHILD_INDEX_SUFFIX = '_story_id_id_url_id_idx'
+const OAUTH_CLIENT_VERIFICATION_INDEX = 'idx_oauth_clients__verified_active_id'
 
 export function assertPaginationPlanShape(result: ExplainResult): void {
+  if (result.scenario_id === 'oauth-client-verification-verified-page') {
+    assertOAuthClientVerificationPlan(result)
+    return
+  }
   if (result.scenario_id === 'rss-feed-items-search-global-cursor') {
     assertRssFeedItemsGlobalCursorPlan(result)
     return
@@ -70,6 +75,24 @@ export function assertPaginationPlanShape(result: ExplainResult): void {
   if (missingIndexes.length > 0 || explicitSort) {
     throw new Error(
       `${result.name} must paginate in ${requiredIndexes.join(' and ')} order without an explicit Sort`,
+    )
+  }
+}
+
+function assertOAuthClientVerificationPlan(result: ExplainResult): void {
+  const nodes = collectPlanNodes(result.plan)
+  const verifiedIndexNode = nodes.find(
+    node => node['Index Name'] === OAUTH_CLIENT_VERIFICATION_INDEX,
+  )
+  const cursorIndexCondition = String(verifiedIndexNode?.['Index Cond'] ?? '')
+  const usesCursorAsIndexBound = /\bid\s*</u.test(cursorIndexCondition)
+  const scansOAuthClients = nodes.some(
+    node => node['Node Type'] === 'Seq Scan' && node['Relation Name'] === 'oauth_clients',
+  )
+  const explicitSort = nodes.some(node => String(node['Node Type'] ?? '').includes('Sort'))
+  if (!verifiedIndexNode || !usesCursorAsIndexBound || scansOAuthClients || explicitSort) {
+    throw new Error(
+      `${result.name} must page verified oauth_clients through ${OAUTH_CLIENT_VERIFICATION_INDEX} with the cursor in its Index Cond and without an oauth_clients sequential scan or explicit Sort`,
     )
   }
 }

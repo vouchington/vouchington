@@ -10,6 +10,7 @@ interface TableInfo {
 
 export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'users', column: 'id' },
+  { table: 'oauth_clients', column: 'id' },
   { table: 'topics', column: 'id' },
   { table: 'individual_cards', column: 'id' },
   { table: 'individual_rewards_program_point_valuations', column: 'id' },

@@ -83,6 +83,100 @@ describe('story post related URL projection EXPLAIN plan', () => {
   })
 })
 
+describe('verified OAuth client listing EXPLAIN plan', () => {
+  it('requires the verified active-client index', () => {
+    const queryText =
+      'SELECT id FROM oauth_clients WHERE metadata_url IS NULL AND revoked_at IS NULL AND verified_at IS NOT NULL ORDER BY id DESC LIMIT $2'
+    const indexed = result('oauth-client-verification-verified-page', queryText, {
+      Plan: {
+        'Node Type': 'Index Scan',
+        'Relation Name': 'oauth_clients',
+        'Index Name': 'idx_oauth_clients__verified_active_id',
+        'Index Cond': '(id < $1)',
+      },
+    })
+    expect(() => assertPaginationPlanShape(indexed)).not.toThrow()
+
+    const wrongIndex = result('oauth-client-verification-verified-page', queryText, {
+      Plan: {
+        'Node Type': 'Index Scan',
+        'Relation Name': 'oauth_clients',
+        'Index Name': 'oauth_clients_pkey',
+        'Index Cond': '(id < $1)',
+      },
+    })
+    expect(() => assertPaginationPlanShape(wrongIndex)).toThrow(
+      'idx_oauth_clients__verified_active_id',
+    )
+  })
+
+  it('requires the continuation cursor to be an index condition', () => {
+    const filtered = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients WHERE id < $1 ORDER BY id DESC LIMIT $2',
+      {
+        Plan: {
+          'Node Type': 'Index Scan',
+          'Relation Name': 'oauth_clients',
+          'Index Name': 'idx_oauth_clients__verified_active_id',
+          Filter: '(id < $1)',
+          'Rows Removed by Filter': 1000,
+        },
+      },
+    )
+    expect(() => assertPaginationPlanShape(filtered)).toThrow('cursor in its Index Cond')
+
+    const unrelatedIdCondition = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients WHERE id < $1 ORDER BY id DESC LIMIT $2',
+      {
+        Plan: {
+          'Node Type': 'Index Scan',
+          'Relation Name': 'oauth_clients',
+          'Index Name': 'idx_oauth_clients__verified_active_id',
+          'Index Cond': '(id = owner_user_id)',
+          Filter: '(id < $1)',
+        },
+      },
+    )
+    expect(() => assertPaginationPlanShape(unrelatedIdCondition)).toThrow(
+      'cursor in its Index Cond',
+    )
+  })
+
+  it('rejects verified client sequential scans', () => {
+    const scanned = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients',
+      {
+        Plan: { 'Node Type': 'Seq Scan', 'Relation Name': 'oauth_clients' },
+      },
+    )
+    expect(() => assertPaginationPlanShape(scanned)).toThrow('oauth_clients sequential scan')
+  })
+
+  it('rejects verified client explicit sorts', () => {
+    const sorted = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients',
+      {
+        Plan: {
+          'Node Type': 'Sort',
+          Plans: [
+            {
+              'Node Type': 'Index Scan',
+              'Relation Name': 'oauth_clients',
+              'Index Name': 'idx_oauth_clients__verified_active_id',
+              'Index Cond': '(id < $1)',
+            },
+          ],
+        },
+      },
+    )
+    expect(() => assertPaginationPlanShape(sorted)).toThrow('explicit Sort')
+  })
+})
+
 function presentationSortResult(sourceRows: number, inputRows: number): ExplainResult {
   return result('story-post-related-url-projection-source-page', 'SELECT id FROM rss_feed_items', {
     Plan: {

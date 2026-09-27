@@ -17,6 +17,7 @@ import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
+import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
 
 async function main() {
   prepareOutputDir()
@@ -25,6 +26,7 @@ async function main() {
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
     await runSearchAndFacetScenarios()
+    await runOAuthClientVerificationScenarios()
     await runEntityAndCommunityScenarios()
     await runAdmissionReservationScenarios()
     await runTopicImportAttemptScenarios()

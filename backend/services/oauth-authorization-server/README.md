@@ -71,6 +71,10 @@ for error behavior, audit retention, and ownership boundaries.
 and owner apps share. `client-verification.mts` lists active dynamically registered clients for
 administrators and verifies the exact reviewed `client_name` and `redirect_uris` with one
 conditional update, or clears verification. Management views live in `management-types.mts`.
+The verified listing uses a static `verified_at IS NOT NULL` predicate and separate first-page and
+continuation queries so generic prepared plans can apply the cursor through
+`idx_oauth_clients__verified_active_id`; the all and unverified listings intentionally have no
+speculative indexes.
 
 ## Boundaries
 

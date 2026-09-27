@@ -49,6 +49,7 @@
     "@services/modmail": "workspace:^",
     "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",
+    "@services/oauth-authorization-server": "workspace:^",
     "@services/platform-stats": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
