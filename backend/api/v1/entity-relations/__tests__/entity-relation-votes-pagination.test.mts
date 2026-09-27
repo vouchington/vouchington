@@ -45,6 +45,7 @@ describe('GET /api/v1/entity-relations/:id/votes pagination', () => {
     createId: async () => {
       const creator = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       const relation = await createTestEntityRelation(creator)
+      if (relation?.id == null) throw new Error('expected an entity relation id')
       return relation.id
     },
     ownChoice: 'confirm',

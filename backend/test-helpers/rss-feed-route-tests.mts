@@ -2,8 +2,8 @@
 import { beforeAll, expect, test } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { createApiKey } from '@services/api-keys'
-import type { PrivateUser } from '@services/users/types'
+import { createApiKey } from '../services/api-keys/index.mts'
+import type { PrivateUser } from '../services/users/types.mts'
 
 /** Shared RSS feed route cases. Call from a literal `describe` after the route module import. */
 export function registerRssFeedRouteTests(

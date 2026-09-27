@@ -2,7 +2,7 @@
 import { beforeAll, expect, test } from 'vitest'
 import { createHash } from 'node:crypto'
 import { createTestUser, makeRandomEmbedding, seedSearchEmbeddingCache } from '@voucha/test-helpers'
-import type { PrivateUser } from '@services/users/types'
+import type { PrivateUser } from '../services/users/types.mts'
 
 type IdPage = {
   results: { id: string }[]

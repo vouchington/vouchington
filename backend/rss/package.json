@@ -24,7 +24,6 @@
     "@voucha/api": "workspace:^"
   },
   "devDependencies": {
-    "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -7,7 +7,7 @@ import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect, createTestLandingPage } from '@voucha/test-helpers'
-import { createDeviceAndSessionTokens } from '@services/jwt-session'
+import { createDeviceAndSessionTokens } from '../services/jwt-session/index.mts'
 import { v7 } from 'uuid'
 
 type AnalyticsRequest = ReturnType<typeof createRequest>

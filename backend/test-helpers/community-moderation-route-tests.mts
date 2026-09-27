@@ -5,7 +5,7 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import type { PrivateUser } from '@services/users/types'
+import type { PrivateUser } from '../services/users/types.mts'
 import {
   releaseThroughOtherCommunity,
   sendAcquire,

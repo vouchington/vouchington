@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestLandingPageProfileLinkItem } from '@voucha/test-helpers'
 import { registerLandingPageAnalyticsTests } from '../../../test-helpers/landing-page-analytics-route-tests.mts'

@@ -4,8 +4,8 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
-import type { Community } from '@services/communities/types'
-import type { PrivateUser } from '@services/users/types'
+import type { Community } from '../services/communities/types.mts'
+import type { PrivateUser } from '../services/users/types.mts'
 import type { Response } from 'supertest'
 
 export type CommunityModerationRouteOptions = {
@@ -54,7 +54,7 @@ export async function sendAcquire(
   ctx: CommunityModerationRouteContext,
   user: PrivateUser | undefined,
   status: number,
-) {
+): Promise<{ response: Response; subjectId: string }> {
   const subjectId = await ctx.options.createSubject({
     community: ctx.community,
     subjectUser: ctx.subjectUser,
@@ -69,7 +69,7 @@ export async function sendRelease(
   user: PrivateUser | undefined,
   status: number,
   existingSubjectId?: string,
-) {
+): Promise<Response> {
   const subjectId =
     existingSubjectId ??
     (await ctx.options.createSubject({
