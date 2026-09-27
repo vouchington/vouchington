@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { testOAuthClientExists } from '@voucha/test-helpers/data-stores/psql/oauth-client-metadata'
 import {
   CLIENT_ID_METADATA_MAX_SIZE_BYTES,
-  parseClientIdMetadataUrl,
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
@@ -53,6 +52,7 @@ describe('Client ID Metadata Documents', () => {
     ['symmetric key material', { jwks: { keys: [{ kty: 'oct', k: 'private' }] } }],
     ['confidential authentication', { token_endpoint_auth_method: 'client_secret_basic' }],
     ['unlisted grant', { grant_types: ['client_credentials'] }],
+    ['invalid redirect URI', { redirect_uris: ['ftp://client.example/callback'] }],
   ])('rejects %s without persisting the document', async (_name, overrides) => {
     const clientId = randomMetadataUrl()
     await expect(
@@ -86,6 +86,8 @@ describe('Client ID Metadata Documents', () => {
     'https://client.example\\other.example/metadata.json',
     'https://client.example/a/../metadata.json',
     'https://client.example/a/%2e%2e/metadata.json',
+    'https://[invalid]/metadata.json',
+    'https://client.example/%zz/metadata.json',
     'https://client.example',
   ])('rejects an invalid Client Identifier URL before fetching: %s', async clientId => {
     const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>()
@@ -113,6 +115,18 @@ describe('Client ID Metadata Documents', () => {
     })
     expect(safeFetch).toHaveBeenCalledOnce()
   })
+
+  it('aborts a metadata request that exceeds the request timeout', async () => {
+    const clientId = randomMetadataUrl()
+    await expect(
+      resolveClientIdMetadataDocument(clientId, {
+        safeFetch: async (_url, options) =>
+          await new Promise((_resolve, reject) => {
+            options?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+          }),
+      }),
+    ).rejects.toMatchObject({ code: 'unauthorized_client' })
+  }, 10_000)
 
   it('bounds the response body and rejects oversized or timed-out reads', async () => {
     const clientId = randomMetadataUrl()
@@ -149,6 +163,26 @@ describe('Client ID Metadata Documents', () => {
             headers: new Headers({ 'content-type': 'text/html' }),
             ok: false,
             status: 302,
+            url: clientId,
+          }) as unknown as Awaited<ReturnType<ClientIdMetadataDependencies['safeFetch']>>,
+      }),
+    ).rejects.toMatchObject({ code: 'unauthorized_client' })
+    expect(body.cancel).toHaveBeenCalledOnce()
+  })
+
+  it('ignores cancellation failures while rejecting an invalid response', async () => {
+    const clientId = randomMetadataUrl()
+    const body = {
+      cancel: vi.fn<() => Promise<void>>(async () => Promise.reject(new Error('closed'))),
+    }
+    await expect(
+      resolveClientIdMetadataDocument(clientId, {
+        safeFetch: async () =>
+          ({
+            body,
+            headers: new Headers({ 'content-type': 'text/html' }),
+            ok: false,
+            status: 500,
             url: clientId,
           }) as unknown as Awaited<ReturnType<ClientIdMetadataDependencies['safeFetch']>>,
       }),
@@ -258,13 +292,5 @@ describe('Client ID Metadata Documents', () => {
     ).resolves.toMatchObject({ client_name: 'Newer' })
     releaseOlder?.()
     await expect(olderResult).resolves.toMatchObject({ code: 'unauthorized_client' })
-  })
-})
-
-describe('parseClientIdMetadataUrl', () => {
-  it('keeps the exact URL spelling used as the client identifier', () => {
-    expect(parseClientIdMetadataUrl('https://CLIENT.example:443/metadata.json?version=1')).toBe(
-      'https://CLIENT.example:443/metadata.json?version=1',
-    )
   })
 })

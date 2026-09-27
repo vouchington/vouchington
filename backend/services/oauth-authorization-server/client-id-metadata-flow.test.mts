@@ -9,6 +9,7 @@ import {
 } from './client-id-metadata-document.mts'
 import {
   beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
@@ -130,7 +131,77 @@ describe('Client ID Metadata Document OAuth flow', () => {
     ).resolves.toMatchObject({ scope: 'mcp.user:read', token_type: 'Bearer' })
   })
 
-  it('rejects a byte-different redirect and never redirects through stale metadata', async () => {
+  it('reuses one no-store metadata fetch when beginning an already validated request', async () => {
+    const user = await createTestUserDirect()
+    const clientId = randomMetadataUrl()
+    const verifier = randomBytes(32).toString('base64url')
+    const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>(async () =>
+      responseFor(clientId, { 'cache-control': 'no-store' }),
+    )
+    const parameters = {
+      clientId,
+      codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
+      codeChallengeMethod: 'S256',
+      redirectUri: 'https://app.example:443/oauth/callback',
+      resource: getOAuthResourceUrl('user'),
+      responseType: 'code',
+      scope: 'mcp.user:read',
+      state: randomBytes(12).toString('base64url'),
+    }
+    const validated = await validateOAuthAuthorizationRequest(parameters, { safeFetch })
+
+    await beginValidatedOAuthAuthorizationRequest(
+      { deviceId: uuidv7(), sessionId: uuidv7(), userId: user.id },
+      validated,
+    )
+
+    expect(safeFetch).toHaveBeenCalledOnce()
+  })
+
+  it('resolves an uncached document before returning a redirectable protocol error', async () => {
+    const clientId = randomMetadataUrl()
+    const redirectUri = 'https://app.example:443/oauth/callback'
+    const state = 'opaque-state'
+    const safeFetch: ClientIdMetadataDependencies['safeFetch'] = async () => responseFor(clientId)
+    const error = await validateOAuthAuthorizationRequest({
+      clientId,
+      codeChallenge: 'unused-for-this-error',
+      codeChallengeMethod: 'S256',
+      redirectUri,
+      resource: getOAuthResourceUrl('user'),
+      responseType: 'token',
+      scope: 'mcp.user:read',
+      state,
+    }).catch((caught: unknown) => caught)
+    expect(error).toMatchObject({ code: 'unsupported_response_type' })
+    if (!(error instanceof OAuthProtocolError)) throw new Error('expected OAuth protocol error')
+
+    const location = await getOAuthAuthorizationErrorRedirect(
+      { clientId, redirectUri, state, error },
+      { safeFetch },
+    )
+    expect(location).not.toBeNull()
+    const errorRedirect = new URL(location ?? '')
+    expect(errorRedirect.origin + errorRedirect.pathname).toBe('https://app.example/oauth/callback')
+    expect(errorRedirect.searchParams.get('error')).toBe('unsupported_response_type')
+    expect(errorRedirect.searchParams.get('error_description')).toBe('response_type must be code')
+    expect(errorRedirect.searchParams.get('state')).toBe(state)
+    expect(errorRedirect.searchParams.get('iss')).toBeTruthy()
+    await expect(
+      getOAuthAuthorizationErrorRedirect(
+        { clientId, redirectUri: 'https://attacker.example/callback', state, error },
+        { safeFetch },
+      ),
+    ).resolves.toBeNull()
+    await expect(
+      getOAuthAuthorizationErrorRedirect(
+        { clientId: randomMetadataUrl(), redirectUri, state, error },
+        { safeFetch: async () => Promise.reject(new Error('unavailable')) },
+      ),
+    ).resolves.toBeNull()
+  })
+
+  it('refreshes stale metadata before deciding whether an error redirect is safe', async () => {
     const clientId = randomMetadataUrl()
     const verifier = randomBytes(32).toString('base64url')
     const safeFetch: ClientIdMetadataDependencies['safeFetch'] = async () =>
@@ -153,12 +224,18 @@ describe('Client ID Metadata Document OAuth flow', () => {
       code: 'invalid_request',
       message: 'redirect_uri is not registered for this client',
     })
+    const redirectInput = {
+      clientId,
+      redirectUri: 'https://app.example:443/oauth/callback',
+      state: 'opaque-state',
+      error: new OAuthProtocolError('invalid_scope', 'scope rejected'),
+    }
+    await expect(getOAuthAuthorizationErrorRedirect(redirectInput, { safeFetch })).resolves.toMatch(
+      /^https:\/\/app\.example\/oauth\/callback\?error=invalid_scope/u,
+    )
     await expect(
-      getOAuthAuthorizationErrorRedirect({
-        clientId,
-        redirectUri: 'https://app.example:443/oauth/callback',
-        state: 'opaque-state',
-        error: new OAuthProtocolError('invalid_scope', 'scope rejected'),
+      getOAuthAuthorizationErrorRedirect(redirectInput, {
+        safeFetch: async () => Promise.reject(new Error('unavailable')),
       }),
     ).resolves.toBeNull()
   })

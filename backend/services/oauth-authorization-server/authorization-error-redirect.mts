@@ -2,19 +2,25 @@ import { write } from '@data-stores/psql'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import type { OAuthProtocolError } from './errors.mts'
 import type { OAuthClient } from './types.mts'
+import {
+  resolveClientIdMetadataDocument,
+  type ClientIdMetadataDependencies,
+} from './client-id-metadata-document.mts'
 
-export async function getOAuthAuthorizationErrorRedirect(input: {
-  clientId: string
-  redirectUri: string
-  state: unknown
-  error: OAuthProtocolError
-}): Promise<string | null> {
+export async function getOAuthAuthorizationErrorRedirect(
+  input: {
+    clientId: string
+    redirectUri: string
+    state: unknown
+    error: OAuthProtocolError
+  },
+  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
+): Promise<string | null> {
   const result = await write<OAuthClient>(
-    `/* getFreshOAuthClientForAuthorizationErrorRedirect */ SELECT *
+    `/* getOAuthClientForAuthorizationErrorRedirect */ SELECT *
      FROM oauth_clients
      WHERE client_id = $1
        AND revoked_at IS NULL
-       AND (metadata_url IS NULL OR metadata_expires_at > CURRENT_TIMESTAMP)
        AND (
          owner_user_id IS NULL
          OR EXISTS (
@@ -23,7 +29,19 @@ export async function getOAuthAuthorizationErrorRedirect(input: {
        )`,
     [input.clientId],
   )
-  const client = result.rows[0]
+  let client: OAuthClient | undefined = result.rows[0]
+  if (client?.metadata_url && (client.metadata_expires_at?.getTime() ?? 0) <= Date.now()) {
+    client = undefined
+  }
+  if (!client) {
+    try {
+      client =
+        (await resolveClientIdMetadataDocument(input.clientId, clientIdMetadataDependencies)) ??
+        undefined
+    } catch {
+      return null
+    }
+  }
   if (!client?.redirect_uris.includes(input.redirectUri)) return null
   return buildOAuthAuthorizationResponseUrl(input.redirectUri, {
     error: input.error.code,

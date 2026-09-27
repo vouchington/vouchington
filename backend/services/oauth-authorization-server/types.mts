@@ -78,3 +78,15 @@ export type OAuthAuthorizationRequestView = {
   scopes: ApiScope[]
   expires_at: Date
 }
+
+declare const validatedOAuthAuthorizationRequest: unique symbol
+
+export type ValidatedOAuthAuthorizationRequest = {
+  readonly [validatedOAuthAuthorizationRequest]: never
+  client: OAuthClient
+  codeChallenge: string
+  redirectUri: string
+  resource: string
+  scopes: ApiScope[]
+  state: string
+}

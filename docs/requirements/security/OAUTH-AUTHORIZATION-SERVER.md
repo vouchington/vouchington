@@ -78,7 +78,8 @@ but does not change Voucha's supported `none` authentication method.
 
 A validated document is upserted into `oauth_clients` under the exact URL so the existing request,
 grant, token, evidence, and provenance foreign keys remain authoritative. Cache freshness respects
-HTTP cache directives with a 5-minute default and 1-hour ceiling after response age is deducted.
+`Cache-Control: max-age` or, when absent, `Expires` relative to `Date`, with a 5-minute default and
+1-hour ceiling after response age is deducted.
 `no-cache`, `no-store`, and zero remaining freshness require another fetch for the next
 authorization. Failed or invalid refreshes abort authorization and cannot authorize an error
 redirect through stale metadata. Database-ordered refresh generations prevent an older concurrent

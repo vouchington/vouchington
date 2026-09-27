@@ -15,8 +15,11 @@ import {
   validatePkceChallenge,
   validateResource,
 } from './validation.mts'
-import type { ApiScope } from '@modules/scopes'
-import type { OAuthAuthorizationRequestView, OAuthClient } from './types.mts'
+import type {
+  OAuthAuthorizationRequestView,
+  OAuthClient,
+  ValidatedOAuthAuthorizationRequest,
+} from './types.mts'
 import { getOAuthClientDisplayName } from './known-clients.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 
@@ -31,14 +34,6 @@ type OAuthAuthorizationRequestParameters = {
   state: unknown
 }
 
-type ValidatedOAuthAuthorizationRequest = {
-  client: OAuthClient
-  codeChallenge: string
-  resource: string
-  scopes: ApiScope[]
-  state: string
-}
-
 type AuthorizationRequestRow = {
   id: string
   client_id: string
@@ -46,7 +41,7 @@ type AuthorizationRequestRow = {
   redirect_uri: string
   state: string
   resource: string
-  scopes: ApiScope[]
+  scopes: OAuthClient['scopes']
   code_challenge: string
   expires_at: Date
   approved_at: Date | null
@@ -64,13 +59,20 @@ export async function beginOAuthAuthorizationRequest(
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<{ request_id: string }> {
   const validated = await validateOAuthAuthorizationRequest(input, clientIdMetadataDependencies)
+  return beginValidatedOAuthAuthorizationRequest(input, validated)
+}
+
+export async function beginValidatedOAuthAuthorizationRequest(
+  input: { deviceId: string; sessionId: string; userId: string },
+  validated: ValidatedOAuthAuthorizationRequest,
+): Promise<{ request_id: string }> {
   const { client, codeChallenge, resource, scopes, state } = validated
   await using query = await beginTransaction()
   const activeParticipantIds = await lockOAuthParticipantUsers(
     [input.userId, client.owner_user_id],
     query,
   )
-  const lockedClient = await getOAuthClient(input.clientId, query)
+  const lockedClient = await getOAuthClient(client.client_id, query)
   if (
     !lockedClient ||
     !activeParticipantIds.has(input.userId) ||
@@ -78,7 +80,7 @@ export async function beginOAuthAuthorizationRequest(
   ) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
-  assertClientAuthorizationRequest(lockedClient, input.redirectUri, scopes)
+  assertClientAuthorizationRequest(lockedClient, validated.redirectUri, scopes)
   if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
@@ -106,7 +108,7 @@ export async function beginOAuthAuthorizationRequest(
       lockedClient.id,
       input.userId,
       browserBindingHash,
-      input.redirectUri,
+      validated.redirectUri,
       state,
       resource,
       scopes,
@@ -138,7 +140,14 @@ export async function validateOAuthAuthorizationRequest(
   const client = await getOAuthClientForAuthorization(input.clientId, clientIdMetadataDependencies)
   if (!client) throw new OAuthProtocolError('unauthorized_client', 'client is not registered')
   assertClientAuthorizationRequest(client, input.redirectUri, scopes)
-  return { client, codeChallenge, resource: resource.url, scopes, state: input.state }
+  return {
+    client,
+    codeChallenge,
+    redirectUri: input.redirectUri,
+    resource: resource.url,
+    scopes,
+    state: input.state,
+  } as ValidatedOAuthAuthorizationRequest
 }
 
 export async function getOAuthAuthorizationRequestForUser(
