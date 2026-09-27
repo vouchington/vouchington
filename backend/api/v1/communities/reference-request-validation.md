@@ -31,6 +31,26 @@ schema is never checked before authentication.
   is not runtime-enforced by the shared AJV instance — the route's own default logic still handles
   the omitted case).
 
+## Carriers the generated schema does not reject by itself
+
+- `PATCH /api/v1/communities/:idOrSlug` reads `archive` and several update fields before the contract
+  call. A non-object JSON body (`null`, an array, or a scalar) used to throw during that read and
+  surface as `500`. The route now checks the owner/admin update gate first, then
+  `validateRequestContract`, so an owner gets `422` and an authenticated non-owner gets `403`.
+  Unauthenticated callers still get `401` from `requireAuth`.
+- `POST /api/v1/communities/:idOrSlug/posts` runs the honeypot check before the contract. The
+  honeypot helper treats a non-object body as not triggered, so JSON `null` reaches the contract and
+  returns `422` after the contribution gates. An object with a filled honeypot field still returns
+  the honeypot response before schema validation. Unauthenticated callers still get `401`.
+- `:promptId` on the agent-prompt routes is generated as `{ type: 'string' }` with no UUID format.
+  `validateRequestContract` therefore accepts `not-a-uuid`, and `getCommunityAgentPrompt` would bind
+  that value to `community_agent_prompts.id` (`22P02`, mapped to `500`). Each handler calls
+  `validateUUIDParam` after its auth or role gate and before that lookup. GET, test-runs, and
+  allocations already had a role gate, so a member who fails it still gets `403`. PATCH and DELETE
+  authorize inside the update/delete service after the row is loaded, so their route gate is
+  `requireAuth` plus the community lookup: a bad id is `422` for any authenticated caller once the
+  community exists.
+
 ## Endpoints that skip a declared carrier
 
 - `GET /api/v1/communities/:idOrSlug/reports/pending` intentionally skips query-carrier validation

@@ -8,7 +8,11 @@ import type { ActiveModeratorConfig } from '@services/moderation/moderation-prom
 import { recordModerationTrainingFeedback } from '@services/moderation-training'
 import { getPromptTestTrainingLabel } from '@services/moderation-training/prompt-test-label'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import {
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../../response-helpers.mts'
 
 import { getCommunityOrThrow } from './shared.mts'
 
@@ -29,6 +33,7 @@ app
       403,
       'Forbidden',
     )
+    validateUUIDParam(ctx, 'promptId')
 
     const prompt = await getCommunityAgentPrompt(promptId)
     ctx.assert(prompt, 404, 'Prompt not found')

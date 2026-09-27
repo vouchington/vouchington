@@ -75,7 +75,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
     recaptcha_token?: string
   }
 
-  if (isHoneypotTriggered(body as Record<string, unknown>)) {
+  if (isHoneypotTriggered(body)) {
     sendCommunityPostHoneypotResponse(ctx, body, community.id, currentUser.id)
     return
   }

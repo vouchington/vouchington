@@ -44,4 +44,11 @@ describe('isHoneypotTriggered', () => {
   it('ignores unrelated fields', () => {
     expect(isHoneypotTriggered({ email: 'tests+user@voucha.ai', content: 'hello' })).toBe(false)
   })
+
+  it('returns false for a non-object body', () => {
+    expect(isHoneypotTriggered(null)).toBe(false)
+    expect(isHoneypotTriggered('spam')).toBe(false)
+    expect(isHoneypotTriggered(1)).toBe(false)
+    expect(isHoneypotTriggered(['hp_website'])).toBe(false)
+  })
 })
