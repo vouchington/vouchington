@@ -7,6 +7,7 @@ export const sharedDbScopeTables = {
   searchRecoverableCopyrightFormReviewIntakeIds: 'copyright_notice_form_intake_reviews',
   searchReconcilableCopyrightEnforcementRequestIds: 'copyright_notice_enforcement_requests',
   searchRecoverableCopyrightActionIntentIds: 'copyright_notice_action_intents',
+  searchBlockedCopyrightHoldRestorationNoticeIds: 'copyright_notices',
   searchRecoverableCopyrightDeliveryIntentIds: 'copyright_notice_delivery_intents',
   searchRecoverableCopyrightEmailIntakeResponseIds: 'copyright_notice_email_intake_responses',
   replayFailedMediaDeliveryRegistryRecords: 'media_delivery_registry_records',

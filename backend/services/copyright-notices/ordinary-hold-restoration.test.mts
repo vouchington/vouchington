@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import {
+  createTestCopyrightDeliveryDependencies,
+  type CopyrightTestDeliveryPublisher,
+} from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -17,10 +19,18 @@ import {
 
 describe('ordinary copyright hold restoration', () => {
   it('reopens the original statutory restore only after both ordinary holds resolve', async () => {
-    const publish: typeof publishImagePlacementDeliveryRecord = async () => undefined
-    const scene = await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
-    const firstHold = await recordHold(scene, publish)
-    const secondHold = await recordHold(scene, publish)
+    const publish: CopyrightTestDeliveryPublisher = async () => undefined
+    const scene = await openHeldCounterNoticeRestore(
+      createTestCopyrightDeliveryDependencies(publish),
+    )
+    const firstHold = await recordHold(
+      scene,
+      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
+    )
+    const secondHold = await recordHold(
+      scene,
+      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
+    )
     const deps = createTestCopyrightDeliveryDependencies(publish)
     await expect(
       processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
@@ -72,8 +82,11 @@ describe('ordinary copyright hold restoration', () => {
   })
 
   it('restores only the counter-noticed target in a two-target case', async () => {
-    const publish: typeof publishImagePlacementDeliveryRecord = async () => undefined
-    const scene = await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish), 2)
+    const publish: CopyrightTestDeliveryPublisher = async () => undefined
+    const scene = await openHeldCounterNoticeRestore(
+      createTestCopyrightDeliveryDependencies(publish),
+      2,
+    )
     const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     const otherTarget = aggregate?.targets.find(target => target.id !== scene.target.id)
     const otherWithhold = aggregate?.actionIntents.find(
@@ -84,7 +97,11 @@ describe('ordinary copyright hold restoration', () => {
     await expect(
       processCopyrightActionIntent(otherWithhold.id, scene.restorationAt, deps),
     ).resolves.toBe('applied')
-    const hold = await recordHold(scene, publish, [scene.target.id, otherTarget.id])
+    const hold = await recordHold(
+      scene,
+      createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
+      [scene.target.id, otherTarget.id],
+    )
     await expect(
       processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
     ).resolves.toBe('blocked')
@@ -121,10 +138,12 @@ describe('ordinary copyright hold restoration', () => {
   it.each(['current', 'superseded'] as const)(
     'rechecks %s authority after an already applied restore is interrupted by a filing',
     async authority => {
-      const publish: typeof publishImagePlacementDeliveryRecord = async () => undefined
-      const scene = await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
+      const publish: CopyrightTestDeliveryPublisher = async () => undefined
+      const scene = await openHeldCounterNoticeRestore(
+        createTestCopyrightDeliveryDependencies(publish),
+      )
       const failure = new Error('External publication unavailable.')
-      const failingPublish: typeof publishImagePlacementDeliveryRecord = async input => {
+      const failingPublish: CopyrightTestDeliveryPublisher = async input => {
         if (input.state === 'allow') throw failure
       }
       await expect(

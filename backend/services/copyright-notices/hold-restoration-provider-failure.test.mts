@@ -26,7 +26,10 @@ import { createCounterNoticeRestoreIntent } from './evidence-and-holds-restorati
 const publish = async () => undefined
 
 async function exhaustedRestoreWithSibling() {
-  const scene = await openHeldCounterNoticeRestore(publish, 2)
+  const scene = await openHeldCounterNoticeRestore(
+    createTestCopyrightDeliveryDependencies(publish),
+    2,
+  )
   for (const attempt of [1, 2, 3, 4, 5]) {
     const attemptedAt = new Date(scene.restorationAt.getTime() + attempt * 60 * 60 * 1000)
     await expect(claimCopyrightActionIntent(scene.restore.id, attemptedAt)).resolves.not.toBeNull()

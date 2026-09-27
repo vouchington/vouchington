@@ -15,6 +15,7 @@ export function searchBlockedCopyrightHoldRestorationNoticeIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright hold restoration cursor',
+    'searchBlockedCopyrightHoldRestorationNoticeIds',
     'rowId',
     sql`
     /* searchBlockedCopyrightHoldRestorationNoticeIds */

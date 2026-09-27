@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import {
+  createTestCopyrightDeliveryDependencies,
+  type CopyrightTestDeliveryPublisher,
+} from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   recordHistoricalTestCopyrightHoldResolution,
@@ -29,11 +31,17 @@ import {
 } from './restoration-hold-scene.mts'
 import { createCounterNoticeRestoreIntent } from './evidence-and-holds-restoration-hold-fixtures.mts'
 
-const publish: typeof publishImagePlacementDeliveryRecord = async () => undefined
+const publish: CopyrightTestDeliveryPublisher = async () => undefined
 
 async function historicalBlockedRestore(targetCount = 1) {
-  const scene = await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish), targetCount)
-  const hold = await recordOrdinaryCopyrightHold(scene, publish)
+  const scene = await openHeldCounterNoticeRestore(
+    createTestCopyrightDeliveryDependencies(publish),
+    targetCount,
+  )
+  const hold = await recordOrdinaryCopyrightHold(
+    scene,
+    createTestCopyrightDeliveryDependencies(publish).prepublishImagePlacementDenial,
+  )
   await expect(
     processCopyrightActionIntent(
       scene.restore.id,
@@ -237,7 +245,9 @@ describe('historical blocked copyright restoration recovery', () => {
   })
 
   it('makes manual failed replay wait at placement before taking its intent row', async () => {
-    const scene = await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
+    const scene = await openHeldCounterNoticeRestore(
+      createTestCopyrightDeliveryDependencies(publish),
+    )
     await exhaustDelivery(scene.restore.id, scene.restorationAt)
     await expect(
       replayTestFailedCopyrightActionBehindHoldFence({

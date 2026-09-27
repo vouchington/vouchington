@@ -1,4 +1,4 @@
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
@@ -63,7 +63,7 @@ export async function openHeldCounterNoticeRestore(
 
 export async function recordOrdinaryCopyrightHold(
   scene: Awaited<ReturnType<typeof openHeldCounterNoticeRestore>>,
-  publish: typeof publishImagePlacementDeliveryRecord,
+  publish: typeof prepublishImagePlacementDenial,
   targetIds: string[] = [scene.target.id],
 ) {
   const receivedAt = new Date('2026-07-03T12:00:00.000Z')
