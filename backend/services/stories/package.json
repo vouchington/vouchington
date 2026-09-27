@@ -25,6 +25,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",

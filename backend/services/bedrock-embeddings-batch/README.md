@@ -16,9 +16,13 @@ AWS-SDK-only or `pg-copy-streams` transitive dependencies.
 
 ## Public Helpers
 
-- `processBatchCreation(...)` (`utils.mts`) — checks provider capacity before any optional
-  copy-existing scan, assembles a batch file for pending entities, submits it via `createBatch`, and
+- `processBatchCreation(...)` (`utils.mts`) — checks provider capacity, assembles a batch file for pending entities, submits it via `createBatch`, and
   records lock rows.
+- `copyExisting{Topic,Post,RssFeedItem}Embeddings(...)` (`entities/*`) — scans at most 100 dirty
+  candidates in UUID order, then applies eligibility, lock, and centralized-cache checks. Every
+  scanned candidate advances the opaque scoped cursor, even a cache miss or locked row. A full
+  page returns a cursor; the independent reconciliation worker enqueues its continuation. Copying
+  does not consult Bedrock provider capacity. Cursorless scheduled roots revisit skipped rows.
 - `processImageBatchCreation(...)` (`utils.mts`) — assembles and submits image batch files under the
   same provider-capacity limits.
 - `processBatchResultsInBatches` / `processCrawlChunkBatchResults` /

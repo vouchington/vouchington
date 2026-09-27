@@ -112,3 +112,8 @@ export function recordDedup(
 export function clearDedupEntries(queueName: string): void {
   dedupEntriesByQueue.delete(queueName)
 }
+
+/** Simulate expiry of one owned dedup reservation without changing other queue state. */
+export function expireTestDedupEntry(queueName: string, dedupId: string): void {
+  dedupEntriesByQueue.get(queueName)?.delete(dedupId)
+}

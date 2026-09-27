@@ -28,6 +28,11 @@ const EXPECTED_SCHEDULED_JOBS = [
   'bedrock-embeddings-batch/creation_dispatcher',
   'bedrock-embeddings-batch/poll_dispatcher',
   'bedrock-embeddings-batch/stale_cleanup_dispatcher',
+  'bedrock-embeddings-batch/reconcile_existing_topics',
+  'bedrock-embeddings-batch/reconcile_existing_posts',
+  'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
+  'bedrock-embeddings-batch/post_trigger_recovery',
+  'bedrock-embeddings-batch/rss_story_trigger_recovery',
   'bloom-filters/backfillEntityCacheBloomFilter_communities',
   'bloom-filters/backfillEntityCacheBloomFilter_posts',
   'bloom-filters/backfillEntityCacheBloomFilter_rss_feed_items',
@@ -97,7 +102,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 31 manifests, including the scheduler tombstone, and 77 live jobs', () => {
+  it('imports the exact 31 manifests, including the scheduler tombstone, and 82 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(31)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -147,7 +152,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(61)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(66)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

@@ -48,9 +48,11 @@ A `story-clustering` job is enqueued whenever an RSS feed item transitions from 
 
 1. **Single-path worker** ([`backend/workers/bedrock-embeddings/workers/bedrock-embeddings-nova-multimodal-v1-single.mts`](../../workers/bedrock-embeddings/workers/bedrock-embeddings-nova-multimodal-v1-single.mts)) — immediately after `upsertRssFeedItemEmbedding` writes the embedding vector.
 2. **Batch-path save** ([`backend/services/bedrock-embeddings-batch/entities/rss-feed-items.mts`](../../services/bedrock-embeddings-batch/entities/rss-feed-items.mts)) — for each item id returned by `applyRssFeedItemBatchUpdates` after a Bedrock batch result is applied.
-3. **Batch-path copy-existing** (same file) — for each item hydrated from the centralized `bedrock_nova_multimodal_v1_embeddings` table by `copyExistingRssFeedItemEmbeddings`.
+3. **Reusable-copy reconciliation** (same file) — for each item hydrated from the centralized `bedrock_nova_multimodal_v1_embeddings` table by `copyExistingRssFeedItemEmbeddings` independently of Bedrock batch creation.
 
-All three paths use the same `debounce` dedup key (`story_clustering_${id}`, 60 s TTL), so rapid re-enqueues coalesce.
+All three paths mark the exact current embedding input only after strict queue acceptance. A
+scheduled RSS trigger recovery job retries pending delivery in bounded pages. This marker says the
+job was accepted by GlideMQ, not that the agent finished clustering; the agent remains replay-safe.
 
 ## Embedding Retry
 

@@ -22,12 +22,21 @@ flowchart LR
     PJ --> BR
     BR --> AU[applyBatchUpdates]
   end
+  subgraph reconciliation ["Provider-free reconciliation"]
+    direction TB
+    RR["five scheduled roots<br/>minute production · hourly staging"] --> RP["bounded copy and trigger pages<br/>100 candidates maximum"]
+    RP -->|full page| RC[opaque cursor continuation]
+    RC --> RP
+    RP --> DT[post ban-evasion or RSS story delivery]
+  end
   CS -- "isEntityLockedForBatch?" --> LT[(bedrock_embeddings_batch_entities)]
   CS -- lookupExistingEmbedding --> CT[(bedrock_nova_multimodal_v1_embeddings)]
   CS -- INSERT ON CONFLICT DO NOTHING --> CT
   AU -- INSERT ON CONFLICT DO NOTHING --> CT
   AU -- UPDATE WHERE content_sha256 matches --> ET[(entity tables)]
   CS -- UPDATE WHERE content_sha256 matches --> ET
+  RP -- guarded cache copy --> ET
+  RP -- lookup reusable embedding --> CT
   CJ -- INSERT lock --> LT
   AU -- DELETE lock --> LT
 ```
@@ -80,7 +89,19 @@ The `backlog_dispatcher` runs every minute and reads the single-queue depth (`wa
 
 ## Downstream Consumers
 
-- **Story clustering** — both pipelines fan out `enqueueStoryClustering` after writing an `rss_feed_item` embedding. See [docs/requirements/content/stories.md](../../requirements/content/stories.md) for the clustering algorithm and trigger sources.
+- **Story clustering** — single writes, batch-result writes, and reusable-copy reconciliation
+  enqueue clustering for current RSS embeddings. An exact-input marker advances only after queue
+  acceptance; failed delivery is recovered by an independent bounded trigger scan. Queue acceptance
+  does not imply agent completion. See [stories](../../requirements/content/stories.md).
+- **Ban-evasion detection** — current first-community-post embeddings use a conditional
+  exact-input delivery marker. A separate bounded root revisits pending posts, including posts
+  that become first after an earlier post is deleted.
+
+The five provider-free roots copy reusable topics, posts, and RSS items and recover post and RSS
+delivery. They share a serialized reconciliation lane but never consult Bedrock batch capacity.
+Every full page enqueues one continuation. Cursorless schedules and the
+`bedrock-embedding-reconciliation` operator backfill recover skipped rows, later cache arrivals,
+and failed or lost delivery. Creation jobs only handle provider batch work.
 
 ## Infrastructure
 

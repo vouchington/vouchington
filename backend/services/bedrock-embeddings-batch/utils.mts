@@ -49,7 +49,6 @@ export async function processBatchCreation<T extends BatchEntity>(
   params: {
     jobType: BatchJobType
     streamPending: () => AsyncGenerator<T, void, unknown>
-    copyExisting?: () => Promise<unknown>
     reEnqueue: () => unknown
   },
   dependencies: BatchCreationDependencies = defaultBatchCreationDependencies,
@@ -59,10 +58,6 @@ export async function processBatchCreation<T extends BatchEntity>(
   if (!limits.allowed) {
     params.reEnqueue()
     return { reEnqueued: true, reason: limits.reason }
-  }
-
-  if (params.copyExisting) {
-    await params.copyExisting()
   }
 
   const fileBuilder = new BatchFileBuilder()

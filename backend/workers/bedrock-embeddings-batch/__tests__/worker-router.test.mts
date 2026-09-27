@@ -1,5 +1,17 @@
+import { randomBytes, randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
+import { UnrecoverableError } from '@modules/queue-errors'
+import { decodeUuidCursor, encodeScopedUuidCursor, isSimpleCursor } from '@modules/pagination'
+import {
+  createTestUserDirect,
+  getTopicEmbeddingReference,
+  insertTestEmbeddings,
+  insertTestTopic,
+  makeRandomEmbedding,
+  setTopicEmbeddingContentSha256,
+} from '@voucha/test-helpers'
+import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { processBedrockEmbeddingsBatchJob } from '../processors/worker-router.mts'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import {
@@ -37,6 +49,69 @@ describe('bedrock embeddings batch worker processor', () => {
     await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig])
   })
 
+  it('reconciles a cached topic even when Bedrock creation is saturated', async () => {
+    await blockBatchCreation()
+    const user = await createTestUserDirect()
+    const suffix = randomUUID().slice(0, 8)
+    const topicId = await insertTestTopic({
+      name: `Reconciliation Router ${suffix}`,
+      slug: `reconciliation-router-${suffix}`,
+      createdById: user.id,
+    })
+    const hash = randomBytes(32)
+    await setTopicEmbeddingContentSha256(topicId, hash)
+    await insertTestEmbeddings([{ content_sha256: hash, embedding: makeRandomEmbedding() }])
+    const before = decodeUuidCursor(
+      encodeUuidCursorBefore(topicId),
+      isSimpleCursor,
+      'Invalid cursor',
+    )
+    const after = encodeScopedUuidCursor(before.id, 'embedding-reconciliation:topics:id-asc')
+
+    await expect(
+      processBedrockEmbeddingsBatchJob(
+        makeJob('reconcile_existing', { entityType: 'topics', after }, 'reconciliation'),
+        {} as Worker,
+      ),
+    ).resolves.toMatchObject({ updatedIds: [topicId], scannedCount: 1 })
+    await expect(getTopicEmbeddingReference(topicId)).resolves.toMatchObject({
+      bedrock_nova_multimodal_v1_embedding_created_at: expect.any(Date),
+    })
+  })
+
+  it('rejects malformed reconciliation payloads and scoped cursors unrecoverably', async () => {
+    for (const data of [
+      {},
+      { entityType: 'images' },
+      { entityType: 'topics', after: 1 },
+      { entityType: 'topics', extra: true },
+    ]) {
+      await expect(
+        processBedrockEmbeddingsBatchJob(
+          makeJob('reconcile_existing', data, 'reconciliation'),
+          {} as Worker,
+        ),
+      ).rejects.toThrow(UnrecoverableError)
+    }
+    await expect(
+      processBedrockEmbeddingsBatchJob(
+        makeJob('reconcile_existing', { entityType: 'topics', after: '' }, 'reconciliation'),
+        {} as Worker,
+      ),
+    ).rejects.toThrow(UnrecoverableError)
+    await expect(
+      processBedrockEmbeddingsBatchJob(
+        makeJob('post_trigger_recovery', { after: '' }, 'reconciliation'),
+        {} as Worker,
+      ),
+    ).rejects.toThrow(UnrecoverableError)
+    await expect(
+      processBedrockEmbeddingsBatchJob(
+        makeJob('rss_story_trigger_recovery', { after: '' }, 'reconciliation'),
+        {} as Worker,
+      ),
+    ).rejects.toThrow(UnrecoverableError)
+  })
   it.each([['topics'], ['posts'], ['rss_feed_items'], ['crawl_chunks'], ['images']] as const)(
     'routes %s creation jobs through the real batch processors',
     async name => {

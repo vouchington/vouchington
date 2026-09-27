@@ -2,7 +2,12 @@ import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
 import type { Post } from '@services/posts/types'
 import type { BatchUpdateItem } from '@services/bedrock-embeddings/batch/types'
-import { copyExistingEmbeddings, applyBatchUpdates } from '../orchestrator/save.mts'
+import { applyBatchUpdates } from '../orchestrator/save.mts'
+import {
+  copyExistingEmbeddings,
+  type EmbeddingReconciliationOptions,
+  type EmbeddingReconciliationPage,
+} from '../orchestrator/reconcile-existing.mts'
 import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 import {
   reusableEmbeddingMissingClause,
@@ -13,14 +18,12 @@ import * as banEvasion from '@services/communities/ban-evasion'
 
 type PendingPost = PendingEntity
 
-export async function copyExistingPostEmbeddings(): Promise<void> {
-  const updatedIds = await copyExistingEmbeddings('posts', { excludeDeleted: true })
-  await enqueueBanEvasionDetectionAfterCopiedPostEmbeddings(updatedIds)
-}
-
-async function enqueueBanEvasionDetectionAfterCopiedPostEmbeddings(updatedIds: string[]) {
-  await banEvasion.enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(updatedIds)
-  await banEvasion.enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts()
+export async function copyExistingPostEmbeddings(
+  options: EmbeddingReconciliationOptions = {},
+): Promise<EmbeddingReconciliationPage> {
+  const page = await copyExistingEmbeddings('posts', options)
+  await banEvasion.enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts(page.updatedIds)
+  return page
 }
 
 export async function* streamPendingPosts(): AsyncGenerator<PendingPost, void, unknown> {

@@ -1,25 +1,23 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  beginTransaction,
   createTestUser,
-  createTestUserDirect,
-  getTopicEmbeddingReference,
   insertTestCommunity,
   insertTestCommunityMember,
   insertTestEmbeddings,
   insertTestPost,
-  insertTestTopic,
   makeRandomEmbedding,
   setPostEmbeddingContentOnlySha256,
-  setTopicEmbeddingContentSha256,
+  setPostDeletedForTest,
 } from '@voucha/test-helpers'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { ban_evasion } from '@queues/ban-evasion/queues'
+import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
 import {
   applyPostBatchUpdates,
   copyExistingPostEmbeddings,
 } from '@services/bedrock-embeddings-batch/entities/posts'
-import { copyExistingEmbeddings, copyExistingLockClause } from './save.mts'
+import { copyExistingEmbeddings, copyExistingLockClause } from './reconcile-existing.mts'
 
 describe('copyExistingLockClause', () => {
   it('uses typed lock checks for topic, post, and RSS feed item tables', () => {
@@ -99,10 +97,10 @@ describe('post embedding batch ban-evasion follow-up', () => {
       },
     ])
 
-    await expect(copyExistingEmbeddings('posts', { excludeDeleted: true })).resolves.toContain(
-      postId,
-    )
-    await copyExistingPostEmbeddings()
+    await expect(copyExistingEmbeddings('posts')).resolves.toMatchObject({
+      updatedIds: expect.arrayContaining([postId]),
+    })
+    await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts()
 
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
   })
@@ -138,6 +136,75 @@ describe('post embedding batch ban-evasion follow-up', () => {
 
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
   })
+
+  it('advances past a non-first embedded post and retries it after the earlier post is deleted', async () => {
+    const owner = await createTestUser()
+    const member = await createTestUser()
+    const otherMember = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
+    const suffix = randomUUID().slice(0, 8)
+    const makePost = (userId: string, label: string, communityId: string | null) =>
+      insertTestPost({
+        title: `${label} ${suffix}`,
+        slug: `${label.toLowerCase()}-${suffix}`,
+        markdown: `${label} body`,
+        createdById: userId,
+        communityId,
+        postType: 'article',
+      })
+    const boundary = await makePost(member.id, 'Boundary', null)
+    const first = await makePost(member.id, 'First', community.id)
+    const nonFirst = await makePost(member.id, 'Second', community.id)
+    const nextFirst = await makePost(otherMember.id, 'Third', community.id)
+    const postIds = [first, nonFirst, nextFirst]
+    const hashes = postIds.map(() => randomBytes(32))
+    await Promise.all(postIds.map((id, i) => setPostEmbeddingContentOnlySha256(id, hashes[i]!)))
+    await insertTestEmbeddings(hashes.map(content_sha256 => ({ content_sha256 })))
+    const scope = 'embedding-reconciliation:posts:id-asc'
+    const copied = await copyExistingEmbeddings('posts', {
+      after: encodeScopedUuidCursor(boundary, scope),
+      limit: 100,
+    })
+    expect(copied.updatedIds).toEqual(expect.arrayContaining(postIds))
+
+    const recoveryScope = 'ban-evasion:post-embedding:pending:id-asc'
+    let after = encodeScopedUuidCursor(boundary, recoveryScope)
+    let sawNonFirst = false
+    let sawNextFirst = false
+    let nonFirstEnqueuedCount: number | undefined
+    let nextFirstEnqueuedCount: number | undefined
+    for (let page = 0; page < 30 && !sawNextFirst; page += 1) {
+      const result = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
+        after,
+        limit: 1,
+      })
+      expect(result.scannedCount).toBe(1)
+      after = result.nextCursor!
+      const candidate = decodeScopedUuidCursor(after, recoveryScope, 'Invalid cursor').id
+      if (candidate === nonFirst) {
+        sawNonFirst = true
+        nonFirstEnqueuedCount = result.enqueuedCount
+      }
+      if (candidate === nextFirst) {
+        sawNextFirst = true
+        nextFirstEnqueuedCount = result.enqueuedCount
+      }
+    }
+    expect(sawNonFirst).toBe(true)
+    expect(sawNextFirst).toBe(true)
+    expect(nonFirstEnqueuedCount).toBe(0)
+    expect(nextFirstEnqueuedCount).toBe(1)
+    await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
+    await expect(getBanEvasionJobsFor(community.id, otherMember.id)).resolves.toHaveLength(1)
+
+    await setPostDeletedForTest(first)
+    const retry = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
+      after: encodeScopedUuidCursor(boundary, recoveryScope),
+      limit: 100,
+    })
+    expect(retry.enqueuedCount).toBeGreaterThanOrEqual(1)
+    await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(2)
+  })
 })
 
 async function getBanEvasionJobsFor(communityId: string, userId: string) {
@@ -155,77 +222,3 @@ async function getBanEvasionJobsFor(communityId: string, userId: string) {
     return data.communityId === communityId && data.userId === userId
   })
 }
-
-describe('copyExistingEmbeddings', () => {
-  it('skips locked rows while copying other cached embeddings', async () => {
-    const user = await createTestUserDirect()
-    const suffix = randomUUID().slice(0, 8)
-    const lockedTopicId = await insertTestTopic({
-      name: `Copy Existing Locked ${suffix}`,
-      slug: `copy-existing-locked-${suffix}`,
-      createdById: user.id,
-    })
-    const copiedTopicId = await insertTestTopic({
-      name: `Copy Existing Unlocked ${suffix}`,
-      slug: `copy-existing-unlocked-${suffix}`,
-      createdById: user.id,
-    })
-    const lockedContentSha256 = randomBytes(32)
-    const copiedContentSha256 = randomBytes(32)
-    await setTopicEmbeddingContentSha256(lockedTopicId, lockedContentSha256)
-    await setTopicEmbeddingContentSha256(copiedTopicId, copiedContentSha256)
-    await insertTestEmbeddings([
-      {
-        content_sha256: lockedContentSha256,
-        embedding: makeRandomEmbedding(),
-      },
-      {
-        content_sha256: copiedContentSha256,
-        embedding: makeRandomEmbedding(),
-      },
-    ])
-
-    await using query = await beginTransaction()
-
-    await query(`SELECT id FROM topics WHERE id = $1 FOR UPDATE`, [lockedTopicId])
-
-    await expect(copyExistingEmbeddings('topics', { excludeDeleted: true })).resolves.toContain(
-      copiedTopicId,
-    )
-
-    await query.commit()
-
-    await expect(getTopicEmbeddingReference(lockedTopicId)).resolves.toMatchObject({
-      bedrock_nova_multimodal_v1_embedding_created_at: null,
-    })
-    await expect(getTopicEmbeddingReference(copiedTopicId)).resolves.toMatchObject({
-      bedrock_nova_multimodal_v1_content_sha256: copiedContentSha256,
-      bedrock_nova_multimodal_v1_embedding_created_at: expect.any(Date),
-    })
-  })
-
-  it('selects the table-specific lock clause before copying cached embeddings', async () => {
-    const user = await createTestUserDirect()
-    const suffix = randomUUID().slice(0, 8)
-    const topicId = await insertTestTopic({
-      name: `Copy Existing Lock ${suffix}`,
-      slug: `copy-existing-lock-${suffix}`,
-      createdById: user.id,
-    })
-    const contentSha256 = randomBytes(32)
-    await setTopicEmbeddingContentSha256(topicId, contentSha256)
-    await insertTestEmbeddings([
-      {
-        content_sha256: contentSha256,
-        embedding: makeRandomEmbedding(),
-      },
-    ])
-
-    await expect(copyExistingEmbeddings('topics', { excludeDeleted: true })).resolves.toContain(
-      topicId,
-    )
-    await expect(getTopicEmbeddingReference(topicId)).resolves.toMatchObject({
-      bedrock_nova_multimodal_v1_content_sha256: contentSha256,
-    })
-  })
-})
