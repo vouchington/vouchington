@@ -84,6 +84,12 @@ The canonical community post feed is `/communities/:slug/posts`. It uses the sha
 field and supports `sort=new` and `sort=hot`; the default is `new`. Pinned posts appear at the top of
 the unfiltered first page and are excluded from the normal paginated result list to avoid duplicates.
 
+## Join Applications
+
+Private communities accept join applications. Owners replace the active question set by soft-deleting the previous questions and their options. Submitted answers keep those original question and option rows, so review still shows the labels the applicant selected.
+
+Each supplied answer is one typed row. An omitted key, explicit `null`, empty string, empty multi-select, and checkbox `false` stay distinct. Selected options reference that question's option rows and keep the submitted order. Unknown questions, unknown options, duplicate option labels, and non-string multi-select elements are rejected. Deleting a community cascades its applications, questions, options, answers, and selections.
+
 ## Auto-Archiving Rules
 
 An archived community is read-only:
