@@ -15,6 +15,13 @@ areas. After selected suites pass, the area coverage job checks the full LCOV ev
 owned by that area, then its required gate reports the result. Codecov is informational and does
 not gate a pull request or merge group.
 
+Trusted Docker validation builds in
+[`build-backend.yml`](../../.github/workflows/build-backend.yml) and
+[`build-web.yml`](../../.github/workflows/build-web.yml) pass `secrets.AWS_TEST_ROLE_ARN` to
+[`setup-aws`](../../.github/actions/setup-aws/action.yml) for OIDC test and smoke credentials.
+The PR-assumable test role has no ECR authentication or image-push permissions; validation builds
+load their images locally rather than publishing runtime artifacts.
+
 Main workflows retain their own path-scoped triggers and completed-run deployment receiver. They
 are not a continuation of pull-request or merge-group CI. See [area test suites](ci.md#area-test-suites)
 and [coverage gates](reference-ci-coverage-gates.md) for the detailed contracts.
