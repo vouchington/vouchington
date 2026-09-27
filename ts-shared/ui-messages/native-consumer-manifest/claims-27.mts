@@ -21,6 +21,8 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_27 = [
   { key: 'native.credentials.revokeFailed', consumers: ['dotnet'] },
   { key: 'native.credentials.scopes', consumers: ['dotnet', 'swift'] },
   { key: 'native.credentials.unusedGrantActivity', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.unverified', consumers: ['dotnet'] },
   { key: 'native.credentials.userAudience', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.verified', consumers: ['dotnet'] },
   { key: 'native.credentials.writeAction', consumers: ['dotnet', 'swift'] },
 ] as const satisfies readonly NativeConsumerManifestEntry[]
