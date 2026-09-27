@@ -20,6 +20,36 @@ export async function eraseTestCopyrightFormRequester(intakeId: string): Promise
   `)
 }
 
+export async function selectTestCopyrightScreeningResult(
+  intakeId: string,
+  screeningId: string,
+): Promise<void> {
+  await write(sql`/* selectTestCopyrightScreeningResult */
+    UPDATE copyright_notice_form_screening_executions
+    SET copyright_notice_form_screening_id = ${screeningId}
+    WHERE copyright_notice_form_intake_id = ${intakeId}
+  `)
+}
+
+export async function readTestCopyrightScreeningExecution(intakeId: string) {
+  const { rows } = await write<{
+    attempt_number: number
+    state: 'pending' | 'failed' | 'completed'
+    copyright_notice_form_screening_id: string | null
+    started_at: Date
+    claimed_at: Date | null
+    completed_at: Date | null
+    updated_at: Date
+  }>(sql`/* readTestCopyrightScreeningExecution */
+    SELECT attempt_number, state, copyright_notice_form_screening_id,
+      started_at, claimed_at, completed_at, updated_at
+    FROM copyright_notice_form_screening_executions
+    WHERE copyright_notice_form_intake_id = ${intakeId}
+  `)
+  if (!rows[0]) throw new Error('Expected owned screening execution')
+  return rows[0]
+}
+
 /** Stops real admission after its form fence, then observes a new screen waiting behind it. */
 export async function admitTestCopyrightBeforeScreening<T>(
   noticeId: string,
