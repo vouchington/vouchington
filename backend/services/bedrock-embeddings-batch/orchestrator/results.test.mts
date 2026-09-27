@@ -18,6 +18,15 @@ describe('downloadBatchResults', () => {
     listOutputObjectKeys.mockRejectedValue(new Error('S3 list failed'))
   })
 
+  it('uses the real database adapter for a missing batch without reaching S3', async () => {
+    const missingBatchId = crypto.randomUUID()
+
+    await expect(downloadBatchResults(missingBatchId, { listOutputObjectKeys })).rejects.toThrow(
+      `Batch not found: ${missingBatchId}`,
+    )
+    expect(listOutputObjectKeys).not.toHaveBeenCalled()
+  })
+
   it('removes the temp result file when S3 listing fails', async () => {
     const tempFilePath = join(tmpdir(), 'bedrock-batch-results-batch-1-123.jsonl')
 

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { finished, pipeline } from 'node:stream/promises'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
-import { read } from '@data-stores/psql'
+import type { read } from '@data-stores/psql'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import type { BatchResultItem } from './shared.mts'
 
@@ -19,7 +19,7 @@ export const downloadBatchResults = async (
   batchId: string,
   deps: DownloadBatchResultsDeps = {},
 ): Promise<string> => {
-  const readBatch = deps.read ?? read
+  const readBatch = deps.read ?? (await import('@data-stores/psql')).read
   const listKeys = deps.listOutputObjectKeys ?? listOutputObjectKeys
   const getObject = deps.getOutputObject ?? getOutputObject
   const { rows: batchRows } = await readBatch(

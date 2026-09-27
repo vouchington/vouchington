@@ -1,7 +1,7 @@
 import {
   OAUTH_PROTECTED_RESOURCE_PATHS,
   type OAuthResourceAudience,
-} from '@services/oauth-authorization-server'
+} from '@services/oauth-authorization-server/resources'
 import type { ToolSurface } from '@voucha/tools/types'
 
 export type McpServerConfig = {
