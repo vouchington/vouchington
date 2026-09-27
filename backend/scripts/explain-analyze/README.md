@@ -119,7 +119,7 @@ continuation, a full limit-plus-one lookahead, and physical member work bounded 
 plus one excluded primary on first previews.
 
 The member selector evaluates discoverability and viewer exclusions in a correlated eligibility
-probe before its `LIMIT`; the probe's `OFFSET 0` keeps PostgreSQL from reordering those exclusions
+probe before its `LIMIT`; the probe's `LIMIT 1` keeps PostgreSQL from reordering those exclusions
 into a hash join and sorting the full remaining story on late continuations. Each selected page
 calls the production hydrator after invalidating only its selected item and election cache keys, so
 the actual item,

@@ -38161,7 +38161,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "bodyKind": "content",
-      "hash": "3ef367aa3da8883530b15ea5f81a3dc6df34a7592c5de7ee61a9eb185ccdc6a8",
+      "hash": "7d950657d3ccf2e70092466b0fbc280e8d13aba7fef8e7ad9dc431c695624234",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -38187,7 +38187,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -38284,6 +38292,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -38291,7 +38302,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -41478,7 +41497,20 @@
               "blocked": {
                 "required": true,
                 "schema": {
-                  "type": "boolean"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": false
+                    },
+                    {
+                      "type": "literal",
+                      "value": true
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "crawlable": {
@@ -41808,15 +41840,31 @@
                         "created_by": {
                           "required": true,
                           "schema": {
-                            "name": "BasicUser",
-                            "type": "ref"
+                            "type": "union",
+                            "variants": [
+                              {
+                                "name": "BasicUser",
+                                "type": "ref"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "updated_by": {
                           "required": true,
                           "schema": {
-                            "name": "BasicUser",
-                            "type": "ref"
+                            "type": "union",
+                            "variants": [
+                              {
+                                "name": "BasicUser",
+                                "type": "ref"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         }
                       },
@@ -41931,15 +41979,31 @@
                                     "created_by": {
                                       "required": true,
                                       "schema": {
-                                        "name": "BasicUser",
-                                        "type": "ref"
+                                        "type": "union",
+                                        "variants": [
+                                          {
+                                            "name": "BasicUser",
+                                            "type": "ref"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
                                       }
                                     },
                                     "updated_by": {
                                       "required": true,
                                       "schema": {
-                                        "name": "BasicUser",
-                                        "type": "ref"
+                                        "type": "union",
+                                        "variants": [
+                                          {
+                                            "name": "BasicUser",
+                                            "type": "ref"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
                                       }
                                     }
                                   },

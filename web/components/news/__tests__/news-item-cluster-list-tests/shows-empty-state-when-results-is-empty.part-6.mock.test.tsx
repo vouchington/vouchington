@@ -5,22 +5,20 @@ import {
   makeClusterResult,
   renderClusterList,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
-import { clientApi } from '@/lib/api/client/instance'
+import { getStoryMemberPage } from '@/lib/api/client/stories'
 import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'
 import { FeedStyleProvider } from '@/lib/preferences/feed-style-context'
 import type { RssFeedItemsFeedResponseBody, StoryPageResponse } from '@/types/rss-feed-items'
 
-vi.mock(
-  import('@/lib/api/client/instance'),
-  () =>
-    ({
-      clientApi: { get: vi.fn<VitestLooseMock>() },
-    }) as unknown as typeof import('@/lib/api/client/instance'),
-)
+vi.mock(import('@/lib/api/client/stories'), async importOriginal => ({
+  ...(await importOriginal()),
+  getStoryMemberPage: vi.fn<VitestLooseMock>(),
+}))
 
 describe('NewsItemClusterList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getStoryMemberPage).mockReset()
     localStorage.clear()
   })
 
@@ -75,7 +73,7 @@ describe('NewsItemClusterList', () => {
       rss_feed_bookmarks: {},
     }
     const request = vi
-      .spyOn(clientApi, 'get')
+      .mocked(getStoryMemberPage)
       .mockResolvedValueOnce(appendedPage)
       .mockResolvedValueOnce({
         ...appendedPage,
@@ -123,8 +121,9 @@ describe('NewsItemClusterList', () => {
     expect(screen.getByText('Preview B').closest('[data-pw="news-item-card"]')).toBe(previewBCard)
     expect(previewBCard?.querySelector('img')).toHaveAttribute('src', '/sideload/preview-b.jpg')
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /load more/i })))
-    expect(request).toHaveBeenNthCalledWith(2, '/api/v1/stories/story-1', {
-      searchParams: { limit: 25, after: 'after-d', exclude_item_id: primary.id },
+    expect(request).toHaveBeenNthCalledWith(2, 'story-1', {
+      after: 'after-d',
+      excludeItemId: primary.id,
     })
     expect(toggle).toHaveTextContent('4 related articles')
   })

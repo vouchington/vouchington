@@ -692,7 +692,7 @@
     },
     "GET:/api/v1/stories/:id": {
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
-      "hash": "3ef367aa3da8883530b15ea5f81a3dc6df34a7592c5de7ee61a9eb185ccdc6a8"
+      "hash": "7d950657d3ccf2e70092466b0fbc280e8d13aba7fef8e7ad9dc431c695624234"
     },
     "GET:/api/v1/topic-recommendations/:id": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],

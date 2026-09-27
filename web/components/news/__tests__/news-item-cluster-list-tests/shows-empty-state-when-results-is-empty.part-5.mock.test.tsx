@@ -6,21 +6,19 @@ import {
   makeClusterStoryPage,
   setClusterMockViewerId,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
-import { clientApi } from '@/lib/api/client/instance'
+import { getStoryMemberPage } from '@/lib/api/client/stories'
 import { useNewsItemClusters } from '@/components/news/use-news-item-clusters'
 import type { RssFeedItemsFeedResponseBody, StoryPageResponse } from '@/types/rss-feed-items'
 
-vi.mock(
-  import('@/lib/api/client/instance'),
-  () =>
-    ({
-      clientApi: { get: vi.fn<VitestLooseMock>() },
-    }) as unknown as typeof import('@/lib/api/client/instance'),
-)
+vi.mock(import('@/lib/api/client/stories'), async importOriginal => ({
+  ...(await importOriginal()),
+  getStoryMemberPage: vi.fn<VitestLooseMock>(),
+}))
 
 describe('NewsItemClusterList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getStoryMemberPage).mockReset()
     localStorage.clear()
     setClusterMockViewerId(null)
   })
@@ -73,7 +71,7 @@ describe('NewsItemClusterList', () => {
     const second = new Promise<StoryPageResponse>(resolve => {
       resolveSecond = resolve
     })
-    vi.spyOn(clientApi, 'get').mockResolvedValueOnce(continuation).mockReturnValueOnce(second)
+    vi.mocked(getStoryMemberPage).mockResolvedValueOnce(continuation).mockReturnValueOnce(second)
     const { result, rerender } = renderHook(
       ({ data }) => useNewsItemClusters(data, '/api/v1/feeds/test', {}),
       { initialProps: { data: firstPage } },
@@ -162,7 +160,7 @@ describe('NewsItemClusterList', () => {
     const pending = new Promise<StoryPageResponse>(resolve => {
       resolvePending = resolve
     })
-    vi.spyOn(clientApi, 'get').mockReturnValue(pending)
+    vi.mocked(getStoryMemberPage).mockReturnValue(pending)
     setClusterMockViewerId('viewer-one')
     const { result, rerender } = renderHook(() => useNewsItemClusters(page, '/feed', {}))
     let inFlight!: Promise<void>

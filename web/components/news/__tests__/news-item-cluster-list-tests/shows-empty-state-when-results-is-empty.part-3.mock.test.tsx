@@ -6,22 +6,20 @@ import {
   makeClusterResult,
   renderClusterList,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
-import { clientApi } from '@/lib/api/client/instance'
+import { getStoryMemberPage } from '@/lib/api/client/stories'
 import { getPaginatedPage } from '@/lib/api/client'
 import { useNewsItemClusters } from '@/components/news/use-news-item-clusters'
 import type { RssFeedItemsFeedResponseBody, StoryPageResponse } from '@/types/rss-feed-items'
 
-vi.mock(
-  import('@/lib/api/client/instance'),
-  () =>
-    ({
-      clientApi: { get: vi.fn<VitestLooseMock>() },
-    }) as unknown as typeof import('@/lib/api/client/instance'),
-)
+vi.mock(import('@/lib/api/client/stories'), async importOriginal => ({
+  ...(await importOriginal()),
+  getStoryMemberPage: vi.fn<VitestLooseMock>(),
+}))
 
 describe('NewsItemClusterList', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getStoryMemberPage).mockReset()
     localStorage.clear()
   })
 
@@ -74,7 +72,7 @@ describe('NewsItemClusterList', () => {
       },
       rss_feed_bookmarks: {},
     }
-    const request = vi.spyOn(clientApi, 'get').mockResolvedValue(continuation)
+    const request = vi.mocked(getStoryMemberPage).mockResolvedValue(continuation)
     renderClusterList(data, { nav: true })
 
     expect(screen.getByTestId('nav-ids')).toHaveTextContent('item-1')
@@ -88,8 +86,9 @@ describe('NewsItemClusterList', () => {
     expect(request).not.toHaveBeenCalled()
 
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /load more/i })))
-    expect(request).toHaveBeenCalledWith('/api/v1/stories/story-1', {
-      searchParams: { limit: 25, after: 'opaque-first', exclude_item_id: 'item-1' },
+    expect(request).toHaveBeenCalledWith('story-1', {
+      after: 'opaque-first',
+      excludeItemId: 'item-1',
     })
     expect(screen.getByTestId('nav-ids')).toHaveTextContent('item-1,item-2,item-3')
     expect(screen.getByText('Prefetched Article')).toBeVisible()
@@ -146,7 +145,7 @@ describe('NewsItemClusterList', () => {
       rss_feed_bookmarks: {},
     }
     const request = vi
-      .spyOn(clientApi, 'get')
+      .mocked(getStoryMemberPage)
       .mockReturnValueOnce(pending)
       .mockResolvedValueOnce(response)
     renderClusterList(data, { nav: true })
@@ -162,8 +161,9 @@ describe('NewsItemClusterList', () => {
     expect(screen.getByText('Prefetched Article')).toBeVisible()
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /try again/i })))
     expect(request).toHaveBeenCalledTimes(2)
-    expect(request).toHaveBeenNthCalledWith(2, '/api/v1/stories/story-1', {
-      searchParams: { limit: 25, after: 'retry-cursor', exclude_item_id: 'item-1' },
+    expect(request).toHaveBeenNthCalledWith(2, 'story-1', {
+      after: 'retry-cursor',
+      excludeItemId: 'item-1',
     })
     expect(screen.getByTestId('nav-ids')).toHaveTextContent('item-1,item-2,item-3')
   })
@@ -211,7 +211,7 @@ describe('NewsItemClusterList', () => {
     })
     expect(result.current.visibleClusters.map(cluster => cluster.primary.id)).toEqual(['item-1'])
     expect(result.current.visibleClusters[0]?.storyItems.map(item => item.id)).toEqual(['item-3'])
-    const request = vi.spyOn(clientApi, 'get').mockResolvedValue({
+    const request = vi.mocked(getStoryMemberPage).mockResolvedValue({
       story: {
         id: 'story-1',
         title: null,
@@ -237,8 +237,9 @@ describe('NewsItemClusterList', () => {
     await act(async () => {
       await result.current.handleLoadStoryMore('story-1')
     })
-    expect(request).toHaveBeenCalledWith('/api/v1/stories/story-1', {
-      searchParams: { limit: 25, after: 'first-preview-cursor', exclude_item_id: 'item-1' },
+    expect(request).toHaveBeenCalledWith('story-1', {
+      after: 'first-preview-cursor',
+      excludeItemId: 'item-1',
     })
   })
 })

@@ -112,7 +112,7 @@ function buildMemberSelection(
     sql`rss_feed_items.id`,
     sql`rss_feed_items.url_id`,
   )
-  query.append(sql` OFFSET 0
+  query.append(sql` LIMIT 1
       ) eligible
       WHERE rss_feed_items.story_id = input.story_id
         AND rss_feed_items.deleted_at IS NULL
