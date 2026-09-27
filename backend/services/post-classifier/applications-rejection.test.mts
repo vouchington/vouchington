@@ -3,12 +3,16 @@ import {
   createPostClassifierExecutionFixture,
   initializePostClassifierExecutionTests,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
-import { getPostClassifierApplicationFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
+import {
+  getPostClassifierApplicationFacts,
+  setPostClassifierPostHashForTest,
+} from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
 import { getClassifierBorrowedDecisionFacts } from '@voucha/test-helpers/data-stores/psql/classifier-borrowed-transactions'
 import type { PersistClassifierDecisionInput } from '@services/classifiers/types'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { persistPostClassifierOutcomes } from './application-outcomes.mts'
 import { completePostClassifierApplication } from './application-completion.mts'
+import { claimPostClassifierApplication } from './application-claim.mts'
 import { applyPostClassifierVotes } from './application-votes.mts'
 import {
   failPostClassifierRemoteAttempt,
@@ -74,6 +78,26 @@ describe('post classifier rejected effects leave durable state unchanged', () =>
     release = await initializePostClassifierExecutionTests()
   })
   afterAll(async () => release?.())
+
+  it.each([0, -1, 1.5])(
+    'rejects invalid lease duration %s without replacing the claimant',
+    async leaseSeconds => {
+      const fixture = await createPostClassifierExecutionFixture(true, false)
+      await expect(
+        claimPostClassifierApplication({ ...fixture.lease, leaseSeconds }),
+      ).rejects.toThrow('lease duration must be a positive integer')
+      await expectNoEffects(fixture)
+    },
+  )
+
+  it('rejects voting when the current post content no longer matches the receipt', async () => {
+    const fixture = await createPostClassifierExecutionFixture(true, false)
+    await setPostClassifierPostHashForTest(fixture.post.id, Buffer.alloc(32, 7))
+    await expect(applyPostClassifierVotes(fixture.lease)).rejects.toThrow(
+      'became stale before vote application',
+    )
+    await expectNoEffects(fixture)
+  })
 
   it('rejects completion and voting before outcomes exist', async () => {
     const fixture = await createPostClassifierExecutionFixture(true, false)
