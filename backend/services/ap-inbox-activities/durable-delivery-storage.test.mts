@@ -4,7 +4,6 @@ import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-sto
 import {
   ageActivityPubInboxCleanupFixturesForTest,
   cleanupActivityPubInboxStorageFixturesForTest,
-  deleteActivityPubInboxDeliveriesForTest,
   expireActivityPubInboxDeliveryForTest,
   getActivityPubInboxRetentionStateForTest,
   getActivityPubInboxStorageTriggerDefinitionsForTest,
