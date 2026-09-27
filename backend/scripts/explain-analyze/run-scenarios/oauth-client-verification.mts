@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { listOAuthClientsForVerification } from '@services/oauth-authorization-server'
 import {
   OAUTH_CLIENT_VERIFICATION_TOTAL_SEED_COUNT,
   OAUTH_CLIENT_VERIFICATION_UNVERIFIED_SEED_COUNT,
@@ -7,7 +8,6 @@ import {
   oauthClientVerificationSeedId,
 } from '../seed-data/oauth-client-verification.mts'
 import { runAndCapture } from '../run-support.mts'
-import { listOAuthClientsForVerification } from '../../../services/oauth-authorization-server/client-verification.mts'
 
 const OAUTH_CLIENT_VERIFICATION_PAGE_LIMIT = 50
 const OAUTH_CLIENT_VERIFICATION_LATE_CURSOR_REMAINING_VERIFIED_COUNT =
