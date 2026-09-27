@@ -32,14 +32,14 @@ _none_
 
 **Check constraints:**
 
-- `media_delivery_registry_records_check1`: `CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))`
+- `media_delivery_registry_records_check`: `CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))`
 - `media_delivery_registry_records_delivery_attempt_count_check`: `CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))`
 - `media_delivery_registry_records_delivery_key_check`: `CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))`
 - `media_delivery_registry_records_desired_state_check`: `CHECK ((desired_state = ANY (ARRAY['allow'::text, 'withheld'::text])))`
 - `media_delivery_registry_records_exact_key`: `CHECK ((delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)))`
 - `media_delivery_registry_records_failure_message_check`: `CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))`
 - `media_delivery_registry_records_generation_check`: `CHECK ((generation >= 0))`
-- `media_delivery_registry_records_placement_revision_check`: `CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))`
+- `media_delivery_registry_records_placement_revision_check`: `CHECK ((placement_revision >= 0))`
 - `media_delivery_registry_records_state_check`: `CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'failed'::text])))`
 
 **Foreign keys:**
@@ -50,7 +50,7 @@ _none_
 **Indexes:**
 
 - `idx_media_delivery_registry_records__image`: `CREATE INDEX idx_media_delivery_registry_records__image ON public.media_delivery_registry_records USING btree (image_id)`
-- `idx_media_delivery_registry_records__placement`: `CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id) WHERE (placement_id IS NOT NULL)`
+- `idx_media_delivery_registry_records__placement`: `CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id)`
 - `idx_media_delivery_registry_records__recoverable`: `CREATE INDEX idx_media_delivery_registry_records__recoverable ON public.media_delivery_registry_records USING btree (next_attempt_at, delivery_key) WHERE (state = 'pending'::text)`
 - `media_delivery_registry_records_pkey`: `CREATE UNIQUE INDEX media_delivery_registry_records_pkey ON public.media_delivery_registry_records USING btree (delivery_key)`
 

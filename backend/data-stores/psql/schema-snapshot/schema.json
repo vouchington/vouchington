@@ -904,7 +904,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_status fediverse_integration_statuses;\nBEGIN\n  -- Serialize concurrent triggers for the same topic: acquire a row-level lock on\n  -- topics__fediverse_instances before re-reading the latest change, so whichever\n  -- trigger holds the lock last wins and writes the correct (most-recently-committed) value.\n  PERFORM topic_id FROM topics__fediverse_instances WHERE topic_id = NEW.topic_id FOR UPDATE;\n  SELECT integration_status INTO v_status\n  FROM fediverse_instance_integration_changes\n  WHERE topic_id = NEW.topic_id\n  ORDER BY id DESC LIMIT 1;\n  UPDATE topics__fediverse_instances SET integration_status = v_status\n  WHERE topic_id = NEW.topic_id AND integration_status IS DISTINCT FROM v_status;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n     placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements DEFAULT VALUES RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n     v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements DEFAULT VALUES RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
     },
     "fn_sync_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -36854,14 +36854,14 @@
     },
     "media_delivery_registry_records": {
       "checkConstraints": {
-        "media_delivery_registry_records_check1": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))",
+        "media_delivery_registry_records_check": "CHECK ((((state = 'pending'::text) AND (claimed_at IS NULL) AND (completed_at IS NULL)) OR ((state = 'claimed'::text) AND (claimed_at IS NOT NULL) AND (completed_at IS NULL)) OR ((state = ANY (ARRAY['completed'::text, 'failed'::text])) AND (completed_at IS NOT NULL))))",
         "media_delivery_registry_records_delivery_attempt_count_check": "CHECK (((delivery_attempt_count >= 0) AND (delivery_attempt_count <= 5)))",
         "media_delivery_registry_records_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
         "media_delivery_registry_records_desired_state_check": "CHECK ((desired_state = ANY (ARRAY['allow'::text, 'withheld'::text])))",
         "media_delivery_registry_records_exact_key": "CHECK ((delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)))",
         "media_delivery_registry_records_failure_message_check": "CHECK (((failure_message IS NULL) OR ((char_length(failure_message) >= 1) AND (char_length(failure_message) <= 4096))))",
         "media_delivery_registry_records_generation_check": "CHECK ((generation >= 0))",
-        "media_delivery_registry_records_placement_revision_check": "CHECK (((placement_revision IS NULL) OR (placement_revision >= 0)))",
+        "media_delivery_registry_records_placement_revision_check": "CHECK ((placement_revision >= 0))",
         "media_delivery_registry_records_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'failed'::text])))"
       },
       "columns": {
@@ -36873,7 +36873,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -36884,7 +36884,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -36895,7 +36895,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "delivery_attempt_count": {
@@ -36906,7 +36906,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 8,
           "type": "integer"
         },
         "delivery_key": {
@@ -36928,7 +36928,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "failure_message": {
@@ -36939,7 +36939,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "generation": {
@@ -36950,7 +36950,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 6,
           "type": "bigint"
         },
         "image_id": {
@@ -36961,7 +36961,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "invalidated_at": {
@@ -36972,7 +36972,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "next_attempt_at": {
@@ -36983,7 +36983,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "placement_id": {
@@ -36994,7 +36994,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "placement_revision": {
@@ -37005,7 +37005,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 3,
           "type": "integer"
         },
         "projected_at": {
@@ -37016,7 +37016,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "state": {
@@ -37027,7 +37027,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "updated_at": {
@@ -37038,7 +37038,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         }
       },
@@ -37088,7 +37088,7 @@
         "idx_media_delivery_registry_records__placement": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id) WHERE (placement_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__placement ON public.media_delivery_registry_records USING btree (placement_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -37099,7 +37099,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(placement_id IS NOT NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -37167,10 +37167,7 @@
       "uniqueConstraints": {}
     },
     "media_delivery_repair_markers": {
-      "checkConstraints": {
-        "media_delivery_repair_markers_delivery_key_check": "CHECK (((char_length(delivery_key) >= 1) AND (char_length(delivery_key) <= 512)))",
-        "media_delivery_repair_markers_exact_key": "CHECK (\nCASE\n    WHEN (delivery_key ~ '^image-placement:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(0|[1-9][0-9]{0,9}):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) THEN ((split_part(delivery_key, ':'::text, 3))::bigint <= 2147483647)\n    ELSE false\nEND)"
-      },
+      "checkConstraints": {},
       "columns": {
         "created_at": {
           "collation": null,
@@ -37180,7 +37177,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "delivery_key": {
@@ -37213,12 +37210,22 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 4,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "FK-free exact-key wakeups for rollback/crash recovery; committed typed authority is re-read under the placement fence.",
-      "foreignKeys": {},
+      "comment": "Committed registry-backed wakeup for pre-commit edge denial recovery; drained by the existing media delivery reconciler.",
+      "foreignKeys": {
+        "media_delivery_repair_markers_delivery_key_fkey": {
+          "columns": ["delivery_key"],
+          "definition": "FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["delivery_key"],
+          "referencedTable": "media_delivery_registry_records",
+          "validated": true
+        }
+      },
       "growth": "bounded",
       "indexes": {
         "idx_media_delivery_repair_markers__oldest": {
@@ -37294,7 +37301,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -37305,7 +37312,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -37327,7 +37334,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         },
         "retirement_reason": {
@@ -37338,7 +37345,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "revision": {
@@ -37349,7 +37356,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 2,
           "type": "integer"
         },
         "updated_at": {
@@ -37360,7 +37367,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         }
       },
