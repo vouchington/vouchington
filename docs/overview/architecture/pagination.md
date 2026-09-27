@@ -8,8 +8,8 @@ and unenforced top-N product expectations are not exemptions.
 ## API And Query Contract
 
 - Forward pagination uses `after`. Bidirectional admin tables may also use `before`.
-- Cursors are opaque, validated, unpadded base64url-encoded JSON. Decoders accept legacy standard
-  base64 cursors during migration; callers must not construct or inspect cursor payloads.
+- Cursors are opaque, validated, unpadded base64url-encoded JSON. Decoding rejects padding and
+  the standard base64 alphabet. Callers must not construct or inspect cursor payloads.
 - The cursor contains every key in the deterministic keyset order, including a unique ID
   tie-breaker. A continuation predicate uses the same keys and direction as `ORDER BY`.
 - Apply visibility, filters, and semantic deduplication before pagination. Preserve those inputs on

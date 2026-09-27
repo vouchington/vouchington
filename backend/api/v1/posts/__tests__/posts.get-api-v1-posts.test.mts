@@ -13,6 +13,7 @@ import {
 } from '@voucha/test-helpers'
 
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { encodeCursor } from '@modules/pagination'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -195,8 +196,7 @@ describe('posts', () => {
           createdById: user!.id,
           markdown: 'Draft content',
         })
-        // Encode cursor for the post
-        const cursor = Buffer.from(JSON.stringify({ id: postId })).toString('base64')
+        const cursor = encodeCursor({ id: postId })
 
         const request = createRequest()
         const response = await request.get(`/api/v1/posts?drafts=true&after=${cursor}`).expect(200)

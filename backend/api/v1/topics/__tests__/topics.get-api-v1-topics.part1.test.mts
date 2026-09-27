@@ -8,6 +8,7 @@ import {
   updateRssFeedTiming,
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { encodeCursor } from '@modules/pagination'
 import { createTopicAliases } from '@services/topics/aliases'
 
 describe('topics', () => {
@@ -235,8 +236,7 @@ describe('topics', () => {
           slug: `topic-id-cursor-${random}`,
           createdById: user.id,
         })
-        // Encode cursor for the topic
-        const cursor = Buffer.from(JSON.stringify({ id: topicId })).toString('base64')
+        const cursor = encodeCursor({ id: topicId })
 
         const request = createRequest()
         const response = await request.get(`/api/v1/topics?after=${cursor}`).expect(200)
