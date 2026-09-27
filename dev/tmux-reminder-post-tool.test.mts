@@ -1,7 +1,7 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { readHookPayload } from './codex-hooks/hook-payload.mts'
 import type { HookPayload } from './codex-hooks/types.mts'
@@ -195,5 +195,35 @@ describe('renderPostToolReminder', () => {
       tool_response: { stdout: '', stderr: '' },
     }
     expect(renderPostToolReminder(payload, '%1')).toContain('PR created')
+  })
+
+  it('reads the pane title from VOUCHA_TMUX_BIN instead of the first tmux on PATH', () => {
+    const payload: HookPayload = { tool_input: { command: 'git push' }, tool_name: 'Bash' }
+    const realDir = mkdtempSync(join(tmpdir(), 'voucha-tmux-bin-'))
+    const decoyDir = mkdtempSync(join(tmpdir(), 'voucha-tmux-decoy-'))
+    const marker = join(decoyDir, 'invoked')
+    const originalPath = process.env.PATH ?? ''
+    writeFileSync(
+      join(realDir, 'tmux'),
+      ['#!/bin/bash', "printf '%s\\n' 'my-feature-pr123'", ''].join('\n'),
+      { mode: 0o755 },
+    )
+    writeFileSync(
+      join(decoyDir, 'tmux'),
+      ['#!/bin/bash', `touch ${JSON.stringify(marker)}`, "printf '%s\\n' 'my-feature'", ''].join(
+        '\n',
+      ),
+      { mode: 0o755 },
+    )
+    vi.stubEnv('PATH', `${decoyDir}:${originalPath}`)
+    vi.stubEnv('VOUCHA_TMUX_BIN', join(realDir, 'tmux'))
+    try {
+      expect(renderPostToolReminder(payload, '%1')).toBeNull()
+      expect(existsSync(marker)).toBe(false)
+    } finally {
+      vi.unstubAllEnvs()
+      rmSync(realDir, { force: true, recursive: true })
+      rmSync(decoyDir, { force: true, recursive: true })
+    }
   })
 })
