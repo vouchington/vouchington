@@ -36,10 +36,9 @@ failed or was rejected.
 Every retrospective must contain a `## CI Failures` section immediately after
 `## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: read the
 session journal first (via `node dev/blackboard-journal.mts entries [--root-codex]` for interactive
-root Codex), then the raw transcript and
-recursive subagent transcripts for failures surfaced during the session. Do not crawl workflow
-history for failures the session never observed, and do not infer that no failure occurred merely
-because the final run passed.
+root Codex), then the bounded transcript facts from `pnpm exec vouchington retrospective-transcript`.
+Do not read raw transcripts or crawl workflow history for failures the session never observed.
+Do not infer that no failure occurred merely because the final run passed.
 
 Use exactly one status line:
 
