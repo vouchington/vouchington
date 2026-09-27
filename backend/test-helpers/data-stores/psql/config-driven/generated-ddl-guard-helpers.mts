@@ -23,7 +23,7 @@ export async function loadGeneratedConfigDrivenSql(
     .filter(file => file.endsWith('.mts'))
     .sort()
 
-  return await Promise.all(
+  return Promise.all(
     generatorFiles.map(async file => {
       const mod = (await import(pathToFileURL(join(configDrivenDir, file)).href)) as {
         default?: unknown

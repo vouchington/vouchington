@@ -37,7 +37,7 @@ export async function assertCopyrightEvidenceAllowsDeletion(
     ) AS blocked
   `)
   assert(
-    rows[0]?.blocked !== true,
+    !rows[0]?.blocked,
     409,
     'Account deletion is blocked while a copyright incident or legal hold is unresolved',
   )

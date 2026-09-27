@@ -13,7 +13,7 @@ export async function processCopyrightActionIntent(
 ): Promise<'applied' | 'stale' | 'blocked' | 'not_claimed'> {
   const intent = await claimCopyrightActionIntent(intentId, now)
   if (!intent) return 'not_claimed'
-  return await executeCopyrightActionIntent(
+  return executeCopyrightActionIntent(
     intent,
     now,
     getCopyrightActionDeliveryDependencies(dependencies),

@@ -145,19 +145,19 @@ describe('native Bluesky callback timeout race', () => {
     [
       'an expired completion',
       async (flowId: string, _did: string) =>
-        await setTestBlueskyLinkCompletionExpiresAt(flowId, new Date(Date.now() - 1_000)),
+        setTestBlueskyLinkCompletionExpiresAt(flowId, new Date(Date.now() - 1_000)),
     ],
     [
       'a missing completion',
-      async (flowId: string, _did: string) => await deleteTestBlueskyLinkCompletion(flowId),
+      async (flowId: string, _did: string) => deleteTestBlueskyLinkCompletion(flowId),
     ],
     [
       'an expired authorization',
-      async (flowId: string, _did: string) => await expireTestBlueskyLinkAuthorization(flowId),
+      async (flowId: string, _did: string) => expireTestBlueskyLinkAuthorization(flowId),
     ],
     [
       'a missing provider account',
-      async (_flowId: string, did: string) => await deleteTestBlueskyLinkedAccount(did),
+      async (_flowId: string, did: string) => deleteTestBlueskyLinkedAccount(did),
     ],
   ] as const)(
     'rejects and cleans up a handoff-ready generation with %s',

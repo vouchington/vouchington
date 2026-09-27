@@ -181,7 +181,7 @@ describe('deleteImageById rollback', () => {
     const blockedEnqueue = new Promise<never>((_, reject) => (rejectEnqueue = reject))
     vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
       enqueueStarted()
-      return await blockedEnqueue
+      return blockedEnqueue
     })
     const deleteKnown = vi
       .spyOn(imageStorage, 'deleteKnownImageStorageFromS3')

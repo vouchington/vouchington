@@ -21,7 +21,7 @@ export async function reconcileNotificationsForRssFeedItem(
       created: 0,
       pruned: await pruneMissingRssFeedItemContentNotifications(rssFeedItemId),
     }
-  return await reconcileNotificationBatches(
+  return reconcileNotificationBatches(
     {
       batchQueryComment: 'selectRssFeedItemNotificationRecipientBatch',
       createRecipients: (client, recipientTable) =>

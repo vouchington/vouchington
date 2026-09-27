@@ -179,7 +179,7 @@ describe('OpenAI response integration boundary', () => {
         runWithOpenAIResponseAttemptHooks(
           { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
           async () =>
-            await runWithBackgroundResponseHooks({ onResponseCreated }, () =>
+            runWithBackgroundResponseHooks({ onResponseCreated }, () =>
               createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
             ),
         ),

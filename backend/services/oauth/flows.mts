@@ -1,5 +1,5 @@
 import onError from '@modules/on-error'
-import { type DeviceClass, type DeviceContext } from '@services/jwt-session'
+import type { DeviceClass, DeviceContext } from '@services/jwt-session'
 import { upsertUser } from '@services/users/create'
 import {
   enqueueSyncFacebookFriends,

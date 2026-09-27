@@ -6,10 +6,10 @@ import {
   isIpv6AllowlistedHost,
 } from './ipv6-allowlist.mts'
 
-const SENTRY_DSN = `https://${'a'.repeat(32)}@o${12345}.ingest.eu.sentry.io/${67890}`
+const SENTRY_DSN = `https://${'a'.repeat(32)}@o12345.ingest.eu.sentry.io/67890`
 const SENTRY_HOST = new URL(SENTRY_DSN).hostname
-const SENTRY_DSN_WITH_PORT = `https://${'a'.repeat(32)}@o${12345}.ingest.eu.sentry.io:8443/${67890}`
-const SENTRY_IPV6_DSN_WITH_PORT = `https://${'a'.repeat(32)}@[2001:db8::1]:8443/${67890}`
+const SENTRY_DSN_WITH_PORT = `https://${'a'.repeat(32)}@o12345.ingest.eu.sentry.io:8443/67890`
+const SENTRY_IPV6_DSN_WITH_PORT = `https://${'a'.repeat(32)}@[2001:db8::1]:8443/67890`
 
 describe('isIpv6AllowlistedHost', () => {
   it('allows every audited fixed IPv6 API hostname exactly', () => {

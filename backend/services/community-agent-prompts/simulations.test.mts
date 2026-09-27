@@ -218,7 +218,7 @@ describe('community agent prompt simulations', () => {
       markdown?: string
     } = {},
   ): Promise<string> {
-    return await insertTestPost({
+    return insertTestPost({
       title: `Simulation ${slugPart}`,
       slug: `simulation-${slugPart}`,
       markdown: options.markdown ?? `Simulation body ${slugPart}`,

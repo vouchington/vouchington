@@ -5,6 +5,7 @@ import { realpath, stat, statfs } from 'node:fs/promises'
 import { homedir, platform, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 import {
   errorMessage,
@@ -24,6 +25,7 @@ export { HOST_STORAGE_MINIMUM_FREE_BYTES } from './lib/host-storage-check.mts'
 export type { HostStorageResult } from './lib/host-storage-check.mts'
 
 const DISCOVERY_TIMEOUT_MS = 5_000
+const execFileAsync = promisify(execFile)
 
 export interface HostStorageDependencies extends HostStorageProbeDependencies {
   execFile(
@@ -37,21 +39,14 @@ export interface HostStorageDependencies extends HostStorageProbeDependencies {
 }
 
 const defaultDependencies: HostStorageDependencies = {
-  execFile: (command, args, options) =>
-    new Promise((resolveCommand, rejectCommand) => {
-      execFile(
-        command,
-        args,
-        { encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: options.timeout },
-        (error, stdout) => {
-          if (error) {
-            rejectCommand(error)
-            return
-          }
-          resolveCommand({ stdout })
-        },
-      )
-    }),
+  execFile: async (command, args, options) => {
+    const { stdout } = await execFileAsync(command, args, {
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024,
+      timeout: options.timeout,
+    })
+    return { stdout }
+  },
   homedir,
   platform: platform(),
   realpath,

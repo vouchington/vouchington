@@ -94,31 +94,38 @@ describe('csv-import atomic replacement', () => {
     expect(importTemps(root)).toEqual([])
   })
 
-  it('leaves dest tables unchanged when staging writeFileSync fails', async () => {
-    const { csv, output, root, source } = makeWorkspace()
-    const fs = await import('node:fs')
-    const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
-    const { runCatalogCli } = await import('./catalog.mts')
-    await runCatalogCli(['csv-export', '--source', source, '--output', csv])
-    await runCatalogCli(['csv-import', '--input', csv, '--output', output])
-    writeFileSync(
-      join(output, 'routes.json'),
-      serializeCatalogTable([
-        { consumer: 'web', selectorId: 'fixture.route.home', alias: 'fixture.nav.home' },
-      ]),
-    )
-    const before = snapshot(output)
-    vi.mocked(fs.writeFileSync).mockImplementation((path, data, options) => {
-      if (String(path).includes('.csv-import-') && String(path).endsWith('copies.json'))
-        throw new Error('injected staging write failure')
-      return actual.writeFileSync(path, data, options)
-    })
-    await expect(runCatalogCli(['csv-import', '--input', csv, '--output', output])).rejects.toThrow(
-      'injected staging write failure',
-    )
-    expect(snapshot(output)).toEqual(before)
-    expect(importTemps(root)).toEqual([])
-  })
+  it.each([new Error('injected staging write failure'), 'primitive staging failure'])(
+    'leaves dest tables unchanged when staging writeFileSync throws %s',
+    async failure => {
+      const { csv, output, root, source } = makeWorkspace()
+      const fs = await import('node:fs')
+      const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+      const { runCatalogCli } = await import('./catalog.mts')
+      await runCatalogCli(['csv-export', '--source', source, '--output', csv])
+      await runCatalogCli(['csv-import', '--input', csv, '--output', output])
+      writeFileSync(
+        join(output, 'routes.json'),
+        serializeCatalogTable([
+          { consumer: 'web', selectorId: 'fixture.route.home', alias: 'fixture.nav.home' },
+        ]),
+      )
+      const before = snapshot(output)
+      vi.mocked(fs.writeFileSync).mockImplementation((path, data, options) => {
+        if (String(path).includes('.csv-import-') && String(path).endsWith('copies.json'))
+          // oxlint-disable-next-line typescript/only-throw-error -- exercises normalization of a non-Error filesystem failure
+          throw failure
+        return actual.writeFileSync(path, data, options)
+      })
+      const importing = runCatalogCli(['csv-import', '--input', csv, '--output', output])
+      await expect(importing).rejects.toBeInstanceOf(Error)
+      await expect(importing).rejects.toMatchObject({
+        message: failure instanceof Error ? failure.message : 'Catalog import failed',
+        ...(failure instanceof Error ? {} : { cause: failure }),
+      })
+      expect(snapshot(output)).toEqual(before)
+      expect(importTemps(root)).toEqual([])
+    },
+  )
 
   it('restores dest tables when promoting translations throws', async () => {
     const { csv, output, root, source } = makeWorkspace()

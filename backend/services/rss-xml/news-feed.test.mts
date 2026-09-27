@@ -22,7 +22,7 @@ function extractDescriptions(xml: string): string[] {
 }
 
 describe('news feed sanitization', () => {
-  const scriptScheme = `java${'script'}:`
+  const scriptScheme = `javascript:`
   let topicId: string
   let feedId: string
 

@@ -5,6 +5,11 @@ Run the cheap before-push commands in [commit.md](../checklists/commit.md#before
 The staged production no-op Promise-catch rule, its inventory, and its remediation/promotion
 sequence are part of [Linters and Static Analysis](reference-tests-linters-and-static-analysis.md).
 
+The runtime-backed Oxlint TypeScript-plugin regression belongs to `static-analysis-tools`; run it
+with `pnpm exec vitest run --project static-analysis-tools static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts`.
+The test uses the configured analyzer rather than injecting a plugin; see the
+[static-analysis guide](../../static-code-analysis/README.md).
+
 **Init column:** `monorepo` = `./dev/initialize monorepo` is sufficient. `web` = requires `./dev/initialize web` (Docker, DB, Valkey, `.env`, HTTPS certs, CF Worker env). A row marked `web` here is the tested/documented baseline, not necessarily a hard floor — some `web`-tagged commands only need DB/Valkey and would also pass under `./dev/initialize backend`; when in doubt, initialize `web`.
 
 **Sourcing `.env`:** `./dev/initialize` writes `.env` but does not export it into your shell. `./dev/tmux`'s service windows source it automatically. Before running a DB/Valkey-backed command in your own shell, run `source .env`; otherwise the data-store globalSetup fails with `DATABASE_URL is not set in the current shell`.

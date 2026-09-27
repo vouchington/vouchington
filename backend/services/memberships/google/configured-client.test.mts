@@ -7,7 +7,7 @@ import {
 } from './configured-client.mts'
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
-const privateKeyPem = privateKey.export({ format: 'pem', type: 'pkcs8' }).toString()
+const privateKeyPem = privateKey.export({ format: 'pem', type: 'pkcs8' })
 const config = {
   clientEmail: 'play-tests@example.iam.gserviceaccount.com',
   privateKey: privateKeyPem,

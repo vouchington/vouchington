@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  type ClosingIssueReference,
-  type IssueReferenceLookup,
-  type ReferencedIssue,
+import type {
+  ClosingIssueReference,
+  IssueReferenceLookup,
+  ReferencedIssue,
 } from '../closing-refs.mts'
 import { formatReferencedIssueSummary } from '../referenced-issue-summary.mts'
 import {

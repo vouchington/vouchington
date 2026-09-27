@@ -78,7 +78,7 @@ async function listSourceRows(
   cursorValue: string | null,
   limit: number,
 ): Promise<SourceRow[]> {
-  if (branch === 'feed') return await listFeedRows(query, postId, cursorValue, limit)
+  if (branch === 'feed') return listFeedRows(query, postId, cursorValue, limit)
   return (await query<SourceRow>(sourceBranchSql(branch, postId, cursorValue, limit))).rows
 }
 

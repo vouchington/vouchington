@@ -53,7 +53,7 @@ export async function requestEmailAddressLoginToken(options: {
 
   try {
     const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
-    enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale))
+    void enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale))
     return { emailAddress }
   } catch (error) {
     throw mapEmailAuthenticationError(error)

@@ -21,5 +21,5 @@ export async function mayUserAuthorizeOAuthResource(
      ) AS is_administrator`,
     [userId],
   )
-  return result.rows[0]?.is_administrator === true
+  return result.rows.at(0)?.is_administrator ?? false
 }

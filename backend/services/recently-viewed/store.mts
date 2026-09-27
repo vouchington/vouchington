@@ -116,5 +116,5 @@ export async function countRecentlyViewed(
   userId: string,
 ): Promise<number> {
   const userKey = getUserKey(entityType, userId)
-  return Number(await cacheValkeyClient.zcard(userKey))
+  return cacheValkeyClient.zcard(userKey)
 }

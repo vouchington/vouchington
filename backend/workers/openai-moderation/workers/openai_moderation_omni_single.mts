@@ -20,7 +20,7 @@ function getOpenAIModerationOmniSingleWorker(): Promise<Worker> {
 async function processOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
 ): Promise<unknown> {
-  return await handleOpenAIModerationOmniSingleJob(job, await getOpenAIModerationOmniSingleWorker())
+  return handleOpenAIModerationOmniSingleJob(job, await getOpenAIModerationOmniSingleWorker())
 }
 
 export const openai_moderation_omni_single = new Worker(

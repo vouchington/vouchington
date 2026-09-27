@@ -8,7 +8,7 @@ const runtime = await initializeWorkerRuntime()
 
 export const startWorkerRuntime = runtime.startWorkerRuntime
 
-if (!process.env.NODE_PREWARM) startWorkerRuntime()
+if (!process.env.NODE_PREWARM) await startWorkerRuntime()
 
 export const sqsConsumers = runtime.sqsConsumers
 export default runtime.workers

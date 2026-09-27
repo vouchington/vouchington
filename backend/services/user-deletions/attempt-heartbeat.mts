@@ -10,7 +10,7 @@ export async function runWithUserDeletionAttemptHeartbeat<T>(
   await assertUserDeletionAttemptOwnership(requestId, processingAttemptId)
 
   let ownershipLost = false
-  let heartbeatError: unknown
+  let heartbeatError: { reason: unknown } | undefined
   let heartbeat = Promise.resolve()
   const timer = setInterval(() => {
     heartbeat = heartbeat
@@ -19,7 +19,7 @@ export async function runWithUserDeletionAttemptHeartbeat<T>(
         return undefined
       })
       .catch(error => {
-        heartbeatError = error
+        heartbeatError = { reason: error }
       })
   }, HEARTBEAT_INTERVAL_MS)
   timer.unref()
@@ -27,7 +27,12 @@ export async function runWithUserDeletionAttemptHeartbeat<T>(
   try {
     const result = await operation()
     await heartbeat
-    if (heartbeatError) throw heartbeatError
+    if (heartbeatError) {
+      const { reason } = heartbeatError
+      throw reason instanceof Error
+        ? reason
+        : new Error('User deletion heartbeat failed', { cause: reason })
+    }
     if (ownershipLost) throw new Error('User deletion attempt lost ownership during external work')
     await assertUserDeletionAttemptOwnership(requestId, processingAttemptId)
     return result

@@ -125,6 +125,7 @@ describe('queue error adapter', () => {
     const localControlError = new Worker.RateLimitError()
     const controlErrorWorker: Pick<GlideWorker, 'rateLimit'> = {
       rateLimit: async () => {
+        // oxlint-disable-next-line typescript/only-throw-error -- GlideMQ's RateLimitError is a required worker control-flow signal.
         throw localControlError
       },
     }

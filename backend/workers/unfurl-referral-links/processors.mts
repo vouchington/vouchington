@@ -1,7 +1,7 @@
 import type { UnfurlReferralLinksJobs } from '@queues/unfurl-referral-links/types'
 import { dispatchUnfurlReferralLinks, runReferralLinkUnfurl } from '@services/referral-link-unfurl'
 import { softDeleteChildrenForUser } from '@services/user-referral-program-links'
-import { type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 
 export async function processUnfurlReferralLinksJob(job: Job): Promise<unknown> {
   const orderingKey = job.opts.ordering?.key

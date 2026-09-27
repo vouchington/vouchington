@@ -125,7 +125,7 @@ export const upsertUser = async ({
     }
     throw error
   }
-  entityCacheBloomFilters.users.add([
+  void entityCacheBloomFilters.users.add([
     normalizeKey(newUser.id),
     ...(newUser.username ? [normalizeKey(newUser.username)] : []),
   ])

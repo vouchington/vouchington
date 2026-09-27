@@ -59,7 +59,7 @@ async function recordSucceededAdministratorRefundReceipt(
   if (!context.cancelRequested) await completeRefundReconciliation(lease, transaction)
   await transaction.commit()
   if (!context.cancelRequested) return 'completed'
-  return convergeAdministratorRefundCancellation(lease, context)
+  return await convergeAdministratorRefundCancellation(lease, context)
 }
 
 async function convergeAdministratorRefundCancellation(

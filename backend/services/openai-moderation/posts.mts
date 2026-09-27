@@ -4,7 +4,7 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createOpenAIModeration } from './request.mts'
 import { applyPostOpenAIModerationResults } from './persist-post-results.mts'
-import { type PersistedOpenAIModerationResults } from './stored-results.mts'
+import type { PersistedOpenAIModerationResults } from './stored-results.mts'
 import type { PostModerationAttempt } from '@services/post-clearance/moderation-ledger'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 

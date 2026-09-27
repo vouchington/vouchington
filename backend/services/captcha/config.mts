@@ -41,7 +41,7 @@ export function isTurnstileAlwaysApprove(
   env: DeployEnvironmentSource = process.env,
   config: TurnstileConfig = getTurnstileConfig(),
 ): boolean {
-  return getDeployEnvironment(env) === 'staging' && config.always_approve === true
+  return getDeployEnvironment(env) === 'staging' && config.always_approve
 }
 
 let loggedAlwaysApproveSkip = false

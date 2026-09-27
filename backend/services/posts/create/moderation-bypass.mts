@@ -46,5 +46,5 @@ export async function hasPostCreationModerationBypass(postId: string): Promise<b
         )
       END AS creation_moderation_bypassed`,
   )
-  return rows[0]?.creation_moderation_bypassed === true
+  return rows.at(0)?.creation_moderation_bypassed ?? false
 }

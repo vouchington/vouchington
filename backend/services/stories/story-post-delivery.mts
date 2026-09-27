@@ -56,9 +56,9 @@ export async function deliverStoryPost(
   }
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
-  entityCacheBloomFilters.posts.add(bloomKeys)
+  void entityCacheBloomFilters.posts.add(bloomKeys)
   await resolvedDependencies.invalidateStories(postStory.story_id)
-  resolvedDependencies.enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
+  void resolvedDependencies.enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
   void resolvedDependencies.enqueueOnPostCreated(post.id)
   void resolvedDependencies.enqueueStoryPostAgent(post.id)
 }

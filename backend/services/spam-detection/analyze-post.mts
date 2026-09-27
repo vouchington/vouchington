@@ -26,8 +26,8 @@ export async function analyzePostForSpam(post: Post): Promise<SpamDetectionResul
     embeddingsSimilarity,
     referralLinkInPost,
   ] = await Promise.all([
-    checkExcessiveLinks(markdown),
-    checkSpamKeywords(title, markdown),
+    Promise.resolve(checkExcessiveLinks(markdown)),
+    Promise.resolve(checkSpamKeywords(title, markdown)),
     userId
       ? checkContentHashDuplicate(content_sha256, userId)
       : Promise.resolve({
@@ -36,7 +36,7 @@ export async function analyzePostForSpam(post: Post): Promise<SpamDetectionResul
           flagged: false,
           details: { skipped: true },
         }),
-    checkLowQualityText(markdown),
+    Promise.resolve(checkLowQualityText(markdown)),
     userId
       ? checkEmbeddingsSimilarity(post.id, userId)
       : Promise.resolve({

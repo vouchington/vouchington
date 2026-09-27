@@ -17,7 +17,7 @@ const BACKGROUND_TEARDOWN_TIMEOUT_MS = 10_000
  */
 /* no-mistakes: integration=openai */
 export async function cancelOpenAIResponse(responseId: string): Promise<Response> {
-  return await openai.responses.cancel(responseId, {
+  return openai.responses.cancel(responseId, {
     maxRetries: 0,
     timeout: BACKGROUND_TEARDOWN_TIMEOUT_MS,
   })
@@ -26,7 +26,7 @@ export async function cancelOpenAIResponse(responseId: string): Promise<Response
 /** Retrieves a background response's current terminal state, for the sweeper to record from. */
 /* no-mistakes: integration=openai */
 export async function retrieveOpenAIResponse(responseId: string): Promise<Response> {
-  return await openai.responses.retrieve(responseId, undefined, {
+  return openai.responses.retrieve(responseId, undefined, {
     maxRetries: 0,
     timeout: BACKGROUND_TEARDOWN_TIMEOUT_MS,
   })

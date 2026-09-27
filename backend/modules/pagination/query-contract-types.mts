@@ -1,8 +1,8 @@
 type LiteralOption<TKey extends PropertyKey, TValue> = [TValue] extends [undefined]
   ? {}
   : [undefined] extends [TValue]
-    ? { readonly [TProperty in TKey]?: Exclude<TValue, undefined> }
-    : { readonly [TProperty in TKey]: TValue }
+    ? Readonly<Partial<Record<TKey, Exclude<TValue, undefined>>>>
+    : Readonly<Record<TKey, TValue>>
 
 type DescriptionOption<TDescription extends string | undefined> = LiteralOption<
   'description',

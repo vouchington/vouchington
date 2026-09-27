@@ -31,7 +31,7 @@ export const createEmailAddressLoginToken = async (emailAddress: string) => {
 }
 
 export const createPhoneNumberLoginToken = async (phoneNumber: string) => {
-  const validatedPhoneNumber = await verifyPhoneNumber(phoneNumber)
+  const validatedPhoneNumber = verifyPhoneNumber(phoneNumber)
   const token = createLoginToken()
   await write(
     '/* createPhoneNumberLoginToken */ INSERT INTO phone_number_login_tokens (phone_number, token) VALUES ($1, $2)',
@@ -64,7 +64,7 @@ export const verifyEmailAddressLoginToken = async (emailAddress: string, token: 
 }
 
 export const verifyPhoneNumberLoginToken = async (phoneNumber: string, token: string) => {
-  const validatedPhoneNumber = await verifyPhoneNumber(phoneNumber)
+  const validatedPhoneNumber = verifyPhoneNumber(phoneNumber)
   const normalizedToken = token.toUpperCase()
   const { rowCount } = await write(
     `/* verifyPhoneNumberLoginToken */

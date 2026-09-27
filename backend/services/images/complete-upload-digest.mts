@@ -23,7 +23,7 @@ export async function persistImageHashWhileProcessing(
   hash: Buffer,
   imageId: string,
 ): Promise<ImageRecord> {
-  const { rows } = await write<ImageRecord>(
+  const { rows } = await write(
     `/* persistHashWhileProcessing */
     UPDATE images
     SET sha_256 = $1
@@ -46,7 +46,7 @@ export async function replaceFailedImage(
   incoming: ImageRecord,
   hash: Buffer,
 ): Promise<ImageRecord> {
-  return await withImageStorageLifecycleLock(existing.id, () =>
+  return withImageStorageLifecycleLock(existing.id, () =>
     replaceFailedImageWhileLocked(existing, incoming, hash),
   )
 }

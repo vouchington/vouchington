@@ -23,12 +23,10 @@ function record(
 }
 
 async function waitForRow(annotation: string): Promise<Record<string, unknown>> {
-  return await vi.waitFor(
+  return vi.waitFor(
     async () => {
       await flush()
-      const rows = await query<Record<string, unknown>>(
-        `SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`,
-      )
+      const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
       if (!rows.length) throw new Error('pending')
       return rows[0]!
     },
@@ -38,9 +36,7 @@ async function waitForRow(annotation: string): Promise<Record<string, unknown>> 
 
 async function countRows(annotation: string): Promise<number> {
   await flush()
-  const rows = await query<Record<string, unknown>>(
-    `SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`,
-  )
+  const rows = await query(`SELECT * FROM pg_query_timing WHERE annotation = '${annotation}'`)
   return rows.length
 }
 
@@ -126,7 +122,7 @@ describe('recordQueryTiming', () => {
     const row = await vi.waitFor(
       async () => {
         await flush()
-        const rows = await query<Record<string, unknown>>(
+        const rows = await query(
           `SELECT * FROM pg_query_timing WHERE annotation = 'unannotated' AND row_count = 3 AND pool = 'client'`,
         )
         if (!rows.length) throw new Error('pending')

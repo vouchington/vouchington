@@ -12,13 +12,11 @@ export async function cleanupExpiredOAuthAuthorizations(
     authorizationIds?: readonly string[]
   } = {},
 ): Promise<CleanupResult> {
-  return await runBoundedBatches(
-    options,
-    async batchSize =>
-      await deleteExpiredOAuthAuthorizationBatch(batchSize, {
-        lowerBoundDate: options.lowerBoundDate,
-        now: options.now,
-        authorizationIds: options.authorizationIds,
-      }),
+  return runBoundedBatches(options, async batchSize =>
+    deleteExpiredOAuthAuthorizationBatch(batchSize, {
+      lowerBoundDate: options.lowerBoundDate,
+      now: options.now,
+      authorizationIds: options.authorizationIds,
+    }),
   )
 }

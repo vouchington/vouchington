@@ -23,8 +23,8 @@ export function isAuthorizedHouseholdMembershipCursorRow(
   row: HouseholdMembershipPageSqlRow,
 ): row is AuthorizedHouseholdMembershipCursorRow {
   if (
-    row.household_exists !== true ||
-    row.can_view !== true ||
+    !row.household_exists ||
+    !row.can_view ||
     typeof row.id !== 'string' ||
     !isUUID(row.id) ||
     typeof row.household_id !== 'string' ||

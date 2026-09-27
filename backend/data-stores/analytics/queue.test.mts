@@ -29,7 +29,7 @@ describe('queue', () => {
       trackJobEnqueue('default', 'send-email', 1)
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM queue_jobs WHERE queue = 'default' AND job = 'send-email' AND event = 'enqueued'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -44,7 +44,7 @@ describe('queue', () => {
       trackQueueWorkerEvent('default', 'ready')
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM queue_workers WHERE queue = 'default' AND event = 'ready'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -57,7 +57,7 @@ describe('queue', () => {
       trackQueueWorkerJobProgressEvent('default', 'send-email', 'active')
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM queue_jobs WHERE queue = 'default' AND job = 'send-email' AND event = 'active'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -70,7 +70,7 @@ describe('queue', () => {
       trackQueueWorkerJobCompletedEvent('default', 'send-email', 'completed', 120)
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM queue_jobs WHERE queue = 'default' AND job = 'send-email' AND event = 'completed'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)

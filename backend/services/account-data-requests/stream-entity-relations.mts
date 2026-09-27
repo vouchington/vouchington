@@ -38,7 +38,7 @@ export function streamEntityRelations(userId: string): EntityRelationStream[] {
       tableName: relation.table_name,
       predicate: relation.predicate,
       objectType: relation.object_type,
-      rows: createAsyncGeneratorFromCursor<Record<string, unknown>>(query),
+      rows: createAsyncGeneratorFromCursor(query),
     }
   })
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { dispatchInboundActivity } from './dispatch-activity.mts'
 import { createRemoteActorFixture, createFederatedUser } from './test-fixtures.mts'
-import { type RemoteActorRow } from '@services/remote-actors'
+import type { RemoteActorRow } from '@services/remote-actors'
 import { getEntityRelations } from '@services/entity-relations'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
 import { createTestPost, createTestUserDirect } from '@voucha/test-helpers'

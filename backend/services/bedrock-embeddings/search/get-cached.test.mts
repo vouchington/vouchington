@@ -6,7 +6,7 @@ import { EMBEDDINGS_TABLE } from '../config.mts'
 import * as bedrockRequest from '../single/request.mts'
 import { getCachedSearchEmbedding } from './get-cached.mts'
 
-const cacheProbe = new ValkeyCache<string>({
+const cacheProbe = new ValkeyCache({
   prefix: `${EMBEDDINGS_TABLE}_search_embeddings`,
   ttlSeconds: 60 * 60 * 24,
   mode: 'json',

@@ -9,10 +9,7 @@ import {
 } from '@ts-shared/ses-inbound-contract'
 import { enqueueOrRetryBulkSesInboundProcess } from './enqueues.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('SES inbound reconciliation through real GlideMQ', () => {
   it('retries a retained failed process job for an object still in S3', async () => {
@@ -47,14 +44,14 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       await expect(
         enqueueOrRetryBulkSesInboundProcess([data], {
           enqueueBulk: async inputs =>
-            await queue.addBulk(
+            queue.addBulk(
               inputs.map(input => ({
                 name: SES_INBOUND_PROCESS_JOB_NAME,
                 data: input,
                 opts: getSesInboundProcessJobOptions(input),
               })),
             ),
-          getFailedJobs: async () => await queue.getJobs('failed', 0, -1, { excludeData: true }),
+          getFailedJobs: async () => queue.getJobs('failed', 0, -1, { excludeData: true }),
         }),
       ).resolves.toBe(1)
 

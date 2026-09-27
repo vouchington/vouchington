@@ -14,7 +14,7 @@ export async function deleteAbandonedBlueskyLinkSessionBatch(
   batchSize: number,
   lowerBoundDate?: Date,
 ): Promise<number> {
-  return await deleteExpiredAuthorizations(
+  return deleteExpiredAuthorizations(
     ['pending', 'callback_claimed'],
     cutoffDate,
     batchSize,

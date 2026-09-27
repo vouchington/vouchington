@@ -24,10 +24,7 @@ import { getEnqueuedJobId, isDeduplicatedEnqueue } from '@voucha/test-helpers/qu
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
 import { processMicrosoftStoreSource, recoverMicrosoftStoreSources } from './microsoft-store.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('Microsoft Store source recovery with real GlideMQ', () => {
   afterEach(() => vi.unstubAllEnvs())

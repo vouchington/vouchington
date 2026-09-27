@@ -104,7 +104,7 @@ export async function deleteImagesFromS3(images: ImageRecord[]): Promise<void> {
 export const getImageFromS3 = async (env: string, key: string) => {
   const bucket = getImageReadBucket(env)
 
-  return await S3ImagesClient.send(
+  return S3ImagesClient.send(
     new GetObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -115,7 +115,7 @@ export const getImageFromS3 = async (env: string, key: string) => {
 /** A short-lived private S3 read URL for external AI providers; never route AI through public CDN delivery. */
 /* no-mistakes: integration=aws */
 export async function presignImageReadUrl(key: string, expiresInSeconds = 300): Promise<string> {
-  return await getSignedUrl(
+  return getSignedUrl(
     S3ImagesClient,
     new GetObjectCommand({ Bucket: S3Buckets.images, Key: key }),
     { expiresIn: expiresInSeconds },

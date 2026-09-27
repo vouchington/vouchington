@@ -26,6 +26,7 @@ backend/types/
 ## Type Ownership
 
 - **[`backend/types/entities/`](../../../../../backend/types/entities/)** — canonical API-facing entity types. All shapes use `Date` for timestamps.
+- **[`backend/types/enqueue.mts`](../../../../../backend/types/enqueue.mts)** — `EnqueueReturnType` is the promise for queue admission, not job processing completion. Best-effort callers may discard it only when the enqueue factory or wrapper already observes and reports rejection.
 - **`backend/services/*/types.mts`** — re-exports canonical types + defines internal-only types (input/option types that never cross the API boundary, like `CreatePostUpdates`, `UpsertUserOptions`).
 - **[`backend/api/types.mts`](../../../../../backend/api/types.mts)** — response body types that compose entities + pagination. Imports from `@voucha/types`.
 - **[`web/types/`](../../../../../web/types/)** — web uses `Serialized<T>` from `@voucha/types/serialized` to convert `Date → string` for JSON-serialized API responses.

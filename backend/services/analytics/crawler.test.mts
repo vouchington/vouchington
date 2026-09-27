@@ -28,7 +28,7 @@ describe('crawler', () => {
       trackCrawlerRequest('html', 'example.com', 200, 50, true)
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM crawler_requests WHERE domain = 'example.com' AND crawler_type = 'html' AND status_code = 200`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -47,7 +47,7 @@ describe('crawler', () => {
       trackCrawlerRequest('rss', 'bad.com', 500, 100, false, 'timeout')
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM crawler_requests WHERE domain = 'bad.com' AND crawler_type = 'rss'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -62,7 +62,7 @@ describe('crawler', () => {
       trackDomainRateLimitLocked('html', 'slow.com', 5000)
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM crawler_requests WHERE domain = 'slow.com' AND event_type = 'rate_limit_locked'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -77,7 +77,7 @@ describe('crawler', () => {
       trackDomainRateLimitDeferred('rss', 'slow.com', 2000)
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM crawler_requests WHERE domain = 'slow.com' AND event_type = 'rate_limit_deferred'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)

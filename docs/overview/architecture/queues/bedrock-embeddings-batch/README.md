@@ -10,7 +10,7 @@ For the dedup contract, centralized table semantics, race outcomes, and bloom fi
 
 ## Queue Configuration
 
-- Do not use `BULLMQ_INLINE_MODE` here — rate limits must be respected and cannot be guaranteed without real queue handling.
+- Batch jobs run through the queue so worker rate limits are respected; enqueue admission does not process a batch inline.
 
 ## Scheduler
 

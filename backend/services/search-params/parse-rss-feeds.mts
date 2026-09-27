@@ -187,7 +187,7 @@ async function parseRssFeedsSearchParamsImpl(
   query: Record<string, unknown>,
   deps: Partial<ParseRssFeedsSearchParamsDeps> = {},
 ) {
-  return await resolveRssFeedsSearchParams(prepareRssFeedsSearchParams(query), deps)
+  return resolveRssFeedsSearchParams(prepareRssFeedsSearchParams(query), deps)
 }
 
 export const parseRssFeedsSearchParams = withQueryContract(

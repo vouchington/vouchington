@@ -152,10 +152,11 @@ describe('OAuth authorization-server account deletion', () => {
     await softDeleteUser(user.id)
 
     let previous = initial
-    for (let delivery = 0; delivery < initial.length; delivery++) {
+    for (const credential of initial) {
       const result = await processUserDeletionCredentialsBatch(user.id, 1)
       expect(result).toEqual({ hasMore: true })
       const next = await getTestOAuthDeletionRows(user.id)
+      expect(next.map(row => row.id)).toContain(credential.id)
       const prior = previous
       const newlyRevoked = next.filter(
         (row, index) => row.revoked_at !== null && prior[index]?.revoked_at === null,

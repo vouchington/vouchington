@@ -37,10 +37,7 @@ export async function reconcileEntities(): Promise<{ reconciled: number }> {
   const window = await getEntityReconciliationWindow(
     getEntityListenerReconciliationIntervalSeconds(),
   )
-  return await reconcileEntityBatches(
-    streamEntityReconciliationCandidateBatches(window),
-    window.end,
-  )
+  return reconcileEntityBatches(streamEntityReconciliationCandidateBatches(window), window.end)
 }
 
 type ReconcileEntityBatchDependencies = {
@@ -98,7 +95,7 @@ export async function reconcileEntity(
       await dependencies.processPostDeleted({ id: data.entityId })
       return
     case 'image':
-      await dependencies.processImageCreated({ id: data.entityId })
+      dependencies.processImageCreated({ id: data.entityId })
       return
     case 'url':
       await dependencies.processUrlCreated({ id: data.entityId })

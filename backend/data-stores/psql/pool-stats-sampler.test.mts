@@ -23,15 +23,13 @@ async function waitForPoolRows(
   sentinel: number,
   expected: number,
 ): Promise<Record<string, unknown>[]> {
-  return await vi.waitFor(
+  return vi.waitFor(
     async () => {
       await flush()
       // No ORDER BY: the DuckDB-less JSONL fallback (used in CI, where the duckdb binary is
       // absent) bails on ORDER BY/aggregate shapes. Callers sort the two rows in JS instead.
       // `sentinel` is a generated integer; quotes keep JSONL fallback text comparison aligned.
-      const rows = await query<Record<string, unknown>>(
-        `SELECT * FROM pg_pool_stats WHERE waiting = '${sentinel}'`,
-      )
+      const rows = await query(`SELECT * FROM pg_pool_stats WHERE waiting = '${sentinel}'`)
       if (rows.length < expected) throw new Error('pending')
       return rows
     },

@@ -12,8 +12,10 @@ const ONE_MINUTE_MS = 60_000
 
 type CommunityModerationItem = { postId: string; communityId: string }
 
-export function enqueueBulkCommunityModerationDispatchers(items: CommunityModerationItem[]): void {
-  enqueueBulkCommunityModerationDispatchersAwaited(items).catch(onError)
+export function enqueueBulkCommunityModerationDispatchers(
+  items: CommunityModerationItem[],
+): Promise<void> {
+  return enqueueBulkCommunityModerationDispatchersAwaited(items).catch(onError)
 }
 
 export async function enqueueBulkCommunityModerationDispatchersAwaited(
@@ -40,14 +42,17 @@ export async function enqueueBulkCommunityModerationDispatchersAwaited(
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'community-moderation-dispatcher', items.length)
 }
 
-export function enqueueCommunityModerationDispatcher(postId: string, communityId: string): void {
-  enqueueBulkCommunityModerationDispatchers([{ postId, communityId }])
+export function enqueueCommunityModerationDispatcher(
+  postId: string,
+  communityId: string,
+): Promise<void> {
+  return enqueueBulkCommunityModerationDispatchers([{ postId, communityId }])
 }
 
 export function enqueueBulkCommunityModerationPrompts(
   items: Array<{ postId: string; communityId: string; promptId: string }>,
-): void {
-  if (items.length === 0) return
+): Promise<void> {
+  if (items.length === 0) return Promise.resolve()
   const jobs = items.map(({ postId, communityId, promptId }) => ({
     name: 'community-moderation-prompt' as const,
     data: { postId, communityId, promptId } satisfies CommunityModerationPromptJobData,
@@ -64,6 +69,7 @@ export function enqueueBulkCommunityModerationPrompts(
       },
     } satisfies JobOptions,
   }))
-  ai_agents.addBulk(jobs).catch(onError)
+  const completion = ai_agents.addBulk(jobs).then(() => undefined, onError)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'community-moderation-prompt', items.length)
+  return completion
 }

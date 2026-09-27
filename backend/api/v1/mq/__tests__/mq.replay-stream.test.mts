@@ -79,7 +79,11 @@ describe('index', () => {
                 resolve()
               } catch (err) {
                 settled = true
-                reject(err)
+                reject(
+                  err instanceof Error
+                    ? err
+                    : new Error('Queue stream abort failed', { cause: err }),
+                )
               }
             })
             .on('error', (err: any) => {
@@ -87,7 +91,11 @@ describe('index', () => {
               // Once headers are captured, ignore all cleanup errors.
               if (settled) return
               if (err.code === 'ECONNRESET' || err.code === 'ECONNABORTED') return
-              reject(err)
+              reject(
+                err instanceof Error
+                  ? err
+                  : new Error('Queue stream request failed', { cause: err }),
+              )
             })
             .end() // dispatch the request
         })

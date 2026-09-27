@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { type QueryExecutor } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { ProviderMembershipSourceConflictError } from '../provider-source.mts'
@@ -49,7 +49,7 @@ export async function persistCredentials(
   }>(sql`/* isCurrentMicrosoftStoreObservation */
     SELECT TRUE AS current FROM membership_sources source INNER JOIN membership_source_states state ON state.membership_source_id = source.id
     WHERE source.user_id = ${context.userId} AND source.membership_provider_lineage_id = ${lineageId} AND state.membership_provider_observation_id = ${observationId}::UUID`)
-  const isCurrent = current[0]?.current === true
+  const isCurrent = current.at(0)?.current ?? false
   const collectionsDigest = digest(evidence.collectionsKey)
   const purchaseDigest = digest(evidence.purchaseKey)
   const maximumCredentialExpiry = new Date(Date.now() + 30 * 86_400_000)

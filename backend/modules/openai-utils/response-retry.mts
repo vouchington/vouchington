@@ -28,8 +28,8 @@ export async function createOpenAIResponseWithRetries(
   params: ResponseCreateParamsStreaming,
   options?: RawCreateOptions,
 ): Promise<{ stream: AsyncIterable<ResponseStreamEvent>; requestStartedAt: Date }> {
-  return await createOpenAICompatibleResponseWithRetries(
-    async (request, requestOptions) => await openai.responses.create(request, requestOptions),
+  return createOpenAICompatibleResponseWithRetries(
+    async (request, requestOptions) => openai.responses.create(request, requestOptions),
     params,
     options,
   )

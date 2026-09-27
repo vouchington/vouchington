@@ -27,7 +27,7 @@ refresh while the hourly schedule remains a recovery path.
 
 ## Testing
 
-**Important**: `BULLMQ_INLINE_MODE` is intentionally **disabled** for psql jobs. Running migrations, views, or idempotent operations inline during tests can cause database state issues and conflicts. These jobs are always enqueued, even in test mode.
+Psql jobs are always enqueued, including in tests. Tests must use the queue fixture and must not process migrations, views, or idempotent operations as an enqueue side effect.
 
 ## Views
 

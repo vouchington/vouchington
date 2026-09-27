@@ -27,7 +27,7 @@ export async function processSendCopyrightNoticeEmail(data: {
     if (typeof result.MessageId !== 'string' || result.MessageId.length === 0) {
       throw new Error('SES accepted copyright email without a MessageId')
     }
-    return markCopyrightEmailSent(data, prepared, result.MessageId)
+    return await markCopyrightEmailSent(data, prepared, result.MessageId)
   } catch (error) {
     if (
       error instanceof CopyrightDeliveryNotClaimedError ||

@@ -133,5 +133,5 @@ export async function updatePostLLMModerator(
   }
   await query.commit()
 
-  return getPostLLMModeratorById(moderatorId)
+  return await getPostLLMModeratorById(moderatorId)
 }

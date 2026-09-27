@@ -34,7 +34,7 @@ export async function insertOldAnonymousReferralAttribution(
   daysOld: number,
 ): Promise<string> {
   const oldDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000)
-  return await insertReferralAttributionAt(referrerId, oldDate)
+  return insertReferralAttributionAt(referrerId, oldDate)
 }
 
 // General retention-fixture insert: lets a test control user_id/signed_up_at directly, e.g. to

@@ -92,7 +92,7 @@ export async function isEngagementEmailsEnabled(userId: string): Promise<boolean
       LIMIT 1
     `,
   )
-  return rows[0]?.engagement_emails_enabled === true
+  return rows.at(0)?.engagement_emails_enabled ?? false
 }
 
 export async function isFollowTopicsEmailStillEligible(userId: string): Promise<boolean> {

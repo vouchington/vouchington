@@ -48,7 +48,7 @@ export async function wasSucceededStripeRefundObservedInLedger(
         AND observation.stripe_refund_id = ${stripeRefundId}
     ) AS observed
   `)
-  return rows[0]?.observed === true
+  return rows.at(0)?.observed ?? false
 }
 
 export async function applyStripeRefundScanPage(options: {

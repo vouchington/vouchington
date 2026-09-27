@@ -56,9 +56,12 @@ export function getRetryAfterDuration(error: unknown): number {
 
 export async function handleOpenAIRateLimit(error: unknown, worker: Worker): Promise<never> {
   if (!isOpenAIRateLimitError(error)) {
-    throw error
+    throw error instanceof Error
+      ? error
+      : new Error('OpenAI rate limit handling failed', { cause: error })
   }
   const durationMs = getRetryAfterDuration(error)
   await worker.rateLimit(durationMs)
+  // oxlint-disable-next-line typescript/only-throw-error -- GlideMQ requires this control-flow signal to defer the job.
   throw new Worker.RateLimitError()
 }

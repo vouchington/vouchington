@@ -28,7 +28,7 @@ const MATRIX_EXPRESSION = /^\$\{\{\s*matrix\.([a-zA-Z0-9_]+)\s*\}\}$/
  */
 export function classifyRunsOnValue(
   runsOn: unknown,
-  matrix?: Record<string, unknown> | undefined,
+  matrix?: Record<string, unknown>,
 ): ClassifyResult {
   if (runsOn === undefined) {
     return { kind: 'delegate', allowed: true }

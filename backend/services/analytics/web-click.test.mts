@@ -33,7 +33,7 @@ describe('web-click', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_click WHERE page_kind = 'landing_page' AND target_id = '${targetId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)

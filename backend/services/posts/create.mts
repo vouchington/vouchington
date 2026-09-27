@@ -160,7 +160,7 @@ export const preparePostWithCommunityReviews = async (
     // The records were committed with the placement rows. Queue admission is best-effort only;
     // the permanent reconciliation schedule owns recovery after a crash or Valkey outage.
     void enqueueReconcileMediaDeliveryRegistry()
-    return await finalizePreparedPost({
+    return finalizePreparedPost({
       communityReviews,
       creator,
       isAdminCreator,

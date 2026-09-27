@@ -24,7 +24,7 @@ describe('extractScheme', () => {
 })
 
 describe('sanitizeLinkUrl', () => {
-  const scriptUrl = `java${'script'}:alert(1)`
+  const scriptUrl = ['java', 'script:alert(1)'].join('')
 
   it('allows http, https, mailto, and tel schemes', () => {
     expect(sanitizeLinkUrl('http://example.com')).toBe('http://example.com')

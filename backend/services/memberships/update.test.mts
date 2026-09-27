@@ -14,7 +14,7 @@ import { getMembershipHistory } from './get.mts'
 async function updateProjectionWithoutRecording(
   options: Parameters<typeof updateMembershipFromEvent>[0],
 ) {
-  return await updateMembershipFromEvent(options, async () => {})
+  return updateMembershipFromEvent(options, async () => {})
 }
 
 describe('update', () => {

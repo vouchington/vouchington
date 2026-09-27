@@ -123,6 +123,6 @@ export async function initializeWorkerRuntime(
       },
     }
   } catch (reason) {
-    throw reportWorkerLoadFailure(reason, dependencies.onError)
+    reportWorkerLoadFailure(reason, dependencies.onError)
   }
 }

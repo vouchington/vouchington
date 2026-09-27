@@ -55,11 +55,10 @@ export type CreateUserRssFeedImportResult = {
 export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedImportSummary {
   return {
     id: batch.id,
-    total_rows: Number(batch.total_rows),
-    completed_rows: Number(batch.completed_rows),
-    failed_rows: Number(batch.failed_rows),
-    pending_rows:
-      Number(batch.total_rows) - Number(batch.completed_rows) - Number(batch.failed_rows),
+    total_rows: batch.total_rows,
+    completed_rows: batch.completed_rows,
+    failed_rows: batch.failed_rows,
+    pending_rows: batch.total_rows - batch.completed_rows - batch.failed_rows,
     completed_at: batch.completed_at,
     created_at: batch.created_at,
   }

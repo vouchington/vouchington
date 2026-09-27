@@ -44,7 +44,7 @@ describe('retrospective-distill CLI', () => {
       (error: unknown) => error,
     )
     expect(rejection).toMatchObject({ code: 1 })
-    expect(String((rejection as { stderr: string }).stderr)).toContain(
+    expect((rejection as { stderr: string }).stderr).toContain(
       'expected exactly one positional argument',
     )
   })

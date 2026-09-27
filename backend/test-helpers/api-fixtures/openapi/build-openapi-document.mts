@@ -77,7 +77,7 @@ function applyHeaderContracts(document: OpenApiDocument, contracts: HeaderContra
       })
     }
     for (const [status, responseContract] of Object.entries(contract.responseHeaders)) {
-      const response = (operation.responses[String(status)] ??= {
+      const response = (operation.responses[status] ??= {
         description:
           status === '409' ? 'Conflict' : status === '429' ? 'Too Many Requests' : 'Error',
       }) as Record<string, unknown>

@@ -6,7 +6,7 @@ import { createBedrockEmbedding } from '../single/request.mts'
 const ONE_DAY_SECONDS = 60 * 60 * 24
 const SEARCH_EMBEDDING_TIMEOUT_MS = 6_000
 
-const cache = new ValkeyCache<string>({
+const cache = new ValkeyCache({
   prefix: `${EMBEDDINGS_TABLE}_search_embeddings`,
   ttlSeconds: ONE_DAY_SECONDS,
   mode: 'json',

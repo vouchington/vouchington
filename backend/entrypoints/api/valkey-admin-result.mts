@@ -40,7 +40,7 @@ export async function executeValkeyAdminOperation(
   if (command.operation === 'diagnose') operation = runtime.diagnose(signal)
   else if (command.concern === 'queues') operation = runtime.flushQueues(signal)
   else operation = runtime.flushConcern(command.concern, { force: command.force, signal })
-  return await operation
+  return operation
 }
 
 export function parseValkeyAdminEnvironment(

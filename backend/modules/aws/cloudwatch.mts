@@ -22,7 +22,7 @@ export const CloudWatchMetricsClient = new Proxy({} as CloudWatchClient, {
 export async function putCloudWatchMetricData(
   input: PutMetricDataCommandInput,
 ): Promise<PutMetricDataCommandOutput> {
-  return await CloudWatchMetricsClient.send(new PutMetricDataCommand(input))
+  return CloudWatchMetricsClient.send(new PutMetricDataCommand(input))
 }
 
 function getClientProperty(target: object, prop: string | symbol): unknown {

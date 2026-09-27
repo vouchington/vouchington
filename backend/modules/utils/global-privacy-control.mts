@@ -1,8 +1,4 @@
-type HeadersLike =
-  | Headers
-  | {
-      [key: string]: string | string[] | undefined
-    }
+type HeadersLike = Headers | Record<string, string | string[] | undefined>
 
 export function hasGlobalPrivacyControlHeaders(headers: HeadersLike): boolean {
   return (

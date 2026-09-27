@@ -100,7 +100,7 @@ describe('incremental notification push receipts', () => {
       slowSend.resolve()
       await deliveryRejection
     }
-    await expect(Promise.reject(await deliveryRejection)).rejects.toThrow(expectedError)
+    expect(await deliveryRejection).toMatchObject({ message: expectedError })
     vi.mocked(webpush.sendNotification).mockResolvedValue(successfulSendResult())
     const retry = await claimNotificationPushIntent(
       { user_id: intent.user_id, notification_id: intent.notification_id },

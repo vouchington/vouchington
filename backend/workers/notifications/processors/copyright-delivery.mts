@@ -41,7 +41,7 @@ export async function processDeliverCopyrightNotice(
 ): Promise<boolean> {
   const deliver =
     dependencies.deliverCopyrightInAppNotification ?? deliverCopyrightInAppNotification
-  return await deliver(data.intentId)
+  return deliver(data.intentId)
 }
 
 /**

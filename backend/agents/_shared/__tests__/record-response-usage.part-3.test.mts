@@ -90,7 +90,7 @@ describe('callRecordingAgentResponseUsage attempt hooks', () => {
     const latchSettled = Promise.withResolvers<void>()
     const latchAccountingUncertainty = vi
       .fn<typeof latchAccountingUncertaintyFn>()
-      .mockImplementation(async () => await latchSettled.promise)
+      .mockImplementation(async () => latchSettled.promise)
     const providerError = new Error('connection reset after provider accepted the request')
     const call = callRecordingAgentResponseUsage(
       async () => {

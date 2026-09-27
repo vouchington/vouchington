@@ -165,7 +165,7 @@ export async function upsertRssFeedItems(
     unchangedUnlinkedExistingRows,
   )
   const upsertedRows = orderUpsertedRowsByInput(itemsToUpsert, rows)
-  return finishRssFeedItemUpsert(
+  return await finishRssFeedItemUpsert(
     isEligibleTopHashtagSource,
     itemsToUpsert,
     existingRows,

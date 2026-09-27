@@ -1,6 +1,6 @@
 import { analyzeProject, type Relationship } from 'no-mistakes'
 import { withI18nAnalysisBudget, type AnalysisBudgetOptions } from './analysis-budget.mts'
-import { type RouteEntry } from './route-tree.mts'
+import type { RouteEntry } from './route-tree.mts'
 import { dependencyPaths, dependencyResult } from './route-usage.mts'
 
 export const DEPENDENCY_RELATIONSHIPS: Relationship[] = [
@@ -37,7 +37,7 @@ export async function analyzeRouteDependencies(
     files: [...new Set([...discovered.flatMap(route => route.files), ...globalFiles])],
     relationships: DEPENDENCY_RELATIONSHIPS,
   }
-  return await withI18nAnalysisBudget(
+  return withI18nAnalysisBudget(
     'analyzeProject',
     analyzeProject({
       root: repoRoot,

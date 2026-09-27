@@ -144,7 +144,7 @@ function reportingSchemaBlock(content: string): string {
       ? ''
       : content.slice(
           start,
-          content.indexOf('## Review Queue', start) === -1
+          !content.includes('## Review Queue', start)
             ? undefined
             : content.indexOf('## Review Queue', start),
         )

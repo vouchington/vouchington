@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 /** Streams OAuth account rows for the given user (provider name + email only, no tokens). */
 export function streamOAuthAccounts(userId: string) {
-  return createAsyncGeneratorFromCursor<Record<string, unknown>>(sql`/* streamOAuthAccounts */
+  return createAsyncGeneratorFromCursor(sql`/* streamOAuthAccounts */
     SELECT 'facebook' AS provider, facebook_user_email_address AS provider_email, created_at
       FROM facebook_accounts WHERE user_id = ${userId}
     UNION ALL

@@ -1,6 +1,6 @@
 import { createPaginationParser } from '@modules/pagination'
 import { loadCommunityForViewer } from '@services/communities'
-import { type PostFeedType, type RssFeedItemFeedType } from '@services/feeds/types'
+import type { PostFeedType, RssFeedItemFeedType } from '@services/feeds/types'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import { requireAuth } from '../../../response-helpers.mts'
 
