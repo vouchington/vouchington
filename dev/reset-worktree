@@ -140,6 +140,12 @@ echo -e "${YELLOW}Fetching origin/main...${NC}"
 git -C "$REPO_ROOT" fetch origin main
 echo -e "${GREEN}✓ Fetched${NC}\n"
 
+# Before teardown or checkout -B --force. A sandboxed checkout can rewrite
+# ordinary files and then fail while unlinking a protected path.
+if ! protected_checkout_allow "$REPO_ROOT" origin/main; then
+    exit 2
+fi
+
 # Tear down services, DB, and Valkey container only when this worktree owns
 # them. The backend-level check is deliberately used here, not the stricter
 # web check: teardown removes DB + Valkey resources, which a backend-only
@@ -169,9 +175,6 @@ if $FORCE; then
     git -C "$REPO_ROOT" clean -fd
 else
     git -C "$REPO_ROOT" checkout -B "$NEW_BRANCH"
-fi
-if ! protected_checkout_allow "$REPO_ROOT" origin/main; then
-    exit 2
 fi
 git -C "$REPO_ROOT" reset --hard origin/main
 echo -e "${GREEN}✓ Now on '$NEW_BRANCH' at origin/main${NC}\n"

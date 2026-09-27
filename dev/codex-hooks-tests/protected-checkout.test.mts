@@ -98,6 +98,47 @@ describe('protected checkout hook', () => {
     ).toContain('.claude/settings.json')
   })
 
+  it('blocks git reset origin/main --hard against the commit, not HEAD', () => {
+    const seen: string[] = []
+    findPreToolUseBlock(
+      { tool_input: { command: 'git reset origin/main --hard' } },
+      {
+        protectedCheckoutDiff: (_cwd, target) => {
+          seen.push(target)
+          return target === 'origin/main' ? ['.claude/settings.json'] : []
+        },
+      },
+    )
+    expect(seen).toEqual(['origin/main'])
+  })
+
+  it('blocks git pull before its internal fetch can be checked', () => {
+    expect(
+      findPreToolUseBlock(
+        { tool_input: { command: 'git pull origin main' } },
+        { protectedCheckoutDiff: emptyDiff },
+      )?.reason,
+    ).toContain(REBASE_ONTO_MAIN)
+  })
+
+  it('blocks gh stack rebase even when origin/main matches', () => {
+    expect(
+      findPreToolUseBlock(
+        { tool_input: { command: 'gh stack rebase' } },
+        { protectedCheckoutDiff: emptyDiff },
+      )?.reason,
+    ).toContain(REBASE_ONTO_MAIN)
+  })
+
+  it('blocks cherry-pick, stash pop, and a whole-tree restore', () => {
+    for (const command of ['git cherry-pick abc', 'git stash pop', 'git restore .']) {
+      expect(
+        findPreToolUseBlock({ tool_input: { command } }, { protectedCheckoutDiff: emptyDiff })
+          ?.reason,
+      ).toContain(REBASE_ONTO_MAIN)
+    }
+  })
+
   it('blocks gh stack rebase when a protected path differs', () => {
     expect(
       findPreToolUseBlock(

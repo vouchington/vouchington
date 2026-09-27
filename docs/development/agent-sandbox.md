@@ -252,10 +252,14 @@ It is not the hook Edit/Write list in
 [`dev/codex-hooks/policy/protected-hook-paths.mts`](../../dev/codex-hooks/policy/protected-hook-paths.mts):
 `dev/codex-hooks/**`, `.codex/**`, and `.grok/**` are writable by checkout. The PreToolUse hook
 refuses a cooperative tree update when one of the pathspec paths differs, including `git fetch`
-chained with that update in one command. `./dev/rebase-onto-main` fetches, repeats the check, and
-runs `git rebase origin/main` only when `SANDBOX_RUNTIME` and `CURSOR_SANDBOX` are unset. Claude
-lists that script in `sandbox.excludedCommands`. Codex allows the same prefix, which removes its
-OS sandbox for that command. `./dev/reset-worktree` uses the same check before `git reset --hard`.
+chained with that update in one command. `git pull`, `gh stack rebase`, `gh stack sync`,
+`git cherry-pick` other than `--continue`/`--abort`/`--skip`/`--quit`, `git stash pop`,
+`git stash apply`, and `git restore` of `.` or a protected path are refused before a diff: the
+fetched tree or the stack parent is not what the check can see. `./dev/rebase-onto-main` fetches,
+repeats the check, and runs `git rebase origin/main` only when `SANDBOX_RUNTIME` and
+`CURSOR_SANDBOX` are unset. Claude lists that script in `sandbox.excludedCommands`. Codex allows
+the same prefix, which removes its OS sandbox for that command. `./dev/reset-worktree` runs the
+same check after `git fetch` and before teardown or `checkout -B`.
 Grok and Cursor writable roots are unchanged. `git rebase --abort` stays allowed so a dirty rebase
 can still be left.
 

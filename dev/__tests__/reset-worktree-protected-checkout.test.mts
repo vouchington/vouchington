@@ -31,6 +31,7 @@ describe('reset-worktree protected checkout', () => {
       env: { SANDBOX_RUNTIME: '1' },
     })
     expect(exitCode).toBe(2)
+    expect(log).not.toContain('checkout -B')
     expect(log).not.toContain('git reset --hard origin/main')
     expect(stderr).toContain('./dev/rebase-onto-main')
     expect(stderr).toContain('.claude/settings.json')

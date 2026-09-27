@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
+import { findBlockedGitReason } from '../../codex-hooks/policy/blocked-command-patterns.mts'
 
 function blockReason(command: string): string | undefined {
   return findPreToolUseBlock({ tool_input: { command } })?.reason
@@ -14,7 +15,6 @@ describe('Codex hook git policy command scope', () => {
   it.each([
     ['git push origin feature; tail -f log', 'force push'],
     ['git commit -m x && echo --amend', 'amend'],
-    ['git pull origin main | grep -r foo', 'pull rebase'],
     ['git status && rg -X ours', 'strategy option'],
     ['git checkout main && grep -- --theirs notes.md', 'checkout ours/theirs'],
     ['git status | grep --no-verify', 'no-verify'],
@@ -23,6 +23,10 @@ describe('Codex hook git policy command scope', () => {
     ['git push origin $(git branch --show-current | head -1); tail -f log', 'force push'],
   ])('ignores a flag on a later command: %s (%s)', command => {
     expect(blockReason(command)).toBeUndefined()
+  })
+
+  it('does not treat a later grep -r as git pull --rebase', () => {
+    expect(findBlockedGitReason('git pull origin main | grep -r foo')).toBeNull()
   })
 
   it.each([
