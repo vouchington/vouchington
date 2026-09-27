@@ -6,12 +6,12 @@ Finalization-owned editors whose hashtag relation votes must be finalized. user_
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                            |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------ |
-| `post_id`    | `uuid`                     | no       |                     |          |           |           |                                                                    |
-| `user_id`    | `uuid`                     | no       |                     |          |           |           | Retained user identity of an editor included in this finalization. |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                    |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                    |
+| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                    |
+| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
+| `post_id`    | `uuid`                     | no       |                     |          |           |           | Finalization row these editors belong to. Deleting the finalization removes the actor set. |
+| `user_id`    | `uuid`                     | no       |                     |          |           |           | Retained user identity of an editor included in this finalization.                         |
+| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
+| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                            |
 
 **Primary key:** `PRIMARY KEY (post_id, user_id)`
 

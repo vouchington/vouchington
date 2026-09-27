@@ -6,12 +6,12 @@ Immutable nonempty topic snapshot for one automatic review-succession epoch. top
 
 Not partitioned — growth: unbounded.
 
-| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                |
-| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------ |
-| `review_succession_id` | `uuid`                     | no       |                     |          |           |           |                                                        |
-| `topic_id`             | `uuid`                     | no       |                     |          |           |           | Retained topic identity in the exact archive-time set. |
-| `created_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                        |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                        |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                    |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
+| `review_succession_id` | `uuid`                     | no       |                     |          |           |           | Automatic review-succession epoch that owns this immutable topic snapshot. |
+| `topic_id`             | `uuid`                     | no       |                     |          |           |           | Retained topic identity in the exact archive-time set.                     |
+| `created_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                            |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                            |
 
 **Primary key:** `PRIMARY KEY (review_succession_id, topic_id)`
 
