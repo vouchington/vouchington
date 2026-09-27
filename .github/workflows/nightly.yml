@@ -29,8 +29,10 @@ jobs:
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
     permissions:
       actions: read
+      attestations: write
       contents: read
       id-token: write
+      packages: write
       pull-requests: read
 
   web:
@@ -41,8 +43,10 @@ jobs:
       S3_BUCKET_IMAGE_UPLOADS: ${{ secrets.S3_BUCKET_IMAGE_UPLOADS }}
     permissions:
       actions: read
+      attestations: write
       contents: read
       id-token: write
+      packages: write
       pull-requests: read
 
   cloudflare-worker:

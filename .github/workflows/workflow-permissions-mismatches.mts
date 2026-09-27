@@ -1,6 +1,9 @@
 import type { WorkflowCallEdge, WorkflowTopology } from 'no-mistakes'
 
 import {
+  hasPermissionInheritance,
+  isValidPermissionDeclaration,
+  isValidPermissionMap,
   parsePermissions,
   permissionsToMap,
   readWorkflow,
@@ -23,24 +26,56 @@ export function callerCalleePermissionMismatches(topology: WorkflowTopology): st
     const caller = readWorkflow(callerPath)
     const job = caller.jobs?.[callerJob.key]
     if (!job) continue
+    const jobPerms = parsePermissions(job.permissions)
+    if (jobPerms === 'write-all') {
+      mismatches.push(
+        `  ${callerPath} job "${callerJob.key}" → ${callee.path}: caller grants write-all`,
+      )
+      continue
+    }
+    if (!isValidPermissionMap(job.permissions) || !(jobPerms instanceof Map)) {
+      mismatches.push(
+        `  ${callerPath} job "${callerJob.key}" → ${callee.path}: caller permissions must be an explicit map`,
+      )
+      continue
+    }
     const calleePath = callee.path
     const calleeWorkflow = readWorkflow(calleePath)
 
-    const calleePerms = requiredWorkflowPermissions(calleeWorkflow)
-    const jobPerms = parsePermissions(job.permissions)
-    if (jobPerms == null) {
+    if (
+      Object.hasOwn(calleeWorkflow, 'permissions') &&
+      !isValidPermissionDeclaration(calleeWorkflow.permissions)
+    ) {
       mismatches.push(
-        `  ${callerPath} job "${callerJob.key}" → ${calleePath}: missing explicit job-level permissions`,
+        `  ${callerPath} job "${callerJob.key}" → ${calleePath}: callee top-level permissions are invalid`,
+      )
+      continue
+    }
+    const invalidCalleeJobs: string[] = []
+    for (const [key, calleeJob] of Object.entries(calleeWorkflow.jobs ?? {})) {
+      if (
+        Object.hasOwn(calleeJob, 'permissions') &&
+        !isValidPermissionDeclaration(calleeJob.permissions)
+      ) {
+        invalidCalleeJobs.push(key)
+      }
+    }
+    if (invalidCalleeJobs.length > 0) {
+      mismatches.push(
+        ...invalidCalleeJobs.map(
+          key =>
+            `  ${callerPath} job "${callerJob.key}" → ${calleePath}: callee job "${key}" permissions are invalid`,
+        ),
       )
       continue
     }
 
-    if (jobPerms === 'write-all' || calleePerms === 'write-all') {
-      if (jobPerms !== calleePerms) {
-        mismatches.push(
-          `  ${callerPath} job "${callerJob.key}" → ${calleePath}: caller grants ${jobPerms}, callee requires ${calleePerms}`,
-        )
-      }
+    const calleePerms = requiredWorkflowPermissions(calleeWorkflow)
+
+    if (calleePerms === 'write-all') {
+      mismatches.push(
+        `  ${callerPath} job "${callerJob.key}" → ${calleePath}: callee requires write-all`,
+      )
       continue
     }
 
@@ -48,7 +83,19 @@ export function callerCalleePermissionMismatches(topology: WorkflowTopology): st
     const calleeMap = permissionsToMap(calleePerms) ?? new Map<string, string>()
     const callerEntries = [...callerMap].toSorted(([left], [right]) => left.localeCompare(right))
     const calleeEntries = [...calleeMap].toSorted(([left], [right]) => left.localeCompare(right))
-    if (JSON.stringify(callerEntries) !== JSON.stringify(calleeEntries)) {
+    const calleeScopesFitCaller = calleeEntries.every(([scope, level]) => {
+      const callerLevel = callerMap.get(scope)
+      const levels = { none: 0, read: 1, write: 2 }
+      return (
+        (levels[callerLevel as keyof typeof levels] ?? 0) >=
+        (levels[level as keyof typeof levels] ?? 0)
+      )
+    })
+    const permissionsMatch = JSON.stringify(callerEntries) === JSON.stringify(calleeEntries)
+    if (
+      !calleeScopesFitCaller ||
+      (!hasPermissionInheritance(calleeWorkflow) && !permissionsMatch)
+    ) {
       mismatches.push(
         `  ${callerPath} job "${callerJob.key}" → ${calleePath}: caller grants ${JSON.stringify(Object.fromEntries(callerEntries))}, callee requires ${JSON.stringify(Object.fromEntries(calleeEntries))}`,
       )

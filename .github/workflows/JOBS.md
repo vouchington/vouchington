@@ -24,18 +24,17 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `actionlint.yml`                    | `actionlint`                    | job    | `ubuntu-slim`                         | 8             |
 | `backend.yml`                       | `backend`                       | job    | `ubuntu-latest`                       | 5             |
 | `backend.yml`                       | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
-| `backend.yml`                       | `build-backend`                 | job    | → `build-backend.yml`                 | 360           |
 | `backend.yml`                       | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `backend.yml`                       | `codecov`                       | job    | → `ci-upload-codecov.yml`             | 360           |
 | `backend.yml`                       | `coverage`                      | job    | → `ci-area-coverage.yml`              | 360           |
+| `backend.yml`                       | `publish-backend-images`        | job    | → `publish-backend-images.yml`        | 360           |
 | `backend.yml`                       | `static-backend`                | job    | → `checks-static.yml`                 | 360           |
 | `backend.yml`                       | `test-backend-credentialed`     | job    | → `tests-backend-credentialed.yml`    | 360           |
 | `backend.yml`                       | `test-backend-modules`          | job    | → `tests-backend-modules.yml`         | 360           |
 | `backend.yml`                       | `test-backend-unit`             | job    | → `tests-backend-unit.yml`            | 360           |
 | `backend.yml`                       | `test-explain-analyze`          | job    | → `explain-analyze.yml`               | 360           |
 | `backend.yml`                       | `test-postgres-schema`          | job    | → `tests-postgres-schema.yml`         | 360           |
-| `build-backend.yml`                 | `build`                         | job    | `ubuntu-24.04-arm`                    | 20            |
-| `build-web.yml`                     | `build`                         | job    | `ubuntu-24.04-arm`                    | 15            |
+| `backend.yml`                       | `validate-backend-images`       | job    | → `publish-backend-images.yml`        | 360           |
 | `checks-backend-smoke.yml`          | `smoke`                         | job    | `ubuntu-latest`                       | 10            |
 | `checks-static.yml`                 | `static-backend`                | job    | `ubuntu-latest`                       | 15            |
 | `checks-static.yml`                 | `static-cloudflare`             | job    | `ubuntu-latest`                       | 20            |
@@ -75,7 +74,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `fix-main.yml`                      | `related-candidates`            | job    | `ubuntu-latest`                       | 5             |
 | `fix-main.yml`                      | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `fix-main.yml`                      | `triage-and-rerun`              | job    | `ubuntu-latest`                       | 10            |
-| `ghcr-cleanup.yml`                  | `cleanup`                       | job    | `ubuntu-slim`                         | 14            |
+| `ghcr-cleanup.yml`                  | `cleanup`                       | job    | `ubuntu-latest`                       | 14            |
 | `gitleaks.yml`                      | `gitleaks`                      | job    | `ubuntu-slim`                         | 5             |
 | `harness-dispatch.yml`              | `dispatch`                      | job    | `ubuntu-latest`                       | 8             |
 | `initialize-smoke-test.yml`         | `initialize-smoke-test`         | job    | `ubuntu-latest`                       | 25            |
@@ -87,7 +86,9 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `lambdas.yml`                       | `static-lambdas`                | job    | → `checks-static.yml`                 | 360           |
 | `lambdas.yml`                       | `test-lambdas`                  | job    | → `tests-lambdas.yml`                 | 360           |
 | `lint-links.yml`                    | `lint-links`                    | job    | `ubuntu-slim`                         | 10            |
+| `main-backend.yml`                  | `backend-deploy-intent`         | job    | `ubuntu-slim`                         | 2             |
 | `main-backend.yml`                  | `backend-smoke`                 | job    | → `checks-backend-smoke.yml`          | 360           |
+| `main-backend.yml`                  | `detect-image-publication`      | job    | `ubuntu-slim`                         | 5             |
 | `main-backend.yml`                  | `postgres-schema-tests`         | job    | → `tests-postgres-schema.yml`         | 360           |
 | `main-backend.yml`                  | `publish-backend-images`        | job    | → `publish-backend-images.yml`        | 360           |
 | `main-backend.yml`                  | `static-checks`                 | job    | → `checks-static.yml`                 | 360           |
@@ -108,7 +109,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `main-storybook.yml`                | `publish-storybook`             | job    | `ubuntu-latest`                       | 10            |
 | `main-storybook.yml`                | `storybook-build`               | job    | → `storybook.yml`                     | 360           |
 | `main-web.yml`                      | `cleanup-artifacts`             | job    | → `cleanup-artifacts.yml`             | 360           |
-| `main-web.yml`                      | `detect-web-deploy`             | job    | `ubuntu-slim`                         | 5             |
+| `main-web.yml`                      | `detect-image-publication`      | job    | `ubuntu-slim`                         | 5             |
 | `main-web.yml`                      | `playwright-credentialed-tests` | job    | → `tests-playwright-credentialed.yml` | 360           |
 | `main-web.yml`                      | `playwright-tests`              | job    | → `tests-playwright.yml`              | 360           |
 | `main-web.yml`                      | `publish-web-images`            | job    | → `publish-web-images.yml`            | 360           |
@@ -139,7 +140,11 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `postgresql-snapshot-update.yml`    | `prepare`                       | job    | `ubuntu-slim`                         | 5             |
 | `postgresql-snapshot-update.yml`    | `publish`                       | job    | `ubuntu-latest`                       | 8             |
 | `publish-backend-images.yml`        | `build`                         | job    | `ubuntu-24.04-arm`                    | 30            |
+| `publish-backend-images.yml`        | `resolve-main-images`           | job    | `ubuntu-latest`                       | 10            |
+| `publish-backend-images.yml`        | `verify-main-images`            | job    | `ubuntu-latest`                       | 10            |
 | `publish-web-images.yml`            | `build`                         | job    | `ubuntu-24.04-arm`                    | 25            |
+| `publish-web-images.yml`            | `resolve-main-images`           | job    | `ubuntu-latest`                       | 10            |
+| `publish-web-images.yml`            | `verify-main-images`            | job    | `ubuntu-latest`                       | 10            |
 | `scheduled-prompts.yml`             | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `scheduled-prompts.yml`             | `select-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `shepherd.yml`                      | `checkpoint-dispatch`           | job    | `ubuntu-latest`                       | 8             |
@@ -182,10 +187,10 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `tooling.yml`                       | `test-tooling`                  | job    | → `tests-tooling.yml`                 | 360           |
 | `tooling.yml`                       | `test-ts-shared`                | job    | → `tests-ts-shared.yml`               | 360           |
 | `tooling.yml`                       | `tooling`                       | job    | `ubuntu-latest`                       | 5             |
-| `web.yml`                           | `build-web`                     | job    | → `build-web.yml`                     | 360           |
 | `web.yml`                           | `changes`                       | job    | → `ci-detect-changes.yml`             | 360           |
 | `web.yml`                           | `codecov`                       | job    | → `ci-upload-codecov.yml`             | 360           |
 | `web.yml`                           | `coverage`                      | job    | → `ci-area-coverage.yml`              | 360           |
+| `web.yml`                           | `publish-web-images`            | job    | → `publish-web-images.yml`            | 360           |
 | `web.yml`                           | `static-web`                    | job    | → `checks-static.yml`                 | 360           |
 | `web.yml`                           | `storybook`                     | job    | → `storybook.yml`                     | 360           |
 | `web.yml`                           | `test-playwright`               | job    | → `tests-playwright.yml`              | 360           |
@@ -193,6 +198,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `web.yml`                           | `test-web`                      | job    | → `tests-web.yml`                     | 360           |
 | `web.yml`                           | `test-web-api`                  | job    | → `tests-web-api.yml`                 | 360           |
 | `web.yml`                           | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
+| `web.yml`                           | `validate-web-images`           | job    | → `publish-web-images.yml`            | 360           |
 | `web.yml`                           | `web`                           | job    | `ubuntu-latest`                       | 5             |
 
 <!-- END GENERATED -->

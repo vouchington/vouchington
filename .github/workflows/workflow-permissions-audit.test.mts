@@ -78,18 +78,18 @@ describe('workflow permissions audit', () => {
       })
     }
 
-    it('reports missing explicit job-level permissions on a local caller', async () => {
+    it('requires caller jobs to declare an explicit permission map', async () => {
       const { callerPath, calleePath } = await writeCallPair({
         callerJobBlock: '',
         calleePermissionsBlock: 'permissions:\n  contents: read',
       })
 
       expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([
-        `  ${callerPath} job "call" → ${calleePath}: missing explicit job-level permissions`,
+        `  ${callerPath} job "call" → ${calleePath}: caller permissions must be an explicit map`,
       ])
     })
 
-    it('reports a map mismatch between caller job grants and callee requirements', async () => {
+    it('rejects a caller map that is weaker than explicit callee requirements', async () => {
       const { callerPath, calleePath } = await writeCallPair({
         callerJobBlock: 'permissions:\n      contents: read',
         calleePermissionsBlock: 'permissions:\n  contents: write',
@@ -100,7 +100,7 @@ describe('workflow permissions audit', () => {
       ])
     })
 
-    it('reports write-all mismatches and accepts an exact write-all match', async () => {
+    it('rejects write-all on either side of a reusable workflow call', async () => {
       const dir = await writeWorkflows({
         'caller.yml':
           'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions: write-all\n',
@@ -110,16 +110,20 @@ describe('workflow permissions audit', () => {
       const callerPath = join(dir, 'caller.yml')
       const calleePath = join(dir, 'callee.yml')
       expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([
-        `  ${callerPath} job "call" → ${calleePath}: caller grants write-all, callee requires read-all`,
+        `  ${callerPath} job "call" → ${calleePath}: caller grants write-all`,
       ])
 
-      const match = await writeCallPair({
-        callerJobBlock: 'permissions: write-all',
+      const calleeWriteAll = await writeCallPair({
+        callerJobBlock: 'permissions:\n      contents: read',
         calleePermissionsBlock: 'permissions: write-all',
       })
       expect(
-        callerCalleePermissionMismatches(callTopology(match.callerPath, match.calleePath)),
-      ).toEqual([])
+        callerCalleePermissionMismatches(
+          callTopology(calleeWriteAll.callerPath, calleeWriteAll.calleePath),
+        ),
+      ).toEqual([
+        `  ${calleeWriteAll.callerPath} job "call" → ${calleeWriteAll.calleePath}: callee requires write-all`,
+      ])
     })
 
     it('expands callee read-all when comparing against a caller permission map', async () => {
@@ -135,13 +139,109 @@ describe('workflow permissions audit', () => {
       ])
     })
 
-    it('returns no mismatches when caller job grants equal callee requirements', async () => {
+    it('requires exact scope equality when every callee job has its own permissions', async () => {
       const { callerPath, calleePath } = await writeCallPair({
         callerJobBlock: 'permissions:\n      contents: read',
         calleePermissionsBlock: 'permissions:\n  contents: read',
       })
 
       expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([])
+    })
+
+    it('allows caller scopes beyond explicit callee scopes only for a real inheriting callee job', async () => {
+      const dir = await writeWorkflows({
+        'caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: read\n      issues: read\n',
+        'callee.yml':
+          'on:\n  workflow_call:\njobs:\n  explicit:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n  inherits:\n    runs-on: ubuntu-latest\n',
+      })
+      const callerPath = join(dir, 'caller.yml')
+      const calleePath = join(dir, 'callee.yml')
+
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([])
+    })
+
+    it('includes skipped callee jobs when checking explicit requirements', async () => {
+      const dir = await writeWorkflows({
+        'caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: read\n',
+        'callee.yml':
+          'on:\n  workflow_call:\npermissions: {}\njobs:\n  skipped:\n    if: false\n    runs-on: ubuntu-latest\n    permissions:\n      contents: write\n',
+      })
+      const callerPath = join(dir, 'caller.yml')
+      const calleePath = join(dir, 'callee.yml')
+
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([
+        `  ${callerPath} job "call" → ${calleePath}: caller grants {"contents":"read"}, callee requires {"contents":"write"}`,
+      ])
+    })
+
+    it('does not mistake null permissions for inheritance', async () => {
+      const dir = await writeWorkflows({
+        'caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: read\n      issues: read\n',
+        'callee.yml':
+          'on:\n  workflow_call:\npermissions: null\njobs:\n  inner:\n    runs-on: ubuntu-latest\n    permissions: null\n',
+      })
+      const callerPath = join(dir, 'caller.yml')
+      const calleePath = join(dir, 'callee.yml')
+
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([
+        `  ${callerPath} job "call" → ${calleePath}: callee top-level permissions are invalid`,
+      ])
+    })
+
+    it('rejects invalid caller maps and invalid callee declarations even beside a real inheriting job', async () => {
+      const dir = await writeWorkflows({
+        'invalid-caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: banana\n',
+        'caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: read\n      issues: read\n',
+        'callee.yml':
+          'on:\n  workflow_call:\njobs:\n  explicit:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n  inherits:\n    runs-on: ubuntu-latest\n  null-value:\n    runs-on: ubuntu-latest\n    permissions: null\n  scalar-value:\n    runs-on: ubuntu-latest\n    permissions: read\n  unknown-level:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: banana\n',
+      })
+      const calleePath = join(dir, 'callee.yml')
+      const invalidCallerPath = join(dir, 'invalid-caller.yml')
+      const callerPath = join(dir, 'caller.yml')
+
+      expect(callerCalleePermissionMismatches(callTopology(invalidCallerPath, calleePath))).toEqual(
+        [
+          `  ${invalidCallerPath} job "call" → ${calleePath}: caller permissions must be an explicit map`,
+        ],
+      )
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([
+        `  ${callerPath} job "call" → ${calleePath}: callee job "null-value" permissions are invalid`,
+        `  ${callerPath} job "call" → ${calleePath}: callee job "scalar-value" permissions are invalid`,
+        `  ${callerPath} job "call" → ${calleePath}: callee job "unknown-level" permissions are invalid`,
+      ])
+    })
+
+    it('accepts valid empty and none permission maps', async () => {
+      const dir = await writeWorkflows({
+        'caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: none\n',
+        'callee.yml':
+          'on:\n  workflow_call:\npermissions: {}\njobs:\n  inner:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: none\n',
+      })
+      const callerPath = join(dir, 'caller.yml')
+      const calleePath = join(dir, 'callee.yml')
+
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([])
+    })
+
+    it('does not treat a top-level permissions property as inherited when all jobs are explicit', async () => {
+      const dir = await writeWorkflows({
+        'caller.yml':
+          'permissions:\n  contents: read\njobs:\n  call:\n    uses: ./callee.yml\n    permissions:\n      contents: read\n      issues: read\n',
+        'callee.yml':
+          'on:\n  workflow_call:\npermissions:\n  contents: read\njobs:\n  inner:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n',
+      })
+      const callerPath = join(dir, 'caller.yml')
+      const calleePath = join(dir, 'callee.yml')
+
+      expect(callerCalleePermissionMismatches(callTopology(callerPath, calleePath))).toEqual([
+        `  ${callerPath} job "call" → ${calleePath}: caller grants {"contents":"read","issues":"read"}, callee requires {"contents":"read"}`,
+      ])
     })
 
     it('skips non-callable callees and non-local call edges', async () => {

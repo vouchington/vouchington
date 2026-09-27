@@ -42,10 +42,12 @@ describe.each(cases)('$path image provenance', config => {
   const steps = workflow.jobs?.build?.steps ?? []
   const publishIndex = steps.findIndex(step => step.id === 'publish')
 
-  it('grants registry attestation permissions at the reusable workflow boundary', () => {
-    expect(workflow.permissions).toMatchObject({
-      attestations: 'write',
-      packages: 'write',
+  it('inherits the caller envelope only in the publishing build job', () => {
+    expect(workflow.permissions).toBeUndefined()
+    expect(workflow.jobs?.build).not.toHaveProperty('permissions')
+    expect(workflow.jobs?.['resolve-main-images']?.permissions).toEqual({
+      contents: 'read',
+      packages: 'read',
     })
   })
 

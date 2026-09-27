@@ -24,8 +24,8 @@ export function parsePermissions(
   if (perms == null) return null
   if (perms === 'read-all') return 'read-all'
   if (perms === 'write-all') return 'write-all'
-  if (typeof perms === 'object' && !Array.isArray(perms)) {
-    return new Map(Object.entries(perms as Record<string, string>))
+  if (isValidPermissionMap(perms)) {
+    return new Map(Object.entries(perms).filter(([, level]) => level !== 'none'))
   }
   return null
 }
@@ -47,6 +47,23 @@ const READ_ALL_PERMISSIONS = [
   'security-events',
   'statuses',
 ] as const
+const PERMISSION_LEVELS = new Set(['none', 'read', 'write'])
+const KNOWN_PERMISSION_SCOPES = new Set([...READ_ALL_PERMISSIONS, 'id-token'])
+
+export function isValidPermissionMap(perms: unknown): perms is Record<string, string> {
+  if (perms == null || typeof perms !== 'object' || Array.isArray(perms)) return false
+  return Object.entries(perms).every(([scope, level]) => {
+    if (!KNOWN_PERMISSION_SCOPES.has(scope) || typeof level !== 'string') return false
+    if (!PERMISSION_LEVELS.has(level)) return false
+    if (scope === 'id-token') return level === 'none' || level === 'write'
+    if (scope === 'models') return level === 'none' || level === 'read'
+    return true
+  })
+}
+
+export function isValidPermissionDeclaration(perms: unknown): boolean {
+  return perms === 'read-all' || perms === 'write-all' || isValidPermissionMap(perms)
+}
 
 function expandReadAllPermissions(): Map<string, string> {
   return new Map(READ_ALL_PERMISSIONS.map(permission => [permission, 'read']))
@@ -92,6 +109,11 @@ export function requiredWorkflowPermissions(
   }
 
   return requiredPerms
+}
+
+export function hasPermissionInheritance(workflow: Workflow): boolean {
+  if ('permissions' in workflow) return false
+  return Object.values(workflow.jobs ?? {}).some(job => !('permissions' in job))
 }
 
 export function isPureReusableWorkflow(workflow: Workflow): boolean {

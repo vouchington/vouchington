@@ -59,12 +59,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   reactCompiler: true,
   // Never run TypeScript type checking inside `next build`. Types are checked by
-  // the dedicated `typecheck:web` job in static-code-analysis.yml
-  // (`next typegen && tsc --noEmit --incremental`), which in the main CI
-  // pipeline runs before any build job; type errors never affect `next build`'s
-  // emit anyway, so the in-build pass is pure redundant work (~46s/build).
-  // (build-web.yml via workflow_dispatch and local `pnpm --dir web build` bypass
-  // that gate — run `pnpm run typecheck:web` explicitly there.)
+  // the `Typecheck web` step in `.github/workflows/checks-static.yml`
+  // (`next typegen && tsc --noEmit --incremental`). That check remains independent
+  // from image builds; type errors never affect `next build`'s emit anyway, so the
+  // in-build pass is pure redundant work (~46s/build). The build-web-images
+  // composite action and direct local builds do not inline that check, so run
+  // `pnpm run typecheck:web` explicitly when building outside the full CI check set.
   typescript: { ignoreBuildErrors: true },
   compress: isTestBuild ? false : undefined,
   compiler: {

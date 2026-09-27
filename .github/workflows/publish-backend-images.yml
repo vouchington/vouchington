@@ -8,29 +8,100 @@ on:
         required: false
         type: boolean
         default: false
+    outputs:
+      verified_images:
+        description: 'Complete ordered target and immutable digest set for a main publication'
+        value: >-
+          ${{
+            jobs.resolve-main-images.outputs.missing_targets == '[]' &&
+            jobs.resolve-main-images.outputs.verified_images ||
+            jobs.resolve-main-images.outputs.missing_targets != '[]' &&
+            jobs.verify-main-images.outputs.verified_images ||
+            ''
+          }}
     secrets:
       AWS_TEST_ROLE_ARN:
         required: true
-permissions:
-  actions: read
-  attestations: write
-  contents: read
-  id-token: write
-  packages: write
 
-# Deliberately no concurrency block: unlike build-backend.yml, this file has exactly one caller
-# (main-backend.yml#publish-backend-images), and main-backend.yml's own workflow-level group
-# already serializes every run on main with cancel-in-progress: false, so two publishes can never
-# race each other here.
-
+# The build job deliberately has no permissions declaration. It inherits the caller's explicit
+# PR-read or merge-group/main-write envelope. Resolver jobs remain explicitly read-only.
 jobs:
+  resolve-main-images:
+    if: >-
+      inputs.trusted_secret_context &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      missing_targets: ${{ steps.promotion.outputs.missing_targets }}
+      source_sha: ${{ steps.source.outputs.source_sha }}
+      verified_images: ${{ steps.promotion.outputs.verified_images }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        timeout-minutes: 2
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Prove source is reachable from pinned main
+        id: source
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: bash ci/verify-main-ancestor.sh
+      - name: Authenticate GHCR
+        timeout-minutes: 1
+        env:
+          GHCR_PASSWORD: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+        run: printf '%s' "$GHCR_PASSWORD" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+      - name: Resolve trusted main images
+        id: promotion
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GHCR_PASSWORD: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          MAIN_REACHABLE_SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          result=$(node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            ci/image-promotion-cli.mts plan backend)
+          missing_targets=$(jq -ce '.missingTargets | arrays' <<<"$result")
+          verified_images=$(jq -ce '.verifiedImages | arrays' <<<"$result")
+          {
+            echo "missing_targets=$missing_targets"
+            echo "verified_images=$verified_images"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$missing_targets" != '[]' ]; then
+            echo "::error::Trusted backend images are missing; building the fallback once."
+            {
+              echo '## Backend image fallback'
+              echo
+              echo "Missing targets: \`$missing_targets\`. The workflow will build once and publish only those targets."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Log out of GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io >/dev/null 2>&1 || true
+
   build:
-    if: ${{ inputs.trusted_secret_context }}
+    needs: resolve-main-images
+    if: >-
+      !cancelled() &&
+      inputs.trusted_secret_context &&
+      (
+        (github.event_name == 'pull_request' && startsWith(github.ref, 'refs/pull/')) ||
+        (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success' && needs.resolve-main-images.outputs.missing_targets != '[]')
+      )
     runs-on: ubuntu-24.04-arm
-    # The publish path runs everything a validation run does and then pushes ~1.3 GiB to GHCR, so
-    # it gets its own ceiling rather than shaving the validation path's margin to fit. #31 moved
-    # this job from 8 vCPU to 2 at the same 20-minute ceiling, so that margin is thinner than it
-    # looks and is not the place to find room for a registry push.
     timeout-minutes: 30
     services:
       valkey:
@@ -49,100 +120,171 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-
+          persist-credentials: false
       - uses: ./.github/actions/setup-aws
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
-
       - id: build
         uses: ./.github/actions/build-backend-images
-
-      # Deliberately the last build step in the job. Everything published here has already passed the
-      # API, worker-cpu and worker-io smoke tests and the Trivy CRITICAL/HIGH gate, so the image
-      # that reaches the registry is the image that was tested -- which is the whole point of
-      # publishing from this repository rather than rebuilding somewhere else.
-      #
-      # The images are pushed from the local daemon rather than built with a registry output,
-      # which would upload them before any of those checks had run.
-      - name: Publish validated backend images to GHCR
-        id: publish
-        # success() is explicit rather than implicit: this is a publication gate, and a reader
-        # should not have to know that GitHub ANDs it in for conditions without a status function.
-        if: ${{ success() }}
-        timeout-minutes: 8
+      - name: Prepare image publication
+        id: prepare-publication
+        if: >-
+          (
+            (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
+            (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve-main-images.result == 'success')
+          )
+        timeout-minutes: 5
         env:
           ACTIVE_WORKER_IMAGES: ${{ steps.build.outputs.active_worker_images }}
-          GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
-          IMAGE_TAG: ${{ env.SHA_TAG }}
-          REGISTRY_PASSWORD: ${{ github.token }}
-          REGISTRY_USERNAME: ${{ github.actor }}
+          GH_TOKEN: ${{ github.token }}
+          GHCR_PASSWORD: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          MAIN_REACHABLE_SOURCE_SHA: ${{ needs.resolve-main-images.outputs.source_sha }}
+          ORIGINAL_MISSING: ${{ needs.resolve-main-images.outputs.missing_targets }}
         run: |
           set -euo pipefail
-
-          printf '%s' "$REGISTRY_PASSWORD" |
-            docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
-
-          {
-            echo "## Published backend images"
-            echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          for target in api $ACTIVE_WORKER_IMAGES; do
+          printf '%s' "$GHCR_PASSWORD" |
+            docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            result=$(node --experimental-strip-types --disable-warning=ExperimentalWarning \
+              ci/image-promotion-cli.mts plan backend)
+            current=$(jq -ce '.missingTargets | arrays' <<<"$result")
+            unexpected=$(jq -cn --argjson original "$ORIGINAL_MISSING" --argjson current "$current" \
+              '$current - $original')
+            if [ "$unexpected" != '[]' ]; then
+              echo '::error::The trusted backend image set changed unexpectedly during the build.'
+              exit 1
+            fi
+            targets=$current
+          else
+            targets=$(jq -cn --arg workers "$ACTIVE_WORKER_IMAGES" \
+              '["api"] + ($workers | split(" ") | map(select(length > 0)))')
+          fi
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+      - name: Publish validated backend images to GHCR
+        id: publish
+        if: >-
+          success() &&
+          steps.prepare-publication.outputs.targets != '[]' &&
+          (
+            (github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) ||
+            (github.event_name == 'push' && github.ref == 'refs/heads/main')
+          )
+        timeout-minutes: 8
+        env:
+          GHCR_NAMESPACE: ghcr.io/${{ github.repository_owner }}
+          IMAGE_TAG: ${{ env.SHA_TAG }}
+          TARGETS: ${{ steps.prepare-publication.outputs.targets }}
+        run: |
+          set -euo pipefail
+          for target in $(jq -r '.[]' <<<"$TARGETS"); do
             local_image="$IMAGE_REPOSITORY/$target:$IMAGE_TAG"
             remote_image="$GHCR_NAMESPACE/$target:$IMAGE_TAG"
             docker tag "$local_image" "$remote_image"
-
-            # The digest is read back from the push output rather than from `docker image
-            # inspect`, whose RepoDigests can carry entries for other repositories.
             push_output=$(docker push "$remote_image")
             printf '%s\n' "$push_output"
-            digest=$(printf '%s\n' "$push_output" |
-              sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' | head -1)
+            digest=$(sed -n 's/.*[[:space:]]digest: \(sha256:[0-9a-f]\{64\}\).*/\1/p' \
+              <<<"$push_output" | head -1)
             if [ -z "$digest" ]; then
               echo "::error::$remote_image was pushed but no digest could be read back."
               exit 1
             fi
-
             case "$target" in
               api) output_name=api_digest ;;
               worker-cpu) output_name=worker_cpu_digest ;;
               worker-io) output_name=worker_io_digest ;;
-              *) echo "::error::Unexpected backend image target: $target" ; exit 1 ;;
+              *) echo "::error::Unexpected backend image target: $target"; exit 1 ;;
             esac
-            printf '%s=%s\n' "$output_name" "$digest" >> "$GITHUB_OUTPUT"
-
-            echo "✓ published $remote_image ($digest)"
+            echo "$output_name=$digest" >> "$GITHUB_OUTPUT"
             echo "- \`$remote_image\` — \`$digest\`" >> "$GITHUB_STEP_SUMMARY"
           done
-
       - name: Attest api image provenance
-        if: ${{ success() && steps.publish.outputs.api_digest != '' }}
+        if: >-
+          success() && steps.publish.outputs.api_digest != '' &&
+          ((github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/api
           subject-digest: ${{ steps.publish.outputs.api_digest }}
           create-storage-record: false
           push-to-registry: true
-
       - name: Attest worker-cpu image provenance
-        if: ${{ success() && steps.publish.outputs.worker_cpu_digest != '' }}
+        if: >-
+          success() && steps.publish.outputs.worker_cpu_digest != '' &&
+          ((github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/worker-cpu
           subject-digest: ${{ steps.publish.outputs.worker_cpu_digest }}
           create-storage-record: false
           push-to-registry: true
-
       - name: Attest worker-io image provenance
-        if: ${{ success() && steps.publish.outputs.worker_io_digest != '' }}
+        if: >-
+          success() && steps.publish.outputs.worker_io_digest != '' &&
+          ((github.event_name == 'merge_group' && startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/')) || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/worker-io
           subject-digest: ${{ steps.publish.outputs.worker_io_digest }}
           create-storage-record: false
           push-to-registry: true
+      - name: Log out of GHCR
+        if: ${{ always() && steps.prepare-publication.outcome != 'skipped' }}
+        run: docker logout ghcr.io >/dev/null 2>&1 || true
 
+  verify-main-images:
+    needs: [resolve-main-images, build]
+    if: >-
+      !cancelled() &&
+      inputs.trusted_secret_context &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.resolve-main-images.result == 'success' &&
+      needs.resolve-main-images.outputs.missing_targets != '[]' &&
+      needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      verified_images: ${{ steps.promotion.outputs.verified_images }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        timeout-minutes: 2
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Reprove source is reachable from pinned main
+        id: final-source
+        env:
+          SOURCE_SHA: ${{ needs.resolve-main-images.outputs.source_sha }}
+        run: bash ci/verify-main-ancestor.sh
+      - name: Authenticate GHCR
+        timeout-minutes: 1
+        env:
+          GHCR_PASSWORD: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+        run: printf '%s' "$GHCR_PASSWORD" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+      - name: Verify complete backend image set
+        id: promotion
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GHCR_PASSWORD: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          MAIN_REACHABLE_SOURCE_SHA: ${{ steps.final-source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          result=$(node --experimental-strip-types --disable-warning=ExperimentalWarning \
+            ci/image-promotion-cli.mts verify backend)
+          verified_images=$(jq -ce '.verifiedImages | arrays' <<<"$result")
+          echo "verified_images=$verified_images" >> "$GITHUB_OUTPUT"
       - name: Log out of GHCR
         if: ${{ always() }}
         run: docker logout ghcr.io >/dev/null 2>&1 || true

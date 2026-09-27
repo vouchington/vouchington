@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -18,7 +18,7 @@ function readWorkflow(path: string): Workflow {
 describe('workflow top-level permissions', () => {
   it('every non-reusable workflow declares a top-level permissions block', () => {
     assertNoWorkflowViolations(
-      missingTopLevelPermissionPaths(githubWorkflowPaths()),
+      missingTopLevelPermissionPaths(githubWorkflowPaths().filter(existsSync)),
       'Workflows missing top-level permissions:',
     )
   })

@@ -144,12 +144,7 @@ describe('workflow runner policy (real workflows)', () => {
       .map(({ file, jobName }) => `${file}#${jobName}`)
       .sort()
 
-    expect(armJobs).toEqual([
-      'build-backend.yml#build',
-      'build-web.yml#build',
-      'publish-backend-images.yml#build',
-      'publish-web-images.yml#build',
-    ])
+    expect(armJobs).toEqual(['publish-backend-images.yml#build', 'publish-web-images.yml#build'])
   })
 
   it('restricts macos-latest to the gated portability-macos job', () => {

@@ -54,9 +54,8 @@ In-build TypeScript type checking is disabled for **every** build
 checked by the dedicated `Typecheck web` step in `tests-web.yml`
 (`next typegen && tsc --noEmit --incremental`), which runs before the test workflow's
 build and gates the main web build; type errors never affect `next build`'s emit anyway, so the in-build pass is
-pure redundant work (~46s/build). Note: `build-web.yml` triggered via `workflow_dispatch`,
-and local `pnpm --dir web build` runs, bypass that gate — run `pnpm run typecheck:web`
-explicitly in those contexts.
+pure redundant work (~46s/build). Direct image validation and local `pnpm --dir web build` runs
+bypass that gate — run `pnpm run typecheck:web` explicitly in those contexts.
 
 Test setup also clears Next.js runtime output and Wrangler/Miniflare state before starting
 servers. This is stale-cache prevention: old `.next` output or persisted worker cache can

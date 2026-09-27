@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import { assertWorkflowInvariant } from '../test-helpers/workflow-test-helpers.mts'
 
 const WORKFLOW_VALKEY_FILES = [
-  '.github/workflows/build-backend.yml',
   '.github/workflows/checks-backend-smoke.yml',
   '.github/workflows/explain-analyze.yml',
   '.github/workflows/tests-backend-credentialed.yml',
@@ -13,6 +12,7 @@ const WORKFLOW_VALKEY_FILES = [
   '.github/workflows/tests-playwright-credentialed.yml',
   '.github/workflows/tests-playwright.yml',
   '.github/workflows/tests-postgres-schema.yml',
+  '.github/workflows/publish-backend-images.yml',
   '.github/workflows/tests-web-integration.yml',
 ]
 

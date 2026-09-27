@@ -60,18 +60,19 @@ describe('Area CI Docker triggers', () => {
     expect(refinedFilters['build-backend-infra']).toBeUndefined()
     expect(refinedFilters['build-web-infra']).toBeUndefined()
 
-    for (const [jobName, infraFilter, broadFilter] of [
-      ['build-backend', 'build-backend-infra', 'build-backend'],
-      ['build-web', 'build-web-infra', 'build-web'],
+    for (const [area, infraFilter, broadFilter] of [
+      ['backend', 'build-backend-infra', 'build-backend'],
+      ['web', 'build-web-infra', 'build-web'],
     ]) {
-      const area = jobName.slice('build-'.length)
       const workflow = load(readFileSync(`.github/workflows/${area}.yml`, 'utf8')) as Workflow
-      const condition = workflow.jobs?.[jobName]?.if ?? ''
-      expect(condition).toContain("github.event_name == 'pull_request'")
-      expect(condition).toContain(`needs.changes.outputs.${infraFilter} == 'true'`)
-      expect(condition).toContain("github.event_name == 'merge_group'")
-      expect(condition).toContain(`needs.changes.outputs.${broadFilter} == 'true'`)
-      expect(condition).toContain("needs.changes.outputs.workflow-action-changes == 'true'")
+      const validation = workflow.jobs?.[`validate-${area}-images`]?.if ?? ''
+      const publication = workflow.jobs?.[`publish-${area}-images`]?.if ?? ''
+      expect(validation).toContain("github.event_name == 'pull_request'")
+      expect(validation).toContain(`needs.changes.outputs.${infraFilter} == 'true'`)
+      expect(publication).toContain("github.event_name == 'merge_group'")
+      expect(publication).toContain(`needs.changes.outputs.${broadFilter} == 'true'`)
+      for (const condition of [validation, publication])
+        expect(condition).toContain("needs.changes.outputs.workflow-action-changes == 'true'")
     }
   })
 

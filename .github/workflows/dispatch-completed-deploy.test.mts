@@ -97,9 +97,12 @@ describe('completed deploy dispatch', () => {
 
     expect(mappedRoutes).toEqual(expectedRoutes)
     expect(dispatch?.permissions).toEqual({ actions: 'read' })
+    expect(intent?.run).toContain('.github/workflows/main-backend.yml')
+    expect(intent?.run).toContain('backend-deploy-intent')
     expect(intent?.run).toContain('.github/workflows/main-web.yml')
-    expect(intent?.run).toContain('.name == "web-deploy-intent"')
-    expect(intent?.run).toContain('.conclusion == "success"')
+    expect(intent?.run).toContain('web-deploy-intent')
+    expect(intent?.run).toContain('.name == \\"$intent_job\\"')
+    expect(intent?.run).toContain('.conclusion == \\"success\\"')
     expect(intent?.run).toContain('filter=all')
     expect(intent?.run).not.toContain('filter=latest')
     expect(intent?.run).toContain('[ "$successful_intent_jobs" = 0 ]')
@@ -131,19 +134,18 @@ describe('completed deploy dispatch', () => {
     expect(serialized).not.toContain('filaments-deploy-v1')
   })
 
-  it('keeps broad web validation triggers while marking only web deploy changes', () => {
+  it('keeps broad web validation triggers while using shared image publication intent', () => {
     const source = readFileSync('.github/workflows/main-web.yml', 'utf8')
     const mainWeb = load(source) as Workflow
     const serialized = JSON.stringify(mainWeb)
 
     expect(serialized).toContain('cloudflare-worker/**')
     expect(serialized).toContain('lambdas/image-resize/**')
-    expect(serialized).toContain('detect-web-deploy')
+    expect(serialized).toContain('detect-image-publication')
     expect(serialized).toContain('web-deploy-intent')
-    expect(serialized).toContain('git diff --no-renames --name-only')
-    expect(source).toContain('changed_files=$(git diff --no-renames --name-only')
-    expect(source).toContain('<<<"$changed_files"')
-    expect(source).not.toContain('"$AFTER" | grep')
+    expect(serialized).toContain('.github/ci-path-filters.yml')
+    expect(serialized).toContain('runtime-build-web')
+    expect(serialized).toContain('predicate-quantifier')
     expect(serialized).toContain('backend/types/')
     expect(serialized).toContain('ts-shared/')
     expect(serialized).not.toContain("'cloudflare-worker/'")

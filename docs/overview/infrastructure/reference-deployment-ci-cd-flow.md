@@ -16,11 +16,13 @@ flowchart TD
 
 The [area workflows](../../../.github/workflows/reference-workflow-automation-pull-requests.md)
 run on pull requests and merge groups. Their backend and web image jobs validate without publishing
-runtime artifacts; trusted main workflows own publication.
+on pull requests, then publish the tested immutable images with provenance from trusted merge
+groups. Main verifies and reuses that complete digest set; an authenticated missing-manifest result
+alone permits one missing-only build fallback.
 
 The completed source-run receiver emits exactly one route-specific event for each successful
-default-branch source workflow. A successful `main-web` run triggered only to validate Lambda or
-Cloudflare Worker changes is the exception: `web-deploy-intent` is skipped and no web event is sent.
+default-branch source workflow. Backend and web validation-only runs are exceptions:
+`backend-deploy-intent` or `web-deploy-intent` is skipped and no deployment event is sent.
 
 | Source workflow          | Event type                              |
 | ------------------------ | --------------------------------------- |

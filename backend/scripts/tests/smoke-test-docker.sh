@@ -8,9 +8,9 @@ set -euo pipefail
 # When using bridge mode, DATABASE_URL and VALKEY_URL must use host.docker.internal.
 
 # Build from the repo root so the build context matches CI
-# (`.github/workflows/build-backend.yml` uses `context: .` with
-# `file: backend/Dockerfile`). The root `.dockerignore` is the
-# authoritative ignore file for monorepo Docker builds.
+# (`.github/actions/build-backend-images/action.yml` runs the root-context
+# `backend/docker-bake.hcl` plan). The root `.dockerignore` is the authoritative
+# ignore file for monorepo Docker builds.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR/../../.."
 

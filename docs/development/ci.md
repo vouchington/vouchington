@@ -82,10 +82,24 @@ a standalone single-shard run builds directly in its test job. CI browser
 assets use the same-origin Cloudflare Worker route, so per-job ports do not enter the shared build.
 The deployable Docker image has its own build and is outside this test cache.
 
-Trusted main-branch web image publication keeps `SENTRY_AUTH_TOKEN` optional. A configured token
-enables Sentry release creation and source-map upload during the image build; without one, the
-validated image still publishes to GHCR without source maps. The Docker smoke and Trivy gates do
+Trusted merge-group and main-fallback web image publication keeps `SENTRY_AUTH_TOKEN` optional. A
+configured token enables Sentry release creation and source-map upload during the image build;
+without one, the validated image still publishes to GHCR without source maps. Pull-request and
+Nightly validation never receive the token or upload source maps. The Docker smoke and Trivy gates do
 not depend on this optional integration. See the [deploy and release workflow reference](../../.github/workflows/reference-deploy-and-release.md).
+
+The weekly GHCR cleanup reads the complete visibility-scoped package and version inventory before
+mutation, pins a full-history `main` checkout, and keeps the newest 30 main-reachable runtime versions
+in each package; older main-reachable versions are eligible without queue proof. The fixed package set
+is API, worker-cpu, worker-io, and web. API, worker-cpu, and web must be visible; worker-io is required
+only while its checked-in automation flag is enabled, though a visible inactive package is still
+classified. An unreachable queue image is eligible only when both package timestamps are strictly
+older than seven days and its immutable digest has trusted queue-only provenance. Untagged,
+mixed-tag, artifact, index, malformed, or otherwise uncertain versions are protected, while any
+verifier or transport failure aborts the complete plan. Apply revalidates every selected tag/digest
+binding and the authenticated remote `main` tip before the first serial delete. Inspection and delete
+are not atomic: after a failed request the report separates confirmed deletions, the indeterminate
+attempted version, and versions never attempted; it never retries the indeterminate request.
 
 GitHub-hosted runners are ephemeral and single-job-per-VM, so repository workflows do not use
 shared-host admission locks, host-pressure diagnostics, or deterministic runner port slices.

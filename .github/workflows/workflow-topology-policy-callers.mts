@@ -17,13 +17,11 @@ export const exactCallerJobs = {
   '.github/workflows/cloudflare-worker.yml': splitIds(
     '.github/workflows/nightly.yml#cloudflare-worker',
   ),
-  '.github/workflows/build-backend.yml': splitIds('.github/workflows/backend.yml#build-backend'),
   '.github/workflows/publish-backend-images.yml': splitIds(
-    '.github/workflows/main-backend.yml#publish-backend-images',
+    '.github/workflows/backend.yml#validate-backend-images .github/workflows/backend.yml#publish-backend-images .github/workflows/main-backend.yml#publish-backend-images',
   ),
-  '.github/workflows/build-web.yml': splitIds('.github/workflows/web.yml#build-web'),
   '.github/workflows/publish-web-images.yml': splitIds(
-    '.github/workflows/main-web.yml#publish-web-images',
+    '.github/workflows/web.yml#validate-web-images .github/workflows/web.yml#publish-web-images .github/workflows/main-web.yml#publish-web-images',
   ),
   '.github/workflows/checks-static.yml': splitIds(
     '.github/workflows/backend.yml#static-backend .github/workflows/cloudflare-worker.yml#static-cloudflare-worker .github/workflows/lambdas.yml#static-lambdas .github/workflows/main-backend.yml#static-checks .github/workflows/main-cloudflare-worker.yml#static-checks .github/workflows/main-lambdas.yml#static-checks .github/workflows/main-web.yml#static-checks .github/workflows/web.yml#static-web',

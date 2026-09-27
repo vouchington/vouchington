@@ -7,13 +7,10 @@ const firstPartyGhcrPaths = ['.github/workflows/ghcr-cleanup.yml', 'ci/ghcr-pack
 // publish-backend-images.yml and publish-web-images.yml are deliberately absent. Since
 // vouchington/vouchington-infra#274 they publish the deployable backend and web images to GHCR on
 // main; their narrower invariants live in the "backend image publication" and "web image
-// publication" blocks below. build-backend.yml, build-web.yml, and the composite actions they
-// delegate to remain pure validation sources -- everything listed here must still keep its output
-// and caches local to its own BuildKit daemon.
+// publication" blocks below. The composite actions remain pure validation sources -- everything
+// listed here must still keep its output and caches local to its own BuildKit daemon.
 const activeValidationSourcePaths = [
-  '.github/workflows/build-backend.yml',
   '.github/actions/build-backend-images/action.yml',
-  '.github/workflows/build-web.yml',
   '.github/actions/build-web-images/action.yml',
   'backend/docker-bake.hcl',
   'ci/exec-vouchington-gha.sh',
@@ -64,11 +61,9 @@ function validationSourceViolations(path: string, source: string): string[] {
   return violations
 }
 
-// build-backend.yml and build-web.yml only set up the job env and delegate the actual image
-// builds to their composite actions, so each workspace's invariants are checked against both
-// files concatenated rather than the workflow file alone.
+// The unified reusable workflow owns the job env while its composite action owns the build.
 const workspaceValidationSource = (workspace: 'backend' | 'web') =>
-  read(`.github/workflows/build-${workspace}.yml`) +
+  read(`.github/workflows/publish-${workspace}-images.yml`) +
   read(`.github/actions/build-${workspace}-images/action.yml`)
 
 describe('validation image invariants', () => {
@@ -102,7 +97,7 @@ describe('validation image invariants', () => {
   })
 
   // Every case below targets the same file; only the violation suffixes vary.
-  const buildWebPath = '.github/workflows/build-web.yml'
+  const buildWebPath = '.github/actions/build-web-images/action.yml'
   it.each([
     ['accepts a GHA cache', 'cache-from: type=gha,scope=web-arm64', []],
     [
@@ -184,7 +179,6 @@ function reusableCallers(calleePath: string): { id: string; job: CallerJob }[] {
 const imagePublicationCases = [
   {
     workspace: 'backend',
-    buildWorkflowPath: '.github/workflows/build-backend.yml',
     compositeActionPath: '.github/actions/build-backend-images/action.yml',
     publishWorkflowPath: '.github/workflows/publish-backend-images.yml',
     publishStepName: 'Publish validated backend images to GHCR',
@@ -194,22 +188,24 @@ const imagePublicationCases = [
       'Scan OS packages in images with Trivy',
     ],
     noCacheInBuildSources: true,
+    validationCallerId: 'backend.yml#validate-backend-images',
+    queueCallerId: 'backend.yml#publish-backend-images',
     mainCallerId: 'main-backend.yml#publish-backend-images',
   },
   {
     workspace: 'web',
-    buildWorkflowPath: '.github/workflows/build-web.yml',
     compositeActionPath: '.github/actions/build-web-images/action.yml',
     publishWorkflowPath: '.github/workflows/publish-web-images.yml',
     publishStepName: 'Publish validated web image to GHCR',
     orderedCompositeSteps: ['Run Docker smoke test', 'Scan OS packages in web image with Trivy'],
     noCacheInBuildSources: false,
+    validationCallerId: 'web.yml#validate-web-images',
+    queueCallerId: 'web.yml#publish-web-images',
     mainCallerId: 'main-web.yml#publish-web-images',
   },
 ] as const
 
 describe.each(imagePublicationCases)('$workspace image publication', config => {
-  const buildSource = read(config.buildWorkflowPath)
   const compositeActionSource = read(config.compositeActionPath)
   const publishSource = read(config.publishWorkflowPath)
   const compositeAction = parseYaml(compositeActionSource) as {
@@ -236,9 +232,7 @@ describe.each(imagePublicationCases)('$workspace image publication', config => {
   )
 
   it('keeps the build itself local and pushes from the daemon afterwards', () => {
-    for (const source of [buildSource, compositeActionSource]) {
-      expect(source).not.toContain('type=registry')
-    }
+    expect(compositeActionSource).not.toContain('type=registry')
   })
 
   it('gates the composite action on the smoke test(s) and the Trivy scan, in order', () => {
@@ -262,20 +256,17 @@ describe.each(imagePublicationCases)('$workspace image publication', config => {
     expect(condition).toContain('success()')
   })
 
-  it('never grants packages: write to a build workflow caller', () => {
-    const callers = reusableCallers(`./${config.buildWorkflowPath}`)
-
-    expect(callers.length).toBeGreaterThan(0)
-    expect(
-      callers.filter(({ job }) => job.permissions?.packages === 'write').map(({ id }) => id),
-    ).toEqual([])
-  })
-
-  it('has exactly one caller of the publish workflow, and it grants packages: write', () => {
+  it('keeps the PR caller read-only and grants writes only to queue and main publishers', () => {
     const callers = reusableCallers(`./${config.publishWorkflowPath}`)
 
-    expect(callers.map(({ id }) => id)).toEqual([config.mainCallerId])
-    expect(callers[0]?.job.permissions?.packages).toBe('write')
+    expect(callers.map(({ id }) => id).toSorted()).toEqual(
+      [config.validationCallerId, config.queueCallerId, config.mainCallerId].toSorted(),
+    )
+    expect(
+      callers.find(({ id }) => id === config.validationCallerId)?.job.permissions?.packages,
+    ).toBe('read')
+    for (const id of [config.queueCallerId, config.mainCallerId])
+      expect(callers.find(caller => caller.id === id)?.job.permissions?.packages).toBe('write')
   })
 
   it('publishes only into the repository owner namespace', () => {
@@ -290,11 +281,10 @@ describe.each(imagePublicationCases)('$workspace image publication', config => {
 describe('image publication build cache', () => {
   it.each(imagePublicationCases.filter(config => config.noCacheInBuildSources))(
     'keeps $workspace build sources free of a BuildKit cache',
-    ({ buildWorkflowPath, compositeActionPath }) => {
-      for (const source of [read(buildWorkflowPath), read(compositeActionPath)]) {
-        expect(source).not.toContain('cache-from')
-        expect(source).not.toContain('cache-to')
-      }
+    ({ compositeActionPath }) => {
+      const source = read(compositeActionPath)
+      expect(source).not.toContain('cache-from')
+      expect(source).not.toContain('cache-to')
     },
   )
 })
