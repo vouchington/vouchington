@@ -37,7 +37,7 @@ results; only completion of the current token supplies idempotency.
 
 Automatic authority requires a current completed clear result for the same intake, an exact
 associated current compliant assessment, complete signed-in statutory fields, and no rejected form
-review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0637-00-00-copyright-structured-submissions.sql)
+review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0641-00-00-copyright-delivery-transport.sql)
 is checked again under the form fence at enforcement claim and final admission. Pending/failed
 staff projections expose their state with null recommendation and rationale; stale private
 rationale never appears as current. A staff approval during either state creates human authority.

@@ -5,7 +5,7 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
-import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
+import { createCopyrightFormReceiptInTransaction } from './form-intake-receipt.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
 import { assertStructuredNoticeStatutoryFields } from './form-input-validation.mts'
@@ -125,26 +125,11 @@ export async function createCopyrightFormIntake(
       copyright_notice_form_intake_id, attempt_number, state, started_at
     ) VALUES (${intake.id}, 1, 'pending', CURRENT_TIMESTAMP)
   `)
-  const claimantReceipt = await createDeterministicCopyrightCorrespondenceInTransaction(
+  await createCopyrightFormReceiptInTransaction(
     {
       noticeId: notice.id,
       submissionId: submission.id,
-      correspondenceKind: 'receipt',
-      bodyText: `We received your copyright notice for case ${notice.id}. We will review it and contact you if we need more information.`,
-    },
-    transaction,
-  )
-  await createCopyrightDeliveryIntent(
-    {
-      noticeId: notice.id,
-      submissionId: submission.id,
-      correspondenceId: claimantReceipt.id,
-      recipientUserId: null,
-      recipientRole: 'claimant',
-      deliveryKind: 'claimant_receipt',
-      channel: 'email',
-      idempotencyKey: `copyright-notice:${notice.id}:claimant-email-receipt`,
-      recipientEmail: input.request.claimantEmail,
+      claimantEmail: input.request.claimantEmail,
     },
     transaction,
   )
