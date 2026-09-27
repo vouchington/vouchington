@@ -9,7 +9,7 @@ export function appendPaginationCTEs(
     shareEventIdLt,
   }: {
     itemIdLt?: string
-    publishedLt?: number
+    publishedLt?: string
     safeLimit: number
     shareEventIdLt?: string
   },
@@ -58,7 +58,8 @@ export function appendFinalSelectCTE(query: SQLStatement): SQLStatement {
       limited_rss_feed_items.result_id,
       limited_rss_feed_items.entity_id,
       limited_rss_feed_items.published_at,
-      limited_rss_feed_items.sort_at,
+      to_char(limited_rss_feed_items.sort_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_sort_at,
+      limited_rss_feed_items.sort_rank,
       limited_rss_feed_items.story_id,
       limited_rss_feed_items.delivery_type,
       limited_rss_feed_items.shared_by_user_id,
@@ -84,7 +85,7 @@ function appendCursorFilter(
     shareEventIdLt,
   }: {
     itemIdLt?: string
-    publishedLt?: number
+    publishedLt?: string
     shareEventIdLt?: string
   },
 ): void {
@@ -92,9 +93,9 @@ function appendCursorFilter(
   if (shareEventIdLt) {
     query.append(sql`
         AND (
-          canonical_rss_feed_items.sort_at < to_timestamp(${publishedLt / 1000.0})
+          canonical_rss_feed_items.sort_at < ${publishedLt}::timestamptz
           OR (
-            canonical_rss_feed_items.sort_at = to_timestamp(${publishedLt / 1000.0})
+            canonical_rss_feed_items.sort_at = ${publishedLt}::timestamptz
             AND (
               canonical_rss_feed_items.sort_rank < 1
               OR (
@@ -108,9 +109,9 @@ function appendCursorFilter(
   } else if (itemIdLt) {
     query.append(sql`
         AND (
-          canonical_rss_feed_items.sort_at < to_timestamp(${publishedLt / 1000.0})
+          canonical_rss_feed_items.sort_at < ${publishedLt}::timestamptz
           OR (
-            canonical_rss_feed_items.sort_at = to_timestamp(${publishedLt / 1000.0})
+            canonical_rss_feed_items.sort_at = ${publishedLt}::timestamptz
             AND canonical_rss_feed_items.sort_rank = 0
             AND canonical_rss_feed_items.item_id < ${itemIdLt}::uuid
           )
@@ -118,7 +119,7 @@ function appendCursorFilter(
       `)
   } else {
     query.append(sql`
-        AND canonical_rss_feed_items.sort_at < to_timestamp(${publishedLt / 1000.0})
+        AND canonical_rss_feed_items.sort_at < ${publishedLt}::timestamptz
       `)
   }
 }

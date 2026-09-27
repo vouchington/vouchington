@@ -41,7 +41,10 @@ if (page1.page_info.has_next_page) {
 - Use `after` parameter with `page_info.end_cursor` to get the next page
 - Post cursor structure varies by sort: `{ timestamp: number, id: string }` for `sort=new` and
   `{ score: number, id: string }` for `sort=hot` (internally encoded)
-- RSS feed item cursors use `{ timestamp: number, id: string }` (internally encoded)
+- RSS feed item cursors preserve PostgreSQL microseconds and the direct/share delivery tier.
+  They are scoped to the viewer, access context, community, effective filters and chronological
+  ordering. Equivalent unordered filter arrays and page-size changes preserve the scope;
+  changing the result set requires a new first page. See [RSS cursor owner](rss-feed-items/cursor.mts).
 - Always check `page_info.has_next_page` before fetching next page
 
 **Example API usage:**

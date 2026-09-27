@@ -224,7 +224,7 @@ describe('search.generated (pagination)', () => {
     // Valid JSON but wrong cursor shape (not timestamp cursor)
     const wrongShapeCursor = encodeCursor({ id: 'test' })
     await expect(searchRssFeedItems({ after: wrongShapeCursor })).rejects.toThrow(
-      /expected timestamp cursor/,
+      /expected scoped precise timestamp cursor/,
     )
   })
 

@@ -55,29 +55,22 @@ These embeddings will be used for searching.
 
 ### Searching
 
-Sorting will always happen by `LEAST(uuidv_extract_timestamp(id), published_at) DESC`.
-We disallow publishers from continuously bumping their items, while also handling cases when we fetch the feed too late.
+Recency search orders canonical story representatives by `(published_at DESC, id DESC)`.
+The generated publication timestamp already clamps publisher dates to the item UUID time.
+Story winners are selected from the complete eligible filter set before applying the cursor.
 
-You can create a stored column and index for this:
+The opaque `after` cursor preserves the exact PostgreSQL UTC microsecond timestamp and item UUID.
+[The recency cursor owner](search-cursor.mts) binds it to the resource, ordering, viewer/access
+context and effective filters. Unordered ID/media arrays are sorted and deduplicated for scope;
+text uses the same trimming as SQL, and read state is effective only for a signed-in viewer.
+Page size is excluded from scope. Changed filters or a different viewer require a fresh first page.
+The current prelaunch contract rejects numeric timestamp cursors rather than decoding old formats.
 
-```sql
-ALTER TABLE rss_feed_items
-ADD COLUMN sort_ts TIMESTAMPTZ
-GENERATED ALWAYS AS (
-  LEAST(uuidv_extract_timestamp(id),
-        COALESCE(published_at, 'infinity'::timestamptz))
-) STORED;
-
-CREATE INDEX IF NOT EXISTS feed_items_sort_ts_idx
-ON rss_feed_items (sort_ts);
-```
-
-Filtering:
-
-- `rss_feed_ids` - filter by a list of RSS Feeds
-- `limit`
-- `published_lt` - exclusive pagination cursor on `sort_ts`
-- `id_lt` - tie-breaker cursor for stable pagination when `sort_ts` ties (`(sort_ts, id) < (published_lt, id_lt)`)
+The query compares `(published_at, id)` directly against `timestamptz`/UUID parameters and retains
+its index-ordered candidate traversal. Only the final bounded page formats timestamps for cursors;
+public result timestamps and string `after`/`PageInfo` types remain unchanged. The
+[EXPLAIN harness](../../scripts/explain-analyze/README.md) covers a late global cursor with a
+physical candidate-work ceiling in both prepared plan modes.
 
 ### Semantic Search
 

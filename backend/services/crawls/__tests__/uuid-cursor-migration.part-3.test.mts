@@ -1,4 +1,4 @@
-import { encodeCursor } from '@modules/pagination'
+import { encodeCursor, encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 // Keep static service imports so no-mistakes selects these migration coverage tests
 // when any migrated cursor caller changes; dynamic imports execute the cases below.
@@ -22,7 +22,7 @@ const simple = encodeCursor({ id: ID })
 const name = encodeCursor({ name: 'cursor-name', id: ID })
 const score = encodeCursor({ score: 1, id: ID })
 const ranking = encodeCursor({ ranking: 1, id: ID })
-const timestamp = encodeCursor({ timestamp: Date.UTC(2024, 0, 1), id: ID })
+
 const tier = encodeCursor({ tier: 1, id: ID })
 const currentUser = { id: ID, roles: [] }
 
@@ -35,7 +35,13 @@ function cursorCase(label: string, run: () => unknown | Promise<unknown>): Curso
 const cases: CursorCase[] = [
   cursorCase('buildRssFeedItemFilters', async () =>
     (await import('../../rss-feed-items/search-filters.mts')).buildRssFeedItemFilters({
-      after: timestamp,
+      after: encodeScopedPreciseTimestampCursor(
+        '2024-01-01T00:00:00.000000Z',
+        ID,
+        (await import('../../rss-feed-items/search-cursor.mts')).getRssFeedItemSearchCursorScope(
+          {},
+        ),
+      ),
     }),
   ),
   cursorCase('decodeTopicSearchCursor text relevance', async () =>

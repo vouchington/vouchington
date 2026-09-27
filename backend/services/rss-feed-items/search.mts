@@ -10,7 +10,10 @@ import { read } from '@data-stores/psql'
 import type { RssFeedItemsResult } from './types.mts'
 import { clampLimit } from '@modules/search-utils'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { encodeCursor } from '@modules/pagination'
+import {
+  buildRssFeedItemSearchPageInfo,
+  getRssFeedItemSearchCursorScope,
+} from './search-cursor.mts'
 import type { PageInfo } from '@voucha/types/pagination'
 import { buildRssFeedItemFilters, appendWhereClauses } from './search-filters.mts'
 import { searchRssFeedItemsBySemantic } from './search-semantic.mts'
@@ -114,23 +117,14 @@ export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}
 
   return {
     results,
-    page_info: {
-      has_next_page: hasNextPage,
-      end_cursor:
-        hasNextPage && results.length > 0
-          ? encodeCursor({
-              timestamp: results[results.length - 1].published_at.getTime(),
-              id: results[results.length - 1].id,
-            })
-          : null,
-      start_cursor:
-        results.length > 0
-          ? encodeCursor({
-              timestamp: results[0].published_at.getTime(),
-              id: results[0].id,
-            })
-          : null,
-    },
+    page_info: buildRssFeedItemSearchPageInfo(
+      rows.map(row => ({
+        id: row.id as string,
+        cursor_published_at: row.cursor_published_at as string,
+      })),
+      hasNextPage,
+      getRssFeedItemSearchCursorScope(options),
+    ),
   }
 }
 
@@ -150,6 +144,7 @@ export function appendRssFeedItemsPageClauses(query: SQLStatement, safeLimit: nu
     SELECT
       limited_rss_feed_items.id,
       limited_rss_feed_items.published_at,
+      to_char(limited_rss_feed_items.published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_published_at,
       limited_rss_feed_items.story_id,
       rss_feed_items_page_info.has_next_page
     FROM limited_rss_feed_items

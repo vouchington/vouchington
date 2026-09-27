@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { decodeUuidCursor, isTimestampCursor } from '@modules/pagination'
+import { getRssFeedItemSearchCursor } from './search-cursor.mts'
 import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
@@ -137,17 +137,9 @@ export function buildRssFeedItemFilters(options: SearchRssFeedItemsOptions): SQL
   }
 
   if (after) {
-    const cursor = decodeUuidCursor(
-      after,
-      isTimestampCursor,
-      'Invalid cursor format: expected timestamp cursor',
-    )
-
-    const published_lt = new Date(cursor.timestamp)
-    const itemId = cursor.id
-
+    const cursor = getRssFeedItemSearchCursor(options)!
     filters.push(
-      sql`(rss_feed_items.published_at, rss_feed_items.id) < (${published_lt}, ${itemId}::uuid)`,
+      sql`(rss_feed_items.published_at, rss_feed_items.id) < (${cursor.timestamp}::timestamptz, ${cursor.id}::uuid)`,
     )
   }
 

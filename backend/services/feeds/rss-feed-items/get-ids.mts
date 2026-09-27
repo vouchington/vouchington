@@ -6,9 +6,10 @@ import { clampLimit } from '@modules/search-utils'
 import createHttpError from 'http-errors'
 import {
   buildRssFeedItemFeedPageInfo,
-  getCutoffDateForTimeRange,
+  getRssFeedItemFeedCursorScope,
   parseRssFeedItemFeedCursor,
-} from './query-utils.mts'
+} from './cursor.mts'
+import { getCutoffDateForTimeRange } from './query-utils.mts'
 import { appendRelationCTEs } from './get-ids/relation-ctes.mts'
 import { appendEligibleRssFeedItemsCTE } from './get-ids/eligible-items-cte.mts'
 import { appendDeliveryCTEs } from './get-ids/delivery-ctes.mts'
@@ -34,7 +35,18 @@ export async function getRssFeedItemFeedIds(
     options.min_score_follow_rss_feeds ?? DEFAULT_MIN_SCORE_FOLLOW_RSS_FEEDS
   const min_score_follow_topics = options.min_score_follow_topics ?? DEFAULT_MIN_SCORE_FOLLOW_TOPICS
   const safeLimit = clampLimit(limit)
-  const { published_lt, item_id_lt, share_event_id_lt } = parseRssFeedItemFeedCursor(options.after)
+  const cursorScope = getRssFeedItemFeedCursorScope(currentUserId, {
+    ...options,
+    feed_type,
+    time_range,
+    min_score_follow_rss_feeds,
+    min_score_follow_topics,
+    isAdministrator: currentUserIsAdministrator,
+  })
+  const { published_lt, item_id_lt, share_event_id_lt } = parseRssFeedItemFeedCursor(
+    options.after,
+    cursorScope,
+  )
 
   const includeDirectItems = feed_type !== 'follow_users'
   const includeSharedItems =
@@ -105,16 +117,12 @@ export async function getRssFeedItemFeedIds(
     results,
     page_info: buildRssFeedItemFeedPageInfo(
       rows.map(row => ({
-        result_id: row.result_id as string,
-        sort_at: row.sort_at as Date | string | null,
-        // Direct items tie-break by item_id; shares tie-break by share_event_id UUID.
-        // Prefix "share:" on share cursors so the parser can distinguish delivery types.
-        cursor_id:
-          row.delivery_type === 'direct'
-            ? (row.item_id as string)
-            : `share:${row.result_id as string}`,
+        cursor_sort_at: row.cursor_sort_at as string,
+        sort_rank: row.sort_rank as 0 | 1,
+        cursor_id: (row.share_event_id ?? row.item_id) as string,
       })),
       hasNextPage,
+      cursorScope,
     ),
   }
 }
