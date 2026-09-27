@@ -81,11 +81,11 @@ Status: <findings|none observed (inspected scope)|not assessed (reason)|unavaila
 `## Plan vs Actual`, `## Scheduled Prompt Suggestions`, and `## PR Creation Feedback` are
 conditional sections — include each only when it fires. `## Tool Findings` and
 `## Architecture Findings` are required with an explicit assessment status and inspected scope
-or reason; findings require observations, evidence, and dispositions. The shared composer always
-includes `## Sandbox & Permission Audit` with an explicit unavailable assessment when no friction
-collector was provided. Derive observed evidence from the default
-`node dev/session-friction/report.mts [--root-codex]` output under the canonical evidence boundary;
-empty capture is not proof of absence.
+or reason; findings require observations, evidence, and dispositions. The CLI composer always
+supplies its trusted friction collector and includes `## Sandbox & Permission Audit`; an unavailable
+source is assessed as unavailable, not empty. For a manually staged retrospective, derive observed
+evidence from `node dev/session-friction/report.mts [--root-codex]` under the canonical evidence
+boundary. Empty capture is not proof of absence.
 
 If you proactively made a GitHub issue already as a follow-up task, link it in the relevant section.
 
@@ -138,11 +138,16 @@ admission before work. A successful work outcome with blocked delivery is not fu
 Invalid content, identity conflicts, saturation, and persistence failure exit nonzero with `Error:`
 and a pinned replay command. Do not discard pending records or claim acknowledged delivery.
 
-`compose --input <json-file>` accepts the portable `RetrospectiveCompositionInput`: session and
-repository identity, date and references, outcome and coverage, concise narrative, facts/transcript
-collector options (or explicit unavailable reasons), and tool/architecture assessments. It generates
-routine markers and facts plus validated `work_outcome` and `feedback_coverage` front matter,
-then applies local document validation. Use observations with evidence and
+`compose --input <json-file>` accepts a serializable subset of the portable composition input:
+session and repository identity, date and references, outcome and coverage, concise narrative,
+facts/transcript paths or explicit unavailable reasons, and tool/architecture assessments. The
+JSON must not contain a friction collector, executable facts callbacks, or a transcript environment.
+The CLI builds the trusted friction collector itself from the same session ID, the local friction
+log directory, and the hosted journal connection; it reads those observations once while composing.
+A missing hosted connection is reported as unavailable, not as an empty journal. Declare coverage
+truthfully, including observed dropped records; composition rejects an understated drop count. The
+composer generates routine markers and facts plus validated `work_outcome` and `feedback_coverage`
+front matter, then applies local document validation. Use observations with evidence and
 disposition; `none-observed`, `not-assessed`, and `unavailable` remain distinct. No raw transcript
 re-mining or routine hand-written lint narratives are required.
 

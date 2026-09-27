@@ -31,10 +31,10 @@ timestamp or report `no delta since <timestamp>`. Otherwise use
 tool assessments, and architectural assessments through the shared composer. Its input supplies
 collector options and concise narrative; unavailable evidence stays explicit. Save preserves the
 generated outcome and coverage front matter; use an explicit `--mode` as described in
-[saving.md](saving.md). The default outputs
-are collected, in order,
-from `pnpm exec vouchington retrospective-facts --pr <PR_NUMBER>` (or `--no-pr`/explicit `--branch`), transcript
-facts, then the session-friction report. The canonical skill owns the evidence-minimization boundary
+[saving.md](saving.md). The composer collects routine repository facts, transcript facts, hosted
+journal observations, and the local friction log itself; do not rerun the standalone report commands
+solely to fill sections that composition already generated. The standalone facts and friction
+commands remain available for inspection or manual staging. The canonical skill owns the evidence-minimization boundary
 for durable content. `retrospective-facts` must fetch `origin/main`; never infer identity from the
 checkout. A zero-work session retains the generated outcome, facts, tool, architecture, and
 sandbox assessment sections, with `## No Substantive Work` as its narrative.

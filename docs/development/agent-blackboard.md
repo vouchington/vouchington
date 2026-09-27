@@ -293,6 +293,9 @@ matter. `dev/retrospective-save.mts save --mode interactive|autonomous --file <p
 these fields in the stored envelope and rejects contradictory explicit metadata flags. Delivery
 mode remains a required trusted CLI option. See the [save contract](../../.agents/skills/retrospective/saving.md)
 for staging and replay recipes, including files prepared without generated metadata.
+The `compose --input <json-file>` adapter accepts serializable facts and transcript options, then
+constructs its own friction collector from the same session's local log and hosted journal. Caller
+JSON cannot supply a collector, credential environment, or executable callback.
 
 The supported journal and retrospective writers take explicit `--mode interactive|autonomous`.
 Interactive delivery failures preserve the shared writer's sanitized feedback record in a bounded,

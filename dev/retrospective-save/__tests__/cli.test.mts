@@ -6,6 +6,9 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { recordFriction } from 'vouchington-tooling/session-friction'
+
+import { frictionLogDirectory } from '../../session-friction/config.mts'
 
 const execFileAsync = promisify(execFile)
 const scriptPath = fileURLToPath(new URL('../../retrospective-save.mts', import.meta.url))
@@ -56,6 +59,48 @@ describe('retrospective-save CLI', () => {
   it('advertises check in the top-level usage', async () => {
     const result = await execFileAsync(process.execPath, [scriptPath, '--help'])
     expect(result.stdout).toContain('check [--session-id')
+  })
+
+  it('collects the local friction log in the actual compose process', async () => {
+    const dir = await makeTempDir()
+    const env = {
+      ...process.env,
+      TMPDIR: dir,
+      AGENT_BLACKBOARD_URL: '',
+      AGENT_BLACKBOARD_TOKEN: '',
+    }
+    const file = join(dir, 'input.json')
+    await writeFile(
+      file,
+      JSON.stringify({
+        sessionId: 'sess-compose',
+        date: '2026-09-27',
+        issues: [],
+        prs: [],
+        description: 'CLI friction capture',
+        repositories: ['vouchington/vouchington'],
+        workOutcome: 'no-change',
+        feedbackCoverage: { status: 'partial', sources: ['friction'], droppedCount: 0 },
+        narrative: '# Retrospective\nNo substantive work.',
+        facts: { status: 'unavailable', reason: 'repository evidence unavailable' },
+        transcript: { status: 'unavailable', reason: 'transcript unavailable' },
+        tools: { status: 'none-observed', reason: 'inspected available observations' },
+        architecture: { status: 'not-assessed', reason: 'no architecture work' },
+      }),
+    )
+    recordFriction(
+      'sess-compose',
+      { type: 'permission-request', command: 'git push' },
+      {
+        directory: frictionLogDirectory(env),
+      },
+    )
+    const result = await execFileAsync(process.execPath, [scriptPath, 'compose', '--input', file], {
+      env,
+    })
+    expect(result.stdout).toContain('## CI Failures\nStatus: unavailable')
+    expect(result.stdout).toContain('## Sandbox & Permission Audit')
+    expect(result.stdout).toContain('git push')
   })
 
   it('rejects an unknown subcommand with usage on stderr and exit code 1', async () => {
