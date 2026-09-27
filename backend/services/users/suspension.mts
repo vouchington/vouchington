@@ -1,4 +1,4 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { ACCOUNT_SUSPENDED, CONFLICT } from '@modules/on-error/error-codes'
@@ -26,45 +26,59 @@ export async function suspendUser(
   if (user.suspended_at) throw createCodedError(409, 'User is already suspended', CONFLICT)
 
   await using query = await beginTransaction()
-  await lockAuthorPublicationLifecycle(query, userId)
+  const result = await ensureUserSuspendedInTransaction(query, {
+    actorId: currentUser!.id,
+    userId,
+    reason,
+  })
+  if (!result.newlySuspended) throw createCodedError(409, 'User is already suspended', CONFLICT)
+  await query.commit()
 
-  // Re-check user existence and active suspension under the lock to handle concurrent operations.
-  const { rows } = await query(sql`/* suspendUser:checkLocked */
+  await accelerateUserSuspensionAfterCommit(userId)
+
+  const updated = await getPrivateUserByAny(userId)
+  if (!updated) throw createHttpError(404, 'User not found')
+  return updated
+}
+
+export async function accelerateUserSuspensionAfterCommit(userId: string): Promise<void> {
+  await invalidate.users(userId)
+  void enqueueRefreshTopHashtags()
+}
+
+export async function ensureUserSuspendedInTransaction(
+  query: TransactionQuery,
+  input: { actorId: string; userId: string; reason?: string },
+): Promise<{ newlySuspended: boolean }> {
+  await lockAuthorPublicationLifecycle(query, input.userId)
+  const { rows } = await query(sql`/* ensureUserSuspendedInTransaction:checkLocked */
       SELECT
-        NOT EXISTS (SELECT 1 FROM users WHERE id = ${userId} AND deleted_at IS NULL) AS user_gone,
-        EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = ${userId} AND lifted_at IS NULL) AS already_suspended
+        NOT EXISTS (SELECT 1 FROM users WHERE id = ${input.userId} AND deleted_at IS NULL) AS user_gone,
+        EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = ${input.userId} AND lifted_at IS NULL) AS already_suspended
     `)
   const { user_gone, already_suspended } = rows[0] as {
     user_gone: boolean
     already_suspended: boolean
   }
   if (user_gone) throw createHttpError(404, 'User not found')
-  if (already_suspended) throw createCodedError(409, 'User is already suspended', CONFLICT)
+  if (already_suspended) return { newlySuspended: false }
 
-  await query(sql`/* suspendUser:insert */
+  // ast-grep-ignore: no-three-sequential-awaits -- suspension, publication invalidation, and moderator audit must commit in order on one transaction client.
+  await query(sql`/* ensureUserSuspendedInTransaction:insert */
       INSERT INTO user_suspensions (user_id, suspended_by_id, reason)
-      VALUES (${userId}, ${currentUser!.id}, ${reason ?? null})
+      VALUES (${input.userId}, ${input.actorId}, ${input.reason ?? null})
     `)
   await recordPostPublicationChange(query, {
-    scope: { type: 'author', authorUserId: userId },
+    scope: { type: 'author', authorUserId: input.userId },
     reason: 'author_suspension_changed',
-    footprint: { priorAuthorUserId: userId },
+    footprint: { priorAuthorUserId: input.userId },
   })
-  await query.commit()
-
-  await Promise.all([
-    invalidate.users(userId),
-    recordModeratorAction(currentUser?.id ?? null, {
-      actionType: 'suspend',
-      targetUserId: userId,
-      reason,
-    }),
-  ])
-  void enqueueRefreshTopHashtags()
-
-  const updated = await getPrivateUserByAny(userId)
-  if (!updated) throw createHttpError(404, 'User not found')
-  return updated
+  await recordModeratorAction(
+    input.actorId,
+    { actionType: 'suspend', targetUserId: input.userId, reason: input.reason },
+    { query },
+  )
+  return { newlySuspended: true }
 }
 
 export async function unsuspendUser(

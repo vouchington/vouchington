@@ -77,7 +77,10 @@ export async function withTransactionOptions<Result>(
   handler: (query: TransactionQuery) => Promise<Result>,
 ): Promise<Result> {
   const owner = options.query
-    ? postCommitActionOwners.get(options.query)
+    ? (postCommitActionOwners.get(options.query) ??
+      (isTransactionQuery(options.query)
+        ? postCommitActionOwnersByClient.get(options.query.client)
+        : undefined))
     : isPoolClient(options.client)
       ? postCommitActionOwnersByClient.get(options.client)
       : undefined
@@ -93,6 +96,10 @@ export async function withTransactionOptions<Result>(
   })
   if (scope) commitPostCommitActionScope(scope)
   return result
+}
+
+function isTransactionQuery(query: QueryExecutor): query is TransactionQuery {
+  return 'client' in query && isPoolClient(query.client)
 }
 async function runPostCommitActions(query: QueryExecutor): Promise<void> {
   const actions = postCommitActions.get(query)
@@ -186,7 +193,7 @@ function commitPostCommitActionScope(scope: PostCommitActionScope): void {
   actions.push(...scope.actions)
   if (!scope.parent) postCommitActions.set(scope.owner, actions)
 }
-function isPoolClient(client: QueryOptions['client']): client is PoolClient {
-  return Boolean(client && 'release' in client)
+function isPoolClient(client: unknown): client is PoolClient {
+  return typeof client === 'object' && client !== null && 'release' in client
 }
 export * from './runtime.mts'

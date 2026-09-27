@@ -6,6 +6,7 @@ import {
   registerPostRollbackAction,
   withTransactionOptions,
 } from './setup.mts'
+import type { QueryExecutor, QueryInput, QueryValues } from './types.mts'
 import {
   recordIdleBorrowedTransactionQueries,
   recordNestedOwnedBorrowedClientQueries,
@@ -70,6 +71,21 @@ describe('transaction post-commit actions', () => {
     const action = vi.fn<() => Promise<void>>(async () => undefined)
     await using transaction = await beginTransaction()
     await withTransactionOptions({ client: transaction.client }, async nestedQuery => {
+      registerPostCommitAction(nestedQuery, action)
+    })
+    expect(action).not.toHaveBeenCalled()
+    await transaction.commit()
+    expect(action).toHaveBeenCalledOnce()
+  })
+
+  it('defers actions through a query wrapper that retains its owned client', async () => {
+    const action = vi.fn<() => Promise<void>>(async () => undefined)
+    await using transaction = await beginTransaction()
+    const wrappedQuery = Object.assign(
+      ((input: QueryInput, values?: QueryValues) => transaction(input, values)) as QueryExecutor,
+      { client: transaction.client },
+    )
+    await withTransactionOptions({ query: wrappedQuery }, async nestedQuery => {
       registerPostCommitAction(nestedQuery, action)
     })
     expect(action).not.toHaveBeenCalled()
