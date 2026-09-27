@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
+import React from 'react'
+import { describe, vi } from 'vitest'
+import { render } from '@testing-library/react'
+import { registerManagerKeyboardTests } from '@/test-helpers/components/my/manager-keyboard-submit'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
 import type { SpendingCategory } from '@/types/my'
 
@@ -27,8 +28,6 @@ vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
   ),
 }))
 
-import React from 'react'
-
 interface MockSelectChildProps {
   children?: React.ReactNode
 }
@@ -52,7 +51,6 @@ function isMockSelectElement<Props>(
   return React.isValidElement<Props>(child) && child.type === type
 }
 
-// Mock select component UI for easy testing as plain select dropdown
 vi.mock(
   import('@/components/ui/select'),
   () =>
@@ -121,115 +119,31 @@ function makeInitialData() {
 }
 
 describe('SpendingCategoriesManager keyboard submit', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-    mockCreate.mockResolvedValue({
-      spending_category: {
-        id: 'sc-2',
-        spending_category_id: 'cat-2',
-        amount: { amount: 20_000, currency: 'usd' },
-        spending_frequency: 'monthly',
-        note: null,
-        spending_category: { id: 'cat-2', name: 'Grocery', slug: 'grocery' },
-      },
-    } as any)
-    mockUpdate.mockResolvedValue({
-      spending_category: {
-        ...initialCategories[0],
-        note: 'Updated note',
-      },
-    } as any)
-  })
-
-  it('Enter on the amount input submits the add form', () => {
-    render(<SpendingCategoriesManager initialData={makeInitialData()} />)
-
-    // Select a category to enable submission
-    const autocompleteInput = screen.getByTestId('mock-topic-autocomplete-input')
-    fireEvent.change(autocompleteInput, { target: { value: 'cat-2' } })
-
-    // Fill in amount
-    const amountInput = screen.getByLabelText('Amount') as HTMLInputElement
-    fireEvent.change(amountInput, { target: { value: '200' } })
-
-    void expectInputEnterSubmits({ input: amountInput, onSubmit: mockCreate })
-  })
-
-  it('Cmd+Enter on add form note textarea submits', () => {
-    render(<SpendingCategoriesManager initialData={makeInitialData()} />)
-    const autocompleteInput = screen.getByTestId('mock-topic-autocomplete-input')
-    fireEvent.change(autocompleteInput, { target: { value: 'cat-2' } })
-    const amountInput = screen.getByLabelText('Amount')
-    fireEvent.change(amountInput, { target: { value: '200' } })
-    const noteTextarea = screen.getByLabelText('Note (optional)') as HTMLTextAreaElement
-    mockCreate.mockClear()
-    fireEvent.keyDown(noteTextarea, { key: 'Enter', metaKey: true })
-    expect(mockCreate).toHaveBeenCalled()
-  })
-
-  it('Ctrl+Enter on add form note textarea submits', () => {
-    render(<SpendingCategoriesManager initialData={makeInitialData()} />)
-    const autocompleteInput = screen.getByTestId('mock-topic-autocomplete-input')
-    fireEvent.change(autocompleteInput, { target: { value: 'cat-2' } })
-    const amountInput = screen.getByLabelText('Amount')
-    fireEvent.change(amountInput, { target: { value: '200' } })
-    const noteTextarea = screen.getByLabelText('Note (optional)') as HTMLTextAreaElement
-    mockCreate.mockClear()
-    fireEvent.keyDown(noteTextarea, { key: 'Enter', ctrlKey: true })
-    expect(mockCreate).toHaveBeenCalled()
-  })
-
-  it('plain Enter on add form note textarea does not submit', () => {
-    render(<SpendingCategoriesManager initialData={makeInitialData()} />)
-    const autocompleteInput = screen.getByTestId('mock-topic-autocomplete-input')
-    fireEvent.change(autocompleteInput, { target: { value: 'cat-2' } })
-    const amountInput = screen.getByLabelText('Amount')
-    fireEvent.change(amountInput, { target: { value: '200' } })
-    const noteTextarea = screen.getByLabelText('Note (optional)') as HTMLTextAreaElement
-    mockCreate.mockClear()
-    fireEvent.keyDown(noteTextarea, { key: 'Enter' })
-    expect(mockCreate).not.toHaveBeenCalled()
-  })
-
-  it('edit form has a submit button wired to the save handler', async () => {
-    render(<SpendingCategoriesManager initialData={makeInitialData()} />)
-
-    // Open edit — both edit and add forms are visible; edit form is first in DOM
-    fireEvent.click(screen.getByRole('button', { name: /Edit/i }))
-
-    // Change a field so handleSave doesn't early-exit
-    const amountInput = screen.getAllByLabelText('Amount')[0] as HTMLInputElement
-    fireEvent.change(amountInput, { target: { value: '180' } })
-
-    // Verify the edit form has a type=submit button and form submit calls the API
-    const saveButton = screen.getByRole('button', { name: /Save/i })
-    expect(saveButton).toHaveAttribute('type', 'submit')
-    const editForm = saveButton.closest('form')!
-    mockUpdate.mockClear()
-    fireEvent.submit(editForm)
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalled())
-  })
-
-  it('Cmd+Enter on the edit note textarea submits the edit form', async () => {
-    render(<SpendingCategoriesManager initialData={makeInitialData()} />)
-
-    // Open edit
-    fireEvent.click(screen.getByRole('button', { name: /Edit/i }))
-
-    // Change a field so handleSave doesn't early-exit
-    const amountInput = screen.getAllByLabelText('Amount')[0] as HTMLInputElement
-    fireEvent.change(amountInput, { target: { value: '180' } })
-
-    const noteTextarea = screen.getByLabelText('Note') as HTMLTextAreaElement
-
-    // Plain Enter on textarea must not submit
-    mockUpdate.mockClear()
-    fireEvent.keyDown(noteTextarea, { key: 'Enter' })
-    expect(mockUpdate).not.toHaveBeenCalled()
-
-    // Cmd+Enter submits
-    mockUpdate.mockClear()
-    fireEvent.keyDown(noteTextarea, { key: 'Enter', metaKey: true })
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalled())
+  registerManagerKeyboardTests({
+    renderManager: () => render(<SpendingCategoriesManager initialData={makeInitialData()} />),
+    prepareMocks: () => {
+      mockCreate.mockResolvedValue({
+        spending_category: {
+          id: 'sc-2',
+          spending_category_id: 'cat-2',
+          amount: { amount: 20_000, currency: 'usd' },
+          spending_frequency: 'monthly',
+          note: null,
+          spending_category: { id: 'cat-2', name: 'Grocery', slug: 'grocery' },
+        },
+      } as any)
+      mockUpdate.mockResolvedValue({
+        spending_category: {
+          ...initialCategories[0],
+          note: 'Updated note',
+        },
+      } as any)
+    },
+    autocompleteValue: 'cat-2',
+    valueLabel: 'Amount',
+    addValue: '200',
+    editValue: '180',
+    onCreate: mockCreate,
+    onUpdate: mockUpdate,
   })
 })
