@@ -14,7 +14,6 @@ import { parseOAuthScopes } from './validation.mts'
 import type { ClientIdMetadataDocument, OAuthClient } from './types.mts'
 import {
   beginClientIdMetadataRefresh,
-  getClientIdMetadataClient,
   getClientIdMetadataExpiry,
   getFreshClientIdMetadataClient,
   upsertClientIdMetadataClient,
@@ -54,7 +53,6 @@ export async function resolveClientIdMetadataDocument(
   const deps = { ...defaultDependencies, ...dependencies }
   const cached = await getFreshClientIdMetadataClient(metadataUrl, deps.query)
   if (cached) return cached
-
   const refresh = await beginClientIdMetadataRefresh(deps.query)
   const fetched = await fetchAndValidateClientIdMetadataDocument(metadataUrl, deps)
   const metadataExpiresAt = getClientIdMetadataExpiry(fetched.response.headers, refresh.startedAt)
@@ -65,7 +63,9 @@ export async function resolveClientIdMetadataDocument(
     deps.query,
   )
   if (client) return client
-  return getClientIdMetadataClient(metadataUrl, deps.query)
+  const winningClient = await getFreshClientIdMetadataClient(metadataUrl, deps.query)
+  if (winningClient) return winningClient
+  throw unavailableClientIdMetadata()
 }
 
 export function parseClientIdMetadataUrl(value: string): string | null {

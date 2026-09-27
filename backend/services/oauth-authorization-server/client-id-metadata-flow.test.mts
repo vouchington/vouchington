@@ -76,7 +76,9 @@ describe('Client ID Metadata Document OAuth flow', () => {
       responseFor(clientId),
     )
 
-    await expect(resolveClientIdMetadataDocument(clientId, { safeFetch })).resolves.toBeNull()
+    await expect(resolveClientIdMetadataDocument(clientId, { safeFetch })).rejects.toMatchObject({
+      code: 'unauthorized_client',
+    })
     expect(safeFetch).toHaveBeenCalledOnce()
   })
 

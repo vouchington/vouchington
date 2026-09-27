@@ -225,6 +225,40 @@ describe('Client ID Metadata Documents', () => {
     releaseOlder?.()
     await expect(older).resolves.toMatchObject({ client_name: 'Newer' })
   })
+
+  it('does not reuse an immediately stale winner after losing a refresh race', async () => {
+    const clientId = randomMetadataUrl()
+    let releaseOlder: (() => void) | undefined
+    let markOlderStarted: (() => void) | undefined
+    const olderWait = new Promise<void>(resolve => {
+      releaseOlder = resolve
+    })
+    const olderStarted = new Promise<void>(resolve => {
+      markOlderStarted = resolve
+    })
+    const older = resolveClientIdMetadataDocument(clientId, {
+      safeFetch: async () => {
+        markOlderStarted?.()
+        await olderWait
+        return responseFor(metadataDocument(clientId, { client_name: 'Older' }))
+      },
+    })
+    const olderResult = older.catch((error: unknown) => error)
+    await olderStarted
+    await expect(
+      resolveClientIdMetadataDocument(clientId, {
+        safeFetch: async () =>
+          responseFor(metadataDocument(clientId, { client_name: 'Newer' }), {
+            headers: {
+              'cache-control': 'no-store',
+              'content-type': 'application/json',
+            },
+          }),
+      }),
+    ).resolves.toMatchObject({ client_name: 'Newer' })
+    releaseOlder?.()
+    await expect(olderResult).resolves.toMatchObject({ code: 'unauthorized_client' })
+  })
 })
 
 describe('parseClientIdMetadataUrl', () => {
