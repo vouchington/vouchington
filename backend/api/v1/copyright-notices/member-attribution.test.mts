@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { CloudFrontClient, type CreateInvalidationCommandOutput } from '@aws-sdk/client-cloudfront'
+import { DynamoDBClient, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   connectTestOAuthAccount,
@@ -17,8 +17,14 @@ import { createCopyrightFormIntake, reviewCopyrightFormIntake } from '@services/
 
 describe('copyright notice member claimant attribution', () => {
   beforeEach(() => {
-    vi.spyOn(CloudFrontClient.prototype, 'send').mockResolvedValue({ $metadata: {} })
-    vi.spyOn(DynamoDBClient.prototype, 'send').mockResolvedValue({ $metadata: {} })
+    vi.spyOn(CloudFrontClient.prototype, 'send').mockImplementation(
+      vi
+        .fn<VitestLooseMock>()
+        .mockResolvedValue({ $metadata: {} } satisfies CreateInvalidationCommandOutput),
+    )
+    vi.spyOn(DynamoDBClient.prototype, 'send').mockImplementation(
+      vi.fn<VitestLooseMock>().mockResolvedValue({ $metadata: {} } satisfies PutItemCommandOutput),
+    )
     vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
     vi.stubEnv('MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID', 'test-distribution')
     vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'true')
