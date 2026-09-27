@@ -35,16 +35,6 @@ wakeups skip live provider claims, expired/failed retries advance the attempt to
 completion cannot select a result. Identical input and prompt may produce distinct successful
 results; only completion of the current token supplies idempotency.
 
-```mermaid
-stateDiagram-v2
-  [*] --> Pending: intake commits
-  Pending --> Completed: current token succeeds
-  Pending --> Failed: current token fails
-  Failed --> Pending: retry advances token
-  Completed --> Pending: new screening advances token
-  Pending --> Pending: expired claim advances token
-```
-
 Automatic authority requires a current completed clear result for the same intake, an exact
 associated current compliant assessment, complete signed-in statutory fields, and no rejected form
 review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0637-00-00-copyright-structured-submissions.sql)
