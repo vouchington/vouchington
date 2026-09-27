@@ -20,29 +20,10 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
 ): Promise<void> {
   if (snapshots.length === 0) return
   const orderedSnapshots = orderedCategorySnapshots(snapshots)
-  const itemIds = orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id)
-  await query(
-    `/* persistRssFeedItemSourceCategorySnapshots */
-      INSERT INTO rss_feed_item_source_category_snapshots
-        (rss_feed_id, rss_feed_item_id)
-      SELECT $1, rss_feed_item_id
-      FROM UNNEST($2::uuid[]) AS snapshot(rss_feed_item_id)
-      ORDER BY rss_feed_item_id
-      ON CONFLICT (rss_feed_id, rss_feed_item_id) DO UPDATE
-      SET updated_at = CURRENT_TIMESTAMP`,
-    [rssFeedId, itemIds],
-  )
-  await query(
-    `/* persistRssFeedItemCategorySnapshotReconciliations */
-      INSERT INTO rss_feed_item_category_snapshot_reconciliations
-        (rss_feed_item_id)
-      SELECT rss_feed_item_id
-      FROM UNNEST($1::uuid[]) AS snapshot(rss_feed_item_id)
-      ORDER BY rss_feed_item_id
-      ON CONFLICT (rss_feed_item_id) DO UPDATE
-      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
-          updated_at = CURRENT_TIMESTAMP`,
-    [itemIds],
+  await upsertCategorySnapshotParents(
+    query,
+    rssFeedId,
+    orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id),
   )
   await replaceCategorySnapshotChildren(query, rssFeedId, orderedSnapshots)
 }
@@ -138,6 +119,36 @@ export async function reconcileRssFeedItemCategorySnapshotRows(
   if (errors.length > 0)
     throw new AggregateError(errors, 'RSS feed item category snapshot reconciliation failed')
   return { reconciled }
+}
+
+async function upsertCategorySnapshotParents(
+  query: QueryExecutor,
+  rssFeedId: string,
+  itemIds: readonly string[],
+): Promise<void> {
+  await query(
+    `/* persistRssFeedItemSourceCategorySnapshots */
+      INSERT INTO rss_feed_item_source_category_snapshots
+        (rss_feed_id, rss_feed_item_id)
+      SELECT $1, rss_feed_item_id
+      FROM UNNEST($2::uuid[]) AS snapshot(rss_feed_item_id)
+      ORDER BY rss_feed_item_id
+      ON CONFLICT (rss_feed_id, rss_feed_item_id) DO UPDATE
+      SET updated_at = CURRENT_TIMESTAMP`,
+    [rssFeedId, itemIds],
+  )
+  await query(
+    `/* persistRssFeedItemCategorySnapshotReconciliations */
+      INSERT INTO rss_feed_item_category_snapshot_reconciliations
+        (rss_feed_item_id)
+      SELECT rss_feed_item_id
+      FROM UNNEST($1::uuid[]) AS snapshot(rss_feed_item_id)
+      ORDER BY rss_feed_item_id
+      ON CONFLICT (rss_feed_item_id) DO UPDATE
+      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
+          updated_at = CURRENT_TIMESTAMP`,
+    [itemIds],
+  )
 }
 
 function assertCategorySnapshot(snapshot: RssFeedItemCategorySnapshotReconciliation): void {

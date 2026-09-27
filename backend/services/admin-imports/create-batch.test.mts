@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { write } from '@data-stores/psql'
+import { insertAdminImportTopicRowForTest } from '@voucha/test-helpers/data-stores/psql/relation-integrity'
 import { createImportBatch } from './create-batch.mts'
 import { getImportBatch, getImportRowsByBatchId } from './get-batch.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -99,10 +99,7 @@ describe('create-batch', () => {
         { url: `https://feed-${suffix}.example.com/rss` },
       ])
       await expect(
-        write(`INSERT INTO admin_import_topic_rows (admin_import_row_id, slug) VALUES ($1, $2)`, [
-          rows[0]!.id,
-          `wrong-${suffix}`,
-        ]),
+        insertAdminImportTopicRowForTest(rows[0]!.id, `wrong-${suffix}`),
       ).rejects.toMatchObject({ code: '23514' })
     })
   })

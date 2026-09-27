@@ -24,7 +24,7 @@ describe('ingestion relational ownership', () => {
     await expect(
       rejectionCode(
         `INSERT INTO ses_bounce_event_recipients (ses_bounce_event_id, ordinal, email)
-         VALUES ($1, 0, 'tests@example.com')`,
+         VALUES ($1, 0, 'tests+ses-bounce-recipient@voucha.ai')`,
         [missing],
       ),
     ).resolves.toBe('23503')

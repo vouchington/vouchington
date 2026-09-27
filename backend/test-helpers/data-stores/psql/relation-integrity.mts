@@ -78,3 +78,15 @@ export async function getMismatchedAdminImportTargetViolationCodes(
   }
   return codes
 }
+
+export async function insertAdminImportTopicRowForTest(
+  adminImportRowId: string,
+  slug: string,
+): Promise<void> {
+  await write(
+    `/* insertAdminImportTopicRowForTest */
+      INSERT INTO admin_import_topic_rows (admin_import_row_id, slug)
+      VALUES ($1, $2)`,
+    [adminImportRowId, slug],
+  )
+}
