@@ -48,3 +48,12 @@ It also installs the physical-attempt accounting hooks used by `@modules/openai-
 attempt has already passed the wrapper's spend-cap check, every known-unbilled flex-capacity retry
 rechecks immediately before dispatch, and an ambiguous potentially billed attempt with no usage
 awaits the request-day `unknown_billed_attempt` latch before the error can escape.
+
+### `createStructuredDecisionBillingHooks(subject)`
+
+Composes one structured-decision workload's spend admission, known-billed usage recording, and
+ambiguous-attempt accounting latch. `subject.workload` is the `ai_usage_records.agent_slug`; the
+optional post and community identities are carried to the usage row. Its optional receipt
+`beforeAttempt` runs **after** cap admission, so a rejected request does not consume an owned
+provider-attempt budget. The structured-decision module stays independent of this accounting
+policy and invokes these hooks only at its one physical request boundary.

@@ -40,9 +40,8 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
         },
         {
           dependency: '@services/post-classifier',
-          evidenceFiles: ['backend/services/post-classifier/index.mts'],
-          evidencePattern:
-            /export \{ claimPostClassifierApplication \} from '\.\/application-claim\.mts'/,
+          evidenceFiles: ['backend/workers/ai-agents/processors/process-post-classifier.mts'],
+          evidencePattern: /\bfrom '@services\/post-classifier'/,
         },
       ],
     ],
@@ -76,9 +75,8 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
         },
         {
           dependency: '@services/post-classifier',
-          evidenceFiles: ['backend/services/post-classifier/index.mts'],
-          evidencePattern:
-            /export \{ claimPostClassifierApplication \} from '\.\/application-claim\.mts'/,
+          evidenceFiles: ['backend/workers/ai-agents/processors/process-post-classifier.mts'],
+          evidencePattern: /\bfrom '@services\/post-classifier'/,
         },
       ],
     ],
