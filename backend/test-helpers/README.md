@@ -2,6 +2,13 @@
 
 Testing utility library for the Voucha backend. See [AGENTS.md](AGENTS.md) for agent conventions and rules.
 
+SQL setup and assertions are grouped by concern in `sql-*.mts` (posts, RSS feeds, topics,
+moderation, feed shares, follower distribution, URLs, configuration, and agent prompts).
+Language detection separates fixture creation from state assertions, and `sql-query-inputs.mts`
+owns SQL fragments used to exercise query builders. The main helper barrel exports each helper
+directly from its owner. Membership schema tests import purchase-intent fixtures and verification
+assertions from their separate owners under `data-stores/psql/`.
+
 ## `onceEntityListenerCompleted`
 
 Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.

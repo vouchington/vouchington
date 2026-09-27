@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { beginTransaction } from '@voucha/test-helpers/sql-state'
-import { createTestUserDirect, insertTestImage, insertTestPost } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestUserDirect,
+  insertTestImage,
+  insertTestPost,
+} from '@voucha/test-helpers'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 
 describe('preparePostImageDeliveryMutation', () => {

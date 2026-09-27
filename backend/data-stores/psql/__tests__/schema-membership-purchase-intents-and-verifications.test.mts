@@ -1,25 +1,27 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
+  createExpiredPurchaseIntent,
+  createFailedPurchaseIntentWithoutCode,
+  createMembershipPurchaseIntent,
+  createMembershipPurchaseIntentFixture,
+  createPartialPriceProviderProduct,
+  createPartialPurchaseIntentCheckout,
+  createPriceOptionalProviderProduct,
+} from '../../../test-helpers/data-stores/psql/membership-purchase-intents.mts'
+import {
   claimCompletedMembershipVerification,
   completeMembershipVerification,
   completeMembershipVerificationWithoutResult,
   createCrossOwnerMembershipVerification,
   createDuplicateMembershipVerification,
-  createExpiredPurchaseIntent,
-  createFailedPurchaseIntentWithoutCode,
   createMembershipAuditUser,
   createMembershipProviderEvidence,
-  createMembershipPurchaseIntent,
-  createMembershipPurchaseIntentFixture,
   createMembershipVerification,
-  createPartialPriceProviderProduct,
-  createPartialPurchaseIntentCheckout,
-  createPriceOptionalProviderProduct,
   deleteMembershipAuditUser,
   getMembershipAuditOwnership,
   setUnstableMembershipVerificationResult,
-} from '../../../test-helpers/data-stores/psql/membership-purchase-intents.mts'
+} from '../../../test-helpers/data-stores/psql/membership-verifications.mts'
 import { onGracefulShutdown } from '../index.mts'
 
 describe('membership purchase intent and verification schema constraints', () => {

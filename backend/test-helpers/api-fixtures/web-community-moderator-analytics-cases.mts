@@ -1,0 +1,96 @@
+import { community, timestamp, user } from './web-community-data.mts'
+import type { ApiFixtureCase } from './types.mts'
+
+export const webCommunityModeratorAnalyticsApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'web.communities.moderation-analytics.default',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderation-analytics`,
+    query: { range: '30d' },
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderation-analytics',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      scope: { type: 'community', community_id: community.id },
+      range: '30d',
+      period_start: '2026-01-01T00:00:00Z',
+      period_end: '2026-01-31T00:00:00Z',
+      queue_volume: {
+        total_reports: 0,
+        pending_reports: 0,
+        reports_over_time: [],
+        clearance_actions_over_time: [],
+        moderator_actions_over_time: [],
+      },
+      rule_violations: { reasons: [], reasons_over_time: [] },
+      appeals: {
+        total_closed: 0,
+        accepted: 0,
+        reduced: 0,
+        denied: 0,
+        dismissed: 0,
+        success_rate: null,
+      },
+      moderator_workload: { moderators: [], users: {} },
+      automod_performance: {
+        total_actions: 0,
+        auto_removes: 0,
+        reviewed_count: 0,
+        false_positive_count: 0,
+        false_positive_rate: null,
+        actions_over_time: [],
+        confidence_distribution: [],
+        sources: [],
+      },
+      new_user_friction: { first_posts: 0, rejected_first_posts: 0, rejection_rate: null },
+    },
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/moderation-analytics.mts'],
+  },
+  {
+    id: 'web.communities.moderator-stats.default',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderator-stats`,
+    query: { window: '30' },
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderator-stats',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      window: 30,
+      stats: [{ actor_id: user.id, total: 3, counts: { approve: 2, remove: 1 } }],
+      users: { [user.id]: user },
+    },
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/moderator-stats.mts'],
+  },
+  {
+    id: 'web.communities.moderator-vacation.default',
+    method: 'GET',
+    path: `/api/v1/communities/${community.slug}/moderator-vacation`,
+    route: {
+      routeTemplate: '/api/v1/communities/:communitySlug/moderator-vacation',
+      pathParams: { communitySlug: community.slug },
+    },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      suppress_community_digests_while_on_vacation: false,
+      vacation: {
+        community_id: community.id,
+        user_id: user.id,
+        starts_at: timestamp,
+        ends_at: null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    },
+    consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom: ['backend/api/v1/communities/moderator-vacation.mts'],
+  },
+]

@@ -230,6 +230,12 @@ to different response shapes.
 
 ## Source Metadata
 
+The native tags/bookmarks, Swift, community, and community-moderation case modules compose
+ordered arrays from focused domain case files. Their composition order is part of the generated
+corpus contract; `cases.mts` retains the composition module as each fixture's provenance owner.
+Extracting a domain file must preserve this order and run `api-fixtures:check` to verify payloads,
+schema locks, and source metadata together.
+
 `cases.mts` attaches `source.caseFile` to every fixture before generation, and
 `backendResponseContracts[*].source` is the same file-path-only shape (no line number), so the
 manifest is format-stable and generation no longer depends on formatting order. The manifest

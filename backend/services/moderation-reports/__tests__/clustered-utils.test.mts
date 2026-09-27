@@ -8,7 +8,7 @@ import {
   parseReasonBreakdown,
 } from '../clustered-utils.mts'
 import type { ClusterRow } from '../clustered-types.mts'
-import { createTestSqlStatement } from '@voucha/test-helpers/sql-state'
+import { createTestSqlStatement } from '@voucha/test-helpers/sql-query-inputs'
 
 describe('clustered moderation report utils', () => {
   it('builds default indicators and cluster ids', () => {
