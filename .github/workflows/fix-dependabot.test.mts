@@ -77,18 +77,18 @@ describe('fix-dependabot workflow', () => {
     expect(on.workflow_run?.types).toEqual(['completed'])
   })
 
-  it('coalesces completions per Dependabot branch, not per commit', () => {
+  it('coalesces completions per source workflow and Dependabot branch, not per commit', () => {
     // Dispatch checks out whatever the dependabot/* branch tip is at checkout time. Keying
     // concurrency on head_sha would let a rebase (new SHA, same
     // branch) open a fresh group and race a still-running triage for the same branch; keying on
-    // head_branch serializes them instead.
+    // branch and workflow_id serialize the same source without cross-source collisions.
     expect(parsed.concurrency?.group).toBe(
-      'fix-dependabot-${{ github.event.workflow_run.head_branch }}',
+      'fix-dependabot-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.workflow_id }}',
     )
     expect(parsed.concurrency?.['cancel-in-progress']).toBe(false)
   })
 
-  it('uses GitHub-supported coalescing without a non-existent FIFO key', () => {
+  it('uses default same-source pending coalescing', () => {
     expect(parsed.concurrency).not.toHaveProperty('queue')
   })
 

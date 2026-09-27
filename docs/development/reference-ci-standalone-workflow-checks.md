@@ -45,6 +45,10 @@ caller's per-target workflow concurrency prevents duplicate sessions for one iss
 SHA. The Harness scheduler keeps each session queued until a host has capacity, ordered by
 `HARNESS_PRIORITY` and expiring after `HARNESS_QUEUE_TTL_SECONDS`, so GitHub adds no global
 admission cap.
+Fix Dependabot groups completed CI events by Dependabot branch and source workflow ID. A pending
+Backend failure therefore remains eligible when Web succeeds on the same branch. GitHub's default
+pending coalescing replaces only an older completion from that same source and branch, while an
+active triage run continues. Source-run and PR-head checks still suppress stale work before mutation.
 The callee receives `HARNESS_API_KEY` as a repository secret that only its own `dispatch` job
 forwards by explicit name through `workflow_call`; caller checkouts do not receive it. That job
 still declares the `auto-harness` GitHub Environment, which permits only `main`, purely for
