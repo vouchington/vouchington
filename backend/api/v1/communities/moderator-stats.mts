@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
 import {
   aggregateModeratorActionCounts,
@@ -29,6 +29,10 @@ app.route('/api/v1/communities/:idOrSlug/moderator-stats').get(async (ctx: Conte
       'Forbidden',
     )
   }
+
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderator-stats', {
+    path: ctx.params,
+  })
 
   const rawWindow = ctx.query.window
   const windowDays: WindowDays = rawWindow === '90' ? 90 : 30

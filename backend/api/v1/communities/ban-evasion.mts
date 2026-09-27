@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateUUIDParam } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { getCommunityOrThrow } from '@services/communities'
 import { assertNotSuspended } from '@services/users'
 import { confirmBanEvasion, dismissBanEvasionFlag } from '@services/communities/ban-evasion'
@@ -19,6 +19,9 @@ app
 
     const community = await getCommunityOrThrow(idOrSlug)
     ctx.assert(!community.archived_at, 403, 'Community is archived')
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId', {
+      path: ctx.params,
+    })
 
     await confirmBanEvasion(currentUser, community.id, userId)
 
@@ -36,6 +39,9 @@ app
 
     const community = await getCommunityOrThrow(idOrSlug)
     ctx.assert(!community.archived_at, 403, 'Community is archived')
+    validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/ban-evasion/:userId', {
+      path: ctx.params,
+    })
 
     await dismissBanEvasionFlag(currentUser, community.id, userId)
 

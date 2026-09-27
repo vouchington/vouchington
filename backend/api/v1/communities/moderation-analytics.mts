@@ -6,7 +6,7 @@ import { getModerationAnalytics } from '@services/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@services/moderation-analytics/types'
 import { currentUserCanViewCommunityModlog } from '@services/moderator-actions'
 import { isModerationStaff } from '@services/users'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 
 const VALID_RANGES = new Set<ModerationAnalyticsRange>(['today', '7d', '30d', '90d', 'all'])
 
@@ -36,6 +36,10 @@ app.route('/api/v1/communities/:idOrSlug/moderation-analytics').get(async (ctx: 
       'Forbidden',
     )
   }
+
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-analytics', {
+    path: ctx.params,
+  })
 
   const range = parseRange(ctx.query.range)
   const metrics = await getModerationAnalytics(range, {

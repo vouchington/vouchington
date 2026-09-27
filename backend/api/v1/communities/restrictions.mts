@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuth, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   activateCommunityRestrictions,
   getCommunityMember,
@@ -27,6 +32,9 @@ app
       403,
       'Forbidden',
     )
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/restrictions', {
+      path: ctx.params,
+    })
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
@@ -60,11 +68,10 @@ app
       expires_at?: unknown
       reason?: unknown
     }>(ctx)
-    ctx.assert(
-      body && typeof body === 'object' && !Array.isArray(body),
-      422,
-      'Request body must be a JSON object',
-    )
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/restrictions', {
+      path: ctx.params,
+      body,
+    })
     ctx.assert(Array.isArray(body.restriction_types), 422, 'restriction_types is required')
     const restrictionTypes = body.restriction_types as CommunityRestrictionType[]
     const allowedTypes = new Set(COMMUNITY_RESTRICTION_TYPES)
@@ -113,6 +120,9 @@ app.route('/api/v1/communities/:idOrSlug/restrictions/:id').delete(async (ctx: C
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const restrictionId = validateUUIDParam(ctx, 'id')
   const community = await getCommunityOrThrow(idOrSlug)
+  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/restrictions/:id', {
+    path: ctx.params,
+  })
 
   await liftCommunityRestriction(currentUser, community.id, restrictionId)
   ctx.setStatus(204)

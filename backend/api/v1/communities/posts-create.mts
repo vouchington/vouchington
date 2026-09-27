@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiHeaders } from '../../response-contract.mts'
 import {
   communityAllowsPostType,
@@ -75,10 +75,16 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
     recaptcha_token?: string
   }
 
-  if (isHoneypotTriggered(body as Record<string, unknown>)) {
+  if (isHoneypotTriggered(body)) {
     sendCommunityPostHoneypotResponse(ctx, body, community.id, currentUser.id)
     return
   }
+
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/posts', {
+    path: ctx.params,
+    header: ctx.req.headers,
+    body,
+  })
 
   ctx.assert(!body.community_id || body.community_id === community.id, 422, 'Invalid community_id')
   const postType = body.post_type ?? 'discussion'

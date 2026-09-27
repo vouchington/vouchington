@@ -1,14 +1,17 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuth, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { loadCommunityForModerator, getCommunityOrThrow } from '@services/communities'
 import {
   resolveModerationReport,
   getReporterForCommunityReport,
   MODERATION_REPORT_RESOLUTION_STATUSES,
-  type CommunityBanEvasionContext,
   type ModerationReportResolutionStatus,
-  type ModerationReportSort,
   buildReportPageInfo,
 } from '@services/moderation-reports'
 import { listCommunityPendingModerationReports } from '@services/moderation-claims'
@@ -19,6 +22,12 @@ import { isUserBlockedOrMuted } from '@services/entity-relations/check-block-mut
 import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
 import { parseReportCursor } from '../reports/reports-cursor.mts'
 import { apiQuery } from '../../response-contract.mts'
+import {
+  communityModeratorVisibleReportSort,
+  parseCommunityReportSort,
+  redactCommunityBanEvasionContext,
+  redactCommunityReport,
+} from './reports-helpers.mts'
 
 const pendingReportsPaginationParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -41,6 +50,17 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
   const community = isStaff
     ? await getCommunityOrThrow(idOrSlug)
     : (await loadCommunityForModerator(currentUser, idOrSlug)).community
+  // The generated query contract types `limit` as an integer (1-100) sourced from this route's
+  // pagination parser, but `ctx.query` always carries raw HTTP strings and the shared registry
+  // performs no type coercion. The existing pagination parser also clamps an out-of-range `limit`
+  // to 100 and returns 200, while the generated contract's `maximum: 100` would reject it — and
+  // `sort` defaults to 'severity' on any unrecognized value rather than rejecting it — so running
+  // the shared validator against the raw query here would change today's clamping/defaulting
+  // behavior into a 422. Query-carrier validation is intentionally skipped for this operation;
+  // only the path carrier is validated below.
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/reports/pending', {
+    path: ctx.params,
+  })
   const { limit, after } = pendingReportsPaginationParser.parse(ctx.query)
   const requestedSort = parseCommunityReportSort(ctx.query.sort)
   const sort = isStaff ? requestedSort : communityModeratorVisibleReportSort(requestedSort)
@@ -120,6 +140,9 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId/modmail').post(async 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const reportId = validateUUIDParam(ctx, 'reportId')
   ctx.assert(isModerationStaff(currentUser), 403, 'Forbidden')
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/reports/:reportId/modmail', {
+    path: ctx.params,
+  })
   const community = await getCommunityOrThrow(idOrSlug)
   const reporterUserId = await getReporterForCommunityReport(reportId, community.id)
   ctx.assert(reporterUserId, 404, 'Report not found in this community')
@@ -147,6 +170,10 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId').patch(async (ctx: C
   const reportId = validateUUIDParam(ctx, 'reportId')
   const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
   const body = await parseJsonBody<{ status?: unknown }>(ctx)
+  validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/reports/:reportId', {
+    path: ctx.params,
+    body,
+  })
   const status =
     typeof body.status === 'string' &&
     MODERATION_REPORT_RESOLUTION_STATUSES.includes(body.status as ModerationReportResolutionStatus)
@@ -162,33 +189,3 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId').patch(async (ctx: C
 
   ctx.json({ report: isModerationStaff(currentUser) ? report : redactCommunityReport(report) })
 })
-
-function redactCommunityReport<T extends { reporter_user_id?: unknown; note?: unknown }>(
-  report: T,
-) {
-  const { reporter_user_id: _, note: __, ...redactedReport } = report
-  return redactedReport
-}
-
-function redactCommunityBanEvasionContext<T extends CommunityBanEvasionContext>(context: T) {
-  return {
-    community_id: context.community_id,
-    community_slug: context.community_slug,
-  }
-}
-
-function communityModeratorVisibleReportSort(sort: ModerationReportSort): ModerationReportSort {
-  return sort === 'severity' ? 'created_at_desc' : sort
-}
-
-function parseCommunityReportSort(value: unknown): ModerationReportSort {
-  if (
-    value === 'severity' ||
-    value === 'most_reported' ||
-    value === 'created_at_asc' ||
-    value === 'created_at_desc'
-  ) {
-    return value
-  }
-  return 'severity'
-}

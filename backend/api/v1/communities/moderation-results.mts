@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getCommunity, getCommunityMember } from '@services/communities'
 import { getMembershipByUserId } from '@services/memberships/get'
 import {
@@ -48,6 +48,12 @@ app
       ),
       403,
       'Forbidden',
+    )
+
+    validateRequestContract(
+      ctx,
+      'GET:/api/v1/communities/:idOrSlug/posts/:postId/moderation-results',
+      { path: ctx.params },
     )
 
     const post = await getPostByAny(postId)

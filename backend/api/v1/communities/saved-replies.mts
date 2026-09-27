@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getCommunityOrThrow } from '@services/communities/get'
 import { getCommunityMember } from '@services/communities/members/get'
@@ -27,6 +27,9 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').get(async (ctx: Context
   const membership = await getCommunityMember(community.id, currentUser.id)
 
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/saved-replies', {
+    path: ctx.params,
+  })
 
   const { after: encodedAfter, limit } = rankingPaginationParser.parse(ctx.query)
   const after = encodedAfter
@@ -56,11 +59,10 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').post(async (ctx: Contex
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
 
   const body = (await ctx.request.json('10kb')) as Record<string, unknown>
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid request body',
-  )
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/saved-replies', {
+    path: ctx.params,
+    body,
+  })
   ctx.assert(typeof body.body === 'string' && body.body.trim().length > 0, 400, 'body is required')
   ctx.assert((body.body as string).length <= 5000, 400, 'body must be 5000 characters or fewer')
 
@@ -86,6 +88,9 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies/:id').delete(async (ctx: 
   const membership = await getCommunityMember(community.id, currentUser.id)
 
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
+  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/saved-replies/:id', {
+    path: ctx.params,
+  })
 
   const replyId = ctx.params.id!
   ctx.assert(isUUID(replyId), 422, 'Invalid reply ID')

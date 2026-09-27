@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   getCommunityMember,
@@ -30,6 +30,10 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
   // Site staff can access any community queue; regular users must be members
   const isStaff = isModerationStaff(currentUser)
   ctx.assert(isStaff || membership !== null, 403, 'Forbidden')
+
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderation-queue', {
+    path: ctx.params,
+  })
 
   // Site staff and community mods/owners can moderate; only site staff get reporter-only fields.
   const viewerTier: 'moderator' | 'member' =

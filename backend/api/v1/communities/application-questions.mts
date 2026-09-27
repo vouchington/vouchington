@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   getCommunityMember,
@@ -18,6 +22,9 @@ app
       ctx,
       'GET:/api/v1/communities/:idOrSlug/application-questions',
     )
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/application-questions', {
+      path: ctx.params,
+    })
     const { idOrSlug } = ctx.params as { idOrSlug: string }
 
     const community = await getCommunityOrThrow(idOrSlug)
@@ -43,7 +50,10 @@ app
     ctx.assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
     const body = (await ctx.request.json('1mb')) as { questions: ApplicationQuestionInput[] }
-    ctx.assert(Array.isArray(body.questions), 422, 'questions must be an array')
+    validateRequestContract(ctx, 'PUT:/api/v1/communities/:idOrSlug/application-questions', {
+      path: ctx.params,
+      body,
+    })
 
     const questions = await setApplicationQuestions(currentUser.id, community.id, body.questions)
 

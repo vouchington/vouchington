@@ -64,18 +64,34 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-transparency', () => {
       .get(`/api/v1/communities/${community.slug}/moderation-transparency`)
       .expect(401)
 
+    // An unauthenticated caller gets a bare 401 even with a query value the schema would reject —
+    // requireAuth runs before validateRequestContract, so a malformed query never reaches it.
+    await createRequest()
+      .get(`/api/v1/communities/${community.slug}/moderation-transparency?range=invalid`)
+      .expect(401)
+
     const moderatorRequest = createRequest()
     await moderatorRequest.authenticateAs(freeModerator)
     await moderatorRequest
       .get(`/api/v1/communities/${community.slug}/moderation-transparency`)
       .expect(200)
+  })
 
-    const ownerRequest = createRequest()
-    await ownerRequest.authenticateAs(owner)
-    const response = await ownerRequest
-      .get(`/api/v1/communities/${community.slug}/moderation-transparency?range=invalid`)
+  it('defaults range to 30d when omitted', async () => {
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    const response = await request
+      .get(`/api/v1/communities/${community.slug}/moderation-transparency`)
       .expect(200)
     expect(response.body).toEqual({ range: '30d', buckets: expect.any(Array) })
+  })
+
+  it('rejects an unrecognized range instead of silently falling back to 30d', async () => {
+    const request = createRequest()
+    await request.authenticateAs(owner)
+    await request
+      .get(`/api/v1/communities/${community.slug}/moderation-transparency?range=invalid`)
+      .expect(422)
   })
 
   it('allows active and past-due paid community members but denies paused and cancelled members', async () => {

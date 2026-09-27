@@ -5,7 +5,7 @@ import {
   listCommunityAgentPromptHistory,
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { getCommunityOrThrow } from './shared.mts'
 
 app.route('/api/v1/communities/:idOrSlug/agent-prompts/history').get(async (ctx: Context) => {
@@ -23,6 +23,9 @@ app.route('/api/v1/communities/:idOrSlug/agent-prompts/history').get(async (ctx:
     403,
     'Forbidden',
   )
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/agent-prompts/history', {
+    path: ctx.params,
+  })
 
   const { promptId, before } = ctx.query as { promptId?: string; before?: string }
 

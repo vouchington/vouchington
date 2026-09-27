@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertOpenAiSpendCapNotBreached } from '@services/ai-usage'
 import {
   currentUserCanModerateCommunity,
@@ -31,6 +31,10 @@ app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Con
     time_window_hours?: unknown
     limit?: unknown
   }
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/automod/simulate', {
+    path: ctx.params,
+    body,
+  })
   ctx.assert(typeof body.prompt_id === 'string' && body.prompt_id, 422, 'prompt_id is required')
   if (body.prompt !== undefined) {
     ctx.assert(typeof body.prompt === 'string', 422, 'prompt must be a string')

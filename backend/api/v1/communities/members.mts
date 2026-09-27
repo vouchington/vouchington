@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   loadCommunityForViewer,
@@ -26,6 +30,9 @@ app
     const { idOrSlug } = ctx.params as { idOrSlug: string }
 
     const { community, membership } = await loadCommunityForViewer(currentUser, idOrSlug)
+    validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/members', {
+      path: ctx.params,
+    })
 
     const limit = ctx.query.limit ? Number(ctx.query.limit) : undefined
     const after = ctx.query.after as string | undefined
@@ -71,6 +78,9 @@ app
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const community = await getCommunityOrThrow(idOrSlug)
+    validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/members', {
+      path: ctx.params,
+    })
 
     await joinCommunity(currentUser.id, community.id)
 
@@ -82,6 +92,9 @@ app
 
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const community = await getCommunityOrThrow(idOrSlug)
+    validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/members', {
+      path: ctx.params,
+    })
 
     await leaveCommunity(currentUser.id, community.id)
 
@@ -100,7 +113,10 @@ app
     const community = await getCommunityOrThrow(idOrSlug)
 
     const body = (await ctx.request.json('1mb')) as { role: CommunityMemberRole }
-    ctx.assert(body.role, 422, 'role is required')
+    validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/members/:userId', {
+      path: ctx.params,
+      body,
+    })
 
     await updateMemberRole(currentUser.id, community.id, userId, body.role)
 
@@ -114,6 +130,9 @@ app
 
     const { idOrSlug, userId } = ctx.params as { idOrSlug: string; userId: string }
     const community = await getCommunityOrThrow(idOrSlug)
+    validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/members/:userId', {
+      path: ctx.params,
+    })
 
     await removeMember(currentUser.id, community.id, userId)
 
@@ -130,6 +149,10 @@ app.route('/api/v1/communities/:idOrSlug/ownership-transfers').post(async (ctx: 
   const community = await getCommunityOrThrow(idOrSlug)
 
   const body = (await ctx.request.json('1mb')) as { user_id: string }
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/ownership-transfers', {
+    path: ctx.params,
+    body,
+  })
   ctx.assert(body.user_id, 422, 'user_id is required')
   ctx.assert(isUUID(body.user_id), 422, 'user_id must be a valid UUID')
 

@@ -168,14 +168,14 @@ describe('modmail thread API', () => {
         .expect(400)
     })
 
-    it('returns 400 when body is null JSON', async () => {
+    it('returns 422 when body is null JSON', async () => {
       const request = createRequest()
       await request.authenticateAs(mod)
       await request
         .post(`/api/v1/communities/${community.slug}/modmail/${threadId}/messages`)
         .set('Content-Type', 'application/json')
         .send('null')
-        .expect(400)
+        .expect(422)
     })
 
     it('returns 403 for a non-participant non-mod', async () => {

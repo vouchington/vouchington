@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateUUIDParam } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { loadCommunityForModerator, getCommunityOrThrow } from '@services/communities'
 import { isModerationStaff } from '@services/users'
 import { claimModerationQueueItem, releaseModerationQueueItem } from '@services/moderation-claims'
@@ -16,6 +16,9 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId/claim').put(async (ct
   const community = isStaff
     ? await getCommunityOrThrow(idOrSlug)
     : (await loadCommunityForModerator(currentUser, idOrSlug)).community
+  validateRequestContract(ctx, 'PUT:/api/v1/communities/:idOrSlug/reports/:reportId/claim', {
+    path: ctx.params,
+  })
 
   const result = await claimModerationQueueItem(currentUser.id, {
     communityId: community.id,
@@ -36,6 +39,9 @@ app.route('/api/v1/communities/:idOrSlug/reports/:reportId/claim').delete(async 
   const community = isStaff
     ? await getCommunityOrThrow(idOrSlug)
     : (await loadCommunityForModerator(currentUser, idOrSlug)).community
+  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/claim', {
+    path: ctx.params,
+  })
 
   await releaseModerationQueueItem(currentUser.id, { communityId: community.id, reportId })
   ctx.setStatus(204)

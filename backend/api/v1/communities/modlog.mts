@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth } from '../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
 import {
   searchModeratorActions,
@@ -35,6 +35,10 @@ app.route('/api/v1/communities/:idOrSlug/modlog').get(async (ctx: Context) => {
       'Forbidden',
     )
   }
+
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/modlog', {
+    path: ctx.params,
+  })
 
   const { limit, after } = parser.parse(ctx.query)
   const rawActionType = ctx.query.action_type as string | undefined

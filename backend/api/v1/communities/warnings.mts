@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { parseJsonBody, requireAuth } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { loadCommunityForModerator, getCommunityOrThrow } from '@services/communities'
 import { isModerationStaff } from '@services/users'
 import { parseCreateUserWarningInput, createUserWarning } from '@services/user-warnings'
@@ -18,6 +18,10 @@ app.route('/api/v1/communities/:idOrSlug/warnings').post(async (ctx: Context) =>
     ? { community: await getCommunityOrThrow(idOrSlug) }
     : await loadCommunityForModerator(currentUser, idOrSlug)
   const body = await parseJsonBody<Record<string, unknown>>(ctx)
+  validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/warnings', {
+    path: ctx.params,
+    body,
+  })
   const input = parseCreateUserWarningInput({
     userId: body.userId,
     reason: body.reason,

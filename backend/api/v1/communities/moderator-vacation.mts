@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, parseJsonBody } from '../../response-helpers.mts'
+import { requireAuth, parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import { getCommunityOrThrow, getCommunityMember } from '@services/communities'
 import {
   setMyCommunityVacation,
@@ -24,6 +24,10 @@ app.route('/api/v1/communities/:idOrSlug/moderator-vacation').get(async (ctx: Co
     'Forbidden',
   )
 
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/moderator-vacation', {
+    path: ctx.params,
+  })
+
   ctx.json(await getMyCommunityVacationSettings(currentUser.id, { communityId: community.id }))
 })
 
@@ -44,6 +48,10 @@ app.route('/api/v1/communities/:idOrSlug/moderator-vacation').patch(async (ctx: 
   const body = await parseJsonBody<{
     suppress_community_digests_while_on_vacation?: unknown
   }>(ctx)
+  validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/moderator-vacation', {
+    path: ctx.params,
+    body,
+  })
   ctx.assert(
     typeof body.suppress_community_digests_while_on_vacation === 'boolean',
     422,
@@ -71,10 +79,13 @@ app.route('/api/v1/communities/:idOrSlug/moderator-vacation').put(async (ctx: Co
   )
 
   const body = await parseJsonBody<{ ends_at?: string | null }>(ctx)
+  validateRequestContract(ctx, 'PUT:/api/v1/communities/:idOrSlug/moderator-vacation', {
+    path: ctx.params,
+    body,
+  })
   const endsAt = body.ends_at ?? null
 
   if (endsAt != null) {
-    ctx.assert(typeof endsAt === 'string', 422, 'ends_at must be a string')
     ctx.assert(!isNaN(Date.parse(endsAt)), 422, 'ends_at must be a valid date string')
     ctx.assert(new Date(endsAt) > new Date(), 422, 'ends_at must be in the future')
   }
@@ -102,6 +113,10 @@ app.route('/api/v1/communities/:idOrSlug/moderator-vacation').delete(async (ctx:
     403,
     'Forbidden',
   )
+
+  validateRequestContract(ctx, 'DELETE:/api/v1/communities/:idOrSlug/moderator-vacation', {
+    path: ctx.params,
+  })
 
   await clearMyCommunityVacation(currentUser.id, { communityId: community.id })
   ctx.setStatus(204)

@@ -144,6 +144,16 @@ describe('communities', () => {
         await request.get('/api/v1/communities?eligible_post_type=story').expect(400)
       })
 
+      it('returns 400 for invalid list_scope param', async () => {
+        const request = createRequest()
+        await request.get('/api/v1/communities?list_scope=invalid').expect(400)
+      })
+
+      it('returns 400 for invalid feed_category param', async () => {
+        const request = createRequest()
+        await request.get('/api/v1/communities?feed_category=invalid').expect(400)
+      })
+
       it('filters eligible discussion communities to active memberships', async () => {
         const random = createRandomString(8)
         const [joinedCommunity, removedCommunity, nonMemberCommunity] = await Promise.all([

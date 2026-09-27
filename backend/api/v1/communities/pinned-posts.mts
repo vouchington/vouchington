@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit, requireAuth } from '../../response-helpers.mts'
+import {
+  getOptionalAuthAndRateLimit,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import {
   loadCommunityForViewer,
   loadCommunityForModerator,
@@ -17,6 +21,9 @@ app.route('/api/v1/communities/:idOrSlug/pinned-posts').get(async (ctx: Context)
   const { idOrSlug } = ctx.params as { idOrSlug: string }
 
   const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/pinned-posts', {
+    path: ctx.params,
+  })
 
   const pinnedPosts = await getPinnedPosts(community.id, currentUser ?? null)
 
@@ -34,16 +41,10 @@ app.route('/api/v1/communities/:idOrSlug/pinned-posts').put(async (ctx: Context)
   const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
 
   const body = (await ctx.request.json('1mb')) as { post_ids: string[] }
-  ctx.assert(
-    body && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Request body must be an object',
-  )
-  ctx.assert(
-    Array.isArray(body.post_ids) && body.post_ids.every(id => typeof id === 'string'),
-    422,
-    'post_ids must be an array of strings',
-  )
+  validateRequestContract(ctx, 'PUT:/api/v1/communities/:idOrSlug/pinned-posts', {
+    path: ctx.params,
+    body,
+  })
 
   const pinnedPosts = await setPinnedPosts(currentUser, community.id, body.post_ids)
 

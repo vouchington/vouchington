@@ -10,7 +10,7 @@ import {
 } from '@services/community-agent-prompts'
 import { getMembershipByUserId } from '@services/memberships/get'
 import app from '../../../app.mts'
-import { requireAuth } from '../../../response-helpers.mts'
+import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 import { getCommunityOrThrow } from './shared.mts'
 
@@ -26,6 +26,9 @@ app.route('/api/v1/communities/:idOrSlug/agent-prompts').get(async (ctx: Context
     403,
     'Forbidden',
   )
+  validateRequestContract(ctx, 'GET:/api/v1/communities/:idOrSlug/agent-prompts', {
+    path: ctx.params,
+  })
 
   const [prompts, paidMembership, usedSlots] = await Promise.all([
     searchCommunityAgentPrompts(community.id),
