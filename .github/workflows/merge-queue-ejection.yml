@@ -85,6 +85,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 2
     permissions:
+      contents: read
       issues: write
       pull-requests: write
     steps:

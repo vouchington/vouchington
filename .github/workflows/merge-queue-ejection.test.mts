@@ -77,7 +77,7 @@ describe('merge-queue ejection workflow', () => {
         name === 'escalate'
           ? { 'pull-requests': 'write' }
           : name === 'comment-session'
-            ? { issues: 'write', 'pull-requests': 'write' }
+            ? { contents: 'read', issues: 'write', 'pull-requests': 'write' }
             : { contents: 'read' }
       expect(job.permissions).toEqual(expected)
     }

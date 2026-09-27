@@ -226,7 +226,11 @@ describe('fix-dependabot workflow', () => {
     expect(commentJob?.needs).toEqual(['triage-and-rerun', 'dispatch'])
     expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")
     expect(commentJob?.['runs-on']).toEqual('ubuntu-slim')
-    expect(commentJob?.permissions).toEqual({ issues: 'write', 'pull-requests': 'write' })
+    expect(commentJob?.permissions).toEqual({
+      contents: 'read',
+      issues: 'write',
+      'pull-requests': 'write',
+    })
     expect(commentStep?.with).toMatchObject({
       target: '${{ needs.triage-and-rerun.outputs.pr_number }}',
       'session-id': '${{ needs.dispatch.outputs.session-id }}',

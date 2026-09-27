@@ -197,7 +197,11 @@ describe('fix-issue workflow', () => {
     )
 
     expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")
-    expect(commentJob?.permissions).toEqual({ issues: 'write', 'pull-requests': 'write' })
+    expect(commentJob?.permissions).toEqual({
+      contents: 'read',
+      issues: 'write',
+      'pull-requests': 'write',
+    })
     expect(commentStep?.with).toMatchObject({
       target: '${{ github.event.issue.number }}',
       'session-url': '${{ needs.dispatch.outputs.session-url }}',
