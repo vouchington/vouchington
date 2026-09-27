@@ -1614,7 +1614,7 @@ rules:
     options:
       # 0.46.1 peels DO $tag$ bodies for pairing engines. This rule may still
       # skip chr()-encoded statements. extraGeneratedColumns stays only for
-      # config-driven vote tables whose DDL is TypeScript.
+      # config-driven tables whose DDL is TypeScript.
       sqlInclude:
         - backend/data-stores/psql/migrations/**/*.sql
       include:
@@ -1629,6 +1629,7 @@ rules:
         - { table: post_votes, column: created_at }
         - { table: rss_feed_item_votes, column: created_at }
         - { table: topic_votes, column: created_at }
+        - { table: user_deletion_relation_impacts, column: created_at }
         - { table: user_vouch_votes, column: created_at }
 
   - name: tests must not eval markdown shell fences

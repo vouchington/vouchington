@@ -63,6 +63,20 @@ export async function getLocalTestUserRawByUsername(username: string): Promise<{
   return rows[0] ?? null
 }
 
+/** Counts roots inserted by the same transaction as this user's current row version. */
+export async function countLocalRetainedRootsFromCurrentUserVersion(
+  userId: string,
+): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`
+    /* countLocalRetainedRootsFromCurrentUserVersion */
+    SELECT COUNT(*)::int AS count
+    FROM users current_user_row
+    JOIN retained_user_identities root ON root.xmin = current_user_row.xmin
+    WHERE current_user_row.id = ${userId}
+  `)
+  return rows[0]?.count ?? 0
+}
+
 export async function countLocalUserRoleAssignments(
   userId: string,
   roleSlug: string,

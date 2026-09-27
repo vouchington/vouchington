@@ -7,7 +7,8 @@
  *
  * buildSystemUserUpsertSQL closes that gap structurally: it first reclaims the username from any
  * non-system holder (renaming them out of the way using their own full UUIDv7 so no two reclaimed
- * squatters can collide), then upserts the system row with is_system = TRUE. Downstream role
+ * squatters can collide), then updates the system row or inserts it if absent. The absent-only
+ * INSERT avoids invoking the retained-identity BEFORE INSERT trigger on every replay. Downstream role
  * grants must additionally filter `is_system = TRUE` so a reclaimed squatter's stale row can never
  * satisfy a grant lookup.
  *
@@ -22,10 +23,13 @@ UPDATE users
 SET username = 'reclaimed-' || replace(id::text, '-', '')
 WHERE LOWER(username) = LOWER('${username}') AND is_system = FALSE;
 
-INSERT INTO users (username, is_system, vote_weight_admin_set_at)
-VALUES ('${username}', TRUE, CURRENT_TIMESTAMP)
-ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL
-DO UPDATE SET username = EXCLUDED.username, is_system = TRUE,
+UPDATE users
+SET username = '${username}',
   vote_weight_admin_set_at = COALESCE(users.vote_weight_admin_set_at, CURRENT_TIMESTAMP)
-WHERE users.is_system = TRUE;`
+WHERE LOWER(username) = LOWER('${username}') AND is_system = TRUE;
+
+INSERT INTO users (username, is_system, vote_weight_admin_set_at)
+SELECT '${username}', TRUE, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(username) = LOWER('${username}'))
+ON CONFLICT ((LOWER(username))) WHERE username IS NOT NULL DO NOTHING;`
 }

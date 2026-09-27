@@ -432,7 +432,7 @@ shared analysis context caches tracked-file contents. Parser-backed guards keep 
 their own source analysis, share the resulting facts with cooperating checks, and discard ASTs instead
 of retaining a repository-wide AST cache. Generated-column DML writes are enforced by `no-mistakes`
 `postgres-no-generated-column-writes`, which parses `backend/data-stores/psql/migrations/**/*.sql`
-and keeps only config-driven vote tables in `extraGeneratedColumns`. Snapshot freshness is verified
+and keeps only config-driven tables in `extraGeneratedColumns`. Snapshot freshness is verified
 after migration by the database-backed CI schema phases.
 
 Optional `.no-mistakes.yml` ignore and exclude entries have derived freshness checks: [`no-mistakes-config.test.mts`](../ci/no-mistakes-config.test.mts) derives ignored Playwright routes from the analyzer report, while [`no-mistakes-config-freshness.test.mts`](../ci/no-mistakes-config-freshness.test.mts) verifies provider/environment globs and filesystem exceptions against current repository state. Do not add a baseline or parallel exception registry. Provider annotation placement is documented in [Tests and Checks](../docs/development/tests.md#vitest-mock-typing).

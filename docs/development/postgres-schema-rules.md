@@ -164,9 +164,10 @@ DML that writes those generated `created_at` columns is enforced by
 `postgres-no-generated-column-writes` in [`.no-mistakes.yml`](../../.no-mistakes.yml).
 `no-mistakes` 0.46.1 peels `DO $tag$` bodies for pairing engines; `chr()`-encoded statements may still
 be skipped. Election vote tables (`post_votes`, `topic_votes`, `hostname_votes`,
-`rss_feed_item_votes`, `agent_moderation_votes`, `user_vouch_votes`, `entity_relation_votes`) are
-created from TypeScript in `backend/data-stores/psql/config-driven/` rather than migration SQL, so
-they stay in `extraGeneratedColumns`.
+`rss_feed_item_votes`, `agent_moderation_votes`, `user_vouch_votes`, `entity_relation_votes`) and
+`user_deletion_relation_impacts` are created from TypeScript in
+`backend/data-stores/psql/config-driven/` rather than migration SQL, so they stay in
+`extraGeneratedColumns`.
 
 Tracked by #7359.
 

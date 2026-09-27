@@ -50,9 +50,18 @@ ${targetColumns.map(column => `  ${column} UUID,`).join('\n')}
   UNIQUE (request_id, id)
 );
 
-CREATE OR REPLACE TRIGGER trigger_user_deletion_relation_impacts_updated_at
-BEFORE UPDATE ON user_deletion_relation_impacts
-FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'user_deletion_relation_impacts'::regclass
+      AND tgname = 'trigger_user_deletion_relation_impacts_updated_at'
+  ) THEN
+    CREATE TRIGGER trigger_user_deletion_relation_impacts_updated_at
+    BEFORE UPDATE ON user_deletion_relation_impacts
+    FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_user_deletion_relation_impacts__pending
 ON user_deletion_relation_impacts (request_id, id)

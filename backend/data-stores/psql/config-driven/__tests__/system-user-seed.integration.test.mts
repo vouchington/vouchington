@@ -6,6 +6,7 @@ import {
   countLocalUserRoleAssignments,
   countAllLocalUserRoleAssignments,
   localSafeUsername,
+  countLocalRetainedRootsFromCurrentUserVersion,
 } from '../../../../test-helpers/data-stores/psql/users.mts'
 import { isLocalPrimaryEmailForUser } from '../../../../test-helpers/data-stores/psql/email-addresses.mts'
 import { runConfigDrivenStatementsInTransaction } from '../../migration-runner/config-driven-statements.mts'
@@ -62,5 +63,18 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
 
     const hasPrimaryEmail = await isLocalPrimaryEmailForUser(jong!.id, 'jong@voucha.ai')
     expect(hasPrimaryEmail).toBe(true)
+  })
+
+  it('does not register a proposed orphan identity when an existing system user is seeded again', async () => {
+    const reservedUsername = localSafeUsername('seed-replay')
+    const sql = buildSystemUserUpsertSQL(reservedUsername)
+    await runConfigDrivenStatementsInTransaction(sql, undefined)
+    const existing = await getLocalTestUserRawByUsername(reservedUsername)
+    expect(existing?.is_system).toBe(true)
+
+    await runConfigDrivenStatementsInTransaction(sql, undefined)
+    const replayed = await getLocalTestUserRawByUsername(reservedUsername)
+    expect(replayed?.id).toBe(existing?.id)
+    expect(await countLocalRetainedRootsFromCurrentUserVersion(replayed!.id)).toBe(0)
   })
 })
