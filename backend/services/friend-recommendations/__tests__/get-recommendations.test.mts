@@ -144,19 +144,13 @@ describe('getFriendRecommendations', () => {
     })
   })
 
-  it('accepts legacy simple cursors during migration', async () => {
+  it('rejects an unscoped simple cursor', async () => {
     const firstPage = await getFriendRecommendations(currentUser, { limit: 1 })
     const legacyCursor = encodeCursor({ id: firstPage.results[0]!.id })
 
-    const nextPage = await getFriendRecommendations(currentUser, {
-      limit: 1,
-      after: legacyCursor,
-    })
-
-    expect(nextPage.used_legacy_cursor).toBe(true)
-    expect(nextPage.results).not.toContainEqual(
-      expect.objectContaining({ id: firstPage.results[0]!.id }),
-    )
+    await expect(
+      getFriendRecommendations(currentUser, { limit: 1, after: legacyCursor }),
+    ).rejects.toMatchObject({ status: 400 })
   })
 
   it('rejects a scoped cursor issued to another user', async () => {

@@ -22,17 +22,7 @@ export async function getPostRecoverySourceUrlIds(
     options,
   )
   const creationSourceUrlId = rows[0]?.creation_source_url_id
-  if (creationSourceUrlId !== null && creationSourceUrlId !== undefined) {
-    return [creationSourceUrlId]
-  }
-  const legacyRows = await runQuery<{ object_id: string }>(
-    sql`/* getLegacyPostRecoverySourceUrlIds */
-      SELECT object_id
-      FROM relation__post__related__url
-      WHERE subject_id = ${postId} AND deleted_at IS NULL AND votes_score_net > 0`,
-    options,
-  )
-  return legacyRows.rows.map(row => row.object_id)
+  return creationSourceUrlId ? [creationSourceUrlId] : []
 }
 
 export async function getPostRelatedUrlIds(

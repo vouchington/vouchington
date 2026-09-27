@@ -46,7 +46,7 @@ describe('ensureAnonymousSession', () => {
     expect(second.sid).not.toBe(first.sid)
   })
 
-  it('rotates legacy dt-only device ids before minting anonymous st', async () => {
+  it('treats a signed UUIDv4 dt-only device as invalid before minting anonymous st', async () => {
     const key = await generatePrivateJwk('legacy-dt-key')
     const env = { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([key]) }
     const legacyDid = uuidv4()

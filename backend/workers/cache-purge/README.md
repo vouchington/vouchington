@@ -2,6 +2,7 @@
 
 Worker package that POSTs batches of Cache-Tags (up to `MAX_TAGS_PER_REQUEST`, 30 tags/job) to the
 Cloudflare Worker's `/infra/cache-purge` route, evicting matching entries from Workers Cache (GA).
+Jobs require the canonical `{ tags: string[] }` payload; the retired single-tag payload fails.
 
 ## Exports
 

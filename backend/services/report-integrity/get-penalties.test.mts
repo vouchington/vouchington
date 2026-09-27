@@ -113,18 +113,19 @@ describe('getReportAbusePenalties', () => {
     ).rejects.toMatchObject({ status: 400 })
   }, 60_000)
 
-  it('accepts a legacy simple cursor but rejects a wrong-scope scoped cursor', async () => {
+  it('rejects an unscoped or wrong-scope cursor', async () => {
     const user = await createTestUser({ username: randomUsername() })
     const ids = await Promise.all([
       insertTestReportAbusePenalty({ userId: user.id, createdById: admin.id }),
       insertTestReportAbusePenalty({ userId: user.id, createdById: admin.id }),
     ])
     const sortedIds = ids.toSorted().toReversed()
-    const legacy = await getReportAbusePenalties({
-      userId: user.id,
-      after: encodeCursor({ id: sortedIds[0] }),
-    })
-    expect(legacy.results.map(penalty => penalty.id)).toEqual(sortedIds.slice(1))
+    await expect(
+      getReportAbusePenalties({
+        userId: user.id,
+        after: encodeCursor({ id: sortedIds[0] }),
+      }),
+    ).rejects.toMatchObject({ status: 400 })
     await expect(
       getReportAbusePenalties({
         userId: user.id,

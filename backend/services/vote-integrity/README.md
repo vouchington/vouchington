@@ -44,8 +44,8 @@ The administrative flag ledger requests `source: 'flag'`, which is defined by th
 `voting_ring` reason rather than a non-null `source_flag_id`; this keeps audit rows visible after
 their source flag is deleted and its foreign key is cleared. Omitting `source` preserves the
 all-source service behavior. Penalty cursors bind `id DESC` to every normalized filter.
-Flag cursors are likewise scoped by resource, status, and ordering. Both lists accept legacy simple
-UUID cursors during deployment compatibility, but reject a scoped cursor whose scope mismatches.
+Flag cursors are likewise scoped by resource, status, and ordering. Both lists reject unscoped
+simple UUID cursors and scoped cursors whose scope mismatches.
 Filtered penalty results carry the exact `filter_scope` used to distinguish the flag ledger from
 the generic all-source service response.
 

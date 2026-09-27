@@ -129,7 +129,6 @@ export type CursorType =
 export type CursorConfig = {
   type: CursorType | readonly CursorType[] // Informational only - documents expected cursor shape(s) but not validated by parser
   paramName?: string // Default: 'after'
-  legacyParamNames?: readonly string[] // Accepted by parse(), not exposed in query metadata
 }
 
 /**

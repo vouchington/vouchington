@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { buildRssFeedItemsFromFeed } from './clean.mts'
+import { buildBoundedRssFeedItemsFromFeed } from './clean.mts'
+import type { ParsedFeed } from './types.mts'
+
+function buildItems(feed: ParsedFeed, feedUrl?: string) {
+  return buildBoundedRssFeedItemsFromFeed(feed, feedUrl, {
+    maxItems: Number.POSITIVE_INFINITY,
+  }).items
+}
 
 // Lives in @services/crawler-rss (not @services/rss-feed-items) because it exercises
-// buildRssFeedItemsFromFeed: rss-feed-items must not depend back on crawler-rss (that would
+// buildItems: rss-feed-items must not depend back on crawler-rss (that would
 // create a @services/crawler-rss <-> @services/rss-feed-items workspace cycle), but crawler-rss
 // already depends on rss-feed-items for real (extractPodcastChaptersReference in clean.mts).
-describe('buildRssFeedItemsFromFeed podcast chapters', () => {
+describe('buildItems podcast chapters', () => {
   it('persists chapter references in normalized RSS item data', () => {
-    const [item] = buildRssFeedItemsFromFeed(
+    const [item] = buildItems(
       {
         items: [
           {
@@ -33,7 +40,7 @@ describe('buildRssFeedItemsFromFeed podcast chapters', () => {
   })
 
   it('keeps chapter references off non-JSON chapter types', () => {
-    const [item] = buildRssFeedItemsFromFeed(
+    const [item] = buildItems(
       {
         items: [
           {

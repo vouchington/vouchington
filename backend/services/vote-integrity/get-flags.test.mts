@@ -37,10 +37,11 @@ describe('getVoteIntegrityFlags pagination compatibility', () => {
     await expect(getVoteIntegrityFlagByIdFromPrimary(uuidv7())).resolves.toBeNull()
   }, 60_000)
 
-  it('accepts a legacy simple cursor continuation', async () => {
+  it('rejects a legacy simple cursor continuation', async () => {
     const flagId = await createFlag()
-    const result = await getVoteIntegrityFlags({ after: encodeCursor({ id: flagId }) })
-    expect(result.results.every(flag => flag.id < flagId)).toBe(true)
+    await expect(
+      getVoteIntegrityFlags({ after: encodeCursor({ id: flagId }) }),
+    ).rejects.toMatchObject({ status: 400 })
   }, 60_000)
 
   it('rejects a scoped cursor from another status or resource', async () => {

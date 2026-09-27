@@ -1,10 +1,16 @@
 import { it, expect, describe } from 'vitest'
 
-import { buildRssFeedItemsFromFeed } from './clean.mts'
+import { buildBoundedRssFeedItemsFromFeed } from './clean.mts'
 
 import type { ParsedFeed } from './types.mts'
 
-describe('buildRssFeedItemsFromFeed', () => {
+function buildItems(feed: ParsedFeed, feedUrl?: string) {
+  return buildBoundedRssFeedItemsFromFeed(feed, feedUrl, {
+    maxItems: Number.POSITIVE_INFINITY,
+  }).items
+}
+
+describe('buildItems', () => {
   it('returns items with link and guid (RSS shape)', () => {
     const feed: ParsedFeed = {
       title: 'Test Feed',
@@ -23,7 +29,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(2)
     expect(result[0]).toMatchObject({
       link: 'https://example.com/1',
@@ -50,7 +56,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0]['content:encoded']).toBe('<p>Full content</p>')
     expect(result[0].content).toBe('<p>Full content</p>')
@@ -67,7 +73,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       link: 'https://example.com/a',
@@ -80,7 +86,7 @@ describe('buildRssFeedItemsFromFeed', () => {
     const feed: ParsedFeed = {
       entries: [{ link: 'https://example.com/atom-id', id: 'atom-id-1', title: 'Atom id entry' }],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].guid).toBe('atom-id-1')
   })
@@ -89,7 +95,7 @@ describe('buildRssFeedItemsFromFeed', () => {
     const feed: ParsedFeed = {
       items: [{ url: 'https://example.com/json-item', id: 'json-id-1', title: 'JSON item' }],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       link: 'https://example.com/json-item',
@@ -102,7 +108,7 @@ describe('buildRssFeedItemsFromFeed', () => {
     const feed: ParsedFeed = {
       items: [{ link: 'https://example.com/rdf-like', title: 'RDF-like entry' }],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].guid).toBe('https://example.com/rdf-like')
   })
@@ -117,7 +123,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result[0].categories).toEqual(['Tech', 'News'])
   })
 
@@ -130,7 +136,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         { guid: 'g3' },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(2)
     expect(result[0].link).toBe('https://example.com/ok')
     expect(result[1].link).toBe('https://example.com/ok2')
@@ -148,7 +154,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-10-15T15:35:00+00:00')
   })
@@ -164,7 +170,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-10-15T15:35:00+00:00')
   })
@@ -180,7 +186,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-09-01T00:00:00Z')
   })
@@ -197,7 +203,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-06-01T12:00:00Z')
   })
@@ -213,7 +219,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-06-02T12:00:00Z')
   })
@@ -229,7 +235,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBe('2025-07-01T00:00:00Z')
   })

@@ -21,8 +21,8 @@ resolved as `"penalized"` in the same transaction as the penalty inserts.
 `GET /api/v1/report-integrity/penalties` accepts `status=active|revoked` (omitted means all),
 optional `user_id`, optional `source_flag_id`, `after`, and `limit` (1-100, default 25). The
 opaque cursor is valid only with the same normalized filters. Flag and penalty lists emit scoped
-cursors; legacy simple UUID cursors remain accepted during deployment compatibility, while a
-scoped cursor from another resource or filter set returns 400.
+cursors; unscoped simple UUID cursors and scoped cursors from another resource or filter set
+return 400.
 
 `DELETE /api/v1/report-integrity/penalties/:id` returns
 `{ penalty, penaltyId, userId }`. `penalty` is the authoritative revoked row; the two scalar fields

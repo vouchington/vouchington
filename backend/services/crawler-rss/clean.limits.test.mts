@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { buildBoundedRssFeedItemsFromFeed, buildRssFeedItemsFromFeed } from './clean.mts'
+import { buildBoundedRssFeedItemsFromFeed } from './clean.mts'
 import {
   chunkArray,
   RSS_FEED_FETCH_MAX_ITEMS,
@@ -64,7 +64,7 @@ describe('buildBoundedRssFeedItemsFromFeed', () => {
     expect(result.stats.categoryTruncatedCount).toBe(6)
   })
 
-  it('keeps legacy item building unbounded without exporting infinite stats', () => {
+  it('keeps an explicitly unlimited build finite in its returned stats', () => {
     const feed: ParsedFeed = {
       items: [
         {
@@ -78,7 +78,7 @@ describe('buildBoundedRssFeedItemsFromFeed', () => {
       maxItems: Number.POSITIVE_INFINITY,
     })
 
-    expect(buildRssFeedItemsFromFeed(feed)).toHaveLength(1)
+    expect(bounded.items).toHaveLength(1)
     expect(bounded.stats.itemCap).toBe(1)
     expect(Number.isFinite(bounded.stats.itemCap)).toBe(true)
     expect(bounded.stats.itemTruncatedCount).toBe(0)

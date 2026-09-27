@@ -24,7 +24,7 @@ row is created for moderator review. Admins can penalise confirmed bad-faith rep
 | `revokeReportAbusePenalty(adminId, penaltyId)`   | Revoke penalty; clear `bad_faith_reporter_at` if last active penalty                                           |
 
 Flag and penalty cursors bind the `id DESC` boundary to their resource and complete normalized
-filter set, while accepting legacy simple cursors during deployment compatibility. Revocation
+filter set and reject unscoped simple cursors. Revocation
 returns the authoritative updated penalty plus the legacy `penaltyId` and `userId` fields. The
 transaction locks the penalized user before its final active-penalty check, so concurrent
 revocations clear the trust-tier stamp and issue one JWT invalidation when the last penalty ends.

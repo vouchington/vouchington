@@ -31,9 +31,8 @@ full cached HTML page on every vote would fight the point of caching. See
   granularity — worst case a few extra purge calls, never fewer purges than needed — and is
   dominated by the call-volume reduction from batching itself (e.g. one post edit producing 3 tags
   goes from 3 jobs/3 HTTP calls to 1 job/1 call).
-- Replayability: the handler stays idempotent under the new `{ tags: string[] }` payload the same
-  way it was under the old `{ tag: string }` one — purging the same Cache-Tags twice is a no-op on
-  Cloudflare's side, so a retried or replayed job is always safe.
+- Replayability: the handler is idempotent under the canonical `{ tags: string[] }` payload;
+  purging the same Cache-Tags twice is a no-op on Cloudflare's side, so a retried job is safe.
 
 ## Related
 

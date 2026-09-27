@@ -40,6 +40,8 @@ Each row includes `topic_election` and the dominant positive-vote `publisher_typ
 Only enabled feeds are eligible for fetching. Fetching is owned by [../../queues/rss-feeds/README.md](../../queues/rss-feeds/README.md). `last_modified_at`, `etag`, and `last_fetched_at` remain on `rss_feeds` as crawl metadata. Raw feed bodies in `rss_feed_crawls` are 30-day monthly-drop history owned by `cleanupPartitions`; 304 replay of `feed_data` requires a crawl still inside that window. Fetch withholds conditional GET validators when no replayable crawl body remains, matching HTML snapshot expiry.
 
 Feed response bodies remain capped by `@services/crawler-rss` at 10MB. After parsing, fetch processing is also bounded to 500 valid items per fetch and 20 normalized unique categories per item; truncation is recorded in backend analytics. Category truncation counts cover retained items only, while dropped valid items are counted separately by the item cap metric.
+Feed-type classification still examines the full parsed item list through the bounded-builder API
+with an explicit unlimited option; it does not inherit the fetch-processing item cap.
 
 Permanent RSS fetch failures soft-delete the feed by default. `unreliable_status_codes` lets admins mark specific HTTP 4xx statuses as retryable at the feed or hostname level. Feed values override hostname values; `NULL` inherits and `[]` explicitly disables hostname retry exceptions. YouTube hostnames are seeded with `[404]` because channel feeds can intermittently return 404 for still-valid feeds.
 

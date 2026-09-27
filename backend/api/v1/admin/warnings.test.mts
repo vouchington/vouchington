@@ -254,7 +254,7 @@ describe('admin warnings routes', () => {
       expect(ids).not.toContain(warning.id)
     })
 
-    it('supports legacy cursor pagination', async () => {
+    it('continues with after and rejects the retired cursor query parameter', async () => {
       const warnedUser = await createTestUser()
       await Promise.all(
         Array.from({ length: 3 }, (_, i) =>
@@ -273,19 +273,19 @@ describe('admin warnings routes', () => {
         .query({ userId: warnedUser.id, limit: 2 })
         .expect(200)
 
-      expect(firstPage.body.warnings).toHaveLength(2)
-      expect(firstPage.body.page_info.has_next_page).toBe(true)
-      expect(firstPage.body.page_info.start_cursor).toBeTruthy()
       expect(firstPage.body.page_info.end_cursor).toBeTruthy()
 
       const secondPage = await request
         .get('/api/v1/admin/warnings')
-        .query({ userId: warnedUser.id, limit: 2, cursor: firstPage.body.page_info.end_cursor })
+        .query({ userId: warnedUser.id, limit: 2, after: firstPage.body.page_info.end_cursor })
         .expect(200)
 
       expect(secondPage.body.warnings).toHaveLength(1)
-      expect(secondPage.body.page_info.has_next_page).toBe(false)
-      expect(secondPage.body.page_info.end_cursor).toBeNull()
+
+      await request
+        .get('/api/v1/admin/warnings')
+        .query({ userId: warnedUser.id, cursor: firstPage.body.page_info.end_cursor })
+        .expect(400)
     })
 
     it('returns 400 for malformed cursors', async () => {

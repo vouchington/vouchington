@@ -22,9 +22,6 @@ app.route('/api/v1/my/friend-recommendations').get(async (ctx: Context) => {
 
   const options = parser.parse(ctx.query)
   const result = await getFriendRecommendations(currentUser, options)
-  if (result.used_legacy_cursor) {
-    ctx.set('Deprecation', 'true')
-  }
   const userIds = result.results.map((r: FriendRecommendationResult) => r.id)
 
   const output = {

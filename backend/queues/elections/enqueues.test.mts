@@ -4,6 +4,8 @@ import {
   enqueueBulkUpdateEntityRelationElectionVoteStats,
 } from './enqueues.mts'
 import { ELECTIONS_DEFAULTS, ELECTIONS_ORDERING } from './config.mts'
+import { elections } from './queues.mts'
+import type { EntityRelationElectionTable } from './types.mts'
 
 describe('buildElectionJobOptions', () => {
   it('runs after the throttle window plus the replica-lag safety margin', () => {
@@ -59,5 +61,23 @@ describe('buildElectionJobOptions', () => {
         { entityRelationId: 'election-1', relationTable: 'relation__not__real' } as never,
       ]),
     ).toThrow('Unknown election entity-relation table')
+  })
+
+  it('enqueues entity-relation jobs with the required ordering key and relation table', async () => {
+    const target = {
+      entityRelationId: crypto.randomUUID(),
+      relationTable: 'relation__post__related__url' as EntityRelationElectionTable,
+    }
+    await enqueueBulkUpdateEntityRelationElectionVoteStats([target])
+
+    const jobs = await elections.searchJobs({
+      name: 'processUpdateElectionVoteStats',
+      data: { electionId: target.entityRelationId },
+    })
+    expect(jobs.map(job => job.data)).toContainEqual({
+      electionId: target.entityRelationId,
+      orderingKey: 'entity_relation',
+      relationTable: target.relationTable,
+    })
   })
 })

@@ -79,11 +79,11 @@ describe('listUserRemovedPosts', () => {
       unpublishedAt: new Date(),
     })
 
-    const legacy = await listUserRemovedPosts(submitter.id)
-    expect(legacy.results.some(post => post.post_id === postId)).toBe(false)
+    const communityOnly = await listUserRemovedPosts(submitter.id)
+    expect(communityOnly.results.some(post => post.post_id === postId)).toBe(false)
   })
 
-  it('keeps the legacy community-only contract unless platform removals are requested', async () => {
+  it('keeps the community-only contract unless platform removals are requested', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
       title: `Platform Removed ${crypto.randomUUID()}`,
@@ -93,10 +93,10 @@ describe('listUserRemovedPosts', () => {
       clearanceStatus: 'rejected',
     })
 
-    const legacy = await listUserRemovedPosts(user.id)
+    const communityOnly = await listUserRemovedPosts(user.id)
     const expanded = await listUserRemovedPosts(user.id, { includePlatform: true })
 
-    expect(legacy.results.some(post => post.post_id === postId)).toBe(false)
+    expect(communityOnly.results.some(post => post.post_id === postId)).toBe(false)
     expect(expanded.results).toContainEqual(
       expect.objectContaining({
         post_id: postId,
@@ -146,6 +146,37 @@ describe('listUserRemovedPosts', () => {
     expect(
       new Set([firstPage.results[0]?.post_removal_kind, secondPage.results[0]?.post_removal_kind]),
     ).toEqual(new Set(['platform', 'community']))
+  })
+
+  it('rejects a community-only cursor when platform removals are requested', async () => {
+    const user = await createTestUser()
+    const community = await insertTestCommunity({ createdById: moderator.id, visibility: 'public' })
+    const postId = await insertTestPost({
+      title: `Community Removed ${crypto.randomUUID()}`,
+      slug: `community-removed-${crypto.randomUUID()}`,
+      createdById: user.id,
+      markdown: 'Removed from a community',
+      clearanceStatus: 'approved',
+    })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId,
+      submittedById: user.id,
+    })
+    await updateTestCommunityPostReviewState({
+      communityId: community.id,
+      postId,
+      unpublishedAt: new Date(),
+    })
+
+    const communityPage = await listUserRemovedPosts(user.id, { limit: 1 })
+    expect(communityPage.page_info.start_cursor).not.toBeNull()
+    await expect(
+      listUserRemovedPosts(user.id, {
+        includePlatform: true,
+        after: communityPage.page_info.start_cursor!,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
   })
 
   it('does not return posts that are not unpublished', async () => {
@@ -225,22 +256,8 @@ describe('listUserRemovedPosts', () => {
     expect(postIds.length).toBe(3)
   })
 
-  it('throws 422 for non-integer limit', async () => {
-    await expect(listUserRemovedPosts(author.id, { limit: 2.5 })).rejects.toMatchObject({
-      status: 422,
-    })
-  })
-
-  it('throws 422 for limit out of range (0)', async () => {
-    await expect(listUserRemovedPosts(author.id, { limit: 0 })).rejects.toMatchObject({
-      status: 422,
-    })
-  })
-
-  it('throws 422 for limit out of range (101)', async () => {
-    await expect(listUserRemovedPosts(author.id, { limit: 101 })).rejects.toMatchObject({
-      status: 422,
-    })
+  it.each([2.5, 0, 101])('throws 422 for invalid limit %s', async limit => {
+    await expect(listUserRemovedPosts(author.id, { limit })).rejects.toMatchObject({ status: 422 })
   })
 
   it('throws 400 for invalid cursor format', async () => {

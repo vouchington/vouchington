@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { extractPodcastChaptersReference } from './chapters-reference.mts'
 import { normalizePodcastChapters } from './chapters.mts'
 
-// The buildRssFeedItemsFromFeed-level "persists chapter references" tests live in
+// The bounded RSS item builder's "persists chapter references" tests live in
 // @services/crawler-rss/clean.build-items.chapters.test.mts (not here): rss-feed-items must
 // not depend back on crawler-rss (that would create a @services/crawler-rss <->
 // @services/rss-feed-items workspace cycle), but crawler-rss already depends on rss-feed-items

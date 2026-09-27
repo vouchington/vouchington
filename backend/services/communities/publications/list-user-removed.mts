@@ -3,10 +3,8 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import {
   decodeScopedPreciseTimestampCursor,
   decodeScopedTierPreciseUuidCursor,
-  decodeCursor,
   encodeScopedPreciseTimestampCursor,
   encodeScopedTierPreciseUuidCursor,
-  isScopedPreciseTimestampCursor,
   type ScopedPreciseTimestampCursor,
   type ScopedTierPreciseUuidCursor,
 } from '@modules/pagination'
@@ -46,7 +44,7 @@ type ListUserRemovedPostsOptions = QueryOptions & {
   includePlatform?: boolean
 }
 
-const LEGACY_CURSOR_SCOPE = (userId: string) =>
+const COMMUNITY_CURSOR_SCOPE = (userId: string) =>
   `user-removed-community-posts:${userId}:unpublished-desc-post-id-desc`
 const EXPANDED_CURSOR_SCOPE = (userId: string) =>
   `user-removed-posts:${userId}:removed-desc-kind-desc-post-desc:v2`
@@ -101,29 +99,22 @@ function resolveUserRemovedPostsTraversal(
   includePlatform: boolean,
   after?: string,
 ): UserRemovedPostsTraversal {
-  const legacyScope = LEGACY_CURSOR_SCOPE(userId)
+  const communityScope = COMMUNITY_CURSOR_SCOPE(userId)
   if (!after) {
     return {
       includePlatform,
-      cursorScope: includePlatform ? EXPANDED_CURSOR_SCOPE(userId) : legacyScope,
+      cursorScope: includePlatform ? EXPANDED_CURSOR_SCOPE(userId) : communityScope,
     }
   }
   if (!includePlatform) {
     return {
       includePlatform: false,
-      cursorScope: legacyScope,
-      cursor: decodeScopedPreciseTimestampCursor(after, legacyScope, 'Invalid cursor format'),
+      cursorScope: communityScope,
+      cursor: decodeScopedPreciseTimestampCursor(after, communityScope, 'Invalid cursor format'),
     }
   }
 
   const expandedScope = EXPANDED_CURSOR_SCOPE(userId)
-  if (isScopedPreciseTimestampCursor(decodeCursor(after))) {
-    return {
-      includePlatform: false,
-      cursorScope: legacyScope,
-      cursor: decodeScopedPreciseTimestampCursor(after, legacyScope, 'Invalid cursor format'),
-    }
-  }
   return {
     includePlatform: true,
     cursorScope: expandedScope,

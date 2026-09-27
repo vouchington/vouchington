@@ -1,6 +1,7 @@
-import { elections as electionsWorker } from './workers.mts'
-import { elections as electionsQueue } from '@queues/elections/queues'
-import onError from '@modules/on-error'
+import { elections as electionsWorker } from '../workers/elections/workers.mts'
+import { elections as electionsQueue } from '../queues/elections/queues.mts'
+import type { ElectionsJobData } from '../queues/elections/types.mts'
+import onError from '../modules/on-error/index.mts'
 
 // Attach an error handler so unhandled 'error' events don't crash the process: this test-support
 // context never goes through the worker bootstrap that normally does this (mirrors
@@ -13,7 +14,7 @@ const JOB_NAME = 'processUpdateElectionVoteStats'
 type ElectionJob = {
   id?: string
   name: string
-  data: { electionId: string; relationTable?: string }
+  data: ElectionsJobData['data']
   failedReason?: string
 }
 
@@ -25,13 +26,13 @@ type ElectionQueueSearch = {
   }): Promise<ElectionJob[]>
 }
 
-function matchesElectionJob(
-  job: ElectionJob,
-  electionId: string,
-  relationTable: string | undefined,
-): boolean {
-  if (job.name !== JOB_NAME || job.data.electionId !== electionId) return false
-  return relationTable === undefined || job.data.relationTable === relationTable
+function matchesElectionJob(job: ElectionJob, target: ElectionsJobData['data']): boolean {
+  return (
+    job.name === JOB_NAME &&
+    job.data.electionId === target.electionId &&
+    job.data.orderingKey === target.orderingKey &&
+    job.data.relationTable === target.relationTable
+  )
 }
 
 type SettledElectionJobs = { completed: ElectionJob[]; failed: ElectionJob[] }
@@ -39,14 +40,17 @@ type SettledElectionJobs = { completed: ElectionJob[]; failed: ElectionJob[] }
 // Pre-scans both terminal states: a job that already failed before this call's listeners
 // registered must be surfaced too, or the caller waits out the full timeout instead of rejecting.
 async function findSettledElectionJobs(
-  electionId: string,
-  relationTable: string | undefined,
+  target: ElectionsJobData['data'],
 ): Promise<SettledElectionJobs> {
   const search = electionsQueue as unknown as ElectionQueueSearch
-  const matches = (job: ElectionJob) => matchesElectionJob(job, electionId, relationTable)
+  const matches = (job: ElectionJob) => matchesElectionJob(job, target)
   const [completed, failed] = await Promise.all([
-    search.searchJobs({ name: JOB_NAME, state: 'completed', data: { electionId } }),
-    search.searchJobs({ name: JOB_NAME, state: 'failed', data: { electionId } }),
+    search.searchJobs({
+      name: JOB_NAME,
+      state: 'completed',
+      data: { electionId: target.electionId },
+    }),
+    search.searchJobs({ name: JOB_NAME, state: 'failed', data: { electionId: target.electionId } }),
   ])
   return { completed: completed.filter(matches), failed: failed.filter(matches) }
 }
@@ -56,8 +60,8 @@ async function findSettledElectionJobs(
 // job an earlier call already consumed, instead of waiting for the new vote's own recompute.
 const consumedJobIds = new Map<string, Set<string>>()
 
-function consumedJobIdsFor(electionId: string, relationTable: string | undefined): Set<string> {
-  const key = relationTable === undefined ? electionId : `${electionId}\0${relationTable}`
+function consumedJobIdsFor(target: ElectionsJobData['data']): Set<string> {
+  const key = `${target.orderingKey}\0${target.relationTable ?? ''}\0${target.electionId}`
   let ids = consumedJobIds.get(key)
   if (ids === undefined) {
     ids = new Set()
@@ -77,17 +81,11 @@ type WorkerLike = {
  * Wait for a specific elections vote-stats recompute job to complete.
  *
  * Every elections ordering key shares one job name (`processUpdateElectionVoteStats`), so the primary
- * discriminator is `job.data.electionId` — the entity id for most types, and `entity_relation_id` (a
- * UUID unique across every relation table, not just within one) for the `entity_relation` ordering
- * key. The dedup id built by `buildElectionJobOptions` (`backend/queues/elections/enqueues.mts`) also
- * folds `relationTable` in when present, so pass it here too when a test targets a specific
- * `entity_relation` partition and must not false-positive on a UUID shared across tables.
+ * discriminator is the canonical job payload: `orderingKey`, `electionId`, and (for an
+ * `entity_relation` election) `relationTable`. IDs can overlap across election kinds or tables.
  *
- * `enqueueElectionStats` calls are fire-and-forget (`shared/entity-service.mts`'s
- * `void options.enqueueElectionStats(...)`), and the recompute is scheduled
- * `ELECTIONS_DEFAULTS.recomputeDelayMs` (6s in production) after the triggering vote, deliberately
- * outside normal request latency — see `backend/services/elections-votes/README.md`. Tests that
- * assert on the recomputed aggregate after a vote must call this first.
+ * Recomputes are scheduled outside request latency; tests reading the aggregate after a vote
+ * must wait here. See `backend/services/elections-votes/README.md`.
  *
  * Unlike `onceEntityListenerCompleted` (`backend/workers/entity-listeners/test-support.mts`), this
  * helper does not short-circuit on `worker.isDrained`: elections enqueues are fire-and-forget, so the
@@ -98,7 +96,7 @@ type WorkerLike = {
  * them is still observed instead of being missed by both, whichever terminal state it lands in.
  *
  * Job ids consumed by a match, from the pre-scan or a live event, are tracked in a module-level set
- * keyed by `electionId`/`relationTable`, not just locally within one call: a job a prior call already
+ * keyed by the full target, not just locally within one call: a job a prior call already
  * consumed can't also satisfy or fail a later call for the same election, which matters for tests
  * that vote more than once against the same entity.
  *
@@ -107,26 +105,25 @@ type WorkerLike = {
  * @param count - number of recompute jobs to wait for (default: 1). Only use values > 1 when you
  *   know that many jobs were actually enqueued: throttle dedup (`buildElectionJobOptions`) can
  *   collapse several rapid votes into one job, in which case waiting for N > jobs times out.
- * @param relationTable - for `entity_relation` elections, narrows matching to jobs enqueued for
- *   this table. Omit for every other election type, or when any table sharing the id is acceptable.
+ * @param target - canonical election job payload, including its ordering key and relation table
+ *   when applicable.
  *
  * @example
  * ```ts
  * await request.put(`/api/v1/posts/${postId}/vote`).send({ choice: 'dislike' }).expect(204)
- * await onceElectionVoteStatsCompleted(postId)
+ * await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
  * // the vote-count aggregate has now been recomputed for this post
  * ```
  */
 export async function onceElectionVoteStatsCompleted(
-  electionId: string,
+  target: ElectionsJobData['data'],
   count = 1,
   timeoutMs = 15_000,
-  relationTable?: string,
 ): Promise<void> {
   if (count <= 0) return
   const worker = electionsWorker as unknown as WorkerLike
   let remaining = count
-  const consumed = consumedJobIdsFor(electionId, relationTable)
+  const consumed = consumedJobIdsFor(target)
 
   return new Promise<void>((resolve, reject) => {
     let settled = false
@@ -135,7 +132,7 @@ export async function onceElectionVoteStatsCompleted(
       cleanup()
       reject(
         new Error(
-          `onceElectionVoteStatsCompleted timed out after ${timeoutMs}ms waiting for election ${electionId}`,
+          `onceElectionVoteStatsCompleted timed out after ${timeoutMs}ms waiting for election ${target.electionId}`,
         ),
       )
     }, timeoutMs)
@@ -167,22 +164,24 @@ export async function onceElectionVoteStatsCompleted(
     function rejectFailed(jobId: string | undefined, message: string): void {
       if (!consumeJobId(jobId)) return
       cleanup()
-      reject(new Error(`Elections vote-stats job for election ${electionId} failed: ${message}`))
+      reject(
+        new Error(`Elections vote-stats job for election ${target.electionId} failed: ${message}`),
+      )
     }
 
     function onCompleted(job: ElectionJob): void {
-      if (matchesElectionJob(job, electionId, relationTable)) markCompleted(job.id)
+      if (matchesElectionJob(job, target)) markCompleted(job.id)
     }
 
     function onFailed(job: ElectionJob | undefined, err: Error): void {
-      if (job === undefined || !matchesElectionJob(job, electionId, relationTable)) return
+      if (job === undefined || !matchesElectionJob(job, target)) return
       rejectFailed(job.id, err.message)
     }
 
     worker.on('completed', onCompleted)
     worker.on('failed', onFailed)
 
-    findSettledElectionJobs(electionId, relationTable)
+    findSettledElectionJobs(target)
       .then(({ completed, failed }) => {
         if (settled) return
         for (const job of failed) {

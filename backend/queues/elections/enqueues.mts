@@ -3,19 +3,20 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { elections } from './queues.mts'
 import { QUEUE_NAME, ELECTIONS_ORDERING, ELECTIONS_DEFAULTS, PRIORITY_DEFAULT } from './config.mts'
-import type { ElectionsJobs, EntityRelationElectionTarget } from './types.mts'
+import type {
+  ElectionOrderingKey,
+  ElectionsJobData,
+  ElectionsJobs,
+  EntityRelationElectionTarget,
+} from './types.mts'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 
 const PROCESSOR_NAME = 'processUpdateElectionVoteStats' as ElectionsJobs
 const entityRelationElectionTables = new Set(
   entityRelationMetadatum.flatMap(metadata => (metadata.election ? [metadata.table_name] : [])),
 )
-export type ElectionOrderingKey = keyof typeof ELECTIONS_ORDERING
-type ElectionJobInput = {
-  electionId: string
-  orderingKey: ElectionOrderingKey
-  relationTable?: string
-}
+export type { ElectionOrderingKey } from './types.mts'
+type ElectionJobInput = ElectionsJobData['data']
 type ElectionErrorContext = {
   operation: string
 }
@@ -38,7 +39,7 @@ export function buildElectionJobOptions(
 
 const enqueueBulkElectionJobs = createBulkEnqueueFunction<
   ElectionJobInput,
-  { electionId: string; relationTable?: string },
+  ElectionsJobData['data'],
   ElectionsJobs,
   ElectionErrorContext
 >({
@@ -51,9 +52,9 @@ const enqueueBulkElectionJobs = createBulkEnqueueFunction<
     removeOnComplete: ELECTIONS_DEFAULTS.removeOnComplete,
     removeOnFail: ELECTIONS_DEFAULTS.removeOnFail,
   },
-  buildJob: ({ electionId, orderingKey, relationTable }) => ({
-    data: { electionId, ...(relationTable ? { relationTable } : {}) },
-    opts: buildElectionJobOptions(electionId, orderingKey, relationTable),
+  buildJob: input => ({
+    data: input,
+    opts: buildElectionJobOptions(input.electionId, input.orderingKey, input.relationTable),
   }),
   decorateError: (error, context) => {
     error.extra = {
@@ -116,7 +117,10 @@ export const enqueueBulkUpdateUserVouchElectionVoteStats = createElectionBulkEnq
   'enqueueBulkUpdateUserVouchElectionVoteStats',
 )
 
-function createElectionBulkEnqueue(orderingKey: ElectionOrderingKey, operation: string) {
+function createElectionBulkEnqueue(
+  orderingKey: Exclude<ElectionOrderingKey, 'entity_relation'>,
+  operation: string,
+) {
   return (electionIds: string[], priority?: number): EnqueueReturnType =>
     enqueueBulkElectionJobs(
       electionIds.map(electionId => ({ electionId, orderingKey })),

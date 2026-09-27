@@ -10,7 +10,7 @@ import {
   signLegacySessionJwt,
 } from '@voucha/test-helpers/services/jwt-session/index'
 import { cacheBootstrapDeviceId } from '@modules/request-client-info'
-import { ATTESTED_SESSION_EXPIRATION_SECONDS, isUUIDv7 } from '@ts-shared/session-jwt'
+import { ATTESTED_SESSION_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
 import {
   createTestMembership,
   createTestUser,
@@ -68,7 +68,7 @@ describe('server request context', () => {
     expect(replacement.sid).not.toBe(tokens.sessionToken.payload.sid)
   })
 
-  it('re-mints legacy UUIDv4 identifiers as UUIDv7 identifiers', async () => {
+  it('rejects signed UUIDv4 identifiers without trusting or rewriting their cookies', async () => {
     const user = await createRequiredTestUser()
     const legacyDid = legacyUuidV4()
     const legacySid = legacyUuidV4()
@@ -76,16 +76,10 @@ describe('server request context', () => {
       signLegacyDeviceJwt({ did: legacyDid }),
       signLegacySessionJwt({ did: legacyDid, sid: legacySid, uid: user.id }),
     ])
-    await softDeleteUser(user.id)
     const { context, cookieWrites } = createRequestContext({ dt: deviceToken, st: sessionToken })
 
     await expect(context.getCurrentUser()).resolves.toBeNull()
-
-    const replacement = await verifyOnlyCookiePair(cookieWrites)
-    expect(isUUIDv7(replacement.did)).toBe(true)
-    expect(isUUIDv7(replacement.sid)).toBe(true)
-    expect(replacement.did).not.toBe(legacyDid)
-    expect(replacement.sid).not.toBe(legacySid)
+    expect(cookieWrites).toEqual([])
   })
 
   it('preserves an attested device class and session cookie lifetime when re-minting', async () => {

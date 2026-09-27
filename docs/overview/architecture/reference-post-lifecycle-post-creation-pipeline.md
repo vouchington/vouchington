@@ -51,10 +51,9 @@ flowchart TD
 - Link creation records the submitted raw URL in `posts.creation_source_url_id` within the post
   transaction, separately from the editable post-to-URL relation.
 - Recovery uses that immutable column to crawl both the raw source and its canonical URL. Vote or
-  relation removal cannot erase a submitted URL's required create-time crawl. Rows written before
-  the column rollout use the prior positive relation as a bounded compatibility fallback. Recovery
-  also safely re-enqueues every link post's canonical URL; the crawl queue deduplicates that work,
-  avoiding an unrecoverable gap when an old writer's source relation no longer exists.
+  relation removal cannot erase a submitted URL's required create-time crawl. A null creation
+  source has no recovery provenance, even when a positive editable relation exists. Recovery also
+  safely re-enqueues every link post's canonical URL; the crawl queue deduplicates that work.
 
 ### Clearance Gate
 

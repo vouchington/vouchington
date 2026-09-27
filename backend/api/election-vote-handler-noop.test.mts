@@ -9,7 +9,7 @@ import {
   getTopicElectionVoteEventCount,
 } from '@voucha/test-helpers'
 import { getTopicElectionById, upsertTopicElectionVotes } from '@services/elections-votes/topic'
-import { onceElectionVoteStatsCompleted } from '@workers/elections/test-support'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('election vote no-op reconciliation', () => {
   it('reconciles aggregate stats when a same-choice retry follows a missed enqueue', async () => {
@@ -20,7 +20,7 @@ describe('election vote no-op reconciliation', () => {
     const request = createRequest()
     await request.authenticateAs(user)
     await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(204)
-    await onceElectionVoteStatsCompleted(topicId)
+    await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
     await expect(getTopicElectionById(topicId)).resolves.toEqual(
       expect.objectContaining({ votes_count_up: 1, votes_count_down: 0, votes_score_net: 1 }),
@@ -31,13 +31,13 @@ describe('election vote no-op reconciliation', () => {
     const user = await createTestUser({ administrator: true })
     const topicId = await createTopicForNoopRetry()
     await upsertTopicElectionVotes(user.id, [{ entityId: topicId, score: 1 }])
-    await onceElectionVoteStatsCompleted(topicId)
+    await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
     await insertTopicElectionVote(user.id, topicId, null)
 
     const request = createRequest()
     await request.authenticateAs(user)
     await request.delete(`/api/v1/topics/${topicId}/vote`).expect(204)
-    await onceElectionVoteStatsCompleted(topicId)
+    await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
     await expect(getTopicElectionById(topicId)).resolves.toEqual(
       expect.objectContaining({ votes_count_up: 0, votes_count_down: 0, votes_score_net: 0 }),

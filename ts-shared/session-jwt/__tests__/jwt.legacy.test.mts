@@ -29,24 +29,24 @@ async function signRawJwt({
 }
 
 describe('legacy UUID session JWT verification', () => {
-  it('accepts signed device tokens with a UUIDv4 device id', async () => {
+  it('rejects signed device tokens with a UUIDv4 device id', async () => {
     const key = await generatePrivateJwk('legacy-device-key')
     const env = { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([key]) }
     const did = uuidv4()
 
     const token = await signRawJwt({ key, payload: { did }, audience: DEVICE_TOKEN_AUDIENCE })
 
-    await expect(verifyDeviceJwt(token, { env, mode: 'test' })).resolves.toMatchObject({ did })
+    await expect(verifyDeviceJwt(token, { env, mode: 'test' })).resolves.toBeNull()
   })
 
-  it('accepts signed session tokens with legacy UUIDv4 ids', async () => {
+  it('rejects signed session tokens with UUIDv4 device and session ids', async () => {
     const key = await generatePrivateJwk('legacy-session-key')
     const env = { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([key]) }
     const payload = { did: uuidv4(), sid: uuidv4(), uid: uuidv4() }
 
     const token = await signRawJwt({ key, payload, audience: SESSION_TOKEN_AUDIENCE })
 
-    await expect(verifySessionJwt(token, { env, mode: 'test' })).resolves.toMatchObject(payload)
+    await expect(verifySessionJwt(token, { env, mode: 'test' })).resolves.toBeNull()
   })
 
   it('signs session tokens for existing non-v7 user ids', async () => {

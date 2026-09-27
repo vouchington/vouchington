@@ -15,7 +15,7 @@ import {
 import { createTestPost } from '@services/posts/test-support'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { invalidate } from '@services/entity-cache'
-import { onceElectionVoteStatsCompleted } from '@workers/elections/test-support'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('topic', () => {
   afterAll(async () => {}, 30000) // Increased timeout for cleanup when Playwright test data exists
@@ -135,7 +135,7 @@ describe('topic', () => {
           .put(`/api/v1/topics/${initial.body.topic.id}/vote`)
           .send({ choice: 'like' })
           .expect(204)
-        await onceElectionVoteStatsCompleted(topicId)
+        await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
         const response = await request.get(`/api/v1/topics/${topicId}`).expect(200)
 

@@ -1,6 +1,5 @@
-import { ensureAnonymousSession, isUUIDv7 } from '@ts-shared/session-jwt'
+import { ensureAnonymousSession } from '@ts-shared/session-jwt'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
-import { issueAnonSession } from './refresh-token-rotation.mts'
 import { trackAuthSessionEvent } from '@services/analytics'
 import type { FetchUserForSession, RefreshedSessionState, SessionTokenPayload } from './types.mts'
 import { applyHotWarmCold } from './hot-warm-cold.mts'
@@ -20,10 +19,6 @@ export async function refreshSessionState(options: {
     })
 
     if (verified && !verified.uid) {
-      if (!isUUIDv7(verified.did) || !isUUIDv7(verified.sid)) {
-        return issueAnonSession(verified.did, options.deviceToken, verified.dc)
-      }
-
       trackAuthSessionEvent({
         did: verified.did,
         sid: verified.sid,

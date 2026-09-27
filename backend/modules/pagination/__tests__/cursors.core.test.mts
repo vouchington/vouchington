@@ -1,5 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { buildPageInfo, encodeCursor } from '../cursors.mts'
+import {
+  buildPageInfo,
+  decodeCursor,
+  decodeScopedUuidCursor,
+  encodeCursor,
+  encodeScopedUuidCursor,
+} from '../cursors.mts'
+
+describe('cursor encoding', () => {
+  it('round-trips canonical unpadded URL-safe cursors through the local facade', () => {
+    const id = crypto.randomUUID()
+    const scope = 'test-scope'
+    const encoded = encodeScopedUuidCursor(id, scope)
+
+    expect(encoded).toMatch(/^[A-Za-z0-9_-]+$/)
+    expect(decodeScopedUuidCursor(encoded, scope, 'Invalid cursor')).toEqual({ id, scope })
+  })
+
+  it('rejects padded Base64 encodings of valid cursor JSON', () => {
+    const encoded = Buffer.from(JSON.stringify({ id: 'abcd' })).toString('base64')
+    expect(encoded).toMatch(/[=]$/)
+
+    expect(() => decodeCursor(encoded)).toThrow(expect.objectContaining({ status: 400 }))
+  })
+
+  it.each(['¾', '¿'])('rejects standard Base64 alphabet for valid cursor JSON %s', id => {
+    const encoded = Buffer.from(JSON.stringify({ id })).toString('base64').replace(/=+$/, '')
+    expect(encoded).toMatch(/[+/]/)
+
+    expect(() => decodeCursor(encoded)).toThrow(expect.objectContaining({ status: 400 }))
+  })
+})
 
 describe('buildPageInfo', () => {
   it('returns null cursors for an empty page', () => {

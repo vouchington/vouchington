@@ -112,7 +112,7 @@ describe('Email Address Authentication Routes', () => {
       expect(response.body.uid).toBe(response.body.user.id)
     })
 
-    it('rotates legacy anonymous dt/st ids to UUIDv7 during login', async () => {
+    it('mints UUIDv7 ids during login with untrusted UUIDv4 cookies', async () => {
       const legacyDid = legacyUuidV4()
       const legacySid = legacyUuidV4()
       const emailAddress = createUniqueTestEmail(`legacy-login-${legacySid.slice(0, 8)}`)

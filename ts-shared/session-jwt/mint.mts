@@ -1,7 +1,7 @@
 import { verifyDeviceJwt, verifySessionJwt, signDeviceJwt, signSessionJwt } from './jwt.mts'
 import { DEVICE_EXPIRATION_STRING, sessionExpiryFor } from './constants.mts'
 import type { DeviceClass, JwtRuntimeOptions, SessionTokenPayload } from './types.mts'
-import { isUUIDv7, mintUUIDv7 } from './uuidv7.mts'
+import { mintUUIDv7 } from './uuidv7.mts'
 
 export type EnsureAnonResult = {
   did: string
@@ -28,7 +28,7 @@ export async function ensureAnonymousSession(
   let dt: string
   let mintedDt: boolean
 
-  if (devicePayload && isUUIDv7(devicePayload.did)) {
+  if (devicePayload) {
     did = devicePayload.did
     dt = deviceToken!
     mintedDt = false

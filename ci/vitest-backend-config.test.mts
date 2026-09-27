@@ -53,6 +53,17 @@ function projectOwnsPath(project: BackendProject, path: string): boolean {
 }
 
 describe('backend Vitest project config', () => {
+  it('runs the election waiter contract with the worker and data-store lifecycle', () => {
+    const path = 'backend/test-helpers/election-vote-stats.test.mts'
+    const owners = backendProjects().filter(project => projectOwnsPath(project, path))
+
+    expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
+    expect(owners[0]?.test?.globalSetup).toBe('./test-helpers/vitest.setup.data-stores.mts')
+    expect(owners[0]?.test?.setupFiles).toContain(
+      './test-helpers/vitest.setup.glide-mq-workers.mts',
+    )
+  })
+
   it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
     const runner = './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts'
     const projects = config.test?.projects as BackendProject[] | undefined

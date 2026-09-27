@@ -1,5 +1,4 @@
 import {
-  isUUIDv7,
   signDeviceJwt,
   signSessionJwt,
   sessionExpiryFor,
@@ -15,7 +14,6 @@ import { trackAuthSessionEvent } from '@services/analytics'
 import type { AuthSessionRecord } from '@data-stores/analytics'
 import { registerAuthenticatedSession } from './user-sessions.mts'
 import { getUserSessionsRevokedBefore } from './session-revocation-keys.mts'
-import { revokeSession } from './revocation.mts'
 
 export async function createDeviceAndSessionTokens({
   did,
@@ -44,9 +42,8 @@ export async function createDeviceAndSessionTokens({
   deviceContext?: DeviceContext
   recheckAfter?: number
 }): Promise<DeviceAndSessionTokenResult> {
-  const tokenDid = normalizeRefreshableTokenId(did)
-  const tokenSid = normalizeRefreshableTokenId(sid)
-  const tokenDeviceClass = tokenDid === did ? deviceClass : undefined
+  validateUUIDv7(did)
+  validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
   const now = await getSessionIssuedAt(uid)
   const sessionPayloadExtra =
@@ -62,37 +59,33 @@ export async function createDeviceAndSessionTokens({
         }
       : {}
 
-  const devicePayloadExtra = tokenDeviceClass !== undefined ? { dc: tokenDeviceClass } : {}
+  const devicePayloadExtra = deviceClass !== undefined ? { dc: deviceClass } : {}
 
   const [deviceToken, sessionToken] = await Promise.all([
-    signDeviceJwt(
-      { did: tokenDid, ...devicePayloadExtra },
-      { expiresIn: DEVICE_EXPIRATION_STRING },
-    ),
+    signDeviceJwt({ did, ...devicePayloadExtra }, { expiresIn: DEVICE_EXPIRATION_STRING }),
     signSessionJwt(
-      { did: tokenDid, sid: tokenSid, uid: uid ?? null, ...sessionPayloadExtra },
-      { expiresIn: sessionExpiryFor(tokenDeviceClass), issuedAt: now },
+      { did, sid, uid: uid ?? null, ...sessionPayloadExtra },
+      { expiresIn: sessionExpiryFor(deviceClass), issuedAt: now },
     ),
   ])
 
-  trackAuthSessionEvent({ did: tokenDid, sid: tokenSid, uid, eventType })
+  trackAuthSessionEvent({ did, sid, uid, eventType })
   await registerAuthenticatedSession({
-    did: tokenDid,
-    sid: tokenSid,
+    did,
+    sid,
     uid,
-    deviceClass: tokenDeviceClass,
+    deviceClass,
     deviceContext,
   })
-  if (uid !== null && tokenSid !== sid) await revokeSession(sid)
 
   return {
     deviceToken: {
       token: deviceToken,
-      payload: { did: tokenDid, ...devicePayloadExtra },
+      payload: { did, ...devicePayloadExtra },
     },
     sessionToken: {
       token: sessionToken,
-      payload: { did: tokenDid, sid: tokenSid, uid: uid ?? null, ...sessionPayloadExtra },
+      payload: { did, sid, uid: uid ?? null, ...sessionPayloadExtra },
     },
   }
 }
@@ -139,7 +132,7 @@ export async function createSessionToken({
   }
 }> {
   validateUUIDv7(did)
-  const tokenSid = normalizeRefreshableTokenId(sid)
+  validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
 
   const now = await getSessionIssuedAt(uid)
@@ -157,29 +150,22 @@ export async function createSessionToken({
         }
       : {}
 
-  const payload = { did, sid: tokenSid, uid: uid ?? null, ...sessionPayloadExtra }
+  const payload = { did, sid, uid: uid ?? null, ...sessionPayloadExtra }
 
   const token = await signSessionJwt(payload, {
     expiresIn: sessionExpiryFor(deviceClass),
     issuedAt: now,
   })
-  trackAuthSessionEvent({ did, sid: tokenSid, uid, eventType })
+  trackAuthSessionEvent({ did, sid, uid, eventType })
   await registerAuthenticatedSession({
     did,
-    sid: tokenSid,
+    sid,
     uid,
     deviceClass,
     deviceContext,
   })
-  if (uid !== null && tokenSid !== sid) await revokeSession(sid)
 
   return { token, payload }
-}
-
-function normalizeRefreshableTokenId(value: string): string {
-  if (isUUIDv7(value)) return value
-  if (isUUID(value)) return mintUUIDv7()
-  return validateUUIDv7(value)
 }
 
 function validateExistingUserId(value: string): void {

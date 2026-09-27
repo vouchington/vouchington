@@ -1,4 +1,4 @@
-import { onceElectionVoteStatsCompleted } from '@workers/elections/test-support'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { onceEntityListenerCompleted } from '@workers/entity-listeners/test-support'
 import { describe, it, expect, beforeAll } from 'vitest'
 
@@ -46,7 +46,7 @@ describe('post', () => {
           .put(`/api/v1/posts/${postId}/vote`)
           .send({ choice: 'dislike' })
           .expect(204)
-        await onceElectionVoteStatsCompleted(postId)
+        await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
 
         // Free user (viewer has no membership_plan) should see votes_count_down = 0
         const freeRequest = createRequest()
@@ -75,7 +75,7 @@ describe('post', () => {
           .put(`/api/v1/posts/${postId}/vote`)
           .send({ choice: 'dislike' })
           .expect(204)
-        await onceElectionVoteStatsCompleted(postId)
+        await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
 
         // Admin should see real downvote counts
         const adminRequest = createRequest()

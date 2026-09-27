@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import { clampLimit } from '@modules/search-utils'
-import { decodeScopedUuidCursorWithLegacySimple, encodeScopedUuidCursor } from '@modules/pagination'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
 
@@ -14,7 +14,6 @@ export type FriendRecommendationResult = {
 type FriendRecommendationsResponse = {
   results: FriendRecommendationResult[]
   page_info: PageInfo
-  used_legacy_cursor: boolean
 }
 
 type FriendRecommendationsOptions = {
@@ -34,15 +33,13 @@ export async function getFriendRecommendations(
   })
 
   let cursorId: string | undefined
-  let usedLegacyCursor = false
   if (options.after) {
-    const cursor = decodeScopedUuidCursorWithLegacySimple(
+    const cursor = decodeScopedUuidCursor(
       options.after,
       cursorScope,
       'Invalid friend recommendations cursor',
     )
     cursorId = cursor.id
-    usedLegacyCursor = !('scope' in cursor)
   }
 
   const cursorFilter = cursorId ? 'AND deduped.id > $2' : ''
@@ -154,6 +151,5 @@ WITH friends AS (
         ? encodeScopedUuidCursor(firstResult.id as string, cursorScope)
         : null,
     },
-    used_legacy_cursor: usedLegacyCursor,
   }
 }

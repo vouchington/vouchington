@@ -51,22 +51,15 @@ fallback, so an attested device keeps its 30-day session expiry across refreshes
 re-attesting. See [App Attest](../../../docs/overview/architecture/app-attestation.md) for how a
 device earns `dc: 'attested'`.
 
-### Legacy UUID Compatibility Matrix
+### UUIDv7 Session Contract
 
-Legacy UUIDv4 inputs are accepted only on compatibility paths. All newly issued IDs are UUIDv7.
-The focused regression suite is `legacy-compatibility.test.mts`.
-
-| Flow                           | Legacy input accepted                      | Expected action                                                                                          |
-| ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| Shared JWT verifier            | Signed UUIDv4 `did` / `sid` / `uid` claims | Verify-only acceptance; no rotation happens in `@ts-shared/session-jwt`.                                 |
-| `createDeviceAndSessionTokens` | `did`, `sid`                               | Rotate legacy device/session IDs to UUIDv7 before signing; revoke old authenticated `sid`.               |
-| `createSessionToken`           | `sid`                                      | Rotate legacy session IDs to UUIDv7 before signing; `did` must already be UUIDv7.                        |
-| `PATCH /api/v1/session`        | `dt`, `st`                                 | Refresh and anonymous fallback re-issue UUIDv7 `did`/`sid` values.                                       |
-| `DELETE /api/v1/session`       | legacy `dt`, optional `st`                 | Revoke matching uid-bearing `sid`, then issue a fresh anonymous UUIDv7 session.                          |
-| Request context re-mint        | legacy uid-bearing `dt`, `st`              | Already-verified requests stay read-only; revoked or missing-user re-mint emits UUIDv7 cookies.          |
-| Active sessions registry       | legacy authenticated `sid` / `did`         | Do not insert UUIDv4 rows into `user_sessions`; repair/list only UUIDv7 rows.                            |
-| Passkey/email login            | legacy anonymous `dt`, `st`                | Bind challenges and response payloads to the rotated UUIDv7 `did`/`sid`.                                 |
-| App Attest `dc`                | legacy attested device `did`               | Drop stale `dc` when the device ID changes; preserve `dc` only when the verified device remains current. |
+The shared JWT verifier rejects signed pre-UUIDv7 `did` and `sid` claims. `uid` remains a valid
+UUID of any version so existing user identities and key rotation stay supported. A rejected cookie
+pair cannot authenticate a user or carry an App Attest device class. Session refresh, reset,
+request context, passkey, and email login treat it as unauthenticated input and mint a fresh UUIDv7
+pair where appropriate. The focused boundary regression suite is
+`legacy-compatibility.test.mts`; the backend verifier remains authoritative for pairing and
+revocation after signature and payload validation.
 
 ### Hot / Warm / Cold Paths (PATCH /api/v1/session)
 

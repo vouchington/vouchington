@@ -13,7 +13,7 @@ import {
   type DeviceTokenPayload,
   type SessionTokenPayload,
 } from './types.mts'
-import { validateUUIDv7 } from './uuidv7.mts'
+import { isUUIDv7, validateUUIDv7 } from './uuidv7.mts'
 type BufferLike = {
   from(
     value: string,
@@ -82,15 +82,15 @@ function isOptionalFiniteNumber(value: unknown): value is number | undefined {
   return value === undefined || (typeof value === 'number' && Number.isFinite(value))
 }
 function isValidDevicePayload(payload: JWTPayload): payload is DeviceTokenPayload {
-  return isNonEmptyString(payload.did) && isUUID(payload.did) && isOptionalDeviceClass(payload.dc)
+  return isNonEmptyString(payload.did) && isUUIDv7(payload.did) && isOptionalDeviceClass(payload.dc)
 }
 
 function isValidSessionPayload(payload: JWTPayload): payload is SessionTokenPayload {
   return (
     isNonEmptyString(payload.did) &&
-    isUUID(payload.did) &&
+    isUUIDv7(payload.did) &&
     isNonEmptyString(payload.sid) &&
-    isUUID(payload.sid) &&
+    isUUIDv7(payload.sid) &&
     (payload.uid === null || (isNonEmptyString(payload.uid) && isUUID(payload.uid))) &&
     (payload.rol === undefined ||
       (Array.isArray(payload.rol) && payload.rol.every(role => typeof role === 'string'))) &&

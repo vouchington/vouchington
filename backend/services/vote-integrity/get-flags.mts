@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import { decodeScopedUuidCursorWithLegacySimple, encodeScopedUuidCursor } from '@modules/pagination'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { VoteIntegrityFlag } from './create-flag.mts'
@@ -40,11 +40,7 @@ export async function getVoteIntegrityFlags(
 
   let afterId: string | undefined
   if (after) {
-    const cursor = decodeScopedUuidCursorWithLegacySimple(
-      after,
-      cursorScope,
-      'Invalid cursor format',
-    )
+    const cursor = decodeScopedUuidCursor(after, cursorScope, 'Invalid cursor format')
     afterId = cursor.id
   }
 

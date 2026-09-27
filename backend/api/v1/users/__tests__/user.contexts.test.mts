@@ -7,7 +7,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
-import { onceElectionVoteStatsCompleted } from '@workers/elections/test-support'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('User vouch-context route', () => {
   it('GET /api/v1/users/:id/vouch-context returns 401 for anonymous viewers', async () => {
@@ -37,7 +37,7 @@ describe('User vouch-context route', () => {
     await upsertUserVouchElectionVotes(stranger.id, [{ entityId: target.id, score: 1 }])
     await upsertUserVouchElectionVotes(viewer.id, [{ entityId: target.id, score: 1 }])
 
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
 
     const request = createRequest()
     await request.authenticateAs(viewer)
@@ -86,7 +86,7 @@ describe('User vouch-context route', () => {
     // so both rows persist; only the latest should determine the bucket.
     await upsertUserVouchElectionVotes(flipper.id, [{ entityId: target.id, score: 2 }])
     await upsertUserVouchElectionVotes(flipper.id, [{ entityId: target.id, score: -2 }])
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
 
     const request = createRequest()
     await request.authenticateAs(viewer)
@@ -109,7 +109,7 @@ describe('User vouch-context route', () => {
 
     await insertTestLocalFollow(viewer.id, hiddenVoucher.id)
     await upsertUserVouchElectionVotes(hiddenVoucher.id, [{ entityId: target.id, score: 1 }])
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
 
     // Update voter's likes_visibility to 'nobody'
     const voterRequest = createRequest()

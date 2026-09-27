@@ -125,14 +125,15 @@ describe('getReportIntegrityFlags / getReportIntegrityFlagByIdFromPrimary', () =
       )
     }, 60_000)
 
-    it('accepts a legacy simple cursor continuation', async () => {
+    it('rejects an unscoped simple cursor', async () => {
       const legacyTarget = await createTestUserDirect({ username: randomUsername() })
       const flagId = await insertTestReportIntegrityFlag({
         reportedUserId: legacyTarget.id,
         reporterCount: 6,
       })
-      const result = await getReportIntegrityFlags({ after: encodeCursor({ id: flagId }) })
-      expect(result.results.every(flag => flag.id < flagId)).toBe(true)
+      await expect(
+        getReportIntegrityFlags({ after: encodeCursor({ id: flagId }) }),
+      ).rejects.toMatchObject({ status: 400 })
     })
 
     it('rejects a scoped cursor from another status or resource', async () => {

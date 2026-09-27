@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import { decodeScopedUuidCursorWithLegacySimple, encodeScopedUuidCursor } from '@modules/pagination'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 
@@ -55,7 +55,7 @@ export async function getReportAbusePenalties(
   const clampedLimit = Math.min(Math.max(1, limit), 100)
   const cursorScope = buildReportPenaltyCursorScope({ status, userId, sourceFlagId })
   const afterId = after
-    ? decodeScopedUuidCursorWithLegacySimple(after, cursorScope, 'Invalid cursor format').id
+    ? decodeScopedUuidCursor(after, cursorScope, 'Invalid cursor format').id
     : undefined
 
   const query = sql`/* getReportAbusePenalties */

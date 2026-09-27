@@ -21,11 +21,10 @@ is supplied by `@vouchington/utils/cookies`.
 Backend signs with the first private key. Verification accepts any configured matching key. If the
 public-key env var is omitted, verification can derive public keys from the private-key list.
 
-Decoded or verified session tokens must carry valid UUID `did` and `sid` values, `uid` as either a
+Decoded or verified session tokens must carry UUIDv7 `did` and `sid` values, `uid` as either a
 valid UUID string or `null`, and correctly typed optional enrichment claims (`rol`, `mpl`, `tt`,
-`rca`, `sca`). Verified device tokens must carry a valid UUID `did`. New signing paths mint UUIDv7
-session/device IDs and rotate legacy UUID session/device IDs on refresh. Malformed signed session
-payloads decode or verify as `null`.
+`rca`, `sca`). Verified device tokens must carry a UUIDv7 `did`. Signed tokens with pre-UUIDv7
+device or session IDs decode or verify as `null`; signing paths require UUIDv7 IDs.
 
 ## Rotation
 

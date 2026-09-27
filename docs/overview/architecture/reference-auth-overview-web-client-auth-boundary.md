@@ -59,8 +59,7 @@ Audience (`aud`) scoping prevents a device token from being accepted as a sessio
 versa.
 
 Verification also rejects signed tokens whose required payload claims are absent or malformed:
-device tokens must include a valid UUID `did`, and session tokens must include valid UUID `did`
-and `sid` claims plus `uid` as either a valid UUID string or `null`. Optional enrichment claims are
-type-checked before downstream auth code receives the payload. The auth service mints new `did`,
-`sid`, and authenticated `uid` values as UUIDv7; legacy UUID session/device IDs are rotated to
-UUIDv7 when refreshed.
+device tokens must include a UUIDv7 `did`, and session tokens must include UUIDv7 `did` and `sid`
+claims plus `uid` as either a valid UUID string or `null`. Optional enrichment claims are
+type-checked before downstream auth code receives the payload. Signed pre-UUIDv7 device or session
+IDs are rejected; the auth service mints fresh UUIDv7 IDs for unauthenticated requests.

@@ -5,5 +5,7 @@
 - Detect bots with `isbot`
 - Detect likely-authenticated users with a valid signed `st` cookie plus the presence of `dt`. If
   the verified session payload contains `uid`, bypass cache for that request.
+- The shared JWT verifier accepts only UUIDv7 device/session IDs. Edge verification decides cache
+  bypass only; backend pairing and revocation remain authoritative for authentication.
 - For bots, cache eligible responses for 1 day and do not send cookies to the origin for cacheable requests.
 - For unauthenticated users, cache eligible responses for 30 seconds and do not send cookies to the origin for cacheable requests.

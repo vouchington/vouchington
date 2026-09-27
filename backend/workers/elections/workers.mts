@@ -6,7 +6,7 @@ import { updateHostnameElectionVoteStats } from '@services/elections-votes/hostn
 import { updateAgentModerationElectionVoteStats } from '@services/elections-votes/agent-moderation'
 import { updatePostElectionVoteStats } from '@services/elections-votes/post'
 import {
-  resolveEntityRelationElectionTarget,
+  createEntityRelationElectionTarget,
   updateEntityRelationElectionVoteStats,
 } from '@services/elections-votes/entity-relation'
 import { updateRssFeedItemElectionVoteStats } from '@services/elections-votes/rss-feed-item'
@@ -19,7 +19,10 @@ function getElectionId(job: Job): string {
 
 async function processElection(job: Job): Promise<void> {
   const electionId = getElectionId(job)
-  const orderingKey = job.opts.ordering?.key
+  const orderingKey = job.data.orderingKey
+  if (orderingKey !== job.opts.ordering?.key) {
+    throw new Error(`Election job ordering mismatch: ${orderingKey}`)
+  }
 
   switch (orderingKey) {
     case 'topic':
@@ -35,7 +38,7 @@ async function processElection(job: Job): Promise<void> {
       await updatePostElectionVoteStats(electionId)
       break
     case 'entity_relation': {
-      const target = await resolveEntityRelationElectionTarget(electionId, job.data.relationTable)
+      const target = createEntityRelationElectionTarget(electionId, job.data.relationTable)
       await updateEntityRelationElectionVoteStats(target)
       break
     }
