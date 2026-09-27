@@ -19,21 +19,30 @@ import {
   validateTopicTypes,
 } from './filters.mts'
 
+class InvalidCursorParameterError extends Error {
+  readonly status = 400
+
+  constructor() {
+    super('Invalid cursor parameter')
+  }
+}
+
 export class PaginationParser<TConfig extends PaginationConfig> {
   readonly queryContract: PaginationQueryContract<TConfig>
   readonly #core: PlatformPaginationParser<PlatformPaginationConfig>
   readonly #limitBounds: { default: number; min: number; max: number }
   readonly #filters: TConfig['filters']
+  readonly #cursorParamName: string
 
   constructor(config: TConfig) {
     const limitMin = config.limit?.min ?? 1
     const limitMax = config.limit?.max ?? 100
     const limitDefault = config.limit?.default ?? 25
     this.#limitBounds = { default: limitDefault, min: limitMin, max: limitMax }
+    this.#cursorParamName = config.cursor.paramName ?? 'after'
     this.#core = new PlatformPaginationParser({
       cursor: {
-        paramName: config.cursor.paramName ?? 'after',
-        legacyParamNames: config.cursor.legacyParamNames,
+        paramName: this.#cursorParamName,
       },
       limit: {
         paramName: 'limit',
@@ -50,6 +59,9 @@ export class PaginationParser<TConfig extends PaginationConfig> {
   }
 
   parse(query: Record<string, unknown>): ParsedOptions<TConfig> {
+    if (this.#cursorParamName !== 'cursor' && 'cursor' in query) {
+      throw new InvalidCursorParameterError()
+    }
     const { limit, ...cursorQuery } = query
     const { after } = this.#core.parse(cursorQuery)
     const result: Record<string, unknown> = {}

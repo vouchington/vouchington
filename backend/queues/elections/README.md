@@ -16,8 +16,9 @@ Queue system for asynchronous vote-stat refreshes.
 - keep expensive stats recalculation off synchronous request paths
 - coalesce each election ID into a fixed five-second throttle window, then wait one additional
   second for replica propagation before recomputing
-- carry both the entity-relation ID and its metadata-validated relation table for entity-relation
-  jobs, allowing PostgreSQL to prune the relation table and UUIDv7 range partitions
+- carry the ordering key on every job and, for `entity_relation`, both the ID and its required
+  metadata-validated relation table, allowing PostgreSQL to prune the relation table and UUIDv7
+  range partitions; malformed queue payloads fail rather than scanning relation tables
 
 ```mermaid
 sequenceDiagram

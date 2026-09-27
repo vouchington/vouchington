@@ -9,10 +9,8 @@ Worker package for entity-created, updated, deleted, and related listener jobs.
   advancing it; `reconcileEntity` re-derives current state.
 - Post-created recovery awaits community-moderation and story-agent queue delivery, so a failed
   enqueue leaves the durable reconciliation checkpoint retryable. Raw-link crawl recovery reads
-  immutable creation provenance from `posts` whenever present. During the bounded old-writer
-  expand/contract window only, NULL provenance falls back to the prior elected related-URL row;
-  remove that fallback after old-writer-created events have drained through reconciliation. No
-  broad backfill is needed or performed.
+  immutable creation provenance from `posts`; an elected related-URL row is not creation provenance.
+  A link post without a source URL still recovers its canonical URL.
 - `processReconcilePostCategoryFinalizations` drains 25 durable post-category rows per page and
   queues one serialized continuation after a full success; the five-minute schedule recovers lost
   continuation dispatches.

@@ -9,7 +9,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 import { getUserVouchElectionById } from '@services/elections-votes/user-vouch'
-import { onceElectionVoteStatsCompleted } from '@workers/elections/test-support'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('User vouch vote routes', () => {
   it('PUT /api/v1/users/:id/vouch-vote returns 401 for anonymous viewers', async () => {
@@ -39,7 +39,7 @@ describe('User vouch vote routes', () => {
     await request.authenticateAs(voter)
 
     await request.put(`/api/v1/users/${target.id}/vouch-vote`).send({ choice: 'like' }).expect(204)
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
     const election = await getUserVouchElectionById(target.id)
     expect(election?.votes_count_up).toBe(1)
     expect(election?.votes_count_down).toBe(0)
@@ -60,7 +60,7 @@ describe('User vouch vote routes', () => {
       .put(`/api/v1/users/${target.id}/vouch-vote`)
       .send({ choice: 'dislike' })
       .expect(204)
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
     const election = await getUserVouchElectionById(target.id)
     expect(election?.votes_count_up).toBe(0)
     expect(election?.votes_count_down).toBe(1)
@@ -84,7 +84,7 @@ describe('User vouch vote routes', () => {
       .send({ choice: 'disavow' })
       .expect(204)
 
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
     const election = await getUserVouchElectionById(target.id)
     expect(election?.votes_count_up).toBe(0)
     expect(election?.votes_count_down).toBe(1)
@@ -107,7 +107,7 @@ describe('User vouch vote routes', () => {
       .put(`/api/v1/users/${target.id}/vouch-vote`)
       .send({ choice: 'disavow' })
       .expect(204)
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
     const disavowedElection = await getUserVouchElectionById(target.id)
     expect(disavowedElection?.votes_count_up).toBe(0)
     expect(disavowedElection?.votes_count_down).toBe(1)
@@ -117,7 +117,7 @@ describe('User vouch vote routes', () => {
       .put(`/api/v1/users/${target.id}/vouch-vote`)
       .send({ choice: 'neutral' })
       .expect(204)
-    await onceElectionVoteStatsCompleted(target.id)
+    await onceElectionVoteStatsCompleted({ electionId: target.id, orderingKey: 'user_vouch' })
     const neutralElection = await getUserVouchElectionById(target.id)
     expect(neutralElection?.votes_count_up).toBe(0)
     expect(neutralElection?.votes_count_down).toBe(0)

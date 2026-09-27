@@ -4,16 +4,16 @@
 
 ### `createDeviceAndSessionTokens(options)`
 
-Creates signed device and session JWTs. New `did` and `sid` values are UUIDv7; legacy valid UUID
-session/device IDs are rotated to UUIDv7 before signing. Non-null `uid` values must be valid UUIDs.
+Creates signed device and session JWTs. `did` and `sid` must be UUIDv7; non-null `uid` values
+must be valid UUIDs.
 Optionally embeds enriched claims (`roles`, `membershipPlan`, `trustTier`) for authenticated sessions. Authenticated minting defaults `rca` to 30 minutes after issuance; the refresh path may pass its existing deadline to preserve that cold-reload bound. Accepts a `deviceClass` option
 (`'attested'`) that embeds `dc` on the device token and selects the session token's expiry via
 `sessionExpiryFor(deviceClass)`. Emits to the `auth_sessions` analytics table as `created`.
 
 ### `createSessionToken(options)`
 
-Session-only variant of `createDeviceAndSessionTokens`. `did` must already be UUIDv7; legacy `sid`
-values are rotated to UUIDv7 before signing, and non-null `uid` values must be valid UUIDs. Its authenticated `rca` behavior matches `createDeviceAndSessionTokens`. Skips
+Session-only variant of `createDeviceAndSessionTokens`. Both `did` and `sid` must be UUIDv7,
+and non-null `uid` values must be valid UUIDs. Its authenticated `rca` behavior matches `createDeviceAndSessionTokens`. Skips
 device JWT signing when the device token already exists. Also accepts `deviceClass` to select the
 session's expiry via `sessionExpiryFor` — it never adds `dc` to the session payload itself. Defaults to a `created`
 analytics event; warm/cold refresh paths pass `refreshed_authenticated`, and anon fallback reuse

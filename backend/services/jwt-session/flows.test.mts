@@ -121,7 +121,7 @@ describe('flows', () => {
       expect(result.sid).toBe(sid)
     })
 
-    it('hot path: rotates legacy anonymous ids before returning tokens', async () => {
+    it('hot path: rejects signed UUIDv4 anonymous ids before returning tokens', async () => {
       const did = legacyUuidV4()
       const sid = legacyUuidV4()
       const deviceToken = await signLegacyDeviceJwt({ did })
@@ -142,7 +142,7 @@ describe('flows', () => {
       expect(result.uid).toBeNull()
     })
 
-    it('hot path: rotates legacy authenticated ids before returning tokens', async () => {
+    it('hot path: rejects signed UUIDv4 authenticated ids before returning tokens', async () => {
       const did = legacyUuidV4()
       const sid = legacyUuidV4()
       const uid = v7()
@@ -168,7 +168,7 @@ describe('flows', () => {
       expect(result.sid).not.toBe(sid)
       expect(result.dt).not.toBe(deviceToken)
       expect(result.st).not.toBe(sessionToken)
-      expect(result.uid).toBe(uid)
+      expect(result.uid).toBeNull()
     })
   })
 })

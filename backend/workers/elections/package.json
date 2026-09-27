@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@queues/elections": "workspace:^",
     "@services/elections-votes": "workspace:^",

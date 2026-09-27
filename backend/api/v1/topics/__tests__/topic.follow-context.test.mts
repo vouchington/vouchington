@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { updateUserFields } from '@services/users/update-fields'
 import { getTopicTypeSlug } from '@voucha/types/entities/topic'
-import { onceElectionVoteStatsCompleted } from '@workers/elections/test-support'
+import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('topic', () => {
   afterAll(async () => {}, 30000) // Increased timeout for cleanup when Playwright test data exists
@@ -205,7 +205,7 @@ describe('topic', () => {
           .put(`/api/v1/topics/${topicId}/vote`)
           .send({ choice: 'dislike' })
           .expect(204)
-        await onceElectionVoteStatsCompleted(topicId)
+        await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
         // Free user should see the real downvote count (not sanitized to 0)
         const freeRequest = createRequest()

@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildPageInfo, decodeScopedUuidCursorWithLegacySimple } from '@modules/pagination'
+import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import { clampLimit } from '@modules/search-utils'
 import type { CrawlBasic } from './types.mts'
@@ -29,11 +29,7 @@ export async function searchCrawlsForUrl(
   const filters: SQLStatement[] = [sql`url_id = ${urlId}`]
 
   if (after) {
-    const cursor = decodeScopedUuidCursorWithLegacySimple(
-      after,
-      cursorScope,
-      'Invalid URL crawl cursor',
-    )
+    const cursor = decodeScopedUuidCursor(after, cursorScope, 'Invalid URL crawl cursor')
 
     filters.push(sql`id < ${cursor.id}`)
   }
@@ -107,11 +103,7 @@ export async function searchPublicUrlCrawlsForUrl(
   const filters: SQLStatement[] = [sql`url_id = ${urlId}`]
 
   if (after) {
-    const cursor = decodeScopedUuidCursorWithLegacySimple(
-      after,
-      cursorScope,
-      'Invalid URL crawl cursor',
-    )
+    const cursor = decodeScopedUuidCursor(after, cursorScope, 'Invalid URL crawl cursor')
 
     filters.push(sql`id < ${cursor.id}`)
   }

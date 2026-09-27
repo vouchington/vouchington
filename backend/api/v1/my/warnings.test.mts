@@ -118,14 +118,14 @@ describe('GET /api/v1/my/warnings', () => {
     expect(secondPage.body.page_info.has_next_page).toBe(false)
   })
 
-  it('accepts cursor as a legacy pagination alias', async () => {
+  it('rejects cursor as a retired pagination alias', async () => {
     const paginationUser = await createTestUser()
     await Promise.all(
       Array.from({ length: 3 }, () =>
         insertTestUserWarning({
           userId: paginationUser.id,
           issuedById: issuer.id,
-          reason: 'Legacy cursor warning',
+          reason: 'Retired cursor warning',
         }),
       ),
     )
@@ -134,13 +134,10 @@ describe('GET /api/v1/my/warnings', () => {
     await request.authenticateAs(paginationUser)
 
     const firstPage = await request.get('/api/v1/my/warnings').query({ limit: 2 }).expect(200)
-    const secondPage = await request
+    await request
       .get('/api/v1/my/warnings')
       .query({ limit: 2, cursor: firstPage.body.page_info.end_cursor })
-      .expect(200)
-
-    expect(secondPage.body.warnings).toHaveLength(1)
-    expect(secondPage.body.page_info.has_next_page).toBe(false)
+      .expect(400)
   })
 
   it('returns 400 for malformed cursors', async () => {

@@ -9,7 +9,6 @@ export {
   decodeScopedTierCursor,
   decodeScopedTimestampUuidCursor,
   decodeScopedUuidCursor,
-  decodeScopedUuidCursorWithLegacySimple,
   decodeUuidCursor,
   encodeCursor,
   encodeScopedAliasCursor,

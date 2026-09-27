@@ -11,7 +11,6 @@ import { createEmailAddressLoginToken } from '../users/authentication.mts'
 import { routeRateLimitConfig } from '../route-rate-limits/config.mts'
 import { refreshSessionState } from './flows.mts'
 import { resetSessionState } from './reset-session.mts'
-import { revokeSession } from './revocation.mts'
 import {
   legacyUuidV4,
   signLegacyDeviceJwt,
@@ -19,7 +18,7 @@ import {
 } from '../../test-helpers/services/jwt-session/index.mts'
 import '../../api/v1/sessions-authentication/index.mts'
 
-describe('legacy UUIDv4 session compatibility matrix', () => {
+describe('signed UUIDv4 session identifiers are rejected', () => {
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
   beforeAll(async () => {
@@ -37,7 +36,7 @@ describe('legacy UUIDv4 session compatibility matrix', () => {
 
   const cases: Array<{ name: string; run: () => Promise<void> }> = [
     {
-      name: 'refresh rotates legacy anonymous ids before signing',
+      name: 'refresh treats signed UUIDv4 anonymous IDs as untrusted',
       async run() {
         const legacyDid = legacyUuidV4()
         const legacySid = legacyUuidV4()
@@ -58,7 +57,7 @@ describe('legacy UUIDv4 session compatibility matrix', () => {
       },
     },
     {
-      name: 'reset rotates legacy device id and drops stale App Attest device class',
+      name: 'reset rejects a signed UUIDv4 device and its App Attest class',
       async run() {
         const legacyDid = legacyUuidV4()
         const result = await resetSessionState({
@@ -72,12 +71,11 @@ describe('legacy UUIDv4 session compatibility matrix', () => {
       },
     },
     {
-      name: 'revoked legacy session downgrades to anonymous UUIDv7 ids',
+      name: 'signed UUIDv4 authenticated session cannot authenticate',
       async run() {
         const user = await createTestUser()
         const legacyDid = legacyUuidV4()
         const legacySid = legacyUuidV4()
-        await revokeSession(legacySid)
 
         const result = await refreshSessionState({
           fetchUser: async () => user,
@@ -96,25 +94,24 @@ describe('legacy UUIDv4 session compatibility matrix', () => {
       },
     },
     {
-      name: 'active-session listing does not register legacy UUIDv4 sid rows',
+      name: 'active-session listing rejects UUIDv4 cookies and does not register their sid',
       async run() {
         const user = await createTestUser()
         const legacyDid = legacyUuidV4()
         const legacySid = legacyUuidV4()
-        const response = await createRequest()
+        await createRequest()
           .get('/api/v1/auth/sessions')
           .set('Cookie', [
             `dt=${await signLegacyDeviceJwt({ did: legacyDid })}`,
             `st=${await signLegacySessionJwt({ did: legacyDid, sid: legacySid, uid: user.id })}`,
           ])
-          .expect(200)
+          .expect(401)
 
-        expect(response.body.results).toEqual([])
         await expect(getTestUserSessionById(legacySid)).resolves.toBeNull()
       },
     },
     {
-      name: 'passkey challenge setup binds to the rotated UUIDv7 device id',
+      name: 'passkey challenge does not authenticate an untrusted UUIDv4 device',
       async run() {
         const legacyDid = legacyUuidV4()
         const legacySid = legacyUuidV4()
@@ -137,7 +134,7 @@ describe('legacy UUIDv4 session compatibility matrix', () => {
       },
     },
     {
-      name: 'email login response ids are rotated to UUIDv7',
+      name: 'email login mints UUIDv7 ids when supplied UUIDv4 cookies',
       async run() {
         const legacyDid = legacyUuidV4()
         const legacySid = legacyUuidV4()

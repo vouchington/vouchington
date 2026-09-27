@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { v7 } from 'uuid'
 import {
   createTestMembership,
   createTestUser,
@@ -23,7 +24,7 @@ describe('membership expiry', () => {
     await updateTestMembershipExpiresAt(membership.id, expiresAt)
     const context = await getUserRateLimitContext(user.id)
     const tokens = await createDeviceAndSessionTokens({
-      did: crypto.randomUUID(),
+      did: v7(),
       uid: user.id,
       membershipPlan: context.membershipPlan,
       membershipExpiresAt: context.membershipExpiresAt,

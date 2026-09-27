@@ -40,6 +40,15 @@ await Promise.all([
 - When testing sort-by-score/best pagination: vote scores change asynchronously via entity listeners, so wait before paginating to ensure stable scores.
 - After deletions/updates that trigger downstream cache invalidation.
 
+## `onceElectionVoteStatsCompleted`
+
+Use `election-vote-stats.mts` after a vote when a test reads the asynchronously recomputed election
+aggregate. Pass the canonical job target `{ electionId, orderingKey }`, including `relationTable`
+for `entity_relation` jobs, so a job for another election kind or relation table cannot satisfy the
+wait. See the [election-votes service](../services/elections-votes/README.md) for an example.
+Its test runs in `backend-data-stores`, retaining worker setup and data-store teardown even though
+the helper and test live together here.
+
 ## `readEnqueuedJob` / `isDeduplicatedEnqueue` / `getEnqueuedJobId`
 
 Read an enqueued job back by id (`backend/test-helpers/queue-jobs.mts`) instead of scanning

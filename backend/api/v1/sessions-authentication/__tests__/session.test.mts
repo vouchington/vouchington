@@ -193,7 +193,7 @@ describe('Session Routes', () => {
       expect(response.body.session.ste).toBe(SESSION_EXPIRATION_SECONDS)
     })
 
-    it('should rotate legacy anonymous dt/st ids to UUIDv7 before returning a session', async () => {
+    it('treats signed UUIDv4 dt/st ids as untrusted before returning a session', async () => {
       const request = createRequest()
       const legacyDid = legacyUuidV4()
       const legacySid = legacyUuidV4()

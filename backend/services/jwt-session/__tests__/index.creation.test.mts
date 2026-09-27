@@ -6,8 +6,6 @@ import {
 } from '../index.mts'
 import * as jose from 'jose'
 import { v7 } from 'uuid'
-import { isUUIDv7 } from '@ts-shared/session-jwt'
-import { isSessionRevoked } from '../revocation.mts'
 import { legacyUuidV4 } from '../../../test-helpers/services/jwt-session/index.mts'
 
 describe('index.creation', () => {
@@ -107,47 +105,22 @@ describe('index.creation', () => {
     expect(result.sessionToken.payload.sid).toBe(customSid)
   })
 
-  it('createDeviceAndSessionTokens rotates legacy device and session ids before signing', async () => {
+  it('createDeviceAndSessionTokens rejects UUIDv4 device and session ids', async () => {
     const legacyDid = legacyUuidV4()
     const legacySid = legacyUuidV4()
-    const uid = v7()
-    const result = await createDeviceAndSessionTokens({ did: legacyDid, sid: legacySid, uid })
-
-    expect(isUUIDv7(result.deviceToken.payload.did)).toBe(true)
-    expect(isUUIDv7(result.sessionToken.payload.did)).toBe(true)
-    expect(isUUIDv7(result.sessionToken.payload.sid)).toBe(true)
-    expect(result.deviceToken.payload.did).not.toBe(legacyDid)
-    expect(result.sessionToken.payload.did).toBe(result.deviceToken.payload.did)
-    expect(result.sessionToken.payload.sid).not.toBe(legacySid)
-
-    const verified = await verifyDeviceAndSessionTokens({
-      deviceToken: result.deviceToken.token,
-      sessionToken: result.sessionToken.token,
-    })
-    expect(verified).not.toBe(false)
-    expect(verified).toMatchObject({
-      did: result.deviceToken.payload.did,
-      sid: result.sessionToken.payload.sid,
-      uid,
-    })
-    await expect(isSessionRevoked(legacySid)).resolves.toBe(true)
+    await expect(
+      createDeviceAndSessionTokens({ did: legacyDid, sid: legacySid, uid: v7() }),
+    ).rejects.toThrow('Invalid UUIDv7')
+    await expect(createDeviceAndSessionTokens({ did: v7(), sid: legacySid })).rejects.toThrow(
+      'Invalid UUIDv7',
+    )
   })
 
-  it('createSessionToken rotates legacy session ids before signing', async () => {
-    const did = v7()
+  it('createSessionToken rejects a UUIDv4 session id', async () => {
     const legacySid = legacyUuidV4()
-    const uid = v7()
-    const result = await createSessionToken({ did, sid: legacySid, uid })
-
-    expect(result.payload.did).toBe(did)
-    expect(result.payload.uid).toBe(uid)
-    expect(isUUIDv7(result.payload.sid)).toBe(true)
-    expect(result.payload.sid).not.toBe(legacySid)
-    await expect(isSessionRevoked(legacySid)).resolves.toBe(true)
-
-    const decodedSession = jose.decodeJwt(result.token)
-    expect(decodedSession.did).toBe(result.payload.did)
-    expect(decodedSession.sid).toBe(result.payload.sid)
+    await expect(createSessionToken({ did: v7(), sid: legacySid, uid: v7() })).rejects.toThrow(
+      'Invalid UUIDv7',
+    )
   })
 
   it('createDeviceAndSessionTokens rejects invalid session id', async () => {

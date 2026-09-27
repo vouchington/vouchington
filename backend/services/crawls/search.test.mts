@@ -100,7 +100,7 @@ describe('search', () => {
     ).rejects.toMatchObject({ status: 400 })
   })
 
-  it('continues public and privileged URL crawl histories with a legacy unscoped cursor', async () => {
+  it('rejects an unscoped cursor for public and privileged URL crawl histories', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createTestUser()
     const url = await addUrl(user!.id, `https://search-crawl-legacy-${random}.example.com/page`)
@@ -113,58 +113,24 @@ describe('search', () => {
 
     const firstPage = await searchPublicUrlCrawlsForUrl(url!.id, { limit: 1 })
     const firstCrawlId = firstPage.results[0]!.id
-    const continuation = await searchPublicUrlCrawlsForUrl(url!.id, {
-      after: encodeCursor({ id: firstCrawlId }),
-      limit: 1,
-    })
-
-    expect(continuation.results).toHaveLength(1)
-    expect(continuation.results[0]!.id).not.toBe(firstCrawlId)
+    await expect(
+      searchPublicUrlCrawlsForUrl(url!.id, {
+        after: encodeCursor({ id: firstCrawlId }),
+        limit: 1,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
 
     const privilegedFirstPage = await searchCrawlsForUrl(url!.id, { limit: 1 })
     const privilegedFirstCrawlId = privilegedFirstPage.results[0]!.id
-    const privilegedContinuation = await searchCrawlsForUrl(url!.id, {
-      after: encodeCursor({ id: privilegedFirstCrawlId }),
-      limit: 1,
-    })
-
-    expect(privilegedContinuation.results).toHaveLength(1)
-    expect(privilegedContinuation.results[0]!.id).not.toBe(privilegedFirstCrawlId)
+    await expect(
+      searchCrawlsForUrl(url!.id, {
+        after: encodeCursor({ id: privilegedFirstCrawlId }),
+        limit: 1,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
   })
 
-  it('keeps a legacy URL crawl cursor structurally bound to the queried URL', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const user = await createTestUser()
-    const targetUrl = await addUrl(
-      user!.id,
-      `https://search-crawl-target-${random}.example.com/page`,
-    )
-    const foreignUrl = await addUrl(
-      user!.id,
-      `https://search-crawl-foreign-${random}.example.com/page`,
-    )
-    const targetCrawler = await createCrawler(user!, {
-      hostname_id: targetUrl!.hostname.id,
-      crawler_type: 'fetch',
-    })
-    const foreignCrawler = await createCrawler(user!, {
-      hostname_id: foreignUrl!.hostname.id,
-      crawler_type: 'fetch',
-    })
-    const firstTargetCrawl = await createCrawl(targetUrl!.id, targetCrawler.id)
-    const secondTargetCrawl = await createCrawl(targetUrl!.id, targetCrawler.id)
-    const foreignCrawl = await createCrawl(foreignUrl!.id, foreignCrawler.id)
-
-    const result = await searchPublicUrlCrawlsForUrl(targetUrl!.id, {
-      after: encodeCursor({ id: foreignCrawl.id }),
-    })
-    const resultIds = result.results.map(crawl => crawl.id)
-
-    expect(resultIds).toEqual(expect.arrayContaining([firstTargetCrawl.id, secondTargetCrawl.id]))
-    expect(resultIds).not.toContain(foreignCrawl.id)
-  })
-
-  it('rejects a malformed legacy URL crawl cursor', async () => {
+  it('rejects a malformed URL crawl cursor', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createTestUser()
     const url = await addUrl(user!.id, `https://search-crawl-malformed-${random}.example.com/page`)

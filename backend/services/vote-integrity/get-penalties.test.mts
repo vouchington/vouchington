@@ -117,19 +117,20 @@ describe('getVoteWeightPenalties', () => {
     ).rejects.toMatchObject({ status: 400 })
   }, 60_000)
 
-  it('accepts a legacy simple cursor but rejects a wrong-scope scoped cursor', async () => {
+  it('rejects an unscoped or wrong-scope cursor', async () => {
     const user = await createTestUser({ username: randomUsername() })
     const ids = await Promise.all([
       insertTestVoteWeightPenaltyRecord({ userId: user.id, createdById: admin.id }),
       insertTestVoteWeightPenaltyRecord({ userId: user.id, createdById: admin.id }),
     ])
     const sortedIds = ids.toSorted().toReversed()
-    const legacy = await getVoteWeightPenalties({
-      userId: user.id,
-      source: 'flag',
-      after: encodeCursor({ id: sortedIds[0] }),
-    })
-    expect(legacy.results.map(penalty => penalty.id)).toEqual(sortedIds.slice(1))
+    await expect(
+      getVoteWeightPenalties({
+        userId: user.id,
+        source: 'flag',
+        after: encodeCursor({ id: sortedIds[0] }),
+      }),
+    ).rejects.toMatchObject({ status: 400 })
     await expect(
       getVoteWeightPenalties({
         userId: user.id,

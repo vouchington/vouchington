@@ -124,17 +124,17 @@ The marker is a write-ordering fence, not a replica-lag reconciler: if the last 
 itself reads before replication catches up, no later recompute is currently guaranteed (#11113).
 
 Tests that vote then read the recomputed aggregate must wait for the recompute job first, using
-`onceElectionVoteStatsCompleted` from `backend/workers/elections/test-support.mts`:
+`onceElectionVoteStatsCompleted` from `backend/test-helpers/election-vote-stats.mts`:
 
 ```typescript
 await request.put(`/api/v1/posts/${postId}/vote`).send({ choice: 'dislike' }).expect(204)
-await onceElectionVoteStatsCompleted(postId)
+await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
 // the vote-count aggregate has now been recomputed for this post
 ```
 
 This service's own test files (e.g. `post/votes-upsert.generated.test.mts`,
 `topic/votes-upsert.generated.test.mts`, `agent-moderation/votes-upsert.generated.test.mts`,
-`user-vouch/votes-upsert.test.mts`) cannot import `onceElectionVoteStatsCompleted` — `@workers/elections`
+`user-vouch/votes-upsert.test.mts`) cannot import `onceElectionVoteStatsCompleted` — its helper imports `@workers/elections`, which
 already depends on `@services/elections-votes` (`workers.mts`'s `processElection` calls the
 per-entity-type update functions directly), and `pnpm-workspace.yaml` sets
 `disallowWorkspaceCycles: true`, so the reverse import would be a forbidden cycle. Those files keep

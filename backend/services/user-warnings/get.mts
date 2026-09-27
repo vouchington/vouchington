@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { decodeScopedUuidCursorWithLegacySimple, encodeScopedUuidCursor } from '@modules/pagination'
+import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { UserWarning } from './config.mts'
 
@@ -48,7 +48,7 @@ export async function listReceivedUserWarnings(
   const limit = Math.floor(Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT)))
   const scope = getReceivedUserWarningsCursorScope(userId)
   const cursor = options.after
-    ? decodeScopedUuidCursorWithLegacySimple(options.after, scope, 'Invalid cursor format')
+    ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format')
     : null
 
   const query = sql`/* listReceivedUserWarnings */
@@ -91,7 +91,7 @@ export async function listIssuedUserWarnings(
   const limit = Math.floor(Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT)))
   const scope = getIssuedUserWarningsCursorScope(options)
   const cursor = options.after
-    ? decodeScopedUuidCursorWithLegacySimple(options.after, scope, 'Invalid cursor format')
+    ? decodeScopedUuidCursor(options.after, scope, 'Invalid cursor format')
     : null
 
   const query = sql`/* listIssuedUserWarnings */

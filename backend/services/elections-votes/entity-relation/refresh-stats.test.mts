@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
-import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
-import { insertTestLinkPostBare } from '@voucha/test-helpers/entities/link-posts'
 import {
   refreshEntityRelationVoteStatsWithDependencies,
   refreshEntityRelationVoteStatsBatchWithDependencies,
 } from './refresh-stats.mts'
-import {
-  createEntityRelationElectionTarget,
-  resolveEntityRelationElectionTarget,
-} from './target.mts'
+import { createEntityRelationElectionTarget } from './target.mts'
 
 describe('refreshEntityRelationVoteStatsFromPrimaryWithFallback', () => {
   const target = createEntityRelationElectionTarget('relation-1', 'relation__user__category__topic')
@@ -167,22 +161,9 @@ describe('createEntityRelationElectionTarget', () => {
     },
   )
 
-  it('resolves the relation table for a legacy queue payload', async () => {
-    const user = await createTestUser()
-    const { postId, urlId } = await insertTestLinkPostBare({
-      createdById: user.id,
-    })
-    const relationId = await createEntityRelationWithElection(postId, urlId, user.id, 0)
-
-    await expect(resolveEntityRelationElectionTarget(relationId, undefined)).resolves.toEqual({
-      entityRelationId: relationId,
-      relationTable: 'relation__post__related__url',
-    })
-  })
-
-  it('rejects a legacy queue payload whose relation no longer exists', async () => {
-    await expect(
-      resolveEntityRelationElectionTarget('00000000-0000-7000-8000-000000000001', undefined),
-    ).rejects.toThrow('Unable to resolve election entity-relation table for legacy queue job')
+  it('requires a whitelisted relation table without database lookup', () => {
+    expect(() => createEntityRelationElectionTarget('relation-1', undefined)).toThrow(
+      'Unknown election entity-relation table',
+    )
   })
 })

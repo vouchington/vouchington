@@ -8,8 +8,8 @@ The module is a compatibility adapter over [`@vouchington/pagination`](https://w
 ## Standards
 
 - **Cursor parameters**: Forward continuation uses `after`; bidirectional endpoints may also use
-  `before`. Never expose a generic `cursor` query parameter. Existing migrations may accept
-  legacy cursor parameter names through parser config without advertising them in query metadata.
+  `before`. The generic `cursor` query parameter is rejected unless it is explicitly configured
+  as the canonical parameter name.
 - **Cursor format**: Opaque, unpadded base64url-encoded JSON. Decoding rejects padding and the
   standard base64 alphabet. Callers must never construct cursors or expose raw database parameters.
 - **Limit range**: 1-100, clamped automatically

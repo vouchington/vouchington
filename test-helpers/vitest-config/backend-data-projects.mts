@@ -56,6 +56,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       runner: './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts',
       include: [
         'backend/{agents,api,data-stores,entrypoints,flows,md,queues,rss,scripts,service-registrations,services,sitemaps,tools,worker-runtime,workers}/**/*.test.mts',
+        'backend/test-helpers/election-vote-stats.test.mts',
       ],
       exclude: [
         '**/node_modules/**',

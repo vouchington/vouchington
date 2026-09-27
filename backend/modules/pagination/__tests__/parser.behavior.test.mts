@@ -93,23 +93,27 @@ describe('PaginationParser — custom limit config', () => {
 describe('PaginationParser — cursor', () => {
   it('parses cursor from default "after" param name', () => {
     const parser = new PaginationParser({ cursor: { type: 'simple' } })
-    const encoded = Buffer.from(JSON.stringify({ id: 'abc' })).toString('base64')
+    const encoded = Buffer.from(JSON.stringify({ id: 'abc' })).toString('base64url')
     expect(parser.parse({ after: encoded }).after).toBe(encoded)
   })
 
   it('uses custom cursor param name', () => {
     const parser = new PaginationParser({ cursor: { type: 'simple', paramName: 'cursor' } })
-    const encoded = Buffer.from(JSON.stringify({ id: 'xyz' })).toString('base64')
+    const encoded = Buffer.from(JSON.stringify({ id: 'xyz' })).toString('base64url')
     const result = parser.parse({ cursor: encoded })
     expect(result.after).toBe(encoded)
   })
 
-  it('accepts a configured legacy cursor alias but prefers the canonical parameter', () => {
-    const parser = new PaginationParser({
-      cursor: { type: 'simple', legacyParamNames: ['cursor'] },
-    })
-    expect(parser.parse({ cursor: 'legacy-cursor' }).after).toBe('legacy-cursor')
-    expect(parser.parse({ after: 'canonical-cursor', cursor: 123 }).after).toBe('canonical-cursor')
+  it('rejects the retired cursor alias even alongside after', () => {
+    const parser = new PaginationParser({ cursor: { type: 'simple' } })
+    for (const query of [
+      { cursor: 'legacy-cursor' },
+      { after: 'canonical-cursor', cursor: 'legacy-cursor' },
+    ]) {
+      expect(() => parser.parse(query)).toThrow(
+        expect.objectContaining({ message: 'Invalid cursor parameter', status: 400 }),
+      )
+    }
   })
 
   it('throws 400 for non-string cursor value', () => {

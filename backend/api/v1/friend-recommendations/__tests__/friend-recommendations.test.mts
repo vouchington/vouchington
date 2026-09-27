@@ -75,16 +75,12 @@ describe('GET /api/v1/my/friend-recommendations', () => {
     expect(response.body.results.length).toBeLessThanOrEqual(1)
   })
 
-  it('marks legacy cursor requests for rollout measurement', async () => {
+  it('rejects an unscoped simple cursor', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     const legacyCursor = encodeURIComponent(encodeCursor({ id: friendUser.id }))
 
-    const response = await request
-      .get(`/api/v1/my/friend-recommendations?after=${legacyCursor}`)
-      .expect(200)
-
-    expect(response.headers.deprecation).toBe('true')
+    await request.get(`/api/v1/my/friend-recommendations?after=${legacyCursor}`).expect(400)
   })
 
   it('returns empty results when no recommendations exist', async () => {

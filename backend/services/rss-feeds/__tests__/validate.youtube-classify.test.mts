@@ -1,6 +1,7 @@
 import { it, expect, vi, describe } from 'vitest'
 import { parseFeedDocument } from '@vouchington/rss-parser'
 import { fetchAndClassifyFeed } from '../validate.mts'
+import { RSS_FEED_FETCH_MAX_ITEMS } from '@services/rss-feed-items/processing-limits'
 
 const SIMPLE_RSS_XML =
   '<rss version="2.0"><channel><title>Test Feed</title>' +
@@ -36,6 +37,30 @@ describe('fetchAndClassifyFeed — feed type classification', () => {
     const result = await fetchAndClassifyFeed('https://example.com/feed.xml', { crawlerRss })
 
     expect(result).toEqual({ kind: 'feed', title: 'Test Feed', feedType: 'article' })
+  })
+
+  it('classifies items beyond the fetch-processing cap', async () => {
+    const feed = {
+      ...SIMPLE_FEED,
+      items: [
+        ...Array.from({ length: RSS_FEED_FETCH_MAX_ITEMS }, (_, index) => ({
+          link: `https://example.com/article-${index}`,
+        })),
+        { link: 'https://example.com/video', yt: { videoId: 'late-video' } },
+      ],
+    }
+    const crawlerRss = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
+      ...MOCK_FEED_RESPONSE,
+      feed,
+    })
+
+    await expect(
+      fetchAndClassifyFeed('https://example.com/feed.xml', { crawlerRss }),
+    ).resolves.toEqual({
+      kind: 'feed',
+      title: 'Test Feed',
+      feedType: 'mixed',
+    })
   })
 
   it('keeps the title of a parsed Atom feed', async () => {

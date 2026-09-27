@@ -12,6 +12,8 @@ import {
   insertTestStory,
   observeTestPostgresQueryPools,
 } from '@voucha/test-helpers'
+import { createEntityRelationWithElection } from '@voucha/test-helpers/entities/dispatch'
+import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { recoverPostCreatedEffects } from '../post-created-recovery.mts'
 
 describe('post-created recovery primary reads', () => {
@@ -41,6 +43,40 @@ describe('post-created recovery primary reads', () => {
     ])
 
     expect(observed.map(result => result.pools)).toEqual([['write'], ['write'], ['write']])
+  })
+
+  it('uses only the immutable creation source URL for recovery', async () => {
+    const user = await createTestUserDirect()
+    const sourceUrl = await insertTestUrlDirect(
+      null,
+      `https://post-recovery-${randomUUID()}.example.com/source`,
+    )
+    const relatedUrl = await insertTestUrlDirect(
+      null,
+      `https://post-recovery-${randomUUID()}.example.com/related`,
+    )
+    if (!sourceUrl || !relatedUrl) throw new Error('Test URL insertion failed')
+
+    const postWithoutSource = await insertTestPost({
+      title: 'No creation source',
+      slug: randomUUID(),
+      createdById: user.id,
+      markdown: '',
+    })
+    await createEntityRelationWithElection(postWithoutSource, relatedUrl.id, user.id, 1)
+    await expect(getPostRecoverySourceUrlIds(postWithoutSource)).resolves.toEqual([])
+
+    const postWithSource = await insertTestPost({
+      title: 'Creation source',
+      slug: randomUUID(),
+      createdById: user.id,
+      markdown: '',
+      postType: 'link',
+      urlId: sourceUrl.id,
+      creationSourceUrlId: sourceUrl.id,
+    })
+    await createEntityRelationWithElection(postWithSource, relatedUrl.id, user.id, 1)
+    await expect(getPostRecoverySourceUrlIds(postWithSource)).resolves.toEqual([sourceUrl.id])
   })
 
   it('propagates a recovered story enqueue failure for checkpoint retry', async () => {

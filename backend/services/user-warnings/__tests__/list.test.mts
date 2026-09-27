@@ -81,7 +81,7 @@ describe('listReceivedUserWarnings', () => {
     expect(secondPage.hasNextPage).toBe(false)
   })
 
-  it('accepts legacy simple cursors from previous warning pages', async () => {
+  it('rejects unscoped cursors for received warnings', async () => {
     const paginationUser = await createTestUser()
     await Promise.all(
       Array.from({ length: 3 }, (_, i) =>
@@ -94,13 +94,12 @@ describe('listReceivedUserWarnings', () => {
     )
 
     const firstPage = await listReceivedUserWarnings(paginationUser.id, { limit: 2 })
-    const secondPage = await listReceivedUserWarnings(paginationUser.id, {
-      limit: 2,
-      after: encodeCursor({ id: firstPage.warnings.at(-1)!.id }),
-    })
-
-    expect(secondPage.warnings).toHaveLength(1)
-    expect(secondPage.hasNextPage).toBe(false)
+    await expect(
+      listReceivedUserWarnings(paginationUser.id, {
+        limit: 2,
+        after: encodeCursor({ id: firstPage.warnings.at(-1)!.id }),
+      }),
+    ).rejects.toMatchObject({ status: 400 })
   })
 
   it('returns warnings ordered by created_at desc', async () => {
@@ -238,7 +237,7 @@ describe('listIssuedUserWarnings', () => {
     expect(secondPage.hasNextPage).toBe(false)
   })
 
-  it('accepts legacy simple cursors from previous issued warning pages', async () => {
+  it('rejects unscoped cursors for issued warnings', async () => {
     const paginationTarget = await createTestUser()
     const paginationIssuer = await createTestUser()
     await Promise.all(
@@ -252,14 +251,13 @@ describe('listIssuedUserWarnings', () => {
     )
 
     const firstPage = await listIssuedUserWarnings({ userId: paginationTarget.id, limit: 2 })
-    const secondPage = await listIssuedUserWarnings({
-      userId: paginationTarget.id,
-      limit: 2,
-      after: encodeCursor({ id: firstPage.warnings.at(-1)!.id }),
-    })
-
-    expect(secondPage.warnings).toHaveLength(1)
-    expect(secondPage.hasNextPage).toBe(false)
+    await expect(
+      listIssuedUserWarnings({
+        userId: paginationTarget.id,
+        limit: 2,
+        after: encodeCursor({ id: firstPage.warnings.at(-1)!.id }),
+      }),
+    ).rejects.toMatchObject({ status: 400 })
   })
 
   it('rejects a cursor scoped to another issued warning filter', async () => {

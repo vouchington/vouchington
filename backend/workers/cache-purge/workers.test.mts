@@ -51,20 +51,16 @@ describe('cache-purge worker queue boundary', () => {
     expect(purgeCacheTags).toHaveBeenCalledWith(secondChunk)
   })
 
-  // Exercises the deploy-window fallback in processors.mts: a rolling ECS deploy can have an
-  // old-code replica enqueue a job in the pre-batching `{ tag: string }` shape while a new-code
-  // replica (this worker) is already live and reading `{ tags: string[] }`. Enqueue that legacy
-  // shape directly (job.data is untyped `any` in glide-mq) to prove the worker still processes it
-  // instead of silently no-oping or throwing.
-  it('falls back to the legacy single-tag payload shape during a rolling deploy', async () => {
+  it('rejects the retired single-tag queue payload', async () => {
     const tag = `post:${crypto.randomUUID()}`
-    await cachePurgeQueue.add(
-      'processPurgeCacheTag',
-      { tag },
-      { attempts: 1, removeOnComplete: true, removeOnFail: true, priority: 10 },
-    )
-
-    expect(purgeCacheTags).toHaveBeenCalledWith([tag])
+    await expect(
+      cachePurgeQueue.add(
+        'processPurgeCacheTag',
+        { tag },
+        { attempts: 1, removeOnComplete: true, removeOnFail: true, priority: 10 },
+      ),
+    ).rejects.toThrow('Cache purge job requires tags')
+    expect(purgeCacheTags).not.toHaveBeenCalled()
   })
 
   // glide-mq is aliased to the same in-memory shim noted below, which does not enforce

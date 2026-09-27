@@ -21,10 +21,8 @@ and unenforced top-N product expectations are not exemptions.
   an exact resource scope built from normalized identifiers, filters, and ordering. Reject scoped
   cursors with missing, additional, tampered, or mismatched fields.
 - Friend recommendation cursors use the exact
-  `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. The prelaunch
-  migration decoder temporarily accepts the previous simple ID cursor; every newly emitted cursor
-  is scoped. Responses to legacy cursors carry `Deprecation: true` so access logs can measure the
-  contraction gate; legacy usage must remain at zero for the rollout contraction window.
+  `{"resource":"my-friend-recommendations","owner_id":"…","order":"id-asc"}` scope. Unscoped
+  simple ID cursors are rejected.
 - Private post relation collections use the same scope binding with a timestamp-and-UUID keyset.
   Resolve comments to their root and apply post type, clearance, audience, and community access in
   SQL before selecting the visible `limit + 1` relation rows.

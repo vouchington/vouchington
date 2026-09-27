@@ -22,7 +22,6 @@ export {
   encodeScopedPreciseTimestampCursor,
   encodeScopedTierPreciseNameCursor,
   encodeScopedTierPreciseUuidCursor,
-  isScopedPreciseTimestampCursor,
 } from '@vouchington/pagination'
 export { parseBoundedIntegerLimit } from './parser.mts'
 

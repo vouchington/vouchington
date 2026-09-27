@@ -1,7 +1,7 @@
 import CrawlerRss from '@services/crawler-rss'
 import { classifyFeedType } from '@services/rss-feed-items/media-classify'
 import { feedTextValue } from '@services/rss-feed-items/clean-helpers'
-import { buildRssFeedItemsFromFeed } from '@services/crawler-rss/clean'
+import { buildBoundedRssFeedItemsFromFeed } from '@services/crawler-rss/clean'
 import assert from 'http-assert'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
 import { CrawlerInvalidContentTypeError } from '@modules/on-error/errors'
@@ -13,14 +13,15 @@ const MISSING_FEED_CONTENT_ERROR_CODE = 'RSS_FEED_URL_MISSING_CONTENT'
 type FeedValidationDeps = {
   crawlerRss?: typeof CrawlerRss
   discoverFeedUrlFromHtml?: typeof discoverFeedUrlFromHtml
-  buildRssFeedItemsFromFeed?: typeof buildRssFeedItemsFromFeed
+  buildBoundedRssFeedItemsFromFeed?: typeof buildBoundedRssFeedItemsFromFeed
 }
 
 function resolveFeedValidationDeps(deps: FeedValidationDeps = {}) {
   return {
     crawlerRss: deps.crawlerRss ?? CrawlerRss,
     discoverFeedUrlFromHtml: deps.discoverFeedUrlFromHtml ?? discoverFeedUrlFromHtml,
-    buildRssFeedItemsFromFeed: deps.buildRssFeedItemsFromFeed ?? buildRssFeedItemsFromFeed,
+    buildBoundedRssFeedItemsFromFeed:
+      deps.buildBoundedRssFeedItemsFromFeed ?? buildBoundedRssFeedItemsFromFeed,
   }
 }
 
@@ -88,7 +89,7 @@ export async function fetchAndClassifyFeed(
   const {
     crawlerRss,
     discoverFeedUrlFromHtml: discoverFeedUrlFromHtmlFn,
-    buildRssFeedItemsFromFeed: buildRssFeedItemsFromFeedFn,
+    buildBoundedRssFeedItemsFromFeed: buildBoundedRssFeedItemsFromFeedFn,
   } = resolveFeedValidationDeps(deps)
 
   if (process.env.PLAYWRIGHT_TEST === 'true' && process.env.NODE_ENV === 'test') {
@@ -141,12 +142,14 @@ export async function fetchAndClassifyFeed(
 
   const title = extractFeedTitle(parsedFeed)
 
-  // buildRssFeedItemsFromFeed already runs classifyItemMediaType on each raw feed item.
+  // The bounded builder already runs classifyItemMediaType on each raw feed item.
   // Re-running it on the normalized output would always return 'article' because the
   // normalized items no longer carry the raw feedsmith fields (yt, enclosures, media, itunes).
   // Filter to items with a classified media_type (the field is optional on the type but
-  // always set by buildRssFeedItemsFromFeed — the type predicate ensures TS is satisfied).
-  const items = buildRssFeedItemsFromFeedFn(parsedFeed, rssFeedUrl).filter(
+  // always set by the builder — the type predicate ensures TS is satisfied).
+  const items = buildBoundedRssFeedItemsFromFeedFn(parsedFeed, rssFeedUrl, {
+    maxItems: Number.POSITIVE_INFINITY,
+  }).items.filter(
     (item): item is typeof item & { media_type: 'article' | 'audio' | 'video' } =>
       item.media_type !== undefined,
   )

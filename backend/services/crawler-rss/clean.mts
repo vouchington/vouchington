@@ -56,18 +56,9 @@ export type BoundedRssFeedItems = {
 
 export function parseRssFeedItemsFromXml(feedXml: Buffer, feedUrl?: string): RssFeedItemToUpsert[] {
   const { feed } = parseFeedDocument(feedXml)
-  return buildRssFeedItemsFromFeed(feed as ParsedFeed, feedUrl)
-}
-
-/**
- * @deprecated Prefer buildBoundedRssFeedItemsFromFeed so item-cap stats are explicit.
- */
-export function buildRssFeedItemsFromFeed(
-  feed: ParsedFeed,
-  feedUrl?: string,
-): RssFeedItemToUpsert[] {
-  return buildBoundedRssFeedItemsFromFeed(feed, feedUrl, { maxItems: Number.POSITIVE_INFINITY })
-    .items
+  return buildBoundedRssFeedItemsFromFeed(feed as ParsedFeed, feedUrl, {
+    maxItems: Number.POSITIVE_INFINITY,
+  }).items
 }
 
 export function buildBoundedRssFeedItemsFromFeed(

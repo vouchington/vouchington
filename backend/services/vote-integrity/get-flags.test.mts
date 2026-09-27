@@ -37,10 +37,24 @@ describe('getVoteIntegrityFlags pagination compatibility', () => {
     await expect(getVoteIntegrityFlagByIdFromPrimary(uuidv7())).resolves.toBeNull()
   }, 60_000)
 
-  it('accepts a legacy simple cursor continuation', async () => {
+  it('rejects a legacy simple cursor continuation', async () => {
     const flagId = await createFlag()
-    const result = await getVoteIntegrityFlags({ after: encodeCursor({ id: flagId }) })
-    expect(result.results.every(flag => flag.id < flagId)).toBe(true)
+    await expect(
+      getVoteIntegrityFlags({ after: encodeCursor({ id: flagId }) }),
+    ).rejects.toMatchObject({ status: 400 })
+  }, 60_000)
+
+  it('continues with a server-issued scoped cursor', async () => {
+    await Promise.all([createFlag(), createFlag()])
+
+    const first = await getVoteIntegrityFlags({ limit: 1 })
+    expect(first.results).toHaveLength(1)
+    expect(first.page_info.has_next_page).toBe(true)
+    expect(first.page_info.end_cursor).toEqual(expect.any(String))
+
+    const second = await getVoteIntegrityFlags({ limit: 1, after: first.page_info.end_cursor! })
+    expect(second.results).toHaveLength(1)
+    expect(second.results[0].id).not.toBe(first.results[0].id)
   }, 60_000)
 
   it('rejects a scoped cursor from another status or resource', async () => {

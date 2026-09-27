@@ -9,20 +9,19 @@ import {
 import { getTestUserSessionById } from '../../../../test-helpers/entities/user-sessions.mts'
 import '../index.mts'
 
-describe('Auth sessions routes legacy cookies', () => {
-  it('does not register legacy UUIDv4 sessions in the partitioned registry', async () => {
+describe('Auth sessions routes with signed UUIDv4 cookies', () => {
+  it('rejects UUIDv4 sessions without registering them', async () => {
     const user = await createTestUser()
     const did = legacyUuidV4()
     const sid = legacyUuidV4()
     const deviceToken = await signLegacyDeviceJwt({ did })
     const sessionToken = await signLegacySessionJwt({ did, sid, uid: user.id })
 
-    const response = await createRequest()
+    await createRequest()
       .get('/api/v1/auth/sessions')
       .set('Cookie', [`dt=${deviceToken}`, `st=${sessionToken}`])
-      .expect(200)
+      .expect(401)
 
-    expect(response.body.results).toEqual([])
     await expect(getTestUserSessionById(sid)).resolves.toBeNull()
   })
 })

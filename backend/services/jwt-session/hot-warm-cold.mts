@@ -1,4 +1,3 @@
-import { isUUIDv7 } from '@ts-shared/session-jwt'
 import { revokeSession } from './revocation.mts'
 import { clearJwtStaleIfCurrent } from './invalidation.mts'
 import { getEnrichedSessionClaims } from './enrich.mts'
@@ -27,11 +26,9 @@ export async function applyHotWarmCold(
 ): Promise<RefreshedSessionState> {
   const uid = verified.uid!
   const now = Math.floor(Date.now() / 1000)
-  const hasLegacyTokenId = !isUUIDv7(did) || !isUUIDv7(verified.sid)
   const membershipEntitlementExpired = verified.mpe !== undefined && now >= verified.mpe
   const canUseHotPath =
     !options?.verifyRevocationOnHotPath &&
-    !hasLegacyTokenId &&
     !membershipEntitlementExpired &&
     verified.rca !== undefined &&
     now < verified.rca &&

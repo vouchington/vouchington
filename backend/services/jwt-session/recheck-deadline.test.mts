@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
-import { isUUIDv7, signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
+import { signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { createTestUser, getTestPrivateUserById } from '@voucha/test-helpers'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { refreshSessionState } from './flows.mts'
@@ -66,7 +66,7 @@ describe('authenticated session recheck deadline', () => {
     expect(refreshed.session.rca).toBe(Math.floor(startedAt.getTime() / 1000) + 30 * 60)
   })
 
-  it('preserves a future recheck deadline while rotating legacy device and session ids', async () => {
+  it('rejects a signed UUIDv4 session instead of preserving its recheck deadline', async () => {
     const user = await createTestUser()
     const startedAt = new Date('2026-01-01T00:00:00.000Z')
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -86,9 +86,10 @@ describe('authenticated session recheck deadline', () => {
       fetchUser: getTestPrivateUserById,
     })
 
-    expect(isUUIDv7(refreshed.did)).toBe(true)
-    expect(isUUIDv7(refreshed.sid)).toBe(true)
-    expect(refreshed.session.rca).toBe(rca)
+    expect(refreshed.did).not.toBe(did)
+    expect(refreshed.sid).not.toBe(sid)
+    expect(refreshed.uid).toBeNull()
+    expect(refreshed.session.rca).toBeUndefined()
   })
 
   it('cold-refreshes a second session at its original deadline after another clears the stale marker', async () => {

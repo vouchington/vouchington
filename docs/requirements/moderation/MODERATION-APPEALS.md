@@ -153,13 +153,11 @@ without resetting the others.
 Approved, sent, resolved, and resolution-action substates are member-safe tracking data, not staff
 controls.
 
-`GET /api/v1/my/removed-posts` remains community-only unless `include_platform=true` is supplied,
-preserving the released cursor contract. Opted-in clients receive a globally ordered,
-cursor-paginated union of community and platform removals. Community and platform removals for the
-same post are distinct appeal targets. During the independent web/backend rollout window, an
-opted-in continuation carrying a legacy community-only cursor remains on the legacy list shape for
-the rest of that traversal; refreshing page one starts the expanded list. This prevents cursor
-errors, gaps, and duplicates across mixed deploy versions.
+`GET /api/v1/my/removed-posts` is community-only unless `include_platform=true` is supplied.
+Opted-in clients receive a globally ordered, cursor-paginated union of community and platform
+removals. Community and platform removals for the same post are distinct appeal targets. A cursor
+from one traversal cannot be used in the other; clients must restart at page one when changing
+`include_platform`.
 
 ## Backend Services
 

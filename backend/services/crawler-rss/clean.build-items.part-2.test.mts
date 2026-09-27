@@ -1,10 +1,16 @@
 import { it, expect, describe } from 'vitest'
 
-import { buildRssFeedItemsFromFeed } from './clean.mts'
+import { buildBoundedRssFeedItemsFromFeed } from './clean.mts'
 
 import type { ParsedFeed } from './types.mts'
 
-describe('buildRssFeedItemsFromFeed', () => {
+function buildItems(feed: ParsedFeed, feedUrl?: string) {
+  return buildBoundedRssFeedItemsFromFeed(feed, feedUrl, {
+    maxItems: Number.POSITIVE_INFINITY,
+  }).items
+}
+
+describe('buildItems', () => {
   it('sets pubDate and isoDate independently from dc.date', () => {
     const feed: ParsedFeed = {
       items: [
@@ -17,7 +23,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBe('Mon, 01 Jan 2024 00:00:00 GMT')
     expect(result[0].isoDate).toBe('2023-12-15T00:00:00Z')
@@ -33,7 +39,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBeUndefined()
   })
@@ -42,7 +48,7 @@ describe('buildRssFeedItemsFromFeed', () => {
     const feed: ParsedFeed = {
       items: [{ link: 'https://example.com/null-pd', guid: 'null-pd-1', pubDate: 'null' }],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBeUndefined()
   })
@@ -51,7 +57,7 @@ describe('buildRssFeedItemsFromFeed', () => {
     const feed: ParsedFeed = {
       items: [{ link: 'https://example.com/null-id', guid: 'null-id-1', isoDate: 'null' }],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].isoDate).toBeUndefined()
   })
@@ -67,7 +73,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBeUndefined()
     expect(result[0].isoDate).toBeUndefined()
@@ -84,7 +90,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBeUndefined()
     expect(result[0].isoDate).toBeUndefined()
@@ -101,7 +107,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBeUndefined()
     expect(result[0].isoDate).toBeUndefined()
@@ -117,7 +123,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBe('Sun, 06 Nov 94 08:49:37 +0000')
   })
@@ -133,7 +139,7 @@ describe('buildRssFeedItemsFromFeed', () => {
         },
       ],
     }
-    const result = buildRssFeedItemsFromFeed(feed)
+    const result = buildItems(feed)
     expect(result).toHaveLength(1)
     expect(result[0].pubDate).toBe('Mon, 01 Jan 2024 00:00:00 GMT')
     expect(result[0].isoDate).toBe('2024-01-01T00:00:00Z')

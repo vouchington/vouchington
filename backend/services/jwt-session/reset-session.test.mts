@@ -25,7 +25,7 @@ describe('resetSessionState', () => {
     expect(result.uid).toBeNull()
   })
 
-  it('rotates a valid legacy device token on reset', async () => {
+  it('rejects a signed UUIDv4 device token on reset', async () => {
     const legacyDid = legacyUuidV4()
     const deviceToken = await signLegacyDeviceJwt({ did: legacyDid, dc: 'attested' })
 

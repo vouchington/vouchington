@@ -127,7 +127,7 @@ describe('post entity listener creation dispatch', () => {
     }
   })
 
-  it('uses the prior elected relation only for legacy rows without immutable provenance', async () => {
+  it('ignores an elected relation when immutable source provenance is absent', async () => {
     try {
       await crawlUrls.obliterate()
       const creator = await createTestUser()
@@ -135,10 +135,10 @@ describe('post entity listener creation dispatch', () => {
       const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
       const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
       const postId = await insertTestPost({
-        title: `Legacy redirect recovery ${randomUUID()}`,
-        slug: `legacy-redirect-recovery-${randomUUID()}`,
+        title: `Relation-only redirect recovery ${randomUUID()}`,
+        slug: `relation-only-redirect-recovery-${randomUUID()}`,
         createdById: creator.id,
-        markdown: 'Legacy link post recovery body',
+        markdown: 'Relation-only link post recovery body',
         postType: 'link',
         urlId: canonicalUrlId,
       })
@@ -151,13 +151,13 @@ describe('post entity listener creation dispatch', () => {
         jobs.map(job => (job.data as { url_id?: string }).url_id).filter(Boolean),
       )
       expect(recoveredUrlIds.has(canonicalUrlId)).toBe(true)
-      expect(recoveredUrlIds.has(sourceUrlId)).toBe(true)
+      expect(recoveredUrlIds.has(sourceUrlId)).toBe(false)
     } finally {
       await crawlUrls.obliterate()
     }
   })
 
-  it('recovers the canonical URL for an old-writer link without a persisted raw source', async () => {
+  it('recovers the canonical URL for a link without a raw source', async () => {
     try {
       await crawlUrls.obliterate()
       const creator = await createTestUser()
