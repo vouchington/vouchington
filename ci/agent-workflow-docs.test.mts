@@ -210,6 +210,20 @@ describe('agent workflow documentation', () => {
     expect(gitAndPrs).toContain('run_in_background')
     expect(gitAndPrs).toContain('ScheduleWakeup')
     expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
+    expect(gitAndPrs).toContain('Local main is not the rebase target.')
+    expect(gitAndPrs).toContain('git rev-list --left-right --count HEAD...origin/<branch>')
+    expect(gitAndPrs).toContain('git cherry -v')
+    expect(gitAndPrs).toContain('git log --oneline --left-right')
+    expect(gitAndPrs).toContain('A stack rebase is the usual reason origin/<branch> was rewritten.')
+    expect(gitAndPrs).toContain(
+      'Unmatched commits on origin/<branch> are new commits someone pushed.',
+    )
+    expect(gitAndPrs).toContain('git range-diff is a reading aid, not the rebase cut.')
+    expect(gitAndPrs).toContain('Do not open a replacement pull request.')
+    expect(gitAndPrs).toContain('./dev/rebase-onto-main --stack')
+    expect(gitAndPrs).not.toContain(
+      'When the host denies `git push --force`, including `--force-with-lease`',
+    )
     expect(rerunReference).toContain('Ineffective rerun patterns')
   })
 
