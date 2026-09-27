@@ -439,7 +439,7 @@ calls `settleBuild` from `vouchington-tooling/compiler-build`. `backend-program-
 keeps the three-attempt bound and the backend terminal error; its exhaustive retry, configuration
 handoff, terminal error, and unexpected-error branches use in-memory tests instead of repeatedly
 building the full backend program. Filesystem-probe freshness uses `trackCompilerHost` and
-`compilerHostProbesAreFresh` from the same package, covered in `backend-program-freshness.test.mts`.
+`compilerHostProbesAreFresh` from the same package, covered in `backend-program.probes.test.mts`.
 Use a small, structural filesystem host for a stable replay baseline or an individual tracked
 operation: its `fileExists`, `readFile`, directory, and realpath answers are owned by the test
 rather than ambient filesystem state that TypeScript can probe while it builds a program. Keep real

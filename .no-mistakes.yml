@@ -1309,6 +1309,7 @@ rules:
         - .routes
         - .topic-ratings.generated
         - .hardening
+        - .probes
         - .stamping
         - .rollover
         - .spend-cap-recheck

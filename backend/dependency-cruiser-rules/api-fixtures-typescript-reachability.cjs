@@ -30,7 +30,7 @@
 // ratchet as its own reviewed change (not a silent allowlist addition) if reuse genuinely isn't
 // possible.
 //
-// 'response-contract-registry.test' and 'backend-program-freshness.test' (note the literal
+// 'response-contract-registry.test' and 'backend-program.probes.test' (note the literal
 // `.test` segment baked into the entry itself, escaped by RegExp.escape below along with the
 // rest of the string) were added after fixing a doNotFollow gap in backend/.dependency-cruiser.cjs
 // that previously hid every *.test.mts file in api-fixtures/ from this rule entirely. Both
@@ -53,7 +53,7 @@ const LEGITIMATE_TYPE_GUARD_CONSUMERS = [
   'registered-route-catalog',
   'query-contract-registry',
   'query-contract-extraction',
-  'backend-program-freshness.test',
+  'backend-program.probes.test',
 ]
 
 // Entries above are interpolated into a RegExp string below; escape regex metacharacters so a
