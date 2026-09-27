@@ -4,13 +4,14 @@ Current-user ("my") account management — identity, email addresses, profile, p
 
 ## Sub-modules
 
-| Sub-module        | Key exports                                                                                                                                                                   |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `identity`        | `updateUsername(userId, username)`, `updateProfileImageId(userId, imageId)`                                                                                                   |
-| `email-addresses` | `listEmailAddressesPage(userId, options)`, `createEmailVerificationToken(...)`, `verifyEmailVerificationToken(...)`, `setPrimaryEmailAddress(...)`, `removeEmailAddress(...)` |
-| `profile`         | `getProfile(userId)`, `updateProfileMarkdown(userId, markdown)`                                                                                                               |
-| `profile-links`   | `listProfileLinks(userId)`, `createProfileLink(...)`, `updateProfileLink(...)`, `deleteProfileLink(...)`, `reorderProfileLinks(...)`                                          |
-| `landing-pages`   | Create, list, update, delete, and set-default for user landing page configurations                                                                                            |
+| Sub-module                   | Key exports                                                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `identity`                   | `updateUsername(userId, username)`, `updateProfileImageId(userId, imageId)`                                                           |
+| `email-addresses`            | `listEmailAddressesPage(userId, options)`, `getPrimaryEmailAddress(userId)`, `setPrimaryEmailAddress(...)`, `removeEmailAddress(...)` |
+| `email-address-verification` | `createEmailVerificationToken(...)`, `verifyEmailVerificationToken(...)`                                                              |
+| `profile`                    | `getProfile(userId)`, `updateProfileMarkdown(userId, markdown)`                                                                       |
+| `profile-links`              | `listProfileLinks(userId)`, `createProfileLink(...)`, `updateProfileLink(...)`, `deleteProfileLink(...)`, `reorderProfileLinks(...)`  |
+| `landing-pages`              | Create, list, update, delete, and set-default for user landing page configurations                                                    |
 
 ## Related
 

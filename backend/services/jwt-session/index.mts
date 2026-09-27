@@ -21,8 +21,10 @@ export * from './enrich.mts'
 export {
   listActiveUserSessions,
   registerAuthenticatedSession,
-  revokeAllAuthenticatedSessions,
-  revokeAuthenticatedSession,
   touchAuthenticatedSession,
   upsertAuthenticatedSession,
 } from './user-sessions.mts'
+export {
+  revokeAllAuthenticatedSessions,
+  revokeAuthenticatedSession,
+} from './user-session-revocation.mts'

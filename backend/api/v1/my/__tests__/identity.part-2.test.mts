@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
-import { createEmailVerificationToken } from '@services/my/email-addresses'
+import { createEmailVerificationToken } from '@services/my/email-address-verification'
 
 import { connectOAuthAccountToUser } from '@services/oauth'
 

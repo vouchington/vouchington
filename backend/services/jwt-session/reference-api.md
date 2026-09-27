@@ -49,11 +49,16 @@ Manage the per-user staleness marker that triggers a cold-path DB reload.
 
 Manage session revocation by session ID.
 
+`user-session-revocation.mts` owns the registry write and Valkey ordering for session revocation.
+`revocation.mts` exposes that operation alongside the Valkey revocation checks and batch operation.
+
 ### `upsertAuthenticatedSession(currentUserId, options)`
 
 Inserts or refreshes the persistent `user_sessions` row for an authenticated JWT session. Used on
 login, session refresh, and the sessions list endpoint to keep `last_seen_at`, `expires_at`, and
 request metadata current.
+
+Session registration, touch, and listing remain in `user-sessions.mts`.
 
 ### `listActiveUserSessions(currentUserId, currentSessionId)`
 

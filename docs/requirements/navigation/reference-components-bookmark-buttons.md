@@ -8,6 +8,10 @@
 
 `EntityBookmarkButton` (`web/components/shared/entity-bookmark-button.tsx`) renders a toggle button for a single bookmark predicate (follow, subscribe, mute, block, etc.) on any entity type.
 
+Its colocated `use-entity-bookmark-state.ts` owns hydration, keyed remote state, fetch cancellation,
+sibling invalidation, and optimistic mutations. The component owns preset labels, button rendering,
+tooltips, and accessibility.
+
 **Cross-instance sync**: When multiple buttons share the same `(entityType, entityId)` pair (e.g. Follow + Subscribe + Mute + Block on a user profile), toggling one emits a `BookmarkChange` event (via `use-bookmark-invalidation.ts`) so sibling buttons for the **same predicate** can refetch and reflect updated server state. Buttons for different predicates are unaffected — the event handler filters by predicate, so toggling Subscribe does not cause Follow or Mute to refetch.
 
 **Implicit-unfollow cascade**: Adding a mute or block bookmark causes the server to also remove the follow relation for certain entity types (`topic:mute/block`, `user:block`, `rss_feed:mute`, `community:proxy_mute`). The toggling button detects this via a client-side mirror of `backend/services/bookmarks/upsert.mts IMPLICIT_UNFOLLOW` and emits an additional `BookmarkChange` for the implicitly affected follow predicate, so the Follow button refetches and stays current.
