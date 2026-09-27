@@ -3,10 +3,8 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { insertTestImage } from '../../../backend/test-helpers/entities/images.mts'
-import {
-  allowTestUserProfileImageDelivery,
-  setTestUserProfileImage,
-} from '../../../backend/test-helpers/entities/image-surface-placements.mts'
+import { allowTestUserProfileImageDelivery } from '../../../backend/test-helpers/entities/image-surface-placements.mts'
+import { setTestUserProfileImage } from '../../../backend/test-helpers/entities/media-surface-writes.mts'
 import { invalidate } from '../../../backend/services/entity-cache/index.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
