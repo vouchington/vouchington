@@ -44,10 +44,10 @@ Worker deployment values. Vouchington contains only identifier-free local defaul
 
 Voucha has not launched. Schema and application changes use one canonical fresh-bootstrap contract,
 with disposable staging databases rebuilt when necessary. Do not introduce migration-deployment
-stages, backfills, old/new readers, or a rollout plan for a prior application version. The deployment receiver
+stages, backfills, or old/new readers for prior application versions. The deployment receiver
 still orders independently built artifacts when a current interface spans them. Preserve external
-protocol compatibility and security key rotation where those have independent consumers. The key-rotation
-example below is that existing contract, not a template for application changes. See the
+protocol compatibility and security key rotation where those have independent consumers. Follow
+[One current contract](../../../AGENTS.md) and the
 [prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
 
 The repo's concrete precedent is HMAC key rotation for signed sideload image URLs

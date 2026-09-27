@@ -12,8 +12,8 @@ Review dimensions (call out concrete file:line in inline comments):
 - **Necessity & alternatives** - question whether the change should exist, whether a simpler or better approach solves the underlying problem, and whether the plan or diff reflects tunnel vision; bring an independent fresh perspective.
 - **Correctness & security** - auth/authz boundaries, injection, secret handling, race conditions.
 - **Performance & cost** - N+1 queries, accidental full-table scans, unnecessary LLM calls, oversized fan-out, hot-path allocations.
-- **Simplification** - dead code, unused exports, cruft, residue from earlier iterations, and a replaced path left beside the new one.
-- **Prelaunch storage** - this app has not launched. Flag upgrade-only migration deploys, compatibility readers/writers, activation flags, rollout plans, business state in JSON, polymorphic/encoded/array relationships, and internal UUID references without target foreign keys (even if primary or unique). Preserve external protocols, exact replay, key rotation, and fresh-bootstrap integrity.
+- **Simplification** - dead code, unused exports, cruft, and residue from earlier iterations.
+- **Prelaunch storage** - flag violations of [One current contract](../../../AGENTS.md). Also flag business state in JSON, polymorphic/encoded/array relationships, and internal UUID references without target foreign keys (even if primary or unique).
 - **DRY & indirection** - duplication that should be extracted, and over-abstracted indirection that obscures intent.
 - **Plan adherence** - does the diff actually deliver what the Plan issue accepted?
 - **Requirement coverage & description accuracy** - walk the requirement list entry by entry. Flag any requirement the diff leaves unmet with no linked deferral, any claim in the description the diff does not support, any description text a later scope change left stale, and any substantial diff scope the description never mentions. Anchor each finding to the changed line it concerns; when a description claim has no matching diff line, raise it in the review body and quote the corrected wording.

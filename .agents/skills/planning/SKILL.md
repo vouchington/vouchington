@@ -16,10 +16,9 @@ The runtime chooses its available agents; if an independent reviewer cannot run,
 Before choosing a design, record the applicable local constraints and their concrete consequences
 in the Plan's implementation steps. In particular, establish launch/deployment state from
 [`AGENTS.md`](../../../AGENTS.md), not from the presence of deployment infrastructure. A conditional
-live-deployment exception is not evidence that it applies. Voucha is not live: plan one current
-contract, delete the path it replaces, and omit compatibility readers, activation switches,
-nullable transition fields, backfills, and rollout plans. The portable planning step that asks for
-a rollout does not apply here.
+live-deployment exception is not evidence that it applies. Follow
+[One current contract](../../../AGENTS.md). The portable planning step that asks for a rollout
+does not apply here.
 
 For database work, read [`backend/data-stores/psql/AGENTS.md`](../../../backend/data-stores/psql/AGENTS.md)
 before selecting column shapes. Trace each identifier's readers and joins; record what it denotes,

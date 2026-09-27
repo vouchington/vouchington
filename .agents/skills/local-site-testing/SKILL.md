@@ -27,8 +27,8 @@ source .env
 worktree ports, creates `.env`, starts the worktree Valkey container, prepares PostgreSQL, runs
 migrations, and clears stale Next.js/Wrangler runtime output.
 
-A non-main worktree's PostgreSQL database and Valkey are ephemeral. When schema or local data is
-stale, run `./dev/reset` without asking. See [Ephemeral worktree databases](../../../AGENTS.md).
+When the worktree database or Valkey is stale, follow
+[Ephemeral worktree databases](../../../AGENTS.md).
 
 If setup fails because Docker, PostgreSQL, host auth, browser permissions, or local sockets are
 outside the agent sandbox, retry the exact command outside the sandbox before calling it blocked.

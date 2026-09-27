@@ -40,11 +40,8 @@ it. `git grep` searches tracked dotfiles as well as ordinary source files.
    identity-only references as evidence-backed non-consumers rather than changing them by string
    resemblance.
 
-2. Verify the current interface and consumer lifetime rather than assuming deploy order. For this
-   unlaunched app, update current producers and consumers together and delete the replaced path.
-   Do not add a reader for a historical application version or a rollout plan. Account for an
-   already-issued URL, external protocol, or key-rotation list only when that contract already
-   exists. Link the evidence to
+2. Verify the current interface and consumer lifetime rather than assuming deploy order. Follow
+   [One current contract](../../../AGENTS.md). Link the evidence to
    [Networking](../../../docs/overview/infrastructure/networking.md),
    [Security](../../../docs/requirements/security/SECURITY.md), and
    [Deployment decoupling](../../../docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).

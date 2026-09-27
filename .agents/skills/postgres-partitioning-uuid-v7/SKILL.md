@@ -24,6 +24,4 @@ applicable migration history, and the project
   attachment validation, retention, and rollback as one migration lifecycle.
 - Queries against a partitioned table constrain its partition key directly. When a join should
   prune both sides, supply equivalent bounds to both sides and verify the actual plan.
-- Voucha is not live. Change the canonical partitioned schema and its current readers and writers
-  together. Do not split that change into expand/contract or rollout steps. See
-  [One current contract](../../../AGENTS.md).
+- Follow [One current contract](../../../AGENTS.md) for partitioned schema changes.
