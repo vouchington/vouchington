@@ -7,6 +7,7 @@ import {
   getTestMembershipProviderEvidenceId,
   getTestMembershipSourceState,
   getTestMembershipRaw,
+  withTestMembershipUserLocked,
   runTestActionWhileMembershipUserLocked,
 } from '@voucha/test-helpers'
 import {
@@ -176,5 +177,46 @@ describe('concurrent Stripe membership source routing', () => {
         }),
       ]),
     )
+  })
+
+  it('rethrows an immediately rejected action after running the blocked callback', async () => {
+    const member = await createTestUser()
+    const failure = new Error('stripe action failed')
+    let whileBlocked = false
+
+    await expect(
+      runTestActionWhileMembershipUserLocked({
+        userId: member.id,
+        lockingQueryComment: '/* unmatched stripe lock query */',
+        startAction: () => Promise.reject(failure),
+        whileActionBlocked: async () => {
+          whileBlocked = true
+        },
+      }),
+    ).rejects.toBe(failure)
+    expect(whileBlocked).toBe(true)
+    await expect(
+      withTestMembershipUserLocked(member.id, async () => undefined),
+    ).resolves.toBeUndefined()
+  })
+
+  it('keeps the early-success diagnostic after running the blocked callback', async () => {
+    const member = await createTestUser()
+    let whileBlocked = false
+
+    await expect(
+      runTestActionWhileMembershipUserLocked({
+        userId: member.id,
+        lockingQueryComment: '/* unmatched stripe lock query */',
+        startAction: async () => undefined,
+        whileActionBlocked: async () => {
+          whileBlocked = true
+        },
+      }),
+    ).rejects.toThrow('Membership action completed before waiting for the user lock')
+    expect(whileBlocked).toBe(true)
+    await expect(
+      withTestMembershipUserLocked(member.id, async () => undefined),
+    ).resolves.toBeUndefined()
   })
 })

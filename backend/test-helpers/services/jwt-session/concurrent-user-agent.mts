@@ -15,22 +15,23 @@ export async function runTestActionsAcrossUserAgentConflict<TFirst, TSecond>(
   if (!holderProcessId) throw new Error('User-agent lock holder has no PostgreSQL process ID')
   const firstResult = await firstAction({ query: holder })
 
-  const action = Promise.resolve().then(blockedAction)
+  const actionOutcome = Promise.allSettled([Promise.resolve().then(blockedAction)] as const)
   let waitError: unknown
   try {
-    await waitForUserAgentInsertLock(action, holderProcessId)
+    await waitForUserAgentInsertLock(actionOutcome, holderProcessId)
   } catch (error) {
     waitError = error
   }
   await holder.commit()
 
-  const result = await action
+  const [outcome] = await actionOutcome
+  if (outcome.status === 'rejected') throw outcome.reason
   if (waitError) throw waitError
-  return [firstResult, result]
+  return [firstResult, outcome.value]
 }
 
 async function waitForUserAgentInsertLock(
-  action: Promise<unknown>,
+  actionOutcome: Promise<[PromiseSettledResult<unknown>]>,
   holderProcessId: number,
 ): Promise<void> {
   for (let attempt = 0; attempt < 500; attempt += 1) {
@@ -45,14 +46,13 @@ async function waitForUserAgentInsertLock(
     )
     if (rows[0]?.blocked) return
 
-    const settled = await Promise.race([
-      action.then(
-        () => true,
-        () => true,
-      ),
-      delay(10).then(() => false),
+    const [outcome] = await Promise.race([
+      actionOutcome,
+      delay(10).then(() => [undefined] as const),
     ])
-    if (settled) throw new Error('Session upsert completed before waiting for the user-agent lock')
+    if (outcome?.status === 'rejected') throw outcome.reason
+    if (outcome?.status === 'fulfilled')
+      throw new Error('Session upsert completed before waiting for the user-agent lock')
   }
   throw new Error('Session upsert did not wait for the user-agent lock')
 }

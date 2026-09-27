@@ -55,4 +55,59 @@ describe('authenticated session persistence', () => {
     })
     await expect(countTestWebUserAgents(userAgent)).resolves.toBe(1)
   })
+
+  it('rethrows an immediately rejected action and releases the user-agent holder', async () => {
+    const user = await createTestUser()
+    const firstSessionId = v7()
+    const firstDeviceId = v7()
+    const retrySessionId = v7()
+    const retryDeviceId = v7()
+    const userAgent = `session-user-agent-rejection-${crypto.randomUUID()}`
+    const expiresAt = new Date(Date.now() + 60_000)
+    const failure = new Error('blocked session failed')
+
+    await expect(
+      runTestActionsAcrossUserAgentConflict(
+        queryOptions =>
+          upsertAuthenticatedSession(
+            user.id,
+            { sid: firstSessionId, deviceId: firstDeviceId, expiresAt, userAgent },
+            queryOptions,
+          ),
+        () => Promise.reject(failure),
+      ),
+    ).rejects.toBe(failure)
+
+    await expect(
+      upsertAuthenticatedSession(user.id, {
+        sid: retrySessionId,
+        deviceId: retryDeviceId,
+        expiresAt,
+        userAgent,
+      }),
+    ).resolves.toMatchObject({ id: retrySessionId })
+  })
+
+  it('keeps the early-success diagnostic for a non-blocking action', async () => {
+    const user = await createTestUser()
+    const userAgent = `session-user-agent-early-${crypto.randomUUID()}`
+    const expiresAt = new Date(Date.now() + 60_000)
+
+    await expect(
+      runTestActionsAcrossUserAgentConflict(
+        queryOptions =>
+          upsertAuthenticatedSession(
+            user.id,
+            {
+              sid: v7(),
+              deviceId: v7(),
+              expiresAt,
+              userAgent,
+            },
+            queryOptions,
+          ),
+        async () => undefined,
+      ),
+    ).rejects.toThrow('Session upsert completed before waiting for the user-agent lock')
+  })
 })

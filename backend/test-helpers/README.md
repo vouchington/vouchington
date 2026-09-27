@@ -137,6 +137,12 @@ These helpers preserve direct database-constraint coverage while keeping SQL out
 helper should identify the operation it performs, such as rejecting a refund-intent mutation or
 reading a current membership projection; do not replace raw SQL with a generic execute wrapper.
 
+### Lock-wait actions
+
+Lock-wait helpers observe a started action with a local settled outcome before polling PostgreSQL.
+They release their holder before returning the fulfilled value or rethrowing the original rejection;
+an action that fulfills before blocking keeps the helper's completed-before-blocking diagnostic.
+
 When a centralized helper must exercise its former owning workspace directly, use an explicit
 source-relative import. Do not add that higher-layer workspace to `@voucha/test-helpers` and create
 a package cycle merely to preserve an alias that was valid before the helper moved.

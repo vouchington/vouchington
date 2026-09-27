@@ -15,6 +15,8 @@ finish before asserting. After the holder finishes, assert that captured result 
 `await expect(capture).resolves`; do not store an assertion promise that can reject unobserved while
 the test is still coordinating the race. The `no-mistakes/test-no-delayed-rejects` Oxlint rule
 enforces this ordering for const promises later asserted with `expect(...).rejects`.
+Lock-wait helpers use the same immediate settled-outcome observation while polling, then release
+their holder before returning the value or rethrowing the original action failure.
 
 ### Exact global aggregates need owned windows
 
