@@ -120,8 +120,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_ban
   ON moderation_appeals (appellant_id, community_ban_id)
   WHERE resolved_at IS NULL AND community_ban_id IS NOT NULL;
 
-DROP INDEX IF EXISTS idx_moderation_appeals__one_open_post;
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_moderation_appeals__one_open_post
   ON moderation_appeals (appellant_id, post_id, post_removal_kind)
   WHERE resolved_at IS NULL AND post_id IS NOT NULL;

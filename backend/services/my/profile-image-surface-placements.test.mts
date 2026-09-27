@@ -6,7 +6,7 @@ import {
   getImagePlacementDeliveryKey,
   getLegacyImageDeliveryKey,
   stageImagePlacementDeliveryRecord,
-  stageAllCurrentImagePlacementDeliveryRecords,
+  stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from '@services/media-delivery-safety'
 import {
   createTestUserDirect,
@@ -171,7 +171,7 @@ describe('image surface placement lifecycle', () => {
       }),
     ).toBe(false)
 
-    await stageAllCurrentImagePlacementDeliveryRecords()
+    await stageCurrentImagePlacementDeliveryRecordsForImageIds([imageId])
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({ desired_state: 'allow' })
     expect(await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(imageId))).toMatchObject({
       desired_state: 'withheld',

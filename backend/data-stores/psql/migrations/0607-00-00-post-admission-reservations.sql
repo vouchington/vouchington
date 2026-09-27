@@ -69,3 +69,8 @@ COMMENT ON COLUMN post_admission_reservations.retryable_failure IS 'Serialized t
 COMMENT ON COLUMN post_admission_reservations.committed_at IS 'Clock timestamp at which the protected mutation committed.';
 COMMENT ON COLUMN post_admission_reservations.expires_at IS 'Replay expiration for committed admission records.';
 COMMENT ON COLUMN post_admission_reservations.retention_expires_at IS 'Indexed deletion boundary for committed replays and abandoned nonterminal reservations.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_retention
+  ON post_admission_reservations (committed_post_id, retention_expires_at)
+  WHERE state = 'committed';

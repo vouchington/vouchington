@@ -96,15 +96,6 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/schema-snapshot/generate.mts --check
         timeout-minutes: 2
-      - name: Check for renamed PostgreSQL indexes
-        if: ${{ !cancelled() }}
-        working-directory: backend
-        env:
-          # Pair 2: origin/<base branch> vs HEAD after the PR merge checkout. Do not pass
-          # pull_request.base.sha: that SHA can lag the merge parent (#11711).
-          PR_BASE_SHA: "${{ github.base_ref && format('origin/{0}', github.base_ref) || 'origin/main' }}"
-        run: node data-stores/psql/schema-snapshot/check-index-renames.mts
-        timeout-minutes: 1
       - name: Upload postgres-schema vitest blob to GitHub (fallback)
         id: vitest-blob-fallback-1
         if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}

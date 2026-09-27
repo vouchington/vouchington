@@ -35,12 +35,11 @@ describe('0010-00-01-seed-agents idempotent', () => {
     expect(sql).toContain('during db:migrate')
   })
 
-  it('repairs older agents__moderators schemas before seeding baseline flags', () => {
+  it('seeds baseline flags using the canonical agents__moderators schema', () => {
     const sql = generateSeedAgentsSQL()
-    expect(sql).toContain('ALTER TABLE agents__moderators')
-    expect(sql).toContain('ADD COLUMN IF NOT EXISTS is_baseline boolean NOT NULL DEFAULT FALSE')
-    expect(sql.indexOf('ADD COLUMN IF NOT EXISTS is_baseline')).toBeLessThan(
-      sql.indexOf('INSERT INTO agents__moderators'),
+    expect(sql).not.toContain('ALTER TABLE agents__moderators')
+    expect(sql).toContain(
+      'INSERT INTO agents__moderators (agent_id, slug, on_flag_action, is_baseline)',
     )
   })
 
@@ -120,8 +119,7 @@ describe('0010-00-01-seed-agents idempotent', () => {
   it('seeds is_baseline true only for ai-generated', () => {
     const sql = generateSeedAgentsSQL()
     expect(sql).toContain('is_baseline')
-    expect(sql).toContain('ADD COLUMN IF NOT EXISTS is_baseline')
-    expect(sql).toContain('COMMENT ON COLUMN agents__moderators.is_baseline')
+    expect(sql).not.toContain('ADD COLUMN')
     expect(sql).toContain('is_baseline = EXCLUDED.is_baseline')
 
     // exactly ai-generated config has baseline true

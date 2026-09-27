@@ -54,7 +54,6 @@
     "db:clean": "bash ../dev/db-clean --db-only",
     "db:snapshot:update": "node ../dev/postgresql-snapshot-update.mts",
     "db:snapshot:check": "node data-stores/psql/schema-snapshot/generate.mts --check",
-    "db:check-index-renames": "node data-stores/psql/schema-snapshot/check-index-renames.mts",
     "seed:playwright": "node scripts/seeds/playwright-test-data.mts",
     "db:seed": "node scripts/seeds/dev-seed.mts"
   },

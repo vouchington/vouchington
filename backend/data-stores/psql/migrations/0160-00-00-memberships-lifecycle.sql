@@ -916,3 +916,8 @@ COMMENT ON COLUMN stripe_events.failed_at IS 'When processing last failed.';
 COMMENT ON COLUMN stripe_events.last_error_at IS 'When the latest processing error occurred.';
 COMMENT ON COLUMN stripe_events.last_error_message IS 'Bounded latest processing error detail.';
 COMMENT ON COLUMN stripe_events.payload IS 'Full Stripe event payload stored as JSONB.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_memberships__user_id
+  ON memberships (user_id)
+  WHERE user_id IS NOT NULL;

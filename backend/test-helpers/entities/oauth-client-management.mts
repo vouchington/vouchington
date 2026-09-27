@@ -87,16 +87,18 @@ async function updateTestOAuthClientWhileWaiting<T>(
   input: OperationWaitingOnClient<T>,
   update: (transaction: TransactionQuery) => Promise<unknown>,
 ): Promise<T> {
-  let operation: Promise<T>
+  let operationOutcome: Promise<[PromiseSettledResult<T>]>
   {
     await using transaction = await beginTransaction()
     await update(transaction)
     const holderProcessId = await getTestPostgresBackendProcessId(transaction)
-    operation = input.start()
+    operationOutcome = Promise.allSettled([input.start()] as const)
     await waitForTestPostgresLockWaiter(holderProcessId, input.waiterQueryMarker)
     await transaction.commit()
   }
-  return operation
+  const [outcome] = await operationOutcome
+  if (outcome.status === 'rejected') throw outcome.reason
+  return outcome.value
 }
 
 export async function revokeTestOAuthClient(id: string): Promise<void> {

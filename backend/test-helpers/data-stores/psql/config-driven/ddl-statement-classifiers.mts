@@ -4,14 +4,6 @@ export function isAlwaysForbiddenDrop(statement: string): boolean {
   )
 }
 
-export function isMixedAlterTableStatement(statement: string): boolean {
-  if (!/\bADD\s+(?:COLUMN\s+)?IF\s+NOT\s+EXISTS\b/is.test(statement)) return false
-  return (
-    /\b(?:DROP|RENAME|OWNER|ALTER\s+COLUMN)\b/is.test(statement) ||
-    /\bADD\s+(?!COLUMN\s+IF\s+NOT\s+EXISTS\b|IF\s+NOT\s+EXISTS\b)/is.test(statement)
-  )
-}
-
 export function isRepairAlterTable(statement: string): boolean {
   return /\bALTER\s+TABLE\b[\s\S]*(?:\bDROP\s+(?:COLUMN|CONSTRAINT)\b|\bALTER\s+COLUMN\b|\bVALIDATE\s+CONSTRAINT\b)/is.test(
     statement,

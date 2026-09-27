@@ -60,54 +60,11 @@ and its generated extension versions move together.
   writing, generated files are passed through oxfmt's `format()` API so committed bytes match
   `oxfmt --check`.
 
-## Cross-Revision Index-Rename Detection
-
-`check-index-renames.mts` (`pnpm run db:check-index-renames`) closes a gap the snapshot alone
-doesn't cover: an index **renamed** in generator/migration source (old name dropped from source, new
-name added) leaves the already-migrated database's old-named index behind forever, because
-`DROP INDEX IF EXISTS` only ever names indexes present in _current_ source. Two same-shape indexes
-under different names cost write throughput and disk, and nothing else reports it — see
-[postgres-schema-rules.md § Renaming a deployed index requires an explicit drop](../../../../docs/development/postgres-schema-rules.md#renaming-a-deployed-index-requires-an-explicit-drop).
-
-It compares `schema.json` at `git merge-base(<base>, HEAD)` against the working tree's `schema.json`
-at HEAD: an index name present at the merge-base but absent at HEAD is flagged as a rename only when
-its shape — the `pg_get_indexdef` text with the index name spliced out — reappears under a different
-name on the same table. A same-named index whose shape changed, and an index removed outright with
-no shape match at HEAD, are not renames and are not flagged; this is deliberately narrower than
-"every dropped index."
-
-The comparison accepts legacy definition-string indexes only when reading a merge-base artifact, so
-the v1 → v2 snapshot-format transition remains detectable. The working-tree artifact is always
-interpreted as v2; this history boundary is not a general snapshot compatibility mode.
-
-**Remediation:** add a migration — under `-- migration-mode: online` — with
-`DROP INDEX CONCURRENTLY IF EXISTS <old name>;`, in a migration file **added on this branch** (a
-drop that already existed before the branch started does not count). For a genuine false positive
-(e.g. a PRIMARY KEY/UNIQUE constraint reshuffle that renders as an index rename with no drop of its
-own), add the retired name to [`retired-index-allowlist.mts`](retired-index-allowlist.mts) instead;
-an allowlist entry that stops matching a detected rename is reported as stale.
-
-- `@vouchington/postgres/pg-schema-snapshot` — pure `indexShapeKey()` / `detectRenamedIndexes()`.
-- `index-rename-acknowledge.mts` — pure `collectDeclaredDrops()` / `unacknowledgedRenames()`, built
-  on `extractDroppedIndexNames()` (`../migration-runner/index-sql.mts`).
-- `index-rename-git.mts` — the only I/O: `git merge-base`/`show`/`diff` shell-outs, injected so the
-  above stay pure and unit-testable.
-- `check-index-renames.mts` — orchestrates the above, plus the CLI entry point run in CI by
-  `tests-postgres-schema.yml` right after the snapshot check; see
-  [reference-tests-schema-checks.md](../../../../docs/development/reference-tests-schema-checks.md).
-
-**Not caught:**
-
-- A rename that also changes shape (e.g. a new key column added at the same time) does not match on
-  shape and is not flagged — the old index is still orphaned. Catching it needs "every dropped
-  index," a broader scope than this check.
-- No cheap local signal: the comparison needs full git history (`git merge-base` against the PR base),
-  so the first feedback is the CI PR run, not a local hook.
-- Detection only — it does not remove an orphan already live. Every database in this repo is
-  disposable today — staging uses the private infrastructure staging database reset runbook (the
-  "Staging database reset" step of the first-deploy checklist in the private `vouchington-infra`
-  repository), which requires organization access, and local development uses `db:clean` — so the
-  value is forward-looking: it stops new orphans, it doesn't clean up existing ones.
+Local development databases can be rebuilt with `db:clean`. Staging uses the private
+infrastructure staging database reset runbook (the "Staging database reset" step of the
+first-deploy checklist in the private `vouchington-infra` repository), which requires organization
+access. Neither path resets Valkey, queues, object storage, analytics warehouse/event data, or
+infrastructure state.
 
 ## Declared Partition Policy and Physical Catalog Facts
 

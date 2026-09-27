@@ -18,3 +18,8 @@ CREATE TABLE IF NOT EXISTS retailer_countries (
 COMMENT ON TABLE retailer_countries IS 'Junction table mapping retailers to the countries they operate in.';
 COMMENT ON COLUMN retailer_countries.retailer_id IS 'The retailer topic.';
 COMMENT ON COLUMN retailer_countries.country_id IS 'The country the retailer operates in.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_retailer_countries__country_id
+  ON retailer_countries (country_id)
+  WHERE country_id IS NOT NULL;

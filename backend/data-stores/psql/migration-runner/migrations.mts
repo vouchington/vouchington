@@ -20,13 +20,7 @@ export interface RunConfigDrivenOptions {
   lockTimeoutMs?: number
 }
 
-export async function runConfigDriven(
-  rootDir: string,
-  loggerOrOptions: MigrationLogger | RunConfigDrivenOptions = silentMigrationLogger,
-) {
-  // Accept both legacy (logger) and new options-object signatures
-  const options: RunConfigDrivenOptions =
-    'log' in loggerOrOptions ? { logger: loggerOrOptions } : loggerOrOptions
+export async function runConfigDriven(rootDir: string, options: RunConfigDrivenOptions = {}) {
   const logger = options.logger ?? silentMigrationLogger
   const configDrivenFolder = options.folder ?? path.resolve(rootDir, 'config-driven')
   const lockTimeoutMs = options.lockTimeoutMs ?? configDrivenLockTimeoutMs

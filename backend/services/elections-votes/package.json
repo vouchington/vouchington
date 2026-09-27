@@ -63,7 +63,6 @@
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/elections": "workspace:^",
-    "@queues/entity-metrics-cache-refresh": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/rss-feed-discoverability": "workspace:^",

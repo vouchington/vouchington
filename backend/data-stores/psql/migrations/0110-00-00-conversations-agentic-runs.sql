@@ -406,3 +406,20 @@ COMMENT ON COLUMN conversation_participants.user_id IS 'Registered user particip
 COMMENT ON COLUMN conversation_participants.role IS 'owner = conversation initiator; admin = support staff.';
 COMMENT ON COLUMN conversation_participants.removed_at IS 'When set, this participant has been removed from the conversation (soft-remove).';
 COMMENT ON COLUMN conversation_participants.removed_by_id IS 'The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_conversations__deleted_by_id
+  ON conversations (deleted_by_id)
+  WHERE deleted_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_conversations__resolved_by_id
+  ON conversations (resolved_by_id)
+  WHERE resolved_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_conversations__subject_user_id
+  ON conversations (subject_user_id)
+  WHERE subject_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_conversations__updated_by_id
+  ON conversations (updated_by_id)
+  WHERE updated_by_id IS NOT NULL;

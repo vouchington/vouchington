@@ -64,43 +64,6 @@ export function extractIndexShapes(
   return shapes
 }
 
-/**
- * Extracts the index name targeted by every top-level `DROP INDEX` statement in the given SQL,
- * for recognizing a migration's acknowledgement of a renamed-away index (see
- * schema-snapshot/check-index-renames.mts).
- *
- * A `DROP INDEX` target parses as a `List` of `String` name parts (e.g. `["public", "idx_foo"]`
- * for a schema-qualified name); the index name itself is always the last part, so `.at(-1)` is
- * taken from each object. Handles both `DROP INDEX IF EXISTS x` and the online-mode
- * `DROP INDEX CONCURRENTLY IF EXISTS x` form, and multi-name drops (`DROP INDEX a, b`) — both
- * shapes parse identically to a `CREATE INDEX`/`DropStmt` distinction already exercised by
- * extractIndexShapes.
- *
- * Unparseable SQL throws rather than returning an empty list, matching extractIndexShapes: a
- * caller treating "no drops" as "nothing was acknowledged" would otherwise mask a malformed
- * migration as an unacknowledged rename.
- *
- * Requires loadSqlParserModule() from sql-statements.mts to have resolved before the first call.
- */
-export function extractDroppedIndexNames(sql: string): string[] {
-  if (!sql.trim()) return []
-  const result = parseSync(sql)
-  const names: string[] = []
-  for (const stmt of result.stmts ?? []) {
-    const node = stmt.stmt
-    if (!node || !('DropStmt' in node) || node.DropStmt.removeType !== 'OBJECT_INDEX') continue
-    for (const object of node.DropStmt.objects ?? []) {
-      if (!('List' in object)) continue
-      const nameParts = (object.List.items ?? []).flatMap(item =>
-        'String' in item && item.String.sval ? [item.String.sval] : [],
-      )
-      const idxname = nameParts.at(-1)
-      if (idxname) names.push(idxname)
-    }
-  }
-  return names
-}
-
 function normalizeIndexParam(param: NonNullable<ParsedIndexStmt['indexParams']>[number]): unknown {
   if (!('IndexElem' in param)) return stripLocations(param)
   const elem = param.IndexElem

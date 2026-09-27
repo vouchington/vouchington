@@ -3,11 +3,7 @@ import {
   getEntityRelationIntegrityTargetColumn,
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
-import {
-  buildCatalogGuardedColumnRepairSql,
-  buildConstraintAddAndValidateSql,
-  buildConstraintColumnSetRepairSql,
-} from './catalog-guarded-ddl.mts'
+import { buildConstraintAddAndValidateSql } from './catalog-guarded-ddl.mts'
 
 export function createEntityRelationVoteIntegrityTargets(
   electionRelations: EntityRelationMetadata[],
@@ -17,8 +13,6 @@ export function createEntityRelationVoteIntegrityTargets(
     const subjectColumn = getEntityRelationIntegritySubjectColumn(metadata)
     const shortName = metadata.table_name.replace(/^relation__/, '')
     return [
-      buildCatalogGuardedColumnRepairSql('vote_integrity_flags', targetColumn, 'UUID'),
-      buildCatalogGuardedColumnRepairSql('vote_integrity_flags', subjectColumn, 'UUID'),
       `COMMENT ON COLUMN vote_integrity_flags."${targetColumn}" IS 'Flagged ${metadata.table_name} relation, if this flag targets that relation type.';`,
       `COMMENT ON COLUMN vote_integrity_flags."${subjectColumn}" IS 'Subject identifier paired with ${targetColumn} for referential integrity.';`,
       ...buildConstraintAddAndValidateSql(
@@ -49,11 +43,6 @@ WHERE ${targetColumn} IS NOT NULL;`,
     ...electionRelations.map(getEntityRelationIntegrityTargetColumn),
   ]
   statements.push(
-    buildConstraintColumnSetRepairSql(
-      'vote_integrity_flags',
-      'chk_vote_integrity_flags__one_target',
-      allTargetColumns,
-    ),
     ...buildConstraintAddAndValidateSql(
       'vote_integrity_flags',
       'chk_vote_integrity_flags__one_target',

@@ -62,6 +62,14 @@ CREATE TABLE IF NOT EXISTS posts (
 
   votes_snapshot_xmax XID8,
   votes_snapshot_xip_count INTEGER,
+  votes_score_up DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_posts_votes_score_up CHECK (votes_score_up >= 0),
+  votes_score_none DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_posts_votes_score_none CHECK (votes_score_none >= 0),
+  votes_score_down DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_posts_votes_score_down CHECK (votes_score_down >= 0),
+  votes_count_up INT NOT NULL DEFAULT 0 CONSTRAINT chk_posts_votes_count_up CHECK (votes_count_up >= 0),
+  votes_count_none INT NOT NULL DEFAULT 0 CONSTRAINT chk_posts_votes_count_none CHECK (votes_count_none >= 0),
+  votes_count_down INT NOT NULL DEFAULT 0 CONSTRAINT chk_posts_votes_count_down CHECK (votes_count_down >= 0),
+  votes_score_sort DOUBLE PRECISION GENERATED ALWAYS AS (fn_wilson_score_lower_bound(votes_score_up, votes_score_up + votes_score_none + votes_score_down)) STORED,
+  votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (votes_score_up - votes_score_down) STORED,
   CONSTRAINT chk_posts_votes_snapshot_complete CHECK (
     (votes_snapshot_xmax IS NULL AND votes_snapshot_xip_count IS NULL)
     OR (votes_snapshot_xmax IS NOT NULL AND votes_snapshot_xip_count IS NOT NULL AND votes_snapshot_xip_count >= 0)
@@ -119,7 +127,8 @@ CREATE TABLE IF NOT EXISTS posts (
   bedrock_nova_multimodal_v1_input_token_count INT,
   CHECK (bedrock_nova_multimodal_v1_input_token_count IS NULL OR bedrock_nova_multimodal_v1_input_token_count >= 0),
   ban_evasion_post_embedding_input_sha256 BYTEA,
-  CHECK (ban_evasion_post_embedding_input_sha256 IS NULL OR OCTET_LENGTH(ban_evasion_post_embedding_input_sha256) = 32),
+  CONSTRAINT posts_ban_evasion_post_embedding_input_sha256_length
+    CHECK (ban_evasion_post_embedding_input_sha256 IS NULL OR OCTET_LENGTH(ban_evasion_post_embedding_input_sha256) = 32),
 
   -- llm moderation results
   llm_moderation_content_sha256 BYTEA NOT NULL,
@@ -662,6 +671,14 @@ CREATE TABLE IF NOT EXISTS agent_moderations (
 
   votes_snapshot_xmax XID8,
   votes_snapshot_xip_count INTEGER,
+  votes_score_up DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_agent_moderations_votes_score_up CHECK (votes_score_up >= 0),
+  votes_score_none DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_agent_moderations_votes_score_none CHECK (votes_score_none >= 0),
+  votes_score_down DOUBLE PRECISION NOT NULL DEFAULT 0 CONSTRAINT chk_agent_moderations_votes_score_down CHECK (votes_score_down >= 0),
+  votes_count_up INT NOT NULL DEFAULT 0 CONSTRAINT chk_agent_moderations_votes_count_up CHECK (votes_count_up >= 0),
+  votes_count_none INT NOT NULL DEFAULT 0 CONSTRAINT chk_agent_moderations_votes_count_none CHECK (votes_count_none >= 0),
+  votes_count_down INT NOT NULL DEFAULT 0 CONSTRAINT chk_agent_moderations_votes_count_down CHECK (votes_count_down >= 0),
+  votes_score_sort DOUBLE PRECISION GENERATED ALWAYS AS (fn_wilson_score_lower_bound(votes_score_up, votes_score_up + votes_score_none + votes_score_down)) STORED,
+  votes_score_net DOUBLE PRECISION GENERATED ALWAYS AS (votes_score_up - votes_score_down) STORED,
   CONSTRAINT chk_agent_moderations_votes_snapshot_complete CHECK (
     (votes_snapshot_xmax IS NULL AND votes_snapshot_xip_count IS NULL)
     OR (votes_snapshot_xmax IS NOT NULL AND votes_snapshot_xip_count IS NOT NULL AND votes_snapshot_xip_count >= 0)

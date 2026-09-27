@@ -33,8 +33,6 @@ CREATE TABLE copyright_notice_email_intake_responses (
   CHECK (ses_message_id IS NULL OR state IN ('sent', 'bounced'))
 );
 
-CREATE INDEX idx_copyright_email_intake_responses__pending
-  ON copyright_notice_email_intake_responses (next_attempt_at, id) WHERE state = 'pending';
 CREATE INDEX idx_copyright_email_intake_responses__ses_message
   ON copyright_notice_email_intake_responses (ses_message_id) WHERE ses_message_id IS NOT NULL;
 
@@ -83,3 +81,8 @@ COMMENT ON COLUMN copyright_notice_email_intake_responses.next_attempt_at IS 'Ea
 COMMENT ON COLUMN copyright_notice_email_intake_responses.bounced_at IS 'Time SES reported this response undeliverable.';
 COMMENT ON COLUMN copyright_notice_email_intake_responses.ses_message_id IS 'SES provider identifier for this response.';
 COMMENT ON COLUMN copyright_notice_email_intake_responses.failure_ciphertext IS 'Encrypted bounded latest transport failure.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_copyright_email_intake_responses__recoverable
+  ON copyright_notice_email_intake_responses (id)
+  WHERE state IN ('pending', 'claimed');

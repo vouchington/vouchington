@@ -232,3 +232,13 @@ COMMENT ON COLUMN user_deletion_relation_impacts.relation_table IS 'Concrete ent
 COMMENT ON COLUMN user_deletion_relation_impacts.entity_relation_id IS 'Affected entity-relation identifier; relation_table selects its concrete table.';
 COMMENT ON COLUMN user_deletion_relation_impacts.recorded_at IS 'Timestamp when deletion captured the relation for durable recomputation.';
 COMMENT ON COLUMN user_deletion_relation_impacts.recomputed_at IS 'Timestamp when all derived effects for the captured relation completed.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__completed_audit
+  ON user_deletion_external_works (request_id, id)
+  WHERE completed_at IS NOT NULL
+    AND work_key <> ('redacted:' || id::text);
+
+CREATE INDEX IF NOT EXISTS idx_user_deletion_relation_impacts__recomputed_audit
+  ON user_deletion_relation_impacts (request_id, id)
+  WHERE recomputed_at IS NOT NULL;

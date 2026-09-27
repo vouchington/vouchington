@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   entityRelationMetadatum,
+  getEntityRelationIntegritySubjectColumn,
+  getEntityRelationIntegrityTargetColumn,
   getEntityRelationVoteTableName,
 } from '@voucha/types/entities/entity-relations-metadata'
 import { createLocalTestUser } from '../../../../test-helpers/data-stores/psql/users.mts'
@@ -18,12 +21,8 @@ describe('user-subject entity relation tables', () => {
     const sql = generateEntityRelationsSql()
 
     expect(sql).toContain('outbound_ap_follow_activity_id UUID DEFAULT uuidv7()')
-    expect(sql).toContain("WHERE attrelid = 'relation__user__follow__user'::regclass")
-    expect(sql).toContain('ADD COLUMN outbound_ap_follow_activity_id UUID;')
-    expect(sql).toContain('ALTER COLUMN outbound_ap_follow_activity_id SET DEFAULT uuidv7()')
-    expect(sql).not.toContain('ALTER COLUMN outbound_ap_follow_activity_id SET NOT NULL')
-    expect(sql).not.toContain('SET outbound_ap_follow_activity_id = uuidv7()')
     expect(sql.match(/outbound_ap_follow_activity_id UUID DEFAULT uuidv7\(\)/g)).toHaveLength(1)
+    expect(sql).not.toContain('ADD COLUMN outbound_ap_follow_activity_id')
   })
 
   it('generates a concrete vote table and composite relation foreign key per election table', () => {
@@ -57,21 +56,38 @@ describe('user-subject entity relation tables', () => {
 
   it('generates concrete vote-integrity targets for every election relation', () => {
     const sql = generateEntityRelationsSql()
+    const canonicalFlagsSql = readFileSync(
+      new URL('../../migrations/0240-00-00-elections-vote-integrity.sql', import.meta.url),
+      'utf8',
+    )
+    const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
 
-    expect(sql).toContain('ADD COLUMN relation__topic__related__post_id UUID;')
-    expect(sql).toContain('ADD COLUMN relation__topic__related__post_subject_id UUID;')
-    expect(sql).toContain(
-      'COMMENT ON COLUMN vote_integrity_flags."relation__topic__related__post_id"',
-    )
-    expect(sql).toContain(
-      'COMMENT ON COLUMN vote_integrity_flags."relation__topic__related__post_subject_id"',
-    )
-    expect(sql).toContain(
-      'FOREIGN KEY (relation__topic__related__post_subject_id, relation__topic__related__post_id) REFERENCES relation__topic__related__post (subject_id, id) ON DELETE CASCADE NOT VALID',
-    )
-    expect(sql).toContain('VALIDATE CONSTRAINT vif_topic__related__post_target_fkey')
-    expect(sql).toContain("IS DISTINCT FROM ARRAY['agent_moderation_id', 'hostname_id', 'post_id'")
-    expect(sql).toContain('DROP CONSTRAINT chk_vote_integrity_flags__one_target')
+    for (const metadata of electionRelations) {
+      const targetColumn = getEntityRelationIntegrityTargetColumn(metadata)
+      const subjectColumn = getEntityRelationIntegritySubjectColumn(metadata)
+      const shortName = metadata.table_name.replace(/^relation__/, '')
+
+      expect(canonicalFlagsSql).toContain(`  ${targetColumn} UUID,`)
+      expect(canonicalFlagsSql).toContain(`  ${subjectColumn} UUID,`)
+      expect(sql).toContain(`COMMENT ON COLUMN vote_integrity_flags."${targetColumn}"`)
+      expect(sql).toContain(`COMMENT ON COLUMN vote_integrity_flags."${subjectColumn}"`)
+      expect(sql).toContain(
+        `FOREIGN KEY (${subjectColumn}, ${targetColumn}) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE NOT VALID`,
+      )
+      expect(sql).toContain(`CHECK ((${subjectColumn} IS NULL) = (${targetColumn} IS NULL))`)
+      expect(sql).toContain(`VALIDATE CONSTRAINT vif_${shortName}_target_fkey`)
+    }
+    const targetColumns = [
+      'post_id',
+      'topic_id',
+      'hostname_id',
+      'rss_feed_item_id',
+      'agent_moderation_id',
+      ...electionRelations.map(getEntityRelationIntegrityTargetColumn),
+    ]
+    expect(sql).toContain(`CHECK (num_nonnulls(${targetColumns.join(', ')}) = 1) NOT VALID`)
+    expect(sql).toContain('VALIDATE CONSTRAINT chk_vote_integrity_flags__one_target')
+    expect(sql).not.toContain('ADD COLUMN')
   })
 
   it('preserves historic binary Neutral relation audit rows without rewriting them', () => {

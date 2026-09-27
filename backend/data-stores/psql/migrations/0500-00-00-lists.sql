@@ -100,3 +100,24 @@ COMMENT ON COLUMN list_items__posts.removed_at IS 'Soft-delete timestamp; NULL m
 CREATE INDEX IF NOT EXISTS idx_lists__created_via_oauth_client_id
   ON lists (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_list_items__posts__list_id__fk
+  ON list_items__posts (list_id)
+  WHERE list_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_list_items__posts__post_id__fk
+  ON list_items__posts (post_id)
+  WHERE post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_list_items__rss_feed_items__list_id__fk
+  ON list_items__rss_feed_items (list_id)
+  WHERE list_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_list_items__rss_feed_items__rss_feed_item_id__fk
+  ON list_items__rss_feed_items (rss_feed_item_id)
+  WHERE rss_feed_item_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_lists__owner_user_id__fk
+  ON lists (owner_user_id)
+  WHERE owner_user_id IS NOT NULL;

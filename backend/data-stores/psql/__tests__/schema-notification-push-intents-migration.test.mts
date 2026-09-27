@@ -5,10 +5,6 @@ const migrationSql = readFileSync(
   new URL('../migrations/0608-00-00-notification-push-intents.sql', import.meta.url),
   'utf8',
 )
-const retentionIndexMigrationSql = readFileSync(
-  new URL('../migrations/0619-00-00-notification-push-intent-retention-index.sql', import.meta.url),
-  'utf8',
-)
 const endpointOwnershipMigrationSql = readFileSync(
   new URL('../migrations/0624-00-00-web-push-endpoint-ownership.sql', import.meta.url),
   'utf8',
@@ -22,9 +18,8 @@ describe('notification push intents migration', () => {
   })
 
   it('adds terminal retention support', () => {
-    expect(migrationSql).not.toContain('idx_notification_push_intents__terminal_retention')
-    expect(retentionIndexMigrationSql).toContain(
-      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_notification_push_intents__terminal_retention',
+    expect(migrationSql).toContain(
+      'CREATE INDEX IF NOT EXISTS idx_notification_push_intents__terminal_retention',
     )
   })
 

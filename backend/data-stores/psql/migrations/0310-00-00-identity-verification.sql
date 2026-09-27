@@ -126,3 +126,12 @@ COMMENT ON COLUMN identity_verification_attempts.released_at IS 'When an unused 
 COMMENT ON COLUMN identity_verification_attempts.consumed_at IS 'When this entitlement or attempt was consumed to create a provider verification session.';
 COMMENT ON COLUMN identity_verification_attempts.granted_by_id IS 'Administrator who issued a parent support-grant entitlement.';
 COMMENT ON COLUMN identity_verification_attempts.grant_note IS 'Required support rationale recorded on a parent support-grant entitlement.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_verified_identities__transferred_to_user_id
+  ON verified_identities (transferred_to_user_id)
+  WHERE transferred_to_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_verified_identities__user_id
+  ON verified_identities (user_id)
+  WHERE user_id IS NOT NULL;

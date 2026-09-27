@@ -131,3 +131,20 @@ COMMENT ON COLUMN moderation_training_feedbacks.review_dispute_id IS 'Review dis
 COMMENT ON COLUMN moderation_training_feedbacks.post_clearance_change_id IS 'Post clearance state change associated with this feedback.';
 COMMENT ON COLUMN moderation_training_feedbacks.input_sha256 IS 'Optional SHA-256 digest for the moderated input text.';
 COMMENT ON COLUMN moderation_training_feedbacks.metadata IS 'Structured model outputs, prompt/version references, and export hints.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__actor_user_id
+  ON moderation_training_feedbacks (actor_user_id)
+  WHERE actor_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__moderation_report_id
+  ON moderation_training_feedbacks (moderation_report_id)
+  WHERE moderation_report_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__post_clearance_change_id
+  ON moderation_training_feedbacks (post_clearance_change_id)
+  WHERE post_clearance_change_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__review_dispute_id
+  ON moderation_training_feedbacks (review_dispute_id)
+  WHERE review_dispute_id IS NOT NULL;

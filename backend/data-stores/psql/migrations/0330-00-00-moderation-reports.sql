@@ -109,3 +109,8 @@ COMMENT ON COLUMN moderation_reports.case_id IS 'The moderation case this report
 CREATE INDEX IF NOT EXISTS idx_moderation_reports__created_via_oauth_client_id
   ON moderation_reports (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_moderation_reports__reporter_user_id
+  ON moderation_reports (reporter_user_id)
+  WHERE reporter_user_id IS NOT NULL;

@@ -17,43 +17,7 @@ const ACTIVE_SUBJECT_NEWEST_INDEX_COLUMNS = 'subject_id, created_at DESC, object
  * because it propagates the index definition to all partitions.
  */
 export default () => {
-  return [
-    createPostCategoryTopicSubjectOrderIndexRepairs(),
-    ...entityRelationMetadatum.map(createEntityRelationIndexes),
-  ].join('\n\n')
-}
-
-function createPostCategoryTopicSubjectOrderIndexRepairs(): string {
-  return `
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1
-    FROM pg_indexes
-    WHERE schemaname = 'public'
-      AND indexname = 'idx_relation__post__category__topic__subject__best'
-      AND lower(indexdef) NOT LIKE '%object_id desc%'
-  ) THEN
-    DROP INDEX IF EXISTS idx_relation__post__category__topic__subject__best;
-    CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__best
-    ON "relation__post__category__topic" (${ACTIVE_SUBJECT_BEST_INDEX_COLUMNS})
-    WHERE deleted_at IS NULL;
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM pg_indexes
-    WHERE schemaname = 'public'
-      AND indexname = 'idx_relation__post__category__topic__subject__newest'
-      AND lower(indexdef) NOT LIKE '%object_id desc%'
-  ) THEN
-    DROP INDEX IF EXISTS idx_relation__post__category__topic__subject__newest;
-    CREATE INDEX IF NOT EXISTS idx_relation__post__category__topic__subject__newest
-    ON "relation__post__category__topic" (${ACTIVE_SUBJECT_NEWEST_INDEX_COLUMNS})
-    WHERE deleted_at IS NULL;
-  END IF;
-END $$;
-`.trim()
+  return entityRelationMetadatum.map(createEntityRelationIndexes).join('\n\n')
 }
 
 function createEntityRelationIndexes(metadata: EntityRelationMetadata): string {

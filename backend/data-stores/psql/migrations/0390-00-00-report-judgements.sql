@@ -73,3 +73,8 @@ COMMENT ON COLUMN moderation_report_judgements.dispatched_at IS 'Timestamp when 
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements_undispatched
   ON moderation_report_judgements (id)
   WHERE dispatched_at IS NULL AND rerun_by_id IS NULL;
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__triggering_report_id
+  ON moderation_report_judgements (triggering_report_id)
+  WHERE triggering_report_id IS NOT NULL;

@@ -101,3 +101,13 @@ COMMENT ON COLUMN images.quarantined_at IS 'When the image was copied to the CSA
 COMMENT ON COLUMN images.quarantine_s3_key IS 'S3 key in the permanent quarantine bucket. NULL until the copy succeeds.';
 COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding IS '1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1 for the image.';
 COMMENT ON COLUMN images.bedrock_nova_multimodal_v1_embedding_created_at IS 'When the image embedding was generated.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_images__created_by_id
+  ON images (created_by_id)
+  WHERE created_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_images__staged_source_cleanup
+  ON images (upload_staged_at, id)
+  WHERE upload_staged_at IS NOT NULL
+    AND upload_source_deleted_at IS NULL;

@@ -105,3 +105,12 @@ COMMENT ON COLUMN ap_inbox_deliveries.retention_expires_at IS 'Maximum retention
 COMMENT ON COLUMN ap_inbox_deliveries.last_error IS 'Latest bounded operational failure message for recovery and operator diagnostics.';
 
 COMMENT ON TABLE ap_inbox_activities IS 'Replay-dedup ledger for the ActivityPub inbox receiver. The marker commits atomically with the activity core database effect; a second delivery of the same activity id is rejected before it reaches any write-path.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_ap_inbox_deliveries__unverified_retention
+  ON ap_inbox_deliveries (retention_expires_at, id)
+  WHERE verified_at IS NULL AND retention_expires_at IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_ap_inbox_deliveries__verified_retention
+  ON ap_inbox_deliveries (retention_expires_at, id)
+  WHERE verified_at IS NOT NULL AND retention_expires_at IS NOT NULL;

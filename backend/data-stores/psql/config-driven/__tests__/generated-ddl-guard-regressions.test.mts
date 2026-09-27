@@ -19,8 +19,14 @@ describe('config-driven generated DDL guard regressions', () => {
       ),
     ).toBe('config-driven generators must not emit CREATE INDEX CONCURRENTLY')
     expect(findFirstGeneratedDdlViolation('ALTER TABLE vote_edges ADD COLUMN score INT;')).toBe(
-      'ALTER TABLE ADD COLUMN must use IF NOT EXISTS',
+      'config-driven generators must not emit ALTER TABLE ADD COLUMN',
     )
+    expect(
+      findFirstGeneratedDdlViolation('ALTER TABLE vote_edges ADD COLUMN IF NOT EXISTS score INT;'),
+    ).toBe('config-driven generators must not emit ALTER TABLE ADD COLUMN')
+    expect(
+      findFirstGeneratedDdlViolation('ALTER TABLE vote_edges ADD IF NOT EXISTS score INT;'),
+    ).toBe('config-driven generators must not emit ALTER TABLE ADD COLUMN')
     expect(findFirstGeneratedDdlViolation('DROP INDEX idx_vote_edges__id;')).toBe(
       'destructive DDL is not allowed',
     )
@@ -33,7 +39,7 @@ END $$;`),
       findFirstGeneratedDdlViolation(
         'ALTER TABLE vote_edges ADD COLUMN IF NOT EXISTS score INT, ADD CONSTRAINT chk_score CHECK (score >= 0);',
       ),
-    ).toBe('ALTER TABLE outside a DO block must only use ADD COLUMN IF NOT EXISTS actions')
+    ).toBe('config-driven generators must not emit ALTER TABLE ADD COLUMN')
     expect(
       findFirstGeneratedDdlViolation(`DO $guard$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_score') THEN
@@ -157,7 +163,21 @@ END $$;`),
       findFirstGeneratedDdlViolation(`DO $$ BEGIN
   ALTER TABLE vote_edges ADD COLUMN IF NOT EXISTS score int, ADD CONSTRAINT chk_score CHECK (score >= 0);
 END $$;`),
-    ).toBe('DO blocks with structural DDL must guard each action with a pre-check')
+    ).toBe('config-driven generators must not emit ALTER TABLE ADD COLUMN')
+    expect(
+      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attname = 'score') THEN
+    ALTER TABLE vote_edges ADD COLUMN score int;
+  END IF;
+END $$;`),
+    ).toBe('config-driven generators must not emit ALTER TABLE ADD COLUMN')
+    expect(
+      findFirstGeneratedDdlViolation(`DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attname = 'score') THEN
+    EXECUTE 'ALTER TABLE vote_edges ADD COLUMN IF NOT EXISTS score int';
+  END IF;
+END $$;`),
+    ).toBe('config-driven generators must not emit ALTER TABLE ADD COLUMN')
     expect(
       findFirstGeneratedDdlViolation(`DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attname = 'old_score') THEN

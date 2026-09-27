@@ -57,6 +57,40 @@ CREATE TABLE IF NOT EXISTS vote_integrity_flags (
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
   agent_moderation_post_id UUID,
   agent_moderation_id UUID,
+  relation__user__category__topic_id UUID,
+  relation__user__category__topic_subject_id UUID,
+  relation__post__category__topic_id UUID,
+  relation__post__category__topic_subject_id UUID,
+  relation__post__category__topic_alias_id UUID,
+  relation__post__category__topic_alias_subject_id UUID,
+  relation__post__related__post_id UUID,
+  relation__post__related__post_subject_id UUID,
+  relation__post__related__url_id UUID,
+  relation__post__related__url_subject_id UUID,
+  relation__topic__related__topic_id UUID,
+  relation__topic__related__topic_subject_id UUID,
+  relation__topic__category__topic_id UUID,
+  relation__topic__category__topic_subject_id UUID,
+  relation__topic__publisher_type__topic_id UUID,
+  relation__topic__publisher_type__topic_subject_id UUID,
+  relation__topic__faq__post_id UUID,
+  relation__topic__faq__post_subject_id UUID,
+  relation__topic__related__post_id UUID,
+  relation__topic__related__post_subject_id UUID,
+  relation__topic__related__url_id UUID,
+  relation__topic__related__url_subject_id UUID,
+  relation__topic__faq__url_id UUID,
+  relation__topic__faq__url_subject_id UUID,
+  relation__topic__guide__url_id UUID,
+  relation__topic__guide__url_subject_id UUID,
+  relation__topic__landing_page__url_id UUID,
+  relation__topic__landing_page__url_subject_id UUID,
+  relation__topic__terms_of_service__url_id UUID,
+  relation__topic__terms_of_service__url_subject_id UUID,
+  relation__rss_feed_item__category__topic_id UUID,
+  relation__rss_feed_item__category__topic_subject_id UUID,
+  relation__rss_feed_item__category__topic_alias_id UUID,
+  relation__rss_feed_item__category__topic_alias_subject_id UUID,
   flag_type vote_integrity_flag_types NOT NULL,
   details JSONB NOT NULL DEFAULT '{}',
   resolved_at TIMESTAMPTZ,
@@ -185,3 +219,16 @@ COMMENT ON COLUMN vote_weight_penalties.source_hostname_id IS 'The blocked hostn
 COMMENT ON COLUMN vote_weight_penalties.source_post_id IS 'The post that triggered this penalty (for referral_link_in_post penalties). NULL for other penalty types.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_at IS 'When the penalty was revoked.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_by_id IS 'Moderator who revoked the penalty.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__agent_moderation_post_id
+  ON vote_integrity_flags (agent_moderation_post_id)
+  WHERE agent_moderation_post_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__created_by_id
+  ON vote_weight_penalties (created_by_id)
+  WHERE created_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__user_id
+  ON vote_weight_penalties (user_id)
+  WHERE user_id IS NOT NULL;

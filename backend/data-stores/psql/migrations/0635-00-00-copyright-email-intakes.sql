@@ -145,3 +145,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_by_id IS 'Moder
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.accepted IS 'Whether the moderator accepted the structured intake.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.rationale_ciphertext IS 'Encrypted moderator rationale.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notice_id IS 'Legal case created by an accepted review, if any.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
+  ON copyright_notice_email_intakes (received_at, id);

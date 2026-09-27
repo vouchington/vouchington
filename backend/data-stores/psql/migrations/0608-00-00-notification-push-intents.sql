@@ -43,3 +43,8 @@ COMMENT ON COLUMN notification_push_intents.leased_at IS 'Timestamp when the cur
 COMMENT ON COLUMN notification_push_intents.lease_expires_at IS 'Deadline after which another worker may reclaim pending delivery.';
 COMMENT ON COLUMN notification_push_intents.suppressed_at IS 'Timestamp when live eligibility prevented push delivery.';
 COMMENT ON COLUMN notification_push_intents.delivered_at IS 'Timestamp when every reachable endpoint reached a terminal outcome.';
+
+-- Current indexes for fresh schema bootstrap.
+CREATE INDEX IF NOT EXISTS idx_notification_push_intents__terminal_retention
+  ON notification_push_intents (COALESCE(delivered_at, suppressed_at), user_id, notification_id)
+  WHERE status IN ('delivered', 'suppressed');
