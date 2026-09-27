@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { verifyCopyrightActionReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
-import { runIsolatedGlobalMediaReplayCase } from '../../../../test-helpers/vitest-isolated-global-media-replay.mts'
 
 describe('copyright notice replay routes', () => {
   beforeEach(() => {
@@ -23,8 +22,4 @@ describe('copyright notice replay routes', () => {
   it('replays a failed action only for copyright-review staff and records one scoped audit event', async () => {
     expect(await verifyCopyrightActionReplayRoute()).toBe(true)
   })
-
-  it('replays failed media registry records in a fresh isolated database', async () => {
-    await expect(runIsolatedGlobalMediaReplayCase()).resolves.toBeUndefined()
-  }, 240_000)
 })

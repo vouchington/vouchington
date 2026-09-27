@@ -43,6 +43,7 @@ export async function runIsolatedGlobalMediaReplayCase(): Promise<void> {
     DATABASE_URL: databaseUrl.toString(),
     READ_DATABASE_URL: databaseUrl.toString(),
     VALKEY_WORKER_QUEUE_URL: queueUrl.toString(),
+    VITEST_ISOLATED_GLOBAL_MEDIA_REPLAY_CHILD: databaseName,
     VITEST_CI_REPORTERS: undefined,
     VITEST_JUNIT_OUTPUT_FILE: undefined,
     VITEST_BLOB_OUTPUT_FILE: undefined,

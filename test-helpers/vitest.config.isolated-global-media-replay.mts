@@ -7,7 +7,6 @@ export default defineConfig({
     name: 'isolated-global-media-replay',
     pool: 'forks',
     isolate: true,
-    maxWorkers: 1,
     testTimeout: 30_000,
     hookTimeout: 30_000,
     teardownTimeout: 20_000,

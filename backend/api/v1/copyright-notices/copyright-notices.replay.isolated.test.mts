@@ -3,6 +3,7 @@ import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { verifyMediaDeliveryReplayRoute } from '@services/copyright-notices/route-replay-fixtures'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { runIsolatedGlobalMediaReplayCase } from '../../../../test-helpers/vitest-isolated-global-media-replay.mts'
 
 describe('isolated global media replay route', () => {
   beforeEach(() => {
@@ -21,6 +22,22 @@ describe('isolated global media replay route', () => {
   })
 
   it('replays failed media registry records only for review staff and writes one audit event', async () => {
-    expect(await verifyMediaDeliveryReplayRoute()).toBe(true)
-  })
+    let replayed: boolean
+    const isolatedDatabaseName = process.env.VITEST_ISOLATED_GLOBAL_MEDIA_REPLAY_CHILD
+    if (!isolatedDatabaseName) {
+      await runIsolatedGlobalMediaReplayCase()
+      replayed = true
+    } else {
+      const databaseUrl = process.env.DATABASE_URL
+      if (
+        !/^voucha_scope_replay_[0-9a-f]{24}$/.test(isolatedDatabaseName) ||
+        !databaseUrl ||
+        new URL(databaseUrl).pathname !== `/${isolatedDatabaseName}`
+      ) {
+        throw new Error('Global media replay requires a disposable database')
+      }
+      replayed = await verifyMediaDeliveryReplayRoute()
+    }
+    expect(replayed).toBe(true)
+  }, 240_000)
 })

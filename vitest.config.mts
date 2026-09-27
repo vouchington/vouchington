@@ -101,12 +101,12 @@ export default defineConfig({
           pool: 'forks',
           isolate: false,
           name: 'backend-aws',
-          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
           include: [
             'backend/**/*.s3.test.mts',
             'backend/modules/aws/s3.test.mts',
             'backend/modules/aws/ses.generated.test.mts',
           ],
+          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
           exclude: ['**/node_modules/**', '**/.git/**'],
           globalSetup: './test-helpers/vitest.setup.data-stores.mts',
           setupFiles: [
@@ -125,8 +125,8 @@ export default defineConfig({
           pool: 'forks',
           isolate: false,
           name: 'backend-openai',
-          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
           include: ['backend/**/*.openai*.test.mts'],
+          runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
           exclude: ['**/node_modules/**', '**/.git/**'],
           globalSetup: './test-helpers/vitest.setup.data-stores.mts',
           setupFiles: [

@@ -65,7 +65,6 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/*.openai*.test.mts',
         '**/*.openrouter.test.mts',
         '**/*.bedrock.test.mts',
-        'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts',
         '**/*.s3.test.mts',
         '**/*.stripe.test.mts',
         'backend/data-stores/analytics/**/*.test.mts',

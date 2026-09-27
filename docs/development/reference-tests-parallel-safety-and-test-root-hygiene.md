@@ -55,8 +55,10 @@ prior failure when Vitest collects files ahead or creates a fresh runner instanc
 `afterAll`, setup, collection, reset-modules, and clean-next-file cases in a one-fork subprocess.
 The intentional global staff media-replay route assertion runs in a separate child Vitest process
 against a newly created local database. Its lifecycle checks nonexistence, migrates the
-new database (including migration-owned invariant seeds), uses a distinct GlideMQ queue prefix, then drops only that exact database after the
-child exits. The parent route test remains in `backend-data-stores` so CI exercises the child case.
+new database (including migration-owned invariant seeds), uses a distinct GlideMQ queue prefix,
+then drops only that exact database after the child exits. The case belongs to
+`backend-data-stores`; a direct or full project run spawns the disposable child before touching
+the route. Only the child uses its private Vitest configuration and executes the global read.
 
 ### Stateful test helpers must be parallel-safe
 
