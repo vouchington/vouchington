@@ -6,18 +6,16 @@ Immutable bindings for non-post persisted public image surfaces. Each surface ha
 
 Not partitioned — growth: unbounded.
 
-| Column                         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                           |
-| ------------------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `placement_id`                 | `uuid`                     | no       |                     |          |           |           | Stable media placement identifier that scopes public delivery to this persisted surface use.                                      |
-| `surface_kind`                 | `text`                     | no       |                     |          |           |           | Typed persisted surface owning this image use; exactly one matching owner branch is required.                                     |
-| `image_id`                     | `uuid`                     | no       |                     |          |           |           | Immutable byte asset bound to this surface placement.                                                                             |
-| `user_id`                      | `uuid`                     | yes      |                     |          |           |           | Current user owner for a profile-image surface; replaced by retired_user_id only during hard deletion.                            |
-| `retired_user_id`              | `uuid`                     | yes      |                     |          |           |           | Tombstone user UUID retained after hard deletion so the immutable surface provenance remains auditable without a foreign key.     |
-| `topic_id`                     | `uuid`                     | yes      |                     |          |           |           | Topic owner for a logo or hero image surface.                                                                                     |
-| `community_id`                 | `uuid`                     | yes      |                     |          |           |           | Community owner for a profile or banner image surface.                                                                            |
-| `user_profile_link_id`         | `uuid`                     | yes      |                     |          |           |           | Current profile-link owner; set NULL by the foreign-key deletion action before the tombstone handoff.                             |
-| `retired_user_profile_link_id` | `uuid`                     | yes      |                     |          |           |           | Tombstone profile-link UUID retained after hard deletion so immutable surface provenance remains auditable without a foreign key. |
-| `updated_at`                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                   |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                             |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
+| `placement_id`         | `uuid`                     | no       |                     |          |           |           | Stable media placement identifier that scopes public delivery to this persisted surface use.        |
+| `surface_kind`         | `text`                     | no       |                     |          |           |           | Typed persisted surface owning this image use; exactly one matching owner branch is required.       |
+| `image_id`             | `uuid`                     | no       |                     |          |           |           | Immutable byte asset bound to this surface placement.                                               |
+| `user_id`              | `uuid`                     | yes      |                     |          |           |           | Concrete live profile owner; cleared only after terminal owner-removal retirement on hard deletion. |
+| `topic_id`             | `uuid`                     | yes      |                     |          |           |           | Topic owner for a logo or hero image surface.                                                       |
+| `community_id`         | `uuid`                     | yes      |                     |          |           |           | Community owner for a profile or banner image surface.                                              |
+| `user_profile_link_id` | `uuid`                     | yes      |                     |          |           |           | Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion. |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (placement_id)`
 
@@ -26,7 +24,7 @@ _none_
 
 **Check constraints:**
 
-- `image_surface_placements_check`: `CHECK ((((surface_kind = 'user-profile-image'::text) AND (num_nonnulls(user_id, retired_user_id) = 1) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (num_nonnulls(user_profile_link_id, retired_user_profile_link_id) = 1) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))`
+- `image_surface_placements_check`: `CHECK ((((surface_kind = 'user-profile-image'::text) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))`
 - `image_surface_placements_surface_kind_check`: `CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))`
 
 **Foreign keys:**
@@ -36,7 +34,7 @@ _none_
 - `image_surface_placements_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT`
 - `image_surface_placements_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 - `image_surface_placements_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- `image_surface_placements_user_profile_link_id_fkey`: `FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE SET NULL`
+- `image_surface_placements_user_profile_link_id_fkey`: `FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -55,5 +53,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_image_surface_placement_guard`: `CREATE TRIGGER trigger_image_surface_placement_guard BEFORE DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()`
+- `trigger_image_surface_placement_guard`: `CREATE TRIGGER trigger_image_surface_placement_guard BEFORE INSERT OR DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()`
 - `trigger_image_surface_placements_updated_at`: `CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

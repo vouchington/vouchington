@@ -637,7 +637,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'image placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_guard_image_surface_placement": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.retired_user_profile_link_id = OLD.user_profile_link_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.retired_user_id IS NOT DISTINCT FROM OLD.retired_user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.retired_user_id = OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_image_surface_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-link-image'\n    AND OLD.user_profile_link_id IS NOT NULL\n    AND NEW.user_profile_link_id IS NULL\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id\n      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE'\n    AND OLD.surface_kind = 'user-profile-image'\n    AND OLD.user_id IS NOT NULL\n    AND NEW.user_id IS NULL\n    AND NEW.placement_id = OLD.placement_id\n    AND NEW.surface_kind = OLD.surface_kind\n    AND NEW.image_id = OLD.image_id\n    AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id\n    AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id\n    AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id\n    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id\n      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)\n  THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' AND num_nonnulls(NEW.user_id, NEW.topic_id, NEW.community_id, NEW.user_profile_link_id) <> 1 THEN\n    RAISE EXCEPTION 'new image surface requires one concrete live owner' USING ERRCODE = 'check_violation';\n  END IF;\n  IF TG_OP = 'INSERT' AND EXISTS (\n    SELECT 1\n    FROM image_surface_placements existing\n    JOIN media_placements placement ON placement.id = existing.placement_id\n    WHERE placement.retired_at IS NULL\n      AND existing.surface_kind = NEW.surface_kind\n    AND existing.user_id IS NOT DISTINCT FROM NEW.user_id\n      AND existing.topic_id IS NOT DISTINCT FROM NEW.topic_id\n      AND existing.community_id IS NOT DISTINCT FROM NEW.community_id\n      AND existing.user_profile_link_id IS NOT DISTINCT FROM NEW.user_profile_link_id\n  ) THEN\n    RAISE EXCEPTION 'a public image surface has at most one current binding' USING ERRCODE = 'unique_violation';\n  END IF;\n  IF TG_OP = 'INSERT' THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'image surface placement bindings are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_guard_images_id_immutable": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_images_id_immutable()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id THEN\n    RAISE EXCEPTION 'image ids are immutable byte identities' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -666,6 +666,9 @@
     "fn_guard_membership_refund_operation_attempt_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'membership refund operation attempts cannot be deleted'; END IF;\n  IF OLD.provider_refund_id IS NULL AND NEW.provider_refund_id IS NOT NULL AND ROW(NEW.id, NEW.membership_operation_id, NEW.attempt_ordinal, NEW.provider, NEW.environment, NEW.application_id, NEW.provider_idempotency_key, NEW.amount_minor_units, NEW.currency_code, NEW.created_at) IS NOT DISTINCT FROM ROW(OLD.id, OLD.membership_operation_id, OLD.attempt_ordinal, OLD.provider, OLD.environment, OLD.application_id, OLD.provider_idempotency_key, OLD.amount_minor_units, OLD.currency_code, OLD.created_at) THEN RETURN NEW; END IF;\n  RAISE EXCEPTION 'membership refund operation attempts only allow provider refund ID enrichment';\nEND $function$\n"
     },
+    "fn_guard_ownerless_image_surface_retirement": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id\n  FOR UPDATE;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_review_dispute_subject_snapshot": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -676,7 +679,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_handoff_deleted_user_image_surfaces": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL, retired_user_id = OLD.id\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
     "fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placement_id uuid, p_revision integer, p_image_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1\n    FROM images image\n    WHERE image.id = p_image_id\n      AND image.deleted_at IS NULL\n      AND image.upload_completed_at IS NOT NULL\n      AND image.quarantine_pending_at IS NULL\n      AND image.openai_omni_moderation_flagged = FALSE\n      AND image.openai_omni_moderation_results IS NOT NULL\n      AND image.openai_omni_moderation_created_at IS NOT NULL\n      AND EXISTS (\n        SELECT 1\n        FROM media_delivery_registry_records registry\n        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)\n          AND registry.desired_state = 'allow'\n          AND registry.state = 'completed'\n      )\n  );\n$function$\n"
@@ -869,6 +872,9 @@
     },
     "fn_require_verified_membership_provider_observation_evidence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM membership_provider_evidence_records evidence\n    WHERE evidence.id = NEW.membership_provider_evidence_id\n      AND evidence.verified_at IS NOT NULL AND evidence.rejected_at IS NULL\n  ) THEN\n    RAISE EXCEPTION 'membership provider observations require verified evidence' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_retire_deleted_profile_link_image_surfaces": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_retire_deleted_profile_link_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);\n  UPDATE image_surface_placements SET user_profile_link_id = NULL\n  WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
     "fn_retire_deleted_user_image_surfaces": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_retire_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -33907,7 +33913,7 @@
     },
     "image_surface_placements": {
       "checkConstraints": {
-        "image_surface_placements_check": "CHECK ((((surface_kind = 'user-profile-image'::text) AND (num_nonnulls(user_id, retired_user_id) = 1) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (num_nonnulls(user_profile_link_id, retired_user_profile_link_id) = 1) AND (user_id IS NULL) AND (retired_user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))",
+        "image_surface_placements_check": "CHECK ((((surface_kind = 'user-profile-image'::text) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))",
         "image_surface_placements_surface_kind_check": "CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))"
       },
       "columns": {
@@ -33919,7 +33925,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "image_id": {
@@ -33944,28 +33950,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "retired_user_id": {
-          "collation": null,
-          "comment": "Tombstone user UUID retained after hard deletion so the immutable surface provenance remains auditable without a foreign key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
-        },
-        "retired_user_profile_link_id": {
-          "collation": null,
-          "comment": "Tombstone profile-link UUID retained after hard deletion so immutable surface provenance remains auditable without a foreign key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "uuid"
-        },
         "surface_kind": {
           "collation": null,
           "comment": "Typed persisted surface owning this image use; exactly one matching owner branch is required.",
@@ -33985,7 +33969,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "updated_at": {
@@ -33996,12 +33980,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "user_id": {
           "collation": null,
-          "comment": "Current user owner for a profile-image surface; replaced by retired_user_id only during hard deletion.",
+          "comment": "Concrete live profile owner; cleared only after terminal owner-removal retirement on hard deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34012,13 +33996,13 @@
         },
         "user_profile_link_id": {
           "collation": null,
-          "comment": "Current profile-link owner; set NULL by the foreign-key deletion action before the tombstone handoff.",
+          "comment": "Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "uuid"
         }
       },
@@ -34071,8 +34055,8 @@
         },
         "image_surface_placements_user_profile_link_id_fkey": {
           "columns": ["user_profile_link_id"],
-          "definition": "FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE SET NULL",
-          "onDelete": "set null",
+          "definition": "FOREIGN KEY (user_profile_link_id) REFERENCES user_profile_links(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "user_profile_links",
@@ -34372,7 +34356,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()",
+        "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE INSERT OR DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement()",
         "trigger_image_surface_placements_updated_at": "CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -37404,6 +37388,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_guard_ownerless_image_surface_retirement": "CREATE TRIGGER trigger_guard_ownerless_image_surface_retirement BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_ownerless_image_surface_retirement()",
         "trigger_media_placement_guard": "CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()",
         "trigger_media_placements_updated_at": "CREATE TRIGGER trigger_media_placements_updated_at BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -103167,6 +103152,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_retire_deleted_profile_link_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_profile_link_image_surfaces BEFORE DELETE ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_profile_link_image_surfaces()",
         "trigger_sync_user_profile_link_image_placement": "CREATE TRIGGER trigger_sync_user_profile_link_image_placement AFTER INSERT OR UPDATE OF image_id ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_link_image_placement()",
         "trigger_user_profile_links_updated_at": "CREATE TRIGGER trigger_user_profile_links_updated_at BEFORE UPDATE ON public.user_profile_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },

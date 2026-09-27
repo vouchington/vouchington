@@ -36,5 +36,6 @@ _none_
 
 **Triggers:**
 
+- `trigger_guard_ownerless_image_surface_retirement`: `CREATE TRIGGER trigger_guard_ownerless_image_surface_retirement BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_ownerless_image_surface_retirement()`
 - `trigger_media_placement_guard`: `CREATE TRIGGER trigger_media_placement_guard BEFORE DELETE OR UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_guard_media_placement()`
 - `trigger_media_placements_updated_at`: `CREATE TRIGGER trigger_media_placements_updated_at BEFORE UPDATE ON public.media_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
