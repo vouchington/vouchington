@@ -1,88 +1,12 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { TopicRecommendationForm } from '../topic-recommendation-form'
-
-import { ApiError } from '@/lib/api/error'
-
-const mockRouterPush = vi.fn<VitestLooseMock>()
-
-const mockRouterRefresh = vi.fn<VitestLooseMock>()
-
-const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
-  mockOnError: vi.fn<VitestLooseMock>().mockReturnValue('error message'),
-  mockOnSuccess: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => ({
-        push: mockRouterPush,
-        refresh: mockRouterRefresh,
-      }),
-    }) as unknown as typeof import('next/navigation'),
-)
-
-vi.mock(import('@/lib/api/client/topic-recommendations'), () => ({
-  createTopicRecommendation: vi.fn<VitestLooseMock>(),
-  fetchTopicRecommendationDuplicates: vi.fn<VitestLooseMock>().mockResolvedValue({
-    exact_topic: null,
-    pending_recommendations: [],
-    similar_topics: [],
-  }),
-  updateTopicRecommendation: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/api/client/my'), () => ({
-  updateMyIdentity: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/on-error'), () => ({
-  default: mockOnError,
-  onSuccess: mockOnSuccess,
-}))
-
-vi.mock(
-  import('@/components/ui/select'),
-  () =>
-    ({
-      Select: ({
-        children,
-        onValueChange,
-        value,
-      }: {
-        children: React.ReactNode
-        onValueChange?: (v: string) => void
-        value?: string
-      }) => (
-        <select
-          data-testid='topic-type-select'
-          value={value}
-          onChange={e => onValueChange?.(e.target.value)}
-        >
-          {children}
-        </select>
-      ),
-      SelectTrigger: () => null,
-      SelectContent: ({ children }: { children: React.ReactNode }) => children,
-      SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => (
-        <option value={value}>{children}</option>
-      ),
-      SelectValue: () => null,
-    }) as unknown as typeof import('@/components/ui/select'),
-)
-
 import {
-  createTopicRecommendation,
-  fetchTopicRecommendationDuplicates,
-} from '@/lib/api/client/topic-recommendations'
-
-const mockCreateTopicRecommendation = vi.mocked(createTopicRecommendation)
-
-const mockFetchTopicRecommendationDuplicates = vi.mocked(fetchTopicRecommendationDuplicates)
+  mockCreateTopicRecommendation,
+  mockFetchTopicRecommendationDuplicates,
+  mockOnError,
+} from '@/test-helpers/components/topic-recommendations/topic-recommendation-form.mock-support'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { TopicRecommendationForm } from '../topic-recommendation-form'
+import { ApiError } from '@/lib/api/error'
 
 describe('TopicRecommendationForm', () => {
   beforeEach(() => {
