@@ -16,8 +16,11 @@ AWS-SDK-only or `pg-copy-streams` transitive dependencies.
 
 ## Public Helpers
 
-- `processBatchCreation(...)` / `processImageBatchCreation(...)` (`utils.mts`) — assembles a batch
-  file for pending entities, submits it via `createBatch`, and records lock rows.
+- `processBatchCreation(...)` (`utils.mts`) — checks provider capacity before any optional
+  copy-existing scan, assembles a batch file for pending entities, submits it via `createBatch`, and
+  records lock rows.
+- `processImageBatchCreation(...)` (`utils.mts`) — assembles and submits image batch files under the
+  same provider-capacity limits.
 - `processBatchResultsInBatches` / `processCrawlChunkBatchResults` /
   `processImageBatchResultsInBatches` (`result-processing.mts`) — streams downloaded batch results
   and applies per-entity updates.

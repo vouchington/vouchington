@@ -87,11 +87,13 @@ describe('utils', () => {
         reason: 'inflight_job_limit_exceeded',
       })
       const reEnqueue = vi.fn<VitestLooseMock>()
+      const copyExisting = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
 
       const result = await processBatchCreation(
         {
           jobType: 'topics',
           streamPending: () => streamEntities([]),
+          copyExisting,
           reEnqueue,
         },
         dependencies,
@@ -99,16 +101,18 @@ describe('utils', () => {
 
       expect(result).toEqual({ reEnqueued: true, reason: 'inflight_job_limit_exceeded' })
       expect(reEnqueue).toHaveBeenCalledTimes(1)
+      expect(copyExisting).not.toHaveBeenCalled()
       expect(mocks.createBatch).not.toHaveBeenCalled()
     })
 
-    it('runs copyExisting before consulting batch creation limits', async () => {
+    it('consults batch creation limits before copying existing embeddings', async () => {
       const copyExisting = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+      const streamPending = vi.fn<VitestLooseMock>(() => streamEntities([]))
 
       const result = await processBatchCreation(
         {
           jobType: 'topics',
-          streamPending: () => streamEntities([]),
+          streamPending,
           copyExisting,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
@@ -119,7 +123,9 @@ describe('utils', () => {
       expect(copyExisting).toHaveBeenCalledTimes(1)
       const copyOrder = copyExisting.mock.invocationCallOrder[0]
       const limitsOrder = mocks.getBatchCreationLimits.mock.invocationCallOrder[0]
-      expect(copyOrder).toBeLessThan(limitsOrder)
+      const streamOrder = streamPending.mock.invocationCallOrder[0]
+      expect(limitsOrder).toBeLessThan(copyOrder)
+      expect(copyOrder).toBeLessThan(streamOrder)
     })
   })
 
