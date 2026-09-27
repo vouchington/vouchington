@@ -9,8 +9,8 @@ runs the same command through the `jscpd` package script.
 
 ## How the Threshold Works
 
-The configured `"minLines": 150` and `"exitCode": 1` make jscpd fail when it finds any clone that
-spans roughly 150 lines or more. A clone is one duplicated block shared by two files, so the unit
+The configured `"minLines": 100` and `"exitCode": 1` make jscpd fail when it finds any clone that
+spans roughly 100 lines or more. A clone is one duplicated block shared by two files, so the unit
 that fails is the pair of copies, not one file. jscpd's console reporter lists each clone
 (`Clone found (<format>): <file> [start:end] ... <file> [start:end]`) above a per-format summary
 table. There is no baseline and no base-branch comparison: every run judges the whole tree the same
@@ -38,10 +38,8 @@ The threshold only moves down. To tighten it:
 3. Lower `minLines` in `.jscpd.json` and the value quoted in this README in the same change, once
    the preview reports no clones.
 
-Web `*.part-N` test splits are the largest remaining clones: each part copies the same `vi.mock`
-prelude. Move the prelude into a shared mock-support module under `web/test-helpers/`, as
-[`post-card-images.mock-support.tsx`](../../web/test-helpers/components/posts/post-card-images.mock-support.tsx)
-does.
+`similarity` stays 0.85. A preview at 0.75 flags generated suites and parallel product flows, not a
+shared function to extract.
 
 ## Scope
 
@@ -77,10 +75,9 @@ To add an exception when dedupe is out of scope:
    issue), and the owner accountable for removing it.
 3. Delete the row and the glob in the change that removes the duplication.
 
-| Glob | Reason | Owner |
-| ---- | ------ | ----- |
-
-No exceptions are configured.
+| Glob                             | Reason                                                                                                                                                                                              | Owner                                                         |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `**/fallback-benefit-catalog.ts` | Intentional web copy of `backend/services/memberships/benefit-catalog.mts` for the web-first rollout window. The files stay separate. [#563](https://github.com/vouchington/vouchington/issues/563) | [#563](https://github.com/vouchington/vouchington/issues/563) |
 
 ## Files
 
