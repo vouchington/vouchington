@@ -2,13 +2,12 @@
  * Posts semantic search test helpers
  */
 
-import { beginTransaction, read, write } from '@data-stores/psql'
 import type { QueryInput, QueryOptions, QueryValues } from '@data-stores/psql/types'
 import type pg from 'pg'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { applyFilteredVectorScan } from '@modules/search-utils'
 import { isUUID } from '@modules/utils'
-import { makeRandomEmbedding } from './embeddings.mts'
+import { makeRandomEmbedding } from './embedding-vectors.mts'
 
 /** Hard cap so this helper cannot be used as an unbounded search API. */
 export const MAX_POST_SEMANTIC_FIXTURE_SCOPE_IDS = 32
@@ -29,6 +28,7 @@ export async function queryPostSemanticFixturesFromPrimary<Row extends pg.QueryR
     throw new Error('Post semantic fixture queries must use toolsSearchPostsSemantic')
   }
 
+  const { beginTransaction, read } = await import('@data-stores/psql')
   await using transaction = await beginTransaction()
   await applyFilteredVectorScan(transaction)
   const result = isQueryOptions(valuesOrOptions)
@@ -135,6 +135,7 @@ export async function addDummyEmbeddingToPost(
     WHERE id = ${postId}
   `)
 
+  const { write } = await import('@data-stores/psql')
   await write(query)
 }
 
@@ -142,6 +143,7 @@ export async function setPostEmbeddingContentSha256KeepingInput(
   postId: string,
   contentSha256: Buffer,
 ): Promise<void> {
+  const { write } = await import('@data-stores/psql')
   await write(sql`
     UPDATE posts
     SET bedrock_nova_multimodal_v1_content_sha256 = ${contentSha256}

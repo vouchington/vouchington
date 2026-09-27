@@ -53,6 +53,10 @@ Reusable root scripts call [`ci/run-vitest-project-group.mts`](../../ci/run-vite
 PostgreSQL/Valkey-backed analytics integration, data-store, and remaining mock projects. The
 aggregate backend groups compose both sets.
 
+Pure test-helper validation belongs to `backend-test-helpers` and must not initialize PostgreSQL
+merely by importing a helper. A helper test that intentionally inspects the live PostgreSQL pools,
+such as `bluesky-link-authorizations.test.mts`, belongs to `backend-data-stores` instead.
+
 Do not force a reporter for local Vitest runs; Vitest's default reporter behavior automatically uses `minimal` when it detects an AI coding agent. CI reporter wiring lives in `vitest.config.mts` and is activated by workflow env vars.
 
 Backend Vitest projects alias `glide-mq` to an inline test shim. The shim drain waits for flushed

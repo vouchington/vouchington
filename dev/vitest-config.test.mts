@@ -75,6 +75,16 @@ describe('dev-tools Vitest config', () => {
         'web-storybook-component-coverage',
         'web/storybook/__tests__/component-story-coverage.test.ts',
       ],
+      ['backend-data-stores', 'backend/test-helpers/entities/bluesky-link-authorizations.test.mts'],
+      ['backend-test-helpers', 'backend/test-helpers/entities/posts-semantic.test.mts'],
+      [
+        'backend-no-data-mocks',
+        'backend/services/bedrock-embeddings-batch/orchestrator/results.no-data.mock.test.mts',
+      ],
+      [
+        'backend-no-data-mocks',
+        'backend/services/mcp-tools/catalog/build-mcp-catalog.no-data.mock.test.mts',
+      ],
     ] as const) {
       const owners = vitestProjects.filter(project => {
         const included =
