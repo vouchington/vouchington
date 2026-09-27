@@ -1,3 +1,4 @@
+import { vouchaScopeGraph } from './scope-graph.mts'
 import {
   hasScope,
   SCOPE_DEFINITIONS,
@@ -24,24 +25,11 @@ export function listScopesForAudience(
   audience: ScopeAudience,
   surface: ScopeCredentialSurface,
 ): ApiScope[] {
-  return (Object.keys(SCOPE_DEFINITIONS) as ApiScope[])
-    .filter(scope => {
-      const definition = SCOPE_DEFINITIONS[scope]
-      return definition.audience === audience && definition.surfaces.includes(surface)
-    })
-    .sort()
+  return vouchaScopeGraph(SCOPE_DEFINITIONS).listScopesForAudience(audience, surface) as ApiScope[]
 }
 
 // Adds each scope's prerequisite (for example `cards:read` for `cards:write`), so the sorted
 // result passes `validateScopeSet`.
 export function withScopePrerequisites(scopes: readonly ApiScope[]): ApiScope[] {
-  const result = new Set<ApiScope>()
-  for (const scope of scopes) {
-    let current: ApiScope | undefined = scope
-    while (current && !result.has(current)) {
-      result.add(current)
-      current = SCOPE_DEFINITIONS[current].requires as ApiScope | undefined
-    }
-  }
-  return [...result].sort()
+  return vouchaScopeGraph(SCOPE_DEFINITIONS).expandPrerequisites(scopes) as ApiScope[]
 }

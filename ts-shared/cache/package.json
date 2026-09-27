@@ -21,6 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@ts-shared/utils": "workspace:^"
+    "@ts-shared/utils": "workspace:^",
+    "@vouchington/utils": "0.5.3"
   }
 }

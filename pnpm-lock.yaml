@@ -2313,8 +2313,8 @@ importers:
   backend/modules/http-signatures:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   backend/modules/markdown-extraction:
     dependencies:
@@ -2443,7 +2443,11 @@ importers:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
 
-  backend/modules/scopes: {}
+  backend/modules/scopes:
+    dependencies:
+      '@vouchington/utils':
+        specifier: 0.5.3
+        version: 0.5.3
 
   backend/modules/search-utils:
     dependencies:
@@ -2463,8 +2467,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       stripe:
         specifier: ^22.6.2
         version: 22.6.2(@types/node@26.6.2)
@@ -2488,8 +2492,8 @@ importers:
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   backend/modules/utils:
     dependencies:
@@ -2515,8 +2519,8 @@ importers:
         specifier: 0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       '@vouchington/uuid-v7':
         specifier: 0.0.0
         version: 0.0.0
@@ -6631,8 +6635,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -6973,8 +6977,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -7461,8 +7465,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12536,6 +12540,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../backend/config
+      '@vouchington/utils':
+        specifier: 0.5.3
+        version: 0.5.3
       isbot:
         specifier: ^5.2.2
         version: 5.2.2
@@ -12736,6 +12743,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../utils
+      '@vouchington/utils':
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/data-points:
     dependencies:
@@ -12746,40 +12756,40 @@ importers:
   ts-shared/deploy-environment:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/env-contract:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/feature-flags:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/feed-capabilities: {}
 
   ts-shared/languages:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/money:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/request-client-info:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/route-classification:
     dependencies:
@@ -12795,8 +12805,8 @@ importers:
         specifier: 0.0.1
         version: 0.0.1
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -12813,8 +12823,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
       fast-xml-parser:
         specifier: ^5.11.1
         version: 5.11.1
@@ -12822,8 +12832,8 @@ importers:
   ts-shared/url-signing:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/user-profile-collections:
     dependencies:
@@ -12840,14 +12850,14 @@ importers:
         specifier: 0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   ts-shared/utm:
     dependencies:
       '@vouchington/utils':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: 0.5.3
+        version: 0.5.3
 
   web:
     dependencies:
@@ -18152,8 +18162,8 @@ packages:
     resolution: {integrity: sha512-yPPBBVBMPUWo/1lACkopTRFvyVucV9Bp7PEfDdP6A4+oMNgbafLcZU+RjVyHyJiih7Ujdbbae0YUDmx30EyebA==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/utils@0.5.1':
-    resolution: {integrity: sha512-hNUYR/0zY0AudHI6ECb/w+jipULG2hLlM4bbSlHUu7ehVk9A9H9ZV1F0b9Qh00yk+w41L2jvZBLMQaEaZOMzcg==}
+  '@vouchington/utils@0.5.3':
+    resolution: {integrity: sha512-bLWguQwRGcQMlnv+1Zk0SiyeONHMUjth1sgGmGzG0YyIFTnQniLMt7bOzrVCnBx6K6DCgrj72MKcf4/Cy4IO6w==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/uuid-v7@0.0.0':
@@ -27180,7 +27190,7 @@ snapshots:
 
   '@vouchington/utils@0.4.1': {}
 
-  '@vouchington/utils@0.5.1': {}
+  '@vouchington/utils@0.5.3': {}
 
   '@vouchington/uuid-v7@0.0.0':
     dependencies:

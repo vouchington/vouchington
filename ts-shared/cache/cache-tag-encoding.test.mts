@@ -5,11 +5,11 @@ import {
   decodeCacheTagPathSegment,
   encodeCacheTagValue,
   isValidCacheTag,
-} from './cache-tag-encoding.mts'
-import { deriveEntityCacheTags, postTag, topicTag, userTag, hostnameTag } from './cache-tags.mts'
+} from '@vouchington/utils/cache-tags'
+import { deriveEntityCacheTags, hostnameTag, postTag, topicTag, userTag } from './cache-tags.mts'
 
 // Cloudflare's accepted Cache-Tag alphabet, characterized against the live staging purge
-// endpoint: printable ASCII excluding space, at most 1024 bytes, and one invalid tag rejects
+// endpoint: printable ASCII excluding space and comma, at most 1024 bytes, and one invalid tag rejects
 // the whole batch. These cases are the contract the encoder exists to satisfy.
 const CLOUDFLARE_REJECTS = [
   ['space', 'new york city', 'topic:new%20york%20city'],
@@ -37,6 +37,7 @@ describe('isValidCacheTag', () => {
     expect(isValidCacheTag('topic:a\u007fb')).toBe(false)
     expect(isValidCacheTag('topic:a\u0001b')).toBe(false)
     expect(isValidCacheTag('topic:new\u00a0york')).toBe(false)
+    expect(isValidCacheTag('topic:a,b')).toBe(false)
     expect(isValidCacheTag(`topic:${'a'.repeat(MAX_CACHE_TAG_BYTES)}`)).toBe(false)
   })
 })

@@ -47,14 +47,17 @@ confirmed root cause per run without changing dependencies or code.
 | `@vouchington/wikimedia`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [vouchington/vouchington-platform](https://github.com/vouchington/vouchington-platform)         |
 | `@vouchington/worker-runtime`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [vouchington/vouchington-platform](https://github.com/vouchington/vouchington-platform)         |
 
-Vouchington pins `@vouchington/utils` exactly at `0.5.1` in its established direct consumers:
-`@modules/http-signatures`, `@modules/stripe`, `@modules/token-secrets`, `@modules/utils`, `@services/oauth-github`,
-`@ts-shared/deploy-environment`, `@ts-shared/env-contract`, `@ts-shared/feature-flags`,
+Vouchington pins `@vouchington/utils` exactly at `0.5.3` in its direct consumers:
+`@modules/http-signatures`, `@modules/scopes`, `@modules/stripe`, `@modules/token-secrets`, `@modules/utils`,
+`@services/memberships`, `@services/moderation-reports`, `@services/oauth-github`,
+`@ts-shared/cache`, `@ts-shared/deploy-environment`, `@ts-shared/env-contract`, `@ts-shared/feature-flags`,
 `@ts-shared/languages`, `@ts-shared/money`, `@ts-shared/request-client-info`,
 `@ts-shared/session-jwt`, `@ts-shared/ui-messages`, `@ts-shared/url-signing`,
-`@ts-shared/utils`, and `@ts-shared/utm`. `@services/moderation-reports` also pins `0.5.1` for the
-`moderation` subpath, and `@services/memberships` pins it for bounded provider-operation
-concurrency.
+`@ts-shared/utils`, `@ts-shared/utm`, and `@voucha/cloudflare-worker`.
+`@modules/scopes` compiles the product catalogue through `scopes`. `@ts-shared/cache` mints tags
+through `cache-tags`. The Cloudflare Worker reads tunnel envelopes through `sentry-envelope`.
+`@services/moderation-reports` uses the `moderation` subpath, and `@services/memberships` uses the
+package for bounded provider-operation concurrency.
 Generic algorithms live in the platform package; these local packages retain Voucha import paths,
 product policy, runtime configuration, and HTTP error contracts.
 
