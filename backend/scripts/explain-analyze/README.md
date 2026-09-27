@@ -40,6 +40,17 @@ pnpm run explain:run
 The topic- and post-metrics scenarios use full batch sizes of 100 and 200 IDs. Their plan gates
 reject correlated metric SubPlans and source work above the normal seed's requested-ID ceilings in
 both CI plan-cache modes.
+RSS feed scenarios gate the materialized eligible cohort and one story-winner selection, and
+bound effective item/source rows plus join-filter rejections, including loops and filtered or
+rechecked scan rows. The budgets derive from the normal RSS seed sizes in
+`seed-data/common.mts`; buffer totals and timing remain diagnostic evidence. Ordinary and heavy
+follow scenarios share those budgets with a sparse source-topic filter and a text-filtered
+high-cardinality story whose feed must return one canonical representative. The skew scenario
+reuses the story-projection cohort with a dedicated search token rather than adding another
+population. Ordinary, heavy-follow, and sparse scenarios capture the first and continuation pages
+and reject repeated direct stories or delivery IDs across them. The skewed story is exhausted by
+its single canonical delivery, so it asserts `has_next_page=false` instead of replaying an empty
+continuation. Global RSS recency and semantic search keep their independent pagination gates.
 The verified OAuth-client scenario interleaves a small active verified subset through a larger
 unverified population and uses a late keyset cursor with exactly 102 verified rows remaining.
 Its pagination gate requires

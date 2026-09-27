@@ -11,6 +11,7 @@ import { assertCommittedAdmissionResponsePlanShapeIfApplicable } from './plan-ad
 import { assertTopicImportAttemptPlanShapeIfApplicable } from './plan-topic-import-attempts-gate.mts'
 import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-remote-followers-gate.mts'
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-review-succession-gate.mts'
+import { assertRssFeedCandidatesAreSetBased } from './plan-rss-feed-candidates-gate.mts'
 
 const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
   'relation__post__category__topic',
@@ -60,6 +61,7 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   assertPostMetricsBatchIsCandidateBounded(result)
   assertTopicMetricsBatchIsCandidateBounded(result)
   assertTopicViewerCountsDiscussionsUsesCandidateBind(result)
+  assertRssFeedCandidatesAreSetBased(result)
   assertPaginationPlanShape(result)
 }
 

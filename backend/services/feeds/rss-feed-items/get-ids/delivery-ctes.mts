@@ -1,7 +1,7 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { buildFeedTypeCondition } from '../../sql-builders/index.mts'
 import type { RssFeedItemFeedOptions } from '../../types.mts'
 import { appendDirectCandidateCTE } from './direct-candidate-cte.mts'
+import { appendDirectWinnerCTE } from './direct-winner-cte.mts'
 
 export function appendDeliveryCTEs(
   query: SQLStatement,
@@ -57,7 +57,7 @@ export function appendDeliveryCTEs(
     hashtagAliasIds,
     hasUnknownHashtag,
   })
-  appendDirectFeedItemsCTE(query, { feedType, minScoreFollowRssFeeds, minScoreFollowTopics })
+  appendDirectWinnerCTE(query)
   appendSharedFeedItemsCTE(query, { cutoffDate, currentUserId, includeSharedItems })
   return query.append(sql`
     ),
@@ -66,40 +66,6 @@ export function appendDeliveryCTEs(
       UNION ALL
       SELECT * FROM shared_rss_feed_items
     )`)
-}
-
-function appendDirectFeedItemsCTE(
-  query: SQLStatement,
-  {
-    feedType,
-    minScoreFollowRssFeeds,
-    minScoreFollowTopics,
-  }: {
-    feedType: RssFeedItemFeedOptions['feed_type']
-    minScoreFollowRssFeeds: number
-    minScoreFollowTopics: number
-  },
-): void {
-  query.append(sql`
-    ),
-    direct_rss_feed_items AS NOT MATERIALIZED (
-      SELECT direct_candidate_rss_feed_items.*
-      FROM direct_candidate_rss_feed_items
-      WHERE 1 = 1
-  `)
-  query.append(
-    buildFeedTypeCondition(feedType ?? 'all', {
-      sourceType: 'rss_feeds',
-      scoreColumn: 'direct_candidate_rss_feed_items.votes_score_net',
-      followedCTEAlias: 'followed_rss_feeds',
-      followedCTEColumn: 'rss_feed_id',
-      topicsConditions: [],
-      minScoreSource: minScoreFollowRssFeeds,
-      minScoreTopics: minScoreFollowTopics,
-      sourceMatchColumn: 'direct_candidate_rss_feed_items.matches_source',
-      topicsMatchColumn: 'direct_candidate_rss_feed_items.matches_topics',
-    }),
-  )
 }
 
 function appendSharedFeedItemsCTE(

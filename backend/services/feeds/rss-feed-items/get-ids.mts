@@ -80,22 +80,6 @@ export async function getRssFeedItemFeedIds(
     hasUnknownHashtag: options.has_unknown_hashtag,
   })
   appendPaginationCTEs(query, {
-    directCandidateFilters: {
-      currentUserId,
-      currentUserIsAdministrator,
-      feedType: feed_type,
-      hasRelatedPosts: options.has_related_posts,
-      includeDirectItems,
-      itemCutoffId: cutoffDate ? itemCutoffId : null,
-      mediaTypes: media_types,
-      minScoreFollowRssFeeds: min_score_follow_rss_feeds,
-      minScoreFollowTopics: min_score_follow_topics,
-      textSearchQuery: options.text_search_query,
-      topicIds: options.topic_ids,
-      hashtagTopicIds: options.hashtag_topic_ids,
-      hashtagAliasIds: options.hashtag_alias_ids,
-      hasUnknownHashtag: options.has_unknown_hashtag,
-    },
     itemIdLt: item_id_lt,
     publishedLt: published_lt,
     safeLimit,
