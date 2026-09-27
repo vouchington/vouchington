@@ -84,7 +84,7 @@ describe('PostgreSQL ordering guard config', () => {
 
     expect(directiveInventory).toEqual([
       'backend/data-stores/psql/config-driven/0503-00-00-youtube-rss-unreliable-status-codes.sql:1',
-      'backend/services/bedrock-embeddings-batch/orchestrator/save.mts:1',
+      'backend/services/bedrock-embeddings-batch/orchestrator/reconcile-existing.mts:1',
       'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
       'backend/services/communities/list-items/add.mts:1',
       'backend/services/crawl-chunks/create.mts:1',
