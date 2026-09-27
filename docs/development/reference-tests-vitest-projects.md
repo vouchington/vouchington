@@ -12,7 +12,8 @@ only by `VITEST_MAX_WORKERS` — set it via `parseVitestMaxWorkers()` /
 `parseStorybookBrowserMaxWorkers()` (`test-helpers/vitest-config/environment.mts`), never a literal.
 A test that cannot run in parallel with the rest of its suite needs to be fixed, not quarantined
 behind a worker pin: assert properties scoped to the rows the test owns (randomized IDs, prefix
-matching) instead of a global snapshot of shared state. A `sequence.groupOrder` sequential barrier
+matching) instead of a global snapshot of shared state. Measure a singleton ledger delta on the
+connection that locks that ledger row and performs the owned write. A `sequence.groupOrder` sequential barrier
 remains available for the rare case that genuinely cannot be made parallel-safe.
 
 Every project must declare an explicit `testTimeout` and `hookTimeout`, enforced by

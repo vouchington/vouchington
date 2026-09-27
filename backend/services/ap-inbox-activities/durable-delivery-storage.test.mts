@@ -4,18 +4,16 @@ import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-sto
 import {
   ageActivityPubInboxCleanupFixturesForTest,
   cleanupActivityPubInboxStorageFixturesForTest,
-  deleteActivityPubInboxDeliveriesForTest,
   expireActivityPubInboxDeliveryForTest,
   getActivityPubInboxRetentionStateForTest,
   getActivityPubInboxStorageTriggerDefinitionsForTest,
   getExistingActivityPubInboxDeliveryIdsForTest,
-  insertActivityPubInboxDeliveryThenRollbackForTest,
   makeActivityPubInboxFailureExpiredForTest,
+  measureActivityPubInboxOwnedStorageCounterForTest,
 } from '@voucha/test-helpers'
 import {
   activityPubInboxDeliveryTransitions,
   expireActivityPubInboxDeliveries,
-  getActivityPubInboxStorageSnapshot,
   type ActivityPubInboxEnvelope,
 } from './index.mts'
 import { createRemoteActorFixture } from './test-fixtures.mts'
@@ -29,21 +27,22 @@ describe('ActivityPub inbox durable storage bounds', () => {
     ownedActivityIds.clear()
   })
 
-  it('tracks retained and unverified row and raw-body byte totals', async () => {
-    const before = await getActivityPubInboxStorageSnapshot()
-    const first = await accept(makeEnvelope(Buffer.from('one')))
-    const second = await accept(makeEnvelope(Buffer.from('second')))
-    const after = await getActivityPubInboxStorageSnapshot()
+  it('adds owned raw-body bytes to the storage counter and removes them on delete', async () => {
+    const firstBody = Buffer.from('one')
+    const secondBody = Buffer.from('second')
+    const rawBodyBytes = firstBody.byteLength + secondBody.byteLength
+    const measured = await measureActivityPubInboxOwnedStorageCounterForTest('insert-delete', [
+      firstBody,
+      secondBody,
+    ])
 
-    expect(after).toEqual({
-      retainedRows: before.retainedRows + 2,
-      retainedRawBodyBytes: before.retainedRawBodyBytes + 9,
-      unverifiedRows: before.unverifiedRows + 2,
-      unverifiedRawBodyBytes: before.unverifiedRawBodyBytes + 9,
+    expect(measured.afterOwnedWrite).toEqual({
+      retainedRows: measured.before.retainedRows + 2,
+      retainedRawBodyBytes: measured.before.retainedRawBodyBytes + rawBodyBytes,
+      unverifiedRows: measured.before.unverifiedRows + 2,
+      unverifiedRawBodyBytes: measured.before.unverifiedRawBodyBytes + rawBodyBytes,
     })
-
-    await deleteActivityPubInboxDeliveriesForTest([first.deliveryId, second.deliveryId])
-    expect(await getActivityPubInboxStorageSnapshot()).toEqual(before)
+    expect(measured.afterScenario).toEqual(measured.before)
   })
 
   it('rejects only writes that would increase an exceeded unverified capacity dimension', async () => {
@@ -72,7 +71,24 @@ describe('ActivityPub inbox durable storage bounds', () => {
     )
 
     const actor = await createRemoteActorFixture()
-    const beforeVerify = await getActivityPubInboxStorageSnapshot()
+    const measured = await measureActivityPubInboxOwnedStorageCounterForTest(
+      'verify',
+      [envelope.rawBody],
+      actor.id,
+    )
+    expect(measured.afterOwnedWrite).toEqual({
+      retainedRows: measured.before.retainedRows + 1,
+      retainedRawBodyBytes: measured.before.retainedRawBodyBytes + envelope.rawBody.byteLength,
+      unverifiedRows: measured.before.unverifiedRows + 1,
+      unverifiedRawBodyBytes: measured.before.unverifiedRawBodyBytes + envelope.rawBody.byteLength,
+    })
+    expect(measured.afterScenario).toEqual({
+      retainedRows: measured.afterOwnedWrite.retainedRows,
+      retainedRawBodyBytes: measured.afterOwnedWrite.retainedRawBodyBytes,
+      unverifiedRows: measured.before.unverifiedRows,
+      unverifiedRawBodyBytes: measured.before.unverifiedRawBodyBytes,
+    })
+
     await activityPubInboxDeliveryTransitions.claim(
       delivery.deliveryId,
       delivery.processingAttemptId,
@@ -83,12 +99,6 @@ describe('ActivityPub inbox durable storage bounds', () => {
       actor.id,
     )
 
-    expect(await getActivityPubInboxStorageSnapshot()).toEqual({
-      retainedRows: beforeVerify.retainedRows,
-      retainedRawBodyBytes: beforeVerify.retainedRawBodyBytes,
-      unverifiedRows: beforeVerify.unverifiedRows - 1,
-      unverifiedRawBodyBytes: beforeVerify.unverifiedRawBodyBytes - envelope.rawBody.byteLength,
-    })
     expect(
       (await getActivityPubInboxRetentionStateForTest(delivery.deliveryId)).retention_expires_at,
     ).toBeNull()
@@ -159,14 +169,17 @@ describe('ActivityPub inbox durable storage bounds', () => {
     ).toEqual([active.deliveryId])
   })
 
-  it('reconciles the ledger after rollback and deletion', async () => {
-    const before = await getActivityPubInboxStorageSnapshot()
-    const envelope = makeEnvelope(Buffer.from('rollback'))
+  it('rolls the storage counter back with the owned insert', async () => {
+    const rawBody = Buffer.from('rollback')
+    const measured = await measureActivityPubInboxOwnedStorageCounterForTest('rollback', [rawBody])
 
-    await expect(insertActivityPubInboxDeliveryThenRollbackForTest(envelope)).rejects.toThrow(
-      'rollback',
-    )
-    expect(await getActivityPubInboxStorageSnapshot()).toEqual(before)
+    expect(measured.afterOwnedWrite).toEqual({
+      retainedRows: measured.before.retainedRows + 1,
+      retainedRawBodyBytes: measured.before.retainedRawBodyBytes + rawBody.byteLength,
+      unverifiedRows: measured.before.unverifiedRows + 1,
+      unverifiedRawBodyBytes: measured.before.unverifiedRawBodyBytes + rawBody.byteLength,
+    })
+    expect(measured.afterScenario).toEqual(measured.before)
   })
 })
 
