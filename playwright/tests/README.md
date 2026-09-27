@@ -1,5 +1,24 @@
 # Playwright Tests
 
+## Route Coverage
+
+The route guard in [`.no-mistakes.yml`](../../.no-mistakes.yml) recognizes direct canonical
+navigation through [`navigateTo`](../helpers/navigate-to.mts). Keep public path prefixes explicit
+in meaningful browser tests; computed entity-type prefixes obscure attribution. Use real entities
+and exercise hydrated interactions, not fabricated IDs or status-only visits.
+
+Only the two `/landing/:idOrUsername` internal rewrite routes are excluded. Public `/@username`
+landing pages retain browser coverage. Deterministic redirects, typed route rejections, and static
+HTTP contracts belong in [`integration-tests/web`](../../integration-tests/web/README.md), not
+additional browser smokes. Selector coverage remains enabled independently of route attribution.
+
+The finite `routeCoverageSources` list binds 27 HTTP-only contracts to the real `web-integration`
+Vitest project: four static pages, six correctly typed source-settings rejections, and seventeen
+owner-private redirects. Registered tests call `WebIntegrationClient.request` or `loadPage`
+directly with literal or canonical template paths. The analyzer follows the runner entry's static
+registration imports and records framework, project, and declaration-file provenance. This adds
+route credit only, never selector or frontend-fetch credit; it is not a route exclusion.
+
 ## Hydration-Sensitive Interactions
 
 React 19 can defer hydration for below-fold client components inside streamed

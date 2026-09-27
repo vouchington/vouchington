@@ -31,7 +31,7 @@ test.describe('Topic types consolidation', () => {
     const suffix = randomSuffix()
     const topic = await insertTestTopic(`Types Topic ${suffix}`, `types-topic-${suffix}`)
 
-    await navigateTo(page, `/${topic.urlSlug}/${topic.id}/settings/behavior`)
+    await navigateTo(page, `/topic/${topic.id}/settings/behavior`)
     await page.getByTestId('topic-settings-behavior').waitFor()
     await expect(page.getByTestId('topic-type-heading')).toBeVisible()
 
@@ -56,7 +56,7 @@ test.describe('Topic types consolidation', () => {
       'rss_feed',
     )
 
-    await navigateTo(page, `/${topic.urlSlug}/${topic.id}/settings/behavior`)
+    await navigateTo(page, `/source/${topic.id}/settings/behavior`)
     await page.getByTestId('topic-settings-behavior').waitFor()
     await expect(page.getByTestId('topic-type-heading')).toBeVisible()
 
@@ -98,7 +98,7 @@ test.describe('Topic types consolidation', () => {
     const suffix = randomSuffix()
     const topic = await insertTestTopic(`Flags Topic ${suffix}`, `flags-topic-${suffix}`)
 
-    await navigateTo(page, `/${topic.urlSlug}/${topic.id}/settings/behavior`)
+    await navigateTo(page, `/topic/${topic.id}/settings/behavior`)
     await page.getByTestId('topic-settings-behavior').waitFor()
 
     await expect(page.getByTestId('topic-flags-section')).toBeVisible()
@@ -124,7 +124,7 @@ test.describe('Topic types consolidation', () => {
     await savePersisted
 
     // Reload and confirm the toggles persisted.
-    await navigateTo(page, `/${topic.urlSlug}/${topic.id}/settings/behavior`)
+    await navigateTo(page, `/topic/${topic.id}/settings/behavior`)
     await page.getByTestId('topic-settings-behavior').waitFor()
     await expect(page.getByTestId('topic-noindex')).toHaveAttribute('aria-checked', 'true')
     await expect(page.getByTestId('topic-allow-reviews')).toHaveAttribute('aria-checked', 'false')

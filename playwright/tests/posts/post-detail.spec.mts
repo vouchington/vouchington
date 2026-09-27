@@ -98,21 +98,29 @@ test.describe('Post Detail Pages', () => {
     )
   })
 
-  // Display tests for post types added by this PR; driven from POST_TYPE_CASES to avoid
-  // duplicating IDs and content regexes that are already defined there.
-  for (const { segment, id, badgeType, contentRegex } of POST_TYPE_CASES.filter(
-    c => c.type === 'story' || c.type === 'article' || c.type === 'blog_post',
-  )) {
-    test(`displays ${badgeType} detail page`, async ({ page }) => {
-      await navigateTo(page, `/${segment}/${id}`)
+  test('displays story detail page', async ({ page }) => {
+    const post = POST_TYPE_CASES.find(candidate => candidate.type === 'story')!
+    await navigateTo(page, `/story/${post.id}`)
+    await expect(page).toHaveURL(`/story/${post.id}`)
+    await expect(page.getByTestId('post-detail-type-badge-story')).toBeVisible()
+    await expect(page.getByTestId('post-detail-heading')).toContainText(post.contentRegex)
+  })
 
-      await expect(page).toHaveURL(`/${segment}/${id}`)
+  test('displays article detail page', async ({ page }) => {
+    const post = POST_TYPE_CASES.find(candidate => candidate.type === 'article')!
+    await navigateTo(page, `/article/${post.id}`)
+    await expect(page).toHaveURL(`/article/${post.id}`)
+    await expect(page.getByTestId('post-detail-type-badge-article')).toBeVisible()
+    await expect(page.getByTestId('post-detail-heading')).toContainText(post.contentRegex)
+  })
 
-      await expect(page.getByTestId(`post-detail-type-badge-${badgeType}`)).toBeVisible()
-
-      await expect(page.getByTestId('post-detail-heading')).toContainText(contentRegex)
-    })
-  }
+  test('displays blog_post detail page', async ({ page }) => {
+    const post = POST_TYPE_CASES.find(candidate => candidate.type === 'blog_post')!
+    await navigateTo(page, `/blog-post/${post.id}`)
+    await expect(page).toHaveURL(`/blog-post/${post.id}`)
+    await expect(page.getByTestId('post-detail-type-badge-blog_post')).toBeVisible()
+    await expect(page.getByTestId('post-detail-heading')).toContainText(post.contentRegex)
+  })
 
   test('loads post detail pages without errors', async ({ page }) => {
     const reviewId = '019c64e6-f720-7002-a002-000000000001'

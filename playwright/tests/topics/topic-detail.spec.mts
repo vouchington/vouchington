@@ -52,18 +52,45 @@ test.describe('Topic Detail Pages', () => {
     contributorId = contributor.id
   })
 
-  for (const [, { id, name, slug }] of Object.entries(TOPICS)) {
-    test(`should load ${slug} detail page`, async ({ page }) => {
-      await navigateTo(page, `/${slug}/${id}/posts`)
+  test('should load card detail page', async ({ page }) => {
+    const { id, name } = TOPICS.card
+    await navigateTo(page, `/card/${id}/posts`)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
+    await expect(page.getByTestId('topic-detail-header')).toBeVisible()
+    await expect(page).toHaveURL(/\/card\/.+\/posts/)
+  })
 
-      // Verify topic name in heading
-      await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
-      await expect(page.getByTestId('topic-detail-header')).toBeVisible()
+  test('should load rewards-program detail page', async ({ page }) => {
+    const { id, name } = TOPICS.rewards_program
+    await navigateTo(page, `/rewards-program/${id}/posts`)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
+    await expect(page.getByTestId('topic-detail-header')).toBeVisible()
+    await expect(page).toHaveURL(/\/rewards-program\/.+\/posts/)
+  })
 
-      // Verify URL is on posts tab
-      await expect(page).toHaveURL(new RegExp(`/${slug}/.+/posts`))
-    })
-  }
+  test('should load rewards-program-status detail page', async ({ page }) => {
+    const { id, name } = TOPICS.rewards_program_status
+    await navigateTo(page, `/rewards-program-status/${id}/posts`)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
+    await expect(page.getByTestId('topic-detail-header')).toBeVisible()
+    await expect(page).toHaveURL(/\/rewards-program-status\/.+\/posts/)
+  })
+
+  test('should load referral-program detail page', async ({ page }) => {
+    const { id, name } = TOPICS.referral_program
+    await navigateTo(page, `/referral-program/${id}/posts`)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
+    await expect(page.getByTestId('topic-detail-header')).toBeVisible()
+    await expect(page).toHaveURL(/\/referral-program\/.+\/posts/)
+  })
+
+  test('should load topic detail page', async ({ page }) => {
+    const { id, name } = TOPICS.topic
+    await navigateTo(page, `/topic/${id}/posts`)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(name)
+    await expect(page.getByTestId('topic-detail-header')).toBeVisible()
+    await expect(page).toHaveURL(/\/topic\/.+\/posts/)
+  })
 
   test('should load rss_feed topic detail page at /source/<id>', async ({ page }) => {
     const unique = randomSuffix()
@@ -107,8 +134,8 @@ test.describe('Topic Detail Pages', () => {
   })
 
   test('card detail page tab navigation', async ({ page }) => {
-    const { id, slug } = TOPICS.card
-    await navigateTo(page, `/${slug}/${id}/posts`)
+    const { id } = TOPICS.card
+    await navigateTo(page, `/card/${id}/posts`)
 
     await expect(page).toHaveURL(/\/card\/.+\/posts/)
 

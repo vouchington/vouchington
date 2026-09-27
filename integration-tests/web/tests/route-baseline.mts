@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { WebIntegrationClient } from '../helpers/client.mts'
-import { PLAYWRIGHT_CHROME_UA, TEST_USER_USERNAME } from '../helpers/constants.mts'
+import { PLAYWRIGHT_CHROME_UA } from '../helpers/constants.mts'
 import { parseHtml } from '../helpers/html-assertions.mts'
 import {
   authenticateTestUserWithDirectSessionTokens,
@@ -62,20 +62,6 @@ describe('web route baseline tests', () => {
         ].map(async path => {
           const response = await client.request(path)
           expect(response.status).toBe(404)
-        }),
-      )
-    })
-
-    it('covers owner-private user routes that redirect to /my/*', async () => {
-      await Promise.all(
-        [
-          `/user/coverage-does-not-exist/topics/muted`,
-          `/user/coverage-does-not-exist/topics/viewed`,
-          `/user/coverage-does-not-exist/users/blocked`,
-          `/user/coverage-does-not-exist/users/muted`,
-          `/user/${TEST_USER_USERNAME}/topics/blocked`,
-        ].map(async path => {
-          await expectManualRedirectMatches(client, path, /^\/my\//)
         }),
       )
     })

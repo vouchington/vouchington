@@ -107,6 +107,51 @@ checks:
 tests:
   playwright:
     configs: playwright.config.mts
+    navigationHelpers: [navigateTo]
+    ignoreRoutes:
+      - /landing/:idOrUsername
+      - /landing/:idOrUsername/:slug
+    routeCoverageSources:
+      - framework: vitest
+        project: web-integration
+        include: ['integration-tests/web/**/*.mts']
+        routes:
+          - /bank-account/:id/settings/source
+          - /card/:id/settings/source
+          - /copyright/counter-notice
+          - /copyright/designated-agent
+          - /copyright/repeat-infringer-policy
+          - /healthz
+          - /referral-program/:id/settings/source
+          - /rewards-program-status/:id/settings/source
+          - /rewards-program/:id/settings/source
+          - /topic/:id/settings/source
+          - /user/:idOrUsername/communities/proxy-following
+          - /user/:idOrUsername/communities/proxy-muted
+          - /user/:idOrUsername/communities/saved
+          - /user/:idOrUsername/domains/blocked
+          - /user/:idOrUsername/domains/muted
+          - /user/:idOrUsername/posts/following
+          - /user/:idOrUsername/posts/hidden
+          - /user/:idOrUsername/posts/saved
+          - /user/:idOrUsername/rss-feed-items/hidden
+          - /user/:idOrUsername/rss-feed-items/saved
+          - /user/:idOrUsername/rss-feed-items/viewed
+          - /user/:idOrUsername/rss-feeds/muted
+          - /user/:idOrUsername/topics/blocked
+          - /user/:idOrUsername/topics/dismissed-recommendations
+          - /user/:idOrUsername/topics/muted
+          - /user/:idOrUsername/topics/viewed
+          - /user/:idOrUsername/users/dismissed-recommendations
+        helpers:
+          - module: integration-tests/web/helpers/client.mts
+            export: WebIntegrationClient
+            method: request
+            urlArgument: 0
+          - module: integration-tests/web/helpers/client.mts
+            export: WebIntegrationClient
+            method: loadPage
+            urlArgument: 0
     projects:
       setup:
         include:
@@ -119,7 +164,7 @@ tests:
           - ci/playwright/**/*.test.mts
           - playwright/helpers/**/*.test.mts
     coverage:
-      routes: false
+      routes: true
       selectors: true
     selectors:
       testIds:
