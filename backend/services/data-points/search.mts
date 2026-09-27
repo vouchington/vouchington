@@ -27,9 +27,10 @@ export async function searchDataPoints(
       posts.id,
       posts.title,
       posts.data_point_vertical,
-      posts.structured_data
+      fn_post_structured_data(posts.id) AS structured_data
     FROM posts
     JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
+    LEFT JOIN post_data_point_facts facts ON facts.post_id = posts.id
     WHERE posts.post_type = 'data_point'
       AND `
   query.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
@@ -45,12 +46,12 @@ export async function searchDataPoints(
   }
 
   if (options.result) {
-    query.append(sql` AND posts.structured_data->>'result' = ${options.result}`)
+    query.append(sql` AND facts.result = ${options.result}`)
   }
 
   if (options.credit_score_range) {
     query.append(
-      sql` AND posts.structured_data->>'credit_score_range' = ${options.credit_score_range}`,
+      sql` AND facts.credit_score_range_presence = 'present' AND facts.credit_score_range = ${options.credit_score_range}`,
     )
   }
 

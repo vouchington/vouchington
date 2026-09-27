@@ -48,11 +48,21 @@ export async function seedCommittedPostAdmissionReservations(
     [seedUuid(0, '05')],
   )
   await write(
-    `/* seedExplainData */ INSERT INTO post_category_finalizations (
-      post_id, actor_user_ids, topic_category_owner_id, generation,
-      admission_response_generation, admission_response_topic_ids
-    ) VALUES ($1, ARRAY[$2]::uuid[], $2, 1, 1, '{}'::uuid[])
-    ON CONFLICT (post_id) DO NOTHING`,
+    `/* seedExplainData */ WITH finalization AS (
+      INSERT INTO post_category_finalizations (
+        post_id, topic_category_owner_id, generation, admission_response_generation
+      ) VALUES ($1, $2, 1, 1)
+      ON CONFLICT (post_id) DO NOTHING
+      RETURNING post_id
+    ), actor AS (
+      INSERT INTO post_category_finalization_actors (post_id, user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (post_id, user_id) DO NOTHING
+      RETURNING post_id
+    )
+    SELECT post_id FROM finalization
+    UNION ALL
+    SELECT post_id FROM actor`,
     [seedUuid(0, '05'), seedUuid(0, '01')],
   )
 }

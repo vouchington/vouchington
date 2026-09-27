@@ -149,7 +149,7 @@ CREATE OR REPLACE VIEW view_posts AS
 
     posts.community_id,
     posts.data_point_vertical,
-    posts.structured_data,
+    fn_post_structured_data(posts.id) AS structured_data,
     posts.created_by_id,
     posts.updated_by_id,
     posts.deleted_at,

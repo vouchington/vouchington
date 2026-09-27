@@ -143,6 +143,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'retained_user_identities',
   'retailer_countries',
   'review_successions',
+  'review_succession_topics',
   'rss_feed_categories',
   'rss_feed_discoverability_changes',
   'rss_feed_enablement_changes',

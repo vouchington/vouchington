@@ -6,7 +6,7 @@
 
 | Field                       | Type                                                    | Required | Description                                                        |
 | --------------------------- | ------------------------------------------------------- | -------- | ------------------------------------------------------------------ |
-| Bank account (`topic_id`)   | UUID (topic autocomplete)                               | Yes      | Links to a bank account topic (topic_type = `bank_account`).       |
+| Bank account (`topic_ids`)  | Ordered UUID list (topic autocomplete)                  | Yes      | Links to bank account topics in `post_data_point_topics` order.    |
 | Result                      | Enum: `approved` / `denied` / `sign_up_bonus` / `offer` | Yes      | Application outcome.                                               |
 | Account type                | Enum: `checking` / `savings` / `cd` / `money_market`    | No       | Type of bank account.                                              |
 | Credit score range          | Range bucket (same as credit card)                      | No       | Credit score used for account opening (e.g. ChexSystems check).    |

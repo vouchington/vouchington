@@ -22,13 +22,20 @@ export async function getTopicDataPointInsights(
   const query = sql`/* getTopicDataPointInsights */
     WITH base AS (
       SELECT
-        posts.structured_data->>'result' AS result,
-        posts.structured_data->>'credit_score_range' AS credit_score_range,
-        (posts.structured_data #>> '{credit_limit,amount}')::bigint AS credit_limit_minor_units,
-        posts.structured_data #>> '{credit_limit,currency}' AS credit_limit_currency
+        facts.result AS result,
+        CASE
+          WHEN facts.credit_score_range_presence = 'present' THEN facts.credit_score_range
+        END AS credit_score_range,
+        CASE
+          WHEN facts.credit_limit_presence = 'present' THEN facts.credit_limit_amount
+        END AS credit_limit_minor_units,
+        CASE
+          WHEN facts.credit_limit_presence = 'present' THEN facts.credit_limit_currency
+        END AS credit_limit_currency
       FROM posts
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
       JOIN post_data_point_topics pdpt ON pdpt.post_id = posts.id AND pdpt.topic_id = ${topicId}
+      LEFT JOIN post_data_point_facts facts ON facts.post_id = posts.id
       WHERE posts.post_type = 'data_point'
         AND `
   query.append(buildPublicPostEligibilityFilter('posts', 'root_post'))
