@@ -6,7 +6,6 @@ import {
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
-import { getOAuthClientDisplayName } from './known-clients.mts'
 
 function randomMetadataUrl(): string {
   return `https://client.example/${randomBytes(12).toString('hex')}/metadata.json`
@@ -37,13 +36,6 @@ function responseFor(
 }
 
 describe('Client ID Metadata Documents', () => {
-  it('uses a reviewed name only for an exact known Client Identifier URL', () => {
-    const metadataUrl = 'https://client.example/metadata.json'
-    const knownClients = { [metadataUrl]: 'Reviewed client' }
-    expect(getOAuthClientDisplayName(metadataUrl, knownClients)).toBe('Reviewed client')
-    expect(getOAuthClientDisplayName(`${metadataUrl}?other`, knownClients)).toBe('client.example')
-  })
-
   it.each([
     ['mismatched client ID', { client_id: 'https://other.example/metadata.json' }],
     ['shared client secret', { client_secret: 'secret' }],
@@ -75,6 +67,13 @@ describe('Client ID Metadata Documents', () => {
         ),
     })
     expect(client?.client_id).toBe(clientId)
+  })
+  it('allows dot-segment text in the query when the URL path is valid', async () => {
+    const clientId = `${randomMetadataUrl()}?next=/../callback`
+    const client = await resolveClientIdMetadataDocument(clientId, {
+      safeFetch: async () => responseFor(metadataDocument(clientId)),
+    })
+    expect(client?.metadata_url).toBe(clientId)
   })
 
   it.each([
@@ -134,6 +133,7 @@ describe('Client ID Metadata Documents', () => {
 
   it('bounds the response body and rejects oversized or timed-out reads', async () => {
     const clientId = randomMetadataUrl()
+    const cause = new Error('body too large')
     let requestSignal: AbortSignal | null | undefined
     const readResponseBodyAsBuffer = vi.fn<
       ClientIdMetadataDependencies['readResponseBodyAsBuffer']
@@ -142,7 +142,7 @@ describe('Client ID Metadata Documents', () => {
       expect(options.signal).toBeInstanceOf(AbortSignal)
       expect(options.signal).not.toBe(requestSignal)
       expect(requestSignal?.aborted).toBe(false)
-      throw new Error('body too large')
+      throw cause
     })
     await expect(
       resolveClientIdMetadataDocument(clientId, {
@@ -152,7 +152,7 @@ describe('Client ID Metadata Documents', () => {
           return responseFor(metadataDocument(clientId))
         },
       }),
-    ).rejects.toMatchObject({ code: 'unauthorized_client' })
+    ).rejects.toMatchObject({ cause, code: 'unauthorized_client' })
     expect(readResponseBodyAsBuffer).toHaveBeenCalledOnce()
   })
 

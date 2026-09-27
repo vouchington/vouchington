@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
       char_length(metadata_url) <= 2048
       AND metadata_url ~ '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'
       AND position(chr(92) IN metadata_url) = 0
-      AND metadata_url !~ '/\.\.?(/|\?|$)'
+      AND split_part(metadata_url, '?', 1) !~ '/\.\.?(/|$)'
     )
   ),
   CONSTRAINT oauth_clients_verified_by_id_check CHECK (verified_by_id IS NULL OR verified_at IS NOT NULL),

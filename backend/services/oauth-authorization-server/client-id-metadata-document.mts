@@ -2,6 +2,7 @@ import { write, type QueryExecutor } from '@data-stores/psql'
 import { readResponseBodyAsBuffer } from '@modules/utils/http'
 import { safeFetch } from 'ssrf-guard/node'
 import { unavailableClientIdMetadata } from './client-id-metadata-errors.mts'
+import { parseClientIdMetadataUrl } from './client-id-metadata-url.mts'
 import {
   validateAuthMethod,
   validateClientName,
@@ -68,40 +69,6 @@ export async function resolveClientIdMetadataDocument(
   throw unavailableClientIdMetadata()
 }
 
-export function parseClientIdMetadataUrl(value: string): string | null {
-  const authorityStart = 'https://'.length
-  const pathStart = value.indexOf('/', authorityStart)
-  const queryStart = value.indexOf('?', authorityStart)
-  if (
-    value.length > 2048 ||
-    pathStart <= authorityStart ||
-    (queryStart !== -1 && pathStart > queryStart) ||
-    !value.startsWith('https://') ||
-    value.includes('#') ||
-    value.includes('\\') ||
-    /[\s\p{Cc}\p{Z}]/u.test(value) ||
-    value.slice(authorityStart, pathStart).includes('@')
-  ) {
-    return null
-  }
-  let url: URL
-  try {
-    url = new URL(value)
-  } catch {
-    return null
-  }
-  if (url.protocol !== 'https:' || url.username || url.password || url.hash) return null
-  const rawPath = value.slice(pathStart).split('?', 1)[0] ?? ''
-  try {
-    if (rawPath.split('/').some(segment => ['.', '..'].includes(decodeURIComponent(segment)))) {
-      return null
-    }
-  } catch {
-    return null
-  }
-  return value
-}
-
 async function fetchAndValidateClientIdMetadataDocument(
   metadataUrl: string,
   deps: ClientIdMetadataDependencies,
@@ -129,14 +96,20 @@ async function fetchAndValidateClientIdMetadataDocument(
     await cancelResponseBody(response)
     throw unavailableClientIdMetadata()
   }
-  let input: unknown
+  let body: Buffer
   try {
-    const body = await deps.readResponseBodyAsBuffer({
+    body = await deps.readResponseBodyAsBuffer({
       response,
       url: metadataUrl,
       maxSizeBytes: CLIENT_ID_METADATA_MAX_SIZE_BYTES,
       signal: AbortSignal.timeout(CLIENT_ID_METADATA_BODY_TIMEOUT_MS),
     })
+  } catch (error) {
+    await cancelResponseBody(response)
+    throw unavailableClientIdMetadata(error)
+  }
+  let input: unknown
+  try {
     input = JSON.parse(body.toString('utf8'))
   } catch {
     await cancelResponseBody(response)
