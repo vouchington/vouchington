@@ -36,15 +36,6 @@ export type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 const observerKey = Symbol.for('voucha.shared-db-scope-observer')
 type ObserverHost = Record<symbol, SharedDbScopeObserver | undefined>
 
-export function installSharedDbScopeObserver(observer: SharedDbScopeObserver): () => void {
-  const host = globalThis as unknown as ObserverHost
-  const previous = host[observerKey]
-  host[observerKey] = observer
-  return () => {
-    if (host[observerKey] === observer) host[observerKey] = previous
-  }
-}
-
 export function observeSharedDbScope(
   operation: SharedDbScopeOperation,
   scope: SharedDbScope,

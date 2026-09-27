@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  installSharedDbScopeObserver,
   observeSharedDbScope,
   sharedDbCursorScope,
   sharedDbIdsScope,
   type SharedDbScopeEvent,
 } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import { installSharedDbScopeObserver } from './vitest-shared-db-scope-observer.mts'
 
 describe('shared database scope observer', () => {
   it('leaves deliberate global production calls legal without an observer', () => {

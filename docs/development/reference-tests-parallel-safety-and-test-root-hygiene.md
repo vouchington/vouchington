@@ -50,6 +50,8 @@ file after `afterAll`, even when a test or hook catches the service error; colle
 are finalized separately. Each appended violation carries Vitest's current file path, and
 process-global per-file reported counts prevent a later `isolate: false` file from inheriting a
 prior failure when Vitest collects files ahead or creates a fresh runner instance. The
+test-only installer lives in `test-helpers/vitest-shared-db-scope-observer.mts`; production exports
+only the typed event observer. The
 `backend-data-stores` runner composes this check with the existing GlideMQ attachment guard.
 `test-helpers/vitest-shared-db-scope-guard.integration.test.mts` exercises swallowed test,
 `afterAll`, setup, collection, reset-modules, and clean-next-file cases in a one-fork subprocess.

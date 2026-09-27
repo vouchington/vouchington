@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
+import { promisify, stripVTControlCharacters } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
@@ -30,7 +30,7 @@ async function runFixture(
   await writeFile(
     join(directory, 'vitest.config.mts'),
     `export default { test: {
-  pool: 'forks', maxWorkers: 1, minWorkers: 1, fileParallelism: false, isolate: false,
+  pool: 'forks', isolate: false,
   runner: ${JSON.stringify(guardRunnerPath)},
   setupFiles: [${JSON.stringify(guardSetupPath)}${setupSource ? `, ${JSON.stringify(setupPath)}` : ''}],
 } }`,
@@ -39,15 +39,15 @@ async function runFixture(
   try {
     const { stdout, stderr } = await execFileAsync(process.execPath, [vitestCliPath, 'run'], {
       cwd: directory,
-      env: { ...process.env, CI: '' },
+      env: { ...process.env, CI: '', VITEST_MAX_WORKERS: '1' },
       timeout: 25_000,
     })
-    return { exitCode: 0, output: `${stdout}\n${stderr}` }
+    return { exitCode: 0, output: stripVTControlCharacters(`${stdout}\n${stderr}`) }
   } catch (error) {
     const failure = error as { code?: number; stdout?: string; stderr?: string }
     return {
       exitCode: failure.code ?? 1,
-      output: `${failure.stdout ?? ''}\n${failure.stderr ?? ''}`,
+      output: stripVTControlCharacters(`${failure.stdout ?? ''}\n${failure.stderr ?? ''}`),
     }
   }
 }
@@ -112,15 +112,23 @@ it('reimports the production module', async () => {
     expect(result.output).toContain('getRecoverableOAuthAuthorizationIds on oauth_authorizations')
   })
 
-  it('attributes a caught setup violation and allows a subsequent clean isolate:false file', async () => {
+  it('attributes a caught setup violation to only one isolate:false file', async () => {
     const result = await runFixture(
       [
         { name: 'first.test.mts', source: `import { it } from 'vitest'; it('runs', () => {})` },
         { name: 'second.test.mts', source: `import { it } from 'vitest'; it('runs', () => {})` },
       ],
-      `import { observeSharedDbScope } from ${JSON.stringify(observerPath)}
-if (!process.env.VOUCHA_SHARED_DB_SCOPE_FIXTURE_SETUP_SEEN) {
-  process.env.VOUCHA_SHARED_DB_SCOPE_FIXTURE_SETUP_SEEN = 'true'
+      `import { closeSync, openSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { observeSharedDbScope } from ${JSON.stringify(observerPath)}
+let firstSetup = false
+try {
+  closeSync(openSync(fileURLToPath(new URL('./setup-seen', import.meta.url)), 'wx'))
+  firstSetup = true
+} catch (error) {
+  if ((error as { code?: string }).code !== 'EEXIST') throw error
+}
+if (firstSetup) {
   try { ${scopeCall('listAvailableNotificationPushIntents', `{ kind: 'global' }`)} } catch {}
 }`,
     )
@@ -131,7 +139,7 @@ if (!process.env.VOUCHA_SHARED_DB_SCOPE_FIXTURE_SETUP_SEEN) {
     expect(result.output).toMatch(/Test Files\s+1 failed \| 1 passed \(2\)/)
   })
 
-  it('does not transfer a collected failure to the next isolate:false file', async () => {
+  it('does not transfer a collected failure to another isolate:false file', async () => {
     const result = await runFixture([
       {
         name: 'first-collection-error.test.mts',
