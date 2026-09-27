@@ -4765,6 +4765,9 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications
+      '@services/post-publication':
+        specifier: workspace:^
+        version: link:../post-publication
       '@services/users':
         specifier: workspace:^
         version: link:../users
