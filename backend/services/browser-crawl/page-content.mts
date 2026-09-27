@@ -117,7 +117,10 @@ export function measureAndSerializePage(limits: {
     }
     const element = node as PageElement
     add(`<${element.tagName}`)
-    for (const attribute of Array.from(element.attributes)) {
+    let attributeIndex = 0
+    while (attributeIndex < element.attributes.length) {
+      const attribute = element.attributes[attributeIndex]!
+      attributeIndex += 1
       add(` ${attribute.name}="`)
       add(attribute.value, 'attribute')
       add('"')

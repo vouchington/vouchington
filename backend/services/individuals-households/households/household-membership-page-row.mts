@@ -9,8 +9,8 @@ export type HouseholdMembershipPageSqlRow = {
   updated_at: string | null
   cursor_updated_at: string | null
   individual: unknown
-  household_exists: boolean
-  can_view: boolean
+  household_exists: unknown
+  can_view: unknown
 }
 
 type AuthorizedHouseholdMembershipCursorRow = HouseholdMembershipRow & {
@@ -23,8 +23,8 @@ export function isAuthorizedHouseholdMembershipCursorRow(
   row: HouseholdMembershipPageSqlRow,
 ): row is AuthorizedHouseholdMembershipCursorRow {
   if (
-    !row.household_exists ||
-    !row.can_view ||
+    row.household_exists !== true ||
+    row.can_view !== true ||
     typeof row.id !== 'string' ||
     !isUUID(row.id) ||
     typeof row.household_id !== 'string' ||

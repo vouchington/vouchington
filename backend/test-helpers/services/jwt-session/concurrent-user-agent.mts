@@ -27,8 +27,7 @@ export async function runTestActionsAcrossUserAgentConflict<TFirst, TSecond>(
   const [outcome] = await actionOutcome
   if (outcome.status === 'rejected')
     throw normalizeFailure(outcome.reason, 'User-agent action failed')
-  if (waitFailure)
-    throw normalizeFailure(waitFailure.reason, 'User-agent lock wait failed')
+  if (waitFailure) throw normalizeFailure(waitFailure.reason, 'User-agent lock wait failed')
   return [firstResult, outcome.value]
 }
 
