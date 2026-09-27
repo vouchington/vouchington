@@ -1343,6 +1343,7 @@ rules:
         backend/services/analytics: [backend]
         backend/analytics-integration: [backend]
         backend-data-stores: [backend]
+        backend-platform-stats-cache: [backend]
         backend-activitypub-capacity: [backend, postgres-schema]
         backend-mocks: [backend]
         backend-real-glide-mq: [backend]

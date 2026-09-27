@@ -1,54 +1,95 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import type { PrivateUser } from '@services/users/types'
+import { randomUUID } from 'node:crypto'
+import { writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterAll, describe, expect, it } from 'vitest'
+import { cacheValkeyClient } from '@data-stores/valkey/clients'
+import { valkeyEvents } from '@data-stores/valkey/events'
+import { stableSerialize } from '@services/entity-cache/search-cache'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
+import {
+  countCapturedQueriesByAnnotation,
+  createTestUser,
+  enableQueryCapture,
+  stopTestQueryCapture,
+} from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('platform-stats', () => {
-  let user: PrivateUser
+  afterAll(() => cacheValkeyClient.close())
 
-  beforeAll(async () => {
-    user = await createTestUser()
-  })
+  it('shares one cold platform aggregate with two authenticated viewers and preserves HTTP headers', async () => {
+    const anonymous = createRequest()
+    const authenticated = [createRequest(), createRequest()]
+    for (const request of authenticated) await request.authenticateAs(await createTestUser())
 
-  describe('Platform Stats API Routes', () => {
-    describe('GET /api/v1/platform-stats', () => {
-      it('should return all expected count fields', async () => {
-        const request = createRequest()
-        const response = await request.get('/api/v1/platform-stats').expect(200)
-
-        expect(response.body).toHaveProperty('topic_count')
-        expect(response.body).toHaveProperty('rss_feed_count')
-        expect(response.body).toHaveProperty('post_count')
-        expect(response.body).toHaveProperty('review_count')
-        expect(response.body).toHaveProperty('data_point_count')
-        expect(response.body).toHaveProperty('hostname_count')
-
-        expect(typeof response.body.topic_count).toBe('number')
-        expect(typeof response.body.rss_feed_count).toBe('number')
-        expect(typeof response.body.post_count).toBe('number')
-        expect(typeof response.body.review_count).toBe('number')
-        expect(typeof response.body.data_point_count).toBe('number')
-        expect(typeof response.body.hostname_count).toBe('number')
-      })
-
-      it('should set Cache-Control header for anonymous requests', async () => {
-        const request = createRequest()
-        const response = await request.get('/api/v1/platform-stats').expect(200)
-
-        expect(response.headers['cache-control']).toContain('public')
-        expect(response.headers['cache-control']).toContain(
-          `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
-        )
-      })
-
-      it('should not set public Cache-Control header for authenticated requests', async () => {
-        const request = createRequest()
-        await request.authenticateAs(user)
-        const response = await request.get('/api/v1/platform-stats').expect(200)
-
-        expect(response.headers['cache-control'] ?? '').not.toContain('public')
-      })
-    })
+    const key = stableSerialize({})
+    const deadline = AbortSignal.timeout(30_000)
+    const written = Promise.withResolvers<void>()
+    const onWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
+      if (cacheName === 'platform_stats_anon' && keys.includes(key)) written.resolve()
+    }
+    const onDeadline = () => written.reject(deadline.reason)
+    valkeyEvents.on('cache:set', onWrite)
+    deadline.addEventListener('abort', onDeadline, { once: true })
+    const timings: number[] = []
+    const requestStats = async (request: ReturnType<typeof createRequest>) => {
+      const started = performance.now()
+      const response = await request.get('/api/v1/platform-stats').expect(200)
+      timings.push(performance.now() - started)
+      return response
+    }
+    let queries: ReturnType<typeof stopTestQueryCapture> = []
+    const responses = []
+    enableQueryCapture()
+    try {
+      const [cold] = await Promise.all([requestStats(anonymous), written.promise])
+      responses.push(cold)
+      for (const request of authenticated) responses.push(await requestStats(request))
+    } finally {
+      queries = stopTestQueryCapture()
+      valkeyEvents.off('cache:set', onWrite)
+      deadline.removeEventListener('abort', onDeadline)
+    }
+    const aggregateQueries = countCapturedQueriesByAnnotation(queries, 'getPlatformStats')
+    await writeFile(
+      join(tmpdir(), `platform-stats-cache-route-${randomUUID()}.json`),
+      JSON.stringify(
+        {
+          aggregateQueries,
+          requestMilliseconds: timings,
+          responses: responses.map(response => ({
+            body: response.body,
+            cacheControl: response.headers['cache-control'] ?? null,
+          })),
+          aggregateSql: queries
+            .filter(query => query.text.includes('/* getPlatformStats */'))
+            .map(query => query.text),
+        },
+        null,
+        2,
+      ),
+    )
+    expect(aggregateQueries).toBe(1)
+    for (const response of responses) {
+      expect(response.body).toEqual(responses[0].body)
+      for (const field of [
+        'topic_count',
+        'rss_feed_count',
+        'post_count',
+        'review_count',
+        'data_point_count',
+        'hostname_count',
+      ]) {
+        expect(response.body).toHaveProperty(field)
+        expect(typeof response.body[field]).toBe('number')
+      }
+    }
+    expect(responses[0].headers['cache-control']).toContain('public')
+    expect(responses[0].headers['cache-control']).toContain(
+      `max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`,
+    )
+    for (const response of responses.slice(1))
+      expect(response.headers['cache-control'] ?? '').not.toContain('public')
   })
 })

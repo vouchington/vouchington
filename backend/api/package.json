@@ -198,7 +198,6 @@
     "@services/official-referral-program-links": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/passkeys": "workspace:^",
-    "@services/platform-stats": "workspace:^",
     "@services/podcast-playback-positions": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",

@@ -79,8 +79,28 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/services/jwt-session/flows.test.mts',
         'backend/data-stores/psql/__tests__/schema-*.test.mts',
         'backend/data-stores/psql/__tests__/lifecycle-integrity.test.mts',
+        'backend/api/v1/platform-stats/platform-stats.test.mts',
         'backend/api/activitypub/inbox-capacity.test.mts',
         'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
+      ],
+    },
+  },
+  {
+    extends: true,
+    test: {
+      ...backendDataStoreTestDefaults,
+      name: 'backend-platform-stats-cache',
+      isolate: true,
+      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
+      include: ['backend/api/v1/platform-stats/platform-stats.test.mts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
+      globalSetup: [
+        backendDataStoreTestDefaults.globalSetup,
+        './test-helpers/vitest.global-setup.platform-stats-cache.mts',
+      ],
+      setupFiles: [
+        './test-helpers/vitest.setup.platform-stats-cache.mts',
+        ...backendDataStoreTestDefaults.setupFiles,
       ],
     },
   },

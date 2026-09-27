@@ -10,15 +10,24 @@ Public statistics about the platform.
 
 ## GET /api/v1/platform-stats
 
-Returns aggregate platform statistics. Anonymous requests use the cached search wrapper and include `Cache-Control` headers for CDN caching. Authenticated requests bypass the cache for fresh data.
+Returns the same aggregate platform statistics for every viewer. Anonymous and authenticated
+requests share the existing `platform_stats_anon` application cache, with the configured short
+cache TTL (60 seconds by default) and existing search-cache invalidation. Anonymous responses
+alone include public `Cache-Control` headers for CDN caching. Authentication and rate limiting
+still run before reading the cache.
 
 Response is streamed via `streamJsonObject`.
 
 ## Performance
 
-| Endpoint                   | Round Trips | Caching                                         | Notes                                         |
-| -------------------------- | ----------- | ----------------------------------------------- | --------------------------------------------- |
-| GET /api/v1/platform-stats | 2           | Search: anon Valkey; HTTP: Cache-Control (anon) | Auth + stats query; anon responses are cached |
+| Endpoint                   | Aggregate SQL queries | Caching                                   | Notes                                           |
+| -------------------------- | --------------------- | ----------------------------------------- | ----------------------------------------------- |
+| GET /api/v1/platform-stats | 1 cold; 0 warm        | Valkey: all viewers; HTTP: anonymous only | Authenticated requests retain their auth lookup |
+
+The aggregate SQL is unchanged. A cold anonymous request followed by two authenticated requests
+executes one aggregate query instead of three while the entry remains fresh. The regression test
+owns a private Valkey container so parallel shared-cache invalidation cannot disturb this proof;
+run it in `backend-platform-stats-cache` (see the [project reference](../../../../docs/development/reference-project-name-reference.md)).
 
 ## Related
 

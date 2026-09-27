@@ -15,6 +15,7 @@ const dockerFreeBackendProjects = [
 const dockerBackedBackendProjects = [
   'backend/analytics-integration',
   'backend-data-stores',
+  'backend-platform-stats-cache',
   'backend-mocks',
   'backend-real-glide-mq',
 ] as const

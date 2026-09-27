@@ -16,7 +16,7 @@ interface BackendProject {
   }
   test?: {
     exclude?: string[]
-    globalSetup?: string
+    globalSetup?: string | string[]
     hookTimeout?: number
     include?: string[]
     isolate?: boolean
@@ -117,7 +117,13 @@ describe('backend Vitest project config', () => {
     ).toEqual(
       forkLeakProjects.map(project => ({
         name: project.test?.name,
-        globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+        globalSetup:
+          project.test?.name === 'backend-platform-stats-cache'
+            ? [
+                './test-helpers/vitest.setup.data-stores.mts',
+                './test-helpers/vitest.global-setup.platform-stats-cache.mts',
+              ]
+            : './test-helpers/vitest.setup.data-stores.mts',
       })),
     )
   })
