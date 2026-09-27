@@ -108,6 +108,7 @@ _none_
 - `fk_users_individual_id`: `FOREIGN KEY (individual_id) REFERENCES individuals(id) ON DELETE SET NULL`
 - `fk_users_profile_image_id`: `FOREIGN KEY (profile_image_id) REFERENCES images(id) ON DELETE SET NULL`
 - `users_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `users_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `users_referrer_id_fkey`: `FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -129,6 +130,7 @@ _none_
 
 - `trigger_create_user_metrics`: `CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_metrics_on_insert()`
 - `trigger_handoff_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_handoff_deleted_user_image_surfaces()`
+- `trigger_register_retained_user_identity`: `CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_user_identity()`
 - `trigger_retire_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_user_image_surfaces()`
 - `trigger_sync_user_profile_image_placement`: `CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_image_placement()`
 - `trigger_users_create_individual_household`: `CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()`

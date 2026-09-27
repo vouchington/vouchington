@@ -24,6 +24,7 @@ _none_
 
 **Foreign keys:**
 
+- `post_publication_post_identities_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
 - `post_publication_post_identities_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 
 **Indexes:**
