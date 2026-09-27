@@ -11,8 +11,9 @@ See [README.md](./README.md) for schema reference and the generated [schema snap
 - Every foreign key declares `ON DELETE`. Cross-file FK and check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`.
 - Fixed migrations run transactionally with their ledger insert. Do not add manual `BEGIN`/`COMMIT`. Concurrent indexes use `-- migration-mode: online`. See [README.md](./README.md#migrations-views-and-config-driven).
 - Vote schema changes are config-driven via [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
-- After SQL changes, push the PR head, run `pnpm run db:snapshot:update` to request CI generation,
-  and fetch its generated commit before continuing. See [schema-snapshot/README.md](schema-snapshot/README.md).
+- After SQL changes, push the PR head, run `pnpm run db:snapshot:update` to request CI generation
+  for the current branch's open PR, or `pnpm run db:snapshot:update -- --pr <number>` for an explicit
+  PR, and fetch its generated commit before continuing. See [schema-snapshot/README.md](schema-snapshot/README.md).
 
 ### Schema Change Placement
 
