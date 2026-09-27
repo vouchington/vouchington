@@ -1,5 +1,4 @@
-import { expect, test, type Page } from '../../helpers/test.mts'
-import type { Locator } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '../../helpers/test.mts'
 import { scrollToLoadMore } from '../../helpers/scroll-to-load-more.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
