@@ -21,3 +21,10 @@ export async function insertRssFeedItemVote(
     VALUES (COALESCE(${id}::uuid, uuidv7()), ${userId}, ${rssFeedItemId}, ${score}, ${scoreIsNeutral}, ${scoreIsSemantic})
   `)
 }
+
+export async function setTestRssFeedItemVotes(itemId: string, scoreUp: number): Promise<void> {
+  await write(sql`/* setTestRssFeedItemVotes */
+    UPDATE rss_feed_items SET votes_score_up = ${scoreUp}, votes_score_down = 0
+    WHERE id = ${itemId}
+  `)
+}

@@ -4,6 +4,7 @@ import { seedUuid } from './common.mts'
 export const STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT = 1_000
 export const STORY_POST_RELATED_URL_PROJECTION_SEED = {
   storyId: seedUuid(200_000, '17'),
+  feedSearchToken: 'rssstoryskewseed',
 } as const
 
 /** Seeds one high-cardinality story so the source-page plan must use its paging index. */
@@ -31,11 +32,16 @@ export async function seedStoryPostRelatedUrlProjection(): Promise<void> {
          LIMIT $1
        )
        UPDATE rss_feed_items items
-       SET story_id = $2
+       SET story_id = $2,
+           data = jsonb_set(items.data, '{title}', to_jsonb($3::text))
        FROM projection_items
        WHERE items.id = projection_items.id
-         AND items.story_id IS DISTINCT FROM $2::uuid`,
-    [STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT, STORY_POST_RELATED_URL_PROJECTION_SEED.storyId],
+         AND (items.story_id IS DISTINCT FROM $2::uuid OR items.data->>'title' IS DISTINCT FROM $3::text)`,
+    [
+      STORY_POST_RELATED_URL_PROJECTION_SEED_COUNT,
+      STORY_POST_RELATED_URL_PROJECTION_SEED.storyId,
+      `Seed Item ${STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken}`,
+    ],
   )
   await assertSeededStoryPostRelatedUrlProjectionCount(query)
   await query.commit()

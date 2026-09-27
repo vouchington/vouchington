@@ -4,6 +4,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
 import * as services from '../run-services.mts'
+import { runRssFeedFirstAndContinuationScenarios } from './rss-feed-pages.mts'
 
 const {
   getCommentAncestorsByAny,
@@ -74,9 +75,10 @@ export async function runFeedAndMetricScenarios() {
     `${SEED_PREFIX}-0300-7000-8000-000000000001`,
   ]
   await runAndCapture('posts-by-url-ids', () => getPostIdsByUrlIds(seedUser as any, seedUrlIds))
-  await runAndCapture('rss-feed-item-feed', () =>
-    getRssFeedItemFeedIds(seedUser as any, { limit: 25, time_range: '1w' }),
-  )
+  await runRssFeedFirstAndContinuationScenarios('rss-feed-item-feed', seedUser as any, {
+    limit: 25,
+    time_range: '1w',
+  })
   await runAndCapture('rss-feed-item-feed-follow-rss-feeds', () =>
     getRssFeedItemFeedIds(seedUser as any, {
       limit: 25,
@@ -90,6 +92,15 @@ export async function runFeedAndMetricScenarios() {
       time_range: '1w',
       feed_type: 'follow_topics',
     }),
+  )
+  await runRssFeedFirstAndContinuationScenarios(
+    'rss-feed-item-feed-sparse-source-filter',
+    seedUser as any,
+    {
+      limit: 25,
+      time_range: '1w',
+      topic_ids: [seedUuid(0, '04')],
+    },
   )
   await runAndCapture('rss-feed-items-search', () => searchRssFeedItems({ limit: 25 }))
   const seedTopicIds = [`${SEED_PREFIX}-0400-7000-8000-000000000000`]

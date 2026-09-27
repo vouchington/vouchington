@@ -1,8 +1,4 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import {
-  appendDirectCandidateFilters,
-  type DirectCandidateFilterOptions,
-} from './direct-candidate-cte.mts'
 
 export function appendPaginationCTEs(
   query: SQLStatement,
@@ -11,9 +7,7 @@ export function appendPaginationCTEs(
     publishedLt,
     safeLimit,
     shareEventIdLt,
-    directCandidateFilters,
   }: {
-    directCandidateFilters: DirectCandidateFilterOptions
     itemIdLt?: string
     publishedLt?: number
     safeLimit: number
@@ -24,36 +18,6 @@ export function appendPaginationCTEs(
     canonical_rss_feed_items AS (
       SELECT combined_rss_feed_items.*
       FROM combined_rss_feed_items
-      LEFT JOIN stories
-        ON stories.id = combined_rss_feed_items.story_id
-        AND stories.deleted_at IS NULL
-      WHERE combined_rss_feed_items.delivery_type = 'share'
-        OR NOT EXISTS (
-          SELECT 1
-          FROM rss_feed_items better_rss_feed_item
-          LEFT JOIN stories better_story
-            ON better_story.id = better_rss_feed_item.story_id
-            AND better_story.deleted_at IS NULL
-          WHERE better_rss_feed_item.story_id = combined_rss_feed_items.story_id
-  `)
-  query.append(sql` AND `)
-  appendDirectCandidateFilters(query, directCandidateFilters, {
-    rssFeedItemId: sql`better_rss_feed_item.id`,
-    rssFeedItemTable: sql`better_rss_feed_item`,
-    rssFeedItemUrlId: sql`better_rss_feed_item.url_id`,
-    rssFeedItemVotes: sql`better_rss_feed_item.votes_score_net`,
-  })
-  query.append(sql`
-            AND (
-              CASE WHEN better_story.official_rss_feed_item_id = better_rss_feed_item.id THEN 1 ELSE 0 END,
-              COALESCE(better_rss_feed_item.votes_score_net, 0),
-              better_rss_feed_item.id
-            ) > (
-              CASE WHEN stories.official_rss_feed_item_id = combined_rss_feed_items.item_id THEN 1 ELSE 0 END,
-              COALESCE(combined_rss_feed_items.votes_score_net, 0),
-              combined_rss_feed_items.item_id
-            )
-        )
     ),
     limited_rss_feed_items_raw AS (
       SELECT canonical_rss_feed_items.*

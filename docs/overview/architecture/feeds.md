@@ -4,7 +4,7 @@ Personalized post and RSS feed item feeds for logged-in users. Feeds are filtere
 
 ## Query Pipeline
 
-Both `getPostFeedIds` and `getRssFeedItemFeedIds` build one large CTE chain in the same shape — relation CTEs, then an eligible-entity CTE, then delivery CTEs unioning direct-follow and shared deliveries. The RSS item pipeline mirrors the post pipeline but has no hot-sort branch; it is always ordered chronologically.
+Both feeds start with follow and exclusion relations and combine direct and shared deliveries. RSS feeds build deduplicated source/topic membership sets with the time-range item cutoff, then materialize a narrow eligible direct cohort. Story winners are selected once from that cohort before adding storyless items and independent shares. The cursor and page limit apply to those canonical deliveries. RSS feeds are always ordered chronologically.
 
 ```mermaid
 flowchart TD
@@ -23,14 +23,16 @@ flowchart TD
         PCursor["LIMIT+1 -> page_info (opaque cursor: score|timestamp + id)"]
     end
 
-    subgraph RSS["RSS item feed - getRssFeedItemFeedIds (mirrors post pipeline)"]
-        RR["Relation CTEs: followed_rss_feeds/topics, excluded_*, hidden_items, excluded_hostname_ids"] --> RE
-        RE["eligible_rss_feed_items CTE: source-enabled, mute/block, hostname block, search filters"] --> RDirect
-        RE --> RShared
-        RDirect["direct_candidate_rss_feed_items -> direct_rss_feed_items"] --> RCombined
+    subgraph RSS["RSS item feed - getRssFeedItemFeedIds"]
+        RR["Follow and exclusion relations"] --> RM
+        RR --> RE
+        RM["Deduplicated source/topic membership IDs with item cutoff"] --> RD
+        RD["Materialized eligible direct cohort with score and request filters"] --> RW
+        RW["Story winners: official, vote score, ID; retain storyless items"] --> RCombined
+        RE["Shared-item eligibility"] --> RShared
         RShared["shared_rss_feed_items (rss_feed_item_feed_shares JOIN eligible items)"] --> RCombined
         RCombined["combined_rss_feed_items = UNION ALL"] --> RFinal
-        RFinal["eligible direct-story winner plus independent shares -> cursor/order -> LIMIT+1"]
+        RFinal["Cursor/order -> LIMIT+1"]
     end
 ```
 
@@ -101,6 +103,8 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 ## Story Clustering
 
 RSS feed items are grouped into stories — first-class entities representing a single news event covered by multiple outlets. The `@story-teller` agent decides whether to cluster using heuristics (e.g., rumors ≠ announcements). Eligibility filters run before selecting one direct representative: official first, then highest vote score, then ID. Share deliveries remain independent events. The resulting canonical rows are cursor-filtered and paginated, so a story cannot recur on a later page. See [stories.md](../../requirements/content/stories.md) for full details.
+
+The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-ids/direct-winner-cte.mts) uses `DISTINCT ON (story_id)` over the materialized eligible cohort. An official item that fails a request filter cannot displace an eligible sibling; a deleted story does not confer official priority. Ordinary, heavy-follow, sparse source-filter, and skewed-story [EXPLAIN scenarios](../../../backend/scripts/explain-analyze/README.md) enforce source work in custom and generic plans. Global recency and semantic search retain their separate selection paths.
 
 ## Related Services
 

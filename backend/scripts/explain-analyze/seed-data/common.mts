@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto'
 export const HOSTNAME_COUNT = 1000
 export const FEED_URL_COUNT = 2500
 export const ITEM_URL_POOL = 600
+export const RSS_FEED_SEED_COUNT = 2500
+export const RSS_FEED_ITEM_SEED_COUNT = 25_000
 
 export const SEED_PREFIX = '019e0000'
 

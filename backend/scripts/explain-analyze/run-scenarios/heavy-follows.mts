@@ -1,5 +1,7 @@
 import { heavyFollowUser, runAndCapture, seedUser } from '../run-support.mts'
 import * as services from '../run-services.mts'
+import { STORY_POST_RELATED_URL_PROJECTION_SEED } from '../seed-data/story-post-related-url-projection.mts'
+import { runRssFeedFirstAndContinuationScenarios } from './rss-feed-pages.mts'
 
 const { getPostFeedIds, getPostIds, getRssFeedItemFeedIds } = services
 
@@ -49,9 +51,10 @@ export async function runHeavyFollowScenarios() {
     'heavy-hot',
   )
 
-  await runAndCapture(
+  await runRssFeedFirstAndContinuationScenarios(
     'rss-feed-item-feed-heavy-follows',
-    () => getRssFeedItemFeedIds(heavyFollowUser as any, { limit: 25, time_range: '1w' }),
+    heavyFollowUser as any,
+    { limit: 25, time_range: '1w' },
     'heavy',
   )
   await runAndCapture(
@@ -84,6 +87,20 @@ export async function runHeavyFollowScenarios() {
       }),
     'heavy-all',
   )
+  await runAndCapture('rss-feed-item-feed-heavy-story-skew', async () => {
+    const page = await getRssFeedItemFeedIds(heavyFollowUser as any, {
+      limit: 25,
+      time_range: '1w',
+      text_search_query: STORY_POST_RELATED_URL_PROJECTION_SEED.feedSearchToken,
+    })
+    if (
+      page.results.length !== 1 ||
+      page.results[0]?.story_id !== STORY_POST_RELATED_URL_PROJECTION_SEED.storyId ||
+      page.page_info.has_next_page
+    ) {
+      throw new Error('RSS story-skew scenario must return one canonical direct representative')
+    }
+  })
 
   await runAndCapture(
     'post-search-heavy-follows',

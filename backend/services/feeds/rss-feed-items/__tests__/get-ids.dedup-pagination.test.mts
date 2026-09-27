@@ -9,9 +9,90 @@ import {
   insertTestStory,
   setTestItemStoryId,
   setRssFeedItemMediaType,
+  addRssFeedItemSource,
+  addCategoryToRssFeedItem,
+  followTopic,
+  followUser,
+  setTestRssFeedItemVotes,
 } from '@voucha/test-helpers'
+import { processFollowerDistributionChunk } from '@services/follower-distributions'
+import { shareRssFeedItemWithFollowers } from '../../share-actions.mts'
 
 describe('getRssFeedItemFeedIds dedup pagination', () => {
+  it('deduplicates overlapping source and topic memberships before selecting story winners', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic()
+    const otherTopic = await createTestTopic()
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    const otherFeedId = await createTestRssFeedWithTiming(otherTopic.id)
+    await Promise.all([
+      followRssFeed(user, feedId),
+      followRssFeed(user, otherFeedId),
+      followTopic(user, topic),
+    ])
+    const item = await createTestRssFeedItemWithUrl(feedId)
+    await Promise.all([
+      addRssFeedItemSource(otherFeedId, item.id),
+      addCategoryToRssFeedItem(item.id, topic.id, 'first'),
+      addCategoryToRssFeedItem(item.id, topic.id, 'second'),
+    ])
+
+    for (const feed_type of ['any', 'all', 'follow_rss_feeds', 'follow_topics'] as const) {
+      const page = await getRssFeedItemFeedIds(user, { feed_type, limit: 1 })
+      expect(page.results.map(row => row.entity_id)).toEqual([item.id])
+      expect(page.page_info.has_next_page).toBe(false)
+    }
+  })
+
+  it('ranks eligible story siblings by score and then UUID without an official item', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic()
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    await followRssFeed(user, feedId)
+    const scoreStory = await insertTestStory()
+    const tieStory = await insertTestStory()
+    const items = await Promise.all(
+      Array.from({ length: 4 }, () => createTestRssFeedItemWithUrl(feedId)),
+    )
+    await Promise.all([
+      setTestItemStoryId(items[0].id, scoreStory.id),
+      setTestItemStoryId(items[1].id, scoreStory.id),
+      setTestItemStoryId(items[2].id, tieStory.id),
+      setTestItemStoryId(items[3].id, tieStory.id),
+      setTestRssFeedItemVotes(items[0].id, 3),
+      setTestRssFeedItemVotes(items[1].id, 1),
+    ])
+    const page = await getRssFeedItemFeedIds(user, { feed_type: 'follow_rss_feeds', limit: 10 })
+    expect(page.results.map(row => row.entity_id).sort()).toEqual(
+      [items[0].id, [items[2].id, items[3].id].sort().at(-1)!].sort(),
+    )
+    expect(page.page_info.has_next_page).toBe(false)
+  })
+
+  it('keeps shared story members separate from the canonical direct member', async () => {
+    const user = await createTestUser()
+    const sharer = await createTestUser()
+    const topic = await createTestTopic()
+    const feedId = await createTestRssFeedWithTiming(topic.id)
+    await Promise.all([followRssFeed(user, feedId), followUser(user, sharer)])
+    const official = await createTestRssFeedItemWithUrl(feedId)
+    const sibling = await createTestRssFeedItemWithUrl(feedId)
+    const story = await insertTestStory({ officialRssFeedItemId: official.id })
+    await Promise.all([
+      setTestItemStoryId(official.id, story.id),
+      setTestItemStoryId(sibling.id, story.id),
+    ])
+    await processFollowerDistributionChunk(
+      (await shareRssFeedItemWithFollowers(sharer, sibling.id)).distribution_id,
+    )
+
+    const page = await getRssFeedItemFeedIds(user, { feed_type: 'any', limit: 10 })
+    expect(page.results.map(row => [row.entity_id, row.delivery_type])).toEqual([
+      [sibling.id, 'share'],
+      [official.id, 'direct'],
+    ])
+    expect(page.page_info.has_next_page).toBe(false)
+  })
   it('paginates canonical direct story representatives without duplicates or gaps', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic()

@@ -62,6 +62,7 @@ import {
 } from './seed-data/core.mts'
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
+import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
   seedMembershipRefunds,
   seedMemberships,
@@ -94,7 +95,7 @@ async function main() {
   await seedFollowPostRelations(5000)
   await seedFollowRelations(10_000)
   await seedMuteBlockRelations(5000)
-  await seedRssFeeds(2500, 25_000)
+  await seedRssFeeds(RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT)
   await seedSemanticRssFeedItems()
   await seedStoryPostRelatedUrlProjection()
   await seedDisabledRssFeed(2500)

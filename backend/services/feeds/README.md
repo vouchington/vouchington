@@ -107,6 +107,7 @@ partitioning comment in
 - Hide RSS Feed Items for RSS Feeds that are muted or blocked by the user
 - Hide any disabled RSS Feeds
 - Filter by `has_related_posts` (`true`/`false`) to show only items with/without linked discussion posts via `post -> related -> url`
+- Source/topic memberships are deduplicated before applying direct-item eligibility. Eligible story winners are selected once before the page cursor; storyless items and shares retain their separate entries. See the [query pipeline](../../../docs/overview/architecture/feeds.md#query-pipeline) and [EXPLAIN work gates](../../scripts/explain-analyze/README.md).
 - Response includes `related_posts_by_url_id`, `posts`, and `posts_metrics` for rendering discussion links
 
 ## Sharing
