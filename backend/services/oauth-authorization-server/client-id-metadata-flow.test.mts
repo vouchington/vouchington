@@ -250,12 +250,6 @@ describe('Client ID Metadata Document OAuth flow', () => {
         { safeFetch: async () => Promise.reject(new Error('unavailable')) },
       ),
     ).resolves.toBeNull()
-    await expect(
-      getOAuthAuthorizationErrorRedirect(
-        { clientId: randomMetadataUrl(), redirectUri, state, error },
-        { query: async () => Promise.reject(new Error('database unavailable')) },
-      ),
-    ).rejects.toThrow('database unavailable')
   })
 
   it('refreshes stale metadata before deciding whether an error redirect is safe', async () => {

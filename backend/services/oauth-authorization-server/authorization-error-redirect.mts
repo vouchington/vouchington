@@ -39,7 +39,8 @@ export async function getOAuthAuthorizationErrorRedirect(
         (await resolveClientIdMetadataDocument(input.clientId, clientIdMetadataDependencies)) ??
         undefined
     } catch (error) {
-      if (!(error instanceof OAuthProtocolError)) throw error
+      if (!(error instanceof OAuthProtocolError) || error.code !== 'unauthorized_client')
+        throw error
       return null
     }
   }
