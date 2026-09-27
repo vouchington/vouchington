@@ -2,31 +2,6 @@
 
 [Schema index](README.md).
 
-## `crawl_open_graph_text(meta jsonb, wanted text)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.crawl_open_graph_text(meta jsonb, wanted text)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE
-```
-
-## `fn_admin_import_rss_feed_row_matches_batch`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_admin_import_rss_feed_row_matches_batch()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_admin_import_topic_row_matches_batch`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_admin_import_topic_row_matches_batch()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_ap_inbox_delivery_retention`
 
 ```sql
@@ -59,14 +34,6 @@ CREATE OR REPLACE FUNCTION public.fn_ap_inbox_delivery_storage_after_update()
  LANGUAGE plpgsql
 ```
 
-## `fn_apply_crawl_embed(p_crawl_id uuid, p_embed jsonb)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_apply_crawl_embed(p_crawl_id uuid, p_embed jsonb)
- RETURNS void
- LANGUAGE plpgsql
-```
-
 ## `fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)`
 
 ```sql
@@ -75,34 +42,34 @@ CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_community_application_answer_from_answer`
+## `fn_assert_data_point_facts_agree`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_answer()
+CREATE OR REPLACE FUNCTION public.fn_assert_data_point_facts_agree()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_community_application_answer_from_selection`
+## `fn_assert_post_category_finalization_children`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_selection()
+CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_community_application_answer_selection_state(checked_answer_id uuid)`
+## `fn_assert_post_data_point_vertical_facts`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selection_state(checked_answer_id uuid)
- RETURNS void
+CREATE OR REPLACE FUNCTION public.fn_assert_post_data_point_vertical_facts()
+ RETURNS trigger
  LANGUAGE plpgsql
 ```
 
-## `fn_assert_follower_distribution_recipient_bounds`
+## `fn_assert_review_succession_topics`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()
+CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -147,40 +114,6 @@ CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_id
  LANGUAGE sql
 ```
 
-## `fn_crawl_embed_json(c crawls)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawl_embed_json(c crawls)
- RETURNS jsonb
- LANGUAGE sql
- STABLE
-```
-
-## `fn_crawl_links_json(p_crawl_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawl_links_json(p_crawl_id uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE
-```
-
-## `fn_crawl_links_same_shape`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawl_links_same_shape()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_crawls_sync_open_graph`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_crawls_sync_open_graph()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_create_topic_metrics_on_insert`
 
 ```sql
@@ -203,6 +136,33 @@ CREATE OR REPLACE FUNCTION public.fn_create_user_individual_household()
 CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()
  RETURNS trigger
  LANGUAGE plpgsql
+```
+
+## `fn_data_point_money_ok(presence text, amount bigint, money_currency text, parent_currency text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_data_point_money_ok(presence text, amount bigint, money_currency text, parent_currency text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_data_point_money_range_ok(presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text, parent_currency text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_data_point_money_range_ok(presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text, parent_currency text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_data_point_presence_ok(presence text, value_is_null boolean)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_data_point_presence_ok(presence text, value_is_null boolean)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
 ```
 
 ## `fn_enforce_membership_provider_evidence_immutability`
@@ -541,6 +501,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_post_data_point_fact_shape`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_post_data_point_fact_shape()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_retained_image_placement_binding`
 
 ```sql
@@ -561,6 +529,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_review_succession_topic_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_topic_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -595,6 +571,51 @@ CREATE OR REPLACE FUNCTION public.fn_image_placement_publicly_projected(p_placem
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)
  RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_jsonb_optional_boolean(field_name text, value boolean)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_boolean(field_name text, value boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_jsonb_optional_int(field_name text, presence text, value bigint)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_int(field_name text, presence text, value bigint)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_jsonb_optional_money_range(field_name text, presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_money_range(field_name text, presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_jsonb_optional_money(field_name text, presence text, amount bigint, money_currency text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_money(field_name text, presence text, amount bigint, money_currency text)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+```
+
+## `fn_jsonb_optional_text(field_name text, presence text, value text)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_text(field_name text, presence text, value text)
+ RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
 ```
@@ -743,13 +764,22 @@ CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_roll
  LANGUAGE plpgsql
 ```
 
-## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
+## `fn_post_category_finalization_actor_ids(target_post_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_post_category_finalization_actor_ids(target_post_id uuid)
+ RETURNS uuid[]
+ LANGUAGE sql
+ STABLE
+```
+
+## `fn_post_structured_data(target_post_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_post_structured_data(target_post_id uuid)
  RETURNS jsonb
  LANGUAGE sql
- IMMUTABLE
+ STABLE
 ```
 
 ## `fn_preserve_notification_publication_target`
@@ -1185,15 +1215,6 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
  IMMUTABLE STRICT
 ```
 
-## `fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])
- RETURNS boolean
- LANGUAGE sql
- IMMUTABLE STRICT
-```
-
 ## `fn_stamp_agent_moderation_transparency`
 
 ```sql
@@ -1419,13 +1440,4 @@ CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id u
 CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()
  RETURNS trigger
  LANGUAGE plpgsql
-```
-
-## `url_search_params_json(p_url_id uuid)`
-
-```sql
-CREATE OR REPLACE FUNCTION public.url_search_params_json(p_url_id uuid)
- RETURNS jsonb
- LANGUAGE sql
- STABLE
 ```
