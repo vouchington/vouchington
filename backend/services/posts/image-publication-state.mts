@@ -26,7 +26,7 @@ export async function getLockedPostImagePublicationState(
   const { rows } = await query<PostImagePublicationState>(sql`/* setPostImages */
     SELECT post.title,
       post.markdown,
-      post.structured_data,
+      fn_post_structured_data(post.id) AS structured_data,
       post.ai_summary_markdown,
       post.llm_moderation_content_sha256,
       post.latest_clearance_change_id,

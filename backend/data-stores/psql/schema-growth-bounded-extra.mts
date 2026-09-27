@@ -108,6 +108,14 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One coalesced durable finalization row per post; a post primary key bounds cardinality to live posts.',
   ],
   [
+    'post_category_finalization_actors',
+    'Actor rows cannot outlive their cascade-deleted finalization, and one finalization per post bounds cardinality to the active finalization backlog.',
+  ],
+  [
+    'post_category_finalization_admission_topics',
+    'Admission topic rows cannot outlive their cascade-deleted finalization, and one finalization per post bounds cardinality to the active finalization backlog.',
+  ],
+  [
     'post_publication_dirty_work',
     'One coalesced row per exact publication dependency scope; successful exact-generation acknowledgement deletes the row, bounding cardinality to the active backlog.',
   ],

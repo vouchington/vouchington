@@ -21,7 +21,12 @@ BEGIN
     FROM relation__post__category__topic relation
     WHERE relation.subject_id = OLD.post_id
       AND OLD.admission_response_generation = OLD.generation
-      AND relation.object_id = ANY(OLD.admission_response_topic_ids)
+      AND EXISTS (
+        SELECT 1
+        FROM post_category_finalization_admission_topics admission_topic
+        WHERE admission_topic.post_id = OLD.post_id
+          AND admission_topic.topic_id = relation.object_id
+      )
       AND relation.deleted_at IS NULL
       AND relation.votes_score_net > 0
     ORDER BY relation.votes_score_net DESC, relation.object_id
@@ -32,7 +37,7 @@ BEGIN
   UPDATE post_admission_reservations
   SET response = CASE
         WHEN OLD.admission_response_generation = OLD.generation
-          AND OLD.admission_response_topic_ids IS NOT NULL
+          AND OLD.admission_response_generation IS NOT NULL
         THEN CASE
           WHEN jsonb_typeof(response) = 'object'
             AND jsonb_typeof(response->'post') = 'object'
