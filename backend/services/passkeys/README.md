@@ -55,7 +55,9 @@ separate challenge step.
 2. Looks up the passkey by credential ID via `getPasskeyByCredentialId`. Returns 401 if not found.
 3. Delegates assertion verification and failure limiting to `passkeyProtocol`.
 4. Records successful use and advances the passkey counter via `updatePasskeyCounter`.
-5. Checks user suspension via `getEnrichedSessionClaims`.
+5. `issueDiscoverablePasskeyLogin` checks that the loaded user is that credential's account.
+   A missing or different account returns 401 and does not mint a session. A suspended account
+   returns 403.
 6. Issues `dt`/`st` tokens via `createDeviceAndSessionTokens` and returns them.
 
 API routes: `POST /api/v1/auth/passkeys/authentication/options` and

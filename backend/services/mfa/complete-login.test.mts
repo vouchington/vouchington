@@ -68,4 +68,33 @@ describe('completeMfaLoginWithContext', () => {
 
     await unsuspendTestUser(user.id)
   }, 20_000)
+
+  it('refuses to mint a session when the loaded account is not the attempt user', async () => {
+    const attemptUser = await createTestUser()
+    const loadedUser = await createTestUser()
+
+    await expect(
+      completeMfaLoginWithContext(
+        {
+          userId: attemptUser.id,
+          deviceId: v7(),
+          sessionId: v7(),
+        },
+        loadedUser,
+      ),
+    ).rejects.toMatchObject({ status: 401, message: 'Login attempt expired or invalid' })
+  }, 20_000)
+
+  it('refuses to mint a session when the account no longer exists', async () => {
+    await expect(
+      completeMfaLoginWithContext(
+        {
+          userId: v7(),
+          deviceId: v7(),
+          sessionId: v7(),
+        },
+        null,
+      ),
+    ).rejects.toMatchObject({ status: 401, message: 'Login attempt expired or invalid' })
+  }, 20_000)
 })

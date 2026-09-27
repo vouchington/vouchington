@@ -9,6 +9,7 @@ import {
   type DeviceContext,
   type FetchUserForSession,
 } from '@services/jwt-session'
+import type { PrivateUser } from '@voucha/types/entities/user'
 
 export async function getDiscoverablePasskeyAuthenticationOptions(deviceId: string) {
   if (!deviceId) throw createHttpError(400, 'Device ID is required')
@@ -59,28 +60,46 @@ export async function verifyDiscoverablePasskeyAuthentication(opts: {
   }
 
   /* v8 ignore start — success path requires a real WebAuthn ceremony (not unit-testable) */
-  const user = await opts.fetchUser(verification.userId)
-  const claims = user ? await getEnrichedSessionClaims(user) : null
-  if (claims?.suspended) throw createHttpError(403, 'Account suspended')
+  return issueDiscoverablePasskeyLogin({
+    userId: verification.userId,
+    user: await opts.fetchUser(verification.userId),
+    deviceId: opts.deviceId,
+    deviceClass: opts.deviceClass,
+    deviceContext: opts.deviceContext,
+  })
+  /* v8 ignore stop */
+}
+
+export async function issueDiscoverablePasskeyLogin(opts: {
+  userId: string
+  user: PrivateUser | null
+  deviceId: string
+  deviceClass?: DeviceClass
+  deviceContext?: DeviceContext
+}): Promise<DiscoverablePasskeyLogin> {
+  if (!opts.user || opts.user.id !== opts.userId) {
+    throw createHttpError(401, 'Passkey sign-in failed')
+  }
+  const claims = await getEnrichedSessionClaims(opts.user)
+  if (claims.suspended) throw createHttpError(403, 'Account suspended')
 
   const tokens = await createDeviceAndSessionTokens({
     did: opts.deviceId,
-    uid: verification.userId,
-    roles: claims?.roles,
-    membershipPlan: claims?.membershipPlan,
-    membershipExpiresAt: claims?.membershipExpiresAt,
-    trustTier: claims?.trustTier,
-    uiLocale: claims?.uiLocale,
+    uid: opts.user.id,
+    roles: claims.roles,
+    membershipPlan: claims.membershipPlan,
+    membershipExpiresAt: claims.membershipExpiresAt,
+    trustTier: claims.trustTier,
+    uiLocale: claims.uiLocale,
     deviceClass: opts.deviceClass,
     deviceContext: opts.deviceContext,
   })
 
   return {
-    userId: verification.userId,
+    userId: opts.user.id,
     deviceToken: tokens.deviceToken,
     sessionToken: tokens.sessionToken,
   }
-  /* v8 ignore stop */
 }
 
 async function throwDiscoverableAuthenticationError(
