@@ -39,6 +39,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_review_successions__active_successor_post_id`: `CREATE INDEX idx_review_successions__active_successor_post_id ON public.review_successions USING btree (successor_post_id) WHERE ((automatically_restored_at IS NULL) AND (manual_override_at IS NULL))`
+- `idx_review_successions__author_user_id`: `CREATE INDEX idx_review_successions__author_user_id ON public.review_successions USING btree (author_user_id)`
 - `idx_review_successions__successor_post_id`: `CREATE INDEX idx_review_successions__successor_post_id ON public.review_successions USING btree (successor_post_id)`
 - `review_successions_pkey`: `CREATE UNIQUE INDEX review_successions_pkey ON public.review_successions USING btree (id)`
 - `uq_review_successions__active_predecessor`: `CREATE UNIQUE INDEX uq_review_successions__active_predecessor ON public.review_successions USING btree (predecessor_post_id) WHERE ((automatically_restored_at IS NULL) AND (manual_override_at IS NULL))`
