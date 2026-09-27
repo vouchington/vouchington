@@ -15,6 +15,7 @@ Not partitioned — growth: unbounded.
 | `rss_feed_item_id`   | `uuid`                     | yes      |                              |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                                        |
 | `scope_category`     | `text`                     | no       |                              |          |           |           | Decision scope: global or community_ai.                                                              |
 | `scope_community_id` | `uuid`                     | yes      |                              |          |           |           | Immutable community provenance for community_ai scope; no FK so history survives community deletion. |
+| `completed_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Completion marker set only after every call and result for this batch is durable.                    |
 | `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                      |
 | `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                      |
 
@@ -23,6 +24,7 @@ Not partitioned — growth: unbounded.
 **Unique constraints:**
 
 - `uq_classifier_decision_batches__id__classifier`: `UNIQUE (id, classifier_id)`
+- `uq_classifier_decision_batches__id__post`: `UNIQUE (id, post_id)`
 - `uq_classifier_decision_batches__id__prompt`: `UNIQUE (id, prompt_version_id)`
 - `uq_classifier_decision_batches__id__scope`: `UNIQUE (id, scope_category, scope_community_id)`
 
@@ -47,9 +49,11 @@ Not partitioned — growth: unbounded.
 - `idx_classifier_decision_batches__rss_feed_item`: `CREATE INDEX idx_classifier_decision_batches__rss_feed_item ON public.classifier_decision_batches USING btree (rss_feed_item_id, id)`
 - `idx_classifier_decision_batches__scope`: `CREATE INDEX idx_classifier_decision_batches__scope ON public.classifier_decision_batches USING btree (scope_community_id, id) WHERE (scope_category = 'community_ai'::text)`
 - `uq_classifier_decision_batches__id__classifier`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__classifier ON public.classifier_decision_batches USING btree (id, classifier_id)`
+- `uq_classifier_decision_batches__id__post`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__post ON public.classifier_decision_batches USING btree (id, post_id)`
 - `uq_classifier_decision_batches__id__prompt`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__prompt ON public.classifier_decision_batches USING btree (id, prompt_version_id)`
 - `uq_classifier_decision_batches__id__scope`: `CREATE UNIQUE INDEX uq_classifier_decision_batches__id__scope ON public.classifier_decision_batches USING btree (id, scope_category, scope_community_id)`
 
 **Triggers:**
 
-- `trigger_classifier_decision_batches_append_only`: `CREATE TRIGGER trigger_classifier_decision_batches_append_only BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()`
+- `trigger_classifier_decision_batches_completion`: `CREATE TRIGGER trigger_classifier_decision_batches_completion BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_decision_batch_completion()`
+- `trigger_classifier_decision_batches_updated_at`: `CREATE TRIGGER trigger_classifier_decision_batches_updated_at BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

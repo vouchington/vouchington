@@ -67,6 +67,22 @@ describe('normalizeClassifierDecisionInput', () => {
     ).toThrow('exactly one subject')
   })
 
+  it('rejects malformed result entity and stored-candidate identifiers', () => {
+    const input = createInput()
+    const result = input.calls[0]!.results[0]! as TopicClassifierDecisionResult
+    for (const invalid of [
+      { ...result, topicId: 'invalid' },
+      { ...result, storedCandidateId: 'invalid' },
+    ]) {
+      expect(() =>
+        normalizeClassifierDecisionInput({
+          ...input,
+          calls: [{ shardOrdinal: 0, results: [invalid] }],
+        }),
+      ).toThrow('durable IDs must be UUIDs')
+    }
+  })
+
   it('enforces scope and community consistency', () => {
     const input = createInput()
     expect(() =>

@@ -1,8 +1,6 @@
 const MARKETPLACE_CATEGORIES = ['buying', 'selling', 'trade', 'for-hire', 'hiring'] as const
 
-export const selfPromotionPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
-
-Your task is to determine if a post is self-promotion. Self-promotion includes:
+export const selfPromotionPolicy = `Your task is to determine if a post is self-promotion. Self-promotion includes:
 - Users promoting their own company, product, or service
 - Users sharing their own referral links or affiliate links
 - Users advertising their own blog, YouTube channel, podcast, or social media
@@ -12,16 +10,18 @@ A post is NOT self-promotion if:
 - The user is genuinely asking for help or sharing an experience
 - The user mentions a product/service they used without promoting it
 - The user is sharing news or information about a company they don't work for
-- The user is recommending something they don't personally benefit from
+- The user is recommending something they don't personally benefit from`
+
+export const selfPromotionPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
+
+${selfPromotionPolicy}
 
 Respond with:
 - flagged: true if the post is self-promotion
 - flagged: false if the post is not self-promotion
 - reason: A brief explanation of your decision`
 
-export const marketplacePrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
-
-Your task is to determine if a post is marketplace content - where users are trying to buy, sell, trade, or offer/seek services.
+export const marketplacePolicy = `Your task is to determine if a post is marketplace content - where users are trying to buy, sell, trade, or offer/seek services.
 
 Marketplace content includes:
 - Buying: User wants to purchase points, miles, gift cards, vouchers, or travel services
@@ -33,7 +33,11 @@ Marketplace content includes:
 A post is NOT marketplace content if:
 - The user is asking general questions about programs or benefits
 - The user is sharing experiences or reviews
-- The user is discussing strategies without buying/selling intent
+- The user is discussing strategies without buying/selling intent`
+
+export const marketplacePrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
+
+${marketplacePolicy}
 
 If the post IS marketplace content, include the applicable categories in the categories array.
 Allowed category values: ${MARKETPLACE_CATEGORIES.join(', ')}
@@ -55,9 +59,7 @@ We still keep an active prompt row so the post moderation agent framework can re
 moderator/prompt/result lifecycle and later switch back to an LLM-backed implementation without a
 schema change.`
 
-export const politicsAversePrompt = `You are a content moderator for a community forum.
-
-Your task is to detect political content that should be discouraged in the community.
+export const politicsAversePolicy = `Your task is to detect political content that should be discouraged in the community.
 
 Allow:
 - Neutral discussion of news and current events
@@ -71,16 +73,18 @@ Flag:
 - Unsubstantiated accusations about politicians, governments, parties, or public policy
 
 When political content cites or links to sources, prefer well-supported reporting and analysis over unsupported assertions.
-When sourcing is weak or unclear, do not give the benefit of the doubt to factual political claims that lack evidence.
+When sourcing is weak or unclear, do not give the benefit of the doubt to factual political claims that lack evidence.`
+
+export const politicsAversePrompt = `You are a content moderator for a community forum.
+
+${politicsAversePolicy}
 
 Respond with:
 - flagged: true if the post is political opinion, persuasion, or unsupported political claims
 - flagged: false if the post is allowed under this policy
 - reason: A brief explanation of your decision`
 
-export const clickBaitPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
-
-Your task is to determine if a post uses intentionally misleading title, body, or attached image captions/metadata to earn clicks.
+export const clickBaitPolicy = `Your task is to determine if a post uses intentionally misleading title, body, or attached image captions/metadata to earn clicks.
 
 Flag click bait when:
 - The title withholds essential information in a manipulative way
@@ -92,16 +96,18 @@ Do NOT flag when:
 - The title is concise but accurately summarizes the post
 - The post asks a genuine question, even if the answer is not known yet
 - The author uses mild humor or opinion without misleading readers
-- The post has a weak title but is not intentionally deceptive
+- The post has a weak title but is not intentionally deceptive`
+
+export const clickBaitPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
+
+${clickBaitPolicy}
 
 Respond with:
 - flagged: true if the post is intentionally misleading click bait
 - flagged: false if the post is not intentionally misleading click bait
 - reason: A brief explanation of your decision`
 
-export const vaguePostPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
-
-Your task is to determine if a post is too vague to be useful to readers.
+export const vaguePostPolicy = `Your task is to determine if a post is too vague to be useful to readers.
 
 Flag vague posts when:
 - The post lacks enough context for readers to understand the situation
@@ -112,16 +118,18 @@ Flag vague posts when:
 Do NOT flag when:
 - The post is short but includes the information needed for a useful discussion
 - Missing details are minor and readers can still answer the question
-- The post is a clear news link, data point, review, or discussion prompt
+- The post is a clear news link, data point, review, or discussion prompt`
+
+export const vaguePostPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
+
+${vaguePostPolicy}
 
 Respond with:
 - flagged: true if the post is too vague to be useful
 - flagged: false if the post has enough context
 - reason: A brief explanation of your decision`
 
-export const shitPostPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
-
-Your task is to determine if a post is a low-effort shit post.
+export const shitPostPolicy = `Your task is to determine if a post is a low-effort shit post.
 
 Flag shit posts when:
 - The post is primarily a meme, joke, rant, dunk, or bait without useful substance
@@ -132,7 +140,11 @@ Flag shit posts when:
 Do NOT flag when:
 - The post is casual but still has a clear travel rewards, credit card, or loyalty-program point
 - The post is critical or frustrated but includes a concrete experience or question
-- The post is humorous while still contributing useful context
+- The post is humorous while still contributing useful context`
+
+export const shitPostPrompt = `You are a content moderator for a community forum focused on travel rewards, credit cards, and loyalty programs.
+
+${shitPostPolicy}
 
 Respond with:
 - flagged: true if the post is a low-effort shit post

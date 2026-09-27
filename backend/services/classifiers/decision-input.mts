@@ -13,9 +13,34 @@ export type NormalizedClassifierDecisionInput = PersistClassifierDecisionInput &
 
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+type ClassifierDecisionBatchIdentity = Pick<
+  PersistClassifierDecisionInput,
+  'batchId' | 'classifierId' | 'promptVersionId' | 'scope' | 'subject'
+>
+
 export function normalizeClassifierDecisionInput(
   input: PersistClassifierDecisionInput,
 ): NormalizedClassifierDecisionInput {
+  assertClassifierDecisionBatchIdentity(input)
+  const resultIds = input.calls.flatMap(call =>
+    call.results.flatMap(result => [
+      result.candidateKind === 'topic' ? result.topicId : result.storyId,
+      ...(result.storedCandidateId ? [result.storedCandidateId] : []),
+    ]),
+  )
+  if (resultIds.some(id => !isUUID(id))) {
+    throw new Error('Classifier decision durable IDs must be UUIDs')
+  }
+  if (input.calls.length === 0) {
+    throw new Error('Classifier decision requires at least one provider call')
+  }
+  assertDecisionCalls(input.calls)
+  return input as NormalizedClassifierDecisionInput
+}
+
+export function assertClassifierDecisionBatchIdentity(
+  input: ClassifierDecisionBatchIdentity,
+): void {
   if (!UUID_V7_PATTERN.test(input.batchId)) {
     throw new Error('Classifier decision batch ID must be UUIDv7')
   }
@@ -23,10 +48,6 @@ export function normalizeClassifierDecisionInput(
   if (input.subject.postId) durableIds.push(input.subject.postId)
   if (input.subject.rssFeedItemId) durableIds.push(input.subject.rssFeedItemId)
   if (input.scope.scopeCommunityId) durableIds.push(input.scope.scopeCommunityId)
-  for (const result of input.calls.flatMap(call => call.results)) {
-    durableIds.push(result.candidateKind === 'topic' ? result.topicId : result.storyId)
-    if (result.storedCandidateId) durableIds.push(result.storedCandidateId)
-  }
   if (durableIds.some(id => !isUUID(id))) {
     throw new Error('Classifier decision durable IDs must be UUIDs')
   }
@@ -39,11 +60,17 @@ export function normalizeClassifierDecisionInput(
   if (input.scope.scopeCategory === 'community_ai' && !input.scope.scopeCommunityId) {
     throw new Error('Community classifier decision batches require a community')
   }
-  if (input.calls.length === 0) {
-    throw new Error('Classifier decision requires at least one provider call')
+}
+
+export function assertClassifierDecisionStoredCandidateIds(
+  storedCandidateIds: readonly string[],
+): void {
+  if (
+    storedCandidateIds.some(id => !isUUID(id)) ||
+    new Set(storedCandidateIds).size !== storedCandidateIds.length
+  ) {
+    throw new Error('Classifier decision stored candidate IDs must be unique UUIDs')
   }
-  assertDecisionCalls(input.calls)
-  return input as NormalizedClassifierDecisionInput
 }
 
 export function classifierDecisionCandidateKind(

@@ -1,9 +1,10 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { isUUID } from '@modules/utils/ids'
 import { upsertTopicElectionVotes } from '@services/elections-votes/topic'
 import sql from 'sql-template-strings'
 import { readCompleteClassifierDecision } from './read-complete-decision.mts'
 import { mapClassifierProbabilityToTopicVoteScore } from './topic-vote-mapper.mts'
+import { recordTopicVoteApplication } from './topic-vote-receipt.mts'
 import type { PersistedClassifierDecision, PersistedClassifierDecisionResult } from './types.mts'
 
 export type ExpectedTopicClassifierBinding = {
@@ -21,24 +22,29 @@ export type ApplyTopicClassifierDecisionVotesResult = {
 }
 export async function applyTopicClassifierDecisionVotes(
   input: ApplyTopicClassifierDecisionVotesInput,
+  options: { query?: OwnedTransaction } = {},
 ): Promise<ApplyTopicClassifierDecisionVotesResult> {
   assertApplicationInput(input)
+  if (options.query) return applyTopicClassifierDecisionVotesWithQuery(input, options.query)
   await using transaction = await beginTransaction()
-  const decision = await readCompleteClassifierDecision(transaction, input.batchId, 'topic')
-  const results = validateTopicDecision(decision, input.expectedBindings)
-  await assertSharedSystemActor(transaction, input.sharedActorId)
-  const appliedTopicIds = await applyTopicResults(
-    transaction,
-    input.sharedActorId,
-    decision,
-    results,
-  )
+  const result = await applyTopicClassifierDecisionVotesWithQuery(input, transaction)
   await transaction.commit()
+  return result
+}
+
+async function applyTopicClassifierDecisionVotesWithQuery(
+  input: ApplyTopicClassifierDecisionVotesInput,
+  query: OwnedTransaction,
+): Promise<ApplyTopicClassifierDecisionVotesResult> {
+  const decision = await readCompleteClassifierDecision(query, input.batchId, 'topic')
+  const results = validateTopicDecision(decision, input.expectedBindings)
+  await assertSharedSystemActor(query, input.sharedActorId)
+  const appliedTopicIds = await applyTopicResults(query, input.sharedActorId, decision, results)
   return { appliedTopicIds }
 }
 
 async function assertSharedSystemActor(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: OwnedTransaction,
   sharedActorId: string,
 ): Promise<void> {
   await query(sql`/* lockClassifierTopicVoteActor */
@@ -118,7 +124,7 @@ function bindingKey(binding: ExpectedTopicClassifierBinding): string {
 }
 
 async function applyTopicResults(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: OwnedTransaction,
   sharedActorId: string,
   decision: PersistedClassifierDecision,
   results: readonly PersistedTopicDecisionResult[],
@@ -128,7 +134,7 @@ async function applyTopicResults(
 }
 
 async function applyOrderedTopicResults(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: OwnedTransaction,
   sharedActorId: string,
   decision: PersistedClassifierDecision,
   results: readonly PersistedTopicDecisionResult[],
@@ -154,47 +160,4 @@ async function applyOrderedTopicResults(
   }
   const appliedTopicIds = await applyOrderedTopicResults(query, sharedActorId, decision, remaining)
   return applies ? [result.topicId, ...appliedTopicIds] : appliedTopicIds
-}
-
-async function recordTopicVoteApplication(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  sharedActorId: string,
-  decision: PersistedClassifierDecision,
-  result: PersistedTopicDecisionResult,
-): Promise<boolean> {
-  await query(sql`/* lockClassifierTopicVoteApplication */
-    SELECT pg_advisory_xact_lock(
-      hashtextextended('topic_votes:' || ${sharedActorId} || ':' || ${result.topicId}, 0)
-    )
-  `)
-  const { rows: supersedingRows } = await query<{ exists: boolean }>(sql`
-    /* readSupersedingClassifierTopicVoteApplication */
-    SELECT EXISTS (
-      SELECT 1
-      FROM classifier_topic_vote_applications
-      WHERE shared_actor_id = ${sharedActorId}
-        AND topic_id = ${result.topicId}
-        AND batch_id >= ${decision.batchId}
-    ) AS exists
-  `)
-  if (supersedingRows[0]?.exists === true) return false
-  const { rows } = await query<{ batch_id: string }>(sql`
-    /* recordTopicClassifierVoteApplication */
-    INSERT INTO classifier_topic_vote_applications (
-      shared_actor_id, topic_id, post_id, rss_feed_item_id, classifier_id,
-      prompt_version_id, batch_id, result_id
-    ) VALUES (
-      ${sharedActorId}, ${result.topicId}, ${decision.subject.postId}, ${decision.subject.rssFeedItemId},
-      ${decision.classifierId}, ${decision.promptVersionId}, ${decision.batchId}, ${result.id}
-    )
-    ON CONFLICT (shared_actor_id, topic_id, post_id, rss_feed_item_id)
-    DO UPDATE SET
-      classifier_id = EXCLUDED.classifier_id,
-      prompt_version_id = EXCLUDED.prompt_version_id,
-      batch_id = EXCLUDED.batch_id,
-      result_id = EXCLUDED.result_id
-    WHERE classifier_topic_vote_applications.batch_id < EXCLUDED.batch_id
-    RETURNING batch_id
-  `)
-  return rows.length === 1
 }

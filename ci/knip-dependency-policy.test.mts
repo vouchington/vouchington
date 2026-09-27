@@ -38,6 +38,12 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
           evidenceFiles: ['backend/workers/entity-listeners/processors/reconciliation.mts'],
           evidencePattern: /\bfrom '@services\/entity-listener-reconciliation'/,
         },
+        {
+          dependency: '@services/post-classifier',
+          evidenceFiles: ['backend/services/post-classifier/index.mts'],
+          evidencePattern:
+            /export \{ claimPostClassifierApplication \} from '\.\/application-claim\.mts'/,
+        },
       ],
     ],
     [
@@ -67,6 +73,12 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
           dependency: '@services/entity-relation-actions',
           evidenceFiles: ['backend/api/v1/entity-relations/entity-relations.mts'],
           evidencePattern: /\bfrom '@services\/entity-relation-actions'/,
+        },
+        {
+          dependency: '@services/post-classifier',
+          evidenceFiles: ['backend/services/post-classifier/index.mts'],
+          evidencePattern:
+            /export \{ claimPostClassifierApplication \} from '\.\/application-claim\.mts'/,
         },
       ],
     ],

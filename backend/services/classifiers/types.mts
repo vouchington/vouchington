@@ -55,6 +55,21 @@ export type PersistClassifierDecisionInput = {
   calls: readonly PersistClassifierDecisionCall[]
 }
 
+/**
+ * A durable C3 batch identity may be reserved before a provider request. Stored candidates are
+ * captured with their exact threshold revision at reservation time so completion never reads a
+ * later configuration revision.
+ */
+export type ClassifierDecisionReservationInput = {
+  batchId: string
+  classifierId: string
+  promptVersionId: string
+  scope: ClassifierDecisionScope
+  subject: { postId: string; rssFeedItemId: null } | { postId: null; rssFeedItemId: string }
+  candidateKind: 'topic' | 'story'
+  storedCandidateIds: readonly string[]
+}
+
 export type PersistedClassifierDecisionResult =
   | (TopicClassifierDecisionResult & {
       id: string

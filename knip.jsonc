@@ -47,7 +47,11 @@
       "includeEntryExports": false,
       // Required by the new-service runtime packaging rule. Reconciliation runs in the entity
       // listener worker, so the API package does not have a direct static import for knip to see.
-      "ignoreDependencies": ["@services/entity-listener-reconciliation"],
+      "ignoreDependencies": [
+        "@services/entity-listener-reconciliation",
+        // Foundation API packaged before the dependent worker cutover; no direct route import.
+        "@services/post-classifier",
+      ],
     },
     "backend/entrypoints/worker-cpu": {
       "entry": ["**/*.mts"],
@@ -70,6 +74,8 @@
         "@services/bluesky-follows",
         "@services/entity-listener-reconciliation",
         "@services/entity-relation-actions",
+        // Foundation API packaged before the dependent worker cutover; no direct route import.
+        "@services/post-classifier",
       ],
     },
     "backend/config": {

@@ -11,6 +11,7 @@ type BatchRow = {
   rss_feed_item_id: string | null
   scope_category: ClassifierDecisionScope['scopeCategory']
   scope_community_id: string | null
+  completed_at: Date | null
 }
 
 type CallRow = { id: string; shard_ordinal: number }
@@ -22,15 +23,18 @@ export async function readCompleteClassifierDecision(
 ): Promise<PersistedClassifierDecision> {
   const batch = await readBatchRow(query, batchId)
   if (!batch) throw new Error('Classifier decision batch disappeared before replay verification')
+  if (batch.completed_at === null) {
+    throw new Error('Classifier decision batch is reserved but not complete')
+  }
   return assembleCompleteClassifierDecision(query, batch, candidateKind)
 }
 
 /**
  * Reads a committed classifier decision batch by ID without throwing when it does not (yet)
  * exist. A C6-style caller uses this before dispatching to the provider: the batch and its calls
- * and results are written atomically in one transaction (see `persistClassifierDecision`), so
- * finding the batch row means the whole decision is already committed and safe to recover instead
- * of re-dispatching.
+ * and results are written atomically in one transaction (see `persistClassifierDecision`). A
+ * pre-reserved batch has no completion marker, so it intentionally reads as absent until its exact
+ * provider result is committed.
  *
  * Always reads the primary, never a caller-supplied executor: a replica can lag behind the commit,
  * and a false "not found" here would make the caller re-dispatch and then fail to persist under the
@@ -41,7 +45,7 @@ export async function readCompleteClassifierDecisionIfExistsFromPrimary(
   candidateKind: 'topic' | 'story',
 ): Promise<PersistedClassifierDecision | null> {
   const batch = await readBatchRow(write, batchId)
-  if (!batch) return null
+  if (!batch || batch.completed_at === null) return null
   return assembleCompleteClassifierDecision(write, batch, candidateKind)
 }
 
@@ -69,7 +73,7 @@ async function readBatchRow(query: QueryExecutor, batchId: string): Promise<Batc
   const { rows } = await query<BatchRow>(sql`
     /* readCompleteClassifierDecisionBatch */
     SELECT id, classifier_id, prompt_version_id, post_id, rss_feed_item_id, scope_category,
-      scope_community_id
+      scope_community_id, completed_at
     FROM classifier_decision_batches
     WHERE id = ${batchId}
     FOR SHARE

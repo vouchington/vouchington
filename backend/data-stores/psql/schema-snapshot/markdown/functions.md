@@ -716,6 +716,14 @@ CREATE OR REPLACE FUNCTION public.fn_protect_moderator_action_type()
  LANGUAGE plpgsql
 ```
 
+## `fn_protect_post_classifier_application`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_protect_post_clearance_change_type`
 
 ```sql
@@ -972,6 +980,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_life
  LANGUAGE plpgsql
 ```
 
+## `fn_require_classifier_decision_batch_completion`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_require_classifier_decision_batch_completion()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_require_classifier_result_batch_scope`
 
 ```sql
@@ -1106,6 +1122,14 @@ CREATE OR REPLACE FUNCTION public.fn_stamp_moderation_report_transparency_scope(
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_stamp_moderator_action_transparency_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_stamp_post_classifier_application_scope`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_stamp_post_classifier_application_scope()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
