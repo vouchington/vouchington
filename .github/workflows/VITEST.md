@@ -53,6 +53,7 @@ Reporter policy:
 | `backend-email-templates`          | `tests-backend-modules.yml`      | `backend-modules`                 | None                     |
 | `backend/analytics-integration`    | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |
 | `backend-data-stores`              | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |
+| `backend-platform-stats-cache`     | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |
 | `backend-mocks`                    | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |
 | `backend-real-glide-mq`            | `tests-backend-unit.yml`         | `backend-tests`                   | None                     |
 | `backend-postgres-schema`          | `tests-postgres-schema.yml`      | `postgres-schema-tests`           | None                     |
