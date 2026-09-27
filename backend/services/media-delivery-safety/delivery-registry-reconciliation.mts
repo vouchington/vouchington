@@ -53,12 +53,23 @@ export async function listRecoverableMediaDeliveryRegistryKeys(
   return rows.map(row => row.delivery_key)
 }
 
+export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(
+  imageIds: readonly string[],
+): Promise<number> {
+  if (imageIds.length === 0) return 0
+  return stageAllCurrentImagePlacementDeliveryRecords(imageIds)
+}
+
 /** Snapshot staging is advisory; the publisher repeats this same proof under retained locks. */
-export async function stageAllCurrentImagePlacementDeliveryRecords(): Promise<number> {
+export async function stageAllCurrentImagePlacementDeliveryRecords(
+  imageIds?: readonly string[],
+): Promise<number> {
+  const imageIdScope = imageIds ? [...imageIds] : null
   const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
     WITH candidates AS (
       SELECT delivery_key, route_kind, placement_id, placement_revision, asset_id
       FROM media_delivery_registry_records
+      WHERE (${imageIdScope}::uuid[] IS NULL OR asset_id = ANY(${imageIdScope}::uuid[]))
       UNION
       SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
         'placement', placement.id, placement.revision, binding.image_id
@@ -67,9 +78,11 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(): Promise<nu
         UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
         ON binding.placement_id = placement.id
       WHERE placement.retired_at IS NULL
+        AND (${imageIdScope}::uuid[] IS NULL OR binding.image_id = ANY(${imageIdScope}::uuid[]))
       UNION
       SELECT concat('legacy-image:', image.id), 'legacy-image', NULL::uuid, NULL::integer, image.id
       FROM images image
+      WHERE (${imageIdScope}::uuid[] IS NULL OR image.id = ANY(${imageIdScope}::uuid[]))
     ), intended AS (
       SELECT authority.*, CASE WHEN `
   statement.append(imageDeliveryAuthorityProof())
