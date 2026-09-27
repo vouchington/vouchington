@@ -26,10 +26,20 @@ function hasNonHelpResetWorktreeInvocation(command: string): boolean {
   return false
 }
 
-function paneTitle(tmuxPane: string): string {
-  const result = spawnSync('tmux', ['display-message', '-p', '-t', tmuxPane, '#{pane_title}'], {
-    encoding: 'utf8',
-  })
+export type PostToolTmuxOptions = {
+  env?: NodeJS.ProcessEnv
+  tmuxCommand?: string
+}
+
+function paneTitle(tmuxPane: string, tmuxCommand: string, env: NodeJS.ProcessEnv): string {
+  const result = spawnSync(
+    tmuxCommand,
+    ['display-message', '-p', '-t', tmuxPane, '#{pane_title}'],
+    {
+      encoding: 'utf8',
+      env,
+    },
+  )
   if (result.status !== 0) return ''
   return result.stdout.trim()
 }
@@ -55,7 +65,14 @@ function toolExitCode(payload: HookPayload): number | undefined {
 // title has no `-pr<N>` suffix yet, or reset-worktree ran but left a stale title behind. Silent
 // (`null`) outside tmux and for every other tool call — mirrors the bash script's laziness, only
 // running `tmux display-message` inside the branches that need the current title.
-export function renderPostToolReminder(payload: HookPayload, tmuxPane: string): string | null {
+export function renderPostToolReminder(
+  payload: HookPayload,
+  tmuxPane: string,
+  options?: PostToolTmuxOptions,
+): string | null {
+  // Resolved up front so callers that return before display-message still exercise the defaults.
+  const env = options?.env ?? process.env
+  const tmuxCommand = options?.tmuxCommand ?? 'tmux'
   if (tmuxPane === '') return null
 
   const toolName = hookToolName(payload)
@@ -79,7 +96,7 @@ export function renderPostToolReminder(payload: HookPayload, tmuxPane: string): 
   }
 
   if (GIT_PUSH_COMMAND_PATTERN.test(command)) {
-    const title = paneTitle(tmuxPane)
+    const title = paneTitle(tmuxPane, tmuxCommand, env)
     if (!PR_SUFFIX_PATTERN.test(title)) {
       return '[tmux-window-name] git push on PR branch — confirm -pr<N> suffix is set: ./dev/tmux-name <feature-pr123>  (dangerouslyDisableSandbox: true)'
     }
@@ -89,7 +106,7 @@ export function renderPostToolReminder(payload: HookPayload, tmuxPane: string): 
   // --help/-h exits before reset-worktree touches the pane title (or anything else), so it
   // never leaves a stale title behind -- don't remind for it.
   if (hasNonHelpResetWorktreeInvocation(command)) {
-    const title = paneTitle(tmuxPane)
+    const title = paneTitle(tmuxPane, tmuxCommand, env)
     if (title !== '') {
       return '[tmux-window-name] reset-worktree ran — pane title should be empty. ./dev/tmux-name ""  (dangerouslyDisableSandbox: true)'
     }
