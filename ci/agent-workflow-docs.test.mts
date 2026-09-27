@@ -227,6 +227,13 @@ describe('agent workflow documentation', () => {
     expect(gitAndPrs).toContain('run_in_background')
     expect(gitAndPrs).toContain('ScheduleWakeup')
     expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
+    expect(gitAndPrs).toContain('#reading-the-four-refs')
+    expect(gitAndPrs).toContain('git rev-list --left-right --count HEAD...origin/<branch>')
+    expect(gitAndPrs).toContain('git cherry -v')
+    expect(gitAndPrs).toContain('git log --oneline --left-right')
+    expect(gitAndPrs).toContain('git range-diff')
+    expect(gitAndPrs).toContain('git rebase origin/<branch>')
+    expect(gitAndPrs).toContain('./dev/rebase-onto-main --stack')
     expect(rerunReference).toContain('Ineffective rerun patterns')
   })
 

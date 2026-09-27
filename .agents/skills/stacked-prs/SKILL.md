@@ -102,8 +102,7 @@ the stack into its one worktree:
    - `0 0` — up to date.
    - `0 N` (only behind) — fast-forward it: `git merge --ff-only origin/<b>` on the checked-out
      layer, `git branch -f <b> origin/<b>` on any other.
-   - left count above `0` (ahead or diverged) — reconcile by hand: push commits that belong on the
-     PR, or move the branch once you have confirmed they are superseded.
+   - left count above `0` (ahead or diverged) — follow [Reading the four refs](../agent-workflow/git-and-prs.md#reading-the-four-refs) before rewriting or pushing. Do not open another pull request for this layer.
 
 ### Lower-layer review fix
 

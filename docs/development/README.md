@@ -175,7 +175,7 @@ flowchart TD
 Plan Mode is read-only with respect to branch history: inspect `origin/main` with `git diff` and
 `git show` instead of resetting or rebasing during planning. Once the plan is accepted, use
 unforced `./dev/reset-worktree` for a new task that was planned from `origin/main`, or preserve the
-branch and run `./dev/rebase-onto-main` for resumed work. Both refuse while `SANDBOX_RUNTIME` or
+branch and run `./dev/rebase-onto-main` for resumed work. Before that publish, read the four refs in [Reading the four refs](../../.agents/skills/agent-workflow/git-and-prs.md#reading-the-four-refs) so a rewritten `origin/<branch>` is not replayed onto local `main`. Both refuse while `SANDBOX_RUNTIME` or
 `CURSOR_SANDBOX` is set and a sandbox-protected path differs. Never infer permission to discard
 changes or add `--force`.
 The agent-specific procedure lives in [Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md);
