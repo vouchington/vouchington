@@ -5,6 +5,13 @@ import {
   resolveGhPackageJsonReader,
   writeSupersessionHints,
 } from '../supersession-hints.mts'
+import { createDiffSummary, reduceDiffBlock } from '../diff-summary.mts'
+
+function summaryFor(block: string) {
+  const summary = createDiffSummary()
+  reduceDiffBlock(summary, block)
+  return summary
+}
 
 describe('parsePullRequestRefOids', () => {
   it('parses baseRefOid/headRefOid from a gh pr view response', () => {
@@ -75,7 +82,9 @@ describe('writeSupersessionHints', () => {
       await writeSupersessionHints(
         runGh,
         Promise.resolve('vouchington/vouchington'),
-        Promise.resolve('diff --git a/backend/x.mts b/backend/x.mts\ndeleted file mode 100644\n'),
+        Promise.resolve(
+          summaryFor('diff --git a/backend/x.mts b/backend/x.mts\ndeleted file mode 100644\n'),
+        ),
         Promise.resolve(async () => undefined),
       )
     } finally {
@@ -89,7 +98,7 @@ describe('writeSupersessionHints', () => {
       writeSupersessionHints(
         () => Promise.reject(new Error('gh unavailable')),
         Promise.reject(new Error('no repo')),
-        Promise.resolve(''),
+        Promise.resolve(createDiffSummary()),
         Promise.resolve(async () => undefined),
       ),
     ).resolves.toBeUndefined()

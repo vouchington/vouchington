@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { findRemovedScripts, type PackageJsonReader } from '../removed-scripts.mts'
 import { runAdvisorySupersessionSearch } from '../supersession.mts'
+import { createDiffSummary, reduceDiffBlock } from '../diff-summary.mts'
 
 const PATH = 'backend/package.json'
 
@@ -91,7 +92,9 @@ describe('composition: removed script reaches a supersession search term (#8779)
       terms.push(...args.filter((_, i) => args[i - 1] === '--search'))
       return Promise.resolve('[]')
     }
-    await runAdvisorySupersessionSearch(runGh, 'vouchington/vouchington', patch, reader)
+    const summary = createDiffSummary()
+    reduceDiffBlock(summary, patch)
+    await runAdvisorySupersessionSearch(runGh, 'vouchington/vouchington', summary, reader)
     expect(terms).toContain('"db:snapshot:check"')
   })
 })

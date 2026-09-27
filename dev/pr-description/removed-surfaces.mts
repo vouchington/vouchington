@@ -21,7 +21,7 @@ const TYPE_PRIORITY: Record<RemovedSurface['type'], number> = {
 
 export function parseRemovedSurfaces(patch: string): RemovedSurface[] {
   const surfaces: RemovedSurface[] = []
-  for (const block of splitDiffBlocks(patch)) {
+  for (const block of splitDiffBlocks(patch.replaceAll('\r\n', '\n'))) {
     if (DELETED_FILE_MODE_RE.test(block)) {
       // `--- a/`/`+++ /dev/null` are absent for binary/empty deletions; `diff --git` is not.
       const oldPath = DIFF_GIT_OLD_PATH_RE.exec(block)?.groups?.path
@@ -53,7 +53,7 @@ export function parseRemovedSurfaces(patch: string): RemovedSurface[] {
  */
 export function parseChangedPackageJsonPaths(patch: string): string[] {
   const paths: string[] = []
-  for (const block of splitDiffBlocks(patch)) {
+  for (const block of splitDiffBlocks(patch.replaceAll('\r\n', '\n'))) {
     if (DELETED_FILE_MODE_RE.test(block)) continue
     const newPath = NEW_PATH_RE.exec(block)?.groups?.path
     if (newPath !== undefined && newPath.endsWith('package.json')) paths.push(newPath)

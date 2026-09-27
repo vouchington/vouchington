@@ -1,16 +1,12 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url'
-import { createPullRequest, getDiffAgainstBase, runGh, runGit } from 'vouchington-tooling/gh-cli'
+import { createPullRequest, processDiffCommand, runGh, runGit } from 'vouchington-tooling/gh-cli'
 import { formatProjectAdvisoryReport } from 'vouchington-tooling/github-projects'
 import { failValidation } from './pr-description/fail-validation.mts'
 import { resolveBody } from './pr-description/body-source.mts'
 import { formatReferencedIssueSummary } from './pr-description/referenced-issue-summary.mts'
 import { parseBodyFileArg, parseCreateArgs } from './pr-description/argv.mts'
-import {
-  countDiffLineChanges,
-  exceedsLargeDiffThreshold,
-  formatLargeDiffRefusal,
-} from './pr-description/diff-size.mts'
+import { exceedsLargeDiffThreshold, formatLargeDiffRefusal } from './pr-description/diff-size.mts'
 import { createMilestoneAuditor } from './pr-description/milestone-audit.mts'
 import {
   createGhPackageJsonReader,
@@ -26,6 +22,7 @@ import {
 import { injectResolvedProvenance, resolveValidationBody } from './pr-description/provenance.mts'
 import { resolveReconciledUpdateBody } from './pr-description/reconciled-update-body.mts'
 import { readPullRequestPatch } from './pr-description/pull-request-patch.mts'
+import { collectDiffSummary } from './pr-description/stream-diff-summary.mts'
 import { createSupersessionAuditor } from './pr-description/supersession.mts'
 import {
   parsePullRequestRefOids,
@@ -56,7 +53,11 @@ async function runValidate(argv: string[]): Promise<void> {
     ])
     const target = parsePullRequestIdentity(prJson)
     const { baseRefOid, headRefOid } = parsePullRequestRefOids(prJson)
-    const patchResult = await readPullRequestPatch(runGh, pr, target)
+    const patchResult = await readPullRequestPatch(
+      onBlock => processDiffCommand({ executable: 'gh', args: ['pr', 'diff', pr] }, onBlock),
+      runGh,
+      target,
+    )
     if (patchResult.source === 'files-api') {
       process.stderr.write(
         'GitHub refused the oversized unified PR diff; supersession validation is using files API metadata and available per-file patches. Files whose patches GitHub omits receive deleted-file, route, rename, and package-manifest checks, but not removed-export content checks.\n',
@@ -71,7 +72,7 @@ async function runValidate(argv: string[]): Promise<void> {
       supersessionAuditor: createSupersessionAuditor(
         runGh,
         repo,
-        patchResult.patch,
+        patchResult.summary,
         readPackageJson,
       ),
       targetPullRequest: target,
@@ -103,10 +104,12 @@ async function runCreate(argv: string[]): Promise<void> {
   if (!result.ok) failValidation(result.errors)
   const issueSummary = formatReferencedIssueSummary(result.referencedIssues)
   if (issueSummary) process.stderr.write(issueSummary)
-  // Reused for both the size gate below and writeSupersessionHints — one `git diff` call.
-  const diffAgainstMain = getDiffAgainstBase(runGit, 'origin/main')
+  const diffSummary = collectDiffSummary({
+    executable: 'git',
+    args: ['diff', 'origin/main...HEAD'],
+  })
   if (!acknowledgeLargeDiff) {
-    const changes = countDiffLineChanges(await diffAgainstMain)
+    const changes = (await diffSummary).lineChanges
     if (exceedsLargeDiffThreshold(changes)) {
       process.stderr.write(formatLargeDiffRefusal(changes))
       process.exit(1)
@@ -115,7 +118,7 @@ async function runCreate(argv: string[]): Promise<void> {
   await writeSupersessionHints(
     runGh,
     currentRepo(runGh),
-    diffAgainstMain,
+    diffSummary,
     Promise.resolve(createLocalPackageJsonReader(runGit)),
   )
   const url = await withTempBodyFile(body, filePath =>
@@ -149,11 +152,10 @@ async function runUpdate(argv: string[]): Promise<void> {
   if (!result.ok) failValidation(result.errors)
   const issueSummary = formatReferencedIssueSummary(result.referencedIssues)
   if (issueSummary) process.stderr.write(issueSummary)
-
   await writeSupersessionHints(
     runGh,
     currentRepo(runGh),
-    runGh(['pr', 'diff', pr]),
+    collectDiffSummary({ executable: 'gh', args: ['pr', 'diff', pr] }),
     resolveGhPackageJsonReader(runGh, pr),
   )
 
@@ -162,7 +164,6 @@ async function runUpdate(argv: string[]): Promise<void> {
   })
   process.stdout.write('PR description updated.\n')
 }
-
 const resolveIssueReference = createClosingIssueReferenceResolver(runGh)
 
 async function validateBody(body: string, options: IssueReferenceValidationOptions = {}) {

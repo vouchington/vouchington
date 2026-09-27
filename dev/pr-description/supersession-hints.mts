@@ -3,6 +3,7 @@ import { createGhPackageJsonReader } from './package-json-source.mts'
 import { currentRepo } from './related-issues.mts'
 import type { PackageJsonReader } from './removed-scripts.mts'
 import { runAdvisorySupersessionSearch } from './supersession.mts'
+import type { DiffSummary } from './diff-summary.mts'
 
 export type PullRequestRefOids = { baseRefOid: string; headRefOid: string }
 
@@ -34,26 +35,26 @@ export async function resolveGhPackageJsonReader(
 }
 
 /**
- * Advisory-only wiring shared by `create`/`update`: resolves repo/diff/reader concurrently and
+ * Advisory-only wiring shared by `create`/`update`: resolves repo/summary/reader concurrently and
  * writes any hints to stderr. Never throws — a supersession-search failure must not block drafting
  * or updating a PR body.
  */
 export async function writeSupersessionHints(
   runGh: RunGh,
   repo: Promise<string>,
-  diff: Promise<string>,
+  summary: Promise<DiffSummary>,
   readPackageJson: Promise<PackageJsonReader>,
 ): Promise<void> {
   try {
-    const [resolvedRepo, resolvedDiff, resolvedReader] = await Promise.all([
+    const [resolvedRepo, resolvedSummary, resolvedReader] = await Promise.all([
       repo,
-      diff,
+      summary,
       readPackageJson,
     ])
     const hints = await runAdvisorySupersessionSearch(
       runGh,
       resolvedRepo,
-      resolvedDiff,
+      resolvedSummary,
       resolvedReader,
     )
     if (hints) process.stderr.write(hints)
