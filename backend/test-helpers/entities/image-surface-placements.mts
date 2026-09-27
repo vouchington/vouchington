@@ -10,8 +10,8 @@ export type TestImageSurfacePlacement = {
   image_id: string
   retired_at: Date | null
   retirement_reason: 'asset_deleted' | 'owner_removed' | null
-  retired_user_id: string | null
-  retired_user_profile_link_id: string | null
+  user_id: string | null
+  user_profile_link_id: string | null
 }
 
 export async function getTestImageSurfacePlacements(input: {
@@ -24,8 +24,8 @@ export async function getTestImageSurfacePlacements(input: {
 }): Promise<TestImageSurfacePlacement[]> {
   const { rows } = await read<TestImageSurfacePlacement>(sql`/* getTestImageSurfacePlacements */
     SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id,
-      placement.retired_at, placement.retirement_reason, surface.retired_user_id,
-      surface.retired_user_profile_link_id
+      placement.retired_at, placement.retirement_reason, surface.user_id,
+      surface.user_profile_link_id
     FROM image_surface_placements surface
     JOIN media_placements placement ON placement.id = surface.placement_id
     WHERE (${input.imageId ?? null}::uuid IS NULL OR surface.image_id = ${input.imageId ?? null}::uuid)

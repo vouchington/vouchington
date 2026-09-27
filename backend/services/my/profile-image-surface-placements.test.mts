@@ -28,7 +28,7 @@ import {
 } from '@voucha/test-helpers'
 
 describe('image surface placement lifecycle', () => {
-  it('retires profile surfaces on soft deletion and hands their historical owner off before purge', async () => {
+  it('retires profile surfaces on soft deletion and clears the live owner before purge', async () => {
     const user = await createTestUserDirect()
     const archiveOwner = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
@@ -39,13 +39,13 @@ describe('image surface placement lifecycle', () => {
     expect(softDeleted).toMatchObject({ image_id: imageId, retired_at: expect.any(Date) })
 
     // A real purge cascades images owned by the user. Transfer this fixture's byte asset so the
-    // test isolates the placement's historical-owner handoff from image-retention policy.
+    // test isolates terminal owner clearing from image-retention policy.
     await setTestImageCreator(imageId, archiveOwner.id)
     await hardDeleteTestUser(user.id)
     const [purged] = await getTestImageSurfacePlacements({ imageId })
     expect(purged).toMatchObject({
       image_id: imageId,
-      retired_user_id: user.id,
+      user_id: null,
       retired_at: expect.any(Date),
     })
   })
@@ -91,7 +91,7 @@ describe('image surface placement lifecycle', () => {
     await deleteProfileLink(user.id, link.id)
     const [placement] = await getTestImageSurfacePlacements({ imageId })
     expect(placement).toMatchObject({
-      retired_user_profile_link_id: link.id,
+      user_profile_link_id: null,
       retired_at: expect.any(Date),
     })
   })

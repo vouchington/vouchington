@@ -167,12 +167,6 @@ export async function deleteProfileLink(userId: string, linkId: string): Promise
         transaction,
       ),
     () =>
-      transaction(sql`/* deleteProfileLink */
-        UPDATE image_surface_placements
-        SET user_profile_link_id = NULL, retired_user_profile_link_id = ${linkId}
-        WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = ${linkId}
-      `),
-    () =>
       transaction(sql`/* deleteProfileLink */ DELETE FROM user_profile_links WHERE id = ${linkId}`),
   ])
   await transaction.commit()

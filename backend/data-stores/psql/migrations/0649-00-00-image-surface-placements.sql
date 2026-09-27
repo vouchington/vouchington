@@ -22,22 +22,19 @@ CREATE TABLE image_surface_placements (
   )),
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
   user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
-  retired_user_id uuid,
   topic_id uuid REFERENCES topics(id) ON DELETE RESTRICT,
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
-  user_profile_link_id uuid REFERENCES user_profile_links(id) ON DELETE SET NULL,
-  retired_user_profile_link_id uuid,
+  user_profile_link_id uuid REFERENCES user_profile_links(id) ON DELETE RESTRICT,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (
-    (surface_kind = 'user-profile-image' AND num_nonnulls(user_id, retired_user_id) = 1
+    (surface_kind = 'user-profile-image'
       AND topic_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
     OR (surface_kind IN ('topic-logo-image', 'topic-hero-image') AND topic_id IS NOT NULL
-      AND user_id IS NULL AND retired_user_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
+      AND user_id IS NULL AND community_id IS NULL AND user_profile_link_id IS NULL)
     OR (surface_kind IN ('community-profile-image', 'community-banner-image') AND community_id IS NOT NULL
-      AND user_id IS NULL AND retired_user_id IS NULL AND topic_id IS NULL AND user_profile_link_id IS NULL)
+      AND user_id IS NULL AND topic_id IS NULL AND user_profile_link_id IS NULL)
     OR (surface_kind = 'user-profile-link-image'
-      AND num_nonnulls(user_profile_link_id, retired_user_profile_link_id) = 1
-      AND user_id IS NULL AND retired_user_id IS NULL AND topic_id IS NULL AND community_id IS NULL)
+      AND user_id IS NULL AND topic_id IS NULL AND community_id IS NULL)
   )
 );
 
@@ -76,14 +73,14 @@ BEGIN
     AND OLD.surface_kind = 'user-profile-link-image'
     AND OLD.user_profile_link_id IS NOT NULL
     AND NEW.user_profile_link_id IS NULL
-    AND NEW.retired_user_profile_link_id = OLD.user_profile_link_id
     AND NEW.placement_id = OLD.placement_id
     AND NEW.surface_kind = OLD.surface_kind
     AND NEW.image_id = OLD.image_id
     AND NEW.user_id IS NOT DISTINCT FROM OLD.user_id
-    AND NEW.retired_user_id IS NOT DISTINCT FROM OLD.retired_user_id
     AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id
     AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id
+    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id
+      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)
   THEN
     RETURN NEW;
   END IF;
@@ -91,16 +88,19 @@ BEGIN
     AND OLD.surface_kind = 'user-profile-image'
     AND OLD.user_id IS NOT NULL
     AND NEW.user_id IS NULL
-    AND NEW.retired_user_id = OLD.user_id
     AND NEW.placement_id = OLD.placement_id
     AND NEW.surface_kind = OLD.surface_kind
     AND NEW.image_id = OLD.image_id
-    AND NEW.retired_user_id = OLD.user_id
     AND NEW.topic_id IS NOT DISTINCT FROM OLD.topic_id
     AND NEW.community_id IS NOT DISTINCT FROM OLD.community_id
     AND NEW.user_profile_link_id IS NOT DISTINCT FROM OLD.user_profile_link_id
+    AND EXISTS (SELECT 1 FROM media_placements placement WHERE placement.id = OLD.placement_id
+      AND placement.retired_at IS NOT NULL AND placement.retirement_reason = 'owner_removed' FOR UPDATE)
   THEN
     RETURN NEW;
+  END IF;
+  IF TG_OP = 'INSERT' AND num_nonnulls(NEW.user_id, NEW.topic_id, NEW.community_id, NEW.user_profile_link_id) <> 1 THEN
+    RAISE EXCEPTION 'new image surface requires one concrete live owner' USING ERRCODE = 'check_violation';
   END IF;
   IF TG_OP = 'INSERT' AND EXISTS (
     SELECT 1
@@ -121,8 +121,26 @@ END;
 $$;
 
 CREATE TRIGGER trigger_image_surface_placement_guard
-BEFORE UPDATE OR DELETE ON image_surface_placements
+BEFORE INSERT OR UPDATE OR DELETE ON image_surface_placements
 FOR EACH ROW EXECUTE FUNCTION fn_guard_image_surface_placement();
+
+CREATE OR REPLACE FUNCTION fn_guard_ownerless_image_surface_retirement()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  v_ownerless boolean;
+BEGIN
+  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0
+  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id
+  FOR UPDATE;
+  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN
+    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_guard_ownerless_image_surface_retirement
+BEFORE UPDATE ON media_placements
+FOR EACH ROW EXECUTE FUNCTION fn_guard_ownerless_image_surface_retirement();
 
 CREATE TRIGGER trigger_image_surface_placements_updated_at
 BEFORE UPDATE ON image_surface_placements
@@ -255,7 +273,7 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);
   UPDATE image_surface_placements
-  SET user_id = NULL, retired_user_id = OLD.id
+  SET user_id = NULL
   WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;
   RETURN OLD;
 END;
@@ -322,6 +340,19 @@ CREATE TRIGGER trigger_sync_user_profile_link_image_placement
 AFTER INSERT OR UPDATE OF image_id ON user_profile_links
 FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_link_image_placement();
 
+CREATE OR REPLACE FUNCTION fn_retire_deleted_profile_link_image_surfaces()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);
+  UPDATE image_surface_placements SET user_profile_link_id = NULL
+  WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;
+  RETURN OLD;
+END;
+$$;
+CREATE TRIGGER trigger_retire_deleted_profile_link_image_surfaces
+BEFORE DELETE ON user_profile_links
+FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_profile_link_image_surfaces();
+
 CREATE OR REPLACE FUNCTION fn_image_placement_publicly_projected(
   p_placement_id uuid,
   p_revision integer,
@@ -355,10 +386,8 @@ COMMENT ON TABLE image_surface_placements IS 'Immutable bindings for non-post pe
 COMMENT ON COLUMN image_surface_placements.placement_id IS 'Stable media placement identifier that scopes public delivery to this persisted surface use.';
 COMMENT ON COLUMN image_surface_placements.surface_kind IS 'Typed persisted surface owning this image use; exactly one matching owner branch is required.';
 COMMENT ON COLUMN image_surface_placements.image_id IS 'Immutable byte asset bound to this surface placement.';
-COMMENT ON COLUMN image_surface_placements.user_id IS 'Current user owner for a profile-image surface; replaced by retired_user_id only during hard deletion.';
-COMMENT ON COLUMN image_surface_placements.retired_user_id IS 'Tombstone user UUID retained after hard deletion so the immutable surface provenance remains auditable without a foreign key.';
+COMMENT ON COLUMN image_surface_placements.user_id IS 'Concrete live profile owner; cleared only after terminal owner-removal retirement on hard deletion.';
 COMMENT ON COLUMN image_surface_placements.topic_id IS 'Topic owner for a logo or hero image surface.';
 COMMENT ON COLUMN image_surface_placements.community_id IS 'Community owner for a profile or banner image surface.';
-COMMENT ON COLUMN image_surface_placements.user_profile_link_id IS 'Current profile-link owner; set NULL by the foreign-key deletion action before the tombstone handoff.';
-COMMENT ON COLUMN image_surface_placements.retired_user_profile_link_id IS 'Tombstone profile-link UUID retained after hard deletion so immutable surface provenance remains auditable without a foreign key.';
+COMMENT ON COLUMN image_surface_placements.user_profile_link_id IS 'Concrete live profile-link owner; cleared only after terminal owner-removal retirement on deletion.';
 COMMENT ON COLUMN images.id IS 'Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.';

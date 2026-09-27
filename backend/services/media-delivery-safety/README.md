@@ -59,6 +59,9 @@ unchanged route. Disabled registry publication leaves existing repair markers un
 no provider calls.
 
 Registry rows require typed image and placement foreign keys and an exact immutable revision.
+Hard owner deletion retains only the retired placement/image binding, not a deleted-owner UUID.
+Live owner links clear after owner-removal retirement, including profile-link deletion cascades;
+ownerless bindings cannot be created or reactivated. Recovery proves current live ownership.
 There is no generic public-image route, media discriminator, or image-wide allow fallback.
 The fresh-bootstrap schema is defined by the placement, delivery registry, surface binding, and
 repair-marker creators in migrations 0647, 0648, 0649, and 0731. Runtime owner writes create their
