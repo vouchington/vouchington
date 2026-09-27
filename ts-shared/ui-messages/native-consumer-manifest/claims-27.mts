@@ -1,0 +1,26 @@
+import type { NativeConsumerManifestEntry } from './types.mts'
+
+/** Canonical credential-management claims, kept in code-point key order. */
+export const NATIVE_CONSUMER_MANIFEST_CLAIMS_27 = [
+  { key: 'native.credentials.action', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.adminAudience', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.apiAudience', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.audience', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.catalogLoadFailed', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.chooseScopes', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.connectedApps', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.grantActivity', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.grantRevoked', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.invalidSelection', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.mcpAdminFullAccess', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.mcpUserFullAccess', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.noConnectedApps', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.readAction', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.requires', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.resource', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.revokeFailed', consumers: ['dotnet'] },
+  { key: 'native.credentials.scopes', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.unusedGrantActivity', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.userAudience', consumers: ['dotnet', 'swift'] },
+  { key: 'native.credentials.writeAction', consumers: ['dotnet', 'swift'] },
+] as const satisfies readonly NativeConsumerManifestEntry[]
