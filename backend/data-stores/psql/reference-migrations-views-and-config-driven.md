@@ -96,13 +96,15 @@ both the live snapshot and a complete fresh migration; applying only the new mig
 development tables cannot establish fresh-install equivalence.
 
 - **Checksum mismatch** (`MigrationChecksumMismatchError` from `@vouchington/postgres`):
-  each ledger row records a SHA-256 hash of the migration file's SQL text alongside its filename. If
-  a migration's filename already has a ledger row but the file's current content hash does not match
-  the recorded hash, the run fails immediately -- it neither silently skips the edited file nor
-  re-applies it. This is exactly the incident scenario: a migration was edited in place after staging
-  had already run the old version. The external `@vouchington/postgres` package still contains a
-  pre-checksum ledger compatibility path; removing it requires a separately scoped platform package
-  change. Fresh databases record checksums from their first migration.
+  each ledger row records a SHA-256 hash of the migration file's SQL text alongside its filename. The
+  runner creates `migrations.checksum` as `text NOT NULL`. If a migration's filename already has a
+  ledger row but the file's current content hash does not match the recorded hash, the run fails
+  immediately -- it neither silently skips the edited file nor re-applies it. This is exactly the
+  incident scenario: a migration was edited in place after staging had already run the old version.
+  A ledger row whose checksum is null fails before any file is applied
+  (`MigrationChecksumMissingError`). The runner does not backfill that checksum from the current
+  file. Fresh databases record checksums from their first migration. Recreate a database whose
+  ledger predates the required checksum; pre-launch databases are disposable.
 - **Post-migration schema verification** (`verifyLiveSchemaMatchesSnapshot`,
   `schema-snapshot/verify-live-schema.mts`): after every migration run, the live PostgreSQL catalog is
   compared structurally against the committed schema snapshot (`schema-snapshot/schema.json`). This
@@ -110,8 +112,9 @@ development tables cannot establish fresh-install equivalence.
   incident's missing column and missing table even without the checksum check above.
 
 Either failure stops the migrate run from succeeding, but they fail at different points. A checksum
-mismatch is caught before that migration's SQL runs, so no ledger row or schema change is written for
-it. Schema verification runs only after every migration for the run has already applied and committed
+mismatch or a missing checksum is caught before that migration's SQL runs, so no ledger row or
+schema change is written for it. Schema verification runs only after every migration for the run has
+already applied and committed
 individually (see the per-migration transactional guarantee above); it does not roll anything back --
 it only prevents the run, and therefore the deploy, from reporting success on top of a schema it
 cannot verify. On staging, the migration job in

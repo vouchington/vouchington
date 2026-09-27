@@ -86,8 +86,8 @@ importers:
         specifier: ^18.4.0
         version: 18.4.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.65.0
-        version: 0.65.0(eslint@10.5.0(jiti@2.7.0))
+        specifier: ^0.66.0
+        version: 0.66.0(eslint@10.5.0(jiti@2.7.0))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0))
@@ -19040,8 +19040,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.65.0:
-    resolution: {integrity: sha512-v3mkRPPSCrUW9Na+gDIZiJK5UCWKsR93Rin32fOLJPhQKjpUdUk+4ZtP2O/u5+LihN9S7JqBVLbPCvYNLTMKvA==}
+  eslint-plugin-no-mistakes@0.66.0:
+    resolution: {integrity: sha512-jMdrWbdzV+WcPd9xLnBVwoC5kBhyVk3fkqMXUxTs6feqXVaC8GGRtAvNi6bNnAuV9G0V7ufz2NVh62ZqrO5X7w==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -28106,7 +28106,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.65.0(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-no-mistakes@0.66.0(eslint@10.5.0(jiti@2.7.0)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)
 
