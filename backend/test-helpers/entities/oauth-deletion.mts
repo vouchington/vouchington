@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
 
 type CredentialKind = 'client' | 'grant' | 'family' | 'access' | 'refresh'
 
@@ -6,6 +6,16 @@ export type TestOAuthDeletionRow = {
   kind: CredentialKind
   id: string
   revoked_at: Date | null
+}
+
+/** Runs real credential mutations inside a transaction that is deliberately rolled back. */
+export async function withTestOAuthDeletionRollback<T>(
+  operation: (query: TransactionQuery) => Promise<T>,
+): Promise<T> {
+  await using query = await beginTransaction()
+  const result = await operation(query)
+  await query.rollback()
+  return result
 }
 
 /** Includes children of revoked grants and families: finalization must inspect them independently. */

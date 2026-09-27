@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createHash, randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   getTestOAuthClientAfterUserPurge,
@@ -11,6 +10,7 @@ import {
   hasTestUserDeletionResidual,
   expireTestOAuthDeletionChild,
   setTestOAuthDeletionRevokedAt,
+  withTestOAuthDeletionRollback,
 } from '@voucha/test-helpers/entities/oauth-deletion'
 import { assignTestOAuthClientOwner } from '@voucha/test-helpers/entities/oauth-client-management'
 import {
@@ -180,11 +180,11 @@ describe('OAuth authorization-server account deletion', () => {
     const user = await createTestUserDirect({ withEmail: false })
     await createCredentialChain(user.id, 0)
     const before = await getTestOAuthDeletionRows(user.id)
-    await using query = await beginTransaction()
-    expect(await revokeOAuthCredentialsForDeletedUserBatch(user.id, 1, query)).toBe(true)
-    expect(await revokeOAuthCredentialsForDeletedUserBatch(user.id, 1, query)).toBe(true)
-    // Transaction disposal intentionally rolls back both mutations.
-    await query.rollback()
+    const mutations = await withTestOAuthDeletionRollback(async query => [
+      await revokeOAuthCredentialsForDeletedUserBatch(user.id, 1, query),
+      await revokeOAuthCredentialsForDeletedUserBatch(user.id, 1, query),
+    ])
+    expect(mutations).toEqual([true, true])
     expect(await getTestOAuthDeletionRows(user.id)).toEqual(before)
     expect(await getTestOAuthDeletionFamilyEvents(user.id)).toEqual([])
   })
