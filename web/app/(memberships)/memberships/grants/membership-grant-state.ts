@@ -12,7 +12,7 @@ export interface MembershipGrantState {
   userKey: number // incremented after each grant to force-remount UserAutocomplete
 }
 
-export const initialState: MembershipGrantState = {
+export const initialMembershipGrantState: MembershipGrantState = {
   userId: '',
   plan: '',
   skuId: '',
@@ -24,11 +24,14 @@ export const initialState: MembershipGrantState = {
   userKey: 0,
 }
 
-export type Action =
+export type MembershipGrantAction =
   | Partial<MembershipGrantState>
   | ((state: MembershipGrantState) => Partial<MembershipGrantState>)
 
-export function reducer(state: MembershipGrantState, action: Action): MembershipGrantState {
+export function membershipGrantReducer(
+  state: MembershipGrantState,
+  action: MembershipGrantAction,
+): MembershipGrantState {
   return { ...state, ...(typeof action === 'function' ? action(state) : action) }
 }
 

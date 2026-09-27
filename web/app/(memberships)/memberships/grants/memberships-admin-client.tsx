@@ -8,11 +8,15 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import { groupStripeMembershipProducts } from '@/lib/memberships/catalog'
 
 import { MembershipGrantForm } from './membership-grant-form'
-import { initialState, reducer, isValidDurationDays } from './membership-grant-state'
+import {
+  initialMembershipGrantState,
+  membershipGrantReducer,
+  isValidDurationDays,
+} from './membership-grant-state'
 
 export default function MembershipsAdminPage() {
   const t = useTranslations()
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [state, dispatch] = useReducer(membershipGrantReducer, initialMembershipGrantState)
   const latestPlanRef = useRef('') // discard stale fetchPlans responses
 
   async function handlePlanChange(selectedPlan: string) {

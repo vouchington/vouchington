@@ -18,7 +18,7 @@ import { formatMoney } from '@/lib/money'
 import type { Dispatch } from 'react'
 import {
   isValidDurationDays,
-  type Action,
+  type MembershipGrantAction,
   type MembershipGrantState,
 } from './membership-grant-state'
 
@@ -29,7 +29,7 @@ export function MembershipGrantForm({
   handleGrant,
 }: {
   state: MembershipGrantState
-  dispatch: Dispatch<Action>
+  dispatch: Dispatch<MembershipGrantAction>
   handlePlanChange: (plan: string) => Promise<void>
   handleGrant: () => Promise<void>
 }) {

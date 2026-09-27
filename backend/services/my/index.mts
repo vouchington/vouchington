@@ -3,7 +3,3 @@ export * from './email-addresses.mts'
 export * from './profile.mts'
 export * from './profile-links.mts'
 export * from './landing-pages/index.mts'
-export {
-  createEmailVerificationToken,
-  verifyEmailVerificationToken,
-} from './email-address-verification.mts'
