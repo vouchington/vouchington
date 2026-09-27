@@ -15,12 +15,14 @@ describe('post seed diagnostics', () => {
         await using transaction = await diagnostics.operation('begin', null, () =>
           beginTransaction(),
         )
-        const { rows } = await transaction<SeedBackend>(
-          `/* postSeedDiagnosticsTestPid */ SELECT pg_backend_pid() AS pid,
+        const { rows } = await diagnostics.operation('backend_context', null, () =>
+          transaction<SeedBackend>(
+            `/* postSeedDiagnosticsTestPid */ SELECT pg_backend_pid() AS pid,
                 current_setting('jit') AS jit,
                 current_setting('work_mem') AS work_mem,
                 current_setting('plan_cache_mode') AS plan_cache_mode,
                 current_setting('server_version') AS server_version`,
+          ),
         )
         diagnostics.startObserver(rows[0])
         await transaction('/* postSeedDiagnosticsTestBusy */ SELECT pg_sleep(2.2)')
@@ -50,6 +52,17 @@ describe('post seed diagnostics', () => {
       ).toBe(true)
       expect(records).toEqual(
         expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'operation',
+            phase: 'begin',
+            name: 'backend_context',
+          }),
+          expect.objectContaining({
+            kind: 'operation',
+            phase: 'end',
+            name: 'backend_context',
+            status: 'ok',
+          }),
           expect.objectContaining({
             kind: 'operation',
             phase: 'begin',

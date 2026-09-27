@@ -8,12 +8,14 @@ export async function seedPosts(count = 10_000): Promise<void> {
   try {
     await using transaction = await diagnostics.operation('begin', null, () => beginTransaction())
     const query = transaction
-    const { rows: backendRows } = await query<SeedBackend>(
-      `/* explainSeedBackendPid */ SELECT pg_backend_pid() AS pid,
+    const { rows: backendRows } = await diagnostics.operation('backend_context', null, () =>
+      query<SeedBackend>(
+        `/* explainSeedBackendPid */ SELECT pg_backend_pid() AS pid,
               current_setting('jit') AS jit,
               current_setting('work_mem') AS work_mem,
               current_setting('plan_cache_mode') AS plan_cache_mode,
               current_setting('server_version') AS server_version`,
+      ),
     )
     diagnostics.startObserver(backendRows[0])
     for (let i = 0; i < count; i += 500) {

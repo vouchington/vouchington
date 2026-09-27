@@ -2,9 +2,9 @@ import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { Pool, type PoolClient } from '@data-stores/psql'
-import { resolveDatabaseConnectionString } from '../../../data-stores/psql/connection-string-env.mts'
-import { withLibpqCompat } from '../../../data-stores/psql/connection-string-utils.mts'
-import { assertNotCrossWorktreeConnection } from '../../../data-stores/psql/worktree-guard.mts'
+import { resolveDatabaseConnectionString } from '@data-stores/psql/connection-string-env'
+import { withLibpqCompat } from '@data-stores/psql/connection-string-utils'
+import { assertNotCrossWorktreeConnection } from '@data-stores/psql/worktree-guard'
 
 type CumulativeStats = { wal: Record<string, unknown>; checkpointer: Record<string, unknown> }
 export type SeedBackend = {
