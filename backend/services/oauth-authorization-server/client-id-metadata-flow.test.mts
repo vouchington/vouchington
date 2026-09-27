@@ -16,6 +16,7 @@ import {
   getOAuthAuthorizationErrorRedirect,
   getOAuthAuthorizationRequestForUser,
   getOAuthResourceUrl,
+  listUserOAuthGrants,
   OAuthProtocolError,
   validateOAuthAuthorizationRequest,
 } from './index.mts'
@@ -129,6 +130,12 @@ describe('Client ID Metadata Document OAuth flow', () => {
         redirectUri,
       }),
     ).resolves.toMatchObject({ scope: 'mcp.user:read', token_type: 'Bearer' })
+    const grants = await listUserOAuthGrants(user.id, { limit: 100 })
+    expect(grants.results.find(grant => grant.client.client_id === clientId)?.client).toMatchObject(
+      {
+        client_name: 'client.example',
+      },
+    )
   })
 
   it('reuses one no-store metadata fetch when beginning an already validated request', async () => {

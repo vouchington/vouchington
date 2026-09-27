@@ -1,7 +1,7 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import { readResponseBodyAsBuffer } from '@modules/utils/http'
 import { safeFetch } from 'ssrf-guard/node'
-import { OAuthProtocolError } from './errors.mts'
+import { unavailableClientIdMetadata } from './client-id-metadata-errors.mts'
 import {
   validateAuthMethod,
   validateClientName,
@@ -71,9 +71,11 @@ export async function resolveClientIdMetadataDocument(
 export function parseClientIdMetadataUrl(value: string): string | null {
   const authorityStart = 'https://'.length
   const pathStart = value.indexOf('/', authorityStart)
+  const queryStart = value.indexOf('?', authorityStart)
   if (
     value.length > 2048 ||
     pathStart <= authorityStart ||
+    (queryStart !== -1 && pathStart > queryStart) ||
     !value.startsWith('https://') ||
     value.includes('#') ||
     value.includes('\\') ||
@@ -118,8 +120,8 @@ async function fetchAndValidateClientIdMetadataDocument(
       maxRedirects: 0,
       signal: requestController.signal,
     })
-  } catch {
-    throw unavailableClientIdMetadata()
+  } catch (error) {
+    throw unavailableClientIdMetadata(error)
   } finally {
     clearTimeout(requestTimeout)
   }
@@ -193,8 +195,4 @@ async function cancelResponseBody(response: ClientIdMetadataResponse): Promise<v
 
 function ignoreCancellationError(): undefined {
   return undefined
-}
-
-function unavailableClientIdMetadata(): OAuthProtocolError {
-  return new OAuthProtocolError('unauthorized_client', 'client metadata document is unavailable')
 }

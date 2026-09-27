@@ -53,6 +53,7 @@ describe('Client ID Metadata Documents', () => {
     ['confidential authentication', { token_endpoint_auth_method: 'client_secret_basic' }],
     ['unlisted grant', { grant_types: ['client_credentials'] }],
     ['invalid redirect URI', { redirect_uris: ['ftp://client.example/callback'] }],
+    ['control character redirect URI', { redirect_uris: ['https://a.test/cb\u0000'] }],
   ])('rejects %s without persisting the document', async (_name, overrides) => {
     const clientId = randomMetadataUrl()
     await expect(
@@ -89,6 +90,7 @@ describe('Client ID Metadata Documents', () => {
     'https://[invalid]/metadata.json',
     'https://client.example/%zz/metadata.json',
     'https://client.example',
+    'https://client.example?next=/metadata.json',
   ])('rejects an invalid Client Identifier URL before fetching: %s', async clientId => {
     const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>()
     await expect(resolveClientIdMetadataDocument(clientId, { safeFetch })).resolves.toBeNull()
@@ -106,11 +108,13 @@ describe('Client ID Metadata Documents', () => {
 
   it('rejects redirects without following them', async () => {
     const clientId = randomMetadataUrl()
+    const cause = new Error('too many redirects')
     const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>(async (_url, options) => {
       expect(options?.maxRedirects).toBe(0)
-      throw new Error('too many redirects')
+      throw cause
     })
     await expect(resolveClientIdMetadataDocument(clientId, { safeFetch })).rejects.toMatchObject({
+      cause,
       code: 'unauthorized_client',
     })
     expect(safeFetch).toHaveBeenCalledOnce()

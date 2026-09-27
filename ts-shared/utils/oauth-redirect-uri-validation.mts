@@ -32,6 +32,7 @@ export function validateOAuthRedirectUris(
     if (typeof value !== 'string' || value.length > MAX_OAUTH_REDIRECT_URI_LENGTH) {
       return { valid: false, code: 'invalid_uri' }
     }
+    if (/[\s\p{Cc}\p{Z}]/u.test(value)) return { valid: false, code: 'invalid_uri' }
 
     let uri: URL
     try {

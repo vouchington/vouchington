@@ -88,7 +88,8 @@ recorded refresh time.
 
 Consent uses a reviewed display name only when the exact document URL is in
 `known-clients.mts`. Otherwise it uses the URL hostname, and the hostname is always visible. RFC
-7591 registration and owned-app clients retain their existing behavior.
+7591 registration and owned-app clients retain their existing behavior. Connected-app grant lists
+apply the same reviewed-name-or-hostname policy instead of exposing a document's mutable name.
 
 Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
 ([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
