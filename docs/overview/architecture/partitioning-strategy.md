@@ -250,7 +250,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `community_post_reviews`, `community_restrictions`, `community_saved_replies`, `crawlers`,
   `crm_contact_social_accounts`, `crm_contacts`, `curated_aside_items`, `domain_blacklists`,
   `email_address_login_tokens`, `facebook_accounts`, `fediverse_instance_integration_changes`,
-  `github_accounts`, `google_accounts`,
+  `follower_distribution_selected_recipients`, `github_accounts`, `google_accounts`,
   `households`, `individual_cards`, `individual_financial_profiles`,
   `individual_rewards_program_point_valuations`, `individual_rewards_program_statuses`,
   `individuals`, `membership_administrator_refund_operation_requests`,
