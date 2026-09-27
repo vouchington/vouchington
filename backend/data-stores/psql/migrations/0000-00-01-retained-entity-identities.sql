@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS retained_rss_feed_item_identities_default
 CREATE TABLE IF NOT EXISTS retained_image_identities (
   id UUID PRIMARY KEY
 ) PARTITION BY RANGE (id);
-COMMENT ON TABLE retained_image_identities IS 'Concrete image byte identity retained for independently committed delivery repair; never delivery authority.';
+COMMENT ON TABLE retained_image_identities IS 'Concrete image byte identity retained while live or durable references remain; never delivery authority.';
 
 CREATE TABLE IF NOT EXISTS retained_image_identities_default
   PARTITION OF retained_image_identities DEFAULT;
@@ -40,10 +40,10 @@ CREATE TABLE IF NOT EXISTS retained_image_placement_bindings (
   UNIQUE (placement_id, image_id),
   UNIQUE (placement_id, image_id, binding_family)
 ) PARTITION BY RANGE (placement_id);
-COMMENT ON TABLE retained_image_placement_bindings IS 'Immutable image, placement and post/surface family identity; retained for independently committed delivery repair, never delivery authority.';
-COMMENT ON COLUMN retained_image_placement_bindings.placement_id IS 'UUIDv7 placement identity allocated before the live owner transaction.';
+COMMENT ON TABLE retained_image_placement_bindings IS 'Immutable image, placement and post/surface family identity retained with live or durable references; never delivery authority.';
+COMMENT ON COLUMN retained_image_placement_bindings.placement_id IS 'UUIDv7 placement identity created with its live owner transaction.';
 COMMENT ON COLUMN retained_image_placement_bindings.image_id IS 'Exact immutable image identity for this placement.';
-COMMENT ON COLUMN retained_image_placement_bindings.binding_family IS 'Post or surface live-child family fixed at first reservation.';
+COMMENT ON COLUMN retained_image_placement_bindings.binding_family IS 'Post or surface live-child family fixed at first insertion.';
 
 CREATE TABLE IF NOT EXISTS retained_image_placement_bindings_default
   PARTITION OF retained_image_placement_bindings DEFAULT;

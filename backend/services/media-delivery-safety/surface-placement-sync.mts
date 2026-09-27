@@ -6,13 +6,10 @@ import {
   lockImageSurfacePlacements,
   type ImageSurfaceReference,
 } from './surface-lock.mts'
-import {
-  publishImagePlacementDeliveryRecord,
-  publishLegacyImageDeliveryRecord,
-} from './delivery-registry-publish.mts'
+import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { lockImageAssetAdmission, assertImagesReadyForSurface } from './asset-admission-lock.mts'
-import { reserveAndPinImagePlacementBinding } from './retained-image-identities.mts'
+import { ensureImagePlacementBinding } from './retained-image-identities.mts'
 
 export type { ImagePlacementTuple } from '@voucha/types/entities/user'
 
@@ -68,12 +65,11 @@ export async function syncImageSurfacePlacement(
   await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
 
   if (current && current.image_id !== imageId) {
-    await publishImagePlacementDeliveryRecord(
+    await prepublishImagePlacementDenial(
       {
         placementId: current.placement_id,
         revision: current.placement_revision,
         imageId: current.image_id,
-        state: 'withheld',
       },
       { query },
     )
@@ -119,14 +115,14 @@ export async function syncImageSurfacePlacement(
       sql`/* syncImageSurfacePlacement:allocate */ SELECT uuidv7() AS id`,
     )
     const placementId = allocated[0]!.id
-    await reserveAndPinImagePlacementBinding(query, {
+    await ensureImagePlacementBinding(query, {
       placementId,
       imageId,
       bindingFamily: 'surface',
     })
     const { rows } = await query<ImagePlacementTuple>(sql`/* syncImageSurfacePlacement:create */
       WITH inserted_placement AS (
-        INSERT INTO media_placements (id, placement_kind) VALUES (${placementId}, 'image')
+        INSERT INTO media_placements (id) VALUES (${placementId})
         RETURNING id, revision
       ), inserted_surface AS (
         INSERT INTO image_surface_placements (
@@ -151,6 +147,5 @@ export async function syncImageSurfacePlacement(
     },
     { query },
   )
-  await publishLegacyImageDeliveryRecord(placement.image_id, 'withheld', { query })
   return placement
 }

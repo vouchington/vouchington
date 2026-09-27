@@ -22,7 +22,7 @@ import {
   publishStagedMediaDeliveryRecord,
   reconcileMediaDeliveryRepairMarkers,
   stageImagePlacementDeliveryRecord,
-  reserveImagePlacementBinding,
+  ensureImagePlacementBinding,
 } from './index.mts'
 import {
   recordImageDeliveryRepairMarker,
@@ -36,18 +36,23 @@ describe('delivery authority and durable denial repair', () => {
     vi.unstubAllEnvs()
   })
 
-  it('rejects a second reservation that changes an image or binding family', async () => {
-    const tuple = await createReservedNeverLiveTuple()
+  it('rejects a conflicting retained binding in the owner transaction', async () => {
+    const { tuple } = await createSurface()
+    const otherImageId = (await createSurface()).tuple.imageId
+    await using query = await beginTransaction()
     await expect(
-      reserveImagePlacementBinding({
-        placementId: tuple.placementId,
-        imageId: crypto.randomUUID(),
-        bindingFamily: 'post',
+      ensureImagePlacementBinding(query, {
+        ...tuple,
+        imageId: otherImageId,
+        bindingFamily: 'surface',
       }),
-    ).rejects.toThrow('already reserved')
-    await expect(reserveImagePlacementBinding({ ...tuple, bindingFamily: 'post' })).rejects.toThrow(
-      'already reserved',
-    )
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'post' }),
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'surface' }),
+    ).resolves.toBeUndefined()
   })
 
   it('does not persist a marker without a committed registry parent', async () => {
@@ -215,7 +220,7 @@ describe('delivery authority and durable denial repair', () => {
     expect(await getTestDeliveryRepairMarker(fixture.deliveryKey)).toBeNull()
   })
 
-  it('repairs A to B to C replacement rollback without FK-blocking the never-committed B tuple', async () => {
+  it('repairs A to B to C replacement rollback without persisting a never-committed B wakeup', async () => {
     const fixture = await createSurface()
     const [imageB, imageC] = await Promise.all([
       insertTestImage(fixture.userId),
@@ -281,13 +286,3 @@ describe('delivery authority and durable denial repair', () => {
     await expect(provider.putMediaDeliveryRegistryRecord(denied)).resolves.toBeDefined()
   })
 })
-
-async function createReservedNeverLiveTuple(): Promise<{
-  placementId: string
-  revision: number
-  imageId: string
-}> {
-  const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
-  await reserveImagePlacementBinding({ ...tuple, bindingFamily: 'surface' })
-  return tuple
-}

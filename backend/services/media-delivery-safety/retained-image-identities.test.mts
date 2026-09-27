@@ -1,22 +1,17 @@
 import { beginTransaction } from '@voucha/test-helpers'
+import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
 import { describe, expect, it } from 'vitest'
-import {
-  pinImagePlacementBinding,
-  reserveImagePlacementBinding,
-} from './retained-image-identities.mts'
+import { ensureImagePlacementBinding } from './retained-image-identities.mts'
 
 describe('retained image placement identity', () => {
   it('pins the exact owner family, not only the image and placement pair', async () => {
-    const tuple = {
-      placementId: crypto.randomUUID(),
-      imageId: crypto.randomUUID(),
-      bindingFamily: 'surface' as const,
-    }
-    await reserveImagePlacementBinding(tuple)
+    const { tuple } = await createTestDeliverySurface()
     await using query = await beginTransaction()
     await expect(
-      pinImagePlacementBinding(query, { ...tuple, bindingFamily: 'post' }),
-    ).resolves.toBe(false)
-    await expect(pinImagePlacementBinding(query, tuple)).resolves.toBe(true)
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'post' }),
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'surface' }),
+    ).resolves.toBeUndefined()
   })
 })

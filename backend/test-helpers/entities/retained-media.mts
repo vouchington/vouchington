@@ -1,4 +1,19 @@
-import { read } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
+
+/** Seeds an unreferenced pair to exercise bounded orphan cleanup without a live owner. */
+export async function seedTestRetainedMediaOrphan(input: {
+  imageId: string
+  placementId: string
+  bindingFamily: 'post' | 'surface'
+}): Promise<void> {
+  await using query = await beginTransaction()
+  await query('SELECT fn_ensure_retained_image_identity($1::uuid)', [input.imageId])
+  await query(
+    'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
+    [input.placementId, input.imageId, input.bindingFamily],
+  )
+  await query.commit()
+}
 
 export async function hasTestRetainedImageIdentity(imageId: string): Promise<boolean> {
   const { rowCount } = await read(

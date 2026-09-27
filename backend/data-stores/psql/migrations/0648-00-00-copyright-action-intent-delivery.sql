@@ -77,7 +77,7 @@ CREATE TABLE media_delivery_registry_records (
 
 ALTER TABLE media_delivery_registry_records
 ADD CONSTRAINT fk_media_delivery_registry_records__retained_image_binding
-FOREIGN KEY (placement_id, asset_id)
+FOREIGN KEY (placement_id, image_id)
 REFERENCES retained_image_placement_bindings (placement_id, image_id)
 ON DELETE RESTRICT NOT VALID;
 ALTER TABLE media_delivery_registry_records

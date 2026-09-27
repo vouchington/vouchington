@@ -67,12 +67,11 @@ The fresh-bootstrap schema is defined by the placement, delivery registry, surfa
 repair-marker creators in migrations 0647, 0648, 0649, and 0731. Runtime owner writes create their
 bindings; there is no historical population or upgrade path.
 
-The image byte root and immutable `(placement_id, image_id, post|surface)` binding are reserved in
-a separate committed transaction before a live owner writes a new placement. The owner explicitly
-pins the image root, then the exact binding, with `FOR KEY SHARE` through its commit. Surface
-triggers reject an unprepared image instead of allocating a placement inside the owner
-transaction. Reservation records identity only; live ownership and delivery authorization still
-require their existing checks.
+The image byte root is registered with the live image. A new owner creates the immutable
+`(placement_id, image_id, post|surface)` binding in its own transaction, pins the image root and
+exact binding in that order, then inserts the live placement. Surface triggers reject an
+unprepared image instead of allocating a placement inside the owner transaction. Retained
+identities are not delivery authority; recovery still proves live ownership.
 
 An independently committed repair marker references an already committed registry delivery key
 with an `ON DELETE RESTRICT` foreign key and contains only that key, rotating token, and timestamps.
@@ -90,8 +89,8 @@ uses the same persisted wakeups and exact reconciler; it never manufactures
 an allow from a separate image-wide eligibility query.
 
 The exact observed marker token is acknowledged before a separate scheduled, cursor-bounded
-orphan sweep may remove an unreferenced binding and then its image root. A newer marker or
-committed registry reference keeps those identities pinned; cleanup never authorizes a route.
+orphan sweep may remove an unreferenced binding and then its image root. A committed registry
+reference keeps those identities pinned; cleanup never authorizes a route.
 
 ```mermaid
 flowchart LR

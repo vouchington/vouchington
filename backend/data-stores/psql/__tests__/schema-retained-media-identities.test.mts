@@ -31,7 +31,7 @@ describe('concrete retained media identities', () => {
     })
   })
 
-  it('constrains live children, registry, and markers to the exact retained pair', async () => {
+  it('constrains live children and registry to the exact retained pair', async () => {
     const { rows } = await read<{ owner: string; target: string; definition: string }>(
       `/* readRetainedMediaForeignKeys */
        SELECT conrelid::regclass::text AS owner, confrelid::regclass::text AS target,
@@ -54,27 +54,21 @@ describe('concrete retained media identities', () => {
         ]),
       )
     }
-    for (const owner of ['media_delivery_registry_records', 'media_delivery_repair_markers']) {
-      expect(rows).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            owner,
-            target: 'retained_image_placement_bindings',
-            definition: expect.stringContaining('FOREIGN KEY (placement_id, asset_id)'),
-          }),
-        ]),
-      )
-    }
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          owner: 'media_delivery_registry_records',
+          target: 'retained_image_placement_bindings',
+          definition: expect.stringContaining('FOREIGN KEY (placement_id, image_id)'),
+        }),
+      ]),
+    )
     expect(rows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ owner: 'images', target: 'retained_image_identities' }),
         expect.objectContaining({
           owner: 'media_placements',
           target: 'retained_image_placement_bindings',
-        }),
-        expect.objectContaining({
-          owner: 'media_delivery_repair_markers',
-          target: 'retained_image_identities',
         }),
       ]),
     )
@@ -97,6 +91,18 @@ describe('concrete retained media identities', () => {
         }),
       ]),
     )
+    const { rows: markerKeys } = await read<{ definition: string }>(
+      `/* readRegistryBackedMarkerKey */ SELECT pg_get_constraintdef(oid) AS definition
+       FROM pg_constraint WHERE contype = 'f'
+         AND conrelid = 'media_delivery_repair_markers'::regclass`,
+    )
+    expect(markerKeys).toEqual([
+      expect.objectContaining({
+        definition: expect.stringContaining(
+          'FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key)',
+        ),
+      }),
+    ])
   })
 
   it.each(['placement_id', 'image_id', 'binding_family'] as const)(
@@ -140,50 +146,16 @@ describe('concrete retained media identities', () => {
     },
   )
 
-  it('rejects a repair marker for an unknown placement pair', async () => {
+  it('rejects a repair marker without a committed registry parent', async () => {
     await using query = await beginTransaction()
     const { rows: identities } = await query<{ image_id: string; placement_id: string }>(
       '/* allocateUnknownMarkerIds */ SELECT uuidv7() AS image_id, uuidv7() AS placement_id',
     )
     const { image_id: imageId, placement_id: placementId } = identities[0]!
-    await query(
-      '/* createRetainedImageForUnknownMarker */ INSERT INTO retained_image_identities (id) VALUES ($1)',
-      [imageId],
-    )
     await expect(
       query(
-        "/* rejectUnknownRetainedMarker */ INSERT INTO media_delivery_repair_markers (delivery_key, marker_token, route_kind, placement_id, placement_revision, asset_id) VALUES ($1, 1, 'placement', $2, 0, $3)",
-        [`image-placement:${placementId}:0:${imageId}`, placementId, imageId],
-      ),
-    ).rejects.toMatchObject({ code: '23503' })
-  })
-
-  it('rejects a repair marker that changes the reserved image', async () => {
-    await using query = await beginTransaction()
-    const { rows: identities } = await query<{
-      image_id: string
-      wrong_image_id: string
-      placement_id: string
-    }>(
-      '/* allocateWrongImageMarkerIds */ SELECT uuidv7() AS image_id, uuidv7() AS wrong_image_id, uuidv7() AS placement_id',
-    )
-    const {
-      image_id: imageId,
-      wrong_image_id: wrongImageId,
-      placement_id: placementId,
-    } = identities[0]!
-    await query(
-      '/* createRetainedImagesForWrongMarker */ INSERT INTO retained_image_identities (id) VALUES ($1), ($2)',
-      [imageId, wrongImageId],
-    )
-    await query(
-      "/* createRetainedBindingForWrongMarker */ INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, 'post')",
-      [placementId, imageId],
-    )
-    await expect(
-      query(
-        "/* rejectWrongImageRetainedMarker */ INSERT INTO media_delivery_repair_markers (delivery_key, marker_token, route_kind, placement_id, placement_revision, asset_id) VALUES ($1, 1, 'placement', $2, 0, $3)",
-        [`image-placement:${placementId}:0:${wrongImageId}`, placementId, wrongImageId],
+        '/* rejectUnknownRegistryMarker */ INSERT INTO media_delivery_repair_markers (delivery_key, marker_token) VALUES ($1, 1)',
+        [`image-placement:${placementId}:0:${imageId}`],
       ),
     ).rejects.toMatchObject({ code: '23503' })
   })

@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { runSequentially } from '@modules/utils/run-sequentially'
-import { reserveAndPinImagePlacementBinding } from '@services/media-delivery-safety'
+import { ensureImagePlacementBinding } from '@services/media-delivery-safety'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -86,7 +86,7 @@ export async function syncPostImagePlacements(
         `)
         const placementId = allocated[0]!.placement_id
         // oxlint-disable-next-line no-await-in-loop -- image then binding pins remain held by this transaction.
-        await reserveAndPinImagePlacementBinding(query, {
+        await ensureImagePlacementBinding(query, {
           placementId,
           imageId: binding.image_id,
           bindingFamily: 'post',
