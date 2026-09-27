@@ -154,8 +154,10 @@ export async function createTestOrphanPostPublicationProjectionReceipts(
     /* createTestOrphanPostPublicationProjectionReceipts */
     WITH orphan_ids AS MATERIALIZED (
       SELECT uuidv7() AS post_id FROM generate_series(1, ${count})
+    ), inserted_roots AS (
+      INSERT INTO retained_post_identities (id) SELECT post_id FROM orphan_ids RETURNING id
     ), inserted_identities AS (
-      INSERT INTO post_publication_post_identities (id) SELECT post_id FROM orphan_ids RETURNING id
+      INSERT INTO post_publication_post_identities (id) SELECT id FROM inserted_roots RETURNING id
     ), inserted_snapshots AS (
       INSERT INTO post_publication_identity_snapshots
         (dirty_work_id, generation, post_identity_id, eligibility_fingerprint, is_public, completed_at)

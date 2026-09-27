@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, hasTestRetainedImageIdentity } from '@voucha/test-helpers'
 import { createImageUploadUrl } from './create-upload-url.mts'
 import { getImageById } from './get.mts'
 import { deriveUploadStatus } from './get-upload-state.mts'
@@ -109,6 +109,7 @@ describe('createImageUploadUrl', () => {
     expect(image.s3_key).toBe(result.image_id)
     expect(image.sha_256).toBeNull()
     expect(image.upload_staged_at).toBeInstanceOf(Date)
+    expect(await hasTestRetainedImageIdentity(result.image_id)).toBe(true)
   })
 
   it('should normalize content type and return it', async () => {

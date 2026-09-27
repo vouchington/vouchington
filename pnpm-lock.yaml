@@ -7155,9 +7155,6 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
-      '@services/images':
-        specifier: workspace:^
-        version: link:../images
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
@@ -9762,6 +9759,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2

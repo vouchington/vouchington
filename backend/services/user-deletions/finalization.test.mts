@@ -91,9 +91,7 @@ describe('user deletion finalization', () => {
     expect(receiptCleanup).not.toBeNull()
     if (!receiptCleanup) throw new Error('Expected audit-cleanup retry')
     const beforeAuditCleanup = await getUserDeletionCompletionAuditForTest(request.id)
-    expect(
-      beforeAuditCleanup.externalWorks.filter(work => work.workKey.startsWith('redacted:')),
-    ).toHaveLength(0)
+    expect(beforeAuditCleanup.externalWorks.filter(work => work.workKey === null)).toHaveLength(0)
     expect(await getUserDeletionRelationImpactIdsForTest(request.id)).toHaveLength(
       USER_DELETION_BATCH_SIZE + 1,
     )
@@ -110,12 +108,10 @@ describe('user deletion finalization', () => {
     expect(boundedCleanup).not.toBeNull()
     const cleanupAudit = await getUserDeletionCompletionAuditForTest(request.id)
     expect(cleanupAudit.externalWorks).toHaveLength(USER_DELETION_BATCH_SIZE + 1)
-    expect(
-      cleanupAudit.externalWorks.filter(work => work.workKey.startsWith('redacted:')),
-    ).toHaveLength(USER_DELETION_BATCH_SIZE)
-    expect(
-      cleanupAudit.externalWorks.filter(work => !work.workKey.startsWith('redacted:')),
-    ).toHaveLength(1)
+    expect(cleanupAudit.externalWorks.filter(work => work.workKey === null)).toHaveLength(
+      USER_DELETION_BATCH_SIZE,
+    )
+    expect(cleanupAudit.externalWorks.filter(work => work.workKey !== null)).toHaveLength(1)
     expect(await getUserDeletionRelationImpactIdsForTest(request.id)).toHaveLength(
       USER_DELETION_BATCH_SIZE + 1,
     )
@@ -174,9 +170,7 @@ describe('user deletion finalization', () => {
       completedAt: expect.any(Date),
     })
     expect((await getUserDeletionCompletionAuditForTest(request.id)).externalWorks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ workKey: expect.stringMatching(/^redacted:/) }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ workKey: null })]),
     )
   })
 })

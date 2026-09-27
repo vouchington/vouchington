@@ -6,7 +6,8 @@ const usage = `Usage:
 Body source: --body-file > piped stdin > gh pr view (validate/update only)
 create refuses over ~5000 added lines or ~20000 deleted lines against origin/main; pass
 --acknowledge-large-diff to proceed anyway once the split-vs-stack decision has been made (see
-.agents/skills/agent-workflow/git-and-prs.md).
+.agents/skills/agent-workflow/git-and-prs.md). Its standing generated-schema-snapshot exception
+uses that flag without another size approval when the handwritten diff fits the budgets.
 `
 
 export function printPrDescriptionUsage(stream: NodeJS.WritableStream): void {

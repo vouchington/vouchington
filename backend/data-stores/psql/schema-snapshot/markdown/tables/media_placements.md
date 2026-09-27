@@ -28,7 +28,8 @@ _none_
 - `media_placements_revision_check`: `CHECK ((revision >= 0))`
 
 **Foreign keys:**
-_none_
+
+- `fk_media_placements__retained_image_binding`: `FOREIGN KEY (id) REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT`
 
 **Indexes:**
 

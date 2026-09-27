@@ -28,6 +28,9 @@ describe('runDataRetentionCleanup', () => {
     }
 
     const result = await runDataRetentionCleanup({
+      retainedIdentityRootIds: {},
+      retainedRelationIdentityKeys: {},
+      retainedMediaBindingIds: [],
       softDeletedUsers: emptyWindow,
       oldReferralAttributions: emptyWindow,
       orphanedOAuthAccounts: emptyWindow,
@@ -41,7 +44,10 @@ describe('runDataRetentionCleanup', () => {
       terminalNotificationPushIntents: emptyWindow,
     })
 
-    expect(result).toEqual({
+    expect(result.retainedIdentityRoots).toEqual([])
+    expect(result.retainedRelationIdentities).toEqual([])
+    expect(result.retainedMediaBindings).toEqual({ scanned: 0, deleted: 0, hasMore: false })
+    expect(result).toMatchObject({
       softDeletedUsers: { deleted: 0, hasMore: false },
       oldReferralAttributions: { deleted: 0, hasMore: false },
       orphanedOAuthAccounts: { deleted: 0, hasMore: false },

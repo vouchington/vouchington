@@ -22,17 +22,47 @@ import {
   publishStagedMediaDeliveryRecord,
   reconcileMediaDeliveryRepairMarkers,
   stageImagePlacementDeliveryRecord,
+  ensureImagePlacementBinding,
 } from './index.mts'
 import {
   recordImageDeliveryRepairMarker,
   reconcileDeliveryRepairMarker,
 } from './delivery-repair-markers.mts'
-import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
+import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 
 describe('delivery authority and durable denial repair', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  it('rejects a conflicting retained binding in the owner transaction', async () => {
+    const { tuple } = await createSurface()
+    const otherImageId = (await createSurface()).tuple.imageId
+    await using query = await beginTransaction()
+    await expect(
+      ensureImagePlacementBinding(query, {
+        ...tuple,
+        imageId: otherImageId,
+        bindingFamily: 'surface',
+      }),
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'post' }),
+    ).rejects.toThrow('already bound')
+    await expect(
+      ensureImagePlacementBinding(query, { ...tuple, bindingFamily: 'surface' }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('does not persist a marker without a committed registry parent', async () => {
+    const tuple = {
+      placementId: crypto.randomUUID(),
+      revision: 0,
+      imageId: crypto.randomUUID(),
+    }
+    await recordImageDeliveryRepairMarker(tuple)
+    expect(await getTestDeliveryRepairMarker(getImagePlacementDeliveryKey(tuple))).toBeNull()
   })
 
   it('repairs a provider-accepted denial after its owner rolls back without compensation', async () => {
@@ -190,7 +220,7 @@ describe('delivery authority and durable denial repair', () => {
     expect(await getTestDeliveryRepairMarker(fixture.deliveryKey)).toBeNull()
   })
 
-  it('repairs A to B to C replacement rollback without FK-blocking the never-committed B tuple', async () => {
+  it('repairs A to B to C replacement rollback without persisting a never-committed B wakeup', async () => {
     const fixture = await createSurface()
     const [imageB, imageC] = await Promise.all([
       insertTestImage(fixture.userId),

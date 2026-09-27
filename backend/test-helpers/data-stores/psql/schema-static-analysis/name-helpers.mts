@@ -32,6 +32,12 @@ const NAME_INFLECTION_IGNORE_PATTERNS = [
   /^post_publication_dirty_work$/,
   /^post_publication_identity_cleanup_progress$/,
   /^post_publication_identity_bridge_cleanup_progress$/,
+  /^retained_identity_cleanup_progress$/,
+  /^retained_relation_identity_cleanup_progress$/,
+  /^retained_post_identities_default$/,
+  /^retained_rss_feed_item_identities_default$/,
+  /^retained_image_identities_default$/,
+  /^retained_image_placement_bindings_default$/,
 ]
 
 const INVARIANT_PLURAL_LAST_WORDS = new Set(['news'])

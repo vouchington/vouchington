@@ -37,13 +37,16 @@ Not partitioned — growth: unbounded.
 - `user_deletion_requests_processing_attempts_check`: `CHECK ((processing_attempts >= 0))`
 
 **Foreign keys:**
-_none_
+
+- `user_deletion_requests_requested_by_id_fkey`: `FOREIGN KEY (requested_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
+- `user_deletion_requests_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `idx_user_deletion_requests__processing_attempt_id`: `CREATE UNIQUE INDEX idx_user_deletion_requests__processing_attempt_id ON public.user_deletion_requests USING btree (processing_attempt_id)`
 - `idx_user_deletion_requests__recover_started`: `CREATE INDEX idx_user_deletion_requests__recover_started ON public.user_deletion_requests USING btree (processing_started_at, id) WHERE ((completed_at IS NULL) AND (processing_started_at IS NOT NULL))`
 - `idx_user_deletion_requests__recover_unstarted`: `CREATE INDEX idx_user_deletion_requests__recover_unstarted ON public.user_deletion_requests USING btree (dispatched_at, id) WHERE ((completed_at IS NULL) AND (processing_started_at IS NULL))`
+- `idx_user_deletion_requests__requested_by_id`: `CREATE INDEX idx_user_deletion_requests__requested_by_id ON public.user_deletion_requests USING btree (requested_by_id) WHERE (requested_by_id IS NOT NULL)`
 - `user_deletion_requests_pkey`: `CREATE UNIQUE INDEX user_deletion_requests_pkey ON public.user_deletion_requests USING btree (id)`
 - `user_deletion_requests_user_id_key`: `CREATE UNIQUE INDEX user_deletion_requests_user_id_key ON public.user_deletion_requests USING btree (user_id)`
 

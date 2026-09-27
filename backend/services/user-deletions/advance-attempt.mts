@@ -80,7 +80,7 @@ async function completeUserDeletion(
         SELECT 1 FROM user_deletion_external_works
         WHERE request_id = ${request.id}
           AND completed_at IS NOT NULL
-          AND work_key <> ('redacted:' || id::text)
+          AND work_key IS NOT NULL
       )
       AND NOT EXISTS (
         SELECT 1 FROM user_deletion_relation_impacts
@@ -137,12 +137,12 @@ async function purgeCompletedUserDeletionAuditPage(
 ): Promise<boolean> {
   const redacted = await query(sql`/* advanceUserDeletionAttempt:redactExternalWorkKeys */
     UPDATE user_deletion_external_works
-    SET work_key = 'redacted:' || id::text
+    SET work_key = NULL
     WHERE id IN (
       SELECT id FROM user_deletion_external_works
       WHERE request_id = ${request.id}
         AND completed_at IS NOT NULL
-        AND work_key <> ('redacted:' || id::text)
+        AND work_key IS NOT NULL
       ORDER BY id
       LIMIT ${USER_DELETION_BATCH_SIZE}
     )

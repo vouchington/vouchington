@@ -9,7 +9,10 @@ import { getPublicationVoteTargetScopes } from './delete-publication-vote-target
 import {
   recomputeEntityRelationVoteStats,
   recordUserDeletionRelationPublicationChanges,
+  type EntityRelationVoteTarget,
 } from './delete-entity-relation-votes.mts'
+import { recordDeletedRelationImpacts } from './record-deleted-relation-impacts.mts'
+import { mapRelationImpactRow } from './relation-impact-targets.mts'
 
 export async function deleteUserEntityRelationVotesBatch(
   requestId: string,
@@ -20,12 +23,25 @@ export async function deleteUserEntityRelationVotesBatch(
   const batch = await getEntityRelationVoteBatch(query, userId, batchSize)
   if (batch.candidates.length === 0) return 0
   const deleted = await deleteEntityRelationVoteBatch(query, userId, batch)
-  await recordDeletedEntityRelationVotes(query, requestId, deleted)
+  await recordDeletedRelationImpacts(
+    query,
+    requestId,
+    deleted.map(row => ({
+      relationTable: row.relation_table,
+      subjectId: row.subject_id,
+      entityRelationId: row.entity_relation_id,
+    })),
+  )
   return batch.candidates.length
 }
 
 type EntityRelationVoteBatch = {
-  candidates: { id: string; relation_table: string; entity_relation_id: string }[]
+  candidates: {
+    id: string
+    relation_table: string
+    subject_id: string
+    entity_relation_id: string
+  }[]
   scopes: Awaited<ReturnType<typeof getPublicationVoteTargetScopes>>
 }
 
@@ -37,13 +53,15 @@ async function getEntityRelationVoteBatch(
   const { rows: candidates } = await query<{
     id: string
     relation_table: string
+    subject_id: string
     entity_relation_id: string
   }>(sql`/* deleteUserEntityRelationVotesBatch:candidates */
-    SELECT id, relation_table, entity_relation_id FROM entity_relation_votes
+    SELECT id, relation_table, subject_id, entity_relation_id FROM entity_relation_votes
     WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
   `)
   const targets = candidates.map(candidate => ({
     relationTable: candidate.relation_table,
+    subjectId: candidate.subject_id,
     entityRelationId: candidate.entity_relation_id,
   }))
   const scopes = await getPublicationVoteTargetScopes(query, targets)
@@ -58,12 +76,22 @@ async function deleteEntityRelationVoteBatch(
   await lockEntityRelationVoteScopes(query, batch.scopes)
   const { rows: deleted } = await query<{
     relation_table: string
+    subject_id: string
     entity_relation_id: string
   }>(sql`/* deleteUserEntityRelationVotesBatch:delete */
-    DELETE FROM entity_relation_votes
-    WHERE id = ANY(${batch.candidates.map(candidate => candidate.id)}::uuid[])
-      AND user_id = ${userId}
-    RETURNING relation_table, entity_relation_id
+    DELETE FROM entity_relation_votes vote
+    USING UNNEST(
+      ${batch.candidates.map(candidate => candidate.relation_table)}::text[],
+      ${batch.candidates.map(candidate => candidate.subject_id)}::uuid[],
+      ${batch.candidates.map(candidate => candidate.entity_relation_id)}::uuid[],
+      ${batch.candidates.map(candidate => candidate.id)}::uuid[]
+    ) AS selected(relation_table, subject_id, entity_relation_id, vote_id)
+    WHERE vote.relation_table = selected.relation_table
+      AND vote.subject_id = selected.subject_id
+      AND vote.entity_relation_id = selected.entity_relation_id
+      AND vote.id = selected.vote_id
+      AND vote.user_id = ${userId}
+    RETURNING vote.relation_table, vote.subject_id, vote.entity_relation_id
   `)
   return deleted
 }
@@ -84,41 +112,6 @@ async function lockEntityRelationVoteTopicScopes(
   await lockTopicRssFeedPublicationScopes(query, scopes.topicIds)
 }
 
-async function recordDeletedEntityRelationVotes(
-  query: TransactionQuery,
-  requestId: string,
-  deleted: { relation_table: string; entity_relation_id: string }[],
-): Promise<number> {
-  if (deleted.length > 0) {
-    await query(sql`/* deleteUserEntityRelationVotesBatch:recordImpacts */
-      INSERT INTO user_deletion_relation_impacts
-        (request_id, relation_table, entity_relation_id)
-      SELECT ${requestId}::uuid AS request_id, impact.relation_table, impact.entity_relation_id
-      FROM UNNEST(
-        ${deleted.map(row => row.relation_table)}::text[],
-        ${deleted.map(row => row.entity_relation_id)}::uuid[]
-      ) AS impact(relation_table, entity_relation_id)
-      ORDER BY request_id ASC NULLS LAST,
-        impact.relation_table ASC NULLS LAST,
-        impact.entity_relation_id ASC NULLS LAST
-      ON CONFLICT (request_id, relation_table, entity_relation_id) DO NOTHING
-    `)
-    await query(sql`/* deleteUserEntityRelationVotesBatch:recordEffects */
-      INSERT INTO user_deletion_external_works (request_id, work_kind, work_key)
-      SELECT ${requestId}::uuid AS request_id,
-        'entity-relation-effects' AS work_kind,
-        impact.relation_table || ':' || impact.entity_relation_id::text AS work_key
-      FROM UNNEST(
-        ${deleted.map(row => row.relation_table)}::text[],
-        ${deleted.map(row => row.entity_relation_id)}::uuid[]
-      ) AS impact(relation_table, entity_relation_id)
-      ORDER BY request_id ASC NULLS LAST, work_kind ASC NULLS LAST, work_key ASC NULLS LAST
-      ON CONFLICT (request_id, work_kind, work_key) DO NOTHING
-    `)
-  }
-  return deleted.length
-}
-
 export async function recomputeUserDeletionRelationImpactsBatch(
   requestId: string,
   batchSize: number,
@@ -131,8 +124,8 @@ export async function recomputeUserDeletionRelationImpactsBatch(
 }
 
 type RelationImpactBatch = {
-  rows: { id: string; relation_table: string; entity_relation_id: string }[]
-  targets: { relationTable: string; entityRelationId: string }[]
+  rows: { id: string }[]
+  targets: EntityRelationVoteTarget[]
   scopes: Awaited<ReturnType<typeof getPublicationVoteTargetScopes>>
 }
 
@@ -143,18 +136,14 @@ async function getRelationImpactBatch(
 ): Promise<RelationImpactBatch> {
   const { rows } = await query<{
     id: string
-    relation_table: string
-    entity_relation_id: string
+    subject_id: string
   }>(sql`/* recomputeUserDeletionRelationImpactsBatch:candidates */
-    SELECT id, relation_table, entity_relation_id
+    SELECT *
     FROM user_deletion_relation_impacts
     WHERE request_id = ${requestId} AND recomputed_at IS NULL
     ORDER BY id LIMIT ${batchSize} FOR UPDATE
   `)
-  const targets = rows.map(row => ({
-    relationTable: row.relation_table,
-    entityRelationId: row.entity_relation_id,
-  }))
+  const targets = rows.map(mapRelationImpactRow)
   const scopes = await getPublicationVoteTargetScopes(query, targets)
   return { rows, targets, scopes }
 }

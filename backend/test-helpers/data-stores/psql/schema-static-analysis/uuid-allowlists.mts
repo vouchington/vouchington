@@ -7,6 +7,18 @@ import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-al
 export const ALLOWED_UNCOMMENTED_RELATIONS = new Map<string, string>([])
 export const ALLOWED_UNCOMMENTED_COLUMNS = new Map<string, string>([])
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  [
+    'retained_identity_cleanup_progress.cursor_identity_id',
+    'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
+  ],
+  [
+    'retained_relation_identity_cleanup_progress.cursor_subject_id',
+    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
+  ],
+  [
+    'retained_relation_identity_cleanup_progress.cursor_relation_id',
+    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
+  ],
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,

@@ -26,6 +26,20 @@ import { runBoundedBatches } from './run-bounded-batches.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
 import { pruneExpiredContributionAdmissionConsumptions } from '@services/contribution-gating/admission-quota'
 import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/topic-import-attempts'
+import {
+  cleanupRetainedIdentityRoots,
+  type RetainedIdentityFamily,
+  type RetainedIdentityCleanupPage,
+} from './cleanup-retained-identities.mts'
+import {
+  cleanupRetainedRelationIdentities,
+  type RetainedRelationIdentityKey,
+  type RetainedRelationIdentityCleanupPage,
+} from './cleanup-retained-relation-identities.mts'
+import {
+  cleanupRetainedMediaBindings,
+  type RetainedMediaBindingCleanupPage,
+} from './cleanup-retained-media-bindings.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -59,6 +73,9 @@ type ExpiryCleanupOptions = Pick<
 >
 
 type DataRetentionCleanupOptions = {
+  retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
+  retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
+  retainedMediaBindingIds?: readonly string[]
   softDeletedUsers?: CleanupOptions
   oldReferralAttributions?: CleanupOptions
   orphanedOAuthAccounts?: CleanupOptions
@@ -73,6 +90,9 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
+  retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
+  retainedMediaBindings: RetainedMediaBindingCleanupPage
+  retainedIdentityRoots: RetainedIdentityCleanupPage[]
   softDeletedUsers: CleanupResult
   oldReferralAttributions: CleanupResult
   orphanedOAuthAccounts: CleanupResult
@@ -121,9 +141,24 @@ export async function runDataRetentionCleanup(
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
     options.terminalNotificationPushIntents,
   )
+  const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
+    1_000,
+    options.retainedRelationIdentityKeys,
+  )
+  const retainedMediaBindings = await cleanupRetainedMediaBindings(
+    1_000,
+    options.retainedMediaBindingIds,
+  )
+  const retainedIdentityRoots = await cleanupRetainedIdentityRoots(
+    1_000,
+    options.retainedIdentityRootIds,
+  )
   await cleanupAnalyticsLocalFiles()
 
   return {
+    retainedRelationIdentities,
+    retainedMediaBindings,
+    retainedIdentityRoots,
     softDeletedUsers,
     oldReferralAttributions,
     orphanedOAuthAccounts,

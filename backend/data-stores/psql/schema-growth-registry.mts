@@ -62,6 +62,10 @@ const UNBOUNDED_RECONSIDERATION_EXCEPTIONS = new Map([
 ])
 
 const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
+  ['retained_post_identities', defaultRange('id')],
+  ['retained_rss_feed_item_identities', defaultRange('id')],
+  ['retained_image_identities', defaultRange('id')],
+  ['retained_image_placement_bindings', defaultRange('placement_id')],
   ['posts', defaultRange('id')],
   ['rss_feed_items', defaultRange('id')],
   ['post_review_topic_ratings', defaultRange('post_id')],

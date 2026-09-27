@@ -29,7 +29,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 CREATE TABLE IF NOT EXISTS posts (
-  id UUID NOT NULL DEFAULT uuidv7(),
+  id UUID NOT NULL DEFAULT uuidv7() REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   created_via content_creation_channels,
   created_via_oauth_client_id UUID,
   CONSTRAINT posts_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
@@ -140,6 +140,10 @@ CREATE TABLE IF NOT EXISTS posts (
 
   PRIMARY KEY (id)
 ) PARTITION BY RANGE (id);
+
+CREATE TRIGGER trigger_register_retained_post_identity
+BEFORE INSERT ON posts
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_post_identity();
 
 CREATE INDEX IF NOT EXISTS idx_posts__creation_source_url_id
   ON posts (creation_source_url_id)

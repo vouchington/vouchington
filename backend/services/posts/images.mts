@@ -96,7 +96,7 @@ export async function setPostImages(
           syncPostImagePlacements(
             post.id,
             images.map(image => image.image_id),
-            { query },
+            query,
           ),
         () =>
           query(sql`/* setPostImages */

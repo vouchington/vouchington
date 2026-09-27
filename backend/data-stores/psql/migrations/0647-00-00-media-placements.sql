@@ -12,12 +12,26 @@ CREATE TABLE media_placements (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE media_placements
+ADD CONSTRAINT fk_media_placements__retained_image_binding
+FOREIGN KEY (id) REFERENCES retained_image_placement_bindings (placement_id)
+ON DELETE RESTRICT NOT VALID;
+ALTER TABLE media_placements VALIDATE CONSTRAINT fk_media_placements__retained_image_binding;
+
 CREATE TABLE image_placements (
   placement_id uuid PRIMARY KEY REFERENCES media_placements(id) ON DELETE RESTRICT,
   post_id uuid NOT NULL REFERENCES posts(id) ON DELETE RESTRICT,
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
+  binding_family text NOT NULL DEFAULT 'post' CHECK (binding_family = 'post'),
   UNIQUE (post_id, image_id)
 );
+
+ALTER TABLE image_placements
+ADD CONSTRAINT fk_image_placements__retained_image_binding
+FOREIGN KEY (placement_id, image_id, binding_family)
+REFERENCES retained_image_placement_bindings (placement_id, image_id, binding_family)
+ON DELETE RESTRICT NOT VALID;
+ALTER TABLE image_placements VALIDATE CONSTRAINT fk_image_placements__retained_image_binding;
 
 CREATE INDEX idx_image_placements__image ON image_placements (image_id);
 
@@ -68,3 +82,4 @@ COMMENT ON TABLE image_placements IS 'Immutable image binding for a media placem
 COMMENT ON COLUMN image_placements.placement_id IS 'Stable media placement identifier used by trusted delivery routes.';
 COMMENT ON COLUMN image_placements.post_id IS 'Hosting post for this immutable image use; retained with the placement so delivery authorization is scoped to the use.';
 COMMENT ON COLUMN image_placements.image_id IS 'Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.';
+COMMENT ON COLUMN image_placements.binding_family IS 'Literal post family checked by the retained image placement triple foreign key.';

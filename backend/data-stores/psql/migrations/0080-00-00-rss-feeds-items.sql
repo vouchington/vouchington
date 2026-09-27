@@ -305,8 +305,14 @@ CREATE TABLE IF NOT EXISTS rss_feed_items (
       COALESCE(fn_text_to_timestamptz(data->>'pubDate'), 'infinity'::timestamptz),
       uuid_extract_timestamp(id)
     )
-  ) STORED
+  ) STORED,
+  CONSTRAINT fk_rss_feed_items__retained_identity FOREIGN KEY (id)
+    REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT
 ) PARTITION BY RANGE (id);
+
+CREATE TRIGGER trigger_register_retained_rss_feed_item_identity
+BEFORE INSERT ON rss_feed_items
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_rss_feed_item_identity();
 
 CREATE TABLE IF NOT EXISTS rss_feed_items_default
 PARTITION OF rss_feed_items DEFAULT;

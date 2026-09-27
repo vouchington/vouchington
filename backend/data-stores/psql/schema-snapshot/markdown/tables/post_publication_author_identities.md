@@ -25,6 +25,7 @@ Not partitioned — growth: bounded.
 
 **Foreign keys:**
 
+- `post_publication_author_identities_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `post_publication_author_identities_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**

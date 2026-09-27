@@ -25,6 +25,7 @@ Not partitioned — growth: bounded.
 
 **Foreign keys:**
 
+- `post_publication_rss_feed_item_identities_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT`
 - `post_publication_rss_feed_item_identities_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE SET NULL`
 
 **Indexes:**

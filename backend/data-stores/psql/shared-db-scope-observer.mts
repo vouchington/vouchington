@@ -13,6 +13,7 @@ export const sharedDbScopeTables = {
   listRecoverableMediaDeliveryRegistryKeys: 'media_delivery_registry_records',
   stageAllCurrentImagePlacementDeliveryRecords: 'media_delivery_registry_records',
   reconcileMediaDeliveryRepairMarkers: 'media_delivery_repair_markers',
+  cleanupRetainedMediaBindings: 'retained_image_placement_bindings',
   recoverActivityPubInboxDeliveries: 'ap_inbox_deliveries',
   rearmFailedActivityPubInboxDeliveries: 'ap_inbox_deliveries',
   getRecoverableOAuthAuthorizationIds: 'oauth_authorizations',

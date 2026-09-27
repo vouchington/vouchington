@@ -5,10 +5,8 @@ import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestImage } from '../../../backend/test-helpers/entities/images.mts'
-import {
-  allowTestTopicSurfaceImageDelivery,
-  setTestTopicSurfaceImages,
-} from '../../../backend/test-helpers/entities/image-surface-placements.mts'
+import { allowTestTopicSurfaceImageDelivery } from '../../../backend/test-helpers/entities/image-surface-placements.mts'
+import { setTestTopicSurfaceImages } from '../../../backend/test-helpers/entities/media-surface-writes.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 

@@ -4,16 +4,14 @@ import sql from 'sql-template-strings'
 import { addUrl } from '@services/urls/upsert'
 import { assertUrlNotBlocked } from '@services/domain-blacklist-check'
 import {
-  syncImageSurfacePlacement,
-  type ImagePlacementTuple,
-} from '@services/images/surface-placements'
-import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import { runSequentially } from '@modules/utils/run-sequentially'
-import {
   lockImageAssetAdmission,
   lockUserProfileLinkImageOwners,
   prepareImageSurfaceAdmission,
+  syncImageSurfacePlacement,
+  type ImagePlacementTuple,
 } from '@services/media-delivery-safety'
+import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import {
   assertProfileLinkType,
   validateProfileLinkFields,
@@ -70,19 +68,30 @@ export async function createProfileLink(
       ${urlId},
       ${input.handle ?? null},
       ${input.name ?? null},
-      ${input.image_id ?? null}
+      NULL
     FROM user_profile_links
     WHERE user_id = ${userId}
     HAVING COUNT(*) < ${MAX_PROFILE_LINKS}
     RETURNING id, user_id, link_type, sort_order, url_id, handle, name, image_id, created_at, updated_at
   `)
   assert(rows.length > 0, 400, `Maximum of ${MAX_PROFILE_LINKS} profile links allowed`)
-  const row = rows[0] as Omit<ProfileLink, 'url' | 'image_placement'>
+  let row = rows[0] as Omit<ProfileLink, 'url' | 'image_placement'>
   await syncImageSurfacePlacement(
     { surfaceKind: 'user-profile-link-image', userProfileLinkId: row.id },
-    row.image_id,
+    input.image_id ?? null,
     transaction,
   )
+  if (input.image_id) {
+    const { rows: updated } = await transaction<Omit<ProfileLink, 'url' | 'image_placement'>>(
+      sql`/* createProfileLink:setImage */
+        UPDATE user_profile_links SET image_id = ${input.image_id}
+        WHERE id = ${row.id}
+        RETURNING id, user_id, link_type, sort_order, url_id, handle, name, image_id,
+          created_at, updated_at
+      `,
+    )
+    row = updated[0]!
+  }
   await transaction.commit()
   void enqueueReconcileMediaDeliveryRegistry()
   // Registry projection is asynchronous. Do not advertise a placement route until listProfileLinks

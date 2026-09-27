@@ -1,5 +1,11 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { createTestUser, insertTestCommunity, createTestMembership } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestCommunity,
+  createTestMembership,
+  insertTestImage,
+  getTestImageSurfacePlacements,
+} from '@voucha/test-helpers'
 import { createCommunity } from './create.mts'
 import { getCommunity } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -14,6 +20,24 @@ describe('create', () => {
   })
 
   describe('createCommunity', () => {
+    it('reserves both image surfaces before applying their owner fields', async () => {
+      const [profileImageId, bannerImageId] = await Promise.all([
+        insertTestImage(user.id),
+        insertTestImage(user.id),
+      ])
+      const community = await createCommunity(user.id, {
+        name: `Reserved Image Community ${crypto.randomUUID()}`,
+        profile_image_id: profileImageId,
+        banner_image_id: bannerImageId,
+      })
+      expect(community.profile_image_id).toBe(profileImageId)
+      expect(community.banner_image_id).toBe(bannerImageId)
+      const placements = await getTestImageSurfacePlacements({ communityId: community.id })
+      expect(placements.map(row => row.image_id)).toEqual(
+        expect.arrayContaining([profileImageId, bannerImageId]),
+      )
+    })
+
     it('creates a community and makes creator the owner', async () => {
       const community = await createCommunity(user.id, {
         name: 'Test Community Create',

@@ -24,7 +24,6 @@ import {
   lockUserProfileImageOwners,
 } from '@services/media-delivery-safety'
 import { assertCopyrightEvidenceAllowsDeletion } from './delete-copyright-evidence.mts'
-
 type UserDeletionTarget = {
   id: string
   username: string | null
@@ -56,14 +55,15 @@ async function auditAndCreateUserDeletionRequest(
   target: UserDeletionTarget,
   requestedById: string,
 ) {
+  const request = await createUserDeletionRequest(target.id, requestedById, {
+    priorUsername: target.username,
+    query,
+  })
   await query(sql`/* deleteUser:audit */
     INSERT INTO user_deletion_audit_logs (user_id, requested_by_id)
     VALUES (${target.id}, ${requestedById})
   `)
-  return createUserDeletionRequest(target.id, requestedById, {
-    priorUsername: target.username,
-    query,
-  })
+  return request
 }
 
 type DeleteUserDependencies = {

@@ -23,6 +23,7 @@ import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enq
 import {
   lockImageAssetAdmission,
   assertImagesReadyForSurface,
+  syncImageSurfacePlacement,
 } from '@services/media-delivery-safety'
 
 export type CreateCommunityInput = {
@@ -91,8 +92,8 @@ export async function createCommunity(
       ${input.post_approval_required_at ?? null},
       ${input.allow_review_posts ?? false},
       ${input.allow_data_point_posts ?? false},
-      ${input.profile_image_id ?? null},
-      ${input.banner_image_id ?? null},
+      NULL,
+      NULL,
       ${currentUserId},
       ${defaultLanguage}
     )
@@ -102,6 +103,28 @@ export async function createCommunity(
     )
 
     const newCommunity = rows[0] as Community
+
+    if (input.profile_image_id) {
+      await syncImageSurfacePlacement(
+        { surfaceKind: 'community-profile-image', communityId: newCommunity.id },
+        input.profile_image_id,
+        query,
+      )
+    }
+    if (input.banner_image_id) {
+      await syncImageSurfacePlacement(
+        { surfaceKind: 'community-banner-image', communityId: newCommunity.id },
+        input.banner_image_id,
+        query,
+      )
+    }
+    if (imageIds.length) {
+      await query(sql`/* createCommunity:setSurfaceImages */
+        UPDATE communities SET profile_image_id = ${input.profile_image_id ?? null},
+          banner_image_id = ${input.banner_image_id ?? null}
+        WHERE id = ${newCommunity.id}
+      `)
+    }
 
     await write(
       sql`/* createCommunity */

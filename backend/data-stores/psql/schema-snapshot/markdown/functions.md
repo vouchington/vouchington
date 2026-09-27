@@ -114,6 +114,46 @@ CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immuta
  LANGUAGE plpgsql
 ```
 
+## `fn_ensure_retained_image_identity(identity_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_image_identity(identity_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_retained_post_identity(identity_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_post_identity(identity_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_retained_rss_feed_item_identity(identity_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_rss_feed_item_identity(identity_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_retained_topic_identity(identity_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_topic_identity(identity_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_retained_user_identity(identity_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_retained_user_identity(identity_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_fence_bluesky_follow_receipt_active_users`
 
 ```sql
@@ -398,6 +438,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_m
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_retained_image_placement_binding`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_retained_image_placement_binding()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -704,6 +752,46 @@ CREATE OR REPLACE FUNCTION public.fn_record_user_data_request_attempt()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_count()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_image_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_post_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_post_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_rss_feed_item_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_rss_feed_item_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_topic_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_topic_identity()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_retained_user_identity`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_retained_user_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

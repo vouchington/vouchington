@@ -85,6 +85,10 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `relation__topic__related__url__votes`                  | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
 | `relation__topic__terms_of_service__url__votes`         | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
 | `relation__user__category__topic__votes`                | RANGE         | `entity_relation_id`                   | default            | none              | target-scoped      |
+| `retained_image_identities`                             | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `retained_image_placement_bindings`                     | RANGE         | `placement_id`                         | default            | none              | target-scoped      |
+| `retained_post_identities`                              | RANGE         | `id`                                   | default            | none              | target-scoped      |
+| `retained_rss_feed_item_identities`                     | RANGE         | `id`                                   | default            | none              | target-scoped      |
 | `rss_feed_crawls`                                       | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `rss_feed_item_feed_shares`                             | RANGE         | `recipient_user_id`                    | default            | none              | target-scoped      |
 | `rss_feed_item_read_states`                             | RANGE         | `user_id`                              | default            | none              | target-scoped      |
@@ -120,7 +124,10 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 
 - Durable entities and content: `communities`, `conversations`, `image_placements`,
   `image_surface_placements`, `images`, `lists`, `media_placements`, `podcast_shows`,
-  `remote_actors`, `rss_feeds`, `topics`, `url_hostnames`, `urls`, `users`.
+  `remote_actors`, `retained_topic_identities`, `retained_user_identities`, `rss_feeds`, `topics`,
+  `url_hostnames`, `urls`, `users`. The two unpartitioned retained-owner families remain selective
+  through UUID primary keys and bounded orphan cleanup; reconsider partitioning at the registry's
+  documented growth threshold rather than introducing partition overhead before measurement.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
   `activitypub_distribution_checkpoints`, `ap_inbox_activities`,
   `community_activity_digest_dispatch_windows`, `community_agent_prompt_changes`,
@@ -214,6 +221,19 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `rss_feed_item_sources`,
   `topic_aliases`, `x_friends`.
 - Config-generated relationship edges: `relation__rss_feed_item__category__topic_alias`.
+- Retained relation identities: `retained_relation__user__category__topic`,
+  `retained_relation__post__category__topic`, `retained_relation__post__category__topic_alias`,
+  `retained_relation__post__related__post`, `retained_relation__post__related__url`,
+  `retained_relation__topic__related__topic`, `retained_relation__topic__category__topic`,
+  `retained_relation__topic__publisher_type__topic`, `retained_relation__topic__faq__post`,
+  `retained_relation__topic__related__post`, `retained_relation__topic__related__url`,
+  `retained_relation__topic__faq__url`, `retained_relation__topic__guide__url`,
+  `retained_relation__topic__landing_page__url`,
+  `retained_relation__topic__terms_of_service__url`,
+  `retained_relation__rss_feed_item__category__topic`,
+  `retained_relation__rss_feed_item__category__topic_alias`. These indexed, composite-key
+  identities exist only while retained deletion impacts reference them; bounded cleanup removes
+  unreferenced rows, and partitioning is reconsidered at the registry's growth threshold.
 - Lower-amplification entities and workflow rows: `agent_prompts`, `agents`,
   `agents__moderators`, `ap_actor_keys`, `ap_posts`, `api_keys`, `app_attestation_keys`,
   `apple_accounts`,

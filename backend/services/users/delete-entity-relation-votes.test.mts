@@ -8,16 +8,122 @@ import {
   insertEntityRelation,
   insertTestPost,
   insertTestTopic,
+  insertTestEntityRelationVote,
+  insertTopicAliasForTest,
+  getTopicAliasIdForTest,
+  setTestEntityRelationIdAndScore,
   startPausedTestUserDeletionWriter,
   withTestEntityRelationVoteCandidateCascade,
 } from '@voucha/test-helpers'
 import { upsertEntityRelationElectionVotes } from '../elections-votes/entity-relation/votes-upsert.mts'
 import { createUserDeletionRequest } from '../user-deletions/create.mts'
 import { deleteUserEntityRelationVotesBatch } from './delete-entity-relation-votes-batches.mts'
+import { recomputeEntityRelationVoteStats } from './delete-entity-relation-votes.mts'
 import { deleteUser } from './delete.mts'
 import { deleteUserAndDrainForTest, drainUserDeletionForTest } from './delete-test-support.mts'
 
 describe('deleteUser entity-relation vote cleanup', () => {
+  it('isolates recomputation for two concrete tables sharing a subject and relation ID', async () => {
+    const creator = await createTestUser()
+    const firstVoter = await createTestUser()
+    const secondVoter = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Collision recompute ${v7()}`,
+      slug: `collision-recompute-${v7()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    const topicId = await insertTestTopic({
+      name: `Collision recompute ${v7()}`,
+      slug: `collision-recompute-${v7()}`,
+      createdById: creator.id,
+    })
+    const alias = `collision-recompute-${v7()}`
+    await insertTopicAliasForTest(topicId, alias)
+    const aliasId = await getTopicAliasIdForTest(alias)
+    if (!aliasId) throw new Error('Expected topic alias')
+    const directTable = 'relation__post__category__topic'
+    const aliasTable = 'relation__post__category__topic_alias'
+    await insertEntityRelation(directTable, postId, topicId)
+    await insertEntityRelation(aliasTable, postId, aliasId)
+    const sharedRelationId = v7()
+    await setTestEntityRelationIdAndScore(directTable, postId, topicId, sharedRelationId, 0)
+    await setTestEntityRelationIdAndScore(aliasTable, postId, aliasId, sharedRelationId, 0)
+    await insertTestEntityRelationVote({
+      relationTable: directTable,
+      relationId: sharedRelationId,
+      subjectId: postId,
+      userId: firstVoter.id,
+      score: 1,
+    })
+    await insertTestEntityRelationVote({
+      relationTable: aliasTable,
+      relationId: sharedRelationId,
+      subjectId: postId,
+      userId: secondVoter.id,
+      score: -1,
+    })
+
+    await using query = await beginTransaction()
+    await recomputeEntityRelationVoteStats(
+      [
+        { relationTable: directTable, subjectId: postId, entityRelationId: sharedRelationId },
+        { relationTable: aliasTable, subjectId: postId, entityRelationId: sharedRelationId },
+      ],
+      query,
+    )
+    await query.commit()
+    const [direct] = await getEntityRelation(directTable, postId, topicId)
+    const [aliased] = await getEntityRelation(aliasTable, postId, aliasId)
+    expect(direct).toMatchObject({ votes_count_up: 1, votes_count_down: 0 })
+    expect(aliased).toMatchObject({ votes_count_up: 0, votes_count_down: 1 })
+  })
+
+  it('deletes only a selected vote when another relation reuses its vote ID', async () => {
+    const creator = await createTestUser()
+    const deletingVoter = await createTestUser()
+    const topicId = await insertTestTopic({
+      name: `Collision vote ${v7()}`,
+      slug: `collision-vote-${v7()}`,
+      createdById: creator.id,
+    })
+    const posts = await Promise.all(
+      [0, 1].map(index =>
+        insertTestPost({
+          title: `Collision vote ${index} ${v7()}`,
+          slug: `collision-vote-${v7()}`,
+          createdById: creator.id,
+          markdown: 'test',
+        }),
+      ),
+    )
+    const table = 'relation__post__category__topic'
+    const voteId = v7()
+    for (const postId of posts) {
+      await insertEntityRelation(table, postId, topicId)
+      const [relation] = await getEntityRelation(table, postId, topicId)
+      await insertTestEntityRelationVote({
+        relationTable: table,
+        relationId: (relation as { id: string }).id,
+        subjectId: postId,
+        userId: deletingVoter.id,
+        score: 1,
+        id: voteId,
+      })
+    }
+    const request = await createUserDeletionRequest(deletingVoter.id, deletingVoter.id)
+    await using query = await beginTransaction()
+    const selected = await deleteUserEntityRelationVotesBatch(
+      request.id,
+      deletingVoter.id,
+      1,
+      query,
+    )
+    await query.commit()
+    expect(selected).toBe(1)
+    await expect(countTestUserDeletionEntityRelationVotes(deletingVoter.id)).resolves.toBe(1)
+  })
+
   it('requires a recheck when a selected vote cascades away before its delete', async () => {
     const creator = await createTestUser()
     const deletingVoter = await createTestUser()

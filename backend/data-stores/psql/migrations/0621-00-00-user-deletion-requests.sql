@@ -1,5 +1,4 @@
--- Durable, resumable account-deletion work. The request intentionally has no user foreign key so
--- its audit and recovery record survives the retention worker's eventual hard delete.
+-- Durable, resumable account-deletion work references retained user identities, not live users.
 CREATE OR REPLACE FUNCTION fn_lock_active_user_for_mutation(target_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -21,8 +20,8 @@ COMMENT ON FUNCTION fn_lock_active_user_for_mutation(UUID) IS
 
 CREATE TABLE IF NOT EXISTS user_deletion_requests (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  user_id UUID NOT NULL,
-  requested_by_id UUID,
+  user_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
+  requested_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   prior_username TEXT,
   queued_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   processing_attempt_id UUID NOT NULL DEFAULT uuidv7(),
@@ -57,6 +56,9 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_deletion_requests__processing_attempt_id
 ON user_deletion_requests (processing_attempt_id);
 
+CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__requested_by_id
+ON user_deletion_requests (requested_by_id) WHERE requested_by_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_user_deletion_requests__recover_unstarted
 ON user_deletion_requests (dispatched_at, id)
 WHERE completed_at IS NULL AND processing_started_at IS NULL;
@@ -69,7 +71,8 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   request_id UUID NOT NULL REFERENCES user_deletion_requests ON DELETE CASCADE,
   work_kind TEXT NOT NULL,
-  work_key TEXT NOT NULL,
+  work_key TEXT,
+  relation_impact_id UUID,
   requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMPTZ,
   last_error_message TEXT,
@@ -82,8 +85,15 @@ CREATE TABLE IF NOT EXISTS user_deletion_external_works (
     'stripe-customer'
   )),
   CHECK (char_length(work_key) <= 1024),
+  CHECK (
+    (work_kind = 'entity-relation-effects' AND work_key IS NULL
+      AND (completed_at IS NOT NULL OR relation_impact_id IS NOT NULL))
+    OR (work_kind <> 'entity-relation-effects' AND relation_impact_id IS NULL
+      AND (completed_at IS NOT NULL OR work_key IS NOT NULL))
+  ),
   CHECK (last_error_message IS NULL OR char_length(last_error_message) <= 2000),
-  UNIQUE (request_id, work_kind, work_key)
+  UNIQUE (request_id, work_kind, work_key),
+  UNIQUE (request_id, relation_impact_id)
 );
 
 CREATE OR REPLACE TRIGGER trigger_user_deletion_external_works_updated_at
@@ -95,27 +105,9 @@ CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__pending
 ON user_deletion_external_works (request_id, id)
 WHERE completed_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS user_deletion_relation_impacts (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  request_id UUID NOT NULL REFERENCES user_deletion_requests ON DELETE CASCADE,
-  relation_table TEXT NOT NULL,
-  entity_relation_id UUID NOT NULL,
-  recorded_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  recomputed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (char_length(relation_table) <= 128),
-  UNIQUE (request_id, relation_table, entity_relation_id)
-);
-
-CREATE OR REPLACE TRIGGER trigger_user_deletion_relation_impacts_updated_at
-BEFORE UPDATE ON user_deletion_relation_impacts
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
-CREATE INDEX IF NOT EXISTS idx_user_deletion_relation_impacts__pending
-ON user_deletion_relation_impacts (request_id, id)
-WHERE recomputed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__relation_impact
+ON user_deletion_external_works (relation_impact_id, request_id)
+WHERE relation_impact_id IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION fn_user_deletion_has_remaining_owned_data(target_user_id UUID)
 RETURNS BOOLEAN
@@ -222,23 +214,14 @@ COMMENT ON COLUMN user_deletion_requests.last_error_message IS 'Truncated diagno
 COMMENT ON TABLE user_deletion_external_works IS 'Required provider cleanup intents. Completion gates the final internal deletion marker.';
 COMMENT ON COLUMN user_deletion_external_works.request_id IS 'Owning durable deletion request.';
 COMMENT ON COLUMN user_deletion_external_works.work_kind IS 'Provider or internal side-effect category whose successful completion gates finalization.';
-COMMENT ON COLUMN user_deletion_external_works.work_key IS 'Idempotency key scoped to the request and work kind.';
+COMMENT ON COLUMN user_deletion_external_works.work_key IS 'Provider idempotency key while work is pending; cleared after completion and retention cleanup.';
+COMMENT ON COLUMN user_deletion_external_works.relation_impact_id IS 'Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned.';
 COMMENT ON COLUMN user_deletion_external_works.requested_at IS 'Timestamp when the durable external-work intent was recorded.';
 COMMENT ON COLUMN user_deletion_external_works.completed_at IS 'Timestamp when the external side effect completed successfully.';
 COMMENT ON COLUMN user_deletion_external_works.last_error_message IS 'Truncated diagnostic from the latest failed external-work attempt.';
-COMMENT ON TABLE user_deletion_relation_impacts IS 'Affected entity relations that must be recomputed before account deletion completes.';
-COMMENT ON COLUMN user_deletion_relation_impacts.request_id IS 'Owning durable deletion request.';
-COMMENT ON COLUMN user_deletion_relation_impacts.relation_table IS 'Concrete entity-relation table containing the affected relation.';
-COMMENT ON COLUMN user_deletion_relation_impacts.entity_relation_id IS 'Affected entity-relation identifier; relation_table selects its concrete table.';
-COMMENT ON COLUMN user_deletion_relation_impacts.recorded_at IS 'Timestamp when deletion captured the relation for durable recomputation.';
-COMMENT ON COLUMN user_deletion_relation_impacts.recomputed_at IS 'Timestamp when all derived effects for the captured relation completed.';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_user_deletion_external_works__completed_audit
   ON user_deletion_external_works (request_id, id)
   WHERE completed_at IS NOT NULL
-    AND work_key <> ('redacted:' || id::text);
-
-CREATE INDEX IF NOT EXISTS idx_user_deletion_relation_impacts__recomputed_audit
-  ON user_deletion_relation_impacts (request_id, id)
-  WHERE recomputed_at IS NOT NULL;
+    AND work_key IS NOT NULL;

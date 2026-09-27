@@ -26,7 +26,7 @@ import {
   assertImagesReadyForSurface,
   lockUserProfileLinkImageOwners,
 } from './index.mts'
-import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
+import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 import { createCommunity } from '../communities/create.mts'
 import { lockActivePostAuthorImageAdmission } from '../posts/create/active-author.mts'
 

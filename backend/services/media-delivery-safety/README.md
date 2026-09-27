@@ -67,6 +67,12 @@ The fresh-bootstrap schema is defined by the placement, delivery registry, surfa
 repair-marker creators in migrations 0647, 0648, 0649, and 0731. Runtime owner writes create their
 bindings; there is no historical population or upgrade path.
 
+The image byte root is registered with the live image. A new owner creates the immutable
+`(placement_id, image_id, post|surface)` binding in its own transaction, pins the image root and
+exact binding in that order, then inserts the live placement. Surface triggers reject an
+unprepared image instead of allocating a placement inside the owner transaction. Retained
+identities are not delivery authority; recovery still proves live ownership.
+
 An independently committed repair marker references an already committed registry delivery key
 with an `ON DELETE RESTRICT` foreign key and contains only that key, rotating token, and timestamps.
 It precedes an owner pre-commit denial when that committed registry parent exists, and also
@@ -81,6 +87,10 @@ revision or sibling binding and remain withheld.
 Immediate rollback repair reads independently committed markers from the primary database, then
 uses the same persisted wakeups and exact reconciler; it never manufactures
 an allow from a separate image-wide eligibility query.
+
+The exact observed marker token is acknowledged before a separate scheduled, cursor-bounded
+orphan sweep may remove an unreferenced binding and then its image root. A committed registry
+reference keeps those identities pinned; cleanup never authorizes a route.
 
 ```mermaid
 flowchart LR

@@ -77,6 +77,7 @@ _none_
 
 **Foreign keys:**
 
+- `fk_rss_feed_items__retained_identity`: `FOREIGN KEY (id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT`
 - `fk_rss_feed_items_story_id`: `FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL`
 - `rss_feed_items_id_fkey`: `FOREIGN KEY (id) REFERENCES rss_feed_item_ids(id) ON DELETE CASCADE`
 - `rss_feed_items_url_id_fkey`: `FOREIGN KEY (url_id) REFERENCES urls(id) ON DELETE CASCADE`
@@ -100,5 +101,6 @@ _none_
 
 **Triggers:**
 
+- `trigger_register_retained_rss_feed_item_identity`: `CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_rss_feed_item_identity()`
 - `trigger_rss_feed_items_updated_at`: `CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_sync_rss_feed_items_search_vector`: `CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_items_search_vector()`

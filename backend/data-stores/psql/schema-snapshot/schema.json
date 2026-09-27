@@ -561,6 +561,21 @@
     "fn_enforce_membership_provider_evidence_immutability": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership provider evidence records are immutable';\n  END IF;\n\n  IF ROW(\n    NEW.id,\n    NEW.provider,\n    NEW.environment,\n    NEW.application_id,\n    NEW.provider_event_id,\n    NEW.evidence_lookup_sha256,\n    NEW.encrypted_evidence,\n    NEW.received_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.provider,\n    OLD.environment,\n    OLD.application_id,\n    OLD.provider_event_id,\n    OLD.evidence_lookup_sha256,\n    OLD.encrypted_evidence,\n    OLD.received_at\n  ) OR (\n    OLD.membership_provider_lineage_id IS NOT NULL\n    AND NEW.membership_provider_lineage_id IS DISTINCT FROM OLD.membership_provider_lineage_id\n  ) THEN\n    RAISE EXCEPTION 'membership provider evidence identity is immutable';\n  END IF;\n\n  IF OLD.rejected_at IS NOT NULL\n    OR num_nonnulls(NEW.verified_at, NEW.rejected_at) <> 1\n    OR (\n      OLD.verified_at IS NOT NULL\n      AND (NEW.verified_at IS NOT NULL OR NEW.rejected_at IS NULL)\n    )\n  THEN\n    RAISE EXCEPTION 'membership provider evidence lifecycle is terminal';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_ensure_retained_image_identity(identity_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_image_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_image_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_image_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
+    },
+    "fn_ensure_retained_post_identity(identity_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_post_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_post_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_post_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
+    },
+    "fn_ensure_retained_rss_feed_item_identity(identity_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_rss_feed_item_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_rss_feed_item_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_rss_feed_item_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
+    },
+    "fn_ensure_retained_topic_identity(identity_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_topic_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_topic_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_topic_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
+    },
+    "fn_ensure_retained_user_identity(identity_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_user_identity(identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  LOOP\n    INSERT INTO retained_user_identities (id) VALUES (identity_id) ON CONFLICT (id) DO NOTHING;\n    PERFORM id FROM retained_user_identities WHERE id = identity_id FOR KEY SHARE;\n    EXIT WHEN FOUND;\n  END LOOP;\nEND;\n$function$\n"
+    },
     "fn_fence_bluesky_follow_receipt_active_users": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_fence_bluesky_follow_receipt_active_users()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.follower_user_id <= NEW.followee_user_id THEN\n    PERFORM fn_lock_active_user_for_mutation(NEW.follower_user_id);\n    IF NEW.followee_user_id <> NEW.follower_user_id THEN\n      PERFORM fn_lock_active_user_for_mutation(NEW.followee_user_id);\n    END IF;\n  ELSE\n    PERFORM fn_lock_active_user_for_mutation(NEW.followee_user_id);\n    PERFORM fn_lock_active_user_for_mutation(NEW.follower_user_id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -668,6 +683,9 @@
     },
     "fn_guard_ownerless_image_surface_retirement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id\n  FOR UPDATE;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_retained_image_placement_binding": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_retained_image_placement_binding()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)\n    IS DISTINCT FROM ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) THEN\n    RAISE EXCEPTION 'retained image placement binding is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_review_dispute_subject_snapshot": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -782,6 +800,21 @@
     },
     "fn_refresh_rss_feed_item_unmapped_category_count": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_text = LOWER(OLD.category_text)\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_text = LOWER(OLD.category_text);\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1,\n          updated_at = CURRENT_TIMESTAMP\n      WHERE category_text = LOWER(OLD.category_text);\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_text, item_count)\n    VALUES (LOWER(NEW.category_text), 1)\n    ON CONFLICT (category_text) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1,\n        updated_at = CURRENT_TIMESTAMP;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_image_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_image_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_post_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_post_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_post_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_rss_feed_item_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_rss_feed_item_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_rss_feed_item_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_topic_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_topic_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_topic_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_retained_user_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_user_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_user_identity(NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_classifier_append_only_update": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_append_only_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION '% is append-only', TG_TABLE_NAME USING ERRCODE = '23514';\nEND $function$\n"
@@ -910,7 +943,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_fediverse_instance_integration_status()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_status fediverse_integration_statuses;\nBEGIN\n  -- Serialize concurrent triggers for the same topic: acquire a row-level lock on\n  -- topics__fediverse_instances before re-reading the latest change, so whichever\n  -- trigger holds the lock last wins and writes the correct (most-recently-committed) value.\n  PERFORM topic_id FROM topics__fediverse_instances WHERE topic_id = NEW.topic_id FOR UPDATE;\n  SELECT integration_status INTO v_status\n  FROM fediverse_instance_integration_changes\n  WHERE topic_id = NEW.topic_id\n  ORDER BY id DESC LIMIT 1;\n  UPDATE topics__fediverse_instances SET integration_status = v_status\n  WHERE topic_id = NEW.topic_id AND integration_status IS DISTINCT FROM v_status;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    INSERT INTO media_placements DEFAULT VALUES RETURNING id, revision INTO v_placement_id, v_revision;\n    INSERT INTO image_surface_placements (\n      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id\n    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind text, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),\n    placement.id, placement.revision, surface.image_id, 'withheld'\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ON CONFLICT (delivery_key) DO UPDATE\n  SET desired_state = 'withheld',\n    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN 'pending' ELSE media_delivery_registry_records.state END,\n    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.claimed_at END,\n    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN NULL ELSE media_delivery_registry_records.completed_at END,\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    delivery_key, placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),\n    v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.openai_omni_moderation_flagged IS NOT TRUE\n      THEN 'allow' ELSE 'withheld' END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (delivery_key) DO NOTHING;\n\nEND;\n$function$\n"
     },
     "fn_sync_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -33758,8 +33791,21 @@
       }
     },
     "image_placements": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "image_placements_binding_family_check": "CHECK ((binding_family = 'post'::text))"
+      },
       "columns": {
+        "binding_family": {
+          "collation": null,
+          "comment": "Literal post family checked by the retained image placement triple foreign key.",
+          "defaultExpression": "'post'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
         "image_id": {
           "collation": null,
           "comment": "Immutable byte asset bound to this post placement; an asset can have multiple separately authorized placements.",
@@ -33796,6 +33842,15 @@
       },
       "comment": "Immutable image binding for a media placement. A post/image pair retains one stable placement identity across detach and reattach.",
       "foreignKeys": {
+        "fk_image_placements__retained_image_binding": {
+          "columns": ["placement_id", "image_id", "binding_family"],
+          "definition": "FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["placement_id", "image_id", "binding_family"],
+          "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
         "image_placements_image_id_fkey": {
           "columns": ["image_id"],
           "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
@@ -33913,10 +33968,22 @@
     },
     "image_surface_placements": {
       "checkConstraints": {
+        "image_surface_placements_binding_family_check": "CHECK ((binding_family = 'surface'::text))",
         "image_surface_placements_check": "CHECK ((((surface_kind = 'user-profile-image'::text) AND (topic_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['topic-logo-image'::text, 'topic-hero-image'::text])) AND (topic_id IS NOT NULL) AND (user_id IS NULL) AND (community_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = ANY (ARRAY['community-profile-image'::text, 'community-banner-image'::text])) AND (community_id IS NOT NULL) AND (user_id IS NULL) AND (topic_id IS NULL) AND (user_profile_link_id IS NULL)) OR ((surface_kind = 'user-profile-link-image'::text) AND (user_id IS NULL) AND (topic_id IS NULL) AND (community_id IS NULL))))",
         "image_surface_placements_surface_kind_check": "CHECK ((surface_kind = ANY (ARRAY['user-profile-image'::text, 'topic-logo-image'::text, 'topic-hero-image'::text, 'community-profile-image'::text, 'community-banner-image'::text, 'user-profile-link-image'::text])))"
       },
       "columns": {
+        "binding_family": {
+          "collation": null,
+          "comment": "Literal surface family checked by the retained image placement triple foreign key.",
+          "defaultExpression": "'surface'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
         "community_id": {
           "collation": null,
           "comment": "Community owner for a profile or banner image surface.",
@@ -33925,7 +33992,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "image_id": {
@@ -33969,7 +34036,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "updated_at": {
@@ -33980,7 +34047,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -33991,7 +34058,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "user_profile_link_id": {
@@ -34002,12 +34069,21 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "uuid"
         }
       },
       "comment": "Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.",
       "foreignKeys": {
+        "fk_image_surface_placements__retained_image_binding": {
+          "columns": ["placement_id", "image_id", "binding_family"],
+          "definition": "FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["placement_id", "image_id", "binding_family"],
+          "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
         "image_surface_placements_community_id_fkey": {
           "columns": ["community_id"],
           "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE RESTRICT",
@@ -34624,6 +34700,15 @@
       },
       "comment": "Uploaded images with S3 storage, metadata, and moderation results.",
       "foreignKeys": {
+        "fk_images__retained_image_identity": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_image_identities",
+          "validated": true
+        },
         "images_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -34837,7 +34922,8 @@
       "triggers": {
         "trigger_images_guard_terminal_lifecycle": "CREATE TRIGGER trigger_images_guard_terminal_lifecycle BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_terminal_lifecycle('upload_completed_at', 'upload_failed_at')",
         "trigger_images_id_immutable": "CREATE TRIGGER trigger_images_id_immutable BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_guard_images_id_immutable()",
-        "trigger_images_updated_at": "CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_images_updated_at": "CREATE TRIGGER trigger_images_updated_at BEFORE UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_register_retained_image_identity": "CREATE TRIGGER trigger_register_retained_image_identity BEFORE INSERT ON public.images FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity()"
       },
       "uniqueConstraints": {
         "images_sha_256_key": {
@@ -37028,6 +37114,15 @@
       },
       "comment": "Durable exact image-placement delivery outbox; image and placement parents are retained.",
       "foreignKeys": {
+        "fk_media_delivery_registry_records__retained_image_binding": {
+          "columns": ["placement_id", "image_id"],
+          "definition": "FOREIGN KEY (placement_id, image_id) REFERENCES retained_image_placement_bindings(placement_id, image_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["placement_id", "image_id"],
+          "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        },
         "media_delivery_registry_records_image_id_fkey": {
           "columns": ["image_id"],
           "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
@@ -37356,7 +37451,17 @@
         }
       },
       "comment": "Durable image-use placements; exact binding and revision authority governs public delivery.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "fk_media_placements__retained_image_binding": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["placement_id"],
+          "referencedTable": "retained_image_placement_bindings",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
         "media_placements_pkey": {
@@ -61600,6 +61705,15 @@
       },
       "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
       "foreignKeys": {
+        "post_publication_author_identities_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "post_publication_author_identities_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -63523,6 +63637,15 @@
       },
       "comment": "Durable post identity referenced by accepted receipts and snapshots; UUIDv7 range partitions bound target-scoped access and bounded sweeps reclaim unreferenced rows.",
       "foreignKeys": {
+        "post_publication_post_identities_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        },
         "post_publication_post_identities_post_id_fkey": {
           "columns": ["post_id"],
           "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL",
@@ -63989,6 +64112,15 @@
       },
       "comment": "Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.",
       "foreignKeys": {
+        "post_publication_rss_feed_item_identities_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_rss_feed_item_identities",
+          "validated": true
+        },
         "post_publication_rss_feed_item_identities_rss_feed_item_id_fkey": {
           "columns": ["rss_feed_item_id"],
           "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE SET NULL",
@@ -66619,6 +66751,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "posts_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        },
         "posts_latest_clearance_change_id_fkey": {
           "columns": ["latest_clearance_change_id"],
           "definition": "FOREIGN KEY (latest_clearance_change_id) REFERENCES post_clearance_changes(id) ON DELETE SET NULL",
@@ -67520,6 +67661,7 @@
         "posts_content_provenance_immutable": "CREATE TRIGGER posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "posts_creation_source_url_id_immutable": "CREATE TRIGGER posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update()",
         "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_register_retained_post_identity": "CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_post_identity()",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_sync_posts_search_vector()"
       },
       "uniqueConstraints": {}
@@ -84798,6 +84940,1953 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "retained_identity_cleanup_progress": {
+      "checkConstraints": {
+        "retained_identity_cleanup_progress_family_check": "CHECK ((family = ANY (ARRAY['user'::text, 'topic'::text, 'post'::text, 'rss_feed_item'::text, 'image'::text, 'image_placement_binding'::text])))"
+      },
+      "columns": {
+        "cursor_identity_id": {
+          "collation": null,
+          "comment": "Last scanned identity, not a durable relationship to that identity.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "family": {
+          "collation": null,
+          "comment": "Concrete retained root family selected by the cleanup worker.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One operational keyset cursor per concrete retained root family.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "retained_identity_cleanup_progress_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_identity_cleanup_progress_pkey ON public.retained_identity_cleanup_progress USING btree (family)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "family",
+              "descending": false,
+              "expression": "family",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["family"],
+        "definition": "PRIMARY KEY (family)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_image_identities": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete image byte identity retained while live or durable references remain; never delivery authority.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "retained_image_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_image_identities_pkey ON ONLY public.retained_image_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_image_placement_bindings": {
+      "checkConstraints": {
+        "retained_image_placement_bindings_binding_family_check": "CHECK ((binding_family = ANY (ARRAY['post'::text, 'surface'::text])))"
+      },
+      "columns": {
+        "binding_family": {
+          "collation": null,
+          "comment": "Post or surface live-child family fixed at first insertion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "image_id": {
+          "collation": null,
+          "comment": "Exact immutable image identity for this placement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": "UUIDv7 placement identity created with its live owner transaction.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Immutable image, placement and post/surface family identity retained with live or durable references; never delivery authority.",
+      "foreignKeys": {
+        "retained_image_placement_bindings_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_image_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_retained_image_placement_bindings__image_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_retained_image_placement_bindings__image_id ON ONLY public.retained_image_placement_bindings USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "retained_image_placement_bind_placement_id_image_id_binding_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_image_placement_bind_placement_id_image_id_binding_key ON ONLY public.retained_image_placement_bindings USING btree (placement_id, image_id, binding_family)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "binding_family",
+              "descending": false,
+              "expression": "binding_family",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "retained_image_placement_bindings_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_image_placement_bindings_pkey ON ONLY public.retained_image_placement_bindings USING btree (placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "retained_image_placement_bindings_placement_id_image_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_image_placement_bindings_placement_id_image_id_key ON ONLY public.retained_image_placement_bindings USING btree (placement_id, image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "placement_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (placement_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["placement_id"],
+        "definition": "PRIMARY KEY (placement_id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "trigger_guard_retained_image_placement_binding": "CREATE TRIGGER trigger_guard_retained_image_placement_binding BEFORE UPDATE ON public.retained_image_placement_bindings FOR EACH ROW EXECUTE FUNCTION fn_guard_retained_image_placement_binding()"
+      },
+      "uniqueConstraints": {
+        "retained_image_placement_bind_placement_id_image_id_binding_key": {
+          "columns": ["placement_id", "image_id", "binding_family"],
+          "definition": "UNIQUE (placement_id, image_id, binding_family)"
+        },
+        "retained_image_placement_bindings_placement_id_image_id_key": {
+          "columns": ["placement_id", "image_id"],
+          "definition": "UNIQUE (placement_id, image_id)"
+        }
+      }
+    },
+    "retained_post_identities": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete post identity owner that outlives the live row while durable references remain.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "retained_post_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_post_identities_pkey ON ONLY public.retained_post_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__post__category__topic": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__post__category__topic_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__post__category__topic_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__post__category__topic_pkey ON public.retained_relation__post__category__topic USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__post__category__topic_alias": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__post__category__topic_alias_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__post__category__topic_alias_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__post__category__topic_alias_pkey ON public.retained_relation__post__category__topic_alias USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__post__related__post": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__post__related__post_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__post__related__post_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__post__related__post_pkey ON public.retained_relation__post__related__post USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__post__related__url": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__post__related__url_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__post__related__url_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__post__related__url_pkey ON public.retained_relation__post__related__url USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__rss_feed_item__category__topic": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__rss_feed_item__category__top_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_rss_feed_item_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__rss_feed_item__category__topic_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__rss_feed_item__category__topic_pkey ON public.retained_relation__rss_feed_item__category__topic USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__rss_feed_item__category__topic_alias": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__rss_feed_item__category__to_subject_id_fkey1": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_rss_feed_item_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__rss_feed_item__category__topic_alias_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__rss_feed_item__category__topic_alias_pkey ON public.retained_relation__rss_feed_item__category__topic_alias USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__category__topic": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__category__topic_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__category__topic_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__category__topic_pkey ON public.retained_relation__topic__category__topic USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__faq__post": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__faq__post_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__faq__post_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__faq__post_pkey ON public.retained_relation__topic__faq__post USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__faq__url": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__faq__url_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__faq__url_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__faq__url_pkey ON public.retained_relation__topic__faq__url USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__guide__url": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__guide__url_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__guide__url_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__guide__url_pkey ON public.retained_relation__topic__guide__url USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__landing_page__url": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__landing_page__url_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__landing_page__url_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__landing_page__url_pkey ON public.retained_relation__topic__landing_page__url USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__publisher_type__topic": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__publisher_type__topic_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__publisher_type__topic_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__publisher_type__topic_pkey ON public.retained_relation__topic__publisher_type__topic USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__related__post": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__related__post_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__related__post_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__related__post_pkey ON public.retained_relation__topic__related__post USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__related__topic": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__related__topic_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__related__topic_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__related__topic_pkey ON public.retained_relation__topic__related__topic USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__related__url": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__related__url_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__related__url_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__related__url_pkey ON public.retained_relation__topic__related__url USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__topic__terms_of_service__url": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__topic__terms_of_service__url_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__topic__terms_of_service__url_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__topic__terms_of_service__url_pkey ON public.retained_relation__topic__terms_of_service__url USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation__user__category__topic": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "subject_id": {
+          "collation": null,
+          "comment": "Concrete subject root paired with this retained relation identifier.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete retained identity for an elected relation captured by durable deletion work.",
+      "foreignKeys": {
+        "retained_relation__user__category__topic_subject_id_fkey": {
+          "columns": ["subject_id"],
+          "definition": "FOREIGN KEY (subject_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "retained_relation__user__category__topic_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation__user__category__topic_pkey ON public.retained_relation__user__category__topic USING btree (subject_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["subject_id", "id"],
+        "definition": "PRIMARY KEY (subject_id, id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_relation_identity_cleanup_progress": {
+      "checkConstraints": {
+        "retained_relation_identity_cleanup_progress_check": "CHECK (((cursor_subject_id IS NULL) = (cursor_relation_id IS NULL)))"
+      },
+      "columns": {
+        "cursor_relation_id": {
+          "collation": null,
+          "comment": "Last scanned relation position, not a durable relationship.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "cursor_subject_id": {
+          "collation": null,
+          "comment": "Last scanned subject position, not a durable relationship.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "relation_table": {
+          "collation": null,
+          "comment": "Metadata family selector for cleanup, not a persisted relation reference.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One operational keyset cursor per metadata-declared elected relation family.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "retained_relation_identity_cleanup_progress_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_relation_identity_cleanup_progress_pkey ON public.retained_relation_identity_cleanup_progress USING btree (relation_table)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "relation_table",
+              "descending": false,
+              "expression": "relation_table",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["relation_table"],
+        "definition": "PRIMARY KEY (relation_table)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_rss_feed_item_identities": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete RSS item identity owner that outlives the live row while durable references remain.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "retained_rss_feed_item_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_rss_feed_item_identities_pkey ON ONLY public.retained_rss_feed_item_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_topic_identities": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete topic identity owner that outlives the live row while durable references remain.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "retained_topic_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_topic_identities_pkey ON public.retained_topic_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "retained_user_identities": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "retained_user_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX retained_user_identities_pkey ON public.retained_user_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "review_dispute_lifecycle_changes": {
       "checkConstraints": {},
       "columns": {
@@ -89089,6 +91178,15 @@
       },
       "comment": "Partitioned RSS feed item content keyed by rss_feed_item_ids.id.",
       "foreignKeys": {
+        "fk_rss_feed_items__retained_identity": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_rss_feed_item_identities",
+          "validated": true
+        },
         "fk_rss_feed_items_story_id": {
           "columns": ["story_id"],
           "definition": "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL",
@@ -89480,6 +91578,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_register_retained_rss_feed_item_identity": "CREATE TRIGGER trigger_register_retained_rss_feed_item_identity BEFORE INSERT ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_register_retained_rss_feed_item_identity()",
         "trigger_rss_feed_items_updated_at": "CREATE TRIGGER trigger_rss_feed_items_updated_at BEFORE UPDATE ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_sync_rss_feed_items_search_vector": "CREATE TRIGGER trigger_sync_rss_feed_items_search_vector BEFORE INSERT OR UPDATE OF data ON public.rss_feed_items FOR EACH ROW EXECUTE FUNCTION fn_sync_rss_feed_items_search_vector()"
       },
@@ -95561,6 +97660,15 @@
           "referencedTable": "url_hostnames",
           "validated": true
         },
+        "topics_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_topic_identities",
+          "validated": true
+        },
         "topics_logo_image_id_fkey": {
           "columns": ["logo_image_id"],
           "definition": "FOREIGN KEY (logo_image_id) REFERENCES images(id) ON DELETE SET NULL",
@@ -96192,6 +98300,7 @@
       "triggers": {
         "topics_content_provenance_immutable": "CREATE TRIGGER topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_topic_metrics_on_insert()",
+        "trigger_register_retained_topic_identity": "CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_topic_identity()",
         "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_sync_topic_image_placements()",
         "trigger_topics_updated_at": "CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -99449,7 +101558,7 @@
         },
         "requested_by_id": {
           "collation": null,
-          "comment": "The user who initiated the deletion (no FK, intentional for audit persistence).",
+          "comment": "Retained identity of the requesting user, if any.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -99460,7 +101569,7 @@
         },
         "user_id": {
           "collation": null,
-          "comment": "The user whose account was deleted (no FK, intentional for audit persistence).",
+          "comment": "Retained identity of the deleted user.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -99470,10 +101579,49 @@
           "type": "uuid"
         }
       },
-      "comment": "Compliance audit trail for account deletions; no FK so records survive after user hard-delete.",
-      "foreignKeys": {},
+      "comment": "Compliance audit trail referencing retained user identities after live hard-delete.",
+      "foreignKeys": {
+        "user_deletion_audit_logs_requested_by_id_fkey": {
+          "columns": ["requested_by_id"],
+          "definition": "FOREIGN KEY (requested_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "user_deletion_audit_logs_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
+        "idx_user_deletion_audit_logs__requested_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_deletion_audit_logs__requested_by_id ON public.user_deletion_audit_logs USING btree (requested_by_id) WHERE (requested_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(requested_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_deletion_audit_logs__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -99527,6 +101675,7 @@
     },
     "user_deletion_external_works": {
       "checkConstraints": {
+        "user_deletion_external_works_check": "CHECK ((((work_kind = 'entity-relation-effects'::text) AND (work_key IS NULL) AND ((completed_at IS NOT NULL) OR (relation_impact_id IS NOT NULL))) OR ((work_kind <> 'entity-relation-effects'::text) AND (relation_impact_id IS NULL) AND ((completed_at IS NOT NULL) OR (work_key IS NOT NULL)))))",
         "user_deletion_external_works_last_error_message_check": "CHECK (((last_error_message IS NULL) OR (char_length(last_error_message) <= 2000)))",
         "user_deletion_external_works_work_key_check": "CHECK ((char_length(work_key) <= 1024))",
         "user_deletion_external_works_work_kind_check": "CHECK ((work_kind = ANY (ARRAY['cloudflare-cache-tag'::text, 'entity-relation-effects'::text, 's3-export'::text, 'stripe-customer'::text])))"
@@ -99540,7 +101689,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -99551,7 +101700,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -99573,8 +101722,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
+        },
+        "relation_impact_id": {
+          "collation": null,
+          "comment": "Typed pointer to an affected relation for internal effects work; cleared when completed impact history is pruned.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
         },
         "request_id": {
           "collation": null,
@@ -99595,7 +101755,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -99606,17 +101766,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "work_key": {
           "collation": null,
-          "comment": "Idempotency key scoped to the request and work kind.",
+          "comment": "Provider idempotency key while work is pending; cleared after completion and retention cleanup.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 4,
           "type": "text"
         },
@@ -99634,6 +101794,15 @@
       },
       "comment": "Required provider cleanup intents. Completion gates the final internal deletion marker.",
       "foreignKeys": {
+        "udew_relation_impact_fkey": {
+          "columns": ["request_id", "relation_impact_id"],
+          "definition": "FOREIGN KEY (request_id, relation_impact_id) REFERENCES user_deletion_relation_impacts(request_id, id) ON DELETE SET NULL (relation_impact_id)",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["request_id", "id"],
+          "referencedTable": "user_deletion_relation_impacts",
+          "validated": true
+        },
         "user_deletion_external_works_request_id_fkey": {
           "columns": ["request_id"],
           "definition": "FOREIGN KEY (request_id) REFERENCES user_deletion_requests(id) ON DELETE CASCADE",
@@ -99649,7 +101818,7 @@
         "idx_user_deletion_external_works__completed_audit": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_deletion_external_works__completed_audit ON public.user_deletion_external_works USING btree (request_id, id) WHERE ((completed_at IS NOT NULL) AND (work_key <> ('redacted:'::text || (id)::text)))",
+          "definition": "CREATE INDEX idx_user_deletion_external_works__completed_audit ON public.user_deletion_external_works USING btree (request_id, id) WHERE ((completed_at IS NOT NULL) AND (work_key IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -99667,7 +101836,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((completed_at IS NOT NULL) AND (work_key <> ('redacted:'::text || (id)::text)))",
+          "predicate": "((completed_at IS NOT NULL) AND (work_key IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -99700,6 +101869,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_deletion_external_works__relation_impact": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_deletion_external_works__relation_impact ON public.user_deletion_external_works USING btree (relation_impact_id, request_id) WHERE (relation_impact_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "relation_impact_id",
+              "descending": false,
+              "expression": "relation_impact_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation_impact_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "user_deletion_external_works_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -99716,6 +101912,33 @@
           ],
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "user_deletion_external_works_request_id_relation_impact_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_deletion_external_works_request_id_relation_impact_id_key ON public.user_deletion_external_works USING btree (request_id, relation_impact_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation_impact_id",
+              "descending": false,
+              "expression": "relation_impact_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -99766,6 +101989,10 @@
         "trigger_user_deletion_external_works_updated_at": "CREATE TRIGGER trigger_user_deletion_external_works_updated_at BEFORE UPDATE ON public.user_deletion_external_works FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
+        "user_deletion_external_works_request_id_relation_impact_id_key": {
+          "columns": ["request_id", "relation_impact_id"],
+          "definition": "UNIQUE (request_id, relation_impact_id)"
+        },
         "user_deletion_external_works_request_id_work_kind_work_key_key": {
           "columns": ["request_id", "work_kind", "work_key"],
           "definition": "UNIQUE (request_id, work_kind, work_key)"
@@ -99774,7 +102001,7 @@
     },
     "user_deletion_relation_impacts": {
       "checkConstraints": {
-        "user_deletion_relation_impacts_relation_table_check": "CHECK ((char_length(relation_table) <= 128))"
+        "chk_user_deletion_relation_impacts_one_target": "CHECK ((num_nonnulls(relation__user__category__topic_id, relation__post__category__topic_id, relation__post__category__topic_alias_id, relation__post__related__post_id, relation__post__related__url_id, relation__topic__related__topic_id, relation__topic__category__topic_id, relation__topic__publisher_type__topic_id, relation__topic__faq__post_id, relation__topic__related__post_id, relation__topic__related__url_id, relation__topic__faq__url_id, relation__topic__guide__url_id, relation__topic__landing_page__url_id, relation__topic__terms_of_service__url_id, relation__rss_feed_item__category__topic_id, relation__rss_feed_item__category__topic_alias_id) = 1))"
       },
       "columns": {
         "created_at": {
@@ -99785,19 +102012,8 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
-        },
-        "entity_relation_id": {
-          "collation": null,
-          "comment": "Affected entity-relation identifier; relation_table selects its concrete table.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "uuid"
         },
         "id": {
           "collation": null,
@@ -99818,7 +102034,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "recorded_at": {
@@ -99829,19 +102045,195 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
-        "relation_table": {
+        "relation__post__category__topic_alias_id": {
           "collation": null,
-          "comment": "Concrete entity-relation table containing the affected relation.",
+          "comment": "Retained relation__post__category__topic_alias identity for this impact.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "relation__post__category__topic_id": {
+          "collation": null,
+          "comment": "Retained relation__post__category__topic identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "relation__post__related__post_id": {
+          "collation": null,
+          "comment": "Retained relation__post__related__post identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "relation__post__related__url_id": {
+          "collation": null,
+          "comment": "Retained relation__post__related__url identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "relation__rss_feed_item__category__topic_alias_id": {
+          "collation": null,
+          "comment": "Retained relation__rss_feed_item__category__topic_alias identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "uuid"
+        },
+        "relation__rss_feed_item__category__topic_id": {
+          "collation": null,
+          "comment": "Retained relation__rss_feed_item__category__topic identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "uuid"
+        },
+        "relation__topic__category__topic_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__category__topic identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "relation__topic__faq__post_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__faq__post identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "relation__topic__faq__url_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__faq__url identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "uuid"
+        },
+        "relation__topic__guide__url_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__guide__url identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "uuid"
+        },
+        "relation__topic__landing_page__url_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__landing_page__url identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "uuid"
+        },
+        "relation__topic__publisher_type__topic_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__publisher_type__topic identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "uuid"
+        },
+        "relation__topic__related__post_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__related__post identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "uuid"
+        },
+        "relation__topic__related__topic_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__related__topic identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "relation__topic__related__url_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__related__url identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "uuid"
+        },
+        "relation__topic__terms_of_service__url_id": {
+          "collation": null,
+          "comment": "Retained relation__topic__terms_of_service__url identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "uuid"
+        },
+        "relation__user__category__topic_id": {
+          "collation": null,
+          "comment": "Retained relation__user__category__topic identity for this impact.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
         "request_id": {
           "collation": null,
@@ -99854,6 +102246,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "subject_id": {
+          "collation": null,
+          "comment": "Authoritative relation subject captured with the deleted vote.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -99862,12 +102265,165 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Affected entity relations that must be recomputed before account deletion completes.",
+      "comment": "Typed affected elected relations captured from vote DELETE RETURNING for durable recomputation.",
       "foreignKeys": {
+        "udri_post__category__topic_alias_target_fkey": {
+          "columns": ["subject_id", "relation__post__category__topic_alias_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__post__category__topic_alias_id) REFERENCES retained_relation__post__category__topic_alias(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__post__category__topic_alias",
+          "validated": true
+        },
+        "udri_post__category__topic_target_fkey": {
+          "columns": ["subject_id", "relation__post__category__topic_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__post__category__topic_id) REFERENCES retained_relation__post__category__topic(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__post__category__topic",
+          "validated": true
+        },
+        "udri_post__related__post_target_fkey": {
+          "columns": ["subject_id", "relation__post__related__post_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__post__related__post_id) REFERENCES retained_relation__post__related__post(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__post__related__post",
+          "validated": true
+        },
+        "udri_post__related__url_target_fkey": {
+          "columns": ["subject_id", "relation__post__related__url_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__post__related__url_id) REFERENCES retained_relation__post__related__url(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__post__related__url",
+          "validated": true
+        },
+        "udri_rss_feed_item__category__topic_alias_target_fkey": {
+          "columns": ["subject_id", "relation__rss_feed_item__category__topic_alias_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__rss_feed_item__category__topic_alias_id) REFERENCES retained_relation__rss_feed_item__category__topic_alias(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__rss_feed_item__category__topic_alias",
+          "validated": true
+        },
+        "udri_rss_feed_item__category__topic_target_fkey": {
+          "columns": ["subject_id", "relation__rss_feed_item__category__topic_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__rss_feed_item__category__topic_id) REFERENCES retained_relation__rss_feed_item__category__topic(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__rss_feed_item__category__topic",
+          "validated": true
+        },
+        "udri_topic__category__topic_target_fkey": {
+          "columns": ["subject_id", "relation__topic__category__topic_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__category__topic_id) REFERENCES retained_relation__topic__category__topic(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__category__topic",
+          "validated": true
+        },
+        "udri_topic__faq__post_target_fkey": {
+          "columns": ["subject_id", "relation__topic__faq__post_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__faq__post_id) REFERENCES retained_relation__topic__faq__post(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__faq__post",
+          "validated": true
+        },
+        "udri_topic__faq__url_target_fkey": {
+          "columns": ["subject_id", "relation__topic__faq__url_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__faq__url_id) REFERENCES retained_relation__topic__faq__url(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__faq__url",
+          "validated": true
+        },
+        "udri_topic__guide__url_target_fkey": {
+          "columns": ["subject_id", "relation__topic__guide__url_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__guide__url_id) REFERENCES retained_relation__topic__guide__url(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__guide__url",
+          "validated": true
+        },
+        "udri_topic__landing_page__url_target_fkey": {
+          "columns": ["subject_id", "relation__topic__landing_page__url_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__landing_page__url_id) REFERENCES retained_relation__topic__landing_page__url(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__landing_page__url",
+          "validated": true
+        },
+        "udri_topic__publisher_type__topic_target_fkey": {
+          "columns": ["subject_id", "relation__topic__publisher_type__topic_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__publisher_type__topic_id) REFERENCES retained_relation__topic__publisher_type__topic(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__publisher_type__topic",
+          "validated": true
+        },
+        "udri_topic__related__post_target_fkey": {
+          "columns": ["subject_id", "relation__topic__related__post_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__related__post_id) REFERENCES retained_relation__topic__related__post(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__related__post",
+          "validated": true
+        },
+        "udri_topic__related__topic_target_fkey": {
+          "columns": ["subject_id", "relation__topic__related__topic_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__related__topic_id) REFERENCES retained_relation__topic__related__topic(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__related__topic",
+          "validated": true
+        },
+        "udri_topic__related__url_target_fkey": {
+          "columns": ["subject_id", "relation__topic__related__url_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__related__url_id) REFERENCES retained_relation__topic__related__url(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__related__url",
+          "validated": true
+        },
+        "udri_topic__terms_of_service__url_target_fkey": {
+          "columns": ["subject_id", "relation__topic__terms_of_service__url_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__topic__terms_of_service__url_id) REFERENCES retained_relation__topic__terms_of_service__url(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__topic__terms_of_service__url",
+          "validated": true
+        },
+        "udri_user__category__topic_target_fkey": {
+          "columns": ["subject_id", "relation__user__category__topic_id"],
+          "definition": "FOREIGN KEY (subject_id, relation__user__category__topic_id) REFERENCES retained_relation__user__category__topic(subject_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["subject_id", "id"],
+          "referencedTable": "retained_relation__user__category__topic",
+          "validated": true
+        },
         "user_deletion_relation_impacts_request_id_fkey": {
           "columns": ["request_id"],
           "definition": "FOREIGN KEY (request_id) REFERENCES user_deletion_requests(id) ON DELETE CASCADE",
@@ -99880,6 +102436,584 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_udri__post__category__topic_alias_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__post__category__topic_alias_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__post__category__topic_alias_id, request_id) WHERE (relation__post__category__topic_alias_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__post__category__topic_alias_id",
+              "descending": false,
+              "expression": "relation__post__category__topic_alias_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__post__category__topic_alias_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__post__category__topic_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__post__category__topic_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__post__category__topic_id, request_id) WHERE (relation__post__category__topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__post__category__topic_id",
+              "descending": false,
+              "expression": "relation__post__category__topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__post__category__topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__post__related__post_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__post__related__post_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__post__related__post_id, request_id) WHERE (relation__post__related__post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__post__related__post_id",
+              "descending": false,
+              "expression": "relation__post__related__post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__post__related__post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__post__related__url_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__post__related__url_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__post__related__url_id, request_id) WHERE (relation__post__related__url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__post__related__url_id",
+              "descending": false,
+              "expression": "relation__post__related__url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__post__related__url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__rss_feed_item__category__topic_alias_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__rss_feed_item__category__topic_alias_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__rss_feed_item__category__topic_alias_id, request_id) WHERE (relation__rss_feed_item__category__topic_alias_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__rss_feed_item__category__topic_alias_id",
+              "descending": false,
+              "expression": "relation__rss_feed_item__category__topic_alias_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__rss_feed_item__category__topic_alias_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__rss_feed_item__category__topic_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__rss_feed_item__category__topic_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__rss_feed_item__category__topic_id, request_id) WHERE (relation__rss_feed_item__category__topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__rss_feed_item__category__topic_id",
+              "descending": false,
+              "expression": "relation__rss_feed_item__category__topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__rss_feed_item__category__topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__category__topic_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__category__topic_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__category__topic_id, request_id) WHERE (relation__topic__category__topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__category__topic_id",
+              "descending": false,
+              "expression": "relation__topic__category__topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__category__topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__faq__post_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__faq__post_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__faq__post_id, request_id) WHERE (relation__topic__faq__post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__faq__post_id",
+              "descending": false,
+              "expression": "relation__topic__faq__post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__faq__post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__faq__url_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__faq__url_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__faq__url_id, request_id) WHERE (relation__topic__faq__url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__faq__url_id",
+              "descending": false,
+              "expression": "relation__topic__faq__url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__faq__url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__guide__url_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__guide__url_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__guide__url_id, request_id) WHERE (relation__topic__guide__url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__guide__url_id",
+              "descending": false,
+              "expression": "relation__topic__guide__url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__guide__url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__landing_page__url_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__landing_page__url_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__landing_page__url_id, request_id) WHERE (relation__topic__landing_page__url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__landing_page__url_id",
+              "descending": false,
+              "expression": "relation__topic__landing_page__url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__landing_page__url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__publisher_type__topic_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__publisher_type__topic_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__publisher_type__topic_id, request_id) WHERE (relation__topic__publisher_type__topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__publisher_type__topic_id",
+              "descending": false,
+              "expression": "relation__topic__publisher_type__topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__publisher_type__topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__related__post_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__related__post_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__related__post_id, request_id) WHERE (relation__topic__related__post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__related__post_id",
+              "descending": false,
+              "expression": "relation__topic__related__post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__related__post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__related__topic_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__related__topic_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__related__topic_id, request_id) WHERE (relation__topic__related__topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__related__topic_id",
+              "descending": false,
+              "expression": "relation__topic__related__topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__related__topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__related__url_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__related__url_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__related__url_id, request_id) WHERE (relation__topic__related__url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__related__url_id",
+              "descending": false,
+              "expression": "relation__topic__related__url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__related__url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__topic__terms_of_service__url_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__topic__terms_of_service__url_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__topic__terms_of_service__url_id, request_id) WHERE (relation__topic__terms_of_service__url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__topic__terms_of_service__url_id",
+              "descending": false,
+              "expression": "relation__topic__terms_of_service__url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__topic__terms_of_service__url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_udri__user__category__topic_target": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_udri__user__category__topic_target ON public.user_deletion_relation_impacts USING btree (subject_id, relation__user__category__topic_id, request_id) WHERE (relation__user__category__topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "relation__user__category__topic_id",
+              "descending": false,
+              "expression": "relation__user__category__topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(relation__user__category__topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "idx_user_deletion_relation_impacts__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -99934,40 +103068,6 @@
           "unique": false,
           "valid": true
         },
-        "user_deletion_relation_impact_request_id_relation_table_ent_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX user_deletion_relation_impact_request_id_relation_table_ent_key ON public.user_deletion_relation_impacts USING btree (request_id, relation_table, entity_relation_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "request_id",
-              "descending": false,
-              "expression": "request_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "relation_table",
-              "descending": false,
-              "expression": "relation_table",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            },
-            {
-              "column": "entity_relation_id",
-              "descending": false,
-              "expression": "entity_relation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "user_deletion_relation_impacts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -99987,6 +103087,33 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "user_deletion_relation_impacts_request_id_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_deletion_relation_impacts_request_id_id_key ON public.user_deletion_relation_impacts USING btree (request_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "request_id",
+              "descending": false,
+              "expression": "request_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -100000,9 +103127,9 @@
         "trigger_user_deletion_relation_impacts_updated_at": "CREATE TRIGGER trigger_user_deletion_relation_impacts_updated_at BEFORE UPDATE ON public.user_deletion_relation_impacts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
-        "user_deletion_relation_impact_request_id_relation_table_ent_key": {
-          "columns": ["request_id", "relation_table", "entity_relation_id"],
-          "definition": "UNIQUE (request_id, relation_table, entity_relation_id)"
+        "user_deletion_relation_impacts_request_id_id_key": {
+          "columns": ["request_id", "id"],
+          "definition": "UNIQUE (request_id, id)"
         }
       }
     },
@@ -100170,7 +103297,26 @@
         }
       },
       "comment": "Durable user-deletion lifecycle with timestamp-derived progress and fenced worker attempts.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "user_deletion_requests_requested_by_id_fkey": {
+          "columns": ["requested_by_id"],
+          "definition": "FOREIGN KEY (requested_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "user_deletion_requests_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
         "idx_user_deletion_requests__processing_attempt_id": {
@@ -100242,6 +103388,26 @@
             }
           ],
           "predicate": "((completed_at IS NULL) AND (processing_started_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_deletion_requests__requested_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_deletion_requests__requested_by_id ON public.user_deletion_requests USING btree (requested_by_id) WHERE (requested_by_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "requested_by_id",
+              "descending": false,
+              "expression": "requested_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(requested_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -106866,6 +110032,15 @@
           "referencedTable": "users",
           "validated": true
         },
+        "users_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
         "users_referrer_id_fkey": {
           "columns": ["referrer_id"],
           "definition": "FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL",
@@ -107150,6 +110325,7 @@
       "triggers": {
         "trigger_create_user_metrics": "CREATE TRIGGER trigger_create_user_metrics AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_metrics_on_insert()",
         "trigger_handoff_deleted_user_image_surfaces": "CREATE TRIGGER trigger_handoff_deleted_user_image_surfaces BEFORE DELETE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_handoff_deleted_user_image_surfaces()",
+        "trigger_register_retained_user_identity": "CREATE TRIGGER trigger_register_retained_user_identity BEFORE INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_register_retained_user_identity()",
         "trigger_retire_deleted_user_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_retire_deleted_user_image_surfaces()",
         "trigger_sync_user_profile_image_placement": "CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_sync_user_profile_image_placement()",
         "trigger_users_create_individual_household": "CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()",

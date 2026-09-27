@@ -35,7 +35,8 @@ probabilistic, or unnecessarily serialize parallel tests.
 Seven DB-backed Vitest projects install the shared-DB scope observer before test-file imports.
 The production-neutral service observer is inert outside tests. Its finite operation catalog lives
 in `backend/data-stores/psql/shared-db-scope-observer.mts`; it covers copyright staff heads and
-recovery/sweep pages, media registry staging/replay/recovery and repair markers, ActivityPub
+recovery/sweep pages, media registry staging/replay/recovery and repair markers, retained media
+binding cleanup, ActivityPub
 delivery recovery/rearm, OAuth exchange recovery/expiry deletion, notification push-intent
 recovery, and stale chat generation selection. It does **not** prove every SQL query scoped.
 

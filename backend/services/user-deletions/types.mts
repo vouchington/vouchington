@@ -6,6 +6,11 @@ export type UserDeletionExternalWorkKind =
   | 's3-export'
   | 'stripe-customer'
 
+export type UserDeletionProviderWorkKind = Exclude<
+  UserDeletionExternalWorkKind,
+  'entity-relation-effects'
+>
+
 export type UserDeletionRequest = {
   id: string
   userId: string

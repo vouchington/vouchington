@@ -268,10 +268,10 @@ describe('user deletion lifecycle', () => {
     for (const originalWorkKey of originalWorkKeys) {
       expect(redactedWorkKeys).not.toContain(originalWorkKey)
     }
-    expect(new Set(redactedWorkKeys).size).toBe(2)
+    expect(new Set(redactedWorkKeys).size).toBe(1)
     for (const work of completionAudit.externalWorks) {
       expect(work.workKind).toBe('cloudflare-cache-tag')
-      expect(work.workKey).toBe(`redacted:${work.id}`)
+      expect(work.workKey).toBeNull()
       expect(work.requestedAt).toBeInstanceOf(Date)
       expect(work.completedAt).toBeInstanceOf(Date)
     }

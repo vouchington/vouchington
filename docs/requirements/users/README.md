@@ -12,7 +12,8 @@ User profiles, settings, privacy, account management, and membership features.
 | [User Profile Tab Matrix](./USER-PROFILE-TAB-MATRIX.md)                | Tab routes, data sources, access control, and count metrics for all public profile tabs |
 | [User Relation Matrix](./USER-RELATION-MATRIX.md)                      | Follow, block, and mute relation management on profile pages                            |
 | [Privacy](./PRIVACY.md)                                                | Post privacy levels and broadcast audience controls                                     |
-| [Account Deletion & Data Request](./ACCOUNT-DELETION-DATA-REQUEST.md)  | GDPR and data management flows                                                          |
+| [Account Deletion](./ACCOUNT-DELETION-DATA-REQUEST.md)                 | Account erasure and durable deletion lifecycle                                          |
+| [Account Data Export](./ACCOUNT-DATA-EXPORT.md)                        | Data portability, export lifecycle, and status routes                                   |
 | [Preferences](./PREFERENCES.md)                                        | localStorage-based preference system and theme architecture                             |
 | [Localization](./LOCALIZATION.md)                                      | UI locale, account country, content language, and future translation requirements       |
 | [Memberships](./memberships.md)                                        | Plans, provider-neutral billing, entitlements, and admin grants                         |

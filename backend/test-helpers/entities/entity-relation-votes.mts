@@ -11,6 +11,7 @@ export async function insertTestEntityRelationVote(options: {
   subjectId: string
   userId: string
   score: -1 | 0 | 1
+  id?: string
 }): Promise<void> {
   const metadata = entityRelationMetadatum.find(
     relation => relation.table_name === options.relationTable,
@@ -18,8 +19,8 @@ export async function insertTestEntityRelationVote(options: {
   if (!metadata?.election) throw new Error(`Invalid election relation: ${options.relationTable}`)
   await write(
     sql`INSERT INTO `.append(getEntityRelationVoteTableName(metadata))
-      .append(sql` (relation_table, user_id, subject_id, entity_relation_id, score)
+      .append(sql` (relation_table, user_id, subject_id, entity_relation_id, score, id)
         VALUES (${options.relationTable}, ${options.userId}, ${options.subjectId},
-          ${options.relationId}, ${options.score})`),
+          ${options.relationId}, ${options.score}, COALESCE(${options.id ?? null}::uuid, uuidv7()))`),
   )
 }

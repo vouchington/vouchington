@@ -1,9 +1,7 @@
 import { createTestUserDirect } from './entities/users.mts'
 import { insertTestImage } from './entities/images.mts'
-import {
-  getTestImageSurfacePlacements,
-  setTestUserProfileImage,
-} from './entities/image-surface-placements.mts'
+import { getTestImageSurfacePlacements } from './entities/image-surface-placements.mts'
+import { setTestUserProfileImage } from './entities/media-surface-writes.mts'
 import { stageImagePlacementDeliveryRecord } from '../services/media-delivery-safety/delivery-registry-staging.mts'
 
 export async function createTestDeliverySurface() {

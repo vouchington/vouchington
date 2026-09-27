@@ -23,7 +23,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 CREATE TABLE IF NOT EXISTS topics (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_topic_identities (id) ON DELETE RESTRICT,
   created_via content_creation_channels,
   created_via_oauth_client_id UUID,
   CONSTRAINT topics_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
@@ -110,6 +110,10 @@ CREATE TABLE IF NOT EXISTS topics (
   lingua_rs_results JSONB,
   lingua_rs_detected_at TIMESTAMPTZ
 );
+
+CREATE TRIGGER trigger_register_retained_topic_identity
+BEFORE INSERT ON topics
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_topic_identity();
 
 CREATE OR REPLACE TRIGGER trigger_topics_updated_at
 BEFORE UPDATE ON topics

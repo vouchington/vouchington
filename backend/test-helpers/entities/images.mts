@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
+import { ensureImagePlacementBinding } from '../../services/media-delivery-safety/retained-image-identities.mts'
 export { insertTestImage, insertTestImageWithSha256 } from './images-insert.mts'
 
 export async function updateImageStatus(
@@ -134,13 +135,25 @@ export async function insertTestPostImage(data: {
   orderIndex?: number
   caption?: string
 }): Promise<void> {
-  await write(sql`
+  const { rowCount } = await read(sql`/* findTestPostImageBinding */
+    SELECT placement_id FROM image_placements
+    WHERE post_id = ${data.postId} AND image_id = ${data.imageId}
+  `)
+  if (rowCount) return
+  const placementId = v7()
+  await using query = await beginTransaction()
+  await ensureImagePlacementBinding(query, {
+    placementId,
+    imageId: data.imageId,
+    bindingFamily: 'post',
+  })
+  await query(sql`
     WITH inserted_post_image AS (
       INSERT INTO post_images (post_id, image_id, order_index, caption)
       VALUES (${data.postId}, ${data.imageId}, ${data.orderIndex ?? 0}, ${data.caption ?? ''})
       RETURNING post_id, image_id
     ), missing_binding AS (
-      SELECT uuidv7() AS placement_id, post_id, image_id
+      SELECT ${placementId}::uuid AS placement_id, post_id, image_id
       FROM inserted_post_image
       WHERE NOT EXISTS (
         SELECT 1 FROM image_placements
@@ -154,6 +167,7 @@ export async function insertTestPostImage(data: {
     INSERT INTO image_placements (placement_id, post_id, image_id)
     SELECT placement_id, post_id, image_id FROM missing_binding
   `)
+  await query.commit()
 }
 
 export async function insertPendingTestImage(userId: string): Promise<string> {

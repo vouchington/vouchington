@@ -39,7 +39,7 @@ export const ALLOWED_OPAQUE_JSON = new Set([
   'x_accounts.x_user_data',
 ])
 
-// Tokens, externally assigned identifiers, and traversal cursors are not entity references.
+// Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
   'ap_inbox_deliveries.processing_attempt_id',
   'autotagger_receipts.batch_id',
@@ -57,6 +57,11 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'post_publication_identity_bridge_cleanup_progress.cursor_identity_id',
   'post_publication_identity_cleanup_progress.cursor_snapshot_id',
   'post_publication_reconciliation_audit_checkpoints.cursor_post_id',
+  'retained_identity_cleanup_progress.cursor_identity_id',
+  // This is the retained binding's primary key, not a pointer to the deletable live placement.
+  'retained_image_placement_bindings.placement_id',
+  'retained_relation_identity_cleanup_progress.cursor_relation_id',
+  'retained_relation_identity_cleanup_progress.cursor_subject_id',
   'story_post_related_url_projection_jobs.prune_cursor_id',
   'story_post_related_url_projection_jobs.relation_high_water_id',
   'story_post_related_url_projection_jobs.source_cursor_id',
