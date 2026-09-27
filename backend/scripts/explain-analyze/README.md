@@ -13,6 +13,18 @@ use the fixed `019e0000-` prefix for easy identification.
 pnpm run explain:seed
 ```
 
+The 100,000-post seed writes `output/seed-posts.jsonl` incrementally. Each batch and its INSERT,
+clearance update, and final COMMIT have begin/end records with elapsed time. Transaction acquisition
+is measured first; a begin record without an end record identifies the operation interrupted by the
+[CI seed-step limit](../../../.github/workflows/explain-analyze.yml). The seed transaction's
+PostgreSQL backend PID and effective settings are recorded after acquisition. A separate, bounded
+observer connection periodically samples its `pg_stat_activity` wait, blockers, query age, and transaction age,
+then records start/end `pg_stat_wal` and `pg_stat_checkpointer` counters with numeric deltas.
+Observer errors appear in the same file and do not change the seed result. CI also saves
+`output/seed-resources.txt`, with labeled host CPU, memory, and workspace disk samples and
+PostgreSQL container stats and tmpfs usage. Both files are retained by the existing EXPLAIN results
+artifact even when seeding fails.
+
 ### 2. Run EXPLAIN ANALYZE
 
 Calls each service function, captures the SQL queries, and replays them with
