@@ -8,7 +8,7 @@ import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
-import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
@@ -58,7 +58,7 @@ export async function removeCommentAsAgent(commentId: string): Promise<AgentRemo
     if (result === 'removed') void enqueueOnPostDeleted(commentId)
     return result
   } catch (error) {
-    await compensateFailedImageDeliveryMutation({ postIds: [commentId] }).catch(onError)
+    await repairFailedImageDeliveryMutation({ postIds: [commentId] }).catch(onError)
     throw error
   }
 }

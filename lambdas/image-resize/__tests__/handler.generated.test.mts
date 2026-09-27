@@ -33,6 +33,7 @@ describe('handler.generated', () => {
     headers: Record<string, string> = {},
   ): APIGatewayProxyEvent {
     return {
+      path: '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002',
       queryStringParameters: params,
       headers,
     } as unknown as APIGatewayProxyEvent
@@ -49,16 +50,17 @@ describe('handler.generated', () => {
     })
 
     describe('request validation errors', () => {
-      it('should return 400 for missing key parameter', async () => {
-        const event = createMockEvent({
-          w: '200',
-        })
+      it('returns 400 for a removed generic route even with a query key', async () => {
+        const event = {
+          ...createMockEvent({ w: '200', key: 'test.jpg' }),
+          path: '/images/test.jpg',
+        }
 
         const result = await handler(event)
 
         expect(result.statusCode).toBe(400)
         const body = JSON.parse(result.body)
-        expect(body.error).toContain('key')
+        expect(body.error).toBe('Invalid placement route')
       })
 
       it('should return 400 for missing width parameter', async () => {

@@ -2,19 +2,24 @@
 
 import { ImageUploadButton } from '@/components/shared/image-upload-button'
 import { PostImage } from '@/components/shared/post-image'
+import { UploadImagePreview } from '@/components/shared/upload-image-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export interface ImageEntry {
+interface ImageEntryFields {
   key: string
   image_id: string
-  placement_id?: string
-  placement_revision?: number
   order_index: number
   caption: string
 }
+
+export type ImageEntry = ImageEntryFields &
+  (
+    | { originalFile: File; placement_id?: never; placement_revision?: never }
+    | { originalFile?: never; placement_id: string; placement_revision: number }
+  )
 
 export function ImagesFieldset({
   images,
@@ -25,7 +30,7 @@ export function ImagesFieldset({
   removeImage,
 }: {
   images: ImageEntry[]
-  onImageUploaded: (imageId: string) => void
+  onImageUploaded: (imageId: string, originalFile: File) => void
   setIsUploading: (value: boolean) => void
   moveImage: (index: number, direction: -1 | 1) => void
   updateCaption: (index: number, caption: string) => void
@@ -78,19 +83,27 @@ export function ImagesFieldset({
           </div>
           <div className='flex min-w-0 flex-1 items-center gap-2'>
             <div className='flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted'>
-              <PostImage
-                imageId={img.image_id}
-                width={100}
-                placement={
-                  img.placement_id != null && img.placement_revision != null
-                    ? { id: img.placement_id, revision: img.placement_revision }
-                    : undefined
-                }
-                alt={
-                  img.caption || t('extracted.posts.postFormImagesFieldset.uploadedImage_01b76eb9')
-                }
-                className='h-full w-full object-cover'
-              />
+              {img.originalFile ? (
+                <UploadImagePreview
+                  file={img.originalFile}
+                  alt={
+                    img.caption ||
+                    t('extracted.posts.postFormImagesFieldset.uploadedImage_01b76eb9')
+                  }
+                  className='h-full w-full object-cover'
+                />
+              ) : (
+                <PostImage
+                  imageId={img.image_id}
+                  width={100}
+                  placement={{ id: img.placement_id, revision: img.placement_revision }}
+                  alt={
+                    img.caption ||
+                    t('extracted.posts.postFormImagesFieldset.uploadedImage_01b76eb9')
+                  }
+                  className='h-full w-full object-cover'
+                />
+              )}
             </div>
             <div className='flex-1'>
               <Input

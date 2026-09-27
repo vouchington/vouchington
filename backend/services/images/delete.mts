@@ -23,7 +23,7 @@ import {
 } from './placements.mts'
 import { retireImageSurfacePlacementsForDeletedImage } from './surface-placements.mts'
 import {
-  compensateFailedImageDeliveryMutation,
+  repairFailedImageDeliveryMutation,
   lockImageAssetMutation,
   prepublishImageDeliveryDenials,
 } from '@services/media-delivery-safety'
@@ -178,7 +178,7 @@ export async function deleteImageByIdWhileStorageLocked(
     return result as ImageDeleteResult
   }
   const deleteResult = await deleteImageInTransaction().catch(async error => {
-    await compensateFailedImageDeliveryMutation({ imageIds: [String(image.id)] }).catch(onError)
+    await repairFailedImageDeliveryMutation({ imageIds: [String(image.id)] }).catch(onError)
     throw error
   })
   if (!deleteResult.deletedThisImage) return
@@ -192,7 +192,7 @@ export async function deleteImageByIdWhileStorageLocked(
       onError(error as Error)
     } else {
       await rollbackImageDeletion(image.id, deleteResult)
-      await compensateFailedImageDeliveryMutation({ imageIds: [image.id] }).catch(onError)
+      await repairFailedImageDeliveryMutation({ imageIds: [image.id] }).catch(onError)
       throw error
     }
   }

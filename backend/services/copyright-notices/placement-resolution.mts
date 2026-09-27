@@ -40,7 +40,6 @@ export async function resolveCopyrightImagePlacement(
       ON image_placement.post_id = pi.post_id AND image_placement.image_id = pi.image_id
     JOIN media_placements placement
       ON placement.id = image_placement.placement_id
-      AND placement.placement_kind = 'image'
       AND placement.retired_at IS NULL
     JOIN posts p ON p.id = pi.post_id AND p.deleted_at IS NULL
     JOIN images i ON i.id = pi.image_id

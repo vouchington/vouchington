@@ -79,7 +79,6 @@ export function UserProfileHeader({
     >
       <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
         <UserAvatar
-          profileImageId={user.profile_image_id}
           profileImagePlacement={user.profile_image_placement}
           username={avatarLabel}
           size='lg'

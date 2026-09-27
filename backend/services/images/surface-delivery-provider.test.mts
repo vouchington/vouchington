@@ -3,15 +3,12 @@ import * as mediaDeliveryRegistryProvider from '@modules/aws/media-delivery-regi
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
-  getTestMediaDeliveryRecord,
   insertTestImage,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import {
   getImagePlacementDeliveryKey,
-  getLegacyImageDeliveryKey,
   prepublishImagePlacementDenials,
-  publishLegacyImageDeliveryRecord,
 } from '@services/media-delivery-safety'
 
 describe('surface delivery provider boundary', () => {
@@ -20,7 +17,7 @@ describe('surface delivery provider boundary', () => {
     vi.unstubAllEnvs()
   })
 
-  it('pre-denies an active surface tuple and its generic alias before a safety or delete transition', async () => {
+  it('pre-denies an active surface tuple before a safety or delete transition', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await setTestUserProfileImage(user.id, imageId)
@@ -38,7 +35,6 @@ describe('surface delivery provider boundary', () => {
       .mockResolvedValue({ $metadata: {} })
 
     await prepublishImagePlacementDenials({ imageId })
-    await publishLegacyImageDeliveryRecord(imageId, 'withheld')
 
     expect(put).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -50,18 +46,8 @@ describe('surface delivery provider boundary', () => {
         state: 'withheld',
       }),
     )
-    expect(put).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deliveryKey: getLegacyImageDeliveryKey(imageId),
-        state: 'withheld',
-      }),
-    )
     expect(invalidate).toHaveBeenCalledWith(
       `/images/placements/${placement!.placement_id}/${placement!.placement_revision}/${imageId}`,
     )
-    expect(await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(imageId))).toMatchObject({
-      desired_state: 'withheld',
-      state: 'completed',
-    })
   })
 })

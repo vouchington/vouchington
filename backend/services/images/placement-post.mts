@@ -12,8 +12,7 @@ export async function getPostIdForImagePlacementCopyright(
     SELECT image_placement.post_id
     FROM image_placements image_placement
     JOIN media_placements placement ON placement.id = image_placement.placement_id
-    WHERE placement.placement_kind = 'image'
-      AND ${placementKey} = concat('image-placement:', placement.id)
+    WHERE ${placementKey} = concat('image-placement:', placement.id)
   `)
   return rows[0]?.post_id ?? null
 }

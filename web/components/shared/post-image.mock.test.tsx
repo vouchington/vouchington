@@ -18,13 +18,14 @@ describe('PostImage', () => {
     render(
       <PostImage
         imageId='image-123'
+        placement={{ id: 'placement-123', revision: 0 }}
         width={320}
         alt='Example image'
       />,
     )
 
     const image = screen.getByAltText('Example image')
-    expect(image).toHaveAttribute('src', '/images/image-123?w=320')
+    expect(image).toHaveAttribute('src', '/images/placements/placement-123/0/image-123?w=320')
     expect(image).toHaveAttribute('width', '320')
     expect(image).toHaveAttribute('height', '320')
     expect(image).toHaveAttribute('data-unoptimized', 'true')
@@ -35,6 +36,7 @@ describe('PostImage', () => {
     render(
       <PostImage
         imageId='image-456'
+        placement={{ id: 'placement-456', revision: 1 }}
         width={640}
         height={240}
         alt='Wide image'
@@ -44,7 +46,7 @@ describe('PostImage', () => {
     expect(screen.getByAltText('Wide image')).toHaveAttribute('height', '240')
   })
 
-  it('uses the placement route only when both placement fields are present', () => {
+  it('keeps the exact revision when the placement changes', () => {
     const { rerender } = render(
       <PostImage
         imageId='image-789'
@@ -61,14 +63,15 @@ describe('PostImage', () => {
 
     rerender(
       <PostImage
-        imageId='upload-preview'
+        imageId='image-789'
+        placement={{ id: 'placement-123', revision: 1 }}
         width={320}
-        alt='Upload preview'
+        alt='Placed image'
       />,
     )
-    expect(screen.getByAltText('Upload preview')).toHaveAttribute(
+    expect(screen.getByAltText('Placed image')).toHaveAttribute(
       'src',
-      '/images/upload-preview?w=320',
+      '/images/placements/placement-123/1/image-789?w=320',
     )
   })
 })

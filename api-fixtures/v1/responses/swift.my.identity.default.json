@@ -27,7 +27,12 @@
     "moderation_email_timezone": "America/Los_Angeles",
     "moderation_emails_enabled": true,
     "news_digest_frequency": "weekly",
-    "profile_image_id": null,
+    "profile_image_id": "00000000-0000-7000-8000-000000000201",
+    "profile_image_placement": {
+      "image_id": "00000000-0000-7000-8000-000000000201",
+      "placement_id": "00000000-0000-7000-8000-000000000301",
+      "placement_revision": 2
+    },
     "rewards_program_statuses_visibility": "everyone",
     "roles": ["user"],
     "rss_feed_follows_visibility": "everyone",

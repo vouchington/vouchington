@@ -59,8 +59,9 @@ export interface SubmitPostResult {
 }
 
 export async function submitPost(input: SubmitPostInput): Promise<SubmitPostResult> {
-  const uploadedImages = input.images.map(({ key: _key, ...img }) => ({
-    ...img,
+  const uploadedImages = input.images.map(img => ({
+    image_id: img.image_id,
+    order_index: img.order_index,
     caption: img.caption.trim(),
   }))
   const result = input.isEdit
@@ -70,13 +71,12 @@ export async function submitPost(input: SubmitPostInput): Promise<SubmitPostResu
   if (input.postType === 'data_point' && input.saveToProfile) {
     await updateProfileFromStructuredData(input.structuredData, input.userFinancialProfile)
   }
-
   return result
 }
 
 async function updateExistingPost(
   input: SubmitPostInput,
-  uploadedImages: Array<Omit<ImageEntry, 'key'>>,
+  uploadedImages: Parameters<typeof setPostImages>[1],
 ): Promise<SubmitPostResult> {
   const post = input.post!
   const categories = serializeDiscussionCategories(input.discussionCategories)
@@ -115,7 +115,7 @@ async function updateExistingPost(
 
 async function createNewPost(
   input: SubmitPostInput,
-  uploadedImages: Array<Omit<ImageEntry, 'key'>>,
+  uploadedImages: Parameters<typeof setPostImages>[1],
 ): Promise<SubmitPostResult> {
   const categories = serializeDiscussionCategories(input.discussionCategories)
   const createInput = {
@@ -179,7 +179,7 @@ export function serializeDiscussionCategories(
 async function syncImages(
   saved: Post,
   post: Post,
-  uploadedImages: Array<Omit<ImageEntry, 'key'>>,
+  uploadedImages: Parameters<typeof setPostImages>[1],
 ): Promise<void> {
   const originalImages = post.images ?? []
   const originalById = new Map(originalImages.map(img => [img.image_id, img]))

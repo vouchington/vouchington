@@ -6,16 +6,16 @@ import {
 } from '@services/images/placements'
 import { clearUnavailableImagePlacementCopyrightWithholding } from '@services/images/placement-copyright-resolution'
 import {
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
 } from '@services/media-delivery-safety'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 
-async function publishCopyrightLegalImagePlacementDeliveryRecord(
-  ...args: Parameters<typeof publishImagePlacementDeliveryRecord>
-): ReturnType<typeof publishImagePlacementDeliveryRecord> {
+async function prepublishCopyrightImagePlacementDenial(
+  ...args: Parameters<typeof prepublishImagePlacementDenial>
+): ReturnType<typeof prepublishImagePlacementDenial> {
   assertMediaDeliveryLegalEnforcementEnabled()
-  return publishImagePlacementDeliveryRecord(...args)
+  return prepublishImagePlacementDenial(...args)
 }
 
 async function publishStagedCopyrightDeliveryRecord(deliveryKey: string): Promise<void> {
@@ -30,7 +30,7 @@ export type CopyrightActionDeliveryDependencies = {
   withholdImagePlacementForCopyright: typeof withholdImagePlacementForCopyright
   restoreImagePlacementForCopyright: typeof restoreImagePlacementForCopyright
   getPostIdForImagePlacementCopyright: typeof getPostIdForImagePlacementCopyright
-  publishImagePlacementDeliveryRecord: typeof publishImagePlacementDeliveryRecord
+  prepublishImagePlacementDenial: typeof prepublishImagePlacementDenial
   publishStagedMediaDeliveryRecord: typeof publishStagedMediaDeliveryRecord
 }
 
@@ -41,7 +41,7 @@ const defaultDependencies: CopyrightActionDeliveryDependencies = {
   withholdImagePlacementForCopyright,
   restoreImagePlacementForCopyright,
   getPostIdForImagePlacementCopyright,
-  publishImagePlacementDeliveryRecord: publishCopyrightLegalImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial: prepublishCopyrightImagePlacementDenial,
   publishStagedMediaDeliveryRecord: publishStagedCopyrightDeliveryRecord,
 }
 

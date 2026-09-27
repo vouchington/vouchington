@@ -14,12 +14,11 @@ export async function prepublishWithholdIfNeeded(input: {
     input.placement.revision !== input.legal.expected_placement_revision
   )
     return
-  await input.dependencies.publishImagePlacementDeliveryRecord(
+  await input.dependencies.prepublishImagePlacementDenial(
     {
       placementId: input.placement.placementId,
       revision: input.placement.revision,
       imageId: input.placement.imageId,
-      state: 'withheld',
     },
     { query: input.query },
   )
@@ -33,12 +32,11 @@ export async function publishRestoreBlockerWithhold(input: {
 }): Promise<void> {
   if (input.legal.action !== 'restore' || input.placement.deleted || input.placement.withheld)
     return
-  await input.dependencies.publishImagePlacementDeliveryRecord(
+  await input.dependencies.prepublishImagePlacementDenial(
     {
       placementId: input.placement.placementId,
       revision: input.placement.revision,
       imageId: input.placement.imageId,
-      state: 'withheld',
     },
     { query: input.query },
   )

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as mediaDeliveryRegistryProvider from '@modules/aws/media-delivery-registry'
+import { getTestDeliveryRepairMarker } from '@voucha/test-helpers/entities/media-delivery-repair'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -14,9 +15,10 @@ import {
 } from '@voucha/test-helpers'
 import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
 import {
-  compensateFailedImageDeliveryMutation,
+  repairFailedImageDeliveryMutation,
   getImagePlacementDeliveryKey,
   processMediaDeliveryRegistryRecord,
+  prepublishImagePlacementDenial,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
 
@@ -103,13 +105,34 @@ describe('media delivery registry processor', () => {
     const placement = await getTestPostImagePlacement(postId, imageId)
     if (!placement) throw new Error('post placement disappeared')
     stubPublication()
-    vi.spyOn(mediaDeliveryRegistryProvider, 'putMediaDeliveryRegistryRecord').mockResolvedValue({
-      $metadata: {},
-    })
+    const put = vi
+      .spyOn(mediaDeliveryRegistryProvider, 'putMediaDeliveryRegistryRecord')
+      .mockResolvedValue({ $metadata: {} })
     vi.spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath').mockResolvedValue({
       $metadata: {},
     })
-    await compensateFailedImageDeliveryMutation({ postIds: [postId], imageIds: [imageId] })
+    const committed = await stageImagePlacementDeliveryRecord({
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
+    await processMediaDeliveryRegistryRecord(committed.deliveryKey)
+    {
+      await using transaction = await beginTransaction()
+      await prepublishImagePlacementDenial(
+        {
+          placementId: placement.placement_id,
+          revision: placement.placement_revision,
+          imageId,
+        },
+        { query: transaction },
+      )
+    }
+    await expect(getTestDeliveryRepairMarker(committed.deliveryKey)).resolves.toEqual(
+      expect.any(String),
+    )
+    await repairFailedImageDeliveryMutation({ postIds: [postId], imageIds: [imageId] })
     const deliveryKey = getImagePlacementDeliveryKey({
       placementId: placement.placement_id,
       revision: placement.placement_revision,
@@ -119,6 +142,15 @@ describe('media delivery registry processor', () => {
       desired_state: 'allow',
       state: 'completed',
     })
+    await expect(getTestDeliveryRepairMarker(deliveryKey)).resolves.toBeNull()
+    expect(put).toHaveBeenLastCalledWith({
+      deliveryKey,
+      state: 'allow',
+      generation: expect.stringMatching(/^\d+$/),
+    })
+    expect(BigInt(put.mock.calls.at(-1)![0].generation)).toBeGreaterThan(
+      BigInt(committed.generation),
+    )
   })
 
   it('allocates a later generation after a rolled-back denial staging transaction', async () => {

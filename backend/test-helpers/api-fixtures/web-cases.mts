@@ -103,17 +103,17 @@ export const webApiFixtureCases: ApiFixtureCase[] = [
     body: {
       topic: {
         ...topic,
-        logo_image_id: 'topic-logo-image-1',
+        logo_image_id: '00000000-0000-7000-8000-000000000205',
         logo_image_placement: {
-          placement_id: 'placement-topic-logo-image-1',
+          placement_id: '00000000-0000-7000-8000-000000000306',
           placement_revision: 3,
-          image_id: 'topic-logo-image-1',
+          image_id: '00000000-0000-7000-8000-000000000205',
         },
-        hero_image_id: 'topic-hero-image-1',
+        hero_image_id: '00000000-0000-7000-8000-000000000206',
         hero_image_placement: {
-          placement_id: 'placement-topic-hero-image-1',
+          placement_id: '00000000-0000-7000-8000-000000000307',
           placement_revision: 4,
-          image_id: 'topic-hero-image-1',
+          image_id: '00000000-0000-7000-8000-000000000206',
         },
       },
     },

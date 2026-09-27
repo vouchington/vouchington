@@ -65,10 +65,23 @@ describe('parseRequest placement routes', () => {
 
   it('does not allow a query key to replace the placement-bound asset', () => {
     const event = placementEvent(
-      '/images/placements/00000000-0000-7000-8000-000000000001/3/bound-image.png',
+      '/images/placements/00000000-0000-7000-8000-000000000001/3/00000000-0000-7000-8000-000000000002',
       { key: 'forged-image.png', w: '400' },
     )
 
-    expect(parseRequest(event).key).toBe('bound-image.png')
+    expect(parseRequest(event).key).toBe('00000000-0000-7000-8000-000000000002')
+  })
+
+  it.each([
+    '/images/00000000-0000-7000-8000-000000000002',
+    '/images/photos/cat.jpg',
+    '/',
+    '/images/placements/00000000-0000-7000-8000-000000000001/2147483648/00000000-0000-7000-8000-000000000002',
+    '/images/placements/00000000-0000-7000-8000-000000000001/0/cat.jpg',
+    '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002/extra',
+  ])('rejects removed or noncanonical image route %s even with a query key', path => {
+    expect(() => parseRequest(placementEvent(path, { w: '400', key: 'cat.jpg' }))).toThrow(
+      RequestParseError,
+    )
   })
 })

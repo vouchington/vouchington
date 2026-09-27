@@ -51,8 +51,7 @@ async function claimMediaDeliveryRegistryRecord(
       delivery_attempt_count = record.delivery_attempt_count + 1, failure_message = NULL
     FROM candidate
     WHERE record.delivery_key = candidate.delivery_key
-    RETURNING record.delivery_key, record.desired_state, record.route_kind,
-      record.placement_id, record.placement_revision, record.asset_id, record.generation
+    RETURNING record.delivery_key, record.desired_state, record.placement_id, record.placement_revision, record.image_id, record.generation
   `)
   const { rows } = await transaction<ImageDeliveryRecord>(statement)
   await transaction.commit()

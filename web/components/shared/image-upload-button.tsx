@@ -7,7 +7,7 @@ import { SUPPORTED_IMAGE_ACCEPT } from '@/lib/utils/image-types'
 import { useImageUploadButton } from './use-image-upload-button'
 
 interface ImageUploadButtonProps {
-  onUploaded: (imageId: string) => void | Promise<void>
+  onUploaded: (imageId: string, originalFile: File) => void | Promise<void>
   onUploadStart?: () => void
   onUploadEnd?: () => void
   disabled?: boolean

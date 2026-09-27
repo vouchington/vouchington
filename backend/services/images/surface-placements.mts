@@ -3,8 +3,7 @@ import type { ImagePlacementTuple } from '@voucha/types/entities/user'
 import type { ImagePlacementRetirement } from './placements.mts'
 import sql from 'sql-template-strings'
 import {
-  publishImagePlacementDeliveryRecord,
-  publishLegacyImageDeliveryRecord,
+  prepublishImagePlacementDenial,
   stageImagePlacementDeliveryRecord,
   lockImageSurfacePlacements,
   lockImageAssetAdmission,
@@ -67,12 +66,11 @@ export async function syncImageSurfacePlacement(
   await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
 
   if (current && current.image_id !== imageId) {
-    await publishImagePlacementDeliveryRecord(
+    await prepublishImagePlacementDenial(
       {
         placementId: current.placement_id,
         revision: current.placement_revision,
         imageId: current.image_id,
-        state: 'withheld',
       },
       { query },
     )
@@ -116,7 +114,7 @@ export async function syncImageSurfacePlacement(
     const columns = surfaceColumns(reference)
     const { rows } = await query<ImagePlacementTuple>(sql`/* syncImageSurfacePlacement:create */
       WITH inserted_placement AS (
-        INSERT INTO media_placements (placement_kind) VALUES ('image')
+        INSERT INTO media_placements DEFAULT VALUES
         RETURNING id, revision
       ), inserted_surface AS (
         INSERT INTO image_surface_placements (
@@ -141,7 +139,6 @@ export async function syncImageSurfacePlacement(
     },
     { query },
   )
-  await publishLegacyImageDeliveryRecord(placement.image_id, 'withheld', { query })
   return placement
 }
 

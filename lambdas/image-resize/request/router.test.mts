@@ -21,20 +21,24 @@ function toOgBase64url(payload: unknown): string {
 
 describe('parseRouterRequest', () => {
   describe('S3 route detection', () => {
-    it('should detect S3 route from query params', () => {
-      const event = createMockEvent('/images', {}, { key: 'image.jpg', w: '800' })
+    it('detects an exact image-placement route', () => {
+      const event = createMockEvent(
+        '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002',
+        {},
+        { w: '800' },
+      )
 
       const result = parseRouterRequest(event)
 
       expect(result.type).toBe('s3')
       const s3Result1 = result as Extract<typeof result, { type: 's3' }>
-      expect(s3Result1.key).toBe('image.jpg')
+      expect(s3Result1.key).toBe('00000000-0000-7000-8000-000000000002')
       expect(s3Result1.width).toBe(800)
     })
 
     it('should parse S3 route with all params', () => {
       const event = createMockEvent(
-        '/images',
+        '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002',
         {},
         {
           key: 'image.jpg',
@@ -51,7 +55,7 @@ describe('parseRouterRequest', () => {
 
       expect(result.type).toBe('s3')
       const s3Result2 = result as Extract<typeof result, { type: 's3' }>
-      expect(s3Result2.key).toBe('image.jpg')
+      expect(s3Result2.key).toBe('00000000-0000-7000-8000-000000000002')
       expect(s3Result2.width).toBe(1200)
       expect(s3Result2.height).toBe(800)
       expect(s3Result2.quality).toBe(90)
@@ -228,12 +232,10 @@ describe('parseRouterRequest', () => {
       expect(result.type).toBe('sideload')
     })
 
-    it('should use S3 route when no sideload indicators present', () => {
+    it('rejects a generic image route instead of defaulting to S3', () => {
       const event = createMockEvent('/images', {}, { key: 'image.jpg', w: '800' })
 
-      const result = parseRouterRequest(event)
-
-      expect(result.type).toBe('s3')
+      expect(() => parseRouterRequest(event)).toThrow('Invalid placement route')
     })
   })
 })

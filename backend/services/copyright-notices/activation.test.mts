@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { assertCopyrightIntakeEnabled } from './activation.mts'
 import { getCopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 
@@ -22,14 +22,13 @@ describe('copyright intake activation', () => {
   it('refuses a legal edge action when publication is disabled', async () => {
     vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'false')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
-    const publish = getCopyrightActionDeliveryDependencies({}).publishImagePlacementDeliveryRecord
+    const publish = getCopyrightActionDeliveryDependencies({}).prepublishImagePlacementDenial
     await expect(
       publish(
         {
           placementId: '00000000-0000-7000-8000-000000000001',
           revision: 1,
           imageId: '00000000-0000-7000-8000-000000000002',
-          state: 'withheld',
         },
         {},
       ),
@@ -39,16 +38,15 @@ describe('copyright intake activation', () => {
   it('keeps injected edge publishers usable in isolated action tests', async () => {
     vi.stubEnv('MEDIA_DELIVERY_EDGE_ENFORCEMENT_ENABLED', 'false')
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'false')
-    const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
+    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     const dependencies = getCopyrightActionDeliveryDependencies({
       ...createTestCopyrightDeliveryDependencies(publish),
     })
-    await dependencies.publishImagePlacementDeliveryRecord(
+    await dependencies.prepublishImagePlacementDenial(
       {
         placementId: '00000000-0000-7000-8000-000000000001',
         revision: 1,
         imageId: '00000000-0000-7000-8000-000000000002',
-        state: 'withheld',
       },
       {},
     )

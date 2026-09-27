@@ -21,7 +21,6 @@ export function GroupThreadHeader({ participants, currentUserId }: Props) {
         {displayed.map(p => (
           <UserAvatar
             key={p.id}
-            profileImageId={p.profile_image_id ?? null}
             profileImagePlacement={p.profile_image_placement}
             username={p.username ?? ''}
             size='sm'

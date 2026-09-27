@@ -15,31 +15,34 @@ describe('httpRequestToLambdaEvent', () => {
     expect(event.pathParameters!).toEqual({})
   })
 
-  it('extracts S3 key from /images/{key}', () => {
+  it('does not turn a removed generic path into a query key', () => {
     const event = httpRequestToLambdaEvent(makeReq('/images/photos/cat.jpg'))
-    expect(event.queryStringParameters!.key).toBe('photos/cat.jpg')
+    expect(event.queryStringParameters!.key).toBeUndefined()
     expect(event.queryStringParameters!.env).toBeUndefined()
   })
 
-  it('extracts the image key from a placement-bound route', () => {
+  it('preserves an exact placement path without manufacturing a query key', () => {
     const event = httpRequestToLambdaEvent(
       makeReq(
         '/images/placements/00000000-0000-7000-8000-000000000001/2/00000000-0000-7000-8000-000000000002?w=400',
       ),
     )
 
-    expect(event.queryStringParameters!.key).toBe('00000000-0000-7000-8000-000000000002')
+    expect(event.queryStringParameters!.key).toBeUndefined()
+    expect(event.path).toBe(
+      '/images/placements/00000000-0000-7000-8000-000000000001/2/00000000-0000-7000-8000-000000000002',
+    )
   })
 
-  it('extracts S3 key that contains multiple path segments', () => {
+  it('does not manufacture nested raw S3 key authority', () => {
     const event = httpRequestToLambdaEvent(makeReq('/images/a/b/c/image.webp'))
-    expect(event.queryStringParameters!.key).toBe('a/b/c/image.webp')
+    expect(event.queryStringParameters!.key).toBeUndefined()
     expect(event.queryStringParameters!.env).toBeUndefined()
   })
 
-  it('merges S3 path params with query string params', () => {
+  it('preserves resize query parameters without injecting path identity', () => {
     const event = httpRequestToLambdaEvent(makeReq('/images/img.jpg?w=400&q=80'))
-    expect(event.queryStringParameters!.key).toBe('img.jpg')
+    expect(event.queryStringParameters!.key).toBeUndefined()
     expect(event.queryStringParameters!.w).toBe('400')
     expect(event.queryStringParameters!.q).toBe('80')
     expect(event.queryStringParameters!.env).toBeUndefined()

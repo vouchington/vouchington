@@ -1,23 +1,17 @@
-export {
-  getImagePlacementDeliveryKey,
-  getLegacyImageDeliveryKey,
-  getMediaDeliveryPath,
-} from './delivery-registry-types.mts'
+export { getImagePlacementDeliveryKey, getMediaDeliveryPath } from './delivery-registry-types.mts'
 export {
   stageImagePlacementDeliveryRecord,
-  stageLegacyImageDeliveryRecord,
   stagePostImagePlacementDeliveryRecords,
 } from './delivery-registry-staging.mts'
 export {
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
-  publishLegacyImageDeliveryRecord,
 } from './delivery-registry-publish.mts'
 export {
   prepublishImagePlacementDenials,
   prepublishImageDeliveryDenials,
 } from './delivery-denials.mts'
-export { compensateFailedImageDeliveryMutation } from './delivery-registry-recovery.mts'
+export { repairFailedImageDeliveryMutation } from './delivery-registry-recovery.mts'
 export {
   replayFailedMediaDeliveryRegistryRecords,
   stageAllCurrentImagePlacementDeliveryRecords,

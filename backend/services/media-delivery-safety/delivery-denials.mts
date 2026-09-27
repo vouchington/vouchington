@@ -2,10 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
-import {
-  publishImagePlacementDeliveryRecord,
-  publishLegacyImageDeliveryRecord,
-} from './delivery-registry-publish.mts'
+import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
 
 export async function prepublishImagePlacementDenials(
   input: { postId?: string; imageId?: string; retainImageIds?: string[] },
@@ -38,12 +35,11 @@ export async function prepublishImagePlacementDenials(
   `)
   for (const row of rows) {
     // oxlint-disable-next-line no-await-in-loop -- each prior tuple is denied before retirement.
-    await publishImagePlacementDeliveryRecord(
+    await prepublishImagePlacementDenial(
       {
         placementId: row.placement_id,
         revision: row.revision,
         imageId: row.image_id,
-        state: 'withheld',
       },
       { query },
     )
@@ -62,5 +58,4 @@ export async function prepublishImageDeliveryDenials(
     return
   }
   await prepublishImagePlacementDenials({ imageId }, options)
-  await publishLegacyImageDeliveryRecord(imageId, 'withheld', options)
 }

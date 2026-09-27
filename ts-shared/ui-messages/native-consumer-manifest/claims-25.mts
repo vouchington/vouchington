@@ -2,6 +2,7 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_25 = [
+  { key: 'images.uploadPreviewUnavailable', consumers: ['dotnet', 'swift'] },
   { key: 'native.taxonomy.lists.item', consumers: ['dotnet'] },
   { key: 'native.taxonomy.lists.post', consumers: ['dotnet'] },
   { key: 'native.taxonomy.lists.private', consumers: ['dotnet', 'swift'] },

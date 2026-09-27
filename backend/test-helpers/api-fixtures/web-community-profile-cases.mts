@@ -34,17 +34,17 @@ export const webCommunityProfileApiFixtureCases: ApiFixtureCase[] = [
     body: {
       community: {
         ...community,
-        profile_image_id: 'community-profile-image-1',
+        profile_image_id: '00000000-0000-7000-8000-000000000203',
         profile_image_placement: {
-          placement_id: 'placement-community-profile-image-1',
+          placement_id: '00000000-0000-7000-8000-000000000304',
           placement_revision: 2,
-          image_id: 'community-profile-image-1',
+          image_id: '00000000-0000-7000-8000-000000000203',
         },
-        banner_image_id: 'community-banner-image-1',
+        banner_image_id: '00000000-0000-7000-8000-000000000204',
         banner_image_placement: {
-          placement_id: 'placement-community-banner-image-1',
+          placement_id: '00000000-0000-7000-8000-000000000305',
           placement_revision: 5,
-          image_id: 'community-banner-image-1',
+          image_id: '00000000-0000-7000-8000-000000000204',
         },
       },
       user: communityOwner,

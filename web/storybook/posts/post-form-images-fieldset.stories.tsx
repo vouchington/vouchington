@@ -52,12 +52,13 @@ function ImagesStory({ images }: { images: ImageEntry[] }) {
     <StoryFrame width='max-w-xl'>
       <ImagesFieldset
         images={entries}
-        onImageUploaded={imageId => {
+        onImageUploaded={(imageId, originalFile) => {
           setEntries(current => [
             ...current,
             {
               key: imageId,
               image_id: imageId,
+              originalFile,
               order_index: current.length,
               caption: '',
             },

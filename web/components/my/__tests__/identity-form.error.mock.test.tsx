@@ -7,10 +7,10 @@ vi.mock(import('@/lib/api/client'), () => ({
 }))
 
 vi.mock(import('@/components/shared/image-upload-button'), () => ({
-  ImageUploadButton: ({ onUploaded }: { onUploaded?: (id: string) => void }) => (
+  ImageUploadButton: ({ onUploaded }: { onUploaded?: (id: string, file: File) => void }) => (
     <button
       type='button'
-      onClick={() => onUploaded?.('img-1')}
+      onClick={() => onUploaded?.('img-1', new File(['image'], 'image.png', { type: 'image/png' }))}
     >
       Upload image
     </button>

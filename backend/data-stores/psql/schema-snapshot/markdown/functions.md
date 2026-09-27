@@ -394,6 +394,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_membership_refund_operation_attempt_m
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_ownerless_image_surface_retirement`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_review_dispute_subject_snapshot`
 
 ```sql
@@ -936,6 +944,14 @@ CREATE OR REPLACE FUNCTION public.fn_require_mipr_succeeded_refund_observation_c
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_require_verified_membership_provider_observation_evidence()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_retire_deleted_profile_link_image_surfaces`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_retire_deleted_profile_link_image_surfaces()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

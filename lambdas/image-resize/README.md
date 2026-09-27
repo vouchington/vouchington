@@ -11,6 +11,15 @@ Client → CloudFront → Lambda Function URL → Lambda → (cache|origin) S3 �
 - `pnpm run typecheck:lambdas` — typecheck Lambda workspaces
 - `pnpm run test:lambdas` — run Lambda tests; append test paths to narrow the run
 
+The [placement smoke monitor](../../monitors/lambdas/image-resize.mts) probes a random canonical
+missing tuple and a removed generic image route through CloudFront; both must return exactly 404.
+A configured `TEST_IMAGE_PLACEMENT_PATH` must name a current exact placement route (no query string)
+with an allowed registry tuple and existing source; that optional probe requires 200 and `image/*`.
+`LAMBDA_FUNCTION_URL` optionally verifies unsigned direct access returns exactly 403 using the same
+canonical missing tuple. Lambda parsing rejects removed generic routes with 400; the edge denies
+them with 404 before cache or origin lookup. These checks require the coordinated placement-only
+edge contract, not a compatibility route. Run the monitor only against an authorized environment.
+
 ## Runtime Configuration
 
 `index.mts` wires the Lambda with `{ source, sideload }` config. The deployment owned by
@@ -36,20 +45,21 @@ last copy requires the Function URL `RESPONSE_STREAM` deployment change in `vouc
 `@vouchington/image-resize` supplies format negotiation, MIME mapping, and the Sharp transform.
 This Lambda owns routing, HMAC/SSRF enforcement, bucket selection, byte and pixel limits, cache
 keys/headers, HTTP error mapping, and artifact cleanup. Adoption is output-compatible with the
-existing transform, so `CACHE_VERSION` remains `v2`.
+existing transform. Placement-only route admission uses cache namespace `v3`.
 
 ## Request Envelope
 
 ### Source images
 
-`GET /images/<key>?w=<width>&h=<height>&q=<quality>&l=<0|1>&p=<0|1>&f=<jpeg|png|webp|avif>`
+`GET /images/placements/<placement-id>/<revision>/<image-id>?w=<width>&h=<height>&q=<quality>&l=<0|1>&p=<0|1>&f=<jpeg|png|webp|avif>`
 
-Post media uses the placement-bound form
-`GET /images/placements/<placement-id>/<revision>/<image-id>?w=...`. The Lambda validates the
+Every uploaded image uses this exact placement-bound form. Placement and image IDs must be canonical
+lowercase UUIDs; revision is a canonical decimal integer from zero through 2147483647.
+Generic `/images/<key>`, nested raw keys, and query-key fallback are rejected. The Lambda validates the
 route binding and reads only `<image-id>` from S3. CloudFront authorization and its placement-state
 registry remain infrastructure-owned; the Lambda route alone does not provide withholding.
 
-- `key` — exact origin S3 object key (may contain slashes)
+- `image-id` — exact origin S3 UUID key, obtained only from the placement path
 - `w` (required) / `h` (optional) — desired max dimensions; always maintains aspect ratio, never upscales
 - `l` — lossless compression (`0`|`1`)
 - `p` — progressive rendering (`0`|`1`)

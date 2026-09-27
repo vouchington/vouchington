@@ -85,7 +85,7 @@ export default async function RootLayout({
   const gtmId = getValidGtmId(runtimePublicConfig.gtmId)
   const assetPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX
   // Mirror the runtime IMAGE_ORIGIN env var onto window for client-side
-  // getImageUrl() callers. Kept out of NEXT_PUBLIC_ on purpose so the same
+  // getPlacementImageUrl() callers. Kept out of NEXT_PUBLIC_ on purpose so the same
   // Docker image can deploy to staging and production with different values.
   const imageOrigin = getServerImageOrigin()
   const imageOriginScript = serializeImageOriginBootstrapScript(imageOrigin)

@@ -17,7 +17,12 @@ export const swiftIdentitySessionApiFixtureCases: ApiFixtureCase[] = [
         username: 'alice',
         roles: ['user'],
         is_official_account: false,
-        profile_image_id: null,
+        profile_image_id: '00000000-0000-7000-8000-000000000201',
+        profile_image_placement: {
+          image_id: '00000000-0000-7000-8000-000000000201',
+          placement_id: '00000000-0000-7000-8000-000000000301',
+          placement_revision: 2,
+        },
         markdown: null,
         email_address: 'tests+api-fixtures@voucha.ai',
         membership_plan: null,

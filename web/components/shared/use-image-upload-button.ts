@@ -18,7 +18,7 @@ import {
 interface UseImageUploadButtonOptions {
   maxFiles?: number
   multiple: boolean
-  onUploaded: (imageId: string) => void | Promise<void>
+  onUploaded: (imageId: string, originalFile: File) => void | Promise<void>
   onUploadEnd?: () => void
   onUploadStart?: () => void
 }
@@ -68,7 +68,7 @@ export function useImageUploadButton({
 
     try {
       const uploadResults = await uploadFiles(validFiles)
-      await showMultipleUploadResults(validFiles.length, uploadResults)
+      await showMultipleUploadResults(validFiles, uploadResults)
     } finally {
       resetUploadState()
     }
@@ -90,7 +90,7 @@ export function useImageUploadButton({
           if (phase === 'processing') setProcessingCount(1)
         },
       })
-      await onUploaded(imageId)
+      await onUploaded(imageId, file)
     } catch (error) {
       showSingleUploadError(error)
     } finally {
@@ -111,28 +111,28 @@ export function useImageUploadButton({
   }
 
   async function showMultipleUploadResults(
-    validFileCount: number,
+    validFiles: File[],
     uploadResults: PromiseSettledResult<string>[],
   ) {
     const blockedCount = countRejected(uploadResults, ImageBlockedError)
     const timeoutCount = countRejected(uploadResults, ImageProcessingTimeoutError)
     const uploadFailures = uploadResults.filter(result => result.status === 'rejected').length
-    const successfulIds = uploadResults.flatMap(result =>
-      result.status === 'fulfilled' ? [result.value] : [],
+    const successfulUploads = uploadResults.flatMap((result, index) =>
+      result.status === 'fulfilled' ? [{ id: result.value, file: validFiles[index]! }] : [],
     )
-    const callbackFailures = await notifyUploadedImages(successfulIds)
+    const callbackFailures = await notifyUploadedImages(successfulUploads)
     const failCount = uploadFailures + callbackFailures
 
     showModerationAndTimeoutErrors(blockedCount, timeoutCount)
-    showOtherMultipleUploadErrors(validFileCount, failCount, blockedCount, timeoutCount)
+    showOtherMultipleUploadErrors(validFiles.length, failCount, blockedCount, timeoutCount)
   }
 
-  async function notifyUploadedImages(successfulIds: string[]) {
+  async function notifyUploadedImages(successfulUploads: { id: string; file: File }[]) {
     let callbackFailures = 0
-    await successfulIds.reduce(async (prev, id) => {
+    await successfulUploads.reduce(async (prev, { id, file }) => {
       await prev
       try {
-        await onUploaded(id)
+        await onUploaded(id, file)
       } catch {
         callbackFailures += 1
       }

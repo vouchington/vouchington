@@ -8,10 +8,16 @@ export function usePostImageState(post?: Post) {
   )
   const [isUploading, setIsUploading] = useState(false)
 
-  const handleImageUploaded = (imageId: string) => {
+  const handleImageUploaded = (imageId: string, originalFile: File) => {
     setImages(prev => [
       ...prev,
-      { key: crypto.randomUUID(), image_id: imageId, order_index: prev.length, caption: '' },
+      {
+        key: crypto.randomUUID(),
+        image_id: imageId,
+        originalFile,
+        order_index: prev.length,
+        caption: '',
+      },
     ])
   }
 

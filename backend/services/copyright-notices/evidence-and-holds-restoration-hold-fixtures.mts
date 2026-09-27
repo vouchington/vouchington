@@ -1,4 +1,3 @@
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -6,7 +5,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
   appendCopyrightSubmissionAssessment,
   createCopyrightCounterNotice,
@@ -96,15 +95,17 @@ async function createAssessmentAndReceipt(
 
 export async function deliverInitialCopyrightWithhold(
   noticeId: string,
-  publish: typeof publishImagePlacementDeliveryRecord,
+  dependencies: Partial<CopyrightActionDeliveryDependencies>,
 ): Promise<void> {
   const withhold = (await getCopyrightNoticePrivateAggregate(noticeId))?.actionIntents.find(
     intent => intent.action === 'withhold',
   )
   if (!withhold) throw new Error('initial withhold intent disappeared')
-  await processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
-    ...createTestCopyrightDeliveryDependencies(publish),
-  })
+  await processCopyrightActionIntent(
+    withhold.id,
+    new Date('2026-07-01T12:01:00.000Z'),
+    dependencies,
+  )
 }
 
 export async function createCompliantCounterNoticeDeadline(input: {

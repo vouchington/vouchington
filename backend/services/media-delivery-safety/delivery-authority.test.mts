@@ -15,17 +15,18 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getImagePlacementDeliveryKey,
-  getLegacyImageDeliveryKey,
   lockImageDeliveryMutation,
   lockImageAssetAdmission,
   processMediaDeliveryRegistryRecord,
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
   reconcileMediaDeliveryRepairMarkers,
   stageImagePlacementDeliveryRecord,
-  stageLegacyImageDeliveryRecord,
 } from './index.mts'
-import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
+import {
+  recordImageDeliveryRepairMarker,
+  reconcileDeliveryRepairMarker,
+} from './delivery-repair-markers.mts'
 import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
 
 describe('delivery authority and durable denial repair', () => {
@@ -41,10 +42,7 @@ describe('delivery authority and durable denial repair', () => {
     const initial = edge.records.get(fixture.deliveryKey)!
     {
       await using transaction = await beginTransaction()
-      await publishImagePlacementDeliveryRecord(
-        { ...fixture.tuple, state: 'withheld' },
-        { query: transaction },
-      )
+      await prepublishImagePlacementDenial({ ...fixture.tuple }, { query: transaction })
       // Disposal simulates losing the owner before commit; no compensation is invoked.
     }
     const leaked = edge.records.get(fixture.deliveryKey)!
@@ -75,32 +73,28 @@ describe('delivery authority and durable denial repair', () => {
     expect(await getTestDeliveryRepairMarker(fixture.deliveryKey)).toBeNull()
   })
 
-  it('denies a never-committed intermediate tuple without an FK-backed outbox row', async () => {
+  it('does not persist or publish a never-committed repair tuple', async () => {
     const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
     const deliveryKey = getImagePlacementDeliveryKey(tuple)
     const edge = enableEdge()
     await recordImageDeliveryRepairMarker(tuple)
-    await reconcileTestDeliveryRepairMarker(deliveryKey)
-    expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
+    expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toBeNull()
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
   })
 
   it('preserves a newer repair marker when an observed token is consumed', async () => {
-    const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
-    const deliveryKey = getImagePlacementDeliveryKey(tuple)
+    const { tuple, deliveryKey } = await createSurface()
     const edge = enableEdge()
     await recordImageDeliveryRepairMarker(tuple)
     const observed = await getTestDeliveryRepairMarker(deliveryKey)
-    edge.put.mockImplementationOnce(async input => {
-      edge.accept(input)
-      await recordImageDeliveryRepairMarker(tuple)
-      return { $metadata: {} }
-    })
-    await reconcileTestDeliveryRepairMarker(deliveryKey)
+    if (!observed) throw new Error('Committed repair marker missing')
+    await recordImageDeliveryRepairMarker(tuple)
+    await reconcileDeliveryRepairMarker({ delivery_key: deliveryKey, marker_token: observed })
     const newer = await getTestDeliveryRepairMarker(deliveryKey)
     expect(newer).not.toBeNull()
     expect(newer).not.toBe(observed)
+    expect(edge.put).not.toHaveBeenCalled()
     await reconcileTestDeliveryRepairMarker(deliveryKey)
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
   })
@@ -131,8 +125,7 @@ describe('delivery authority and durable denial repair', () => {
   })
 
   it('drains no markers when the bounded sweep limit is zero', async () => {
-    const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
-    const deliveryKey = getImagePlacementDeliveryKey(tuple)
+    const { tuple, deliveryKey } = await createSurface()
     const edge = enableEdge()
     await recordImageDeliveryRepairMarker(tuple)
     const token = await getTestDeliveryRepairMarker(deliveryKey)
@@ -142,29 +135,24 @@ describe('delivery authority and durable denial repair', () => {
   })
 
   it('consumes only an owned repair marker and preserves the unrelated token', async () => {
-    const selected = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
-    const unrelated = {
-      placementId: crypto.randomUUID(),
-      revision: 0,
-      imageId: crypto.randomUUID(),
-    }
-    const selectedKey = getImagePlacementDeliveryKey(selected)
-    const unrelatedKey = getImagePlacementDeliveryKey(unrelated)
+    const [selected, unrelated] = await Promise.all([createSurface(), createSurface()])
+    const selectedKey = selected.deliveryKey
+    const unrelatedKey = unrelated.deliveryKey
     enableEdge()
     await Promise.all([
-      recordImageDeliveryRepairMarker(selected),
-      recordImageDeliveryRepairMarker(unrelated),
+      recordImageDeliveryRepairMarker(selected.tuple),
+      recordImageDeliveryRepairMarker(unrelated.tuple),
     ])
     const unrelatedToken = await getTestDeliveryRepairMarker(unrelatedKey)
+    expect(unrelatedToken).not.toBeNull()
     expect(await reconcileMediaDeliveryRepairMarkers(10, [selectedKey])).toBe(1)
     expect(await getTestDeliveryRepairMarker(selectedKey)).toBeNull()
     expect(await getTestDeliveryRepairMarker(unrelatedKey)).toBe(unrelatedToken)
     await reconcileTestDeliveryRepairMarker(unrelatedKey)
   })
 
-  it('retains a missing-tuple repair marker while publication is disabled', async () => {
-    const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
-    const deliveryKey = getImagePlacementDeliveryKey(tuple)
+  it('retains a committed repair marker while publication is disabled', async () => {
+    const { tuple, deliveryKey } = await createSurface()
     const edge = enableEdge()
     await recordImageDeliveryRepairMarker(tuple)
     const token = await getTestDeliveryRepairMarker(deliveryKey)
@@ -175,17 +163,9 @@ describe('delivery authority and durable denial repair', () => {
     expect(await getTestDeliveryRepairMarker(deliveryKey)).toBe(token)
     vi.stubEnv('MEDIA_DELIVERY_REGISTRY_PUBLICATION_ENABLED', 'true')
     await reconcileTestDeliveryRepairMarker(deliveryKey)
-    expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
-    expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
-  })
-
-  it('refuses a legacy allow when the asset belongs to an active surface', async () => {
-    const fixture = await createSurface()
-    const edge = enableEdge()
-    const deliveryKey = getLegacyImageDeliveryKey(fixture.tuple.imageId)
-    await stageLegacyImageDeliveryRecord(fixture.tuple.imageId, 'allow')
     await processMediaDeliveryRegistryRecord(deliveryKey)
-    expect(edge.records.get(deliveryKey)?.state).toBe('withheld')
+    expect(edge.records.get(deliveryKey)?.state).toBe('allow')
+    expect(await getTestDeliveryRepairMarker(deliveryKey)).toBeNull()
   })
 
   it('repairs an unauthorized allow denial accepted before invalidation fails and authority recovers', async () => {
@@ -240,8 +220,8 @@ describe('delivery authority and durable denial repair', () => {
     }
     expect(edge.records.get(intermediateKey)?.state).toBe('withheld')
     expect(await getTestMediaDeliveryRecord(intermediateKey)).toBeNull()
+    expect(await getTestDeliveryRepairMarker(intermediateKey)).toBeNull()
     await reconcileTestDeliveryRepairMarker(fixture.deliveryKey)
-    await reconcileTestDeliveryRepairMarker(intermediateKey)
     await processMediaDeliveryRegistryRecord(fixture.deliveryKey)
     expect(edge.records.get(fixture.deliveryKey)?.state).toBe('allow')
     expect(edge.records.get(intermediateKey)?.state).toBe('withheld')

@@ -3,10 +3,9 @@ import { isMediaDeliveryEdgeEnforcementEnabled } from '@modules/aws/media-delive
 import {
   lockImageDeliveryMutation,
   prepublishImagePlacementDenials,
-  publishLegacyImageDeliveryRecord,
 } from '@services/media-delivery-safety'
 
-/** The post service owns admission, while images owns one delivery saga for every route kind. */
+/** The post service owns admission, while images owns the exact image placement delivery saga. */
 export async function preparePostImageDeliveryMutation(
   query: TransactionQuery,
   input: { postId?: string; imageIds: string[]; retainImageIds?: string[] },
@@ -21,9 +20,5 @@ export async function preparePostImageDeliveryMutation(
       { postId: input.postId, retainImageIds: input.retainImageIds },
       { query },
     )
-  }
-  for (const imageId of [...new Set(input.imageIds)].toSorted()) {
-    // oxlint-disable-next-line no-await-in-loop -- every attached image must lose its generic alias before commit.
-    await publishLegacyImageDeliveryRecord(imageId, 'withheld', { query })
   }
 }

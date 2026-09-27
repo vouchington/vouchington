@@ -67,7 +67,7 @@ describe('ImageUploadButton', () => {
       const file = makeFile('photo.jpg')
       fireEvent.change(getFileInput(), { target: { files: [file] } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('img-1'))
+      await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('img-1', file))
     })
 
     it('does not set multiple attribute when multiple prop is not set', () => {
@@ -104,6 +104,32 @@ describe('ImageUploadButton', () => {
   })
 
   describe('multiple-file mode', () => {
+    it('keeps selected bytes paired with deduplicated IDs despite partial failure and completion order', async () => {
+      const first = Promise.withResolvers<string>()
+      const last = Promise.withResolvers<string>()
+      mockUploadImageFile.mockImplementation(file => {
+        if (file.name === 'first.png') return first.promise
+        if (file.name === 'failed.png') return Promise.reject(new Error('Upload failed'))
+        return last.promise
+      })
+      const files = [makeFile('first.png'), makeFile('failed.png'), makeFile('last.png')]
+      const onUploaded = vi.fn<VitestLooseMock>()
+      render(
+        <ImageUploadButton
+          onUploaded={onUploaded}
+          multiple
+        />,
+      )
+      fireEvent.change(getFileInput(), { target: { files } })
+      last.resolve('deduplicated-image')
+      first.resolve('deduplicated-image')
+      await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(2))
+      expect(onUploaded.mock.calls).toEqual([
+        ['deduplicated-image', files[0]],
+        ['deduplicated-image', files[2]],
+      ])
+    })
+
     it('sets multiple attribute on the input', () => {
       render(
         <ImageUploadButton
@@ -132,9 +158,9 @@ describe('ImageUploadButton', () => {
       fireEvent.change(getFileInput(), { target: { files } })
 
       await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(3))
-      expect(onUploaded).toHaveBeenCalledWith('img-1')
-      expect(onUploaded).toHaveBeenCalledWith('img-2')
-      expect(onUploaded).toHaveBeenCalledWith('img-3')
+      expect(onUploaded).toHaveBeenCalledWith('img-1', files[0])
+      expect(onUploaded).toHaveBeenCalledWith('img-2', files[1])
+      expect(onUploaded).toHaveBeenCalledWith('img-3', files[2])
       expect(mockUploadImageFile).toHaveBeenCalledTimes(3)
     })
 
@@ -175,7 +201,7 @@ describe('ImageUploadButton', () => {
       const files = [makeFile('good.jpg'), makeFile('bad.pdf', 'application/pdf')]
       fireEvent.change(getFileInput(), { target: { files } })
 
-      await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('img-valid'))
+      await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('img-valid', files[0]))
       expect(mockUploadImageFile).toHaveBeenCalledTimes(1)
       expect(mockToastError).toHaveBeenCalledWith(expect.stringContaining('bad.pdf'))
     })

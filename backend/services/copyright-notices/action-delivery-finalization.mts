@@ -63,12 +63,11 @@ export async function finalizeCopyrightActionAfterDelivery(
   if (action === 'restore' && (await restoreIsBlocked(legal, now, transaction))) {
     await runSequentially([
       () =>
-        dependencies.publishImagePlacementDeliveryRecord(
+        dependencies.prepublishImagePlacementDenial(
           {
             placementId: current.placementId,
             revision: current.revision,
             imageId: current.imageId,
-            state: 'withheld',
           },
           { query: transaction },
         ),

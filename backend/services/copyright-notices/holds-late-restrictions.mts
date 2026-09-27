@@ -4,7 +4,7 @@ import {
   getImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
 } from '@services/images/placements'
-import { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 
 /** A qualifying hold is governed by receipt time. Its later review cannot leave an already
@@ -16,7 +16,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   transaction: TransactionQuery,
   dependencies: {
     assertLegalEnforcementEnabled?: typeof assertMediaDeliveryLegalEnforcementEnabled
-    publishPlacement?: typeof publishImagePlacementDeliveryRecord
+    publishPlacement?: typeof prepublishImagePlacementDenial
   } = {},
 ): Promise<string[]> {
   const { rows } = await transaction<{
@@ -65,7 +65,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       dependencies.assertLegalEnforcementEnabled ?? assertMediaDeliveryLegalEnforcementEnabled
     assertEnabled()
   }
-  const publishPlacement = dependencies.publishPlacement ?? publishImagePlacementDeliveryRecord
+  const publishPlacement = dependencies.publishPlacement ?? prepublishImagePlacementDenial
   const intentIds = await Promise.all(
     rows.map(async restriction => {
       const placement = await getImagePlacementForCopyright(restriction.placement_key, {
@@ -78,7 +78,6 @@ export async function activateLateCopyrightLegalHoldRestrictions(
             placementId: placement.placementId,
             revision: placement.revision,
             imageId: placement.imageId,
-            state: 'withheld',
           },
           { query: transaction },
         )

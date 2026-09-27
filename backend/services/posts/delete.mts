@@ -12,7 +12,7 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
-import { compensateFailedImageDeliveryMutation } from '@services/media-delivery-safety'
+import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
@@ -67,7 +67,7 @@ export const deletePost = async (
     }
     await query.commit()
   } catch (error) {
-    await compensateFailedImageDeliveryMutation({ postIds: [post.id] }).catch(onError)
+    await repairFailedImageDeliveryMutation({ postIds: [post.id] }).catch(onError)
     throw error
   }
 

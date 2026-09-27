@@ -38,7 +38,6 @@ function FollowContextUserList({ users }: { users: PublicUser[] }) {
             <span className='min-w-0 flex-1 truncate text-sm'>{label}</span>
             {user.profile_image_id && (
               <UserAvatar
-                profileImageId={user.profile_image_id}
                 profileImagePlacement={user.profile_image_placement}
                 username={label}
                 size='sm'

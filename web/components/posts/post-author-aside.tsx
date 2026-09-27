@@ -43,7 +43,6 @@ export function PostAuthorAside({ t, author, aside, postType }: PostAuthorAsideP
           data-pw='post-author-aside-user-link'
         >
           <UserAvatar
-            profileImageId={author.profile_image_id}
             profileImagePlacement={author.profile_image_placement}
             username={author.username}
             size='sm'

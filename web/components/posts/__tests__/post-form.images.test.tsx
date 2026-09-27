@@ -9,7 +9,8 @@ import {
   mockUploadImageFile,
 } from '@/test-helpers/components/posts/post-form-images.mock-support'
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mockObjectUrls } from '@/test-helpers/object-urls'
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -32,6 +33,7 @@ const postWithImages: Post = {
 
 describe('PostForm image state', () => {
   beforeEach(() => {
+    mockObjectUrls()
     mockRouterPush.mockClear()
     mockCreatePost.mockClear()
     mockUpdatePost.mockClear()
@@ -39,6 +41,7 @@ describe('PostForm image state', () => {
     mockUploadImageFile.mockClear()
     mockToastError.mockClear()
   })
+  afterEach(() => vi.unstubAllGlobals())
 
   it('does not call setPostImages when images are unchanged in edit mode', async () => {
     mockUpdatePost.mockResolvedValue({ post: { ...postWithImages } })

@@ -13,11 +13,9 @@ import {
 import {
   getImagePlacementDeliveryKey,
   getMediaDeliveryRegistryScanBefore,
-  getLegacyImageDeliveryKey,
   stageAllCurrentImagePlacementDeliveryRecords,
   stageCurrentImagePlacementDeliveryRecordsForImageIds,
   stageImagePlacementDeliveryRecord,
-  stageLegacyImageDeliveryRecord,
   listRecoverableMediaDeliveryRegistryKeys,
   replayFailedMediaDeliveryRegistryRecords,
 } from './index.mts'
@@ -57,52 +55,28 @@ describe('scoped media delivery reconciliation', () => {
     expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
   })
 
-  it('stages current placement and legacy records only for selected images', async () => {
+  it('stages current placement records only for selected images', async () => {
     const [selected, unrelated] = await Promise.all([
       createCurrentProfilePlacement(),
       createCurrentProfilePlacement(),
     ])
     await Promise.all([
       stageImagePlacementDeliveryRecord({ ...selected, state: 'withheld' }),
-      stageLegacyImageDeliveryRecord(selected.imageId, 'allow'),
       stageImagePlacementDeliveryRecord({ ...unrelated, state: 'withheld' }),
-      stageLegacyImageDeliveryRecord(unrelated.imageId, 'allow'),
     ])
-    const nextAttemptAt = new Date(Date.now() + 60_000)
-    await Promise.all([
-      scheduleTestMediaDeliveryRetry(unrelated.deliveryKey, nextAttemptAt),
-      scheduleTestMediaDeliveryRetry(getLegacyImageDeliveryKey(unrelated.imageId), nextAttemptAt),
-    ])
-    const unrelatedBefore = await Promise.all([
-      getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey),
-      getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(unrelated.imageId)),
-    ])
-    expect(unrelatedBefore).toEqual([
-      expect.objectContaining({
-        desired_state: 'withheld',
-        delivery_attempt_count: 3,
-        next_attempt_at: expect.any(String),
-      }),
-      expect.objectContaining({
-        desired_state: 'allow',
-        delivery_attempt_count: 3,
-        next_attempt_at: expect.any(String),
-      }),
-    ])
+    await scheduleTestMediaDeliveryRetry(unrelated.deliveryKey, new Date(Date.now() + 60_000))
+    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)
+    expect(unrelatedBefore).toMatchObject({
+      desired_state: 'withheld',
+      delivery_attempt_count: 3,
+      next_attempt_at: expect.any(String),
+    })
 
-    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(2)
+    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
     expect(await getTestMediaDeliveryRecord(selected.deliveryKey)).toMatchObject({
       desired_state: 'allow',
     })
-    expect(
-      await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(selected.imageId)),
-    ).toMatchObject({ desired_state: 'withheld' })
-    expect(
-      await Promise.all([
-        getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey),
-        getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(unrelated.imageId)),
-      ]),
-    ).toEqual(unrelatedBefore)
+    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
   })
 
   it('withholds only selected unsafe records and treats an empty scope as a no-op', async () => {
@@ -112,68 +86,30 @@ describe('scoped media delivery reconciliation', () => {
     ])
     await Promise.all([
       stageImagePlacementDeliveryRecord({ ...selected, state: 'allow' }),
-      stageLegacyImageDeliveryRecord(selected.imageId, 'allow'),
       stageImagePlacementDeliveryRecord({ ...unrelated, state: 'allow' }),
-      stageLegacyImageDeliveryRecord(unrelated.imageId, 'allow'),
     ])
     await Promise.all([
       markImageModerationFlagged(selected.imageId),
       markImageModerationFlagged(unrelated.imageId),
     ])
-    const nextAttemptAt = new Date(Date.now() + 60_000)
-    await Promise.all([
-      scheduleTestMediaDeliveryRetry(unrelated.deliveryKey, nextAttemptAt),
-      scheduleTestMediaDeliveryRetry(getLegacyImageDeliveryKey(unrelated.imageId), nextAttemptAt),
-    ])
-    const unrelatedBefore = await Promise.all([
-      getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey),
-      getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(unrelated.imageId)),
-    ])
-    expect(unrelatedBefore).toEqual([
-      expect.objectContaining({
-        desired_state: 'allow',
-        delivery_attempt_count: 3,
-        next_attempt_at: expect.any(String),
-      }),
-      expect.objectContaining({
-        desired_state: 'allow',
-        delivery_attempt_count: 3,
-        next_attempt_at: expect.any(String),
-      }),
-    ])
+    await scheduleTestMediaDeliveryRetry(unrelated.deliveryKey, new Date(Date.now() + 60_000))
+    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)
+    expect(unrelatedBefore).toMatchObject({
+      desired_state: 'allow',
+      delivery_attempt_count: 3,
+      next_attempt_at: expect.any(String),
+    })
 
-    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(2)
+    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
     expect(await getTestMediaDeliveryRecord(selected.deliveryKey)).toMatchObject({
       desired_state: 'withheld',
     })
-    expect(
-      await getTestMediaDeliveryRecord(getLegacyImageDeliveryKey(selected.imageId)),
-    ).toMatchObject({ desired_state: 'withheld' })
-    expect(
-      await Promise.all([
-        getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey),
-        getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(unrelated.imageId)),
-      ]),
-    ).toEqual(unrelatedBefore)
-
-    const selectedBefore = await Promise.all([
-      getTestMediaDeliveryRecordSnapshot(selected.deliveryKey),
-      getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(selected.imageId)),
-    ])
+    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
+    const selectedBefore = await getTestMediaDeliveryRecordSnapshot(selected.deliveryKey)
     expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([])).toBe(0)
     expect(await stageAllCurrentImagePlacementDeliveryRecords([])).toBe(0)
-    expect(
-      await Promise.all([
-        getTestMediaDeliveryRecordSnapshot(selected.deliveryKey),
-        getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(selected.imageId)),
-      ]),
-    ).toEqual(selectedBefore)
-    expect(
-      await Promise.all([
-        getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey),
-        getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(unrelated.imageId)),
-      ]),
-    ).toEqual(unrelatedBefore)
+    expect(await getTestMediaDeliveryRecordSnapshot(selected.deliveryKey)).toEqual(selectedBefore)
+    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
   })
 })
 

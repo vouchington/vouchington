@@ -1,5 +1,5 @@
 import { ProxiedImage as Image } from '@/components/shared/proxied-image'
-import { getImageUrl, getPlacementImageUrl } from '@/lib/utils/image-url'
+import { getPlacementImageUrl } from '@/lib/utils/image-url'
 
 interface ImagePlacement {
   id: string
@@ -14,7 +14,7 @@ interface PostImageProps {
   className?: string
   priority?: boolean
   /** Both placement identity and revision are required for bound post media. */
-  placement?: ImagePlacement
+  placement: ImagePlacement
 }
 
 export function PostImage({
@@ -31,11 +31,7 @@ export function PostImage({
   return (
     <Image
       data-pw='post-image'
-      src={
-        placement
-          ? getPlacementImageUrl(placement.id, placement.revision, imageId, { width })
-          : getImageUrl(imageId, { width })
-      }
+      src={getPlacementImageUrl(placement.id, placement.revision, imageId, { width })}
       alt={alt}
       unoptimized
       className={className}

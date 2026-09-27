@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -13,9 +13,9 @@ import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('copyright notice overlapping legal holds', () => {
   it('replays a blocked restore after the final overlapping hold resolves', async () => {
-    const publish: typeof publishImagePlacementDeliveryRecord = async () => undefined
+    const publish: typeof prepublishImagePlacementDenial = async () => undefined
     const { initialWithhold, moderator, notice, restorationAt, restore, restriction, target } =
-      await openHeldCounterNoticeRestore(publish)
+      await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
     const initialRestore = restore
     await expect(
       processCopyrightActionIntent(initialRestore.id, restorationAt, {
@@ -90,7 +90,7 @@ async function createQualifyingHold(input: {
   noticeId: string
   targetId: string
   assessedAt: Date
-  publish: typeof publishImagePlacementDeliveryRecord
+  publish: typeof prepublishImagePlacementDenial
 }) {
   const receivedAt = new Date('2026-07-03T12:00:00.000Z')
   const submission = await appendCopyrightNoticeSubmission({

@@ -80,8 +80,8 @@ export async function syncPostImagePlacements(
         WHERE existing.post_id = ${postId} AND existing.image_id = requested.image_id
       )
     ), registered AS (
-      INSERT INTO media_placements (id, placement_kind)
-      SELECT placement_id, 'image' FROM missing_bindings
+      INSERT INTO media_placements (id)
+      SELECT placement_id FROM missing_bindings
       RETURNING id
     )
     INSERT INTO image_placements (placement_id, post_id, image_id)
@@ -90,10 +90,10 @@ export async function syncPostImagePlacements(
     () =>
       query(sql`/* syncPostImagePlacements:stageDelivery */
     INSERT INTO media_delivery_registry_records (
-      delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
+      delivery_key, placement_id, placement_revision, image_id, desired_state
     )
     SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', binding.image_id),
-      'image', 'placement', placement.id, placement.revision, binding.image_id, 'allow'
+      placement.id, placement.revision, binding.image_id, 'allow'
     FROM image_placements binding
     JOIN media_placements placement ON placement.id = binding.placement_id
     JOIN images image ON image.id = binding.image_id

@@ -69327,7 +69327,7 @@
         "q": "test"
       },
       "responseSchema": {
-        "hash": "aac668e9bf50b99d049a2a6dd25e953ee5e873b308ed3a2c17a53d7297403972",
+        "hash": "3a5625e2f0c2b0fb46fde609a76e0adc6e9299d358c553d96200a53adbfb6a13",
         "key": "web.communities.search.default"
       },
       "route": {
@@ -72095,7 +72095,7 @@
       ],
       "path": "/api/v1/my/identity",
       "responseSchema": {
-        "hash": "9827ab76a83dee834bd3f33fb45f86182f1d14e533f1c747ff24491049165f43",
+        "hash": "113ece89ba969906d89e663782694c51dd849d1433f58b8847a286639e74c36b",
         "key": "swift.my.identity.default"
       },
       "route": {
@@ -75475,7 +75475,7 @@
         "include_bio": "1"
       },
       "responseSchema": {
-        "hash": "ecd63222e5f8d355e5d4a188be9f6e17529fea1977bfd7051ec0ed35d5116be0",
+        "hash": "4d644b46c4f8d85a24c3d961b0ff4f2ea91b5188e6681e9460067b4ef3fca41e",
         "key": "native.users.profile.restricted"
       },
       "route": {

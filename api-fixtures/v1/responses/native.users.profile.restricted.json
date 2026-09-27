@@ -4,6 +4,12 @@
     "__entity_type": "user",
     "id": "user-restricted",
     "markdown": "Private collections",
+    "profile_image_id": "00000000-0000-7000-8000-000000000201",
+    "profile_image_placement": {
+      "image_id": "00000000-0000-7000-8000-000000000201",
+      "placement_id": "00000000-0000-7000-8000-000000000303",
+      "placement_revision": 0
+    },
     "roles": ["user"],
     "username": "restricted"
   },

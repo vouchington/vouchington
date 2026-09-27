@@ -168,7 +168,7 @@ describe('utils', () => {
     })
 
     it('skips and reports failures for images with a non-public URL origin', async () => {
-      // addImageToBatch throws (as getPublicImageUrl returns null) → processImageBatchCreation
+      // Image preparation fails before the provider batch can be created.
       // catches via onError and continues; with all images failing and none added, returns a
       // failure summary rather than null.
       const result = await processImageBatchCreation(

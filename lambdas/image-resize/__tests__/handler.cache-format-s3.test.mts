@@ -36,6 +36,7 @@ describe('handler.cache-format', () => {
     headers: Record<string, string> = {},
   ): APIGatewayProxyEvent {
     return {
+      path: '/images/placements/00000000-0000-7000-8000-000000000001/0/00000000-0000-7000-8000-000000000002',
       queryStringParameters: params,
       headers,
     } as unknown as APIGatewayProxyEvent

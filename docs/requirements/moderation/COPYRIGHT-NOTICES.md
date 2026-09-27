@@ -44,7 +44,7 @@ rows, resolve private recipient evidence case-scoped, and report SES bounces bef
 
 ## Placement enforcement boundary
 
-Hosted post media is addressed by a durable, media-neutral placement identity. The image binding is
+Hosted images are addressed by a durable, concrete image-placement identity. The image binding is
 immutable, while a monotonic placement revision advances whenever the attachment is retired,
 reactivated, withheld, or restored. Copyright action workers re-read and lock that authoritative
 placement, the exact image binding, the expected revision, every legal blocker, and the restriction
@@ -56,9 +56,17 @@ Application projections omit retired or withheld placements, and persisted post 
 shape and keeps the placement segments out of the S3 key. Those application controls do not by
 themselves revoke a warm CDN response or prevent a caller from trying a historical generic image
 URL. Complete delivery enforcement therefore also requires the separately deployed infrastructure
-edge registry, viewer authorization, direct-origin denial, legacy-route retirement, cache
+edge registry, viewer authorization, direct-origin denial, generic-route retirement, cache
 invalidation, and cross-store reconciliation. Intake must remain disabled until those controls pass
 cold-cache, warm-cache, stale-revision, mismatched-image, and direct-origin tests.
+
+The application outbox requires exact image and placement foreign keys. Independently committed
+rollback wakeups reference an already committed registry key through a restrictive foreign key and
+contain only that key, rotating token, and timestamps, never an uncommitted entity snapshot.
+Recovery joins the registry's typed tuple and rechecks committed binding authority without borrowing
+another placement's revision. An uncommitted first registry insert cannot publish an allow; its
+rollback creates no repair obligation. The fresh-bootstrap schema and recovery protocol are
+documented in [media-delivery safety](../../../backend/services/media-delivery-safety/README.md).
 
 Staff may request image-similarity candidates from existing embeddings. Candidates are advisory,
 exclude unavailable or moderated media, and return placement identifiers and state rather than S3

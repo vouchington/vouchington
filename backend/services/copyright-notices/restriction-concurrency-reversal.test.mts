@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   createTestUserDirect,
@@ -83,7 +83,7 @@ describe('copyright restriction reversal concurrency', () => {
     const restoreIntent = reversed?.actionIntents.find(intent => intent.action === 'restore')
     const withholdIntent = reversed?.actionIntents.find(intent => intent.action === 'withhold')
     if (!restoreIntent || !withholdIntent) throw new Error('reversal intents disappeared')
-    const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
+    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     await expect(
       processCopyrightActionIntent(restoreIntent.id, new Date('2026-07-01T12:04:00.000Z'), {
         ...createTestCopyrightDeliveryDependencies(publish),

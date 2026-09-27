@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightLegalHoldAssessment,
@@ -106,7 +106,7 @@ describe('unassessed court or CCB filings', () => {
       intent => intent.action === 'withhold',
     )
     if (!withhold) throw new Error('initial withhold intent disappeared')
-    const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
+    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     await expect(
       processCopyrightActionIntent(withhold.id, new Date('2026-07-01T12:01:00.000Z'), {
         ...createTestCopyrightDeliveryDependencies(publish),

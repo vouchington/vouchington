@@ -3,10 +3,9 @@ import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-reg
 export type ImageDeliveryRecord = {
   delivery_key: string
   desired_state: MediaDeliveryRegistryState
-  route_kind: 'placement' | 'legacy-image'
-  placement_id: string | null
-  placement_revision: number | null
-  asset_id: string
+  placement_id: string
+  placement_revision: number
+  image_id: string
   generation: string
 }
 
@@ -27,14 +26,6 @@ export function getImagePlacementDeliveryKey(input: {
   return `image-placement:${input.placementId}:${input.revision}:${input.imageId}`
 }
 
-export function getLegacyImageDeliveryKey(imageId: string): string {
-  return `legacy-image:${imageId}`
-}
-
 export function getMediaDeliveryPath(record: ImageDeliveryRecord): string {
-  if (record.route_kind === 'legacy-image') return `/images/${record.asset_id}`
-  if (!record.placement_id || record.placement_revision === null) {
-    throw new Error(`Placement delivery record ${record.delivery_key} is missing its exact tuple`)
-  }
-  return `/images/placements/${record.placement_id}/${record.placement_revision}/${record.asset_id}`
+  return `/images/placements/${record.placement_id}/${record.placement_revision}/${record.image_id}`
 }

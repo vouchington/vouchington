@@ -174,7 +174,6 @@ function ModeratorStatsRow({ stat, user }: RowProps) {
       <td className='py-2 pr-4'>
         <div className='flex items-center gap-2'>
           <UserAvatar
-            profileImageId={user?.profile_image_id}
             profileImagePlacement={user?.profile_image_placement}
             username={username}
             size='sm'

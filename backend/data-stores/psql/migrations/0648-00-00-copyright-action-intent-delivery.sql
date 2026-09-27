@@ -51,11 +51,9 @@ COMMENT ON COLUMN copyright_notice_action_intents.next_attempt_at IS 'Earliest d
 -- never authorize another asset or a stale revision.
 CREATE TABLE media_delivery_registry_records (
   delivery_key text PRIMARY KEY CHECK (char_length(delivery_key) BETWEEN 1 AND 512),
-  media_kind text NOT NULL CHECK (media_kind IN ('image')),
-  route_kind text NOT NULL CHECK (route_kind IN ('placement', 'legacy-image')),
-  placement_id uuid REFERENCES media_placements(id) ON DELETE RESTRICT,
-  placement_revision integer CHECK (placement_revision IS NULL OR placement_revision >= 0),
-  asset_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
+  placement_id uuid NOT NULL REFERENCES media_placements(id) ON DELETE RESTRICT,
+  placement_revision integer NOT NULL CHECK (placement_revision >= 0),
+  image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
   desired_state text NOT NULL CHECK (desired_state IN ('allow', 'withheld')),
   generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0),
   state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'claimed', 'completed', 'failed')),
@@ -68,10 +66,8 @@ CREATE TABLE media_delivery_registry_records (
   next_attempt_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (
-    (route_kind = 'placement' AND placement_id IS NOT NULL AND placement_revision IS NOT NULL)
-    OR (route_kind = 'legacy-image' AND placement_id IS NULL AND placement_revision IS NULL AND media_kind = 'image')
-  ),
+  CONSTRAINT media_delivery_registry_records_exact_key
+    CHECK (delivery_key = concat('image-placement:', placement_id, ':', placement_revision, ':', image_id)),
   CHECK (
     (state = 'pending' AND claimed_at IS NULL AND completed_at IS NULL)
     OR (state = 'claimed' AND claimed_at IS NOT NULL AND completed_at IS NULL)
@@ -107,21 +103,19 @@ CREATE INDEX idx_media_delivery_registry_records__recoverable
   WHERE state = 'pending';
 
 CREATE INDEX idx_media_delivery_registry_records__placement
-  ON media_delivery_registry_records (placement_id) WHERE placement_id IS NOT NULL;
-CREATE INDEX idx_media_delivery_registry_records__asset
-  ON media_delivery_registry_records (asset_id);
+  ON media_delivery_registry_records (placement_id);
+CREATE INDEX idx_media_delivery_registry_records__image
+  ON media_delivery_registry_records (image_id);
 
 CREATE TRIGGER trigger_media_delivery_registry_records_updated_at
 BEFORE UPDATE ON media_delivery_registry_records
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE media_delivery_registry_records IS 'Durable exact delivery-tuple projection to the edge DynamoDB authority. Absence is denied by the edge. New media kinds add their own foreign-key column and check branch in a later migration.';
-COMMENT ON COLUMN media_delivery_registry_records.delivery_key IS 'Exact edge identity: image-placement:<placement UUID>:<revision>:<image UUID>, video-placement equivalent, or legacy-image:<image UUID>.';
-COMMENT ON COLUMN media_delivery_registry_records.media_kind IS 'Media family served by this delivery tuple; the check grows only when a typed asset branch is added.';
-COMMENT ON COLUMN media_delivery_registry_records.route_kind IS 'Trusted delivery route shape: revision-fenced placement or the retained legacy image route.';
-COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Optional typed placement owner required for revision-fenced placement routes.';
+COMMENT ON TABLE media_delivery_registry_records IS 'Durable exact image-placement delivery outbox; image and placement parents are retained.';
+COMMENT ON COLUMN media_delivery_registry_records.delivery_key IS 'Exact canonical image-placement:<placement UUID>:<revision>:<image UUID> URL identity.';
+COMMENT ON COLUMN media_delivery_registry_records.placement_id IS 'Typed placement authority; never inferred from image existence.';
 COMMENT ON COLUMN media_delivery_registry_records.placement_revision IS 'Exact placement revision required by a placement route; stale revisions are independently withheld.';
-COMMENT ON COLUMN media_delivery_registry_records.asset_id IS 'Typed immutable image asset authorized or withheld by this exact tuple.';
+COMMENT ON COLUMN media_delivery_registry_records.image_id IS 'Immutable image bound to the exact public-use placement.';
 COMMENT ON COLUMN media_delivery_registry_records.desired_state IS 'Desired legal delivery state; DynamoDB is updated before this row becomes completed.';
 COMMENT ON COLUMN media_delivery_registry_records.state IS 'Durable edge-projection workflow state: pending, claimed, completed, or failed.';
 COMMENT ON COLUMN media_delivery_registry_records.delivery_attempt_count IS 'Bounded count of worker claims for this edge-projection operation.';

@@ -2,34 +2,42 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
 
+export type CopyrightTestDeliveryPublisher = (
+  input: Parameters<CopyrightActionDeliveryDependencies['prepublishImagePlacementDenial']>[0] & {
+    state: 'allow' | 'withheld'
+  },
+  options?: Parameters<CopyrightActionDeliveryDependencies['prepublishImagePlacementDenial']>[1],
+) => Promise<void>
+
 /** External delivery seam for action tests; tuple identity still comes from the real committed outbox. */
 export function createTestCopyrightDeliveryDependencies(
-  publish: CopyrightActionDeliveryDependencies['publishImagePlacementDeliveryRecord'],
+  publish: CopyrightTestDeliveryPublisher,
 ): Pick<
   CopyrightActionDeliveryDependencies,
   | 'assertMediaDeliveryLegalEnforcementEnabled'
-  | 'publishImagePlacementDeliveryRecord'
+  | 'prepublishImagePlacementDenial'
   | 'publishStagedMediaDeliveryRecord'
 > {
   return {
     assertMediaDeliveryLegalEnforcementEnabled: () => undefined,
-    publishImagePlacementDeliveryRecord: publish,
+    prepublishImagePlacementDenial: (input, options) =>
+      publish({ ...input, state: 'withheld' }, options),
     publishStagedMediaDeliveryRecord: async deliveryKey => {
       const { rows } = await read<{
         placement_id: string
         placement_revision: number
-        asset_id: string
+        image_id: string
         desired_state: 'allow' | 'withheld'
       }>(sql`
-        SELECT placement_id, placement_revision, asset_id, desired_state
-        FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey} AND route_kind = 'placement'
+        SELECT placement_id, placement_revision, image_id, desired_state
+        FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
       `)
       const record = rows[0]
       if (!record) throw new Error(`Missing copyright test outbox record ${deliveryKey}`)
       await publish({
         placementId: record.placement_id,
         revision: record.placement_revision,
-        imageId: record.asset_id,
+        imageId: record.image_id,
         state: record.desired_state,
       })
     },

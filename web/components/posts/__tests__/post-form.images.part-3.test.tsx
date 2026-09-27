@@ -9,7 +9,8 @@ import {
   mockUploadImageFile,
 } from '@/test-helpers/components/posts/post-form-images.mock-support'
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mockObjectUrls } from '@/test-helpers/object-urls'
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
@@ -17,6 +18,7 @@ import { PostForm } from '../post-form'
 
 describe('PostForm image state', () => {
   beforeEach(() => {
+    mockObjectUrls()
     mockRouterPush.mockClear()
     mockCreatePost.mockClear()
     mockUpdatePost.mockClear()
@@ -24,6 +26,7 @@ describe('PostForm image state', () => {
     mockUploadImageFile.mockClear()
     mockToastError.mockClear()
   })
+  afterEach(() => vi.unstubAllGlobals())
 
   it('uploads multiple files at once and appends them all with correct order_index', async () => {
     mockUploadImageFile

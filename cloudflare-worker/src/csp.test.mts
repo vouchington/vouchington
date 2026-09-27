@@ -182,6 +182,8 @@ describe('buildWebCsp', () => {
     const csp = buildTestWebCsp()
     expect(csp).toMatch(/img-src [^;]*https:\/\/images-staging\.voucha\.ai/)
     expect(csp).toMatch(/img-src [^;]*https:\/\/images\.voucha\.ai/)
+    expect(csp).toMatch(/img-src [^;]*\bblob:/)
+    expect(csp).not.toMatch(/(?:script-src|connect-src) [^;]*\bblob:/)
   })
 
   it('does not include CloudFront image-delivery hosts in connect-src', () => {

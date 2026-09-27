@@ -21,7 +21,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
   })
 
   it('deduplicates one registry projection per delivery key', async () => {
-    const deliveryKey = `legacy-image:${crypto.randomUUID()}`
+    const deliveryKey = `image-placement:${crypto.randomUUID()}:0:${crypto.randomUUID()}`
     await enqueueApplyMediaDeliveryRegistryRecord(deliveryKey)
     const job = (await notifications.getJobs('waiting')).find(
       candidate =>

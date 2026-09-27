@@ -15,7 +15,9 @@ describe('media delivery registry processors', () => {
   it('does not claim a record when registry publication is disabled', async () => {
     const { processMediaDeliveryRegistryRecord } = await import('@services/media-delivery-safety')
     await expect(
-      processMediaDeliveryRegistryRecord('legacy-image:00000000-0000-7000-8000-000000000001'),
+      processMediaDeliveryRegistryRecord(
+        'image-placement:00000000-0000-7000-8000-000000000001:0:00000000-0000-7000-8000-000000000002',
+      ),
     ).resolves.toBe('not_claimed')
   })
 
@@ -27,12 +29,15 @@ describe('media delivery registry processors', () => {
 
     await expect(
       processApplyMediaDeliveryRegistryRecord(
-        { deliveryKey: 'image-placement:00000000-0000-7000-8000-000000000001:1:asset' },
+        {
+          deliveryKey:
+            'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
+        },
         { processMediaDeliveryRegistryRecord: process, now: () => now },
       ),
     ).resolves.toBe('completed')
     expect(process).toHaveBeenCalledWith(
-      'image-placement:00000000-0000-7000-8000-000000000001:1:asset',
+      'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
       now,
     )
   })
@@ -40,8 +45,8 @@ describe('media delivery registry processors', () => {
   it('stages current placements then re-enqueues only recoverable registry keys', async () => {
     const list = vi.fn<typeof listRecoverableMediaDeliveryRegistryKeys>().mockResolvedValue({
       results: [
-        'image-placement:00000000-0000-7000-8000-000000000001:1:asset',
-        'legacy-image:00000000-0000-7000-8000-000000000002',
+        'image-placement:00000000-0000-7000-8000-000000000001:1:00000000-0000-7000-8000-000000000002',
+        'image-placement:00000000-0000-7000-8000-000000000003:0:00000000-0000-7000-8000-000000000004',
       ],
       page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     })

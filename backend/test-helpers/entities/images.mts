@@ -147,8 +147,8 @@ export async function insertTestPostImage(data: {
         WHERE post_id = inserted_post_image.post_id AND image_id = inserted_post_image.image_id
       )
     ), registered AS (
-      INSERT INTO media_placements (id, placement_kind)
-      SELECT placement_id, 'image' FROM missing_binding
+      INSERT INTO media_placements (id)
+      SELECT placement_id FROM missing_binding
       RETURNING id
     )
     INSERT INTO image_placements (placement_id, post_id, image_id)

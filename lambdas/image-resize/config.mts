@@ -1,4 +1,4 @@
-export const CACHE_VERSION = 'v2'
+export const CACHE_VERSION = 'v3'
 
 export const OUTPUT_FORMATS = ['jpeg', 'png', 'webp', 'avif'] as const
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number]

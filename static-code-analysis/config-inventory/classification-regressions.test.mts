@@ -51,6 +51,7 @@ describe('config inventory classification regressions', () => {
         'process.env.SNS_SES_BOUNCE_TOPIC_ARN',
       ].join('\n'),
       'lambdas/image-resize/handler-auth.mts': 'process.env.AWS_LAMBDA_FUNCTION_NAME\n',
+      'monitors/lambdas/image-resize.mts': 'process.env.TEST_IMAGE_PLACEMENT_PATH\n',
       'lambdas/ses-bounce/README.md': '`SES_BOUNCE_SHARED_KEY`\n',
       'playwright/tests/users/user-vouch-disavow.spec.mts': 'process.env.TMPDIR\n',
       'backend/services/example/fixtures/env.mts': 'process.env.FIXTURE_ONLY_ENV\n',
@@ -77,6 +78,12 @@ describe('config inventory classification regressions', () => {
         expect.objectContaining({
           name: 'AWS_LAMBDA_FUNCTION_NAME',
           classifications: expect.not.arrayContaining(['dynamic-config-candidate']),
+        }),
+        expect.objectContaining({
+          name: 'TEST_IMAGE_PLACEMENT_PATH',
+          classifications: ['review-required'],
+          readers: ['monitors/lambdas/image-resize.mts'],
+          reviewReason: expect.stringContaining('Optional image-resize smoke monitor input'),
         }),
         expect.objectContaining({
           name: 'VOUCHA_SIDELOAD_SIGNING_KEYS',

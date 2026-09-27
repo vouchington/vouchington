@@ -9,31 +9,36 @@ import {
   failExpiredExhaustedMediaDeliveryRegistryRecords,
   listRecoverableMediaDeliveryRegistryKeys,
   replayFailedMediaDeliveryRegistryRecords,
-  stageLegacyImageDeliveryRecord,
+  stageImagePlacementDeliveryRecord,
 } from './index.mts'
 
 describe('media registry recovery pages', () => {
   it('preserves a committed replacement generation after an abandoned final claim', async () => {
     const user = await createTestUserDirect()
-    await withTestMediaRecoveryBacklog(user.id, 1, async ({ deliveryKeys, scanBefore }) => {
-      const key = deliveryKeys[0]!
-      const expiredAt = new Date(new Date(scanBefore).getTime() - 6 * 60_000).toISOString()
-      await setTestMediaRecoveryState(deliveryKeys, {
-        state: 'claimed',
-        attempts: 5,
-        at: expiredAt,
-      })
-      const abandoned = await getTestMediaDeliveryRecordSnapshot(key)
-      await stageLegacyImageDeliveryRecord(key.slice('legacy-image:'.length), 'withheld', {
-        forceGeneration: true,
-      })
-      const replacement = await getTestMediaDeliveryRecordSnapshot(key)
-      expect(Number(replacement?.generation)).toBeGreaterThan(Number(abandoned?.generation))
-      expect(await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, deliveryKeys)).toBe(
-        0,
-      )
-      expect(await getTestMediaDeliveryRecordSnapshot(key)).toEqual(replacement)
-    })
+    await withTestMediaRecoveryBacklog(
+      user.id,
+      1,
+      async ({ deliveryKeys, placements, scanBefore }) => {
+        const key = deliveryKeys[0]!
+        const expiredAt = new Date(new Date(scanBefore).getTime() - 6 * 60_000).toISOString()
+        await setTestMediaRecoveryState(deliveryKeys, {
+          state: 'claimed',
+          attempts: 5,
+          at: expiredAt,
+        })
+        const abandoned = await getTestMediaDeliveryRecordSnapshot(key)
+        await stageImagePlacementDeliveryRecord(
+          { ...placements[0]!, state: 'withheld' },
+          { forceGeneration: true },
+        )
+        const replacement = await getTestMediaDeliveryRecordSnapshot(key)
+        expect(Number(replacement?.generation)).toBeGreaterThan(Number(abandoned?.generation))
+        expect(
+          await failExpiredExhaustedMediaDeliveryRegistryRecords(scanBefore, deliveryKeys),
+        ).toBe(0)
+        expect(await getTestMediaDeliveryRecordSnapshot(key)).toEqual(replacement)
+      },
+    )
   })
   it('drains 101 records through scoped immutable keysets at one cutoff', async () => {
     const user = await createTestUserDirect()
