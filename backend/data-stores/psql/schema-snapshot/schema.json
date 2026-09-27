@@ -92363,6 +92363,7 @@
         "rss_feed_items_lingua_rs_content_sha256_check": "CHECK (((lingua_rs_content_sha256 IS NULL) OR (length(lingua_rs_content_sha256) = 32)))",
         "rss_feed_items_lingua_rs_detected_language_check": "CHECK (((lingua_rs_detected_language IS NULL) OR ((lingua_rs_detected_language = lower(lingua_rs_detected_language)) AND (length(lingua_rs_detected_language) <= 10))))",
         "rss_feed_items_lingua_rs_input_sha256_check": "CHECK (((lingua_rs_input_sha256 IS NULL) OR (length(lingua_rs_input_sha256) = 32)))",
+        "rss_feed_items_story_clustering_embedding_input_sha256_length": "CHECK (((story_clustering_embedding_input_sha256 IS NULL) OR (octet_length(story_clustering_embedding_input_sha256) = 32)))",
         "rss_feed_items_thumbnail_url_check": "CHECK (((thumbnail_url IS NULL) OR (char_length(thumbnail_url) <= 2048)))",
         "rss_feed_items_video_id_check": "CHECK (((video_id IS NULL) OR (char_length(video_id) <= 255)))",
         "rss_feed_items_video_platform_check": "CHECK (((video_platform IS NULL) OR (char_length(video_platform) <= 64)))"
@@ -92431,7 +92432,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "data": {
@@ -92453,7 +92454,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "duration_seconds": {
@@ -92464,7 +92465,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "integer"
         },
         "enclosure_length": {
@@ -92475,7 +92476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "bigint"
         },
         "enclosure_type": {
@@ -92486,7 +92487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "text"
         },
         "enclosure_url": {
@@ -92497,7 +92498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "id": {
@@ -92519,7 +92520,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -92530,7 +92531,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -92541,7 +92542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -92552,7 +92553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -92563,7 +92564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 33,
           "type": "jsonb"
         },
         "media_type": {
@@ -92574,7 +92575,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "rss_feed_item_media_types"
         },
         "published_at": {
@@ -92585,7 +92586,7 @@
           "generatedExpression": "LEAST(COALESCE(fn_text_to_timestamptz((data ->> 'isoDate'::text)), 'infinity'::timestamp with time zone), COALESCE(fn_text_to_timestamptz((data ->> 'pubDate'::text)), 'infinity'::timestamp with time zone), uuid_extract_timestamp(id))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "search_vector": {
@@ -92596,8 +92597,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "tsvector"
+        },
+        "story_clustering_embedding_input_sha256": {
+          "collation": null,
+          "comment": "Exact current embedding input SHA-256 for which story-clustering enqueue was accepted. NULL means delivery is pending; this marker does not indicate clustering completed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "bytea"
         },
         "story_id": {
           "collation": null,
@@ -92607,7 +92619,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "story_locked_at": {
@@ -92618,7 +92630,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "thumbnail_url": {
@@ -92629,7 +92641,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "text"
         },
         "updated_at": {
@@ -92640,7 +92652,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "url_id": {
@@ -92662,7 +92674,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "text"
         },
         "video_platform": {
@@ -92673,7 +92685,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "text"
         },
         "votes_count_down": {
@@ -92772,7 +92784,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -92783,7 +92795,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 37,
           "type": "xid8"
         }
       },
@@ -92991,6 +93003,26 @@
             }
           ],
           "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_items__story_clustering_embedding_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_items__story_clustering_embedding_pending ON ONLY public.rss_feed_items USING btree (id) WHERE ((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((story_clustering_embedding_input_sha256 IS NULL) OR (story_clustering_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((story_clustering_embedding_input_sha256 IS NULL) OR (story_clustering_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
           "primary": false,
           "ready": true,
           "unique": false,
