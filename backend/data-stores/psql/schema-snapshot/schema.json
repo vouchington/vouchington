@@ -55890,12 +55890,12 @@
     "oauth_clients": {
       "checkConstraints": {
         "oauth_clients_check": "CHECK ((((client_type = 'public'::text) AND (token_endpoint_auth_method = 'none'::text) AND (client_secret_hash IS NULL)) OR ((client_type = 'confidential'::text) AND (token_endpoint_auth_method = 'client_secret_basic'::text) AND (client_secret_hash IS NOT NULL))))",
-        "oauth_clients_client_id_check": "CHECK ((client_id ~ '^voucha_[A-Za-z0-9_-]{32,}$'::text))",
+        "oauth_clients_check1": "CHECK ((((metadata_url IS NULL) AND (metadata_refresh_generation IS NULL) AND (metadata_refreshed_at IS NULL) AND (metadata_expires_at IS NULL) AND (client_id ~ '^voucha_[A-Za-z0-9_-]{32,}$'::text)) OR ((metadata_url IS NOT NULL) AND (client_id = metadata_url) AND (metadata_refresh_generation IS NOT NULL) AND (metadata_refreshed_at IS NOT NULL) AND (metadata_expires_at IS NOT NULL) AND (owner_user_id IS NULL) AND (client_type = 'public'::text) AND (token_endpoint_auth_method = 'none'::text) AND (client_secret_hash IS NULL) AND (verified_at IS NULL) AND (verified_by_id IS NULL))))",
         "oauth_clients_client_name_check": "CHECK (((char_length(client_name) >= 1) AND (char_length(client_name) <= 120)))",
         "oauth_clients_client_secret_hash_check": "CHECK (((client_secret_hash IS NULL) OR (char_length(client_secret_hash) = 64)))",
         "oauth_clients_client_type_check": "CHECK ((client_type = ANY (ARRAY['public'::text, 'confidential'::text])))",
         "oauth_clients_grant_types_check": "CHECK (((grant_types <@ ARRAY['authorization_code'::text, 'refresh_token'::text]) AND (grant_types @> ARRAY['authorization_code'::text, 'refresh_token'::text])))",
-        "oauth_clients_metadata_url_check": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?/[^#[:space:][:cntrl:]]*$'::text) AND (metadata_url !~ '/\\.\\.?(/|\\?|$)'::text))))",
+        "oauth_clients_metadata_url_check": "CHECK (((metadata_url IS NULL) OR ((char_length(metadata_url) <= 2048) AND (metadata_url ~ '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'::text) AND (POSITION((chr(92)) IN (metadata_url)) = 0) AND (metadata_url !~ '/\\.\\.?(/|\\?|$)'::text))))",
         "oauth_clients_redirect_uris_check": "CHECK (((cardinality(redirect_uris) >= 1) AND (cardinality(redirect_uris) <= 10)))",
         "oauth_clients_response_types_check": "CHECK ((response_types = ARRAY['code'::text]))",
         "oauth_clients_scopes_check": "CHECK ((cardinality(scopes) > 0))",
@@ -55905,13 +55905,13 @@
       "columns": {
         "client_id": {
           "collation": null,
-          "comment": "Public OAuth client identifier issued at registration.",
+          "comment": "Public OAuth client identifier issued at registration or the exact Client ID Metadata Document URL.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "client_name": {
@@ -55922,7 +55922,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "client_secret_hash": {
@@ -55933,7 +55933,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "client_type": {
@@ -55944,7 +55944,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "created_at": {
@@ -55955,7 +55955,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "grant_types": {
@@ -55966,7 +55966,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 14,
           "type": "text[]"
         },
         "id": {
@@ -55979,6 +55979,39 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "metadata_expires_at": {
+          "collation": null,
+          "comment": "Time after which the stored Client ID Metadata Document must be refreshed for a new authorization; NULL for registered clients.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "metadata_refresh_generation": {
+          "collation": null,
+          "comment": "Database-ordered generation of the newest Client ID Metadata Document fetch applied to this row; NULL for registered clients.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "bigint"
+        },
+        "metadata_refreshed_at": {
+          "collation": null,
+          "comment": "Fetch-start time of the newest Client ID Metadata Document representation applied to this row; NULL for registered clients.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
         },
         "metadata_url": {
           "collation": null,
@@ -55999,7 +56032,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "redirect_uris": {
@@ -56010,7 +56043,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 13,
           "type": "text[]"
         },
         "response_types": {
@@ -56021,7 +56054,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 15,
           "type": "text[]"
         },
         "revoked_at": {
@@ -56032,7 +56065,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "scopes": {
@@ -56043,7 +56076,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 16,
           "type": "text[]"
         },
         "token_endpoint_auth_method": {
@@ -56054,7 +56087,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "updated_at": {
@@ -56065,7 +56098,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 17,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "verified_at": {
@@ -56076,7 +56109,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "verified_by_id": {
@@ -56087,11 +56120,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 7,
           "type": "uuid"
         }
       },
-      "comment": "Dynamically registered clients for the Voucha OAuth authorization server.",
+      "comment": "Dynamically registered and Client ID Metadata Document clients for the Voucha OAuth authorization server.",
       "foreignKeys": {
         "oauth_clients_owner_user_id_fkey": {
           "columns": ["owner_user_id"],
