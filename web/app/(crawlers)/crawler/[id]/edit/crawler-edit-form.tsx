@@ -21,19 +21,10 @@ import { updateCrawler } from '@/lib/api/client/admin'
 import { buildCrawlerUpdates } from './crawler-edit-updates'
 import { CrawlerRemovalFields } from './crawler-removal-fields'
 import { useTranslations } from '@/lib/i18n/use-translations'
-
-export interface Crawler {
-  id: string
-  description: string
-  crawler_type: string
-  priority: number
-  css_selectors_to_remove: string[]
-  link_text_content_to_remove: string[]
-  link_hrefs_to_remove: string[]
-}
+import type { CrawlerResponse } from '@/types/api-responses'
 
 interface CrawlerEditFormProps {
-  crawler: Crawler
+  crawler: CrawlerResponse
   crawlerId: string
 }
 
@@ -108,7 +99,7 @@ function CrawlerBasicFields({
   crawlerType,
   onCrawlerTypeChange,
 }: {
-  crawler: Crawler
+  crawler: CrawlerResponse
   crawlerType: string
   onCrawlerTypeChange: (crawlerType: string) => void
 }) {

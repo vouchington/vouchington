@@ -6,13 +6,14 @@ import { getCrawler } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import type { CrawlerDetailResponseBody } from '@/types/api-responses'
 export const dynamic = 'force-dynamic'
 
 export default async function CrawlerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations()
   const { id } = await params
   const [data, currentUser] = await Promise.all([
-    getCrawler<{ crawler: any }>(id),
+    getCrawler<CrawlerDetailResponseBody>(id),
     getCurrentUser(),
   ])
   if (!data) notFound()
@@ -82,7 +83,7 @@ export default async function CrawlerDetailPage({ params }: { params: Promise<{ 
               <dd className='mt-1 text-sm text-foreground'>
                 {crawler.css_selectors_to_remove.length > 0 ? (
                   <ul className='list-disc pl-5'>
-                    {crawler.css_selectors_to_remove.map((selector: string) => (
+                    {crawler.css_selectors_to_remove.map(selector => (
                       <li key={selector}>{selector}</li>
                     ))}
                   </ul>
@@ -100,7 +101,7 @@ export default async function CrawlerDetailPage({ params }: { params: Promise<{ 
               <dd className='mt-1 text-sm text-foreground'>
                 {crawler.link_text_content_to_remove.length > 0 ? (
                   <ul className='list-disc pl-5'>
-                    {crawler.link_text_content_to_remove.map((text: string) => (
+                    {crawler.link_text_content_to_remove.map(text => (
                       <li key={text}>{text}</li>
                     ))}
                   </ul>
@@ -118,7 +119,7 @@ export default async function CrawlerDetailPage({ params }: { params: Promise<{ 
               <dd className='mt-1 text-sm text-foreground'>
                 {crawler.link_hrefs_to_remove.length > 0 ? (
                   <ul className='list-disc pl-5'>
-                    {crawler.link_hrefs_to_remove.map((href: string) => (
+                    {crawler.link_hrefs_to_remove.map(href => (
                       <li key={href}>{href}</li>
                     ))}
                   </ul>

@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { createCrawlerPathname } from '@/lib/links/entity-href'
-import { CrawlerEditForm, type Crawler } from './crawler-edit-form'
+import { CrawlerEditForm } from './crawler-edit-form'
 import { getCrawler } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import type { CrawlerDetailResponseBody } from '@/types/api-responses'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export default async function EditCrawlerPage({ params }: { params: Promise<{ id
   const t = await getTranslations()
   const { id } = await params
   const [data, currentUser] = await Promise.all([
-    getCrawler<{ crawler: Crawler }>(id),
+    getCrawler<CrawlerDetailResponseBody>(id),
     getCurrentUser(),
   ])
   if (!data) notFound()
