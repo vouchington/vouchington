@@ -1,3 +1,4 @@
+import { UNASSESSED_RETROSPECTIVE_SECTIONS } from '../../test-helpers/blackboard/retrospective-sections.mts'
 import { execFile } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -30,6 +31,8 @@ worktree: bubbly-knitting-manatee
 ## CI Failures
 
 Status: none observed
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
 
 async function makeTempDir(): Promise<string> {
@@ -73,7 +76,18 @@ describe('retrospective-save CLI', () => {
 
     const rejection = await execFileAsync(
       process.execPath,
-      [scriptPath, 'save', '--file', stagedFile, '--session-id', 'sess-1'],
+      [
+        scriptPath,
+        'save',
+        '--mode',
+        'autonomous',
+        '--work-outcome',
+        'success',
+        '--file',
+        stagedFile,
+        '--session-id',
+        'sess-1',
+      ],
       {
         env: {
           ...process.env,
@@ -105,7 +119,18 @@ describe('retrospective-save CLI', () => {
 
     const rejection = await execFileAsync(
       process.execPath,
-      [scriptPath, 'save', '--file', stagedFile, '--root-codex', '--new-root-codex-session'],
+      [
+        scriptPath,
+        'save',
+        '--mode',
+        'autonomous',
+        '--work-outcome',
+        'success',
+        '--file',
+        stagedFile,
+        '--root-codex',
+        '--new-root-codex-session',
+      ],
       { cwd: dir },
     ).catch((error: unknown) => error)
 
@@ -121,6 +146,10 @@ describe('retrospective-save CLI', () => {
     const rejection = await execFileAsync(process.execPath, [
       scriptPath,
       'save',
+      '--mode',
+      'autonomous',
+      '--work-outcome',
+      'success',
       '--file',
       stagedFile,
       '--root-codex',

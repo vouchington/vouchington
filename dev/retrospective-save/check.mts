@@ -12,10 +12,12 @@ type ParsedArgs = {
   newRootCodexSession?: boolean
   rootCodex?: boolean
   sessionIdArg?: string
+  sourceEventId?: string
 }
 
 const FLAG_KEYS: Record<string, FlagKey<ParsedArgs>> = {
   '--session-id': 'sessionIdArg',
+  '--source-event-id': 'sourceEventId',
   '--new-root-codex-session': { key: 'newRootCodexSession', type: 'boolean' },
   '--root-codex': { key: 'rootCodex', type: 'boolean' },
 }
@@ -35,8 +37,16 @@ function formatList(value: unknown): string {
     : 'none'
 }
 
-function formatCheckResult(sessionId: string, entries: SessionEntry[]): string {
-  const existingRetro = entries.find(isRetrospectiveEntry)
+function formatCheckResult(
+  sessionId: string,
+  entries: SessionEntry[],
+  sourceEventId?: string,
+): string {
+  const existingRetro = entries.find(
+    entry =>
+      isRetrospectiveEntry(entry) &&
+      (sourceEventId === undefined || entry.data.sourceEventId === sourceEventId),
+  )
   if (!existingRetro) return `No retrospective saved yet for agent-blackboard session ${sessionId}.`
   return (
     `Retrospective already saved for agent-blackboard session ${sessionId} ` +
@@ -68,7 +78,7 @@ export async function runCheck(
   const connection = await resolveBlackboardConnection({ env })
   try {
     const entries = await getEntries({ sessionId, connection, entries: entriesClient })
-    return formatCheckResult(sessionId, entries)
+    return formatCheckResult(sessionId, entries, parsed.sourceEventId)
   } catch (error) {
     if (isBlackboardNotFound(error))
       return `No retrospective saved yet for agent-blackboard session ${sessionId} (session not created).`

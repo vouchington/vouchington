@@ -1,4 +1,5 @@
 import type { Session } from 'agent-blackboard'
+import { createFeedbackEnvelope } from 'vouchington-tooling/agent-blackboard'
 import { describe, expect, it } from 'vitest'
 
 import { entryFixture, sessionFixture } from '../../test-helpers/blackboard/client-fixtures.mts'
@@ -12,6 +13,63 @@ const FRESH = '2026-08-20T00:00:00.000Z' // after both cutoffs
 const STALE = '2026-07-01T00:00:00.000Z' // before both cutoffs
 
 describe('classifySession', () => {
+  it('quarantines a malformed versioned envelope without blocking clean unrelated sessions', () => {
+    const session = sessionFixture({ id: 's1', agent: 'codex', version: '1', lastEntryAt: STALE })
+    const malformed = entryFixture({
+      data: { type: 'retrospective', schemaVersion: 1, workOutcome: 'success' },
+    })
+    expect(classifySession(session, [malformed], CUTOFFS)).toMatchObject({
+      eligible: false,
+      shape: 'entry-type-unresolved',
+      quarantine: { entryCount: 1, reasons: ['invalid-feedback-envelope'] },
+    })
+    expect(
+      classifySession(
+        sessionFixture({ ...session, id: 'clean' }),
+        [
+          entryFixture({
+            sessionId: 'clean',
+            data: { type: 'journal', markdown: 'verified legacy observation' },
+          }),
+        ],
+        CUTOFFS,
+      ),
+    ).toMatchObject({ shape: 'journal-only', eligible: true })
+  })
+
+  it('deduplicates stable source events by their first timestamp and quarantines conflicts', () => {
+    const session = sessionFixture({ id: 's1', agent: 'codex', version: '1', lastEntryAt: FRESH })
+    const data = createFeedbackEnvelope({
+      schemaVersion: 1,
+      type: 'retrospective',
+      sourceEventId: 'task-1',
+      timestamp: STALE,
+      markdown: 'verified source finding',
+      repositories: ['vouchington/vouchington'],
+      workOutcome: 'success',
+      feedbackCoverage: { status: 'partial', sources: ['journal'], droppedCount: 0 },
+      date: '2026-07-01',
+      issues: [],
+      prs: [],
+    })
+    const original = entryFixture({ sessionId: 's1', createdAt: STALE, data })
+    const replay = entryFixture({ sessionId: 's1', createdAt: FRESH, data })
+    expect(classifySession(session, [replay, original], CUTOFFS)).toMatchObject({
+      shape: 'retrospective',
+      eligible: true,
+      duplicateEntryCount: 1,
+    })
+    const conflict = entryFixture({
+      sessionId: 's1',
+      data: { ...data, markdown: 'contradictory finding' },
+    })
+    expect(classifySession(session, [original, conflict], CUTOFFS)).toMatchObject({
+      shape: 'entry-type-unresolved',
+      eligible: false,
+      quarantine: { entryCount: 1, reasons: ['conflicting-source-event'] },
+    })
+  })
+
   it('classifies a session with a retrospective entry as retrospective', () => {
     const session = sessionFixture({ id: 's1', agent: 'claude', version: '1', lastEntryAt: FRESH })
     const entries = [
@@ -32,6 +90,7 @@ describe('classifySession', () => {
       sessionId: 's1',
       shape: 'entry-type-unresolved',
       eligible: false,
+      quarantine: { entryCount: 1, reasons: ['unknown-entry-type'] },
     })
   })
 

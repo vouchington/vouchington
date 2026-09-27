@@ -29,7 +29,7 @@ terminal manifest. This requires `agent-blackboard` 0.5.0 or later; if the insta
 the tool, stop and report the dependency mismatch rather than falling back to paginated session reads.
 Never pass `selection.inactiveForHours` to `snapshot_export`: a session with zero entries never
 matches that filter (`lastEntryAt === null`), so filtering server-side would permanently hide the
-aborted, retro-less sessions this workflow exists to sweep up. Always export unfiltered and classify
+feedback gaps in retro-less sessions this workflow exists to sweep up. Always export unfiltered and classify
 age client-side from each record's `createdAt`/`lastEntryAt`.
 Before delegation, the root verifies `manifest.schemaVersion === 1`, `manifest.status === "complete"`,
 that the generated export returned a nonempty `cleanupToken`, and that manifest counts exactly match
@@ -64,10 +64,13 @@ marks a mechanically auto-appended journal entry via a structural `data.checkpoi
 rendered `## Auto-append: ` heading), and
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md) (the CLI's `--file` convenience
 omits `type` entirely). A session is an **entry-type-unresolved** session when it has at least one
-entry whose `type` is missing or is anything other than `"journal"`/`"retrospective"` — even if it
+entry whose `type` is missing or is anything other than `"journal"`/`"retrospective"`, or whose
+versioned feedback envelope fails the shared validator — even if it
 also has a retrospective entry — report it separately and give it no issue-filing pass or archival
 this run, regardless of its age, rather than treating an untyped entry as journal evidence; a
-**retrospective** session when it has a retrospective entry and no unresolved entry; a
+**retrospective** session when it has a retrospective entry and no unresolved entry; report quarantine counts/reasons and continue clean unrelated sessions.
+Deduplicate versioned source events by session and `sourceEventId` before theme counting; conflicting
+payloads stay quarantined. A
 **checkpoint-only** session when it has at least one entry, no retrospective entry, and
 every entry satisfies `isCheckpointEntry` (journal auto-append noise, #9337); a **journal-only**
 session when it has at least one entry, no retrospective entry, and at least one entry is not a
@@ -102,7 +105,7 @@ issue work completes, whether or not it produced a theme: no actionable content 
 a deferral. Two exceptions, both keyed by the theme→session-ID mapping above: skip archival for
 exactly the sessions that contributed to a theme whose issue mutation failed this run (they remain
 eligible next round), and skip archival for a session whose only themes were deferred — a
-recently-fixed-dependency skip ([distilling.md](distilling.md) step 6) or a kept-eligible
+verified-fix adoption prerequisite ([distilling.md](distilling.md) step 6) or a kept-eligible
 PR-creation-feedback theme (below) — since deferral promises re-evaluation next round and archival
 would foreclose it. In a `finally` cleanup path owned by the root, run `pnpm exec
 agent-blackboard snapshot cleanup --directory <path> --path <path> --cleanup-token <cleanupToken>`;
@@ -113,13 +116,13 @@ for archival.
 Cluster journal and retrospective findings by root cause. A journal item that already names an open
 issue is skipped unless a retrospective supplies genuinely new evidence; a closed or superseded
 target is eligible again. For every actionable theme, search open issues and open changes, prefer
-adding evidence to an existing open issue, and use the local issue agent for a new one. Recent
-first-party releases, explicit rejections, completed work, and existing coverage are skips, with a
-reason.
+adding evidence to an existing open issue, and use the local issue agent for a new one. Verified fixes in adopted
+first-party releases, explicit rejections, completed work, and existing coverage receive an explicit
+disposition and reason; a version bump alone never resolves a finding.
 
 Archive every eligible session after all issue work completes (see the eligibility rule above,
-including its recheck-before-archive and deferred/failed-theme carve-outs). Report created, updated,
-not-yet-eligible, entry-type-unresolved, deferred, and archived counts plus reasons, broken out by
+including its recheck-before-archive and deferred/failed-theme carve-outs). Report reviewed, fixed, duplicate, deferred, quarantined, actionable, created, updated,
+not-yet-eligible, entry-type-unresolved, and archived counts plus reasons, broken out by
 eligible-with-retro vs. eligible-stale (splitting eligible-stale into checkpoint-only, journal-only,
 zero-entry-child, and zero-entry-root). Do not ask the user for subset or style; the local summary is
 the record of the complete run.

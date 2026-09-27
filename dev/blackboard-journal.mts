@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
+import { feedbackOutboxStatus, flushFeedbackOutbox } from 'vouchington-tooling/agent-blackboard'
+import { parseFlagArgs } from './blackboard/parse-flag-args.mts'
 
 import { BlackboardJournalError, runAppend } from './blackboard-journal/append.mts'
 import { runEntries } from './blackboard-journal/entries.mts'
@@ -18,6 +21,7 @@ function printUsage(stream: NodeJS.WritableStream = process.stderr): void {
       '[--outbox-directory <path>] --root-codex [--new-root-codex-session] [--agent codex] ' +
       '[--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]\n' +
       '       node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new-root-codex-session]]\n' +
+      '       node dev/blackboard-journal.mts outbox-status|outbox-flush [--outbox-directory <path>]\n' +
       'Note: entries --root-codex refreshes the worktree-local root identity before reading the server.\n',
   )
 }
@@ -53,6 +57,20 @@ function printReplayCommand(error: BlackboardJournalError): void {
   if (error.outboxDirectory) parts.push('--outbox-directory', shellQuote(error.outboxDirectory))
   for (const repository of error.repositories ?? [])
     parts.push('--repository', shellQuote(repository))
+  for (const [flag, value] of Object.entries(error.feedback)) {
+    const flags: Record<string, string> = {
+      mode: '--mode',
+      sourceEventId: '--source-event-id',
+      workOutcome: '--work-outcome',
+      coverageStatus: '--coverage-status',
+      droppedCount: '--dropped-count',
+      category: '--category',
+      outboxDirectory: '--outbox-directory',
+    }
+    if (flags[flag] && typeof value === 'string') parts.push(flags[flag], shellQuote(value))
+    if (flag === 'coverageSources' && Array.isArray(value))
+      for (const source of value) parts.push('--coverage-source', shellQuote(source))
+  }
   process.stderr.write(`Replay with: ${parts.join(' ')}\n`)
 }
 
@@ -68,6 +86,19 @@ async function main(): Promise<void> {
     (rest[0] === '-h' || rest[0] === '--help')
   ) {
     printUsage(process.stdout)
+    return
+  }
+  if (subcommand === 'outbox-status' || subcommand === 'outbox-flush') {
+    const { parsed, positional } = parseFlagArgs<{ directory?: string }>(rest, {
+      '--outbox-directory': 'directory',
+    })
+    if (positional.length) throw new Error('outbox commands do not accept positional arguments')
+    const directory = parsed.directory ?? join(process.cwd(), '.local', 'blackboard-outbox')
+    const result =
+      subcommand === 'outbox-status'
+        ? await feedbackOutboxStatus(directory)
+        : await flushFeedbackOutbox({ directory })
+    process.stdout.write(`${JSON.stringify(result)}\n`)
     return
   }
   if (subcommand === 'entries') {

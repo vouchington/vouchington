@@ -136,6 +136,10 @@ that exit is 0, so read the JSON status. See
 [docs/development/agent-blackboard.md](../docs/development/agent-blackboard.md) for bringing the
 stack up.
 
+`node dev/retrospective-save.mts compose --input <json-file>` assembles routine facts and markers,
+including validated work outcome and coverage front matter. `save --mode interactive|autonomous --file <path>`
+preserves that metadata and rejects contradictory explicit outcome or coverage flags.
+
 ### Read-only helpers
 
 | Command                                                                                                  | Scope and output                                                                                                                                                                                                                                                                        |

@@ -1,3 +1,4 @@
+import { UNASSESSED_RETROSPECTIVE_SECTIONS } from '../test-helpers/blackboard/retrospective-sections.mts'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -7,8 +8,8 @@ import { validateRetroDoc } from '../retrospective-validate.mts'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
-// Byte-identical to the step-0 UAT baseline fixtures (already run through the
-// real, extracted has_valid_ci_failure_section awk — exit 0) so this test
+// CI grammar from the step-0 UAT baseline fixtures (already run through the
+// real, extracted has_valid_ci_failure_section awk — exit 0), extended with current assessments. This test
 // proves the TypeScript port agrees with the original on a known-good doc,
 // not just on cases invented alongside the port.
 const VALID_RETRO = `---
@@ -48,6 +49,8 @@ Sample body for baseline schema validation only.
 ## Skill Evaluation
 
 Sample body for baseline schema validation only.
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
 
 // Same doc, but Status: none observed with a failure group still present —
@@ -102,6 +105,8 @@ describe('validateRetroDoc', () => {
 ## CI Failures
 
 Status: none observed
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
     expect(validateRetroDoc(doc)).toEqual({ ok: true, errors: [] })
   })
@@ -118,6 +123,8 @@ Status: none observed
 ## CI Failures
 
 Status: unavailable (no CI configured for this repository)
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
     expect(validateRetroDoc(doc)).toEqual({ ok: true, errors: [] })
   })
@@ -182,6 +189,8 @@ Status: none observed
 ## CI Failures
 
 Status: none observed
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
     const result = validateRetroDoc(doc)
     expect(result.ok).toBe(false)
@@ -215,6 +224,8 @@ no status line here
 
 Status: none observed
 Status: none observed
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `
     const result = validateRetroDoc(doc)
     expect(result.ok).toBe(false)

@@ -111,12 +111,12 @@ investigated and rejected for #7669, for three reasons:
    `restore`/`clean`/`tag`/`worktree`/`gc`/`reflog`/…). Missing one silently drops it into the
    sandbox, where it can fail unexpectedly (e.g. a write to the shared `.git/objects` store outside
    the worktree).
-3. **Reintroduces E2BIG friction.** The sandbox profile grows with every registered git worktree
+3. **Historical E2BIG friction.** The sandbox profile grows with every registered git worktree
    (each contributes deny-paths). Once large enough, even read-only commands hit the OS `E2BIG`
    argument-list limit and are forced to escalate anyway — see
    [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#why-frequency-isnt-the-signal).
-   Blanket `git *` avoids this entirely today; sandboxing read-only git would reintroduce it as the
-   dominant escalation driver the audit tool already tracks.
+   This historical mechanism needs current diagnostics before it explains a new failure;
+   escalation counts alone do not establish a dominant driver.
 
 Net: narrower git benefits almost nothing here and costs real reliability. `git *` stays excluded.
 
@@ -290,6 +290,16 @@ OS sandbox for that command. `./dev/reset-worktree` runs the same check after `g
 before teardown or `checkout -B`.
 Grok and Cursor writable roots are unchanged. `git rebase --abort` stays allowed so a dirty rebase
 can still be left.
+
+## Feedback evidence boundary
+
+Report consequential tool and sandbox outcomes through the supported Blackboard writer before
+issue filing. Record the command boundary, sanitized diagnostic, work outcome, and evidence coverage
+separately. A refusal, missing credential, network error, Git write denial, and `E2BIG` require
+different remedies; frequency alone does not justify broadening bypasses. Automatic hooks remain
+local-only. The trusted autonomous controller owns hosted admission and terminal delivery, with its
+credential outside agent and repository-hook environments. See
+[the delivery contract](agent-blackboard.md#autonomous-admission-and-terminal-feedback).
 
 ## See also
 

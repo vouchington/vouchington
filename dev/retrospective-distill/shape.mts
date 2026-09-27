@@ -1,4 +1,6 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { Session, SessionEntry } from 'agent-blackboard'
+import { validateFeedbackEnvelope } from 'vouchington-tooling/agent-blackboard'
 
 import { isCheckpointEntry } from '../journal-checkpoint/checkpoint-entry.mts'
 import { isRetrospectiveEntry } from '../retrospective-save/retrospective-entry.mts'
@@ -24,6 +26,8 @@ export type SessionClassification = {
   sessionId: string
   shape: SessionShape
   eligible: boolean
+  quarantine?: { entryCount: number; reasons: string[] }
+  duplicateEntryCount?: number
 }
 
 export type DistillCutoffs = {
@@ -31,8 +35,21 @@ export type DistillCutoffs = {
   sessionCutoff: string
 }
 
+function quarantineReason(entry: SessionEntry): string | undefined {
+  if (entry.data.type !== 'journal' && entry.data.type !== 'retrospective')
+    return 'unknown-entry-type'
+  if (entry.data.schemaVersion !== undefined) {
+    try {
+      validateFeedbackEnvelope(entry.data)
+    } catch {
+      return 'invalid-feedback-envelope'
+    }
+  }
+  return undefined
+}
+
 function hasUnresolvedType(entry: SessionEntry): boolean {
-  return entry.data.type !== 'journal' && !isRetrospectiveEntry(entry)
+  return quarantineReason(entry) !== undefined
 }
 
 function classifyShape(session: Session, entries: SessionEntry[]): SessionShape {
@@ -41,9 +58,9 @@ function classifyShape(session: Session, entries: SessionEntry[]): SessionShape 
   if (entries.length === 0) {
     // Loose equality on purpose: a partition record missing `parentSessionId` entirely (this
     // reader trusts the file on disk and does not re-validate every field against the Session
-    // interface — see partition-records.mts) must fall to zero-entry-root, the bucket
-    // distilling.md treats as a genuine abort signal, never to zero-entry-child, the bucket it
-    // treats as expected routine noise. `=== null` would silently misroute `undefined` into the
+    // interface — see partition-records.mts) must fall to zero-entry-root. This is a
+    // topology and capture-gap signal, never evidence of crash or clean completion.
+    // `=== null` would silently misroute `undefined` into the
     // wrong, discarded bucket.
     return session.parentSessionId == null ? 'zero-entry-root' : 'zero-entry-child'
   }
@@ -78,11 +95,55 @@ function isEligible(
   return staleRetro || staleSession
 }
 
+function normalizeSourceEvents(entries: SessionEntry[]) {
+  const events = new Map<string, SessionEntry>()
+  const unique: SessionEntry[] = []
+  let duplicateEntryCount = 0
+  let conflictCount = 0
+  for (const entry of entries) {
+    if (entry.data.schemaVersion !== 1 || quarantineReason(entry) !== undefined) {
+      unique.push(entry)
+      continue
+    }
+    const key = `${entry.sessionId}:${entry.data.sourceEventId}`
+    const existing = events.get(key)
+    if (!existing) {
+      events.set(key, entry)
+      unique.push(entry)
+      continue
+    }
+    if (!isDeepStrictEqual(existing.data, entry.data)) {
+      conflictCount++
+      continue
+    }
+    duplicateEntryCount++
+    // At-least-once replay does not postpone a source event's distillation age.
+    if (Date.parse(entry.createdAt) < Date.parse(existing.createdAt)) {
+      unique[unique.indexOf(existing)] = entry
+      events.set(key, entry)
+    }
+  }
+  return { unique, duplicateEntryCount, conflictCount }
+}
+
 export function classifySession(
   session: Session,
   entries: SessionEntry[],
   cutoffs: DistillCutoffs,
 ): SessionClassification {
-  const shape = classifyShape(session, entries)
-  return { sessionId: session.id, shape, eligible: isEligible(session, entries, shape, cutoffs) }
+  const { unique, duplicateEntryCount, conflictCount } = normalizeSourceEvents(entries)
+  const shape = conflictCount ? 'entry-type-unresolved' : classifyShape(session, unique)
+  const reasons = entries
+    .map(quarantineReason)
+    .filter((reason): reason is string => reason !== undefined)
+  for (let index = 0; index < conflictCount; index++) reasons.push('conflicting-source-event')
+  return {
+    sessionId: session.id,
+    shape,
+    eligible: isEligible(session, unique, shape, cutoffs),
+    ...(duplicateEntryCount ? { duplicateEntryCount } : {}),
+    ...(reasons.length === 0
+      ? {}
+      : { quarantine: { entryCount: reasons.length, reasons: [...new Set(reasons)].sort() } }),
+  }
 }

@@ -1,19 +1,33 @@
 import { isUtf8 } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
-import { appendEntry, getEntries } from '../blackboard/entries.mts'
-import type { BlackboardEntriesClient, BlackboardSessionsClient } from '../blackboard/client.mts'
+import {
+  writeFeedback,
+  type BlackboardClientDependencies,
+} from 'vouchington-tooling/agent-blackboard'
+
+import {
+  FEEDBACK_FLAGS,
+  feedbackMode,
+  feedbackOutcome,
+  feedbackCoverage,
+  feedbackResult,
+  type FeedbackArgs,
+} from '../blackboard/feedback-options.mts'
+
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
-import { connectAndEnsureSession } from '../blackboard/sessions.mts'
 import {
   requireBlackboardIdentity,
   validateRootCodexOptions,
 } from '../agent-session-id/resolve.mts'
 import { validateRetroDoc } from '../retrospective-validate.mts'
 import { parseFrontMatter } from './front-matter.mts'
-import { isRetrospectiveEntry, RETROSPECTIVE_ENTRY_TYPE } from './retrospective-entry.mts'
+import { retrospectiveEnvelope } from './feedback-metadata.mts'
 
-type ParsedArgs = {
+type ParsedArgs = FeedbackArgs & {
+  timestamp?: string
+  repositories?: string[]
   stagedFile?: string
   sessionIdArg?: string
   parentSessionId?: string
@@ -24,6 +38,9 @@ type ParsedArgs = {
 }
 
 const FLAG_KEYS: Record<string, FlagKey<ParsedArgs>> = {
+  ...FEEDBACK_FLAGS,
+  '--timestamp': 'timestamp',
+  '--repository': { key: 'repositories', type: 'repeatable' },
   '--file': 'stagedFile',
   '--session-id': 'sessionIdArg',
   '--parent-session-id': 'parentSessionId',
@@ -52,6 +69,7 @@ export class RetrospectiveSaveError extends Error {
   readonly newRootCodexSession?: boolean
   readonly rootCodex?: boolean
   readonly version?: string
+  readonly feedback: ParsedArgs
 
   constructor(message: string, info: ParsedArgs, cause?: unknown) {
     super(message, { cause })
@@ -63,6 +81,7 @@ export class RetrospectiveSaveError extends Error {
     this.newRootCodexSession = info.newRootCodexSession
     this.rootCodex = info.rootCodex
     this.version = info.version
+    this.feedback = info
   }
 }
 
@@ -74,16 +93,11 @@ async function readAndValidateDoc(stagedFile: string): Promise<string> {
   return buffer.toString('utf8')
 }
 
-// No filesystem fallback: assemble -> validate -> append -> read-back all happen
-// here. Any failure past arg-parsing hard-fails as a RetrospectiveSaveError, never
-// falls back to writing the doc anywhere else.
+// Content validation precedes the shared delivery boundary in either execution mode.
 export async function runSave(
   argv: string[],
   env: NodeJS.ProcessEnv = process.env,
-  clients: {
-    sessions?: BlackboardSessionsClient
-    entries?: BlackboardEntriesClient
-  } = {},
+  dependencies: BlackboardClientDependencies = {},
   cwd = process.cwd(),
 ): Promise<string> {
   const parsed = parseArgs(argv)
@@ -98,7 +112,13 @@ export async function runSave(
     if (!validation.ok) {
       throw new Error(`retrospective doc failed validation:\n- ${validation.errors.join('\n- ')}`)
     }
-    const { date, issues, prs, sessionId: stagedSessionId } = parseFrontMatter(markdown)
+    const {
+      date,
+      issues,
+      prs,
+      sessionId: stagedSessionId,
+      feedbackMetadata,
+    } = parseFrontMatter(markdown)
     const { agent, sessionId } = requireBlackboardIdentity({
       agentArg: parsed.agent,
       cwd,
@@ -124,43 +144,50 @@ export async function runSave(
       )
     }
 
-    const connection = await connectAndEnsureSession({
-      env,
-      sessionId,
-      parentSessionId: parsed.parentSessionId ?? null,
-      agent,
-      version: parsed.version ?? 'unknown',
-      sessions: clients.sessions,
-    })
-
-    const existing = await getEntries({ sessionId, connection, entries: clients.entries })
-    const existingRetro = existing.find(isRetrospectiveEntry)
-    if (existingRetro) {
-      return (
-        `Retrospective already saved for agent-blackboard session ${sessionId} ` +
-        `(entry created at ${existingRetro.createdAt}); skipping duplicate append.`
-      )
-    }
-
-    const entry = await appendEntry({
-      sessionId,
-      data: { type: RETROSPECTIVE_ENTRY_TYPE, markdown, issues, prs, date },
-      connection,
-      entries: clients.entries,
-    })
-
-    const confirmed = await getEntries({ sessionId, connection, entries: clients.entries })
-    const persisted = confirmed.some(
-      candidate => isRetrospectiveEntry(candidate) && candidate.createdAt === entry.createdAt,
+    const mode = feedbackMode(parsed.mode)
+    if (mode === 'autonomous' && parsed.outboxDirectory)
+      throw new Error('autonomous delivery cannot use an interactive outbox')
+    const sourceEventId = parsed.sourceEventId ?? `retrospective-${sessionId}`
+    const timestamp = parsed.timestamp ?? `${date}T00:00:00.000Z`
+    replayInfo = { ...replayInfo, sourceEventId, timestamp }
+    const envelope = retrospectiveEnvelope(
+      {
+        schemaVersion: 1,
+        type: 'retrospective',
+        sourceEventId,
+        timestamp,
+        markdown,
+        repositories: parsed.repositories ?? ['vouchington/vouchington'],
+        workOutcome: feedbackMetadata
+          ? feedbackMetadata.workOutcome
+          : feedbackOutcome(parsed.workOutcome, false),
+        feedbackCoverage: feedbackMetadata
+          ? feedbackMetadata.feedbackCoverage
+          : feedbackCoverage(parsed),
+        ...(parsed.category === undefined ? {} : { category: parsed.category }),
+        date,
+        issues,
+        prs,
+      },
+      parsed,
     )
-    if (!persisted) {
-      throw new Error(
-        `saved retrospective failed read-back verification ` +
-          `(entry created at ${entry.createdAt} not found on re-read)`,
-      )
-    }
-
-    return `Saved retrospective to agent-blackboard session ${sessionId} (entry created at ${entry.createdAt}).`
+    return feedbackResult(
+      await writeFeedback({
+        env,
+        identity: {
+          sessionId,
+          parentSessionId: parsed.parentSessionId ?? null,
+          agent,
+          version: parsed.version ?? 'unknown',
+        },
+        envelope,
+        mode,
+        ...(mode === 'interactive'
+          ? { outboxDirectory: parsed.outboxDirectory ?? join(cwd, '.local', 'blackboard-outbox') }
+          : {}),
+        dependencies,
+      }),
+    )
   } catch (error) {
     throw new RetrospectiveSaveError(
       error instanceof Error ? error.message : String(error),
