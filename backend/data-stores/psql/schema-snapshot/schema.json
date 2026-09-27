@@ -59411,7 +59411,7 @@
         "chk_post_classifier_applications__remote_failure": "CHECK ((((terminal_remote_failure_kind IS NULL) = (terminal_remote_failed_at IS NULL)) AND ((terminal_remote_failed_at IS NULL) OR ((decision_batch_id IS NOT NULL) AND (outcomes_persisted_at IS NULL)))))",
         "chk_post_classifier_applications__superseded_lease": "CHECK (((superseded_at IS NULL) OR (lease_token IS NULL)))",
         "post_classifier_applications_check": "CHECK (((octet_length(configuration_sha256) = 32) AND (configuration_sha256 = digest((configuration_json)::text, 'sha256'::text))))",
-        "post_classifier_applications_configuration_json_check": "CHECK ((json_typeof(configuration_json) = 'object'::text))",
+        "post_classifier_applications_configuration_json_check": "CHECK ((jsonb_typeof(configuration_json) = 'object'::text))",
         "post_classifier_applications_detector_package_version_check": "CHECK ((btrim(detector_package_version) <> ''::text))",
         "post_classifier_applications_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
         "post_classifier_applications_local_classification_check": "CHECK ((local_classification = ANY (ARRAY['ai'::text, 'human'::text])))",
@@ -59432,7 +59432,7 @@
         },
         "completed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time all durable effects completed atomically and the exclusive claim was released.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59443,18 +59443,18 @@
         },
         "configuration_json": {
           "collation": null,
-          "comment": "Exact canonical ordered replay envelope; relational facts are materialized in sibling typed columns.",
+          "comment": "PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4,
-          "type": "json"
+          "type": "jsonb"
         },
         "configuration_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59509,7 +59509,7 @@
         },
         "input_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Approved post content digest used to fence stale classification effects.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59520,7 +59520,7 @@
         },
         "lease_expires_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Deadline after which another worker may replace the current claim.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59531,7 +59531,7 @@
         },
         "lease_token": {
           "collation": null,
-          "comment": null,
+          "comment": "Opaque fencing token for the current exclusive claimant; rotated on transfer and unrelated to any durable entity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59542,7 +59542,7 @@
         },
         "leased_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Start of the current exclusive application claim.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59553,7 +59553,7 @@
         },
         "local_classification": {
           "collation": null,
-          "comment": null,
+          "comment": "Local detector classification of the content as AI-generated or human-written.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59564,7 +59564,7 @@
         },
         "local_confidence_score": {
           "collation": null,
-          "comment": null,
+          "comment": "Local detector confidence, bounded to the inclusive zero-to-one interval.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59575,7 +59575,7 @@
         },
         "local_confidence_threshold": {
           "collation": null,
-          "comment": null,
+          "comment": "Pinned local detector confidence boundary used for this decision.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59586,7 +59586,7 @@
         },
         "local_detector": {
           "collation": null,
-          "comment": null,
+          "comment": "Local detector identifier retained with its complete outcome.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59597,7 +59597,7 @@
         },
         "local_detector_model_version": {
           "collation": null,
-          "comment": null,
+          "comment": "Local detector model version returned with this outcome.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59608,7 +59608,7 @@
         },
         "local_flagged": {
           "collation": null,
-          "comment": null,
+          "comment": "Existing local detector decision retained unchanged for retry-safe topic application.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59619,7 +59619,7 @@
         },
         "local_reason": {
           "collation": null,
-          "comment": null,
+          "comment": "Explanation returned by the local AI-generated detector.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59641,7 +59641,7 @@
         },
         "outcomes_persisted_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time the complete configured outcomes became durable and eligible for effect application.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59652,7 +59652,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Post whose approved content is classified; deleting the post removes its application receipts.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59674,7 +59674,7 @@
         },
         "shared_actor_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Shared classifier system user attributing automatic topic votes and tags.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59696,7 +59696,7 @@
         },
         "tags_applied_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Monotone marker that classifier tags were applied after topic votes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59707,7 +59707,7 @@
         },
         "terminal_remote_failed_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Time remote classification became terminal for this content and configuration identity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59718,7 +59718,7 @@
         },
         "terminal_remote_failure_kind": {
           "collation": null,
-          "comment": null,
+          "comment": "Durable reason remote classification stopped without a complete valid decision.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59740,7 +59740,7 @@
         },
         "votes_applied_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Monotone marker that configured classifier topic votes were applied.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
