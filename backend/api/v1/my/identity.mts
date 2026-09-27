@@ -6,11 +6,13 @@ import { isOfficialAccount } from '@services/users/authorization'
 import { getUserPrivateByAnyCached } from '@services/entity-fetch'
 import {
   listEmailAddressesPage,
-  createEmailVerificationToken,
-  verifyEmailVerificationToken,
   setPrimaryEmailAddress,
   removeEmailAddress,
 } from '@services/my/email-addresses'
+import {
+  createEmailVerificationToken,
+  verifyEmailVerificationToken,
+} from '@services/my/email-address-verification'
 import { updateUserFields } from '@services/users/update-fields'
 import type { UpdateUserOptions } from '@services/users/types'
 import { enqueueSendEmailVerificationToken } from '@queues/emails/enqueues'

@@ -16,7 +16,7 @@ import { refreshSessionState } from './flows.mts'
 import { applyHotWarmCold } from './hot-warm-cold.mts'
 import { revokeSession } from './revocation.mts'
 import { markJwtStale } from './invalidation.mts'
-import { revokeAllAuthenticatedSessions } from './user-sessions.mts'
+import { revokeAllAuthenticatedSessions } from './user-session-revocation.mts'
 import { revokeUserSessionsBefore } from './session-revocation-keys.mts'
 
 describe('flows warm and cold paths', () => {

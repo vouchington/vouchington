@@ -14,7 +14,7 @@ import {
   getJwtUserRevokedBeforeKey,
 } from './constants.mts'
 import { REVOCATION_EXPIRATION_SECONDS } from './session-revocation-keys.mts'
-import { revokeSession } from './user-sessions.mts'
+import { revokeSession } from './user-session-revocation.mts'
 
 // Production PostgreSQL statements are bounded at 30s. Cleanup and its following registry write
 // can run serially, so the lease exceeds both bounds with room for the Valkey operations.

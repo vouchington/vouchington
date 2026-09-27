@@ -1,9 +1,9 @@
 import { Batch } from '@valkey/valkey-glide'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
-import { revokeSession } from './user-sessions.mts'
+import { revokeSession } from './user-session-revocation.mts'
 
-export { revokeSession } from './user-sessions.mts'
+export { revokeSession } from './user-session-revocation.mts'
 
 /**
  * Revoke a session by session ID. Called on logout.
