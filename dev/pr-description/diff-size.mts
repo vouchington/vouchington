@@ -3,9 +3,10 @@
  * `.agents/skills/agent-workflow/git-and-prs.md`. Dependency, not size, decides whether that
  * split is a native GitHub stack or independent PRs against `main`; this only forces the split
  * decision to be made consciously instead of skipped by default. Deletion-heavy retirement work
- * can remain coherent at a larger limit. Deliberately no exclusion list for lockfiles or generated
- * files — filtering the count would make the thresholds unfalsifiable. The
- * `--acknowledge-large-diff` escape hatch covers a genuinely atomic large diff instead.
+ * can remain coherent at a larger limit. Counts include generated files so the full diff stays
+ * visible. The workflow's standing CI-generated schema snapshot exception uses
+ * `--acknowledge-large-diff` without another approval when the remaining diff fits the budgets.
+ * Other genuinely atomic large diffs also use that explicit acknowledgement.
  */
 export const LARGE_DIFF_ADDED_LINE_THRESHOLD = 5000
 export const LARGE_DIFF_DELETED_LINE_THRESHOLD = 20_000
@@ -53,6 +54,8 @@ export function formatLargeDiffRefusal(changes: DiffLineChanges): string {
     'independently, split it into a native GitHub stack (.agents/skills/stacked-prs/SKILL.md); ' +
     'if they can land in any order, open separate PRs targeting main instead.\n' +
     'If this PR is genuinely atomic (a lockfile bump, a generated-file refresh) and splitting ' +
-    'would not help, rerun create with --acknowledge-large-diff to proceed anyway.\n'
+    'would not help, rerun create with --acknowledge-large-diff to proceed anyway.\n' +
+    'Apply the standing generated-schema-snapshot exception in the workflow without asking ' +
+    'for another size approval; the handwritten diff must still fit the budgets.\n'
   )
 }
