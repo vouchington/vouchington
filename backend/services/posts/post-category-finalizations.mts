@@ -73,6 +73,7 @@ export async function persistPostCategoryFinalization(
           UNION
           SELECT topic_id FROM post_data_point_topics WHERE post_id = $1
         ) persisted_topics
+        ORDER BY $1 ASC NULLS LAST, topic_id ASC NULLS LAST
         ON CONFLICT (post_id, topic_id) DO NOTHING`,
         [postId],
       )
