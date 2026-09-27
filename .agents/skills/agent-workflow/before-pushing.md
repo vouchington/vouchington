@@ -33,7 +33,7 @@ When CI fails, fix the underlying issue and push again. Do not classify a repeat
 
 Knip owns unused dependency detection and participates in unused export detection for the workspace; the replacement must be proven with a failing fixture or CI check. Knip's `duplicates` issue type is narrower than project-wide export-name uniqueness: it catches duplicate or alias export declarations, not every repeated export name across a project.
 
-Changing `package.json` also requires `pnpm run syncpack:lint && pnpm run no-mistakes` (auto-fix Syncpack with `pnpm run syncpack:fix`) and committing the matching `pnpm-lock.yaml` changes.
+Changing `package.json` also requires `pnpm run syncpack:lint && pnpm run no-mistakes` (auto-fix Syncpack with `pnpm run syncpack:fix`). Commit a `pnpm-lock.yaml` diff only under the lockfile rule in [the package.json checklist](../../../docs/checklists/package-json.md).
 
 See [docs/checklists/commit.md](../../../docs/checklists/commit.md) for the pre-commit checklist (format, lint, message, file size) and the [git-commit-checklist skill](../git-commit-checklist/SKILL.md) for the skill entry point. For `package.json` changes see the [package-json-checklist skill](../package-json-checklist/SKILL.md).
 
