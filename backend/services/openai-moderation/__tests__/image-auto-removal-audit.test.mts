@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { getModeratorActionRowsForTest } from '@voucha/test-helpers/sql-state'
+import { getModeratorActionRowsForTest } from '@voucha/test-helpers/sql-moderation'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
 import { insertTestImage, insertTestPostImage } from '@voucha/test-helpers/entities/images'
