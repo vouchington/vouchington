@@ -149,13 +149,3 @@ test.describe('Create Pages — Articles and Blog', () => {
     await expect(page.getByTestId('post-form')).toBeVisible()
   })
 })
-
-test.describe('OAuth Button — Facebook', () => {
-  test('Facebook login button is hidden until runtime public config enables it', async ({
-    page,
-  }) => {
-    await navigateTo(page, '/login')
-
-    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeHidden()
-  })
-})

@@ -149,6 +149,7 @@ describe('web SEO tests', () => {
 
     it('user landing pages expose the expected public metadata', async () => {
       const result = await client.loadPage(`/@${TEST_USER_USERNAME}`, 'seo-user-landing-default')
+      expect(result.response.status).toBe(200)
       const document = parseHtml(result.html, result.response.url)
 
       expect(document.body.textContent).toContain('Test landing page')
@@ -162,6 +163,7 @@ describe('web SEO tests', () => {
         `/@${TEST_USER_USERNAME}/bonus`,
         'seo-user-landing-slug',
       )
+      expect(slugResult.response.status).toBe(200)
       expect(parseHtml(slugResult.html, slugResult.response.url).body.textContent).toContain(
         'Bonus page',
       )

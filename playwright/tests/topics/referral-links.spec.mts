@@ -17,7 +17,6 @@ const REFERRAL_PROGRAM = {
 
 const CARD_TOPIC = {
   id: '019c64e6-f710-74cb-b36d-130af8ff1067',
-  slug: 'card',
 }
 
 const UNLINKED_TOPIC = {
@@ -39,14 +38,14 @@ test.describe('Referral Links Tab', () => {
   })
 
   test('referral links tab loads for referral program topic', async ({ page }) => {
-    await navigateTo(page, `/${REFERRAL_PROGRAM.slug}/${REFERRAL_PROGRAM.id}/referral-links`)
+    await navigateTo(page, `/referral-program/${REFERRAL_PROGRAM.id}/referral-links`)
 
     await expect(page.getByTestId('referral-links-page-heading')).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`/${REFERRAL_PROGRAM.slug}/.+/referral-links`))
   })
 
   test('referral links tab loads for card topic linked to referral program', async ({ page }) => {
-    await navigateTo(page, `/${CARD_TOPIC.slug}/${CARD_TOPIC.id}/referral-links`)
+    await navigateTo(page, `/card/${CARD_TOPIC.id}/referral-links`)
     await expect(page.getByTestId('referral-links-page-heading')).toBeVisible()
   })
 
@@ -56,7 +55,7 @@ test.describe('Referral Links Tab', () => {
   })
 
   test('aside appears on referral program topic page', async ({ page }) => {
-    await navigateTo(page, `/${REFERRAL_PROGRAM.slug}/${REFERRAL_PROGRAM.id}/discussions`)
+    await navigateTo(page, `/referral-program/${REFERRAL_PROGRAM.id}/discussions`)
 
     const aside = page.getByTestId('referral-links-aside-heading')
     await expect(aside).toBeVisible()
@@ -66,7 +65,7 @@ test.describe('Referral Links Tab', () => {
   })
 
   test('logged-in user sees add form', async ({ page }) => {
-    await navigateTo(page, `/${REFERRAL_PROGRAM.slug}/${REFERRAL_PROGRAM.id}/referral-links`)
+    await navigateTo(page, `/referral-program/${REFERRAL_PROGRAM.id}/referral-links`)
 
     const formHeading = page.getByTestId('referral-link-form-heading')
     await expect(formHeading).toBeVisible()
@@ -80,7 +79,7 @@ test.describe('Referral Links Tab', () => {
 
   test('signed-out user does not see add form', async ({ page }) => {
     await page.context().clearCookies()
-    await navigateTo(page, `/${REFERRAL_PROGRAM.slug}/${REFERRAL_PROGRAM.id}/referral-links`)
+    await navigateTo(page, `/referral-program/${REFERRAL_PROGRAM.id}/referral-links`)
 
     await expect(page.getByTestId('referral-links-page-heading')).toBeVisible()
 
@@ -94,14 +93,14 @@ test.describe('Referral Links Tab', () => {
   test('Show All button is visible on referral links page for logged-in users', async ({
     page,
   }) => {
-    await navigateTo(page, `/${REFERRAL_PROGRAM.slug}/${REFERRAL_PROGRAM.id}/referral-links`)
+    await navigateTo(page, `/referral-program/${REFERRAL_PROGRAM.id}/referral-links`)
 
     const showAllButton = page.getByTestId('referral-links-show-all')
     await expect(showAllButton).toBeVisible()
   })
 
   test('Show All button loads full list when clicked', async ({ page }) => {
-    await navigateTo(page, `/${REFERRAL_PROGRAM.slug}/${REFERRAL_PROGRAM.id}/referral-links`)
+    await navigateTo(page, `/referral-program/${REFERRAL_PROGRAM.id}/referral-links`)
 
     const showAllButton = page.getByTestId('referral-links-show-all')
     await showAllButton.scrollIntoViewIfNeeded()

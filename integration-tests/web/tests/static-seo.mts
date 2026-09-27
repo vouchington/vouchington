@@ -25,6 +25,54 @@ describe('web static SEO tests', () => {
   })
 
   describe('static SEO routes and link contracts', () => {
+    it('health page exposes the readiness response', async () => {
+      const result = await client.loadPage('/healthz', 'route-healthz')
+      expect(result.response.status).toBe(200)
+      expect(
+        Array.from(
+          parseHtml(result.html, result.response.url).querySelectorAll('span'),
+          span => span.textContent,
+        ),
+      ).toContain('ok')
+    })
+
+    it('counter-notice information states the statutory requirements', async () => {
+      const result = await client.loadPage('/copyright/counter-notice', 'route-counter-notice')
+      const document = parseHtml(result.html, result.response.url)
+      expect(result.response.status).toBe(200)
+      expect(document.querySelector('h1')?.textContent).toBe('Counter-notice and restoration')
+      expect(document.body.textContent).toContain('consent to federal jurisdiction')
+      expect(document.body.textContent).toContain(
+        'qualifying court or Copyright Claims Board notice',
+      )
+      expect(document.querySelector('main a[href="/copyright"]')?.textContent).toBe(
+        'Copyright policy',
+      )
+    })
+
+    it('designated-agent information keeps the unregistered program explicit', async () => {
+      const result = await client.loadPage('/copyright/designated-agent', 'route-designated-agent')
+      const document = parseHtml(result.html, result.response.url)
+      expect(result.response.status).toBe(200)
+      expect(document.querySelector('h1')?.textContent).toBe('Designated agent status')
+      expect(document.body.textContent).toContain('not yet registered')
+      expect(document.body.textContent).toContain('Do not send a statutory DMCA notice')
+    })
+
+    it('repeat-infringer policy retains human review and disabled intake', async () => {
+      const result = await client.loadPage(
+        '/copyright/repeat-infringer-policy',
+        'route-repeat-infringer',
+      )
+      const document = parseHtml(result.html, result.response.url)
+      expect(result.response.status).toBe(200)
+      expect(document.querySelector('h1')?.textContent).toBe('Repeat-infringer policy')
+      expect(document.body.textContent).toContain('Copyright intake stays off')
+      expect(document.body.textContent).toContain(
+        'A notice count does not suspend or delete an account',
+      )
+      expect(document.querySelectorAll('main li')).toHaveLength(5)
+    })
     it('robots.txt contains required directives', async () => {
       const response = await client.request('/robots.txt')
       const body = await response.text()

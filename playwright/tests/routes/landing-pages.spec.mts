@@ -6,8 +6,7 @@ import { requireTestValue } from '../../helpers/assertions.mts'
 
 test.describe('Landing pages', () => {
   test('renders the default public landing page', async ({ page }) => {
-    const response = await page.goto(`/@${TEST_USER_USERNAME}`)
-    expect(response?.status()).toBe(200)
+    await navigateTo(page, `/@${TEST_USER_USERNAME}`)
 
     await expect(page.getByTestId('landing-page-title')).toContainText('Test landing page')
     await expect(page.getByTestId('landing-page-profile-link')).toContainText('Test profile link')
@@ -20,8 +19,7 @@ test.describe('Landing pages', () => {
   })
 
   test('renders the slug landing page', async ({ page }) => {
-    const response = await page.goto(`/@${TEST_USER_USERNAME}/bonus`)
-    expect(response?.status()).toBe(200)
+    await navigateTo(page, `/@${TEST_USER_USERNAME}/bonus`)
 
     await expect(page.getByTestId('landing-page-title')).toContainText('Bonus page')
     await expect(page.getByTestId('landing-page-referral-link')).toContainText(

@@ -7,20 +7,17 @@ import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 
 // Seeded topic for read-only tests
 const SEEDED_TOPIC_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'
-const SEEDED_TOPIC_TYPE = 'card'
 
 test.describe('Topic Aliases', () => {
   test.use({ storageState: AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   let topicId: string
-  let topicType: string
 
   test.beforeAll(async () => {
     const suffix = randomSuffix()
     const topic = await insertTestTopic(`Alias Test Topic ${suffix}`, `alias-test-topic-${suffix}`)
     topicId = topic.id
-    topicType = topic.urlSlug
   })
 
   test('should redirect unauthenticated users to home for aliases search', async ({ page }) => {
@@ -39,7 +36,7 @@ test.describe('Topic Aliases', () => {
   test('should search aliases and show results', async ({ page }) => {
     const alias = `pw-alias-search-${randomSuffix()}`
 
-    await navigateTo(page, `/${topicType}/${topicId}/settings/aliases`)
+    await navigateTo(page, `/topic/${topicId}/settings/aliases`)
     const aliasesInput = page.getByTestId('aliases-input')
     await aliasesInput.scrollIntoViewIfNeeded()
     await waitForBelowFoldHydration(page)
@@ -73,12 +70,12 @@ test.describe('Topic Aliases', () => {
 
   test('should redirect unauthenticated users to home for topic aliases page', async ({ page }) => {
     await page.context().clearCookies()
-    await navigateTo(page, `/${SEEDED_TOPIC_TYPE}/${SEEDED_TOPIC_ID}/settings/aliases`)
+    await navigateTo(page, `/card/${SEEDED_TOPIC_ID}/settings/aliases`)
     await expect(page).toHaveURL('/')
   })
 
   test('should allow admin to view topic aliases page', async ({ page }) => {
-    await navigateTo(page, `/${SEEDED_TOPIC_TYPE}/${SEEDED_TOPIC_ID}/settings/aliases`)
+    await navigateTo(page, `/card/${SEEDED_TOPIC_ID}/settings/aliases`)
 
     await expect(page.getByTestId('current-aliases-heading')).toContainText('Current Aliases')
     // Scope to breadcrumb nav to avoid strict mode violation (topic name appears in breadcrumb + subtitle)
@@ -89,7 +86,7 @@ test.describe('Topic Aliases', () => {
   })
 
   test('should add an alias', async ({ page }) => {
-    await navigateTo(page, `/${topicType}/${topicId}/settings/aliases`)
+    await navigateTo(page, `/topic/${topicId}/settings/aliases`)
 
     const testAlias = `pw-test-alias-add-${randomSuffix()}`
     const aliasesInput = page.getByTestId('aliases-input')
@@ -106,7 +103,7 @@ test.describe('Topic Aliases', () => {
   })
 
   test('should remove an alias', async ({ page }) => {
-    await navigateTo(page, `/${topicType}/${topicId}/settings/aliases`)
+    await navigateTo(page, `/topic/${topicId}/settings/aliases`)
 
     const testAlias = `pw-test-alias-remove-${randomSuffix()}`
     const aliasesInput = page.getByTestId('aliases-input')
@@ -131,7 +128,7 @@ test.describe('Topic Aliases', () => {
     const alias = `pw-alias-link-${randomSuffix()}`
 
     // Add an alias so it shows up in search
-    await navigateTo(page, `/${topicType}/${topicId}/settings/aliases`)
+    await navigateTo(page, `/topic/${topicId}/settings/aliases`)
     const aliasesInput = page.getByTestId('aliases-input')
     await aliasesInput.scrollIntoViewIfNeeded()
     await waitForBelowFoldHydration(page)
@@ -153,11 +150,11 @@ test.describe('Topic Aliases', () => {
     await editAliasesLink.click()
 
     // Should navigate to the topic aliases management page
-    await expect(page).toHaveURL(new RegExp(`/${topicType}/.+/settings/aliases$`))
+    await expect(page).toHaveURL(/\/topic\/.+\/settings\/aliases$/)
   })
 
   test('should show merge page with form elements', async ({ page }) => {
-    await navigateTo(page, `/${SEEDED_TOPIC_TYPE}/${SEEDED_TOPIC_ID}/settings/merge`)
+    await navigateTo(page, `/card/${SEEDED_TOPIC_ID}/settings/merge`)
 
     await expect(page.getByTestId('topic-settings-merge')).toBeVisible()
     await expect(page.getByTestId('merge-topic-confirmation-input')).toBeVisible()
@@ -167,12 +164,12 @@ test.describe('Topic Aliases', () => {
   })
 
   test('should open settings dropdown from aliases page', async ({ page }) => {
-    await navigateTo(page, `/${SEEDED_TOPIC_TYPE}/${SEEDED_TOPIC_ID}/settings/aliases`)
+    await navigateTo(page, `/card/${SEEDED_TOPIC_ID}/settings/aliases`)
 
     await page.getByTestId('topic-detail-tab-settings').click()
     await expect(page.getByTestId('settings-tab-about')).toBeVisible()
     await page.getByTestId('settings-tab-about').click()
-    await expect(page).toHaveURL(new RegExp(`/${SEEDED_TOPIC_TYPE}/.+/settings/about$`))
+    await expect(page).toHaveURL(/\/card\/.+\/settings\/about$/)
   })
 })
 

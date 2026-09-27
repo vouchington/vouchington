@@ -6,6 +6,13 @@ import { loginAsTestUser } from '../../helpers/auth.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { installTurnstileStub } from '../../helpers/turnstile-stub.mts'
 import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import type { getConfiguredOAuthProviders } from '../../../backend/services/oauth/config.mts'
+import type { getOAuthAuthorizationBrokerCapabilities } from '../../../backend/services/oauth/broker-config.mts'
+
+type OAuthProvidersResponse = {
+  providers: ReturnType<typeof getConfiguredOAuthProviders>
+  broker_capabilities: ReturnType<typeof getOAuthAuthorizationBrokerCapabilities>
+}
 
 test.describe('Login Page', () => {
   test('should render login form', async ({ page }) => {
@@ -155,7 +162,8 @@ test.describe('Login Page', () => {
 
     await expect(page.getByTestId('login-email-input')).toBeVisible()
     await expect(page.getByTestId('login-continue-with-email-button')).toBeVisible()
-    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeHidden()
+    await expect(page.getByTestId('login-verification-code-input')).toBeHidden()
+    await expect(page.getByTestId('login-code-submit-button')).toBeHidden()
     await expect(page.getByTestId('login-email-input')).toBeFocused()
   })
 
@@ -194,12 +202,33 @@ test.describe('Login Page', () => {
     await expect(page).toHaveURL('/')
   })
 
-  test('should hide Facebook login button until runtime public config enables it', async ({
+  test('shows Facebook login only when the public provider configuration enables it', async ({
     page,
   }) => {
+    const providersResponse = page.waitForResponse(
+      response => new URL(response.url()).pathname === '/api/v1/auth/oauth/providers',
+    )
     await navigateTo(page, '/login')
 
-    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeHidden()
+    const configuration: OAuthProvidersResponse = await (await providersResponse).json()
+    const hasRuntimeAppId = await page.evaluate(() => {
+      const browserWindow = window as Window & {
+        __VOUCHA_PUBLIC_CONFIG__?: { facebookAppId?: string }
+      }
+      return Boolean(browserWindow['__VOUCHA_PUBLIC_CONFIG__']?.facebookAppId)
+    })
+    const hasPublicFacebookConfiguration = [
+      hasRuntimeAppId,
+      Boolean(configuration.broker_capabilities.facebook?.modes.web),
+    ].includes(true)
+    const expectedVisible = [
+      configuration.providers.includes('facebook'),
+      hasPublicFacebookConfiguration,
+    ].every(Boolean)
+
+    await expect(page.getByTestId('oauth-provider-button-facebook')).toBeVisible({
+      visible: expectedVisible,
+    })
   })
 
   test('should logout and clear cookies', async ({ page }) => {

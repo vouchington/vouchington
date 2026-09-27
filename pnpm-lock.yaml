@@ -86,8 +86,8 @@ importers:
         specifier: ^18.4.0
         version: 18.4.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.66.0
-        version: 0.66.0(eslint@10.5.0(jiti@2.7.0))
+        specifier: ^0.67.1
+        version: 0.67.1(eslint@10.5.0(jiti@2.7.0))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.38.0
       no-mistakes:
-        specifier: ^0.66.0
-        version: 0.66.0
+        specifier: ^0.67.1
+        version: 0.67.1
       oxfmt:
         specifier: ^0.70.0
         version: 0.70.0
@@ -1505,7 +1505,7 @@ importers:
         version: 1.0.1
       supertest:
         specifier: ^7.3.0
-        version: 7.3.0
+        version: 7.3.0(supports-color@8.1.1)
 
   backend/config:
     dependencies:
@@ -2246,7 +2246,7 @@ importers:
         version: 2.0.1
       https-proxy-agent:
         specifier: ^9.1.0
-        version: 9.1.0
+        version: 9.1.0(supports-color@8.1.1)
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -10428,7 +10428,7 @@ importers:
         version: 2.2.2
       supertest:
         specifier: ^7.3.0
-        version: 7.3.0
+        version: 7.3.0(supports-color@8.1.1)
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -12464,8 +12464,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.66.0
-        version: 0.66.0
+        specifier: ^0.67.1
+        version: 0.67.1
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -12600,7 +12600,7 @@ importers:
         version: 19.3.0(react@19.3.0)
       react-email:
         specifier: ^6.11.0
-        version: 6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -12695,7 +12695,7 @@ importers:
         version: 18.0.0
       '@typescript-eslint/parser':
         specifier: ^8.70.1
-        version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))
+        version: 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))(supports-color@8.1.1)
       '@vouchington/localization':
         specifier: 0.2.0
         version: 0.2.0
@@ -12709,8 +12709,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.66.0
-        version: 0.66.0
+        specifier: ^0.67.1
+        version: 0.67.1
       oxfmt:
         specifier: ^0.70.0
         version: 0.70.0
@@ -13028,7 +13028,7 @@ importers:
         version: 10.6.0(@vitest/browser-playwright@4.1.11)(@vitest/browser@4.1.11)(@vitest/runner@4.1.11)(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vitest@4.1.11)
       '@storybook/nextjs-vite':
         specifier: ^10.6.0
-        version: 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+        version: 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -19065,8 +19065,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.66.0:
-    resolution: {integrity: sha512-jMdrWbdzV+WcPd9xLnBVwoC5kBhyVk3fkqMXUxTs6feqXVaC8GGRtAvNi6bNnAuV9G0V7ufz2NVh62ZqrO5X7w==}
+  eslint-plugin-no-mistakes@0.67.1:
+    resolution: {integrity: sha512-pOWzxJf3PEBd6XIFyegtz+zp8sZNbRPaugJxtrt1qGAnipupTXrH7kvR2K2zFWwXJsyL9VUQiGzgcB9zK5sueQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -20408,30 +20408,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.66.0:
-    resolution: {integrity: sha512-C+n0dgPbvQf2/NV8WSyQBzUupExdlm9CqkmWEYbz+tbygOF6T86ykNtDxfqIA3B0bGlKcxJTqWX/e6EzQnpTfg==}
+  no-mistakes-darwin-arm64@0.67.1:
+    resolution: {integrity: sha512-sUiPhQ7+Mn+YcQn/GrEooesaDTHiOO05pxn1UyCLBmYNILGZYEyUDMGH6I8UEwsk6wJ8vl4D2xsIci0JskKJ7A==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.66.0:
-    resolution: {integrity: sha512-gUCrbwq3RW6JZFlW9sz7xpZejvP4MBzfdWsM/0kGUpEH0McxJ/4RbH1WiBoUJP6w8+0YNqFPnHZWZfB5KntNJA==}
+  no-mistakes-linux-arm64-gnu@0.67.1:
+    resolution: {integrity: sha512-OxJlcHAudzR52QOlbzXgqJ84O4tvDJx+0ngXBlqXkaAi+9NZXkwlnVMQIqPnPwrFW5kiNPbB8STapt47TNTlVQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.66.0:
-    resolution: {integrity: sha512-rIBYuWjjXP/0r5hFMm0L76H/+0lEEDITkqZaEiAGZ//5nSPoys6+VfyV3T12QnGbWwXVpsAIfuVMfj6/PXlwGw==}
+  no-mistakes-linux-x64-gnu@0.67.1:
+    resolution: {integrity: sha512-JlfuatjcSO7zN9AQRpwEnk36mKJ1Ee3FE6tUb6ukfcGdk5efdrzhKwhLsUSh5mUZenQjjHamQPKCJOdQ0eFq7w==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.66.0:
-    resolution: {integrity: sha512-bzuB0Mx0FKBsb9lYhJC2X+is6IO47+I1wEdzkQZbNcl8MWMGOUhtN4TUO1yVCnAk526F56RuYDTNMOGBuUdD6Q==}
+  no-mistakes-win32-x64-msvc@0.67.1:
+    resolution: {integrity: sha512-zsi4J2haFDqkPEKgIqx5/Wha5rZyE72iYJfYAot7oCjtgRLmtHH89wjp4dUtGjqneXIjs8DUXk1VISOr4y4bpw==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.66.0:
-    resolution: {integrity: sha512-t1B9HAzxy6PnJUVibcT/Dp5IjfQE8OcPr2Fn3dvQWZuAgFIhRaFCRr4vba2CPrRDWKHeRB/GUGqoIiattYQDCw==}
+  no-mistakes@0.67.1:
+    resolution: {integrity: sha512-ua+9d2DtoUDEJ/yNaKBzJ5EUxneItkLexaDJPeLlsWTCEEFDMIGJoAXb3Zf8h/vQqJilFso9gLVvXCyhQ58baw==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -22907,7 +22907,7 @@ snapshots:
       '@babel/parser': 7.29.9
       '@babel/types': 7.29.8
 
-  '@babel/traverse@7.29.0':
+  '@babel/traverse@7.29.0(supports-color@8.1.1)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
@@ -26284,7 +26284,7 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  '@storybook/nextjs-vite@10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
+  '@storybook/nextjs-vite@10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))':
     dependencies:
       '@storybook/builder-vite': 10.6.0(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@storybook/react': 10.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))
@@ -26295,7 +26295,7 @@ snapshots:
       storybook: 10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       styled-jsx: 5.1.6(react@19.3.0)
       vite: 8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      vite-plugin-storybook-nextjs: 10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vite-plugin-storybook-nextjs: 10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -26727,11 +26727,11 @@ snapshots:
     dependencies:
       '@types/node': 26.6.2
 
-  '@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))':
+  '@typescript-eslint/parser@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0))(supports-color@8.1.1)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.70.1
       '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@typescript-eslint/visitor-keys': 8.70.1
       debug: 4.4.3(supports-color@8.1.1)
       eslint: 10.5.0(jiti@2.7.0)
@@ -26739,7 +26739,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/project-service@8.70.1(@typescript/typescript6@6.0.2)':
+  '@typescript-eslint/project-service@8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.70.1
@@ -26759,9 +26759,9 @@ snapshots:
 
   '@typescript-eslint/types@8.70.1': {}
 
-  '@typescript-eslint/typescript-estree@8.70.1(@typescript/typescript6@6.0.2)':
+  '@typescript-eslint/typescript-estree@8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)':
     dependencies:
-      '@typescript-eslint/project-service': 8.70.1(@typescript/typescript6@6.0.2)
+      '@typescript-eslint/project-service': 8.70.1(@typescript/typescript6@6.0.2)(supports-color@8.1.1)
       '@typescript-eslint/tsconfig-utils': 8.70.1(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.70.1
       '@typescript-eslint/visitor-keys': 8.70.1
@@ -27970,7 +27970,7 @@ snapshots:
 
   engine.io-parser@5.2.3: {}
 
-  engine.io@6.6.10:
+  engine.io@6.6.10(supports-color@8.1.1):
     dependencies:
       '@types/cors': 2.8.19
       '@types/node': 26.6.2
@@ -28094,7 +28094,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.66.0(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-no-mistakes@0.67.1(eslint@10.5.0(jiti@2.7.0)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)
 
@@ -28607,7 +28607,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@9.1.0:
+  https-proxy-agent@9.1.0(supports-color@8.1.1):
     dependencies:
       agent-base: 9.0.0
       debug: 4.4.3(supports-color@8.1.1)
@@ -29599,24 +29599,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.66.0:
+  no-mistakes-darwin-arm64@0.67.1:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.66.0:
+  no-mistakes-linux-arm64-gnu@0.67.1:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.66.0:
+  no-mistakes-linux-x64-gnu@0.67.1:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.66.0:
+  no-mistakes-win32-x64-msvc@0.67.1:
     optional: true
 
-  no-mistakes@0.66.0:
+  no-mistakes@0.67.1:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.66.0
-      no-mistakes-linux-arm64-gnu: 0.66.0
-      no-mistakes-linux-x64-gnu: 0.66.0
-      no-mistakes-win32-x64-msvc: 0.66.0
+      no-mistakes-darwin-arm64: 0.67.1
+      no-mistakes-linux-arm64-gnu: 0.67.1
+      no-mistakes-linux-x64-gnu: 0.67.1
+      no-mistakes-win32-x64-msvc: 0.67.1
 
   node-app-attest@1.0.1:
     dependencies:
@@ -30210,10 +30210,10 @@ snapshots:
       react: 19.3.0
       scheduler: 0.28.0
 
-  react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  react-email@6.11.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1):
     dependencies:
       '@babel/parser': 7.29.2
-      '@babel/traverse': 7.29.0
+      '@babel/traverse': 7.29.0(supports-color@8.1.1)
       '@react-email/render': 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       chokidar: 5.0.0
       commander: 13.1.0
@@ -30233,7 +30233,7 @@ snapshots:
       prompts: 2.4.2
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      socket.io: 4.8.3
+      socket.io: 4.8.3(supports-color@8.1.1)
       tailwindcss: 4.3.3
       tsconfig-paths: 4.2.0
     transitivePeerDependencies:
@@ -30681,7 +30681,7 @@ snapshots:
 
   smol-toml@1.9.0: {}
 
-  socket.io-adapter@2.5.8:
+  socket.io-adapter@2.5.8(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       ws: 8.21.3
@@ -30690,22 +30690,22 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  socket.io-parser@4.2.7:
+  socket.io-parser@4.2.7(supports-color@8.1.1):
     dependencies:
       '@socket.io/component-emitter': 3.1.2
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
-  socket.io@4.8.3:
+  socket.io@4.8.3(supports-color@8.1.1):
     dependencies:
       accepts: 1.3.8
       base64id: 2.0.0
       cors: 2.8.6
       debug: 4.4.3(supports-color@8.1.1)
-      engine.io: 6.6.10
-      socket.io-adapter: 2.5.8
-      socket.io-parser: 4.2.7
+      engine.io: 6.6.10(supports-color@8.1.1)
+      socket.io-adapter: 2.5.8(supports-color@8.1.1)
+      socket.io-parser: 4.2.7(supports-color@8.1.1)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -30873,7 +30873,7 @@ snapshots:
       client-only: 0.0.1
       react: 19.3.0
 
-  superagent@10.4.1:
+  superagent@10.4.1(supports-color@8.1.1):
     dependencies:
       component-emitter: 1.3.1
       cookiejar: 2.1.4
@@ -30887,11 +30887,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  supertest@7.3.0:
+  supertest@7.3.0(supports-color@8.1.1):
     dependencies:
       cookie-signature: 1.2.2
       methods: 1.1.2
-      superagent: 10.4.1
+      superagent: 10.4.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -31231,7 +31231,7 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-plugin-storybook-nextjs@10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
+  vite-plugin-storybook-nextjs@10.6.0(@typescript/typescript6@6.0.2)(next@16.3.6(@opentelemetry/api@1.9.1)(@playwright/test@1.63.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(rollup@4.63.4)(storybook@10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0))(supports-color@8.1.1)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
       '@next/env': 16.3.6
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
@@ -31244,13 +31244,13 @@ snapshots:
       storybook: 10.6.0(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.0)
       ts-dedent: 2.3.0
       vite: 8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
-      vite-tsconfig-paths: 5.1.4(@typescript/typescript6@6.0.2)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+      vite-tsconfig-paths: 5.1.4(@typescript/typescript6@6.0.2)(supports-color@8.1.1)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
+  vite-tsconfig-paths@5.1.4(@typescript/typescript6@6.0.2)(supports-color@8.1.1)(vite@8.3.1(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       globrex: 0.1.2

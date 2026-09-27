@@ -1,6 +1,15 @@
 import { test, expect } from '../../helpers/test.mts'
+import { navigateTo } from '../../helpers/navigate-to.mts'
 
 test.describe('404 Not Found Page', () => {
+  test('offline recovery link navigates back to the topics browser', async ({ page }) => {
+    await navigateTo(page, '/offline')
+    await expect(page.getByTestId('status-page-title')).toContainText(/offline/i)
+    await page.getByTestId('status-page-topics-link').click()
+    await expect(page).toHaveURL('/topics')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Topics')
+  })
+
   test('renders 404 page with navigation links', async ({ page }) => {
     const response = await page.goto('/this-page-definitely-does-not-exist-abc123')
     expect(response?.status()).toBe(404)

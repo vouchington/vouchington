@@ -51,6 +51,9 @@ test.describe('OAuth consent', () => {
     await navigateTo(page, `/authorize?${authorize.toString()}`)
 
     await expect(page).toHaveURL(/\/oauth\/consent\?request_id=/)
+    const requestId = new URL(page.url()).searchParams.get('request_id')
+    expect(requestId).toBeTruthy()
+    await navigateTo(page, `/oauth/consent?request_id=${requestId}`)
     await expect(page.getByTestId('oauth-consent-card')).toBeVisible()
     await expect(page.getByTestId('oauth-consent-title')).toContainText(client.client_name)
     await expect(page.getByTestId('oauth-consent-resource')).toHaveText(resource)

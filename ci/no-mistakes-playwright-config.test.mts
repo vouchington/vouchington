@@ -9,6 +9,20 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 type NoMistakesConfig = {
   tests?: {
     playwright?: {
+      navigationHelpers?: string[]
+      ignoreRoutes?: string[]
+      routeCoverageSources?: Array<{
+        framework: string
+        project: string
+        include: string[]
+        routes: string[]
+        helpers: Array<{
+          module: string
+          export: string
+          method: string
+          urlArgument: number
+        }>
+      }>
       coverage?: {
         routes?: boolean
         selectors?: boolean
@@ -60,8 +74,12 @@ describe('no-mistakes Playwright config', () => {
     expect(noMistakes).toContain('rule: playwright-unique-test-ids')
     expect(noMistakes).toContain('rule: playwright-unique-html-ids')
     expect(noMistakes).toContain('rule: playwright-prefer-test-id-locators')
-    expect(playwright?.coverage).toEqual({ routes: false, selectors: true })
-    expect(noMistakes).not.toContain('ignoreRoutes:')
+    expect(playwright?.coverage).toEqual({ routes: true, selectors: true })
+    expect(playwright?.navigationHelpers).toEqual(['navigateTo'])
+    expect(playwright?.ignoreRoutes).toEqual([
+      '/landing/:idOrUsername',
+      '/landing/:idOrUsername/:slug',
+    ])
     expect(playwright?.selectorExclude).toEqual([
       '**/*.test.ts',
       '**/*.test.tsx',
@@ -96,6 +114,59 @@ describe('no-mistakes Playwright config', () => {
     expect(noMistakes).not.toContain('playwrightAstCoverage:')
     expect(noMistakes).not.toContain('frontendRoot: web/app')
     expect(noMistakes).not.toContain('playwrightConfig: playwright.config.mts')
+  })
+
+  it('credits only the finite HTTP-contract routes from the real Vitest integration owner', () => {
+    expect(readNoMistakesConfig().tests?.playwright?.routeCoverageSources).toEqual([
+      {
+        framework: 'vitest',
+        project: 'web-integration',
+        include: ['integration-tests/web/**/*.mts'],
+        routes: [
+          '/bank-account/:id/settings/source',
+          '/card/:id/settings/source',
+          '/copyright/counter-notice',
+          '/copyright/designated-agent',
+          '/copyright/repeat-infringer-policy',
+          '/healthz',
+          '/referral-program/:id/settings/source',
+          '/rewards-program-status/:id/settings/source',
+          '/rewards-program/:id/settings/source',
+          '/topic/:id/settings/source',
+          '/user/:idOrUsername/communities/proxy-following',
+          '/user/:idOrUsername/communities/proxy-muted',
+          '/user/:idOrUsername/communities/saved',
+          '/user/:idOrUsername/domains/blocked',
+          '/user/:idOrUsername/domains/muted',
+          '/user/:idOrUsername/posts/following',
+          '/user/:idOrUsername/posts/hidden',
+          '/user/:idOrUsername/posts/saved',
+          '/user/:idOrUsername/rss-feed-items/hidden',
+          '/user/:idOrUsername/rss-feed-items/saved',
+          '/user/:idOrUsername/rss-feed-items/viewed',
+          '/user/:idOrUsername/rss-feeds/muted',
+          '/user/:idOrUsername/topics/blocked',
+          '/user/:idOrUsername/topics/dismissed-recommendations',
+          '/user/:idOrUsername/topics/muted',
+          '/user/:idOrUsername/topics/viewed',
+          '/user/:idOrUsername/users/dismissed-recommendations',
+        ],
+        helpers: [
+          {
+            module: 'integration-tests/web/helpers/client.mts',
+            export: 'WebIntegrationClient',
+            method: 'request',
+            urlArgument: 0,
+          },
+          {
+            module: 'integration-tests/web/helpers/client.mts',
+            export: 'WebIntegrationClient',
+            method: 'loadPage',
+            urlArgument: 0,
+          },
+        ],
+      },
+    ])
   })
 
   it('binds coverage, unique HTML IDs, and prefer-test-id locators separately', () => {
