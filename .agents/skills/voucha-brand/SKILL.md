@@ -1,6 +1,6 @@
 ---
 name: voucha-brand
-description: Use when writing any user-facing copy for Voucha (UI labels, marketing text, headings, descriptions, CTAs, tooltips). Establishes voice, key phrases, em-dash ban, and linking rules.
+description: Write Voucha user-facing UI and marketing copy in the product voice.
 ---
 
 # Voucha Brand Voice

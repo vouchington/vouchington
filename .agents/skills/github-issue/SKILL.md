@@ -1,6 +1,6 @@
 ---
 name: github-issue
-description: Search, create, classify, verify, update, link, and relate Vouchington GitHub issues using the portable Vouchington workflow and local routing policy.
+description: Search, verify, create, update, classify, and link Vouchington GitHub issues.
 ---
 
 # Vouchington GitHub Issue Adapter
@@ -85,14 +85,14 @@ expected behavior, actual behavior, and installed version, or an
 links, or jargon in that report. Omit the block for non-dependency work or an issue created directly
 in its authorized owning repository.
 
-Create `Plan:` issues through `node dev/plan-issue.mts create` only as the immediate mutation after
-the local [planning](../planning/SKILL.md) validation and canonical gate pass for the exact
-`TARGET_REPO`; the helper never grants authority. For PR links and body
-mutation, use `node dev/pr-description.mts` in `PR_REPO`; same-repository closes are `Closes #N`, and
-cross-repository closes are `Closes owner/repo#N`.
+An optional `Plan:` issue uses this ordinary issue workflow and its authority gate for the exact
+`TARGET_REPO`; it has no separate template or validation helper. Prefer the existing plan record
+when one already exists. For PR links and body mutation, use `node dev/pr-description.mts` in
+`PR_REPO`; same-repository closes are `Closes #N`, and cross-repository closes are
+`Closes owner/repo#N`.
 
 ## Batch preflight
 
-The [batch manifest](../../../dev/agent-issue-labels/README.md#batch-github-issue-preflight) exposes only the read-only
+The [batch manifest](../../../docs/development/local-development/agent-issue-labels/README.md#batch-github-issue-preflight) exposes only the read-only
 `preflight` mode. Perform every authorized write and its read-back through the canonical workflow
 one issue at a time.

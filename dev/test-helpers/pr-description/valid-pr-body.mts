@@ -8,7 +8,7 @@ export const VALID_PROVENANCE_LINES = [
 /** Joined block for splicing into a fixture's `Workspace setup:` line via template interpolation. */
 export const VALID_PROVENANCE_BLOCK = VALID_PROVENANCE_LINES.join('\n')
 
-/** Canonical minimal valid PR body, mirroring `dev/test-helpers/plan-issue/valid-plan-body.mts`. */
+/** Canonical minimal valid PR body. */
 export const VALID_PR_BODY = `## Summary
 
 Brief summary.

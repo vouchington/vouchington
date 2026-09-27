@@ -95,6 +95,6 @@ All endpoints (`GET /api/v1/rss-feed-categories`, `POST/DELETE /api/v1/rss-feed-
 ## Related
 
 - API reference: [`backend/api/v1/admin/rss-feed-categories/`](../../../backend/api/v1/admin/rss-feed-categories)
-- RSS feed items service: [`backend/services/rss-feed-items/README.md`](../../../backend/services/rss-feed-items/README.md)
-- Topic aliases: [`backend/services/topics/README.md`](../../../backend/services/topics)
-- Schema: [`backend/data-stores/psql/README.md`](../../../backend/data-stores/psql/README.md)
+- RSS feed items service: [`docs/overview/architecture/services/rss-feed-items/README.md`](../../overview/architecture/services/rss-feed-items/README.md)
+- Topic aliases: [`docs/overview/architecture/services/topics/README.md`](../../../backend/services/topics)
+- Schema: [`docs/development/postgresql/README.md`](../../development/postgresql/README.md)

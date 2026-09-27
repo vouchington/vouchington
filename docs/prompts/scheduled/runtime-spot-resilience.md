@@ -1,4 +1,4 @@
-Review runtime Spot resilience. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review runtime Spot resilience. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 Audit the served SSE and WebSocket routes and their web, Swift, and .NET consumers. Verify that:
 

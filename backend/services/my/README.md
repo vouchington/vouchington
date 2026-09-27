@@ -1,19 +1,3 @@
 # @services/my
 
-Current-user ("my") account management — identity, email addresses, profile, profile links, and landing pages.
-
-## Sub-modules
-
-| Sub-module                   | Key exports                                                                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `identity`                   | `updateUsername(userId, username)`, `updateProfileImageId(userId, imageId)`                                                           |
-| `email-addresses`            | `listEmailAddressesPage(userId, options)`, `getPrimaryEmailAddress(userId)`, `setPrimaryEmailAddress(...)`, `removeEmailAddress(...)` |
-| `email-address-verification` | `createEmailVerificationToken(...)`, `verifyEmailVerificationToken(...)`                                                              |
-| `profile`                    | `getProfile(userId)`, `updateProfileMarkdown(userId, markdown)`                                                                       |
-| `profile-links`              | `listProfileLinks(userId)`, `createProfileLink(...)`, `updateProfileLink(...)`, `deleteProfileLink(...)`, `reorderProfileLinks(...)`  |
-| `landing-pages`              | Create, list, update, delete, and set-default for user landing page configurations                                                    |
-
-## Related
-
-- Parent: [../AGENTS.md](../AGENTS.md)
-- Users service: [../users/README.md](../users/README.md)
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/my/README.md).

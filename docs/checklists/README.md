@@ -18,3 +18,12 @@ Consolidated lifecycle and edit checklists for the Voucha monorepo. Each checkli
 - Skills: [.agents/skills/git-commit-checklist](../../.agents/skills/git-commit-checklist/SKILL.md), [package-json-checklist](../../.agents/skills/package-json-checklist/SKILL.md), [github-actions-checklist](../../.agents/skills/github-actions-checklist/SKILL.md), [voucha-queue-authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md)
 - Lifecycle Codex checklist adapters: [.codex/agents/git-commit-checklist.toml](../../.codex/agents/git-commit-checklist.toml), [package-json-checklist.toml](../../.codex/agents/package-json-checklist.toml), [github-actions-checklist.toml](../../.codex/agents/github-actions-checklist.toml)
 - [docs/README.md](../README.md) — Full documentation index
+
+## Reference index
+
+- [Define a replay-safe job](reference-backend-queues-define-a-replay-safe-job.md)
+- [Durable transition matrix](reference-backend-queues-durable-transition-matrix.md)
+- [Place each responsibility](reference-backend-queues-place-each-responsibility.md)
+- [Schedulers, flows, and backfills](reference-backend-queues-schedulers-flows-and-backfills.md)
+- [See also](reference-backend-queues-see-also.md)
+- [Test and document](reference-backend-queues-test-and-document.md)

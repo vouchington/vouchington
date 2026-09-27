@@ -74,6 +74,18 @@ describe('Area CI triggers', () => {
     )
   })
 
+  it('runs backend and tooling consumers for generated schema Markdown without selecting runtime builds', () => {
+    const paths = [
+      'docs/development/postgresql/schema-snapshot/markdown/README.md',
+      'docs/development/postgresql/schema-snapshot/markdown/views.md',
+      'docs/development/postgresql/schema-snapshot/markdown/tables/widgets.md',
+    ]
+    expectFilterMatches('backend', paths)
+    expectFilterMatches('tooling', paths)
+    expectRefinedRuntimeFilterMisses('build-backend', paths)
+    expectRefinedRuntimeFilterMisses('build-web', paths)
+  })
+
   it('runs Storybook for every browser-runtime input', () => {
     const runtimeInputs = [
       'ci/run-storybook-browser-tests.mts',
@@ -138,7 +150,7 @@ describe('Area CI triggers', () => {
       '.github/workflows/tests-backend-unit.yml',
       '.github/workflows/checks-backend-smoke.yml',
       '.github/workflows/README.md',
-      '.github/workflows/VITEST.md',
+      'docs/development/ci/workflows/VITEST.md',
       '.github/workflows/AGENTS.md',
       '.github/workflows/example.yaml',
       '.github/workflows/secret-context.test.mts',
@@ -151,7 +163,7 @@ describe('Area CI triggers', () => {
       'docs/prompts/automation/scheduled-prompt.md',
       'docs/prompts/scheduled/ci.md',
       'backend/agents/README.md',
-      'backend/agents/reference-tests.md',
+      'docs/overview/architecture/ai-agents/reference-tests.md',
       'backend/Dockerfile',
       'backend/package.json',
       'backend/entrypoints/api/package.json',

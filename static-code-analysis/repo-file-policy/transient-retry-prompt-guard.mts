@@ -5,7 +5,7 @@ export const TRANSIENT_RETRY_PROMPT_PATH = 'docs/prompts/scheduled/transient-ret
 export const TRANSIENT_RETRY_RULES_PATH = 'ci/transient-retry/rules.mts'
 
 const OPENING_LINE =
-  'Review `ci/transient-retry/rules.mts`. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.'
+  'Review `ci/transient-retry/rules.mts`. Pick at most one concrete, bounded improvement that is safe to ship in one PR.'
 const FALLBACK_START =
   'If the audit confirms a repository-owned root cause but its smallest safe fix'
 

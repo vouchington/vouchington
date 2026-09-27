@@ -1,4 +1,4 @@
-Review Valkey scripts and usage. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review Valkey scripts and usage. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Minimize in-flight requests: collapse sequential awaits and per-item round-trips into a single batched call. Avoid per-item/key-by-key Valkey calls inside loops — collect the full key set first and use `MGET`/`Batch`. Cursor-based `SCAN` workflows and bounded deletion loops are intentional exceptions. Avoid unbounded concurrent fan-out that pressures the connection pool.
 - Minimize total requests: combine reads with `MGET` or a [`Batch`](https://valkey.io/valkey-glide/node/Batch/classes/Batch/); cache or memoize repeated lookups within a single request lifecycle.

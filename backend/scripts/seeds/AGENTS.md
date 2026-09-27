@@ -1,3 +1,3 @@
-# Seed Data
+# Seed data
 
-- Seed data in monthly-retention tables must use guarded recent-day UUIDs (`recentSeedCrawlId()`): derive the timestamp from the start of `now - 12h`'s UTC day. The first 12 UTC hours intentionally overlap the prior UTC day, and at month boundaries the prior month's partition.
+- Monthly-retention rows use guarded recent-day UUIDs from `recentSeedCrawlId()`: timestamp is the UTC day start of `now - 12h`. Preserve the intentional prior-day overlap during the first 12 UTC hours, including prior-month partitions at month boundaries.

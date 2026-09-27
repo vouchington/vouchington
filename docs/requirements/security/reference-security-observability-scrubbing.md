@@ -160,5 +160,5 @@ exercise SDK-internal merge behavior either.
 ## Related
 
 - [Error handling architecture](../../overview/architecture/error-handling.md)
-- [Client-side onError](../../../web/lib/on-error/README.md)
-- [Backend onError](../../../backend/modules/on-error/README.md)
+- [Client-side onError](../../overview/architecture/web/lib/on-error/README.md)
+- [Backend onError](../../overview/architecture/backend/modules/on-error/README.md)

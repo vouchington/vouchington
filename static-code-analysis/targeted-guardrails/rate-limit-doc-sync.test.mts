@@ -99,7 +99,7 @@ export interface MoreEnv {
     const repoRoot = await mkdtemp(join(testRoot, 'voucha-targeted-guardrails-'))
     testDirs.push(repoRoot)
     const sourceFile = 'cloudflare-worker/src/types.mts'
-    const docFile = 'cloudflare-worker/reference-rate-limiting.md'
+    const docFile = 'docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md'
     await mkdir(join(repoRoot, 'cloudflare-worker/src'), { recursive: true })
     await writeFile(
       join(repoRoot, sourceFile),
@@ -108,6 +108,9 @@ export interface MoreEnv {
         '  WEB_ORIGIN?: string\n  PRODUCTION?: string',
       ),
     )
+    await mkdir(join(repoRoot, 'docs/overview/infrastructure/cloudflare-worker'), {
+      recursive: true,
+    })
     await writeFile(join(repoRoot, docFile), docWithBindings(['RATE_LIMITER_SERVER_ACTION']))
 
     const result = checkTargetedGuardrails({
@@ -124,7 +127,7 @@ export interface MoreEnv {
     const repoRoot = await mkdtemp(join(testRoot, 'voucha-targeted-guardrails-'))
     testDirs.push(repoRoot)
     const sourceFile = 'cloudflare-worker/src/types.mts'
-    const docFile = 'cloudflare-worker/reference-rate-limiting.md'
+    const docFile = 'docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md'
     await mkdir(join(repoRoot, 'cloudflare-worker/src'), { recursive: true })
     await writeFile(join(repoRoot, sourceFile), sourceWithBindings(['RATE_LIMITER_SERVER_ACTION']))
 
@@ -136,7 +139,7 @@ export interface MoreEnv {
     })
 
     expect(result.errors).toEqual([
-      '::error file=cloudflare-worker/src/types.mts::cloudflare-worker/src/types.mts: rate-limit doc-sync guard expects cloudflare-worker/reference-rate-limiting.md to exist; if you renamed one of the two, update the guard path constants together',
+      '::error file=cloudflare-worker/src/types.mts::cloudflare-worker/src/types.mts: rate-limit doc-sync guard expects docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md to exist; if you renamed one of the two, update the guard path constants together',
     ])
   })
 
@@ -144,9 +147,12 @@ export interface MoreEnv {
     const repoRoot = await mkdtemp(join(testRoot, 'voucha-targeted-guardrails-'))
     testDirs.push(repoRoot)
     const sourceFile = 'cloudflare-worker/src/types.mts'
-    const docFile = 'cloudflare-worker/reference-rate-limiting.md'
+    const docFile = 'docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md'
     await mkdir(join(repoRoot, 'cloudflare-worker/src'), { recursive: true })
     await writeFile(join(repoRoot, sourceFile), sourceWithBindings(['RATE_LIMITER_SERVER_ACTION']))
+    await mkdir(join(repoRoot, 'docs/overview/infrastructure/cloudflare-worker'), {
+      recursive: true,
+    })
     await writeFile(join(repoRoot, docFile), docWithBindings([]))
 
     const result = checkTargetedGuardrails({
@@ -164,9 +170,12 @@ export interface MoreEnv {
     const repoRoot = await mkdtemp(join(testRoot, 'voucha-targeted-guardrails-'))
     testDirs.push(repoRoot)
     const sourceFile = 'cloudflare-worker/src/types.mts'
-    const docFile = 'cloudflare-worker/reference-rate-limiting.md'
+    const docFile = 'docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md'
     await mkdir(join(repoRoot, 'cloudflare-worker/src'), { recursive: true })
     await writeFile(join(repoRoot, sourceFile), sourceWithBindings(['RATE_LIMITER_SERVER_ACTION']))
+    await mkdir(join(repoRoot, 'docs/overview/infrastructure/cloudflare-worker'), {
+      recursive: true,
+    })
     await writeFile(join(repoRoot, docFile), docWithBindings(['RATE_LIMITER_SERVER_ACTION']))
 
     const result = checkTargetedGuardrails({
@@ -177,7 +186,7 @@ export interface MoreEnv {
     })
 
     expect(result.errors).toEqual([
-      '::error file=cloudflare-worker/src/types.mts::cloudflare-worker/src/types.mts: rate-limit doc-sync guard expects cloudflare-worker/reference-rate-limiting.md to also be tracked; if you renamed one of the two, update the guard path constants together',
+      '::error file=cloudflare-worker/src/types.mts::cloudflare-worker/src/types.mts: rate-limit doc-sync guard expects docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md to also be tracked; if you renamed one of the two, update the guard path constants together',
     ])
   })
 
@@ -185,9 +194,12 @@ export interface MoreEnv {
     const repoRoot = await mkdtemp(join(testRoot, 'voucha-targeted-guardrails-'))
     testDirs.push(repoRoot)
     const sourceFile = 'cloudflare-worker/src/types.mts'
-    const docFile = 'cloudflare-worker/reference-rate-limiting.md'
+    const docFile = 'docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md'
     await mkdir(join(repoRoot, 'cloudflare-worker/src'), { recursive: true })
     await writeFile(join(repoRoot, sourceFile), sourceWithBindings(['RATE_LIMITER_SERVER_ACTION']))
+    await mkdir(join(repoRoot, 'docs/overview/infrastructure/cloudflare-worker'), {
+      recursive: true,
+    })
     await writeFile(join(repoRoot, docFile), docWithBindings(['RATE_LIMITER_SERVER_ACTION']))
 
     const result = checkTargetedGuardrails({
@@ -198,7 +210,7 @@ export interface MoreEnv {
     })
 
     expect(result.errors).toEqual([
-      '::error file=cloudflare-worker/reference-rate-limiting.md::cloudflare-worker/reference-rate-limiting.md: rate-limit doc-sync guard expects cloudflare-worker/src/types.mts to also be tracked; if you renamed one of the two, update the guard path constants together',
+      '::error file=docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md::docs/overview/infrastructure/cloudflare-worker/reference-rate-limiting.md: rate-limit doc-sync guard expects cloudflare-worker/src/types.mts to also be tracked; if you renamed one of the two, update the guard path constants together',
     ])
   })
 })

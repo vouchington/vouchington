@@ -66,7 +66,7 @@ contain only that key, rotating token, and timestamps, never an uncommitted enti
 Recovery joins the registry's typed tuple and rechecks committed binding authority without borrowing
 another placement's revision. An uncommitted first registry insert cannot publish an allow; its
 rollback creates no repair obligation. The fresh-bootstrap schema and recovery protocol are
-documented in [media-delivery safety](../../../backend/services/media-delivery-safety/README.md).
+documented in [media-delivery safety](../../overview/architecture/services/media-delivery-safety/README.md).
 
 Staff may request image-similarity candidates from existing embeddings. Candidates are advisory,
 exclude unavailable or moderated media, and return placement identifiers and state rather than S3

@@ -1,7 +1,7 @@
 # Job Replayability & Idempotency
 
 See also: [ENTITY-ACTION-MATRIX.md](../ENTITY-ACTION-MATRIX.md) and the
-[backend queue reference](../../../backend/queues/README.md).
+[backend queue reference](../../overview/architecture/queues/README.md).
 
 ## Contents
 

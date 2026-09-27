@@ -24,7 +24,7 @@ export const DEFAULT_AUTOMATION_CONTEXT = true
 export type GitHubWorkflowPolicyOptions = {
   /**
    * Whether this tool call is running inside GitHub Actions automation (GITHUB_ACTIONS/CI set).
-   * Only the merge-authority branches in findGitHubWorkflowBlock read this. Defaults to
+   * Merge authority and the interactive direct-request PR exception read this. Defaults to
    * DEFAULT_AUTOMATION_CONTEXT (block) when omitted, so callers that don't pass it — tests, direct
    * invocations — keep the strict behavior. Only the wired pre-tool-use.mts entry point computes
    * this from real process.env; every other layer stays a pure function. See

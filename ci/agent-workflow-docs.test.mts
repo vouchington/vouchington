@@ -184,19 +184,9 @@ describe('agent workflow documentation', () => {
     expect(workflow).toContain('Visual verification:')
   })
 
-  it('requires live browser preflight during planning and independent validation reporting', () => {
-    const startRaw = readRepoFile('.agents/skills/planning/references/live-browser-preflight.md')
-    const start = normalizedMarkdown('.agents/skills/planning/references/live-browser-preflight.md')
+  it('retains independent validation reporting fields', () => {
     const implementation = normalizedMarkdown('.agents/skills/agent-workflow/implementation.md')
 
-    expect(start).toContain('## Live browser preflight')
-    expect(start).toContain('Status: `not-required`')
-    expect(start).toContain('(`not-required`, `available`, or `exception`)')
-    expect(startRaw).toContain('- Status: `available`')
-    expect(startRaw).toContain('- Surface:')
-    expect(startRaw).toContain('- Evidence:')
-    expect(startRaw).toContain('- Status: `exception`')
-    expect(startRaw).toContain('- Reason:')
     expect(implementation).toContain('Automated browser tests:')
     expect(implementation).toContain('Screenshot attachment:')
   })
@@ -204,7 +194,7 @@ describe('agent workflow documentation', () => {
   it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
     const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
     const rerunReference = normalizedMarkdown(
-      'ci/transient-retry/reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md',
+      'docs/development/ci/transient-retry/reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md',
     )
 
     expect(gitAndPrs).toContain('run_in_background')

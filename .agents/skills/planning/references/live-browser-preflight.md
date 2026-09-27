@@ -1,32 +1,12 @@
 # Live browser preflight
 
-Before finalizing a Plan, determine whether its verification requires a supported interactive browser. Every Plan issue must contain exactly one allowed status (`not-required`, `available`, or `exception`).
+When a change requires live visual QA, check supported interactive browser availability before
+accepting the plan. Record the result and evidence in the existing plan record; no fixed heading
+or status schema is required.
 
-Use `not-required` when no live visual QA is required:
+Establish availability with a successful browser discovery or binding call and inspection of the
+planned route. Automated Chromium, Playwright, or Storybook capability alone does not establish
+interactive browser availability.
 
-```markdown
-## Live browser preflight
-
-- Status: `not-required`
-```
-
-Use `available` only after a successful browser discovery or binding call:
-
-```markdown
-## Live browser preflight
-
-- Status: `available`
-- Surface: Supported interactive browser
-- Evidence: Opened and inspected the planned UI route.
-```
-
-Use `exception` when the supported interactive browser is unavailable:
-
-```markdown
-## Live browser preflight
-
-- Status: `exception`
-- Reason: No supported interactive browser is available in this session.
-```
-
-Human acceptance of an `exception` explicitly accepts omitting live visual QA. Automated Chromium, Playwright, or Storybook capability does not establish interactive browser availability.
+If the browser is unavailable, record the concrete reason and obtain human acceptance before
+omitting required live visual QA. Changes that do not require live visual QA need no browser probe.

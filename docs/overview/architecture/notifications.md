@@ -121,8 +121,8 @@ The following notification concepts have underlying signals tracked in the datab
 
 ## Related
 
-- Service: [backend/services/notifications/README.md](../../../backend/services/notifications/README.md)
-- System: [backend/queues/notifications/README.md](../../../backend/queues/notifications/README.md)
+- Service: [docs/overview/architecture/services/notifications/README.md](services/notifications/README.md)
+- System: [docs/overview/architecture/queues/notifications/README.md](queues/notifications/README.md)
 - Requirements: [../../requirements/navigation/NOTIFICATIONS.md](../../requirements/navigation/NOTIFICATIONS.md)
 - [Web rules](../../../web/AGENTS.md) -- notification list and push permission UI
 - [Backend rules](../../../backend/AGENTS.md) -- service conventions

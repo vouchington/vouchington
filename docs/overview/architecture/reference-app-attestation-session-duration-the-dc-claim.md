@@ -22,7 +22,7 @@ device does not need to re-attest on every session renewal, only when it needs a
 after Keychain data loss forces a fresh `generateKey()`).
 
 See [auth-overview.md § Tokens](auth-overview.md#tokens) and
-[jwt-session/README.md](../../../backend/services/jwt-session/README.md) for the general
+[jwt-session/README.md](services/jwt-session/README.md) for the general
 device/session token model this extends.
 
 ## Native Device Identity

@@ -1,5 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { chmod, cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -169,9 +169,14 @@ describe('PostgreSQL snapshot controller process', () => {
     const candidate = join(root, 'candidate')
     const remote = join(root, 'remote.git')
     const snapshot = join(candidate, 'backend/data-stores/psql/schema-snapshot')
-    await mkdir(join(snapshot, 'markdown'), { recursive: true })
+    const markdown = join(candidate, 'docs/development/postgresql/schema-snapshot/markdown')
+    await mkdir(markdown, { recursive: true })
+    await mkdir(snapshot, { recursive: true })
+    await writeFile(join(snapshot, 'generate.mts'), '// source sentinel\n')
     await writeFile(join(snapshot, 'schema.json'), '{}\n')
-    await writeFile(join(snapshot, 'markdown/README.md'), '# Schema\n')
+    await writeFile(join(markdown, 'README.md'), '# Schema\n')
+    await writeFile(join(markdown, 'orphan.md'), '# Old leaf\n')
+    await writeFile(join(markdown, '../README.md'), '# Documentation owner\n')
     await git(candidate, 'init', '-b', 'feat/snapshot')
     await git(candidate, 'add', '.')
     await git(candidate, 'commit', '-m', 'initial')
@@ -184,8 +189,6 @@ describe('PostgreSQL snapshot controller process', () => {
     await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
     const artifact = join(root, 'artifact')
     await mkdir(artifact)
-    await cp(join(snapshot, 'schema.json'), join(artifact, 'schema.json'))
-    await cp(join(snapshot, 'markdown'), join(artifact, 'markdown'), { recursive: true })
     const publishEnv = {
       ...env,
       SNAPSHOT_PUBLISH_TOKEN: 'test-publish-token',
@@ -215,7 +218,16 @@ describe('PostgreSQL snapshot controller process', () => {
       }
       await writeFile(join(artifact, 'manifest.json'), JSON.stringify(manifest))
     }
-    await writeManifest()
+    await runController('manifest', { ...publishEnv, GITHUB_WORKSPACE: candidate })
+    const generatedManifest = JSON.parse(
+      await readFile(join(artifact, 'manifest.json'), 'utf8'),
+    ) as SnapshotManifest
+    expect(Object.keys(generatedManifest.files)).toEqual([
+      'markdown/README.md',
+      'markdown/orphan.md',
+      'schema.json',
+    ])
+    expect(generatedManifest).toMatchObject({ headSha: actualHead, postgresImage: image })
     await runController('publish', publishEnv)
     expect(await git(candidate, 'rev-parse', 'HEAD')).toBe(actualHead)
 
@@ -225,7 +237,7 @@ describe('PostgreSQL snapshot controller process', () => {
     pr.head.sha = actualHead
     await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
 
-    const markdownPath = join(snapshot, 'markdown/README.md')
+    const markdownPath = join(markdown, 'README.md')
     await rm(markdownPath)
     await symlink(join(root, 'permission.json'), markdownPath)
     await expect(runController('publish', publishEnv)).rejects.toThrow(
@@ -236,6 +248,8 @@ describe('PostgreSQL snapshot controller process', () => {
     expect(await git(candidate, 'rev-parse', 'HEAD')).toBe(actualHead)
 
     await writeFile(join(artifact, 'schema.json'), '{"formatVersion":2}\n')
+    await writeFile(join(artifact, 'markdown/README.md'), '# Updated schema\n')
+    await rm(join(artifact, 'markdown/orphan.md'))
     await writeManifest()
     await runController('publish', publishEnv)
     expect(await git(candidate, 'rev-parse', 'HEAD')).not.toBe(actualHead)
@@ -249,6 +263,14 @@ describe('PostgreSQL snapshot controller process', () => {
       (await git(candidate, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD')).split(
         '\n',
       ),
-    ).toEqual(['backend/data-stores/psql/schema-snapshot/schema.json'])
+    ).toEqual([
+      'backend/data-stores/psql/schema-snapshot/schema.json',
+      'docs/development/postgresql/schema-snapshot/markdown/README.md',
+      'docs/development/postgresql/schema-snapshot/markdown/orphan.md',
+    ])
+    expect(await readFile(join(snapshot, 'generate.mts'), 'utf8')).toBe('// source sentinel\n')
+    expect(await readFile(join(markdown, '../README.md'), 'utf8')).toBe('# Documentation owner\n')
+    expect(await readFile(join(markdown, 'README.md'), 'utf8')).toBe('# Updated schema\n')
+    await expect(readFile(join(markdown, 'orphan.md'))).rejects.toThrow(/ENOENT/)
   })
 })

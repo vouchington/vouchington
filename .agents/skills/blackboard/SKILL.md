@@ -1,6 +1,6 @@
 ---
 name: blackboard
-description: Record or read Vouchington session journal notes in agent-blackboard using the portable Vouchington workflow and local hosted-connection policy.
+description: Read or record Vouchington session findings in agent-blackboard.
 ---
 
 # Vouchington Blackboard Adapter

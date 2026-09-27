@@ -1,6 +1,6 @@
 ---
 name: review-ci-logs
-description: Audit Vouchington GitHub Actions failures and misleading CI logs with the portable Vouchington workflow and local CI diagnosis policy.
+description: Diagnose Vouchington GitHub Actions failures, misleading logs, and retry eligibility.
 ---
 
 # Vouchington CI Log Review Adapter

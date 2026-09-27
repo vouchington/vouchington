@@ -84,7 +84,7 @@ export async function createTestTopic(options: CreateTestTopicOptions = {}) {
 // not replicate @services/posts' community/comment authorization, moderation/spam
 // side effects, or entity-listener enqueues — fixtures that assert on that genuine
 // behavior must use the real createTestPost from `@services/posts/test-support`
-// instead (see backend/test-helpers/README.md).
+// instead (see docs/development/testing/backend/helpers.md).
 export async function createTestPost(options: CreateTestPostOptions = {}) {
   // null-default-ok: createTestPost treats null user as "create a default user".
   const user = options.user || (await createTestUser())

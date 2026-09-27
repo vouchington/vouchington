@@ -1,11 +1,4 @@
-# Authenticated `(my)` routes
+# Authenticated routes
 
-Pages under `web/app/(my)/my/`. Parent web rules: [../../AGENTS.md](../../AGENTS.md).
-
-## Invariants
-
-- **`force-dynamic`**: `force-dynamic-pages` enforces `export const dynamic = 'force-dynamic'` on
-  every `web/app/**/page.tsx`; `(my)/layout.tsx` is not enough.
-- **Auth guard**: `(my)/layout.tsx` already redirects signed-out users. Do not add page-level
-  `/login?next=` redirects under `(my)/my`. When the page needs the user, call
-  `requireCurrentUser()` from `@/lib/auth/require-current-user`.
+- Every `web/app/**/page.tsx` exports `dynamic = 'force-dynamic'`; `(my)/layout.tsx` alone is insufficient (`force-dynamic-pages` guard).
+- `(my)/layout.tsx` owns signed-out redirects; never add page-level `/login?next=` redirects under `(my)/my`. Pages needing users call `requireCurrentUser()` from `@/lib/auth/require-current-user`.

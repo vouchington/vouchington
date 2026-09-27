@@ -13,13 +13,10 @@ const SESSION = { sessionOwners: () => new Set(['acme']) }
 const UNREAD_CWD = '/owner-scope-session'
 const DRAFT_FIRST = 'New PRs must be opened as draft first'
 const CLOSING_KEYWORD = 'PR bodies must include at least one GitHub closing keyword'
-const PLAN_TITLE = 'Raw issue creation requires a literal non-Plan title'
 const TARGET_MAIN = 'PRs must target main'
 
 const nonDraftPr = (flags: string, prefix = '') =>
   `${prefix}gh pr create ${flags} --title t --body "no refs"`
-const planIssue = (flags: string, prefix = '') =>
-  `${prefix}gh issue create ${flags} --title "Plan: widgets" --body b`
 const editPr = (selector: string, flags = '') => `gh pr edit ${selector} ${flags} --body "no refs"`
 
 function reasonOf(
@@ -59,7 +56,6 @@ describe('gh content-rule owner scope', () => {
       ['--repo behind command wrappers', '--repo widgets-inc/tool', 'env -C /srv/home nohup '],
     ])('via %s', (_name, flags, prefix) => {
       expect(reasonOf(nonDraftPr(flags, prefix))).toBeUndefined()
-      expect(reasonOf(planIssue(flags, prefix))).toBeUndefined()
     })
 
     it('reads -R before the subcommand', () => {
@@ -84,7 +80,6 @@ describe('gh content-rule owner scope', () => {
       await withRepo(WIDGETS_REMOTE, dir => {
         expect(reasonOf(nonDraftPr(''), dir)).toBeUndefined()
         expect(reasonOf(nonDraftPr('', `cd ${dir} && `))).toBeUndefined()
-        expect(reasonOf(planIssue('', `cd ${dir} && `))).toBeUndefined()
       })
     })
 
@@ -140,7 +135,6 @@ describe('gh content-rule owner scope', () => {
       ['a GH_REPO prefix before another wrapper', '', 'GH_REPO=widgets-inc/tool nohup '],
     ])('for %s', (_name, flags, prefix) => {
       expect(reasonOf(nonDraftPr(flags, prefix))).toContain(DRAFT_FIRST)
-      expect(reasonOf(planIssue(flags, prefix))).toContain(PLAN_TITLE)
     })
 
     it.each([

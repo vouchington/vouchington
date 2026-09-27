@@ -1,43 +1,12 @@
 # Web
 
-Next.js app. Use [README.md](README.md) and [tests.md](../docs/development/tests.md) for commands. Use
-the [local-site-testing skill](../.agents/skills/local-site-testing/SKILL.md) for local QA and the
-[agent-workflow implementation rules](../.agents/skills/agent-workflow/implementation.md)
-for PR evidence; never commit screenshots.
-Before pushing, run the full suites of the web Vitest projects your change touches; follow the
-[canonical before-push recipe](../docs/checklists/commit.md#before-pushing).
-Run production Next and Storybook builds through the package scripts (`next build` /
-`storybook build` directly — no build lock, since GitHub-hosted runners are single-job VMs).
-
-## Rules
-
-- Read [web-agent-rules.md](../docs/development/web-agent-rules.md) before changing navigation,
-  route structure, page headers, bookmark registration, or component/test conventions. Product
-  contracts live under [docs/requirements](../docs/requirements/README.md).
-- Pages under `web/app/(my)/` follow [(my)/AGENTS.md](<app/(my)/AGENTS.md>).
-- Every database-backed list renders page one on the server and supports cursor continuation; see
-  [pagination.md](../docs/overview/architecture/pagination.md).
-- Server components call `getCurrentUser()`; client components use `useAuth()` and do not receive
-  `currentUser` across the RSC/client boundary. GET helpers in `web/lib/api/server/**` are already
-  `React.cache`-wrapped — see [lib/api/server/AGENTS.md](lib/api/server/AGENTS.md).
-- Do not proxy mutations through inline `'use server'` actions. Call client API helpers from client
-  components.
-- Entity URLs must come from canonical helpers — never hand-build path templates. See
-  [Entity Link Helpers](lib/links/AGENTS.md).
-- External image URLs render through the `/sideload/` proxy via `ProxiedImage`, not bare
-  `next/image`.
-- Browser-visible config is injected at runtime through the public config bootstrap (the
-  `IMAGE_ORIGIN` pattern), not a new Docker build arg. See
-  [environment variables reference](../docs/overview/infrastructure/reference-environment-variables-web-build-time-and-runtime-public-config.md).
-- `data-pw` is the Playwright test-ID; production source must not use `data-testid`. See
-  [web-agent-rules.md](../docs/development/web-agent-rules.md#components-and-tests).
-- React Compiler is enabled; avoid identity-only memoization. See
-  [Pure Component Contracts](../docs/requirements/navigation/reference-components-patterns.md#pure-component-contracts).
-- Before adding or changing a Vitest test, fixture, or mock, load the
-  [web-vitest-test-authoring skill](../.agents/skills/web-vitest-test-authoring/SKILL.md).
-- API changes update fixtures plus Swift/.NET tests.
-
-## See Also
-
-Workspace catalogs, requirement-doc cross-references, and entity matrices are indexed in
-[README.md](README.md).
+- Use [web docs](../docs/overview/architecture/web/README.md), [test commands](../docs/development/tests.md), and [local QA](../.agents/skills/local-site-testing/SKILL.md). Follow [validation evidence](../.agents/skills/agent-workflow/implementation.md); never commit screenshots.
+- Before push, follow the [canonical before-push recipe](../docs/checklists/commit.md#before-pushing). Production Next/Storybook builds use package scripts (`next build`/`storybook build`) without build locks.
+- Read [web conventions](../docs/development/web-agent-rules.md) for navigation/routes/headers/bookmarks/components/tests; product contracts belong in [requirements](../docs/requirements/README.md). Authenticated routes follow [(my) rules](<app/(my)/AGENTS.md>).
+- Database lists server-render page one and support [cursor continuation](../docs/overview/architecture/pagination.md).
+- Server components use `getCurrentUser()`; clients use `useAuth()` without `currentUser` crossing RSC/client boundaries. GET helpers are already React-cached; follow [server API rules](lib/api/server/AGENTS.md).
+- Mutations call client API helpers, never inline `'use server'` proxies. Entity URLs use [canonical link helpers](lib/links/AGENTS.md), never hand-built templates.
+- External images use `/sideload/` through `ProxiedImage`, never bare `next/image` URLs.
+- Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build args; follow [public config](../docs/overview/infrastructure/reference-environment-variables-web-build-time-and-runtime-public-config.md).
+- Production test IDs use `data-pw`, never `data-testid`. React Compiler is enabled; avoid identity-only memoization under [pure component contracts](../docs/requirements/navigation/reference-components-patterns.md#pure-component-contracts).
+- Load [web Vitest authoring](../.agents/skills/web-vitest-test-authoring/SKILL.md) for tests/fixtures/mocks. API changes update fixtures and Swift/.NET tests under the root client-parity contract.

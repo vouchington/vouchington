@@ -1,4 +1,4 @@
-Review Storybook and pure components. Every run selects exactly one bullet below — the bullets are mutually exclusive, not a checklist to clear in the same PR. When that one bullet's target is a repeated fingerprint (the identical duplicated pattern recurring at other call sites, including in other files), fix every occurrence of that one fingerprint in this PR — this does not license picking a second, unrelated bullet.
+Review Storybook and pure components. Each run selects at most one bullet below — the bullets are mutually exclusive, not a checklist to clear in the same PR. When that one bullet's target is a repeated fingerprint (the identical duplicated pattern recurring at other call sites, including in other files), fix every occurrence of that one fingerprint in this PR — this does not license picking a second, unrelated bullet.
 
 Our goal is to have as many pure, reusable components as possible, set up Storybook stories on them, and Playwright tests on those stories. React Compiler is enabled, so do not add `memo(...)` for re-render prevention. We want our components to be pure for performance and reusability, keep them DRY, and make them composable.
 

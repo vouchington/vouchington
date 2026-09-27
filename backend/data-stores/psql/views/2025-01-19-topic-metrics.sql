@@ -7,7 +7,7 @@ CREATE OR REPLACE VIEW view_topic_metrics AS
       -- joining posts + the eligibility view, so the planner can pull this view up
       -- into an indexed per-topic lookup instead of re-deriving the whole
       -- topic-independent eligible-discussion set for every output row. See
-      -- backend/data-stores/psql/reference-migrations-views-and-config-driven.md
+      -- docs/development/postgresql/reference-migrations-views-and-config-driven.md
       -- for why this must stay UNION ALL with no CTE.
       SELECT COUNT(DISTINCT posts.id)::bigint
       FROM (

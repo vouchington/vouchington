@@ -45,8 +45,6 @@ const LIVE_ANALYSIS_IMPORTS = new Set([
   'validateMermaidMarkdown',
 ])
 
-const LIVE_ADAPTER_CALLS = /\bvalidatePlanMermaidMarkdown\(/u
-
 function liveAnalysisImportNames(source: string): string[] {
   if (!source.includes('no-mistakes')) return []
   const file = ts.createSourceFile('test.mts', source, ts.ScriptTarget.Latest, true)
@@ -129,10 +127,7 @@ describe('no-mistakes CI contention policy', () => {
         if (/\.mock\.test\./u.test(path)) {
           return hits.length > 0 ? [`${path}:${hits.join(',')}`] : []
         }
-        hits.push(
-          ...liveAnalysisImportNames(source).map(name => `import:${name}`),
-          ...(LIVE_ADAPTER_CALLS.test(source) ? ['adapter-call'] : []),
-        )
+        hits.push(...liveAnalysisImportNames(source).map(name => `import:${name}`))
         return hits.length > 0 ? [`${path}:${hits.join(',')}`] : []
       }),
     ).toEqual([])

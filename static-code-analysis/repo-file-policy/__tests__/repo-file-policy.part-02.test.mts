@@ -19,11 +19,11 @@ describe('repo-file-policy', () => {
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n'
     await track(dir, 'docs/requirements/moderation/REPORTING.md', syncedReportDoc)
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
-    await track(dir, 'backend/api/v1/reports/README.md', syncedReportDoc)
+    await track(dir, 'docs/requirements/api/v1/reports/README.md', syncedReportDoc)
     await expect(run(dir)).rejects.toMatchObject({
       code: 1,
       stdout: expect.stringContaining(
-        'backend/services/moderation-reports/README.md: required moderation policy/report doc is missing',
+        'docs/overview/architecture/services/moderation-reports/README.md: required moderation policy/report doc is missing',
       ),
     })
   })
@@ -54,10 +54,10 @@ describe('repo-file-policy', () => {
       'Entities: rss_feed_item post comment user url_hostname old_entity. Reasons: spam harassment misinformation illegal_content vote_manipulation other bad_reason.\n'
     await track(dir, 'docs/requirements/moderation/REPORTING.md', staleReportDoc)
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', staleReportDoc)
-    await track(dir, 'backend/api/v1/reports/README.md', staleReportDoc)
+    await track(dir, 'docs/requirements/api/v1/reports/README.md', staleReportDoc)
     await track(
       dir,
-      'backend/services/moderation-reports/README.md',
+      'docs/overview/architecture/services/moderation-reports/README.md',
       staleReportDoc.concat(
         '| Target FK | uuid | Exactly one of `post_id`, `reported_user_id`, or `rss_feed_item_id` |\n',
       ),
@@ -109,8 +109,12 @@ describe('repo-file-policy', () => {
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n'
     await track(dir, 'docs/requirements/moderation/REPORTING.md', syncedReportDoc)
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
-    await track(dir, 'backend/api/v1/reports/README.md', syncedReportDoc)
-    await track(dir, 'backend/services/moderation-reports/README.md', syncedReportDoc)
+    await track(dir, 'docs/requirements/api/v1/reports/README.md', syncedReportDoc)
+    await track(
+      dir,
+      'docs/overview/architecture/services/moderation-reports/README.md',
+      syncedReportDoc,
+    )
     await track(
       dir,
       'docs/requirements/moderation/REPORT-JUDGEMENTS.md',
@@ -139,8 +143,12 @@ describe('repo-file-policy', () => {
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n'
     await track(dir, 'docs/requirements/moderation/REPORTING.md', syncedReportDoc)
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
-    await track(dir, 'backend/api/v1/reports/README.md', syncedReportDoc)
-    await track(dir, 'backend/services/moderation-reports/README.md', syncedReportDoc)
+    await track(dir, 'docs/requirements/api/v1/reports/README.md', syncedReportDoc)
+    await track(
+      dir,
+      'docs/overview/architecture/services/moderation-reports/README.md',
+      syncedReportDoc,
+    )
     await track(
       dir,
       'docs/requirements/moderation/REPORT-JUDGEMENTS.md',

@@ -1,6 +1,6 @@
 ---
 name: event-ingress-routing
-description: Use before adding, changing, or reviewing an inbound AWS event (SNS/EventBridge) or third-party webhook path — decides in-VPC enqueue-only Lambda vs. public endpoint, whether an auth check is self-contained, and whether the path is real-time.
+description: Choose ingress and authentication boundaries for AWS events and third-party webhooks.
 ---
 
 # Event Ingress Routing

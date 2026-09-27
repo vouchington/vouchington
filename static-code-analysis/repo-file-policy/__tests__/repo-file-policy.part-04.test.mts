@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { renderPartitionInventory } from '../partition-inventory-doc.mts'
-
 import {
   SYNCED_MODERATION_POLICY_MATRIX_DOC,
   setupRepoFilePolicyTest,
 } from '../repo-file-policy-test-helpers.mts'
+
+const reportServiceDoc = 'docs/overview/architecture/services/moderation-reports/README.md'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track, trackSyncedModerationDocs } = setupRepoFilePolicyTest()
@@ -52,7 +53,7 @@ describe('repo-file-policy', () => {
     )
     await track(
       dir,
-      'backend/api/v1/reports/README.md',
+      'docs/requirements/api/v1/reports/README.md',
       [
         'Canonical `entityType` values are `rss_feed_item`, `post`, `comment`, `user`, and `url_hostname`.',
         '## Endpoints',
@@ -67,7 +68,7 @@ describe('repo-file-policy', () => {
     )
     await track(
       dir,
-      'backend/services/moderation-reports/README.md',
+      reportServiceDoc,
       [
         'Canonical entity types are `rss_feed_item`, `post`, `comment`, `user`, and `url_hostname`.',
         '## Data Model',
@@ -100,8 +101,8 @@ describe('repo-file-policy', () => {
       'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n'
     await track(dir, 'docs/requirements/moderation/REPORTING.md', syncedReportDoc)
     await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
-    await track(dir, 'backend/api/v1/reports/README.md', syncedReportDoc)
-    await track(dir, 'backend/services/moderation-reports/README.md', syncedReportDoc)
+    await track(dir, 'docs/requirements/api/v1/reports/README.md', syncedReportDoc)
+    await track(dir, reportServiceDoc, syncedReportDoc)
     await track(
       dir,
       'docs/requirements/moderation/REPORT-JUDGEMENTS.md',

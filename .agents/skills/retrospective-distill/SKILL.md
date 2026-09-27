@@ -1,6 +1,6 @@
 ---
 name: retrospective-distill
-description: Distill Vouchington agent-blackboard retrospective entries into actionable GitHub issues using the portable workflow and local issue policy.
+description: Turn verified Vouchington retrospective findings into actionable issues.
 ---
 
 # Vouchington Retrospective Distillation Adapter

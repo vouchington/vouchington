@@ -92,7 +92,7 @@ describe('blockedDevServerPatterns', () => {
       'wrangler dev dist/index.js --no-bundle',
       // wrangler/next/npx as arguments to another tool — must not block
       'rg next dev',
-      'grep wrangler dev/README.md',
+      'grep wrangler docs/development/local-development/README.md',
       'FOO=1 rg next dev',
       'rg npx next dev',
       // pnpm --long-flag dev subcommand — `dev` is a flag value, not the script name

@@ -57,5 +57,5 @@ Keep this aligned with `backend/services/posts/review-successions/audit.mts`,
 
 ## See Also
 
-- [Post publication queue](../../backend/queues/post-publication/README.md)
+- [Post publication queue](../overview/architecture/queues/post-publication/README.md)
 - [Review succession lifecycle](../requirements/content/reference-post-lifecycle-review-succession.md)

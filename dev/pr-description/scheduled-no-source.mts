@@ -30,7 +30,7 @@ const STANDALONE_ROOT_CAUSE_REF_RE =
   /^Refs:?[ \t]+(?:(?<owner>[\w.-]+)\/(?<repo>[\w.-]+))?#(?<number>\d+)$/i
 const FIX_MAIN_WORKSPACE_SETUP_LINE = 'Workspace setup: Automation fix-main run'
 
-function extractRelatedIssuesLines(bodyLines: string[]): string[] {
+export function extractRelatedIssuesLines(bodyLines: string[]): string[] {
   const sections = bodyLines.join('\n').split(/^(?=##\s)/m)
   const section = sections.find(candidate => {
     const [heading = ''] = candidate.split(/\r?\n/, 1)

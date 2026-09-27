@@ -51,5 +51,5 @@ User -----> CF Worker (gateway, always runs) ----+----> Next.js (HTML pages)
 | `/favicon.ico`, `/robots.txt`, `/llms.txt`, `/llms-full.txt`, `/.well-known/*` | CF Worker (inline, cached)                        | CF Worker (inline, cached)                      | CF Worker (inline, cached)                                       |
 | Everything else                                                                | CF Worker -> Next.js                              | CF Worker -> Next.js                            | CF Worker -> Next.js                                             |
 
-See [Worker caching architecture](../../../cloudflare-worker/reference-caching-architecture.md)
+See [Worker caching architecture](../infrastructure/cloudflare-worker/reference-caching-architecture.md)
 for the CI asset route shared by Playwright and web-integration tests.

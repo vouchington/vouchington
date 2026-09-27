@@ -7,7 +7,7 @@ import type { HookPayload } from './types.mts'
 // Merged PostToolUse entrypoint: reads stdin and parses the payload exactly once, then runs every
 // PostToolUse side effect in-process instead of Codex/Claude spawning three separate hook
 // processes for the same tool call (see docs/development on the reveal-delay investigation this
-// replaced — dev/reference-agent-session-hooks.md). Only the tmux reminder may write stdout, and
+// replaced — docs/development/local-development/reference-agent-session-hooks.md). Only the tmux reminder may write stdout, and
 // it writes at most once, at the very end; the journal checkpoint and session-friction logging are
 // fire-and-forget side effects that must never surface as hook output or block the calling tool.
 // Each stays behind its own try/catch so one failing step never skips the others, and each import

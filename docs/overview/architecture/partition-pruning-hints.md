@@ -50,4 +50,4 @@ workflow is `pnpm run explain:seed`, `pnpm run explain:run`, and `pnpm run expla
 
 - [Partitioning Strategy](partitioning-strategy.md)
 - [Database Rules](../../../backend/data-stores/psql/AGENTS.md)
-- [PostgreSQL queue](../../../backend/queues/psql/README.md)
+- [PostgreSQL queue](queues/psql/README.md)
