@@ -37,10 +37,11 @@ function runScript({
 
 function writeFakeTmux(paneTitle: string): string {
   const dir = makeTempDir()
+  const tmuxCommand = path.join(dir, 'tmux')
   writeFileSync(
-    path.join(dir, 'tmux'),
+    tmuxCommand,
     [
-      '#!/usr/bin/env bash',
+      '#!/bin/bash',
       'case "$1" in',
       `  display-message) printf '%s\\n' ${JSON.stringify(paneTitle)} ;;`,
       'esac',
@@ -48,7 +49,7 @@ function writeFakeTmux(paneTitle: string): string {
     ].join('\n'),
     { mode: 0o755 },
   )
-  return dir
+  return tmuxCommand
 }
 
 describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook subprocess)', () => {
@@ -130,10 +131,10 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
   })
 
   it('emits only the tmux reminder on stdout, even when the same call also fires a journal milestone', () => {
-    const tmuxDir = writeFakeTmux('old-task')
+    const tmuxCommand = writeFakeTmux('old-task')
     const result = runScript({
       args: ['claude'],
-      env: { PATH: `${tmuxDir}:${process.env.PATH ?? ''}`, TMUX_PANE: '%1' },
+      env: { TMUX_PANE: '%1', VOUCHA_TMUX_BIN: tmuxCommand },
       input: JSON.stringify({
         session_id: `e2e-post-tool-use-command-reminder-${randomUUID()}`,
         tool_input: { command: 'gh pr create --title x --body y' },
@@ -155,10 +156,10 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
   // Cursor runs this same Claude-compat entrypoint with its own `Shell` tool name and a JSON-string
   // `tool_output`; readHookPayload normalizes both, so the exit-code gate still applies.
   function runCursorPrCreate(exitCode: number) {
-    const tmuxDir = writeFakeTmux('old-task')
+    const tmuxCommand = writeFakeTmux('old-task')
     return runScript({
       args: ['claude'],
-      env: { PATH: `${tmuxDir}:${process.env.PATH ?? ''}`, TMUX_PANE: '%1' },
+      env: { TMUX_PANE: '%1', VOUCHA_TMUX_BIN: tmuxCommand },
       input: JSON.stringify({
         cursor_version: 'present',
         tool_input: { command: 'gh pr create --title x --body y' },

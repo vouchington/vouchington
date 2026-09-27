@@ -6,6 +6,8 @@ set -euo pipefail
 #
 # Usage: dev/tmux-agent-reminder <event>
 #   event: session-start | user-prompt
+#   VOUCHA_TMUX_BIN: optional tmux binary (default: tmux on PATH). Tests set an
+#   absolute path so a missed PATH lookup cannot look like an empty pane title.
 #
 # post-tool moved to dev/tmux-reminder-post-tool.mts's renderPostToolReminder, called in-process
 # from the merged dev/codex-hooks/post-tool-use-command.mts entrypoint — see
@@ -24,7 +26,8 @@ fi
 cat >/dev/null
 
 pane_title() {
-  tmux display-message -p -t "$TMUX_PANE" '#{pane_title}' 2>/dev/null || true
+  local tmux_bin="${VOUCHA_TMUX_BIN:-tmux}"
+  "$tmux_bin" display-message -p -t "$TMUX_PANE" '#{pane_title}' 2>/dev/null || true
 }
 
 POLICY="Run: ./dev/tmux-name <name>  (must run unsandboxed: Claude/Codex dangerouslyDisableSandbox; Cursor disable sandbox)

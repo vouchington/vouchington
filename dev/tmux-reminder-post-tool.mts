@@ -71,8 +71,10 @@ export function renderPostToolReminder(
   options?: PostToolTmuxOptions,
 ): string | null {
   // Resolved up front so callers that return before display-message still exercise the defaults.
+  // VOUCHA_TMUX_BIN is the same absolute-binary seam as dev/tmux-agent-reminder: a PATH
+  // miss is indistinguishable from an empty pane title.
   const env = options?.env ?? process.env
-  const tmuxCommand = options?.tmuxCommand ?? 'tmux'
+  const tmuxCommand = options?.tmuxCommand || env.VOUCHA_TMUX_BIN || 'tmux'
   if (tmuxPane === '') return null
 
   const toolName = hookToolName(payload)
