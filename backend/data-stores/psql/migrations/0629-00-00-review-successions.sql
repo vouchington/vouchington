@@ -1,24 +1,8 @@
-CREATE OR REPLACE FUNCTION fn_review_succession_topic_ids_are_sorted_distinct(topic_ids UUID[])
-RETURNS BOOLEAN
-LANGUAGE SQL
-IMMUTABLE
-STRICT
-AS $$
-  SELECT cardinality(topic_ids) > 0
-    AND array_position(topic_ids, NULL::uuid) IS NULL
-    AND topic_ids = ARRAY(
-      SELECT DISTINCT topic_id
-      FROM unnest(topic_ids) AS input(topic_id)
-      ORDER BY topic_id
-    );
-$$;
-
 CREATE TABLE IF NOT EXISTS review_successions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   predecessor_post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
   successor_post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
   author_user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-  topic_ids UUID[] NOT NULL CHECK (fn_review_succession_topic_ids_are_sorted_distinct(topic_ids)),
   predecessor_archived_at TIMESTAMPTZ NOT NULL,
   automatically_restored_at TIMESTAMPTZ,
   manual_override_at TIMESTAMPTZ,
@@ -48,9 +32,6 @@ CREATE INDEX IF NOT EXISTS idx_review_successions__active_successor_post_id
 ON review_successions (successor_post_id)
 WHERE automatically_restored_at IS NULL AND manual_override_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_review_successions__author_user_id__topic_ids
-ON review_successions (author_user_id, topic_ids);
-
 CREATE OR REPLACE FUNCTION fn_guard_review_succession_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -61,14 +42,12 @@ BEGIN
     NEW.predecessor_post_id,
     NEW.successor_post_id,
     NEW.author_user_id,
-    NEW.topic_ids,
     NEW.predecessor_archived_at
   ) IS DISTINCT FROM ROW(
     OLD.id,
     OLD.predecessor_post_id,
     OLD.successor_post_id,
     OLD.author_user_id,
-    OLD.topic_ids,
     OLD.predecessor_archived_at
   ) THEN
     RAISE EXCEPTION 'review succession identity and archive epoch are immutable';
@@ -100,7 +79,85 @@ COMMENT ON TABLE review_successions IS 'Immutable automatic review-archive epoch
 COMMENT ON COLUMN review_successions.predecessor_post_id IS 'Older exact-topic review archived by this automatic succession epoch.';
 COMMENT ON COLUMN review_successions.successor_post_id IS 'Newer review that was public when this archive epoch was created; immutable historical evidence, not a current routing pointer.';
 COMMENT ON COLUMN review_successions.author_user_id IS 'Shared non-null author snapshot for the predecessor and successor reviews.';
-COMMENT ON COLUMN review_successions.topic_ids IS 'Ascending, distinct exact topic-set snapshot at automatic archive time.';
 COMMENT ON COLUMN review_successions.predecessor_archived_at IS 'Exact posts.archived_at value written by this automatic archive epoch.';
+
+CREATE TABLE IF NOT EXISTS review_succession_topics (
+  review_succession_id UUID NOT NULL REFERENCES review_successions (id) ON DELETE CASCADE,
+  topic_id UUID NOT NULL REFERENCES retained_topic_identities (id) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (review_succession_id, topic_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_succession_topics__topic_id
+  ON review_succession_topics (topic_id);
+
+CREATE OR REPLACE TRIGGER trigger_review_succession_topics_updated_at
+BEFORE UPDATE ON review_succession_topics
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+CREATE OR REPLACE FUNCTION fn_guard_review_succession_topic_mutation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF EXISTS (SELECT 1 FROM review_successions WHERE id = OLD.review_succession_id) THEN
+      RAISE EXCEPTION 'review succession topics are immutable' USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'review succession topics are immutable' USING ERRCODE = 'check_violation';
+END;
+$$;
+
+CREATE TRIGGER trigger_review_succession_topics_immutable
+BEFORE UPDATE OR DELETE ON review_succession_topics
+FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_topic_mutation();
+
+CREATE OR REPLACE FUNCTION fn_assert_review_succession_topics()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  succession_id UUID;
+  topic_count INTEGER;
+BEGIN
+  IF TG_TABLE_NAME = 'review_successions' THEN
+    IF TG_OP = 'DELETE' THEN
+      succession_id := OLD.id;
+    ELSE
+      succession_id := NEW.id;
+    END IF;
+  ELSIF TG_OP = 'DELETE' THEN
+    succession_id := OLD.review_succession_id;
+  ELSE
+    succession_id := NEW.review_succession_id;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM review_successions WHERE id = succession_id) THEN
+    RETURN NULL;
+  END IF;
+  SELECT COUNT(*) INTO topic_count
+  FROM review_succession_topics
+  WHERE review_succession_id = succession_id;
+  IF topic_count < 1 THEN
+    RAISE EXCEPTION 'review succession topic set must be nonempty' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER trigger_review_successions_topics
+AFTER INSERT OR DELETE ON review_successions
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics();
+
+CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty
+AFTER INSERT OR DELETE ON review_succession_topics
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics();
+
+COMMENT ON TABLE review_succession_topics IS 'Immutable nonempty topic snapshot for one automatic review-succession epoch. topic_id is a retained identity and does not authorize a deleted topic.';
+COMMENT ON COLUMN review_succession_topics.topic_id IS 'Retained topic identity in the exact archive-time set.';
 COMMENT ON COLUMN review_successions.automatically_restored_at IS 'Terminal timestamp when reconciliation restored the predecessor.';
 COMMENT ON COLUMN review_successions.manual_override_at IS 'Terminal timestamp when a manual archive or unarchive revoked automatic restoration authority.';

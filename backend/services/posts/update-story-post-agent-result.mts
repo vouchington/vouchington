@@ -46,7 +46,7 @@ export async function updateStoryPostAgentResult(
       SELECT
         title,
         markdown,
-        structured_data,
+        fn_post_structured_data(id) AS structured_data,
         COALESCE((
           SELECT JSON_AGG(
             jsonb_build_object(
