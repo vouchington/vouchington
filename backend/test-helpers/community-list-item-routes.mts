@@ -1,6 +1,4 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import type { Community } from '@services/communities/types'
-import type { PrivateUser } from '@services/users/types'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
@@ -21,9 +19,9 @@ export function describeCommunityListItemRoutes(options: {
   const { segment, itemType, bodyKey, createEntityId } = options
   const register = segment === 'domains' ? registerDomainRoutes : registerUrlRoutes
   register(() => {
-    let owner: PrivateUser
-    let member: PrivateUser
-    let community: Community
+    let owner: Awaited<ReturnType<typeof createTestUser>>
+    let member: Awaited<ReturnType<typeof createTestUser>>
+    let community: Awaited<ReturnType<typeof insertTestCommunity>>
 
     beforeAll(async () => {
       const [ownerUser, memberUser] = await Promise.all([createTestUser(), createTestUser()])
