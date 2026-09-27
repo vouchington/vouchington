@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'json' }
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import {
   createTestPost,
@@ -83,6 +83,10 @@ describe('post classifier worker', () => {
     releaseSeedLock = await initializePostClassifierExecutionTests()
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
   afterAll(async () => releaseSeedLock?.())
 
   it('dispatches one remote child from an approved post independent of label count', async () => {
@@ -107,6 +111,7 @@ describe('post classifier worker', () => {
   })
 
   it('runs a local-only receipt without starting a provider attempt and replays after completion', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', '')
     const { post } = await createApprovedClassifierPost(false)
     const child = await dispatch(post.id)
 
@@ -172,6 +177,10 @@ describe('post classifier worker', () => {
   })
 
   it('does not run a provider after its attempt budget is exhausted', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('Unexpected provider request'))
     const { community, inputSha256, post } = await createApprovedClassifierPost(true)
     const reservation = await reservePostClassifierApplication(post.id, detectorPackageVersion)
     if (!reservation) throw new Error('Expected classifier reservation')
@@ -212,6 +221,7 @@ describe('post classifier worker', () => {
         }),
       ),
     ).resolves.toEqual({ kind: 'terminal' })
+    expect(fetch).not.toHaveBeenCalled()
     expect(await getPostClassifierApplicationFacts(post.id)).toEqual([
       expect.objectContaining({
         id: reservation.applicationId,
