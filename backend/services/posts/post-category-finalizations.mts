@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, withTransactionOptions, write } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { enqueueReconcilePostCategoryFinalizations } from '@queues/entity-listeners/enqueues'
 import { getPrivateUserByAny } from '@services/users/get'
@@ -99,7 +99,7 @@ export async function persistPostCategoryFinalization(
     )
     return finalized[0]!
   }
-  if (options.query) return persist(options.query)
+  if (options.query || options.client) return withTransactionOptions(options, persist)
   await using transaction = await beginTransaction()
   const finalization = await persist(transaction)
   await transaction.commit()

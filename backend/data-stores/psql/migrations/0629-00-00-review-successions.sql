@@ -28,6 +28,9 @@ WHERE automatically_restored_at IS NULL AND manual_override_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_review_successions__successor_post_id
 ON review_successions (successor_post_id);
 
+CREATE INDEX IF NOT EXISTS idx_review_successions__author_user_id
+ON review_successions (author_user_id);
+
 CREATE INDEX IF NOT EXISTS idx_review_successions__active_successor_post_id
 ON review_successions (successor_post_id)
 WHERE automatically_restored_at IS NULL AND manual_override_at IS NULL;
