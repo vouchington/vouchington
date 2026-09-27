@@ -25,6 +25,15 @@ Observer errors appear in the same file and do not change the seed result. CI al
 PostgreSQL container stats and tmpfs usage. Both files are retained by the existing EXPLAIN results
 artifact even when seeding fails.
 
+On a freshly migrated database, the first post batch can leave the planner with empty-table
+statistics while the [`fn_ensure_retained_post_identity` trigger](../../data-stores/psql/migrations/0000-00-01-retained-entity-identities.sql)
+looks up each inserted identity. An exact-schema local reproduction found repeated sequential scans
+of the growing retained-identity partition in that trigger. After the first completed batch, the
+seed runs one timed `ANALYZE retained_post_identities, posts` inside its existing transaction. Plain
+`ANALYZE` also refreshes their partitions; later batches can then plan against populated statistics.
+This addresses the reproduced stale-plan path. The hosted clearance slowdown still needs its own
+diagnostic evidence before assigning it the same cause.
+
 ### 2. Run EXPLAIN ANALYZE
 
 Calls each service function, captures the SQL queries, and replays them with

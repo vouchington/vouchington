@@ -78,6 +78,11 @@ export async function seedPosts(count = 10_000): Promise<void> {
           ),
         )
       })
+      if (batchIndex === 0) {
+        await diagnostics.operation('analyze_post_stats', batchIndex, () =>
+          query('/* explainSeedPostStats */ ANALYZE retained_post_identities, posts'),
+        )
+      }
     }
 
     await diagnostics.operation('commit', null, () => transaction.commit())
