@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
   createTestUserDirect,
   getTestPostgresAdvisoryLockHolderProcessId,
   insertTestBlueskyLinkedAccount,
+  readEnqueuedJob,
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -22,6 +24,14 @@ import { BLUESKY_DISCONNECT_LOCK_NAMESPACE } from './disconnect-lock.mts'
 
 describe('durable Bluesky disconnect', () => {
   it('persists and queues the exact generation without synchronous cleanup', async () => {
+    const unrelated = {
+      userId: randomUUID(),
+      blueskyDid: `did:plc:${randomUUID()}`,
+      linkAuthorizationId: randomUUID(),
+    }
+    const unrelatedEnqueued = await enqueueDisconnectRequested(unrelated)
+    const unrelatedJob = await readEnqueuedJob(blueskyFollowPropagation, unrelatedEnqueued)
+    const unrelatedJobOptions = structuredClone(unrelatedJob.opts)
     const user = await createTestUserDirect()
     const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
     const cleanup =
@@ -42,18 +52,24 @@ describe('durable Bluesky disconnect', () => {
     expect(cleanup).not.toHaveBeenCalled()
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
     expect(await hasPendingBlueskyDisconnect(expected)).toBe(true)
-    const job = (await blueskyFollowPropagation.getJobs('waiting')).find(
-      candidate => candidate.name === 'disconnectRequested',
-    )
+    const jobId = `disconnect_${user.id}_${linked.link_authorization_id}`
+    const job = await blueskyFollowPropagation.getJob(jobId)
+    expect(job?.name).toBe('disconnectRequested')
     expect(job?.data).toEqual(expected)
     expect(job?.opts).toMatchObject({
       attempts: 3,
-      jobId: `disconnect_${user.id}_${linked.link_authorization_id}`,
+      jobId,
       priority: 10,
       deduplication: {
-        id: `disconnect_${user.id}_${linked.link_authorization_id}`,
+        id: jobId,
         mode: 'simple',
       },
+    })
+    expect(await readEnqueuedJob(blueskyFollowPropagation, unrelatedEnqueued)).toMatchObject({
+      id: unrelatedJob.id,
+      name: 'disconnectRequested',
+      data: unrelated,
+      opts: unrelatedJobOptions,
     })
   })
 

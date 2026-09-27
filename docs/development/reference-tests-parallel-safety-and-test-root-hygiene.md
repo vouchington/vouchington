@@ -128,6 +128,11 @@ turns a broken processor into "no job was enqueued." The same vacuity defect rea
 `queue.searchJobs({ state: 'waiting', ... })` too; omit the `state` key there instead of picking a
 different one, since the shim skips the filter entirely when it is `undefined`.
 
+When an indirect enqueue still has a known deterministic job ID, use `queue.getJob(expectedId)`
+instead of scanning by job name. For example, a Bluesky disconnect job's ID includes both the
+requesting user and link authorization, so another `disconnectRequested` job cannot satisfy its
+assertion. Assert the selected job's name, payload, and options as well as its ID.
+
 An all-state read returns every job the fork has ever put on that queue, since the shim never prunes
 terminal records and `obliterate()` only clears them when a test explicitly calls it. A **scoped**
 assertion (filtered by the test's own id/name/key) stays correct under that widening. An **unscoped**
