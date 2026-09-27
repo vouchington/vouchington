@@ -14,6 +14,7 @@ import {
   setPostDeletedForTest,
 } from '@voucha/test-helpers'
 import { getPostFeedIds } from '../get-ids.mts'
+import type { PostFeedOptions } from '../../types.mts'
 
 describe('post share delivery pagination', () => {
   it.each(['new', 'hot'] as const)(
@@ -47,7 +48,7 @@ describe('post share delivery pagination', () => {
         expect(page.results.map(row => row.id)).toEqual([id])
         expect(page.results[0]?.entity_id).toBe(post.id)
         delivered.push(page.results[0]!)
-        after = page.page_info.end_cursor
+        after = page.page_info.end_cursor ?? undefined
         expect(page.page_info.has_next_page).toBe(id !== expectedIds.at(-1))
       }
       expect(delivered.map(row => row.delivery_type)).toEqual(['share', 'share', 'direct'])
@@ -123,7 +124,7 @@ describe('post share delivery pagination', () => {
       { post_types: ['review'] },
       { text_search_query: 'missinguniquetoken' },
       { has_unknown_hashtag: true },
-    ]) {
+    ] satisfies PostFeedOptions[]) {
       expect(
         (await getPostFeedIds(viewer, { feed_type: 'follow_users', limit: 10, ...options }))
           .results,
@@ -145,7 +146,11 @@ describe('post share delivery pagination', () => {
       sharedByUserId: rootCreator.id,
       postId: comment.id,
     })
-    const options = { feed_type: 'follow_users' as const, post_types: ['comment'], limit: 10 }
+    const options: PostFeedOptions = {
+      feed_type: 'follow_users',
+      post_types: ['comment'],
+      limit: 10,
+    }
     expect((await getPostFeedIds(viewer, options)).results.map(row => row.id)).toEqual([shareId])
     await setPostDeletedForTest(root.id)
     expect((await getPostFeedIds(viewer, options)).results).toEqual([])
