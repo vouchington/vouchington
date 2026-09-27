@@ -67,10 +67,13 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   change](../../development/agent-sandbox.md#three-surface-consistency-when-the-allowlist-does-change)
   still names command-prefix surfaces (`sandbox.excludedCommands`, `permissions.allow`,
   `.codex/rules/default.rules`) separately from writable-root parity.
-- `sandbox.credentials.envVars` (the deny-list of secrets unset before a sandboxed command runs) is
-  undocumented outside `.claude/settings.json` itself, aside from one incidental comment in
-  `dev/check-blackboard.mts` and an implicit reference at
-  [agent-blackboard.md](../../development/agent-blackboard.md). Do not judge an entry's staleness by
+- `sandbox.credentials.envVars` (the deny-list of secrets unset before a sandboxed command runs)
+  is documented in
+  [reference-agent-sandbox-credential-deny-list.md](../../development/reference-agent-sandbox-credential-deny-list.md).
+  [agent-sandbox.md](../../development/agent-sandbox.md#sandbox-credential-deny-list) owns the
+  mechanism and links there. That parent page is already over the markdown structure budget and
+  can keep only one table, so do not add this inventory back as a second table on that page, and
+  do not move it into `agent-blackboard.md`. Do not judge an entry's staleness by
   whether the repo itself issues or references that credential — several entries (e.g.
   `CLAUDE_CODE_OAUTH_TOKEN`, `CLOUDSDK_PROXY_PASSWORD`, `GITHUB_PERSONAL_ACCESS_TOKEN`,
   `SONAR_TOKEN`) are ambient secrets a developer's local environment may hold even though nothing in
@@ -78,9 +81,7 @@ Review the agent sandbox and permission configuration across Claude, Codex, Grok
   commands. Only propose dropping an entry when you have positive evidence it is obsolete in the
   supported local dev environments (documented in
   [system-dependencies.md](../../development/system-dependencies.md) or equivalent), not merely the
-  absence of a repo reference. Separately, check whether the list belongs in `agent-sandbox.md` or
-  `agent-blackboard.md` — whichever is the intended home — as a documented, guarded surface, so a
-  future editor doesn't add it only as an inline comment again.
+  absence of a repo reference. The set-equality guard is `dev/agent-sandbox-credentials.test.mts`.
 - `dev/agent-sandbox-config.test.mts` verifies the remaining git/gh prefixes and the
   pnpm approval prefixes exist in `codexRules` and in doc text, and forbids the six review-bypass
   families in `.codex/rules/default.rules`. It does not read `claudeSettings.permissions.allow` for those families. Do **not**

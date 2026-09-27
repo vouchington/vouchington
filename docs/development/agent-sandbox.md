@@ -30,7 +30,9 @@ Every agent tool call in this repo passes through two layers that don't overlap:
 2. **The OS sandbox** (Landlock/seccomp on Linux, the App Sandbox on macOS) — filesystem
    read/write scoping and network allowlisting at the kernel/OS level. This is what
    `sandbox.excludedCommands` bypasses. An excluded command still goes through the hook above; it
-   just isn't also confined by the OS. Codex allow prefix rules also bypass this layer.
+   just isn't also confined by the OS. Codex allow prefix rules also bypass this layer. The same
+   layer unsets `sandbox.credentials.envVars` before a sandboxed command starts
+   ([Sandbox credential deny list](#sandbox-credential-deny-list)).
 
 Narrowing `excludedCommands` only affects layer 2. It does not add or remove any semantic gate.
 
@@ -153,6 +155,27 @@ residual if that env is set; do not grant `/run/user` (formerly filed as jonatha
 [`dev/agent-workspace-sandbox-config.test.mts`](../../dev/agent-workspace-sandbox-config.test.mts) requires the three
 workspace-write lists to stay equal and every Codex writable root to appear in Claude `allowWrite`.
 
+## Sandbox credential deny list
+
+Claude's OS sandbox unsets every name in [`.claude/settings.json`](../../.claude/settings.json)
+`sandbox.credentials.envVars` before a sandboxed command starts. Each entry is `mode` `deny`.
+A command in `sandbox.excludedCommands` runs outside that sandbox and still receives the
+variables. `dev/check-blackboard.mts` stays excluded for that reason: a sandboxed probe cannot
+tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
+([Stop-work gate](agent-blackboard.md#stop-work-gate)).
+
+Codex `[mcp_servers.agent-blackboard].env_vars` forwards `AGENT_BLACKBOARD_URL` and
+`AGENT_BLACKBOARD_TOKEN` into the MCP server. That pass-through is a separate control. Grok
+[`.grok/sandbox.toml`](../../.grok/sandbox.toml) and Cursor
+[`.cursor/sandbox.json`](../../.cursor/sandbox.json) configure writable roots and have no
+credential unset list. This deny list stays on Claude.
+
+[`.claude/settings.json`](../../.claude/settings.json) is the runtime list. The rationale
+inventory lives in
+[Sandbox credential deny list](reference-agent-sandbox-credential-deny-list.md).
+[`dev/agent-sandbox-credentials.test.mts`](../../dev/agent-sandbox-credentials.test.mts) requires
+that inventory to equal `sandbox.credentials.envVars`, in the same order.
+
 ## Claude review-skip for dev/ commands
 
 Claude `permissions.allow` pre-approves every `dev/` entrypoint with two blanket rules,
@@ -249,5 +272,9 @@ full decision criteria on when an escalation is a genuine bypass candidate worth
   workspace writable-root parity and shared hook-source guard.
 - [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts) — the
   `dev/` allow (blanket plus narrow unsandboxed) and `/../` deny guard.
+- [Sandbox credential deny list](reference-agent-sandbox-credential-deny-list.md) — the
+  `sandbox.credentials.envVars` name inventory.
+- [`dev/agent-sandbox-credentials.test.mts`](../../dev/agent-sandbox-credentials.test.mts) — the
+  `sandbox.credentials.envVars` deny-list guard.
 - [Agent Harness Parity](agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor sandbox and hook reuse.
 - [`.cursor/README.md`](../../.cursor/README.md) — Cursor CLI sandbox, hooks, and worktree setup.
