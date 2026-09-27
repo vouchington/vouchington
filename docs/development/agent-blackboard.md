@@ -262,6 +262,9 @@ It uses bounded `sessions.list({ limit: 1 })`; emitting context cannot mechanica
 A sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
 credential and egress are deliberately withheld. `CHECK_BLACKBOARD_SKIP=1` skips only this advisory
 probe and never bypasses autonomous admission.
+Claude's [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list) explains why
+the token is absent in a sandboxed probe. That diagnostic does not discard interactive pending
+feedback or authorize autonomous work; the trusted controller must still verify delivery.
 
 ## Autonomous admission and terminal feedback
 
