@@ -6,6 +6,7 @@ import {
 } from '@voucha/types/entities/entity-relations-metadata'
 import type { EntityRelationEntityType } from '@voucha/types/entities/entity-relations-config'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
+import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
 
 export default () => {
   const tableCreation = entityRelationMetadatum.map(createEntityRelationTable).join('\n\n')
@@ -13,7 +14,14 @@ export default () => {
   const relationVoteParent = createEntityRelationVoteParentTable()
   const relationVoteTables = electionRelations.map(createEntityRelationVoteTable).join('\n\n')
   const integrityTargets = createEntityRelationVoteIntegrityTargets(electionRelations)
-  return [tableCreation, relationVoteParent, relationVoteTables, integrityTargets].join('\n\n')
+  const retainedImpacts = createRetainedEntityRelationImpacts(electionRelations)
+  return [
+    tableCreation,
+    relationVoteParent,
+    relationVoteTables,
+    integrityTargets,
+    retainedImpacts,
+  ].join('\n\n')
 }
 
 function createEntityRelationTable(metadata: EntityRelationMetadata) {

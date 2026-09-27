@@ -24,49 +24,45 @@ export async function getPublicationVoteTargetScopes(
   query: TransactionQuery,
   targets: readonly EntityRelationVoteTarget[],
 ): Promise<PublicationVoteTargetScopes> {
-  const postTargetIdsByTable = new Map<string, string[]>()
-  const topicAliasTargetIdsByTable = new Map<string, string[]>()
-  const topicTargetIdsByTable = new Map<string, string[]>()
+  const postTargetsByTable = new Map<string, EntityRelationVoteTarget[]>()
+  const topicAliasTargetsByTable = new Map<string, EntityRelationVoteTarget[]>()
+  const topicTargetsByTable = new Map<string, EntityRelationVoteTarget[]>()
   for (const target of targets) {
-    const targetIdsByTable = isPostScopedPublicationRelationTable(target.relationTable)
-      ? postTargetIdsByTable
+    const targetsByTable = isPostScopedPublicationRelationTable(target.relationTable)
+      ? postTargetsByTable
       : isRssFeedItemTopicAliasPublicationRelationTable(target.relationTable)
-        ? topicAliasTargetIdsByTable
+        ? topicAliasTargetsByTable
         : isTopicPublisherTypePublicationRelationTable(target.relationTable)
-          ? topicTargetIdsByTable
+          ? topicTargetsByTable
           : undefined
-    if (!targetIdsByTable) continue
-    const ids = targetIdsByTable.get(target.relationTable) ?? []
-    ids.push(target.entityRelationId)
-    targetIdsByTable.set(target.relationTable, ids)
+    if (!targetsByTable) continue
+    const tableTargets = targetsByTable.get(target.relationTable) ?? []
+    tableTargets.push(target)
+    targetsByTable.set(target.relationTable, tableTargets)
   }
 
   // ast-grep-ignore: no-three-sequential-awaits -- one transaction client serializes the scope-specific whitelisted reads.
-  const postIds = await getPublicationVoteTargetScopeIds(query, postTargetIdsByTable, 'subject_id')
+  const postIds = await getPublicationVoteTargetScopeIds(query, postTargetsByTable, 'subject_id')
   const topicAliasIds = await getPublicationVoteTargetScopeIds(
     query,
-    topicAliasTargetIdsByTable,
+    topicAliasTargetsByTable,
     'object_id',
   )
-  const topicIds = await getPublicationVoteTargetScopeIds(
-    query,
-    topicTargetIdsByTable,
-    'subject_id',
-  )
+  const topicIds = await getPublicationVoteTargetScopeIds(query, topicTargetsByTable, 'subject_id')
   return { postIds, topicAliasIds, topicIds }
 }
 
 async function getPublicationVoteTargetScopeIds(
   query: TransactionQuery,
-  targetIdsByTable: ReadonlyMap<string, readonly string[]>,
+  targetsByTable: ReadonlyMap<string, readonly EntityRelationVoteTarget[]>,
   scopeColumn: 'subject_id' | 'object_id',
 ): Promise<string[]> {
-  if (targetIdsByTable.size === 0) return []
+  if (targetsByTable.size === 0) return []
 
   const statement = sql`/* getPublicationVoteTargetScopeIds */ SELECT `
   statement.append(scopeColumn)
   statement.append(sql` FROM (`)
-  for (const [index, [table, ids]] of [...targetIdsByTable]
+  for (const [index, [table, targets]] of [...targetsByTable]
     .toSorted(([left], [right]) => left.localeCompare(right))
     .entries()) {
     if (index > 0) statement.append(sql` UNION ALL `)
@@ -75,7 +71,12 @@ async function getPublicationVoteTargetScopeIds(
       .append(scopeColumn)
       .append(sql` FROM `)
       .append(assertWhitelistedSqlIdentifier(table, electionTables, 'entityRelationTable'))
-      .append(sql` WHERE id = ANY(${ids}::uuid[])`)
+      .append(sql` WHERE (subject_id, id) IN (
+        SELECT subject_id, relation_id FROM UNNEST(
+          ${targets.map(target => target.subjectId)}::uuid[],
+          ${targets.map(target => target.entityRelationId)}::uuid[]
+        ) AS target(subject_id, relation_id)
+      )`)
   }
   statement.append(sql`) AS publication_targets ORDER BY `)
   statement.append(scopeColumn)

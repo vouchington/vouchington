@@ -1,6 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
   prepublishImageSurfaceDenials,
+  syncImageSurfacePlacement,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
 import { recordPostPublicationChange } from '@services/post-publication'
@@ -30,7 +31,11 @@ async function applyLockedCommunityUpdate(
   input: Parameters<typeof updateCommunityInTransaction>[0],
 ) {
   // ast-grep-ignore: no-three-sequential-awaits -- retain surface owner fences before the physical community row lock and its dependent update
-  await prepublishChangedCommunitySurfaces(input)
+  const surfaces = await prepublishChangedCommunitySurfaces(input)
+  for (const surface of surfaces) {
+    // oxlint-disable-next-line no-await-in-loop -- admission was declared and locked as one owner batch.
+    await syncImageSurfacePlacement(surface, surface.nextImageId ?? null, input.query)
+  }
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
   const rowCount = await prepublishAndUpdateCommunity(input)
   return { locked, rowCount }
@@ -60,7 +65,7 @@ async function prepublishChangedCommunitySurfaces(input: {
   communityId: string
   update: UpdateCommunityInput
   query: TransactionQuery
-}): Promise<void> {
+}): Promise<(ImageSurfaceReference & { nextImageId?: string | null })[]> {
   const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
   if ('profile_image_id' in input.update) {
     references.push({
@@ -77,6 +82,7 @@ async function prepublishChangedCommunitySurfaces(input: {
     })
   }
   await prepublishImageSurfaceDenials(references, input.query)
+  return references
 }
 
 function publicationChanged(

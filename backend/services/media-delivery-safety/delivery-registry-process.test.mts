@@ -13,7 +13,7 @@ import {
   insertTestPostImage,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
-import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
+import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 import {
   repairFailedImageDeliveryMutation,
   getImagePlacementDeliveryKey,

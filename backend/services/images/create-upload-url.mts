@@ -4,6 +4,7 @@ import { v7 } from 'uuid'
 import { SUPPORTED_IMAGE_FORMATS } from './constants.mts'
 import { presignImageUploadUrl } from './presign-upload-url.mts'
 import createHttpError from 'http-errors'
+import { reserveImageIdentity } from '@services/media-delivery-safety'
 
 const PRESIGNED_URL_EXPIRATION_SECONDS = 3600 // 1 hour
 
@@ -34,6 +35,8 @@ export async function createImageUploadUrl(user: { id: string }, options: Create
     contentLength: options.contentLength,
     expiresInSeconds: PRESIGNED_URL_EXPIRATION_SECONDS,
   })
+
+  await reserveImageIdentity(imageId)
 
   // Source provenance and the selected presign bucket commit together in the row.
   const { rows } = await write(

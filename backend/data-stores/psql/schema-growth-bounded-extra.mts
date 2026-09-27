@@ -1,5 +1,9 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
+    'retained_relation_identity_cleanup_progress',
+    'One bounded cleanup cursor for each metadata-declared elected relation family.',
+  ],
+  [
     'post_publication_community_identities',
     'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
   ],

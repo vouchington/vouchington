@@ -2,6 +2,7 @@ import { read, write, writePool, withTransactionOptions } from '@data-stores/psq
 import sql from 'sql-template-strings'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { reconcileDeliveryRepairMarker } from '../../services/media-delivery-safety/delivery-repair-markers.mts'
+import { syncImageSurfacePlacement } from '../../services/media-delivery-safety/surface-placement-sync.mts'
 
 /** Real autocommit executor for rejecting authority calls without a retained transaction. */
 export const testDeliveryAutocommitQuery = write
@@ -47,6 +48,7 @@ export async function setTestDeliveryUserImageInTransaction(
   userId: string,
   imageId: string,
 ): Promise<void> {
+  await syncImageSurfacePlacement({ surfaceKind: 'user-profile-image', userId }, imageId, query)
   await query(sql`UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}`)
 }
 

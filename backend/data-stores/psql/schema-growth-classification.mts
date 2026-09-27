@@ -1,6 +1,11 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { EXTRA_BOUNDED_TABLES } from './schema-growth-bounded-extra.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
+import {
+  RETAINED_ID_POLICIES,
+  RETAINED_RELATION_GROWTH_POLICIES,
+  sharedParentUuidv7,
+} from './schema-growth-retained-identities.mts'
 export const STATIC_IDENTITY_EXCEPTIONS = new Map<string, string>([
   ['countries', 'Small ISO country lookup populated from a fixed reference set.'],
   ['currencies', 'Small ISO currency lookup populated from a fixed reference set.'],
@@ -31,6 +36,10 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
     'Committed replays expire after 48 hours, abandoned reservations are pruned after 48 hours, and bounded cleanup deletes both classes, bounding cardinality to recent admission traffic.',
   ],
   ['ap_inbox_delivery_storage_counters', 'A true primary key limits the ledger to one row.'],
+  [
+    'retained_identity_cleanup_progress',
+    'One bounded cleanup cursor for each of six concrete retained identity families.',
+  ],
 ])
 type NonDefaultIdException = { policy: 'uuidv7' | 'natural-or-provider'; rationale: string }
 const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
@@ -38,6 +47,7 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
+  ...RETAINED_ID_POLICIES,
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
   ['post_publication_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],
@@ -57,10 +67,6 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
     { policy: 'uuidv7', rationale: 'The application supplies the UUIDv7 JWT session id.' },
   ],
 ])
-function sharedParentUuidv7(parentTable: string) {
-  const rationale = `The id is shared with its UUIDv7 ${parentTable} parent row.`
-  return { policy: 'uuidv7' as const, rationale }
-}
 const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'communities',
   'conversations',
@@ -172,6 +178,7 @@ export function buildUnboundedUnpartitionedTables(
             ],
           ] as const),
     ),
+    ...RETAINED_RELATION_GROWTH_POLICIES,
     [
       'ap_inbox_deliveries',
       'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',

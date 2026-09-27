@@ -20,6 +20,8 @@ import { createTopicAliases, finalizeClaimedTopicAliases } from './aliases.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import {
   prepublishImageSurfaceDenials,
+  syncImageSurfacePlacement,
+  assertImageDeliveryTransaction,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
 export const updateTopic = async (
@@ -51,7 +53,15 @@ export const updateTopic = async (
           topicId: topic.id,
           nextImageId: changes.hero_image_id ?? null,
         })
-      if (references.length) await prepublishImageSurfaceDenials(references, options.query ?? write)
+      if (references.length) {
+        const imageQuery = options.query ?? write
+        assertImageDeliveryTransaction(imageQuery)
+        await prepublishImageSurfaceDenials(references, imageQuery)
+        for (const reference of references) {
+          // oxlint-disable-next-line no-await-in-loop -- one predeclared admission batch, then each exact owner binding.
+          await syncImageSurfacePlacement(reference, reference.nextImageId ?? null, imageQuery)
+        }
+      }
       const updateQuery = sql`/* updateTopicInStore */ UPDATE topics SET updated_by_id = ${updater.id}`
       appendTopicUpdateFields(updateQuery, changes)
       let resolvedHostnameId: string | null | undefined

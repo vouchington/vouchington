@@ -21,6 +21,26 @@ describe('unchanged surface image updates', () => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
+  it('reserves a new topic logo binding before the owner update', async () => {
+    const user = await createTestUser({ administrator: true })
+    const imageId = await insertTestImage(user.id)
+    const topicId = await insertTestTopic({
+      name: `new-logo-${crypto.randomUUID()}`,
+      slug: `new-logo-${crypto.randomUUID()}`,
+      createdById: user.id,
+    })
+
+    await updateTopic(
+      user,
+      (await getTopicByAny(topicId))!,
+      { logo_image_id: imageId },
+      { skipSideEffects: true },
+    )
+
+    expect(await getTestImageSurfacePlacements({ topicId })).toEqual([
+      expect.objectContaining({ image_id: imageId }),
+    ])
+  })
   it.each(['community', 'topic'] as const)(
     'keeps %s same-value image routes allowed without publishing a denial',
     async kind => {

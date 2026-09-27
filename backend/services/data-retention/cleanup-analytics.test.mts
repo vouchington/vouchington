@@ -51,6 +51,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
 
     await expect(
       runDataRetentionCleanup({
+        retainedIdentityRootIds: {},
+        retainedRelationIdentityKeys: {},
+        retainedMediaBindingIds: [],
         softDeletedUsers: emptyWindow,
         oldReferralAttributions: emptyWindow,
         orphanedOAuthAccounts: emptyWindow,
@@ -63,6 +66,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
         expiredTopicImportAttempts: emptyWindow,
       }),
     ).resolves.toEqual({
+      retainedIdentityRoots: [],
+      retainedRelationIdentities: [],
+      retainedMediaBindings: { scanned: 0, deleted: 0, hasMore: false },
       softDeletedUsers: { deleted: 0, hasMore: false },
       oldReferralAttributions: { deleted: 0, hasMore: false },
       orphanedOAuthAccounts: { deleted: 0, hasMore: false },

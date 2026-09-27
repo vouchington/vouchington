@@ -1,4 +1,4 @@
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostInput } from '../types.mts'
 import type { CommunityPostReview } from '@services/communities/types'
@@ -30,7 +30,7 @@ export async function applyPostTransactionSideEffects({
   updates,
 }: {
   creator: PrivateUser
-  options: QueryOptions
+  options: { query: TransactionQuery }
   post: { id: string; community_id?: string | null; title: string | null }
   postType: NonNullable<CreatePostInput['post_type']>
   updates: CreatePostInput
@@ -154,7 +154,7 @@ async function insertImages({
   postId,
   updates,
 }: {
-  options: QueryOptions
+  options: { query: TransactionQuery }
   postId: string
   updates: CreatePostInput
 }): Promise<void> {
@@ -174,6 +174,6 @@ async function insertImages({
   await syncPostImagePlacements(
     postId,
     updates.images.map(image => image.image_id),
-    options,
+    options.query,
   )
 }

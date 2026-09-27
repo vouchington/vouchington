@@ -14,6 +14,20 @@ retention is 90 days and never selects pending delivery work.
   reconciliation fences. Final purge also
   revokes retained administrator grants, terminalizes their source state, and closes open activation
   periods before removing the account while preserving the grant audit rows
+- `cleanupRetainedRelationIdentities()` — one cursor-bounded, `SKIP LOCKED` page per elected
+  relation family, after completed deletion impacts are purged. It removes tuples with no impact
+  reference even while a live relation still exists; a later authoritative vote deletion can
+  capture that tuple again. Each family uses its own transaction and never locks a parent root.
+- `cleanupRetainedIdentityRoots()` — one cursor-bounded, `SKIP LOCKED` page per concrete user,
+  topic, post, RSS-item, and image owner family on each scheduled run. A root is deleted only when its
+  live row and all durable request, audit, publication, or retained-relation references are absent; this is separate
+  from publication-bridge cleanup and does not expire audit history.
+- `cleanupRetainedMediaBindings()` — one separate cursor-bounded page of immutable image placement
+  bindings before image-root cleanup. It locks image roots then bindings with `SKIP LOCKED` and
+  removes only bindings with no live placement, registry row, or repair marker. The image-root
+  sweep then excludes live images, retained bindings, and marker references. Marker acknowledgement
+  never performs this cleanup in its transaction.
+
 - `cleanupOldReferralAttributions()` — removes anonymous (`user_id IS NULL`) referral attribution
   rows older than 30 days; rows linked to a user are retained for the life of the account and drop
   into this sweep once `deleteUser` nulls `user_id` (see [attribution README](../attribution/README.md#retention--dedup))
@@ -37,6 +51,11 @@ retention is 90 days and never selects pending delivery work.
   authorization rows retain identifiers and timestamps for lifecycle auditing but scrub the
   plaintext handle
 - `cleanupAnalyticsLocalFiles()` — flushes and compacts/deletes local analytics JSONL files when `ANALYTICS_BACKEND=local`
+
+The scheduled call leaves the three retained cleanup scopes unspecified and advances their
+independent global cursors. Explicit root IDs, relation `(subjectId, relationId)` tuples, or binding
+IDs select only those identities in one page without changing a global cursor; shared-database
+tests use these scopes so their cleanup cannot sweep unrelated fixtures.
 
 Age-based cleanup functions accept optional
 `{ retentionDays, batchSize, maxBatches, lowerBoundDate, now }` options. Explicit-expiry cleanup

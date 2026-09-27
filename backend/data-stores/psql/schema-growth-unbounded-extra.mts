@@ -139,6 +139,8 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'referral_program_link_validations',
   'referral_program_link_validations_rules',
   'report_abuse_penalties',
+  'retained_topic_identities',
+  'retained_user_identities',
   'retailer_countries',
   'review_successions',
   'rss_feed_categories',

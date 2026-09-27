@@ -25,6 +25,33 @@ required by existing retention and recovery behavior. Model alternatives as per-
 with an exact-one-target constraint or as typed child rows. Do not use JSON, UUID arrays, type/id
 pairs, generic attribute/value tables, or encoded string keys as relationship storage.
 
+The canonical user, topic, post, and RSS-item creators register their concrete retained identity
+inside the live-row insertion transaction. Live rows FK back to that owner; deletion may remove the
+live row while a request, audit record, or publication bridge keeps the owner. Root reservation is
+not proof that the live entity exists or that an operation is authorized. The independent bounded
+[retained-identity cleanup](../../backend/services/data-retention/README.md#key-exports) removes
+an owner only after its live row and every durable reference have gone; audit rows have no inferred
+expiry.
+
+Image delivery repair retains a concrete image identity and immutable placement binding with an
+exact post/surface family. The reservation commits independently before a live owner transaction;
+that owner and its repair marker pin image then binding identities in a compatible order. Live
+image and placement rows, registry records, and repair markers use concrete FKs to these owners,
+but retained identity alone never grants delivery. Scheduled bounded cleanup removes an orphan
+binding after its last live, registry, and marker reference, then removes an unreferenced image
+root in a separate sweep.
+
+Elected relation history uses 17 metadata-derived `retained_relation__*` identity owners, each
+keyed by the authoritative `(subject_id, id)` pair and FK-linked to its concrete subject root.
+Only the actual vote `DELETE RETURNING` tuple may reserve one for user-deletion work; neither a
+candidate nor a later live-relation lookup proves the deleted target. Typed, exact-one impact
+columns FK to those pairs, and pending relation effects FK to an impact in the same deletion
+request. The owners are unpartitioned: they contain only active deletion-work identities, not
+permanent copies of live relation rows; composite-key and target indexes keep access selective.
+Reconsider partitioning at sustained one-million-row cardinality or measured pressure. A bounded
+relation-identity sweep removes each owner once no impact references it, even if the live relation
+still exists. The subsequent root sweep also checks all 17 retained-relation references.
+
 JSON storage is for exact reviewed opaque provider documents, external protocol payloads, and
 replay envelopes. Queryable application-owned fields and relationships must be extracted into typed
 storage even when the original external document is also retained. The

@@ -32,6 +32,7 @@ describe('enqueueReconcileNotificationsForPostCategoryVotes', () => {
     await enqueueReconcileNotificationsForPostCategoryVotes([
       {
         relationTable: 'relation__post__category__topic_alias',
+        subjectId: post.id,
         entityRelationId: relationId,
       },
     ])

@@ -1,6 +1,6 @@
 -- Concrete repair relationships retain immutable identity while live deletion clears only the FK.
 CREATE TABLE IF NOT EXISTS post_publication_post_identities (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   post_id UUID REFERENCES posts (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS post_publication_community_identities (
 COMMENT ON TABLE post_publication_community_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_community_identities.community_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
 CREATE TABLE IF NOT EXISTS post_publication_rss_feed_item_identities (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
   rss_feed_item_id UUID UNIQUE REFERENCES rss_feed_items (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS post_publication_rss_feed_item_identities (
 COMMENT ON TABLE post_publication_rss_feed_item_identities IS 'Repair-only identity bridge; unreferenced rows are reclaimed in bounded pages.';
 COMMENT ON COLUMN post_publication_rss_feed_item_identities.rss_feed_item_id IS 'Live entity FK; deletion clears this link without deleting historical repair identity.';
 CREATE TABLE IF NOT EXISTS post_publication_author_identities (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   user_id UUID UNIQUE REFERENCES users (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

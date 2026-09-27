@@ -15,6 +15,7 @@ import {
   getTopicIdsForPostCategoryVotes,
 } from './enqueue-reconcile-post-topic-notifications.mts'
 import { hasTopHashtagVoteTarget } from './top-hashtag-vote-targets.mts'
+import { mapRelationImpactRow } from './relation-impact-targets.mts'
 
 type ExternalWorkDependencies = {
   deleteExportFromS3: (s3Key: string) => Promise<unknown>
@@ -51,7 +52,7 @@ export async function processUserDeletionExternalWork(
           if (!isStripeMissingCustomerError(error)) throw error
         }
       } else if (work.work_kind === 'entity-relation-effects') {
-        await processEntityRelationEffects(work.work_key)
+        await processEntityRelationEffects(requestId, work.relation_impact_id)
       } else {
         throw new Error(`Unsupported user deletion external work kind: ${work.work_kind}`)
       }
@@ -66,19 +67,20 @@ export async function processUserDeletionExternalWork(
   return { hasMore: true }
 }
 
-async function processEntityRelationEffects(workKey: string): Promise<void> {
-  const separator = workKey.lastIndexOf(':')
-  if (separator < 1) throw new Error(`Invalid entity-relation effects key: ${workKey}`)
-  const target = {
-    relationTable: workKey.slice(0, separator),
-    entityRelationId: workKey.slice(separator + 1),
-  }
+async function processEntityRelationEffects(requestId: string, impactId: string): Promise<void> {
+  const { rows } = await write<{ subject_id: string }>(sql`/* processEntityRelationEffects:impact */
+    SELECT * FROM user_deletion_relation_impacts
+    WHERE request_id = ${requestId} AND id = ${impactId}`)
+  const impact = rows[0]
+  if (!impact) throw new Error('Missing user deletion relation impact for pending effects')
+  const target = mapRelationImpactRow(impact)
   const topicIds = await runPrimaryEntityRelationEffects(target)
   await runEntityRelationTopicEffects(target, topicIds)
 }
 
 async function runPrimaryEntityRelationEffects(target: {
   relationTable: string
+  subjectId: string
   entityRelationId: string
 }): Promise<string[]> {
   await invalidate.entity_relation_elections(target.entityRelationId)
@@ -87,7 +89,7 @@ async function runPrimaryEntityRelationEffects(target: {
 }
 
 async function runEntityRelationTopicEffects(
-  target: { relationTable: string; entityRelationId: string },
+  target: { relationTable: string; subjectId: string; entityRelationId: string },
   topicIds: string[],
 ): Promise<void> {
   if (topicIds.length > 0) await invalidate.topic_metrics(...topicIds)
@@ -96,10 +98,23 @@ async function runEntityRelationTopicEffects(
 
 async function getPendingExternalWork(requestId: string) {
   const { rows } = await write(sql`/* processUserDeletionExternalWork:candidate */
-    SELECT id, work_kind, work_key FROM user_deletion_external_works
+    SELECT id, work_kind, work_key, relation_impact_id FROM user_deletion_external_works
     WHERE request_id = ${requestId} AND completed_at IS NULL ORDER BY id LIMIT 1`)
   return rows[0] as
-    | { id: string; work_kind: UserDeletionExternalWorkKind; work_key: string }
+    | (
+        | {
+            id: string
+            work_kind: 'entity-relation-effects'
+            work_key: null
+            relation_impact_id: string
+          }
+        | {
+            id: string
+            work_kind: Exclude<UserDeletionExternalWorkKind, 'entity-relation-effects'>
+            work_key: string
+            relation_impact_id: null
+          }
+      )
     | undefined
 }
 

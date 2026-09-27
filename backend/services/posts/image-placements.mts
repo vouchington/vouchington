@@ -1,7 +1,7 @@
-import { write } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { runSequentially } from '@modules/utils/run-sequentially'
+import { reserveAndPinImagePlacementBinding } from '@services/media-delivery-safety'
 
 export type PostImagePlacement = {
   placement_id: string
@@ -32,10 +32,9 @@ export async function retirePostImagePlacements(
 export async function syncPostImagePlacements(
   postId: string,
   imageIds: string[],
-  options: QueryOptions = {},
+  query: TransactionQuery,
 ): Promise<void> {
   const distinctImageIds = [...new Set(imageIds)]
-  const query = options.query ?? write
   await query(sql`/* syncPostImagePlacements:lockExisting */
     SELECT placement.id
     FROM image_placements image_placement
@@ -69,24 +68,40 @@ export async function syncPostImagePlacements(
       AND image_placement.image_id = ANY(${distinctImageIds}::uuid[])
       AND placement.retired_at IS NOT NULL
     `),
-    () =>
-      query(sql`/* syncPostImagePlacements:createMissing */
-    WITH missing_bindings AS (
-      SELECT uuidv7() AS placement_id, image_id
-      FROM UNNEST(${distinctImageIds}::uuid[]) AS requested(image_id)
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM image_placements existing
-        WHERE existing.post_id = ${postId} AND existing.image_id = requested.image_id
-      )
-    ), registered AS (
-      INSERT INTO media_placements (id)
-      SELECT placement_id FROM missing_bindings
-      RETURNING id
-    )
-    INSERT INTO image_placements (placement_id, post_id, image_id)
-    SELECT placement_id, ${postId}, image_id FROM missing_bindings
-    `),
+    async () => {
+      const { rows: missing } = await query<{ image_id: string }>(sql`
+        /* syncPostImagePlacements:missing */
+        SELECT requested.image_id
+        FROM UNNEST(${distinctImageIds}::uuid[]) AS requested(image_id)
+        WHERE NOT EXISTS (
+          SELECT 1 FROM image_placements existing
+          WHERE existing.post_id = ${postId} AND existing.image_id = requested.image_id
+        )
+        ORDER BY requested.image_id
+      `)
+      for (const binding of missing) {
+        // oxlint-disable-next-line no-await-in-loop -- each retained tuple commits before its live owner row.
+        const { rows: allocated } = await query<{ placement_id: string }>(sql`
+          /* syncPostImagePlacements:allocate */ SELECT uuidv7() AS placement_id
+        `)
+        const placementId = allocated[0]!.placement_id
+        // oxlint-disable-next-line no-await-in-loop -- image then binding pins remain held by this transaction.
+        await reserveAndPinImagePlacementBinding(query, {
+          placementId,
+          imageId: binding.image_id,
+          bindingFamily: 'post',
+        })
+        // oxlint-disable-next-line no-await-in-loop -- placements are immutable exact-pair owners.
+        await query(sql`/* syncPostImagePlacements:createParent */
+          INSERT INTO media_placements (id) VALUES (${placementId})
+        `)
+        // oxlint-disable-next-line no-await-in-loop -- parent FK must exist before its child.
+        await query(sql`/* syncPostImagePlacements:createChild */
+          INSERT INTO image_placements (placement_id, post_id, image_id)
+          VALUES (${placementId}, ${postId}, ${binding.image_id})
+        `)
+      }
+    },
     () =>
       query(sql`/* syncPostImagePlacements:stageDelivery */
     INSERT INTO media_delivery_registry_records (

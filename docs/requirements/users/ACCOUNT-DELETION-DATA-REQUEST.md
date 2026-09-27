@@ -1,8 +1,11 @@
-# Account Deletion & Data Request
+# Account Deletion
 
 ## Overview
 
-Users can delete their accounts and download a copy of their personal data from the account settings page (`/my/data`). These features satisfy GDPR "Right to Erasure" / "Right to Data Portability" and CCPA "Right to Delete" / "Right to Know" requirements. See the [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md) for coverage.
+Users can delete their accounts from the account settings page (`/my/data`). This feature satisfies
+GDPR "Right to Erasure" and CCPA "Right to Delete" requirements. Data export has its own
+[requirements](./ACCOUNT-DATA-EXPORT.md); see the [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
+for coverage.
 
 ---
 
@@ -76,8 +79,10 @@ payment/support audit without retaining either deleted account identifier.
 2. Authored and contributed post-publication preimages are captured in bounded pages before authored
    posts are reassigned to the tombstone `deleted` user.
 3. Active lists, configured election votes, and user-subject relations are removed in bounded pages.
-4. Entity-relation vote targets are durably recorded, their votes are removed in bounded pages, and
-   only recorded targets are recomputed.
+4. Entity-relation votes are removed in bounded pages by their full concrete key. Their actual
+   `DELETE RETURNING` tuples supply the relation table, subject ID, and relation ID for 17 concrete
+   retained identity families and an exact-one typed impact. Recompute, publication, and effect
+   work use that full key; if a relation cascade removed the vote first, no impact is recorded.
 5. Email addresses, phone numbers, passkeys, social links, OAuth PII, Bluesky data, referral
    attribution, data-export rows, and [OAuth credentials](../security/OAUTH-AUTHORIZATION-SERVER.md#account-deletion)
    are drained idempotently. Claimed exports first record their
@@ -88,9 +93,11 @@ payment/support audit without retaining either deleted account identifier.
 7. A final transaction acquires the user and author lifecycle locks, verifies every phase is empty,
    performs an independent residual-data sweep across deletion-owned tables and OAuth credentials, and sets
    `user_deletion_requests.completed_at` only when both checks are empty. It also clears the copied
-   prior username, redacts completed external-work keys while retaining non-identifying audit
-   metadata and timestamps, and deletes the fully recomputed relation-impact worklist so its vote-
-   target identifiers do not outlive successful finalization.
+   prior username, clears completed provider work keys to `NULL` while retaining non-identifying
+   audit metadata and timestamps, and deletes the fully recomputed relation-impact worklist. A
+   completed relation-effect pointer may then become `NULL`; pending effects require their typed
+   same-request impact pointer. A separate bounded retention sweep reclaims unreferenced retained
+   relation identities without expiring request or audit history.
 
 Stripe customer anonymization uses a request-derived provider idempotency key. The per-provider
 egress flag selects the direct or HTTP CONNECT transport without changing the operation or retrying
@@ -100,72 +107,11 @@ block the internal completion marker while the immediate database privacy fence 
 
 ---
 
-## Data Export
-
-- Users can request a download of all their personal data from account settings
-- Native clients expose the in-app request, status refresh, and ready export download link from the
-  settings account-data section.
-- Only one active export request is allowed at a time
-- Export is prepared as a background job and may take a few minutes
-- User is notified in the UI when the export is ready (polls for status every 5 seconds)
-- The download is a ZIP file containing CSV files for each data category:
-  - `profile.csv` – username, display preferences, bio, privacy/processing settings, marketing consent, created date
-  - `posts.csv` – all non-deleted posts created by the user
-  - `votes.csv` – all votes cast by the user
-  - `emails.csv` – email addresses
-  - `phones.csv` – phone numbers
-  - `passkeys.csv` – passkey metadata, never private keys
-  - `oauth-accounts.csv` – connected OAuth account metadata
-  - `followed-rss-feeds.csv` – followed RSS feeds with source URLs and topic details
-  - `followed-topics.csv` – followed topics with slugs and topic types
-  - `entity-relations.csv` – follows, mutes, blocks, and other relation predicates
-  - `bookmarks.csv` – saved/bookmarked data
-  - `consents.csv` – legal and cookie consent ledger records
-  - `referral-attributions.csv` – referral click attributions
-- Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
-- Download link expires after 7 days
-- Users can request a new export at any time after the previous one has expired, failed, or is ready
-- Admins can request exports on behalf of any user
-
-### Data Request Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> pending: POST /api/v1/users/:idOrSlug/data-request
-    pending --> processing: processing_started_at set
-    pending --> failed: failed_at set
-    processing --> ready: completed_at + s3_key set
-    processing --> failed: failed_at set
-    ready --> expired: expires_at elapses, s3_key cleared
-    failed --> [*]
-    expired --> [*]
-```
-
-Status is not a stored enum — `deriveDataRequestStatus()` computes it from the timestamp/`s3_key`
-columns on read: `failed_at` set means `failed`; `completed_at` set with no `s3_key`, or with
-`expires_at` in the past, means `expired`; `completed_at` set with a live `s3_key` means `ready`;
-`processing_started_at` set (and not yet completed/failed) means `processing`; otherwise `pending`.
-
-### Export Statuses
-
-| Status       | Meaning                                |
-| ------------ | -------------------------------------- |
-| `pending`    | Job has been enqueued, not yet started |
-| `processing` | Job is running                         |
-| `ready`      | ZIP is available for download          |
-| `failed`     | Export failed; user can retry          |
-| `expired`    | Download window has closed             |
-
----
-
 ## API Endpoints
 
-| Method   | Route                                         | Description                                                                              |
-| -------- | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `DELETE` | `/api/v1/users/:idOrSlug`                     | Accept deletion; returns `202 { logout: true }` after the privacy fence commits          |
-| `POST`   | `/api/v1/users/:idOrSlug/data-request`        | Create a new export request                                                              |
-| `GET`    | `/api/v1/users/:idOrSlug/data-request`        | Get latest export status and `download_url`                                              |
-| `GET`    | `/api/v1/users/:idOrSlug/data-request/stream` | Server-Sent Events stream of status until a terminal status (`ready`/`failed`/`expired`) |
+`DELETE /api/v1/users/:idOrSlug` accepts deletion and returns `202 { logout: true }` after the
+privacy fence commits. The [data-export requirements](./ACCOUNT-DATA-EXPORT.md#api-endpoints)
+document the request and status routes.
 
 Authorization: Users can only access their own requests; admins can access any user's requests.
 
@@ -174,6 +120,7 @@ Authorization: Users can only access their own requests; admins can access any u
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 - [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
+- [Account Data Export](./ACCOUNT-DATA-EXPORT.md)
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [docs/requirements/navigation/ACTIONS.md](../navigation/ACTIONS.md)

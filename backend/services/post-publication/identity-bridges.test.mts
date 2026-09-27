@@ -12,6 +12,7 @@ import {
   seedTestUnreferencedPublicationIdentities,
   readTestPublicationBridgeTraversalBound,
   readTestPublicationConcreteSchema,
+  hasTestRetainedIdentityRoot,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
@@ -123,11 +124,13 @@ describe('publication concrete identity relationships', () => {
       id: post.id,
       live_id: null,
     })
+    expect(await hasTestRetainedIdentityRoot('post', post.id)).toBe(true)
     const bound = await readTestPublicationBridgeTraversalBound(100)
     for (let page = 0; page < bound; page++) {
       expect((await cleanupPostPublicationIdentityBridges()).scanned).toBeLessThanOrEqual(100)
     }
     expect(await readTestPublicationIdentityBridge('post', post.id)).toBeDefined()
+    expect(await hasTestRetainedIdentityRoot('post', post.id)).toBe(true)
   })
   it('preserves community and RSS item identities after their live FK targets disappear', async () => {
     const user = await createTestUser()

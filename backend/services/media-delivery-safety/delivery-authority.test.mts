@@ -22,17 +22,42 @@ import {
   publishStagedMediaDeliveryRecord,
   reconcileMediaDeliveryRepairMarkers,
   stageImagePlacementDeliveryRecord,
+  reserveImagePlacementBinding,
 } from './index.mts'
 import {
   recordImageDeliveryRepairMarker,
   reconcileDeliveryRepairMarker,
 } from './delivery-repair-markers.mts'
-import { syncImageSurfacePlacement } from '../images/surface-placements.mts'
+import { syncImageSurfacePlacement } from './surface-placement-sync.mts'
 
 describe('delivery authority and durable denial repair', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+  })
+
+  it('rejects a second reservation that changes an image or binding family', async () => {
+    const tuple = await createReservedNeverLiveTuple()
+    await expect(
+      reserveImagePlacementBinding({
+        placementId: tuple.placementId,
+        imageId: crypto.randomUUID(),
+        bindingFamily: 'post',
+      }),
+    ).rejects.toThrow('already reserved')
+    await expect(reserveImagePlacementBinding({ ...tuple, bindingFamily: 'post' })).rejects.toThrow(
+      'already reserved',
+    )
+  })
+
+  it('does not persist a marker without a committed registry parent', async () => {
+    const tuple = {
+      placementId: crypto.randomUUID(),
+      revision: 0,
+      imageId: crypto.randomUUID(),
+    }
+    await recordImageDeliveryRepairMarker(tuple)
+    expect(await getTestDeliveryRepairMarker(getImagePlacementDeliveryKey(tuple))).toBeNull()
   })
 
   it('repairs a provider-accepted denial after its owner rolls back without compensation', async () => {
@@ -256,3 +281,13 @@ describe('delivery authority and durable denial repair', () => {
     await expect(provider.putMediaDeliveryRegistryRecord(denied)).resolves.toBeDefined()
   })
 })
+
+async function createReservedNeverLiveTuple(): Promise<{
+  placementId: string
+  revision: number
+  imageId: string
+}> {
+  const tuple = { placementId: crypto.randomUUID(), revision: 0, imageId: crypto.randomUUID() }
+  await reserveImagePlacementBinding({ ...tuple, bindingFamily: 'surface' })
+  return tuple
+}

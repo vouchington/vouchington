@@ -11,7 +11,11 @@ const electionTables = new Set(
   entityRelationMetadatum.flatMap(metadata => (metadata.election ? [metadata.table_name] : [])),
 )
 
-export type EntityRelationVoteTarget = { relationTable: string; entityRelationId: string }
+export type EntityRelationVoteTarget = {
+  relationTable: string
+  subjectId: string
+  entityRelationId: string
+}
 export type UpdatedEntityRelationVoteStats = {
   relation_table: string
   subject_id: string
@@ -28,17 +32,18 @@ export async function recomputeEntityRelationVoteStats(
     WITH affected_ids AS (
       SELECT * FROM UNNEST(
         ${targets.map(target => target.relationTable)}::text[],
+        ${targets.map(target => target.subjectId)}::uuid[],
         ${targets.map(target => target.entityRelationId)}::uuid[]
-      ) AS affected(relation_table, entity_relation_id)
+      ) AS affected(relation_table, subject_id, entity_relation_id)
     ), current_votes AS (
-      SELECT DISTINCT ON (votes.relation_table, votes.entity_relation_id, votes.user_id)
-        votes.relation_table, votes.entity_relation_id, votes.user_id, votes.score
+      SELECT DISTINCT ON (votes.relation_table, votes.subject_id, votes.entity_relation_id, votes.user_id)
+        votes.relation_table, votes.subject_id, votes.entity_relation_id, votes.user_id, votes.score
       FROM entity_relation_votes votes
-      JOIN affected_ids affected USING (relation_table, entity_relation_id)
-      ORDER BY votes.relation_table, votes.entity_relation_id, votes.user_id, votes.id DESC
+      JOIN affected_ids affected USING (relation_table, subject_id, entity_relation_id)
+      ORDER BY votes.relation_table, votes.subject_id, votes.entity_relation_id, votes.user_id, votes.id DESC
     ), aggregated AS (
       SELECT
-        current_votes.relation_table, current_votes.entity_relation_id,
+        current_votes.relation_table, current_votes.subject_id, current_votes.entity_relation_id,
         COALESCE(SUM(CASE WHEN score > 0 THEN score * users.vote_weight ELSE 0 END), 0)::double precision AS votes_score_up,
         0::double precision AS votes_score_none,
         COALESCE(-SUM(CASE WHEN score < 0 THEN score * users.vote_weight ELSE 0 END), 0)::double precision AS votes_score_down,
@@ -47,9 +52,9 @@ export async function recomputeEntityRelationVoteStats(
         COUNT(*) FILTER (WHERE score < 0)::integer AS votes_count_down
       FROM current_votes
       JOIN users ON users.id = current_votes.user_id AND users.deleted_at IS NULL
-      GROUP BY current_votes.relation_table, current_votes.entity_relation_id
+      GROUP BY current_votes.relation_table, current_votes.subject_id, current_votes.entity_relation_id
     ), stats AS (
-      SELECT affected.relation_table, affected.entity_relation_id,
+      SELECT affected.relation_table, affected.subject_id, affected.entity_relation_id,
         COALESCE(aggregated.votes_score_up, 0) AS votes_score_up,
         COALESCE(aggregated.votes_score_none, 0) AS votes_score_none,
         COALESCE(aggregated.votes_score_down, 0) AS votes_score_down,
@@ -57,7 +62,7 @@ export async function recomputeEntityRelationVoteStats(
         COALESCE(aggregated.votes_count_none, 0) AS votes_count_none,
         COALESCE(aggregated.votes_count_down, 0) AS votes_count_down
       FROM affected_ids affected
-      LEFT JOIN aggregated USING (relation_table, entity_relation_id)
+      LEFT JOIN aggregated USING (relation_table, subject_id, entity_relation_id)
     ), `
 
   const tables = [...electionTables]
@@ -70,6 +75,7 @@ export async function recomputeEntityRelationVoteStats(
     statement.append(assertWhitelistedSqlIdentifier(table, electionTables, 'entityRelationTable'))
     statement.append(sql` relation
       JOIN stats ON stats.entity_relation_id = relation.id
+        AND stats.subject_id = relation.subject_id
         AND stats.relation_table = ${table}
       ORDER BY relation.id
       FOR UPDATE OF relation
@@ -88,9 +94,13 @@ export async function recomputeEntityRelationVoteStats(
     statement.append(`current_${index}`)
     statement.append(sql`
       WHERE relation.id = stats.entity_relation_id
+        AND relation.subject_id = stats.subject_id
+        AND stats.relation_table = ${table}
         AND `)
     statement.append(`current_${index}`)
-    statement.append(sql`.id = relation.id
+    statement.append(sql`.id = relation.id AND `)
+    statement.append(`current_${index}`)
+    statement.append(sql`.subject_id = relation.subject_id
       RETURNING relation.subject_id, relation.object_id,
         `)
     statement.append(`current_${index}`)

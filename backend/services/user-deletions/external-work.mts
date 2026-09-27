@@ -1,11 +1,11 @@
 import { write } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import type { UserDeletionExternalWorkKind } from './types.mts'
+import type { UserDeletionProviderWorkKind } from './types.mts'
 
 export async function addUserDeletionExternalWork(
   requestId: string,
-  workKind: UserDeletionExternalWorkKind,
+  workKind: UserDeletionProviderWorkKind,
   workKey: string,
   query: QueryExecutor = write,
 ): Promise<void> {
@@ -18,7 +18,7 @@ export async function addUserDeletionExternalWork(
 
 export async function completeUserDeletionExternalWork(
   requestId: string,
-  workKind: UserDeletionExternalWorkKind,
+  workKind: UserDeletionProviderWorkKind,
   workKey: string,
 ): Promise<boolean> {
   const { rowCount } = await write(sql`/* completeUserDeletionExternalWork */
@@ -31,4 +31,20 @@ export async function completeUserDeletionExternalWork(
       AND completed_at IS NULL
   `)
   return (rowCount ?? 0) > 0
+}
+
+export async function addUserDeletionRelationEffects(
+  requestId: string,
+  impactIds: readonly string[],
+  query: QueryExecutor = write,
+): Promise<void> {
+  if (impactIds.length === 0) return
+  await query(sql`/* addUserDeletionRelationEffects */
+    INSERT INTO user_deletion_external_works (request_id, work_kind, relation_impact_id)
+    SELECT ${requestId}::uuid, 'entity-relation-effects', impact.id
+    FROM user_deletion_relation_impacts impact
+    WHERE impact.request_id = ${requestId} AND impact.id = ANY(${impactIds}::uuid[])
+    ORDER BY impact.id
+    ON CONFLICT (request_id, relation_impact_id) DO NOTHING
+  `)
 }

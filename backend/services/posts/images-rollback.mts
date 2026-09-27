@@ -112,7 +112,7 @@ export async function rollbackPostImages(
         syncPostImagePlacements(
           postId,
           rollback.images.map(image => image.image_id),
-          { query },
+          query,
         ),
       () =>
         query(sql`/* rollbackPostImages */

@@ -48,6 +48,15 @@ CREATE TABLE IF NOT EXISTS images (
   bedrock_nova_multimodal_v1_embedding_created_at TIMESTAMPTZ
 );
 
+ALTER TABLE images
+ADD CONSTRAINT fk_images__retained_image_identity
+FOREIGN KEY (id) REFERENCES retained_image_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE images VALIDATE CONSTRAINT fk_images__retained_image_identity;
+
+CREATE OR REPLACE TRIGGER trigger_register_retained_image_identity
+BEFORE INSERT ON images
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_image_identity();
+
 CREATE OR REPLACE TRIGGER trigger_images_updated_at
 BEFORE UPDATE ON images
 FOR EACH ROW

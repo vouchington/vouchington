@@ -17,6 +17,16 @@ export {
   markImageDeliveryAuthorityStarted,
 } from './asset-admission-lock.mts'
 export { lockImageDeliveryMutation } from './delivery-lock.mts'
+export { assertImageDeliveryTransaction } from './transaction-contract.mts'
+export { getImageSurfacePlacement, syncImageSurfacePlacement } from './surface-placement-sync.mts'
+export type { ImagePlacementTuple } from '@voucha/types/entities/user'
+export {
+  reserveImageIdentity,
+  reserveImagePlacementBinding,
+  reserveAndPinImagePlacementBinding,
+  type ImageBindingFamily,
+  type ImagePlacementBinding,
+} from './retained-image-identities.mts'
 export {
   lockUserProfileImageOwners,
   lockUserProfileLinkImageOwners,

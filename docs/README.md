@@ -409,7 +409,8 @@ Feature specifications, rules, and policies.
 - [User Flow Test Matrix](requirements/user-flows/README.md) — key user flows (sources, posts, topics) × persona × Playwright coverage matrix
 - [UI Components](requirements/navigation/COMPONENTS.md) — shadcn/ui component patterns and design guidelines
 - [Bookmarks Catalog](requirements/content/BOOKMARKS-CATALOG.md) — `/my/<entity>/<listType>` self-routes per intent
-- [Account Deletion & Data Request](requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) — GDPR and data management
+- [Account Deletion](requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) — account erasure and durable cleanup
+- [Account Data Export](requirements/users/ACCOUNT-DATA-EXPORT.md) — data portability and export status
 - [SEO](requirements/seo/SEO.md) — Search engine optimization
 - [SEO Resources](requirements/seo/SEO-RESOURCES.md) — Curated external references for SEO and AI-search strategy
 - [Website Specifications](requirements/seo/WEBSITE-SPECIFICATIONS.md) — Public web, agent, privacy, resilience, performance, and i18n specification alignment

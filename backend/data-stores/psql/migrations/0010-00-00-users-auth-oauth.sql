@@ -122,7 +122,7 @@ END $$;
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
 
   -- public
   use_display_name_from user_display_name_source DEFAULT 'username',
@@ -226,6 +226,10 @@ CREATE TABLE IF NOT EXISTS users (
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL
 );
+
+CREATE TRIGGER trigger_register_retained_user_identity
+BEFORE INSERT ON users
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_user_identity();
 
 CREATE OR REPLACE TRIGGER trigger_users_updated_at
 BEFORE UPDATE ON users

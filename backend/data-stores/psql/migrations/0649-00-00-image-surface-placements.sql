@@ -21,6 +21,7 @@ CREATE TABLE image_surface_placements (
     'community-profile-image', 'community-banner-image', 'user-profile-link-image'
   )),
   image_id uuid NOT NULL REFERENCES images(id) ON DELETE RESTRICT,
+  binding_family text NOT NULL DEFAULT 'surface' CHECK (binding_family = 'surface'),
   user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
   topic_id uuid REFERENCES topics(id) ON DELETE RESTRICT,
   community_id uuid REFERENCES communities(id) ON DELETE RESTRICT,
@@ -37,6 +38,14 @@ CREATE TABLE image_surface_placements (
       AND user_id IS NULL AND topic_id IS NULL AND community_id IS NULL)
   )
 );
+
+ALTER TABLE image_surface_placements
+ADD CONSTRAINT fk_image_surface_placements__retained_image_binding
+FOREIGN KEY (placement_id, image_id, binding_family)
+REFERENCES retained_image_placement_bindings (placement_id, image_id, binding_family)
+ON DELETE RESTRICT NOT VALID;
+ALTER TABLE image_surface_placements
+VALIDATE CONSTRAINT fk_image_surface_placements__retained_image_binding;
 
 CREATE UNIQUE INDEX idx_image_surface_placements__user_profile
   ON image_surface_placements (user_id, image_id)
@@ -213,10 +222,8 @@ BEGIN
   FOR UPDATE OF placement;
 
   IF v_placement_id IS NULL THEN
-    INSERT INTO media_placements DEFAULT VALUES RETURNING id, revision INTO v_placement_id, v_revision;
-    INSERT INTO image_surface_placements (
-      placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id
-    ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);
+    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'
+      USING ERRCODE = 'check_violation';
   ELSE
     UPDATE media_placements
     SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1
@@ -386,6 +393,7 @@ COMMENT ON TABLE image_surface_placements IS 'Immutable bindings for non-post pe
 COMMENT ON COLUMN image_surface_placements.placement_id IS 'Stable media placement identifier that scopes public delivery to this persisted surface use.';
 COMMENT ON COLUMN image_surface_placements.surface_kind IS 'Typed persisted surface owning this image use; exactly one matching owner branch is required.';
 COMMENT ON COLUMN image_surface_placements.image_id IS 'Immutable byte asset bound to this surface placement.';
+COMMENT ON COLUMN image_surface_placements.binding_family IS 'Literal surface family checked by the retained image placement triple foreign key.';
 COMMENT ON COLUMN image_surface_placements.user_id IS 'Concrete live profile owner; cleared only after terminal owner-removal retirement on hard deletion.';
 COMMENT ON COLUMN image_surface_placements.topic_id IS 'Topic owner for a logo or hero image surface.';
 COMMENT ON COLUMN image_surface_placements.community_id IS 'Community owner for a profile or banner image surface.';

@@ -137,47 +137,9 @@ export async function isTestImagePlacementPubliclyProjected(input: {
   return rows[0]?.projected ?? false
 }
 
-export async function setTestTopicSurfaceImages(
-  topicId: string,
-  input: { logoImageId?: string | null; heroImageId?: string | null },
-): Promise<void> {
-  const logoImageId = input.logoImageId === undefined ? null : input.logoImageId
-  const heroImageId = input.heroImageId === undefined ? null : input.heroImageId
-  await write(sql`/* setTestTopicSurfaceImages */
-    UPDATE topics SET
-      logo_image_id = CASE WHEN ${input.logoImageId !== undefined} THEN ${logoImageId}::uuid ELSE logo_image_id END,
-      hero_image_id = CASE WHEN ${input.heroImageId !== undefined} THEN ${heroImageId}::uuid ELSE hero_image_id END
-    WHERE id = ${topicId}
-  `)
-}
-
-export async function setTestCommunitySurfaceImages(
-  communityId: string,
-  input: { profileImageId?: string | null; bannerImageId?: string | null; deleted?: boolean },
-): Promise<void> {
-  const profileImageId = input.profileImageId === undefined ? null : input.profileImageId
-  const bannerImageId = input.bannerImageId === undefined ? null : input.bannerImageId
-  await write(sql`/* setTestCommunitySurfaceImages */
-    UPDATE communities
-    SET profile_image_id = CASE WHEN ${input.profileImageId !== undefined} THEN ${profileImageId}::uuid ELSE profile_image_id END,
-        banner_image_id = CASE WHEN ${input.bannerImageId !== undefined} THEN ${bannerImageId}::uuid ELSE banner_image_id END,
-        deleted_at = CASE WHEN ${input.deleted === true} THEN CURRENT_TIMESTAMP ELSE deleted_at END
-    WHERE id = ${communityId}
-  `)
-}
-
 export async function setTestImageCreator(imageId: string, userId: string): Promise<void> {
   await write(sql`/* setTestImageCreator */
     UPDATE images SET created_by_id = ${userId} WHERE id = ${imageId}
-  `)
-}
-
-export async function setTestUserProfileImage(
-  userId: string,
-  imageId: string | null,
-): Promise<void> {
-  await write(sql`/* setTestUserProfileImage */
-    UPDATE users SET profile_image_id = ${imageId} WHERE id = ${userId}
   `)
 }
 

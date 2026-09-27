@@ -37,7 +37,7 @@ export {
   unsuspendTestUser,
 } from './users-lifecycle.mts'
 
-export { lockTestUserMutation } from './users-mutation-locks.mts'
+export { lockTestUserMutation, lockTestUserRowForUpdate } from './users-mutation-locks.mts'
 
 // Split out of this file (concern: raw/direct user-row primitives) into users-direct.mts; kept
 // re-exported here so `@voucha/test-helpers` and `@voucha/test-helpers/entities/users` consumers

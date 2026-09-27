@@ -31,18 +31,19 @@ export async function addUserDeletionRelationImpactForTest(
   recomputed: boolean,
 ): Promise<string> {
   const { rows } = await write(sql`/* addUserDeletionRelationImpactForTest */
+    WITH owner AS (
+      INSERT INTO retained_relation__user__category__topic (subject_id, id)
+      SELECT user_id, uuidv7() FROM user_deletion_requests WHERE id = ${requestId}
+      RETURNING subject_id, id
+    )
     INSERT INTO user_deletion_relation_impacts (
       request_id,
-      relation_table,
-      entity_relation_id,
+      subject_id,
+      relation__user__category__topic_id,
       recomputed_at
     )
-    VALUES (
-      ${requestId},
-      'entity_relations',
-      uuidv7(),
-      CASE WHEN ${recomputed} THEN CURRENT_TIMESTAMP END
-    )
+    SELECT ${requestId}, owner.subject_id, owner.id,
+      CASE WHEN ${recomputed} THEN CURRENT_TIMESTAMP END FROM owner
     RETURNING id
   `)
   return (rows[0] as { id: string }).id
@@ -93,7 +94,7 @@ export async function getUserDeletionCompletionAuditForTest(requestId: string): 
   externalWorks: {
     id: string
     workKind: string
-    workKey: string
+    workKey: string | null
     requestedAt: Date
     completedAt: Date | null
   }[]
@@ -113,7 +114,7 @@ export async function getUserDeletionCompletionAuditForTest(requestId: string): 
       const work = row as {
         id: string
         work_kind: string
-        work_key: string
+        work_key: string | null
         requested_at: Date
         completed_at: Date | null
       }

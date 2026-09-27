@@ -6,7 +6,7 @@ import onError from '@modules/on-error'
 import { getPrivateUserByAny } from '@services/users'
 import { ensureDefaultLandingPage } from './landing-pages/index.mts'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
-import { syncImageSurfacePlacement } from '@services/images/surface-placements'
+import { syncImageSurfacePlacement } from '@services/media-delivery-safety'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 
 export async function updateUsername(userId: string, username: string): Promise<void> {
