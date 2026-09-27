@@ -1,5 +1,7 @@
+import { DiffCommandError } from 'vouchington-tooling/gh-cli'
 import type { RunGh } from './issue-closure.mts'
 import type { PullRequestIdentity } from './validate.mts'
+import { createDiffSummary, reduceDiffBlock, type DiffSummary } from './diff-summary.mts'
 
 type PullRequestFile = {
   filename: string
@@ -35,15 +37,20 @@ function patchHeader(file: PullRequestFile): string[] {
  * deleted file surfaces instead of silently disabling itself.
  */
 export type PullRequestPatch = {
-  patch: string
+  summary: DiffSummary
   source: 'files-api' | 'unified-diff'
 }
 
-async function readPullRequestFiles(
+export type ProcessPullRequestDiff = (
+  onBlock: (block: string) => void | Promise<void>,
+) => Promise<void>
+
+async function readPullRequestFileSummary(
   runGh: RunGh,
   target: PullRequestIdentity,
-): Promise<PullRequestFile[]> {
-  const files: PullRequestFile[] = []
+): Promise<DiffSummary> {
+  const summary = createDiffSummary()
+  let fileCount = 0
   for (let page = 1; page <= MAX_PULL_REQUEST_FILES_PAGES; page++) {
     // oxlint-disable-next-line no-await-in-loop -- the next page exists only after this page fills.
     const json = await runGh([
@@ -57,8 +64,10 @@ async function readPullRequestFiles(
       `page=${page}`,
     ])
     const batch = JSON.parse(json) as PullRequestFile[]
-    files.push(...batch)
-    if (batch.length < PULL_REQUEST_FILES_PAGE_SIZE) return files
+    for (const file of batch)
+      reduceDiffBlock(summary, [...patchHeader(file), file.patch ?? ''].join('\n'))
+    fileCount += batch.length
+    if (batch.length < PULL_REQUEST_FILES_PAGE_SIZE) return summary
   }
   const changedFiles = Number(
     await runGh([
@@ -68,26 +77,26 @@ async function readPullRequestFiles(
       '.changed_files',
     ]),
   )
-  if (Number.isSafeInteger(changedFiles) && changedFiles === files.length) return files
-  throw new Error(`PR files API returned only ${files.length} of ${changedFiles} changed files`)
+  if (Number.isSafeInteger(changedFiles) && changedFiles === fileCount) return summary
+  throw new Error(`PR files API returned only ${fileCount} of ${changedFiles} changed files`)
 }
 
 export async function readPullRequestPatch(
+  processUnifiedDiff: ProcessPullRequestDiff,
   runGh: RunGh,
-  pr: string,
   target: PullRequestIdentity,
 ): Promise<PullRequestPatch> {
   try {
-    return { patch: await runGh(['pr', 'diff', pr]), source: 'unified-diff' }
+    const summary = createDiffSummary()
+    await processUnifiedDiff(block => {
+      reduceDiffBlock(summary, block)
+    })
+    return { summary, source: 'unified-diff' }
   } catch (diffError: unknown) {
+    if (!(diffError instanceof DiffCommandError)) throw diffError
     try {
-      const files = await readPullRequestFiles(runGh, target)
-      return {
-        patch: files
-          .flatMap(file => [...patchHeader(file), ...(file.patch?.split('\n') ?? [])])
-          .join('\n'),
-        source: 'files-api',
-      }
+      const summary = await readPullRequestFileSummary(runGh, target)
+      return { summary, source: 'files-api' }
     } catch {
       throw diffError
     }

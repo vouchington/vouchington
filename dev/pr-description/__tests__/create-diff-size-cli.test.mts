@@ -18,11 +18,15 @@ import {
 
 /**
  * `writeFakeGit` (test-helpers/fake-cli.mts) does not stub `git diff` at all — every existing CLI
- * test therefore exercises `getDiffAgainstBase` against empty output, which is under the size
+ * test therefore exercises the command-owned diff reducer against empty output, which is under the size
  * threshold and never trips the new gate. This local fake extends it with a `diff` branch so the
  * gate itself can be exercised end-to-end.
  */
-async function writeFakeGitWithDiff(gitPath: string, diffText: string): Promise<void> {
+async function writeFakeGitWithDiff(
+  gitPath: string,
+  diffText: string,
+  failDiff = false,
+): Promise<void> {
   await writeFile(
     gitPath,
     [
@@ -35,7 +39,9 @@ async function writeFakeGitWithDiff(gitPath: string, diffText: string): Promise<
       "else if (args[0] === 'rev-parse')",
       `  console.log(${JSON.stringify(FIXTURE_REMOTE_SHA)})`,
       "else if (args[0] === 'diff')",
-      `  console.log(${JSON.stringify(diffText)})`,
+      failDiff
+        ? "  { process.stderr.write('diff unavailable'); process.exit(2) }"
+        : `  console.log(${JSON.stringify(diffText)})`,
     ].join('\n'),
   )
   await chmod(gitPath, 0o755)
@@ -66,7 +72,7 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  async function setUp(diffText: string) {
+  async function setUp(diffText: string, failDiff = false) {
     const dir = await mkdtemp(join(tmpdir(), 'pr-description-diff-size-cli-'))
     testDirs.push(dir)
     const binDir = join(dir, 'bin')
@@ -86,7 +92,7 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
       "else if (args[0] === 'pr' && args[1] === 'create') console.log('https://github.com/owner/repo/pull/3')",
       "else if (args[0] === 'pr' && args[1] === 'view') console.log(JSON.stringify({ body: '' }))",
     )
-    await writeFakeGitWithDiff(join(binDir, 'git'), diffText)
+    await writeFakeGitWithDiff(join(binDir, 'git'), diffText, failDiff)
     const env = { ...process.env, GH_CALLS_PATH: callsPath, PATH: `${binDir}:${process.env.PATH}` }
     return { bodyPath, callsPath, env }
   }
@@ -187,5 +193,36 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
       .split('\n')
       .map(line => JSON.parse(line) as string[])
     expect(calls.some(call => call[0] === 'pr' && call[1] === 'create')).toBe(true)
+  })
+
+  it('creates an acknowledged PR when advisory diff collection fails', async () => {
+    const { bodyPath, callsPath, env } = await setUp('', true)
+    const result = await execFileAsync(
+      process.execPath,
+      [
+        scriptPath,
+        'create',
+        '--title',
+        'Acknowledged',
+        '--body-file',
+        bodyPath,
+        '--acknowledge-large-diff',
+      ],
+      { env },
+    )
+    expect(result.stdout).toContain('https://github.com/owner/repo/pull/3')
+    expect(await readFile(callsPath, 'utf8')).toContain('"pr","create"')
+  })
+
+  it('refuses an unacknowledged PR when diff collection fails', async () => {
+    const { bodyPath, callsPath, env } = await setUp('', true)
+    await expect(
+      execFileAsync(
+        process.execPath,
+        [scriptPath, 'create', '--title', 'Unavailable', '--body-file', bodyPath],
+        { env },
+      ),
+    ).rejects.toMatchObject({ code: 1, stderr: expect.stringContaining('diff unavailable') })
+    expect(await readFile(callsPath, 'utf8').catch(() => '')).not.toContain('"pr","create"')
   })
 })

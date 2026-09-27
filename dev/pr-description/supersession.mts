@@ -6,22 +6,18 @@ import {
 } from './issue-audit-marker.mts'
 import type { RunGh } from './issue-closure.mts'
 import { findRemovedScripts, type PackageJsonReader } from './removed-scripts.mts'
-import {
-  buildRemovalVocabulary,
-  parseChangedPackageJsonPaths,
-  parseRemovedSurfaces,
-  type RemovedSurface,
-} from './removed-surfaces.mts'
+import { buildRemovalVocabulary } from './removed-surfaces.mts'
+import type { DiffSummary } from './diff-summary.mts'
 import { formatHints } from './related-issues.mts'
 
 // `readPackageJson` is required, not optional: an accidentally-omitted reader would silently
 // disable script-removal detection again — the exact "inert on real manifests" bug #8779 is about.
 async function buildRemovalTerms(
-  patch: string,
+  summary: DiffSummary,
   readPackageJson: PackageJsonReader,
 ): Promise<string[]> {
-  const surfaces: RemovedSurface[] = parseRemovedSurfaces(patch)
-  surfaces.push(...(await findRemovedScripts(parseChangedPackageJsonPaths(patch), readPackageJson)))
+  const surfaces = [...summary.removedSurfaces]
+  surfaces.push(...(await findRemovedScripts(summary.changedPackageJsonPaths, readPackageJson)))
   return buildRemovalVocabulary(surfaces).terms
 }
 
@@ -148,16 +144,17 @@ export function validateAuditHits(
 /**
  * Composition point for `dev/pr-description.mts`: bundles vocabulary building, search, and decision
  * policy behind the `(body, closingRefs) => Promise<string[]>` shape `validate.mts` expects, so the
- * CLI only wires `runGh`, `repo`, and a raw diff `patch` — no auditor internals leak into the CLI.
+ * CLI only wires `runGh`, `repo`, and an incrementally-reduced diff summary — no auditor internals
+ * leak into the CLI.
  */
 export function createSupersessionAuditor(
   runGh: RunGh,
   repo: string,
-  patch: string,
+  summary: DiffSummary,
   readPackageJson: PackageJsonReader,
 ): (body: string, closingRefs: ClosingIssueReference[]) => Promise<string[]> {
   return async (body, closingRefs) => {
-    const terms = await buildRemovalTerms(patch, readPackageJson)
+    const terms = await buildRemovalTerms(summary, readPackageJson)
     if (terms.length === 0) return []
     const hits = await findSupersessionHits(runGh, repo, terms)
     return validateAuditHits(repo, hits, parseAuditDecisions(body), closingRefs)
@@ -171,11 +168,11 @@ export function createSupersessionAuditor(
 export async function runAdvisorySupersessionSearch(
   runGh: RunGh,
   repo: string,
-  diff: string,
+  summary: DiffSummary,
   readPackageJson: PackageJsonReader,
 ): Promise<string> {
   try {
-    const terms = await buildRemovalTerms(diff, readPackageJson)
+    const terms = await buildRemovalTerms(summary, readPackageJson)
     if (terms.length === 0) return ''
     return formatHints(await findSupersessionHits(runGh, repo, terms))
   } catch {

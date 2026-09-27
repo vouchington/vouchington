@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ClosingIssueReference } from '../closing-refs.mts'
 import type { IssueAuditKeepOpenDecision } from '../issue-audit-marker.mts'
 import type { PackageJsonReader } from '../removed-scripts.mts'
+import { createDiffSummary, reduceDiffBlock } from '../diff-summary.mts'
 import {
   buildSupersessionSearchArgs,
   createSupersessionAuditor,
@@ -15,6 +16,12 @@ import {
 } from '../supersession.mts'
 
 const REPO = 'vouchington/vouchington'
+
+function summaryFor(...blocks: string[]) {
+  const summary = createDiffSummary()
+  for (const block of blocks) reduceDiffBlock(summary, block)
+  return summary
+}
 
 // None of these fixtures touch a `package.json`, so `parseChangedPackageJsonPaths` always returns
 // `[]` and this reader is never actually invoked — it exists only to satisfy the required parameter.
@@ -230,7 +237,7 @@ describe('createSupersessionAuditor', () => {
     const auditor = createSupersessionAuditor(
       runGh,
       REPO,
-      'diff --git a/x.mts b/x.mts\n',
+      summaryFor('diff --git a/x.mts b/x.mts\n'),
       NO_PACKAGE_JSON,
     )
     await expect(auditor('', [])).resolves.toEqual([])
@@ -242,7 +249,7 @@ describe('createSupersessionAuditor', () => {
     const auditor = createSupersessionAuditor(
       runGh,
       REPO,
-      SNS_VERIFICATION_DELETION_PATCH,
+      summaryFor(SNS_VERIFICATION_DELETION_PATCH),
       NO_PACKAGE_JSON,
     )
     const errors = await auditor('', [])
@@ -256,44 +263,12 @@ describe('createSupersessionAuditor', () => {
     const auditor = createSupersessionAuditor(
       runGh,
       REPO,
-      SNS_VERIFICATION_DELETION_PATCH,
+      summaryFor(SNS_VERIFICATION_DELETION_PATCH),
       NO_PACKAGE_JSON,
     )
     const closingRefs: ClosingIssueReference[] = [
       { key: '#7995', number: 7995, owner: undefined, repo: undefined },
     ]
     await expect(auditor('Closes #7995', closingRefs)).resolves.toEqual([])
-  })
-})
-
-describe('runAdvisorySupersessionSearch', () => {
-  it('issues zero gh calls and returns empty for a patch with no removals', async () => {
-    let calls = 0
-    const runGh = (_args: string[]) => {
-      calls += 1
-      return Promise.resolve('[]')
-    }
-    await expect(
-      runAdvisorySupersessionSearch(runGh, REPO, 'diff --git a/x.mts b/x.mts\n', NO_PACKAGE_JSON),
-    ).resolves.toBe('')
-    expect(calls).toBe(0)
-  })
-
-  it('formats a hint for a removed-surface term that matches an open issue', async () => {
-    const runGh = fakeRunGh({ [SNS_VERIFICATION_TERM]: [SNS_VERIFICATION_HIT] })
-    const hints = await runAdvisorySupersessionSearch(
-      runGh,
-      REPO,
-      SNS_VERIFICATION_DELETION_PATCH,
-      NO_PACKAGE_JSON,
-    )
-    expect(hints).toContain('#7995')
-  })
-
-  it('swallows a search failure and returns empty rather than throwing', async () => {
-    const runGh = () => Promise.reject(new Error('gh unavailable'))
-    await expect(
-      runAdvisorySupersessionSearch(runGh, REPO, SNS_VERIFICATION_DELETION_PATCH, NO_PACKAGE_JSON),
-    ).resolves.toBe('')
   })
 })

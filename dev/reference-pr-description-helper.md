@@ -3,6 +3,7 @@
 [Back to Dev Environment Reference](README.md#pr-description-helper)
 
 `node dev/pr-description.mts <subcommand>` validates and manages PR bodies; prefer it over raw `gh pr create/edit --body-file`.
+Diff-consuming commands reduce each unified-diff file block as it arrives, so large PRs do not require a whole-patch buffer.
 
 - `validate [<pr>] [--body-file <path>]` — validates required PR sections, closing references, and the scheduled no-source exception. Body source: `--body-file` > stdin > `gh pr view <pr>`.
 - `create --title <title> [--body-file <path>]` — validates and creates a draft PR; prints referenced issue state and related-issue hints. Body source: `--body-file` or stdin.
