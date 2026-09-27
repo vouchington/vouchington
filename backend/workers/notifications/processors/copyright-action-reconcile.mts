@@ -4,6 +4,8 @@ import {
   createMissingCopyrightEnforcementRequests,
   processCopyrightEnforcementRequest,
   recoverRejectedCopyrightFormReviewEffect,
+  recoverBlockedCopyrightHoldRestorations,
+  searchBlockedCopyrightHoldRestorationNoticeIds,
   searchDueStatutoryCopyrightRestorationDeadlineIds,
   searchReconcilableCopyrightEnforcementRequestIds,
   searchRecoverableCopyrightActionIntentIds,
@@ -23,6 +25,8 @@ export type ReconcileCopyrightActionIntentsDeps = {
   createMissingEnforcementRequests: typeof createMissingCopyrightEnforcementRequests
   searchEnforcementRequests: typeof searchReconcilableCopyrightEnforcementRequestIds
   processEnforcementRequest: typeof processCopyrightEnforcementRequest
+  searchBlockedHoldRestorations: typeof searchBlockedCopyrightHoldRestorationNoticeIds
+  recoverBlockedHoldRestorations: typeof recoverBlockedCopyrightHoldRestorations
   searchDueRestorations: typeof searchDueStatutoryCopyrightRestorationDeadlineIds
   createDueRestoreIntents: typeof createDueStatutoryCopyrightRestoreIntentsForDeadline
   searchActionIntents: typeof searchRecoverableCopyrightActionIntentIds
@@ -36,6 +40,8 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
   createMissingEnforcementRequests: createMissingCopyrightEnforcementRequests,
   searchEnforcementRequests: searchReconcilableCopyrightEnforcementRequestIds,
   processEnforcementRequest: processCopyrightEnforcementRequest,
+  searchBlockedHoldRestorations: searchBlockedCopyrightHoldRestorationNoticeIds,
+  recoverBlockedHoldRestorations: recoverBlockedCopyrightHoldRestorations,
   searchDueRestorations: searchDueStatutoryCopyrightRestorationDeadlineIds,
   createDueRestoreIntents: createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchActionIntents: searchRecoverableCopyrightActionIntentIds,
@@ -45,7 +51,7 @@ const defaultDeps: ReconcileCopyrightActionIntentsDeps = {
 
 /**
  * Walks every page of each copyright action sweep in stage order: rejected form reviews, missing
- * enforcement requests, pending enforcement, due statutory restorations, then recoverable action
+ * enforcement requests, pending enforcement, blocked hold restorations, due statutory restorations, then recoverable action
  * intents. A failed item, page read, or stage does not stop the rest; the job fails afterwards with
  * every error so its retry covers what is still pending.
  */
@@ -55,7 +61,6 @@ export async function processReconcileCopyrightActionIntents(
   const deps = { ...defaultDeps, ...dependencyOverrides }
   const evaluatedAt = deps.now()
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
-  // ast-grep-ignore: no-three-sequential-awaits -- each stage acts on rows the previous stage wrote
   await runCopyrightSweepStage(tally, () =>
     walkCopyrightSweep(
       page => deps.searchFormReviews(page),
@@ -70,6 +75,15 @@ export async function processReconcileCopyrightActionIntents(
     walkCopyrightSweep(
       page => deps.searchEnforcementRequests(page),
       ids => settleCopyrightSweepSequentially(ids, id => deps.processEnforcementRequest(id)),
+    ),
+  )
+  await runCopyrightSweepStage(tally, () =>
+    walkCopyrightSweep(
+      page => deps.searchBlockedHoldRestorations(page),
+      ids =>
+        settleCopyrightSweepSequentially(ids, id =>
+          deps.recoverBlockedHoldRestorations(id, evaluatedAt),
+        ),
     ),
   )
   await runCopyrightSweepStage(tally, () =>

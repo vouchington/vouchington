@@ -285,6 +285,14 @@ final overlapping hold replays a previously blocked restoration. A hold on an or
 restriction blocks restoration while unresolved; resolving that hold does not bypass the ordinary
 counter-notice deadline or human reversal requirement.
 
+Hold assessment or resolution and replay of an existing eligible restore are one transaction,
+fenced across every placement on the case before taking the case lock. Replay retains the original
+intent, restriction, deadline, revision and restoration authority, and rechecks their current
+validity and placement safety. Queue delivery starts only after commit. The existing reconciler
+automatically retries eligible historical blocked restorations after the filing is assessed or
+the final hold resolves; it does not periodically reopen exhausted provider failures. Unresolved
+or unassessed filings and another independent restriction never lose their protective effect.
+
 ## Jurisdiction and public meaning
 
 US timing does not govern EU or UK cases. The public form and email intake still accept only

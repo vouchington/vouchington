@@ -136,41 +136,22 @@ preserving generation and attempt evidence. After investigating the provider fai
 existing media-delivery registry replay control to reopen failed records. A stale final claim no
 longer needs manual database repair, and exhausted records cannot block later recovery pages.
 
-Before enabling copyright intake, audit any historical blocked restores whose qualifying hold lacks
-restriction provenance. This read-only query identifies candidates; it cannot infer a safe binding,
-because a later restriction on the same target may be unrelated to the hold. Counsel and the
-moderation owner must review the case's lifecycle ledger and remediate it through the domain
-workflow rather than writing a binding directly.
+An ordinary active restriction has no late-hold provenance binding; that absence is expected.
+Resolving its final qualifying hold reopens the original eligible restore in the same transaction
+as the immutable resolution and replay audit. Assessing a previously unassessed filing uses the
+same transaction-owned replay. Both retain the original intent, restriction, deadline and expected
+revision; neither creates ordinary restoration authority.
 
-```sql
-SELECT assessment.id AS assessment_id, submission.copyright_notice_id,
-  assessment_target.copyright_notice_target_id, restriction.id AS restriction_id,
-  intent.id AS restore_intent_id, resolution.id AS resolution_id
-FROM copyright_notice_legal_hold_assessments assessment
-JOIN copyright_notice_submissions submission
-  ON submission.id = assessment.copyright_notice_submission_id
-JOIN copyright_notice_legal_hold_assessment_targets assessment_target
-  ON assessment_target.copyright_notice_legal_hold_assessment_id = assessment.id
-JOIN copyright_restrictions restriction
-  ON restriction.copyright_notice_target_id = assessment_target.copyright_notice_target_id
-JOIN copyright_notice_action_intents intent
-  ON intent.copyright_restriction_id = restriction.id
-  AND intent.action = 'restore'
-  AND intent.state = 'blocked'
-LEFT JOIN copyright_legal_hold_restrictions binding
-  ON binding.copyright_restriction_id = restriction.id
-  AND binding.copyright_notice_legal_hold_assessment_id = assessment.id
-LEFT JOIN copyright_notice_legal_hold_resolutions resolution
-  ON resolution.copyright_notice_legal_hold_assessment_id = assessment.id
-WHERE binding.copyright_restriction_id IS NULL
-  AND assessment.from_original_claimant
-  AND assessment.same_material
-  AND assessment.proceeding_kind IS NOT NULL
-  AND assessment.commenced_at IS NOT NULL
-  AND assessment.received_by_designated_agent_at IS NOT NULL
-  AND assessment.received_by_designated_agent_at <= assessment.assessed_at
-ORDER BY assessment.id, intent.id;
-```
+The existing copyright action reconciler automatically recovers historical blocked restores after
+a court or CCB filing has been assessed, before creating due statutory intents and enqueueing pending
+actions. Each case is fenced and rechecked against its original counter-notice scope and current
+assessment, human review, deadline, unresolved or unassessed filings, and current placement safety.
+Repeated scans leave ineligible work unchanged. Exhausted provider-failed intents are excluded from
+automatic recovery and still require explicit operator replay.
+
+If a historical restore remains blocked, inspect those original facts and the lifecycle ledger.
+Do not fabricate a hold binding, replace its deadline, copy a newer placement revision into the
+intent, or mark delivery complete by hand.
 
 For a cross-store failure, PostgreSQL remains the legal workflow record. Keep the application
 projection fail-closed, replay the idempotent edge-registry publication, invalidate the exact
