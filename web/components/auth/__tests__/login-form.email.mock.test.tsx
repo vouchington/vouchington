@@ -1,115 +1,28 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+  mockContinueOAuthLogin,
+  mockLoginWithEmailAddress,
+  mockSendEmailLoginToken,
+  turnstileCallbacks,
+} from '@/test-helpers/components/auth/login-form.email.mock-support'
+
+import { createNavMock } from '@/test-helpers/next-navigation-mock'
 
 import {
   clearRuntimePublicConfigForTest,
   setRuntimePublicConfigForTest,
 } from '@/test-helpers/runtime-public-config'
 
-import type { ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { LoginForm } from '../login-form'
-
-import type { OAuthProvider } from '@/types/user'
-
-vi.mock(
-  import('next/link'),
-  () =>
-    ({
-      default: ({
-        children,
-        href,
-        ...props
-      }: {
-        children: ReactNode
-        href: string
-        [k: string]: unknown
-      }) => (
-        <a
-          href={href}
-          {...props}
-        >
-          {children}
-        </a>
-      ),
-    }) as unknown as typeof import('next/link'),
-)
-
-const mockRouter = vi.hoisted(() => ({
-  refresh: vi.fn<VitestLooseMock>(),
-  replace: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(
-  import('next/navigation'),
-  () =>
-    ({
-      useRouter: () => mockRouter,
-    }) as unknown as typeof import('next/navigation'),
-)
-
-const mockSendEmailLoginToken = vi.hoisted(() => vi.fn<VitestLooseMock>().mockResolvedValue({}))
-
-const mockLoginWithEmailAddress = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>().mockResolvedValue({ user: {} }),
-)
-
-const mockContinueOAuthLogin = vi.hoisted(() => vi.fn<VitestLooseMock>().mockResolvedValue({}))
-const mockGetConfiguredOAuthProviders = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>().mockResolvedValue({ providers: ['facebook'] }),
-)
-
-vi.mock(import('@/lib/api/client'), () => ({
-  continueOAuthLogin: mockContinueOAuthLogin,
-  getConfiguredOAuthProviders: mockGetConfiguredOAuthProviders,
-  loginWithEmailAddress: mockLoginWithEmailAddress,
-  sendEmailLoginToken: mockSendEmailLoginToken,
-}))
-
-vi.mock(
-  import('@/hooks/use-facebook-sdk'),
-  () =>
-    ({
-      useFacebookSDK: () => ({ isAvailable: false }),
-    }) as unknown as typeof import('@/hooks/use-facebook-sdk'),
-)
-
-// Render a plain button that calls onToken on click so we can test the OAuth flow.
-vi.mock(import('../oauth-login-button'), () => ({
-  OAuthLoginButton: ({
-    provider,
-    onToken,
-    disabled,
-  }: {
-    provider: OAuthProvider
-    onToken: (token: any) => Promise<void>
-    disabled?: boolean
-  }) => (
-    <button
-      type='button'
-      disabled={disabled}
-      onClick={() => void onToken({ provider: provider as any, token: 'mock-token' })}
-    >{`Continue with ${provider}`}</button>
-  ),
-}))
-
-// Capture onSuccess and reset so tests can simulate Turnstile resolution and verify reset behavior
-const turnstileCallbacks = vi.hoisted(() => ({
-  onSuccess: undefined as ((token: string) => void) | undefined,
-  reset: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/hooks/use-turnstile'), () => ({
-  useTurnstile: ({ onSuccess }: { onSuccess: (token: string) => void }) => {
-    turnstileCallbacks.onSuccess = onSuccess
-    return { ref: () => {}, reset: turnstileCallbacks.reset, isError: false }
-  },
-}))
 
 vi.mock(import('../mfa-step'), () => ({
   default: () => <div data-testid='mfa-step' />,
 }))
+
+const mockNav = createNavMock()
 
 async function renderAtCodeStep() {
   const result = render(<LoginForm />)
@@ -129,8 +42,8 @@ describe('LoginForm', () => {
     mockLoginWithEmailAddress.mockResolvedValue({ user: {} })
     mockContinueOAuthLogin.mockReset()
     mockContinueOAuthLogin.mockResolvedValue({})
-    mockRouter.refresh.mockReset()
-    mockRouter.replace.mockReset()
+    mockNav.refresh.mockReset()
+    mockNav.replace.mockReset()
     turnstileCallbacks.reset.mockReset()
     vi.spyOn(document, 'hasFocus').mockReturnValue(true)
   })
