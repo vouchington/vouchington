@@ -1,4 +1,7 @@
-import { terminalFailedGithubActionsStepLog } from './github-actions-log.mts'
+import {
+  getGithubActionsStepGroupSlices,
+  terminalFailedGithubActionsStepLog,
+} from './github-actions-log.mts'
 import { isGithubReleasesDownloadFlake } from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
 
@@ -37,14 +40,44 @@ function hasOnlyGithub5xxLycheeFailures(log: string): boolean {
   return failures.length > 0 && failures.every(isGithub5xxLycheeFailure)
 }
 
-function hasSetupLycheeReleasesDownloadFlake(log: string): boolean {
-  const setupLog = terminalFailedGithubActionsStepLog(log)
-  if (!setupLog.includes('Process completed with exit code 1.')) return false
+const githubComDnsResolutionFailurePattern =
+  /curl: \(6\) Could not resolve host: github\.com(?:\s|$)/m
 
+function terminalLycheeSetupFailureLog(log: string): string {
+  const slices = getGithubActionsStepGroupSlices(log)
+  let exit6Index = -1
+  for (let index = slices.length - 1; index >= 0; index -= 1) {
+    if ((slices[index]?.log ?? '').includes('Process completed with exit code 6.')) {
+      exit6Index = index
+      break
+    }
+  }
+
+  const sharedTerminalLog = terminalFailedGithubActionsStepLog(log)
+  if (exit6Index === -1) return sharedTerminalLog
+
+  const exit6Log = slices[exit6Index]?.log ?? ''
+  if (sharedTerminalLog === '') return exit6Log
+
+  const sharedIndex = slices.findIndex(slice => slice.log === sharedTerminalLog)
+  return exit6Index > sharedIndex ? exit6Log : sharedTerminalLog
+}
+
+function hasSetupLycheeReleasesDownloadFlake(log: string): boolean {
+  const setupLog = terminalLycheeSetupFailureLog(log)
   const mentionsLycheeInstaller =
     setupLog.includes('--repo lycheeverse/lychee') ||
     setupLog.includes('github.com/lycheeverse/lychee/releases/download/')
   if (!mentionsLycheeInstaller) return false
+
+  if (
+    githubComDnsResolutionFailurePattern.test(setupLog) &&
+    setupLog.includes('Process completed with exit code 6.')
+  ) {
+    return true
+  }
+
+  if (!setupLog.includes('Process completed with exit code 1.')) return false
 
   const curlFlake =
     setupLog.includes('curl: (28)') ||
@@ -96,9 +129,9 @@ export const lintLinksSetupLycheeDownloadFlakeRule: TransientRetryRule = {
   consumerKey: 'setup-lychee',
   rootCauseKey: 'github-release-download-failure',
   description:
-    'Lint Links fails before link checking because setup-lychee cannot download the pinned Lychee release asset from GitHub Releases.',
+    'Lint Links fails before link checking because setup-lychee cannot download the pinned Lychee release asset from GitHub Releases, including when DNS cannot resolve github.com.',
   rationale:
-    'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download failure, not a broken repository link.',
+    'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download or github.com DNS failure, not a broken repository link.',
   exampleRunIds: ['29263881027'],
   maxAttempts: 1,
   needsLogs: true,
