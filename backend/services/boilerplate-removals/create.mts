@@ -25,7 +25,7 @@ function removalValues(results: ExtractDomRemovalsResult): {
   return { kinds, ordinals, values }
 }
 
-export function removalFromRow(row: {
+export type StoredBoilerplateRemovalRow = {
   id: string
   hostname_id: string
   parent_path: string
@@ -33,7 +33,9 @@ export function removalFromRow(row: {
   updated_at: Date
   css_selectors: string[] | null
   html_to_remove: string[] | null
-}): BoilerplateRemoval {
+}
+
+export function removalFromRow(row: StoredBoilerplateRemovalRow): BoilerplateRemoval {
   return {
     id: row.id,
     hostname_id: row.hostname_id,
@@ -55,7 +57,7 @@ export const createBoilerplateRemoval = async (
   queryOptions: QueryOptions = {},
 ): Promise<BoilerplateRemoval> => {
   const stored = removalValues(results)
-  const { rows } = await write(
+  const { rows } = await write<StoredBoilerplateRemovalRow>(
     sql`/* createBoilerplateRemoval */
     WITH existing_removal AS (
       SELECT id
@@ -145,5 +147,7 @@ export const createBoilerplateRemoval = async (
     undefined,
     queryOptions,
   )
-  return removalFromRow(rows[0])
+  const row = rows[0]
+  if (!row) throw new Error('boilerplate removal was not stored')
+  return removalFromRow(row)
 }

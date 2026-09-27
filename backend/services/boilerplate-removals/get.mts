@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getMaxUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
-import { removalFromRow } from './create.mts'
+import { removalFromRow, type StoredBoilerplateRemovalRow } from './create.mts'
 import type { BoilerplateRemoval } from './types.mts'
 
 export const getLatestBoilerplateRemovalByHostnameAndPath = async (
@@ -11,7 +11,7 @@ export const getLatestBoilerplateRemovalByHostnameAndPath = async (
   queryOptions: QueryOptions = {},
 ): Promise<BoilerplateRemoval | null> => {
   const recentCutoffId = getMaxUUIDv7ForDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
-  const { rows } = await read<Parameters<typeof removalFromRow>[0]>(
+  const { rows } = await read<StoredBoilerplateRemovalRow>(
     sql`/* getLatestBoilerplateRemovalByHostnameAndPath */
     SELECT
       removal.id,
