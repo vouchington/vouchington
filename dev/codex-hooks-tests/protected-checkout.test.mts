@@ -121,13 +121,12 @@ describe('protected checkout hook', () => {
     ).toContain(REBASE_ONTO_MAIN)
   })
 
-  it('blocks gh stack rebase even when origin/main matches', () => {
-    expect(
-      findPreToolUseBlock(
-        { tool_input: { command: 'gh stack rebase' } },
-        { protectedCheckoutDiff: emptyDiff },
-      )?.reason,
-    ).toContain(REBASE_ONTO_MAIN)
+  it('leaves gh stack rebase and sync on the stack allowlist', () => {
+    for (const command of ['gh stack rebase', 'gh stack sync']) {
+      expect(
+        findPreToolUseBlock({ tool_input: { command } }, { protectedCheckoutDiff: protectedDiff }),
+      ).toBeNull()
+    }
   })
 
   it('blocks cherry-pick, stash pop, and a whole-tree restore', () => {
@@ -137,15 +136,6 @@ describe('protected checkout hook', () => {
           ?.reason,
       ).toContain(REBASE_ONTO_MAIN)
     }
-  })
-
-  it('blocks gh stack rebase when a protected path differs', () => {
-    expect(
-      findPreToolUseBlock(
-        { tool_input: { command: 'gh stack rebase' } },
-        { protectedCheckoutDiff: protectedDiff },
-      )?.reason,
-    ).toContain(REBASE_ONTO_MAIN)
   })
 
   it('matches the shared pathspec file', () => {

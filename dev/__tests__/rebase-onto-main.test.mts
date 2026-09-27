@@ -110,4 +110,15 @@ describe('rebase-onto-main', () => {
     expect(result.log).toContain('gh stack rebase')
     expect(result.log).not.toContain('git rebase origin/main')
   })
+
+  it('stops --stack before gh when a sandbox marker is set', async () => {
+    const result = await runRebase(['--stack'], {
+      PROTECTED_CHECKOUT_DIFF: '',
+      SANDBOX_RUNTIME: '1',
+    })
+    expect(result.exitCode).toBe(2)
+    expect(result.log).toContain('git fetch origin main')
+    expect(result.log).not.toContain('gh stack rebase')
+    expect(result.stderr).toContain('stack parent is not origin/main')
+  })
 })

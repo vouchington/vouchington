@@ -15,7 +15,8 @@ Usage: ./dev/rebase-onto-main [--stack] [--upstack]
 Fetches origin/main, then rebases onto it. With --stack, runs gh stack rebase
 instead (add --upstack to rewrite upper stack layers). Exits before git or gh
 when SANDBOX_RUNTIME or CURSOR_SANDBOX is set and a sandbox-protected path
-differs, so a sandboxed checkout cannot leave the worktree half-updated.
+differs. --stack refuses whenever either marker is set, because the stack
+parent is not origin/main.
 EOF
 }
 
@@ -46,6 +47,12 @@ if $UPSTACK && ! $STACK; then
 fi
 
 git -C "$REPO_ROOT" fetch origin main
+if $STACK && { [ -n "${SANDBOX_RUNTIME:-}" ] || [ -n "${CURSOR_SANDBOX:-}" ]; }; then
+  echo "Refusing gh stack rebase because the stack parent is not origin/main." >&2
+  echo "A sandboxed checkout can leave the tree half-updated." >&2
+  echo "Run ./dev/rebase-onto-main --stack with SANDBOX_RUNTIME and CURSOR_SANDBOX unset." >&2
+  exit 2
+fi
 if ! protected_checkout_allow "$REPO_ROOT" origin/main; then
   exit 2
 fi

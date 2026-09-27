@@ -13,16 +13,10 @@ export type { SegmentAction }
 
 export function classifySegment(segment: string): SegmentAction[] {
   const tokens = commandTokens(segment)
-  // The parent of a stack layer is not origin/main. Refuse until the unsandboxed script runs it.
-  if (isStackRewrite(tokens)) return [{ kind: 'tree', target: undefined }]
+  // gh stack rebase/sync stay on the stack allowlist. Their parent is not origin/main, and the
+  // hook cannot resolve it without a network call.
   if (tokens[0] !== 'git') return []
   return classifyGit(tokens)
-}
-
-function isStackRewrite(tokens: string[]): boolean {
-  return (
-    tokens[0] === 'gh' && tokens[1] === 'stack' && (tokens[2] === 'rebase' || tokens[2] === 'sync')
-  )
 }
 
 function classifyGit(tokens: string[]): SegmentAction[] {
