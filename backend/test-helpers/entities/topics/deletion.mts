@@ -37,7 +37,7 @@ export async function mergeTopicForTest(
 export async function getTopicDeletedById(topicId: string): Promise<{
   deleted_by_id: string | null
 } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read<{ deleted_by_id: string | null }>(sql`
     SELECT deleted_by_id
     FROM topics
     WHERE id = ${topicId}

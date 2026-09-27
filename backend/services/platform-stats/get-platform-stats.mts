@@ -26,6 +26,6 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     ) post_counts
   `
 
-  const { rows } = await read(query)
+  const { rows } = await read<PlatformStats>(query)
   return rows[0]
 }

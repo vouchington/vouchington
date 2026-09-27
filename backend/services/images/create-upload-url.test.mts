@@ -103,7 +103,8 @@ describe('createImageUploadUrl', () => {
     // Verify via getImageById instead of direct DB access
     const image = await getImageById(result.image_id)
 
-    expect(image).toBeDefined()
+    expect(image).not.toBeNull()
+    if (!image) throw new Error('Expected pending image upload')
     expect(deriveUploadStatus(image)).toBe('pending')
     expect(image.created_by_id).toBe(user.id)
     expect(image.s3_key).toBe(result.image_id)

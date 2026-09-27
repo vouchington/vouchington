@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 
 export async function reorderProfileLinks(userId: string, orderedIds: string[]): Promise<void> {
   assert(orderedIds.length > 0, 400, 'orderedIds must not be empty')
-  const { rows } = await read(
+  const { rows } = await read<{ id: string }>(
     sql`/* reorderProfileLinks */ SELECT id FROM user_profile_links WHERE user_id = ${userId}`,
   )
   const existingIds = new Set(rows.map((r: { id: string }) => r.id))

@@ -72,7 +72,7 @@ export async function applyBatchUpdates(
           AND EXCLUDED.input_token_count IS NOT NULL`,
   )
 
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     `/* applyBatchUpdates */ UPDATE ${tableName}
       SET ${EMBEDDING_COLUMNS.input_sha256} = u.content_sha256,
         ${EMBEDDING_COLUMNS.embedding} = u.embedding,
@@ -139,7 +139,7 @@ export async function copyExistingEmbeddings(
     return updatedIds
   }
 
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     `/* copyExistingEmbeddings */
       UPDATE ${tableName}
       SET ${EMBEDDING_COLUMNS.input_sha256} = existing.content_sha256,

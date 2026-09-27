@@ -4,7 +4,7 @@ export async function queryRssFeedCurrentState(feedId: string): Promise<{
   is_enabled: boolean
   is_discoverable: boolean
 } | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ is_enabled: boolean; is_discoverable: boolean }>(
     `/* queryRssFeedCurrentState */
     SELECT is_enabled, is_discoverable
     FROM view_rss_feed_current_states
@@ -20,7 +20,7 @@ export async function queryRssFeedBaseState(feedId: string): Promise<{
   is_enabled: boolean
   is_discoverable: boolean
 } | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ is_enabled: boolean; is_discoverable: boolean }>(
     `/* queryRssFeedBaseState */
     SELECT is_enabled, is_discoverable
     FROM rss_feeds

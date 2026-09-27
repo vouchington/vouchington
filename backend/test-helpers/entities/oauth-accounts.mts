@@ -26,7 +26,7 @@ export async function insertTestOAuthAccount(
       ${config.emailColumn} AS provider_user_email_address,
       ${config.dataColumn} AS provider_user_data
   `
-  const { rows } = await write(query, [providerUserId, providerUserEmailAddress])
+  const { rows } = await write<OAuthAccount>(query, [providerUserId, providerUserEmailAddress])
   return rows[0]
 }
 
@@ -121,17 +121,19 @@ export async function deleteTestOAuthAccount(
   ])
 }
 
-export async function getTestOAuthAccountRaw(
-  provider: OAuthProvider,
-  providerUserId: string,
-): Promise<{
+type RawOAuthAccountRow = {
   user_id: string | null
   provider_user_email_address: string | null
   provider_user_data: Record<string, unknown>
   access_token: string | null
   refresh_token: string | null
   access_token_expires_at: Date | null
-} | null> {
+}
+
+export async function getTestOAuthAccountRaw(
+  provider: OAuthProvider,
+  providerUserId: string,
+): Promise<RawOAuthAccountRow | null> {
   const config = providerTableConfigs[provider]
   let tokenColumns: string
   if (!config.hasTokenColumns) {
@@ -141,18 +143,13 @@ export async function getTestOAuthAccountRaw(
   } else {
     tokenColumns = `, access_token_ciphertext AS access_token, NULL AS refresh_token, access_token_expires_at`
   }
-  const { rows } = await read(
+  const { rows } = await read<RawOAuthAccountRow>(
     `SELECT user_id, ${config.emailColumn} AS provider_user_email_address, ${config.dataColumn} AS provider_user_data${tokenColumns}
      FROM ${config.table}
      WHERE ${config.providerUserIdColumn} = $1`,
     [providerUserId],
   )
-  const row = rows[0] as
-    | ((typeof rows)[0] & {
-        access_token?: string | null
-        refresh_token?: string | null
-      })
-    | undefined
+  const row = rows[0]
   if (!row) return null
   if (row.access_token) {
     row.access_token = decryptSecret(

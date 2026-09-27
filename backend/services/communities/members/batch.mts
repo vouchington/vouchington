@@ -9,7 +9,7 @@ export async function getCommunityMemberBatch(
   options?: QueryOptions,
 ): Promise<Record<string, CommunityMember>> {
   if (communityIds.length === 0) return {}
-  const { rows } = await (options?.query ?? read)(
+  const { rows } = await (options?.query ?? read)<CommunityMember>(
     sql`/* getCommunityMemberBatch */
     SELECT * FROM community_members
     WHERE user_id = ${userId}

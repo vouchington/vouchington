@@ -17,7 +17,10 @@ export interface MigrationStatus {
 export async function getMigrationStatus(): Promise<MigrationStatus> {
   let rows: Array<{ id: string }> = []
   try {
-    const result = await read('/* getMigrationStatus */ SELECT id FROM migrations ORDER BY id', [])
+    const result = await read<{ id: string }>(
+      '/* getMigrationStatus */ SELECT id FROM migrations ORDER BY id',
+      [],
+    )
     rows = result.rows
   } catch (err) {
     // Only ignore "relation does not exist" (42P01) on a fresh database before first migration run

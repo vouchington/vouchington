@@ -101,7 +101,12 @@ async function insertRssFeedAndInitialState(
   feedType: 'article' | 'podcast' | 'video' | 'mixed',
   query: TransactionQuery,
 ) {
-  const { rows } = await write(
+  const { rows } = await write<{
+    id: string
+    title: string | null
+    topic_id: string
+    rss_feed_url_id: string
+  }>(
     sql`/* createRssFeed */
       INSERT INTO rss_feeds (
         rss_feed_url_id,
@@ -121,6 +126,6 @@ async function insertRssFeedAndInitialState(
     `,
     { query },
   )
-  await createInitialRssFeedStateChanges(rows[0].id as string, { query })
+  await createInitialRssFeedStateChanges(rows[0].id, { query })
   return rows[0]
 }

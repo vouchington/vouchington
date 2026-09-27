@@ -111,8 +111,8 @@ type TopicBasic = {
 }
 
 export type Topic = TopicBasic & {
-  created_by: BasicUser
-  updated_by: BasicUser
+  created_by: BasicUser | null
+  updated_by: BasicUser | null
 }
 
 export type TopicMetrics = {
@@ -139,11 +139,11 @@ export type TopicMetrics = {
       '5': number
     }
   }
-  ratings__updated_at: Date
+  ratings__updated_at: Date | null
   bookmarks: {
     follow: number
   }
-  bookmarks__updated_at: Date
+  bookmarks__updated_at: Date | null
 }
 
 export type TopicRatingStats = {

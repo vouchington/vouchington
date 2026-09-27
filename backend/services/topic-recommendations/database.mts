@@ -14,7 +14,12 @@ interface ContentItem {
 export async function getPosts(ids: string[]): Promise<ContentItem[]> {
   if (ids.length === 0) return []
 
-  const result = await read(
+  const result = await read<{
+    id: string
+    title: string | null
+    markdown: string | null
+    community_id: string | null
+  }>(
     `/* getPosts */
 		SELECT id, title, markdown, community_id
 		FROM posts

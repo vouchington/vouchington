@@ -20,7 +20,7 @@ export async function markReferralLinkUnfurlRequested(
 ): Promise<UserReferralLink | null> {
   validateUUID(linkId)
 
-  const { rows } = await write(
+  const { rows } = await write<UserReferralLink>(
     sql`/* markReferralLinkUnfurlRequested */
       UPDATE user_referral_program_links
       SET unfurl_requested_at = CURRENT_TIMESTAMP,

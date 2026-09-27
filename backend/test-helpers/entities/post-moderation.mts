@@ -56,7 +56,13 @@ export async function getPostModerationData(postId: string): Promise<{
   openai_omni_moderation_flagged: boolean | null
   openai_omni_moderation_created_at: Date | null
 } | null> {
-  const { rows } = await read(sql`/* getPostModerationData */
+  const { rows } = await read<{
+    openai_omni_moderation_content_sha256: Buffer | null
+    openai_omni_moderation_input_sha256: Buffer | null
+    openai_omni_moderation_results: unknown
+    openai_omni_moderation_flagged: boolean | null
+    openai_omni_moderation_created_at: Date | null
+  }>(sql`/* getPostModerationData */
     SELECT post.llm_moderation_content_sha256 AS openai_omni_moderation_content_sha256,
       version.content_sha256 AS openai_omni_moderation_input_sha256,
       disposition.evidence AS openai_omni_moderation_results,
@@ -105,7 +111,12 @@ export async function getPostSpamDetectionState(postId: string): Promise<{
   spam_detection_score: number | null
   spam_detection_results: unknown
 } | null> {
-  const { rows } = await read(sql`/* getPostSpamDetectionState */
+  const { rows } = await read<{
+    spam_detection_flagged: boolean | null
+    spam_detection_created_at: Date | null
+    spam_detection_score: number | null
+    spam_detection_results: unknown
+  }>(sql`/* getPostSpamDetectionState */
     SELECT CASE WHEN disposition.disposition IS NULL THEN NULL ELSE disposition.disposition <> 'pass' END AS spam_detection_flagged,
       disposition.decided_at AS spam_detection_created_at,
       NULLIF(disposition.evidence->>'composite_score', '')::double precision AS spam_detection_score,

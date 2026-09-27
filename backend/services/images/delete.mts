@@ -35,8 +35,9 @@ export async function deleteImageByIdWhileStorageLocked(
   omitRollback: true | undefined,
   includeQuarantinePending: boolean,
 ) {
-  const image = await getImageByAny(imageId, { includeQuarantinePending })
-  if (!image) return
+  const foundImage = await getImageByAny(imageId, { includeQuarantinePending })
+  if (!foundImage) return
+  const image = foundImage
   let lockedStorageImage:
     | {
         id: string
@@ -109,7 +110,6 @@ export async function deleteImageByIdWhileStorageLocked(
       JOIN affected_posts USING (post_id)
       GROUP BY post_images.post_id
     `)
-
       const postIds = postRows.map(row => row.post_id)
       let postRollbacks: ImageDeletePostRollbackSnapshot[] = []
       if (postIds.length > 0) {

@@ -6,7 +6,7 @@ export async function createAgentSystemUser(
   username: string,
   options?: QueryOptions,
 ): Promise<{ id: string }> {
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* createAgentSystemUser */
     INSERT INTO users (username)
     VALUES (${username})

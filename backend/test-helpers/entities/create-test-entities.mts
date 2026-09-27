@@ -1,5 +1,5 @@
 import type { PrivateUser } from '@voucha/types/entities/user'
-import type { PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entities/post'
+import type { Post, PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entities/post'
 import type { TopicTypes } from '@voucha/types/entities/topic'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -137,7 +137,7 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
     `)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Post>(
     sql`/* createTestPost */ SELECT * FROM view_posts WHERE id = ${postId}`,
   )
   return rows[0]

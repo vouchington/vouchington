@@ -41,14 +41,15 @@ export async function getConversationMessageAgenticRunById(
       AND deleted_at IS NULL
     LIMIT 1
   `)
-  const { rows } = await read(query)
+  const { rows } = await read<ConversationMessageAgenticRun>(query)
   return rows[0] || null
 }
 
 export async function getConversationMessageAgenticRunEventsByRunId(
   conversationMessageAgenticRunId: string,
 ): Promise<ConversationMessageAgenticRunEvent[]> {
-  const { rows } = await read(sql`/* getConversationMessageAgenticRunEventsByRunId */
+  const { rows } =
+    await read<ConversationMessageAgenticRunEvent>(sql`/* getConversationMessageAgenticRunEventsByRunId */
     SELECT
       id,
       conversation_message_agentic_run_id,
@@ -95,7 +96,7 @@ export async function getConversationMessageAgenticRunsByConversationMessageId(
       AND deleted_at IS NULL
     ORDER BY id ASC
   `)
-  const { rows } = await read(query)
+  const { rows } = await read<ConversationMessageAgenticRun>(query)
   return rows
 }
 
@@ -171,6 +172,6 @@ export async function getLatestConversationMessageAgenticRunByConversationMessag
     ORDER BY id DESC
     LIMIT 1
   `)
-  const { rows } = await read(query)
+  const { rows } = await read<ConversationMessageAgenticRun>(query)
   return rows[0] || null
 }

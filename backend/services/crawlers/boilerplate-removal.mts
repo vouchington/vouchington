@@ -31,7 +31,7 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
 
   const likePattern = `${escapedPrefix}%`
 
-  const { rows } = await read(
+  const { rows } = await read<BoilerplateRemovalUrlCandidate>(
     sql`/* searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId */
     SELECT ordered_candidates.id, ordered_candidates.url
     FROM (

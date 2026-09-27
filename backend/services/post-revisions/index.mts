@@ -43,7 +43,7 @@ export async function createPostRevision(
 ): Promise<PostRevision> {
   const {
     rows: [row],
-  } = await write(
+  } = await write<PostRevision>(
     sql`/* createPostRevision */
     INSERT INTO post_revisions (post_id, revision_type, revised_by_id, changes)
     VALUES (${postId}, ${revisionType}, ${revisedById}, ${JSON.stringify(changes)})

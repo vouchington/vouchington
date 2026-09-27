@@ -7,6 +7,24 @@
 re-exports the adapted helpers through [index.mts](index.mts). The helpers accept either raw SQL
 strings or `sql-template-strings` statements.
 
+The `query`, `read`, `write`, and transaction query signatures reuse the canonical
+`@vouchington/postgres` contracts. Without a row type argument, they return `pg.QueryResultRow`;
+that default is not a complete application entity. Declare the columns a query actually selects:
+
+```ts
+const { rows } = await read<{ id: string; deleted_at: Date | null }>(
+  '/* getPostDeletion */ SELECT id, deleted_at FROM posts WHERE id = $1',
+  [postId],
+)
+```
+
+These row declarations are compile-time contracts, not runtime validation or conversion. Match
+the selected SQL projection, including nullable columns and the configured PostgreSQL parsers:
+`NUMERIC` arrives as `number`, while `BIGINT` and `DATE` arrive as strings; timestamps arrive as
+`Date`. For a view or partial `SELECT`, do not claim the full entity type when the projection omits
+required fields. The [query-row contract test](query-row-contract.test.mts) checks parser values
+through the test-helper-owned PostgreSQL probe.
+
 Features:
 
 - query capture hooks for EXPLAIN tooling

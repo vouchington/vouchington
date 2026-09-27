@@ -77,7 +77,7 @@ export type ActiveModeratorConfig = {
 }
 
 export async function getAllActiveModerationConfigs(): Promise<ActiveModeratorConfig[]> {
-  const { rows } = await read(sql`/* getAllActiveModerationConfigs */
+  const { rows } = await read<ActiveModeratorConfig>(sql`/* getAllActiveModerationConfigs */
     SELECT DISTINCT ON (a.id)
       a.id as moderator_id,
       am.slug as moderator_slug,

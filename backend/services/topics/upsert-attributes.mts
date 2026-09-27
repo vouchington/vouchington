@@ -1,4 +1,5 @@
 import { write, type QueryOptions } from '@data-stores/psql'
+import type pg from 'pg'
 
 type TopicAttributeTableName =
   | 'topics__cards'
@@ -17,7 +18,7 @@ type TopicAttributeTableName =
  * @param values - Array of values corresponding to the columns
  * @returns The upserted row or null if the operation fails
  */
-export async function upsertTopicAttributes<T>(
+export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   tableName: TopicAttributeTableName,
   topicId: string,
   columns: string[],
@@ -28,7 +29,7 @@ export async function upsertTopicAttributes<T>(
     // No columns to update, but we still want to ensure the row exists
     // Use a no-op update on conflict so RETURNING always yields a row.
     const query = topicAttributeUpsertQuery(tableName, '', '', 'topic_id = EXCLUDED.topic_id')
-    const { rows } = await write(query, [topicId], options)
+    const { rows } = await write<T>(query, [topicId], options)
     return rows[0] ?? null
   }
 
@@ -46,7 +47,7 @@ export async function upsertTopicAttributes<T>(
     updateSets,
   )
 
-  const { rows } = await write(query, [topicId, ...values], options)
+  const { rows } = await write<T>(query, [topicId, ...values], options)
   return rows[0] ?? null
 }
 

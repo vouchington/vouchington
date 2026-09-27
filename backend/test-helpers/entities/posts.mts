@@ -39,7 +39,11 @@ export async function getPostEmbeddingData(postId: string): Promise<{
   created_at: Date | null
   ban_evasion_post_embedding_input_sha: Buffer | null
 } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read<{
+    input_sha: Buffer | null
+    created_at: Date | null
+    ban_evasion_post_embedding_input_sha: Buffer | null
+  }>(sql`
     SELECT
       bedrock_nova_multimodal_v1_input_sha256 AS input_sha,
       bedrock_nova_multimodal_v1_embedding_created_at AS created_at,
@@ -185,6 +189,6 @@ export async function getPostIdsByPrivacyFilter(filter: SQLStatement | null): Pr
   } else {
     query.append(sql` TRUE`)
   }
-  const { rows } = await read(query)
+  const { rows } = await read<{ id: string }>(query)
   return rows.map((r: { id: string }) => r.id)
 }

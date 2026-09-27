@@ -7,6 +7,6 @@ export type ReferralLinkValidationRule = {
   is_invalid_referral_link_url: boolean
   user_error_text: string | null
   example_urls: string[] | null
-  created_at: string
-  updated_at: string
+  created_at: Date
+  updated_at: Date
 }

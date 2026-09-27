@@ -4,9 +4,15 @@ import {
   upsertSystemUser,
   upsertAdminEmailAddresses,
   getUserByPrimaryEmail,
+  getSystemUserForAuthorization,
 } from './system-users.mts'
 import { getPrivateUserByAny } from './get.mts'
-import { createTestUserDirect, getTestUserRaw, safeUsername } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  getTestUserRaw,
+  getTestUserRoleSlugs,
+  safeUsername,
+} from '@voucha/test-helpers'
 
 describe('upsertSystemAdministrator', () => {
   it('ensures administrator role on existing user', async () => {
@@ -18,6 +24,27 @@ describe('upsertSystemAdministrator', () => {
 
     const refreshed = await getPrivateUserByAny(user.id)
     expect(refreshed?.roles).toContain('administrator')
+  })
+})
+
+describe('getSystemUserForAuthorization', () => {
+  it('loads persisted authorization roles for a system administrator', async () => {
+    const username = safeUsername('system-actor')
+    const systemUser = await upsertSystemAdministrator(username)
+
+    const actor = await getSystemUserForAuthorization(username)
+    const persistedRoles = await getTestUserRoleSlugs(systemUser.id)
+
+    expect(actor?.id).toBe(systemUser.id)
+    expect(actor?.__entity_type).toBe('user')
+    expect(persistedRoles).toContain('administrator')
+    expect(actor?.roles.toSorted()).toEqual(persistedRoles)
+  })
+
+  it('returns null for an unknown system username', async () => {
+    await expect(
+      getSystemUserForAuthorization(safeUsername('missing-system-actor')),
+    ).resolves.toBeNull()
   })
 })
 

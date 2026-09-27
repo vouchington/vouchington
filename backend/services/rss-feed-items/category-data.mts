@@ -2,6 +2,18 @@ import { write } from '@data-stores/psql'
 import { RSS_FEED_CATEGORIZER_USERNAME } from '@services/users/constants'
 import sql from 'sql-template-strings'
 
+export type CategoryDataRow = {
+  rss_feed_item_id: string
+  category_text: string
+  exists: boolean
+  existing_topic_id: string | null
+  existing_topic_alias_id: string | null
+  new_topic_id: string | null
+  new_topic_alias_id: string | null
+  topic_relation_confirmed: boolean
+  hashtag_relation_confirmed: boolean
+}
+
 export async function readCategoryDataChunk(
   categories: Array<{
     rss_feed_item_id: string
@@ -14,7 +26,7 @@ export async function readCategoryDataChunk(
   const hashtagAliases = categories.map(c => c.hashtag_alias)
 
   // This is a writer read: aliases may have been created immediately before this query.
-  const { rows } = await write(sql`/* upsertRssFeedItemCategories */
+  const { rows } = await write<CategoryDataRow>(sql`/* upsertRssFeedItemCategories */
       SELECT
         input.rss_feed_item_id,
         input.category_text,

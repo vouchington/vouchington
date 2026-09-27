@@ -4,13 +4,22 @@ import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { addUserRole } from './roles-permissions.mts'
+import { getPrivateUserByAny } from './get.mts'
 import {
   AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
   MODERATION_SYSTEM_USERNAME,
   RSS_FEED_AUTO_UPDATER_USERNAME,
 } from './constants.mts'
 
-const systemUsers = new Map<string, BasicUser>()
+type SystemUserRow = {
+  id: string
+  username: string
+  use_display_name_from: NonNullable<BasicUser['use_display_name_from']> | null
+}
+
+type EmailUserRow = Omit<SystemUserRow, 'username'> & { username: string | null }
+
+const systemUsers = new Map<string, SystemUserRow>()
 
 /**
  * System users are used by the system to perform actions.
@@ -25,7 +34,7 @@ const systemUsers = new Map<string, BasicUser>()
  * upserting the system row with is_system = TRUE, so ownership is structural rather than trusted
  * by username string alone.
  */
-export const upsertSystemUser = async (username: string): Promise<BasicUser> => {
+export const upsertSystemUser = async (username: string): Promise<SystemUserRow> => {
   assert(isSlug(username), 422, 'Username must be a valid slug')
   await using query = await beginTransaction()
   await write(
@@ -36,7 +45,7 @@ export const upsertSystemUser = async (username: string): Promise<BasicUser> => 
       `,
     { query },
   )
-  const { rows } = await write(
+  const { rows } = await write<SystemUserRow>(
     sql`/* upsertSystemUser */
         INSERT INTO users (username, is_system, vote_weight_admin_set_at)
         VALUES (${username}, TRUE, CURRENT_TIMESTAMP)
@@ -53,7 +62,7 @@ export const upsertSystemUser = async (username: string): Promise<BasicUser> => 
   return result
 }
 
-export const upsertSystemAdministrator = async (username: string): Promise<BasicUser> => {
+export const upsertSystemAdministrator = async (username: string): Promise<SystemUserRow> => {
   const user = await upsertSystemUser(username)
   await addUserRole(user.id, 'administrator')
   return user
@@ -89,9 +98,9 @@ export const upsertAdminEmailAddresses = async (
   await query.commit()
 }
 
-export const getSystemUserByUsername = async (username: string): Promise<BasicUser | null> => {
+export const getSystemUserByUsername = async (username: string): Promise<SystemUserRow | null> => {
   if (systemUsers.has(username)) return systemUsers.get(username)!
-  const { rows } = await read(sql`/* getSystemUserByUsername */
+  const { rows } = await read<SystemUserRow>(sql`/* getSystemUserByUsername */
     SELECT id, username, use_display_name_from
     FROM users
     WHERE username = ${username} AND is_system = TRUE
@@ -104,9 +113,16 @@ export const getSystemUserByUsername = async (username: string): Promise<BasicUs
   return user
 }
 
-export const getUserByPrimaryEmail = async (email: string): Promise<BasicUser | null> => {
+/** Load the actual persisted roles before using a system user as an authorization actor. */
+export async function getSystemUserForAuthorization(username: string) {
+  const systemUser = await getSystemUserByUsername(username)
+  if (!systemUser) return null
+  return getPrivateUserByAny(systemUser.id, { readOnly: false })
+}
+
+export const getUserByPrimaryEmail = async (email: string): Promise<EmailUserRow | null> => {
   const normalizedEmail = email.trim().toLowerCase()
-  const { rows } = await read(sql`/* getUserByPrimaryEmail */
+  const { rows } = await read<EmailUserRow>(sql`/* getUserByPrimaryEmail */
     SELECT u.id, u.username, u.use_display_name_from
     FROM user_email_addresses uea
     JOIN users u ON u.id = uea.user_id

@@ -49,9 +49,13 @@ export async function setTestRssFeedDiscoverable(
 export async function getRssFeedCrawlById(crawlId: string): Promise<{
   response_code: number
   feed_data: unknown
-  feed_data_sha256: Buffer
+  feed_data_sha256: Buffer | null
 } | null> {
-  const { rows } = await read(
+  const { rows } = await read<{
+    response_code: number
+    feed_data: unknown
+    feed_data_sha256: Buffer | null
+  }>(
     `
     SELECT response_code, feed_data, feed_data_sha256
     FROM rss_feed_crawls

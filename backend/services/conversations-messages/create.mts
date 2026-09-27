@@ -10,7 +10,7 @@ import type {
 } from './types.mts'
 
 export async function createConversation(createdById: string, title = ''): Promise<Conversation> {
-  const { rows } = await write(sql`/* createConversation */
+  const { rows } = await write<Conversation>(sql`/* createConversation */
       INSERT INTO conversations (created_by_id, title)
       VALUES (${createdById}, ${title})
       RETURNING *
@@ -23,7 +23,7 @@ export async function createConversationMessage(
   createdById: string,
   content: unknown,
 ): Promise<ConversationMessage> {
-  const { rows } = await write(sql`/* createConversationMessage */
+  const { rows } = await write<ConversationMessage>(sql`/* createConversationMessage */
     INSERT INTO conversation_messages (conversation_id, created_by_id, content)
     VALUES (${conversationId}, ${createdById}, ${JSON.stringify(content)})
     RETURNING *
@@ -140,7 +140,8 @@ export async function createConversationMessageAgenticRunEvent(params: {
   input: unknown
 }): Promise<ConversationMessageAgenticRunEvent> {
   const { conversationMessageAgenticRunId, type, input } = params
-  const { rows } = await write(sql`/* createConversationMessageAgenticRunEvent */
+  const { rows } =
+    await write<ConversationMessageAgenticRunEvent>(sql`/* createConversationMessageAgenticRunEvent */
     INSERT INTO conversation_message_agentic_runs_events
       (conversation_message_agentic_run_id, type, input)
     VALUES

@@ -61,7 +61,7 @@ export type Post = {
     topic_id: string
     rating: number
     order_index: number
-    updated_at: Date
+    updated_at: string
     category_slug?: string | null
     topic?: {
       __entity_type: 'topic'
@@ -70,7 +70,7 @@ export type Post = {
       slug: string
       markdown: string
       topic_type: string
-      created_at: Date
+      created_at: string
     }
   }> | null
   post_related_topics?: Array<{
@@ -111,7 +111,7 @@ export type Post = {
     landing_page_urls: string[]
     approval_error_message: string | null
     status: TopicRecommendationStatus
-    reviewed_at: Date | null
+    reviewed_at: string | null
     reviewed_by_id: string | null
     rejection_reason: string | null
     created_topic_id: string | null

@@ -7,7 +7,7 @@ import { isUUID } from '@modules/utils'
 import { isHostname } from '@ts-shared/utils/urls'
 
 export const getUrlHostnameById = async (id: string): Promise<ViewHostname | null> => {
-  const { rows } = await read(sql`/* getUrlHostnameById */
+  const { rows } = await read<ViewHostname>(sql`/* getUrlHostnameById */
     SELECT * FROM view_url_hostnames
     WHERE id = ${id}
     LIMIT 1
@@ -19,7 +19,7 @@ export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | nu
   const normalized = id.trim().toLowerCase()
   if (isUUID(normalized)) return getUrlHostnameById(normalized)
   if (isHostname(normalized)) {
-    const { rows } = await read(sql`/* getUrlHostnameByAny */
+    const { rows } = await read<ViewHostname>(sql`/* getUrlHostnameByAny */
       SELECT * FROM view_url_hostnames
       WHERE hostname = ${normalized}
       LIMIT 1
@@ -44,7 +44,7 @@ export const getUrlHostnameCrawlerDetailsById = async (
   options: QueryOptions = {},
 ): Promise<UrlHostnameCrawlerDetails | null> => {
   const runQuery = options.readOnly === false ? write : read
-  const { rows } = await runQuery(
+  const { rows } = await runQuery<UrlHostnameCrawlerDetails>(
     sql`/* getUrlHostnameCrawlerDetailsById */
     SELECT
       id,

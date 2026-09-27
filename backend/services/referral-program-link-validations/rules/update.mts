@@ -117,7 +117,7 @@ export async function updateReferralLinkValidationRule(
   query.append(sql` WHERE id = ${ruleId} RETURNING *`)
 
   return withReferralLinkEligibilityMutationLock({}, async transactionQuery => {
-    const { rows } = await transactionQuery(query)
+    const { rows } = await transactionQuery<ReferralLinkValidationRule>(query)
     return rows[0] ?? null
   })
 }

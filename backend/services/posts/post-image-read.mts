@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import type { PostImagePlacement } from './image-placements.mts'
 
 export async function getPostImages(postId: string): Promise<PostImagePlacement[]> {
-  const { rows } = await read(sql`/* getPostImages */
+  const { rows } = await read<PostImagePlacement>(sql`/* getPostImages */
     SELECT pi.image_id, pi.order_index, pi.caption,
       placement.id AS placement_id, placement.revision AS placement_revision
     FROM post_images pi

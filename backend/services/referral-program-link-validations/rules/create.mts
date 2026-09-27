@@ -60,7 +60,8 @@ export async function createReferralLinkValidationRule(
   }
 
   return withReferralLinkEligibilityMutationLock({}, async query => {
-    const { rows } = await query(sql`/* createReferralLinkValidationRule */
+    const { rows } =
+      await query<ReferralLinkValidationRule>(sql`/* createReferralLinkValidationRule */
       INSERT INTO referral_program_link_validations_rules (
         referral_program_link_validation_id,
         hostname,

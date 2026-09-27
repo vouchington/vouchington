@@ -56,7 +56,7 @@ export async function createChildReferralLink(
     assert(label.length <= 255, 422, 'label must be 255 characters or less')
   }
 
-  const { rows } = await write(
+  const { rows } = await write<UserReferralLink>(
     sql`/* createChildReferralLink */
       INSERT INTO user_referral_program_links (
         user_id,

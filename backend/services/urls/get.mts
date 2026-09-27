@@ -9,7 +9,7 @@ export const getUrlById = async (
   options: QueryOptions = {},
 ): Promise<ViewUrl | null> => {
   const runQuery = options.readOnly === false ? write : read
-  const { rows } = await runQuery(
+  const { rows } = await runQuery<ViewUrl>(
     `/* getUrlById */
     SELECT * FROM view_urls
     WHERE id = $1
@@ -26,7 +26,7 @@ export const getUrlsByIds = async (
   options: QueryOptions = {},
 ): Promise<ViewUrl[]> => {
   if (ids.length === 0) return []
-  const { rows } = await read(
+  const { rows } = await read<ViewUrl>(
     `/* getUrlsByIds */
     SELECT * FROM view_urls
     WHERE id = ANY($1::uuid[])
@@ -59,7 +59,7 @@ export const getUrlByAny = async (
       })
     }
   }
-  const { rows } = await read(
+  const { rows } = await read<ViewUrl>(
     `/* getUrlByAny */
     WITH url_id AS (
       SELECT id

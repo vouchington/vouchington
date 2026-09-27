@@ -58,7 +58,14 @@ export async function getImageModerationState(imageId: string): Promise<{
   openai_omni_moderation_flagged: boolean | null
   openai_omni_moderation_created_at: Date | null
 } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read<{
+    deleted_at: Date | null
+    quarantine_pending_at: Date | null
+    quarantined_at: Date | null
+    openai_omni_moderation_results: unknown | null
+    openai_omni_moderation_flagged: boolean | null
+    openai_omni_moderation_created_at: Date | null
+  }>(sql`
     SELECT deleted_at, quarantine_pending_at, quarantined_at,
       openai_omni_moderation_results,
       openai_omni_moderation_flagged,
@@ -184,7 +191,7 @@ export async function insertPendingTestImage(userId: string): Promise<string> {
 export async function getImageEmbeddingState(
   imageId: string,
 ): Promise<{ bedrock_nova_multimodal_v1_embedding_created_at: Date | null } | null> {
-  const { rows } = await read(
+  const { rows } = await read<{ bedrock_nova_multimodal_v1_embedding_created_at: Date | null }>(
     `SELECT bedrock_nova_multimodal_v1_embedding_created_at FROM images WHERE id = $1`,
     [imageId],
   )

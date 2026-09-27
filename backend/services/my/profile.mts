@@ -10,7 +10,7 @@ type UserProfile = {
 }
 
 export async function getProfile(userId: string): Promise<UserProfile | null> {
-  const { rows } = await read(
+  const { rows } = await read<UserProfile>(
     sql`/* getProfile */ SELECT id, markdown FROM users WHERE id = ${userId} AND deleted_at IS NULL LIMIT 1`,
   )
   return rows[0] ?? null

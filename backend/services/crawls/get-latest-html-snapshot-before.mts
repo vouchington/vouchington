@@ -13,7 +13,7 @@ export const getLatestHtmlSnapshotCrawlBefore = async (
     throw createError(422, `Invalid URL ID or crawl ID: ${urlId}, ${crawlId}`)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getLatestHtmlSnapshotCrawlBefore */
     SELECT
       id,

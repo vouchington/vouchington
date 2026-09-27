@@ -17,6 +17,8 @@ type CrawlSearchResult = {
   markdown: string
 }
 
+type CrawlSearchRow = CrawlSearchResult & { rank: number }
+
 export async function toolsSearchCrawls(
   options: SearchCrawlsOptions,
 ): Promise<CrawlSearchResult[]> {
@@ -59,11 +61,11 @@ export async function toolsSearchCrawls(
     cte.append(buildExcludedHostnameIdsCTE(exclude_for_user_id))
     cte.append(sql` `)
     cte.append(sqlQuery)
-    const { rows } = await read(cte)
+    const { rows } = await read<CrawlSearchRow>(cte)
     return formatResults(rows)
   }
 
-  const { rows } = await read(sqlQuery)
+  const { rows } = await read<CrawlSearchRow>(sqlQuery)
   return formatResults(rows)
 }
 

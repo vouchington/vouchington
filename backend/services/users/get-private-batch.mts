@@ -45,7 +45,7 @@ export const getPrivateUsersByAnyBatch = async (
     { cteName: 'phone_input', sqlType: 'text', inputs: partitions.get('phone') ?? [] },
   ])
 
-  const { rows } = await read(
+  const { rows } = await read<PrivateUser & { input_order: number }>(
     `/* getPrivateUsersByAnyBatch */
     WITH ${inputCtes.ctes},
     id_lookups AS (

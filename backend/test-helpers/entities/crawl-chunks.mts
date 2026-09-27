@@ -100,7 +100,7 @@ export async function getCrawlChunksWithEmbeddingStatus(
 export async function getCrawlChunksGroupedByCrawl(
   urlId: string,
 ): Promise<Array<{ crawl_id: string; count: number }>> {
-  const { rows } = await read(sql`
+  const { rows } = await read<{ crawl_id: string; count: number }>(sql`
     SELECT crawl_chunks.crawl_id, COUNT(*)::int as count
     FROM crawl_chunks
     JOIN crawls ON crawls.id = crawl_chunks.crawl_id

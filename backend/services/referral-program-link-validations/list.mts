@@ -63,7 +63,7 @@ export async function listReferralLinkValidations(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(query, queryOptions)
+  const { rows } = await read<ReferralLinkValidation>(query, queryOptions)
 
   const hasNextPage = rows.length > limit
   const results: typeof rows = []
@@ -91,7 +91,7 @@ export async function listReferralLinkValidationsForProgram(
   options?: QueryOptions,
 ): Promise<ReferralLinkValidation[]> {
   validateUUID(referralProgramId)
-  const { rows } = await read(
+  const { rows } = await read<ReferralLinkValidation>(
     sql`/* listReferralLinkValidationsForProgram */
       SELECT v.id, v.slug, v.user_help_text, v.updated_at
       FROM referral_program_link_validations v

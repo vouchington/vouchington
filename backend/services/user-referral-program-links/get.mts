@@ -88,7 +88,7 @@ export async function getUserReferralLinks(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(query, queryOptions)
+  const { rows } = await read<UserReferralLinkWithDetails>(query, queryOptions)
 
   // Check if there are more results
   const hasNextPage = rows.length > limit
@@ -115,7 +115,7 @@ export async function getUserReferralLink(
 ): Promise<UserReferralLink | null> {
   validateUUID(linkId)
 
-  const { rows } = await read(
+  const { rows } = await read<UserReferralLink>(
     sql`/* getUserReferralLink */
       SELECT `
       .append(userReferralLinkColumns())

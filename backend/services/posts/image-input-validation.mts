@@ -11,7 +11,10 @@ async function assertImagesExistForUser(
 ): Promise<void> {
   if (imageIds.length === 0) return
 
-  const { rows } = await read(sql`/* assertImagesExistForUser */
+  const { rows } = await read<{
+    id: string
+    created_by_id: string
+  }>(sql`/* assertImagesExistForUser */
     SELECT id, created_by_id
     FROM images
     WHERE id = ANY(${imageIds}::uuid[])
@@ -23,7 +26,7 @@ async function assertImagesExistForUser(
       AND openai_omni_moderation_created_at IS NOT NULL
   `)
 
-  const rowMap = new Map(rows.map((r: { id: string; created_by_id: string }) => [r.id, r]))
+  const rowMap = new Map(rows.map(r => [r.id, r]))
 
   for (const imageId of imageIds) {
     const row = rowMap.get(imageId)

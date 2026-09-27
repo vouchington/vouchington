@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import type { Agent, AgentType, AgentModerator } from './types.mts'
 
 export async function getAgentBySystemUserId(system_user_id: string): Promise<Agent | null> {
-  const { rows } = await read(sql`/* getAgentBySystemUserId */
+  const { rows } = await read<Agent>(sql`/* getAgentBySystemUserId */
     SELECT
       id,
       system_user_id,
@@ -25,7 +25,7 @@ export async function getAgentBySystemUserId(system_user_id: string): Promise<Ag
 }
 
 export async function getActiveAgentsByType(agent_type: AgentType): Promise<Agent[]> {
-  const { rows } = await read(sql`/* getActiveAgentsByType */
+  const { rows } = await read<Agent>(sql`/* getActiveAgentsByType */
     SELECT
       id,
       system_user_id,
@@ -47,7 +47,7 @@ export async function getActiveAgentsByType(agent_type: AgentType): Promise<Agen
 }
 
 export async function getAgentModeratorConfig(agent_id: string): Promise<AgentModerator | null> {
-  const { rows } = await read(sql`/* getAgentModeratorConfig */
+  const { rows } = await read<AgentModerator>(sql`/* getAgentModeratorConfig */
     SELECT
       agent_id,
       created_at,

@@ -18,7 +18,7 @@ export async function insertStoryPostRecord(
   },
   options: QueryOptions,
 ): Promise<Post> {
-  const { rows: postRows } = await write(
+  const { rows: postRows } = await write<Omit<Post, '__entity_type'>>(
     sql`/* insertStoryPostRecord */
     INSERT INTO posts (
       post_type,

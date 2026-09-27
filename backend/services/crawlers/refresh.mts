@@ -59,7 +59,7 @@ export const searchCrawlerRefreshUrlCandidatesByHostnameId = async (
     sql` GROUP BY u.id, u.url ORDER BY MAX(uuid_extract_timestamp(c.id)) ASC NULLS FIRST LIMIT ${limit}`,
   )
 
-  const { rows } = await read(query, undefined, queryOptions)
+  const { rows } = await read<CrawlerRefreshCandidateUrl>(query, undefined, queryOptions)
 
   return rows
 }

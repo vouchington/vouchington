@@ -12,7 +12,7 @@ export async function getReferralLinkValidationRule(
 ): Promise<ReferralLinkValidationRule | null> {
   validateUUID(ruleId)
 
-  const { rows } = await read(
+  const { rows } = await read<ReferralLinkValidationRule>(
     sql`/* getReferralLinkValidationRule */
       SELECT
         id,
@@ -92,7 +92,7 @@ export async function getReferralLinkValidationRules(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(query, queryOptions)
+  const { rows } = await read<ReferralLinkValidationRule>(query, queryOptions)
 
   const hasNextPage = rows.length > limit
   const results: typeof rows = []

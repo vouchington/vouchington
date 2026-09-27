@@ -103,7 +103,7 @@ describe('updateTopic', () => {
     })
 
     expect(updatedTopic).toBeDefined()
-    expect(updatedTopic!.updated_by.id).toBe(updater!.id)
+    expect(updatedTopic?.updated_by?.id).toBe(updater!.id)
   })
 
   it('persists noindex and allow_reviews flags', async () => {

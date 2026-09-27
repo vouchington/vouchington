@@ -37,7 +37,7 @@ export const getTopicsByAnyBatch = async (
     { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
   ])
 
-  const { rows } = await read(
+  const { rows } = await read<Topic & { input_order: number }>(
     `/* getTopicsByAnyBatch */
     -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes.ctes} interpolation breaks structural
     -- SQL parsing; id_lookups/slug_lookups below are manually verified to filter both deleted_at
@@ -113,7 +113,7 @@ export const getTopicsBySlugBatch = async (
   const normalizedSlugs = slugs.map(slug => slug.toLowerCase().trim())
   const inputOrder = slugs.map((_, index) => index)
 
-  const { rows } = await read(
+  const { rows } = await read<Topic & { input_order: number }>(
     `/* getTopicsBySlugBatch */
     WITH input_data AS (
       SELECT unnest($1::text[]) AS input_value,

@@ -9,15 +9,8 @@ import { startConfiguredPoolStatsSampler } from './pool-stats-sampler.mts'
 import { maybeCaptureQuery, runWithSingleQueryCapture } from './query-capture.mts'
 import { recordQueryTiming } from './query-telemetry.mts'
 import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
-import type { QueryInput, QueryOptions, QueryValues } from './types.mts'
 
 const { Pool } = pg
-
-type AdapterQuery = <Row extends pg.QueryResultRow = any>(
-  input: QueryInput,
-  valuesOrOptions?: QueryValues | QueryOptions,
-  options?: QueryOptions,
-) => Promise<pg.QueryResult<Row>>
 
 export const databaseName = 'voucha'
 const connectionString = withLibpqCompat(resolveDatabaseConnectionString())
@@ -47,14 +40,14 @@ export const psql: Psql = await createPsql({
 export const writePool = psql.writePool
 export const advisoryLockPool = psql.advisoryLockPool
 export const readPool = psql.readPool
-const runtimeQuery = psql.query as AdapterQuery
-const runtimeRead = psql.read as AdapterQuery
-const runtimeWrite = psql.write as AdapterQuery
-export const query: AdapterQuery = (input, valuesOrOptions, options) =>
+const runtimeQuery = psql.query
+const runtimeRead = psql.read
+const runtimeWrite = psql.write
+export const query: Psql['query'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeQuery(input, valuesOrOptions, options))
-export const read: AdapterQuery = (input, valuesOrOptions, options) =>
+export const read: Psql['read'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeRead(input, valuesOrOptions, options))
-export const write: AdapterQuery = (input, valuesOrOptions, options) =>
+export const write: Psql['write'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeWrite(input, valuesOrOptions, options))
 export const createAsyncGeneratorFromCursor: Psql['createAsyncGeneratorFromCursor'] =
   psql.createAsyncGeneratorFromCursor

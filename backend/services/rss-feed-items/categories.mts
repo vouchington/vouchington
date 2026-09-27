@@ -5,7 +5,7 @@ import {
   buildRssFeedItemCategorySqlBatches,
   normalizeRssFeedItemCategorySnapshots,
 } from './category-batches.mts'
-import { readCategoryDataChunk } from './category-data.mts'
+import { readCategoryDataChunk, type CategoryDataRow } from './category-data.mts'
 import {
   insertMissingCategories,
   insertMissingHashtagAliases,
@@ -33,18 +33,6 @@ export { backfillCategoriesForTopicAliases } from './backfill-categories-for-top
 
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 const INVALIDATION_CHUNK_SIZE = 16
-
-type CategoryDataRow = {
-  rss_feed_item_id: string
-  category_text: string
-  exists: boolean
-  existing_topic_id: string | null
-  existing_topic_alias_id: string | null
-  new_topic_id: string | null
-  new_topic_alias_id: string | null
-  topic_relation_confirmed: boolean
-  hashtag_relation_confirmed: boolean
-}
 
 // Canonical definition lives in @voucha/types/entities/rss-feed-item (avoids a
 // @queues/rss-feed-item-categories <-> @services/rss-feed-items workspace cycle:
@@ -207,7 +195,13 @@ async function recordCategoryPublicationChanges(
 }
 
 export const getRssFeedItemCategories = async (rss_feed_item_id: string) => {
-  const { rows } = await read(
+  const { rows } = await read<{
+    rss_feed_item_id: string
+    category_text: string
+    topic_id: string | null
+    created_at: Date
+    updated_at: Date
+  }>(
     `/* getRssFeedItemCategories */
     SELECT
       rss_feed_item_id,

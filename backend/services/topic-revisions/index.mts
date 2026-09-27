@@ -52,7 +52,7 @@ export async function createTopicRevision(
 ): Promise<TopicRevision> {
   const {
     rows: [row],
-  } = await write(
+  } = await write<TopicRevision>(
     sql`/* createTopicRevision */
     INSERT INTO topic_revisions (
       topic_id,

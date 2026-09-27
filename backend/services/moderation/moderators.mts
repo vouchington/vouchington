@@ -20,7 +20,7 @@ export async function createPostLLMModerator(
 ): Promise<PostLLMModerator> {
   assert(isSlug(slug), 422, 'Moderator slug must be a valid slug')
 
-  const { rows } = await write(sql`/* createPostLLMModerator */
+  const { rows } = await write<PostLLMModerator>(sql`/* createPostLLMModerator */
     WITH new_agent AS (
       INSERT INTO agents (system_user_id, agent_type, created_by_id)
       VALUES (${systemUser.id}, 'moderator', ${currentUser.id})
@@ -38,7 +38,7 @@ export async function createPostLLMModerator(
 }
 
 export async function getActivePostLLMModerators(): Promise<PostLLMModerator[]> {
-  const { rows } = await read(sql`/* getActivePostLLMModerators */
+  const { rows } = await read<PostLLMModerator>(sql`/* getActivePostLLMModerators */
     SELECT
       a.id,
       am.slug,
@@ -58,7 +58,7 @@ export async function getActivePostLLMModerators(): Promise<PostLLMModerator[]> 
 }
 
 export async function getPostLLMModeratorBySlug(slug: string): Promise<PostLLMModerator | null> {
-  const { rows } = await read(sql`/* getPostLLMModeratorBySlug */
+  const { rows } = await read<PostLLMModerator>(sql`/* getPostLLMModeratorBySlug */
     SELECT
       a.id,
       am.slug,
@@ -76,7 +76,7 @@ export async function getPostLLMModeratorBySlug(slug: string): Promise<PostLLMMo
 }
 
 async function getPostLLMModeratorById(id: string): Promise<PostLLMModerator | null> {
-  const { rows } = await read(sql`/* getPostLLMModeratorById */
+  const { rows } = await read<PostLLMModerator>(sql`/* getPostLLMModeratorById */
     SELECT
       a.id,
       am.slug,

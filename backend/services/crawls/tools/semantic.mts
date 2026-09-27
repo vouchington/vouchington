@@ -20,6 +20,8 @@ type CrawlSemanticSearchResult = {
   distance: number
 }
 
+type CrawlSemanticRow = Omit<CrawlSemanticSearchResult, 'distance'> & { distance: number }
+
 export async function toolsSearchCrawlsSemantic(
   options: SearchCrawlsSemanticOptions,
 ): Promise<CrawlSemanticSearchResult[]> {
@@ -66,23 +68,15 @@ export async function toolsSearchCrawlsSemantic(
     cte.append(buildExcludedHostnameIdsCTE(exclude_for_user_id))
     cte.append(sql` `)
     cte.append(sqlQuery)
-    const { rows } = await read(cte)
+    const { rows } = await read<CrawlSemanticRow>(cte)
     return formatResults(rows)
   }
 
-  const { rows } = await read(sqlQuery)
+  const { rows } = await read<CrawlSemanticRow>(sqlQuery)
   return formatResults(rows)
 }
 
-function formatResults(
-  rows: Array<{
-    url_id: string
-    crawl_id: string
-    hostname: string
-    markdown: string
-    distance: string
-  }>,
-): Promise<CrawlSemanticSearchResult[]> {
+function formatResults(rows: CrawlSemanticRow[]): Promise<CrawlSemanticSearchResult[]> {
   return Promise.all(
     rows.map(async row => ({
       url_id: row.url_id,
@@ -92,7 +86,7 @@ function formatResults(
         source: 'crawl',
         contentType: 'web_page',
       }),
-      distance: Number.parseFloat(row.distance),
+      distance: Number.parseFloat(String(row.distance)),
     })),
   )
 }

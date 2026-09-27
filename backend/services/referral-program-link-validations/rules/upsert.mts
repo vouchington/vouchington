@@ -14,7 +14,7 @@ export async function upsertReferralLinkValidationRule(
   const hostname = data.hostname.toLowerCase().trim()
   const pathname = data.pathname.trim()
 
-  const { rows: existing } = await read(
+  const { rows: existing } = await read<ReferralLinkValidationRule>(
     sql`/* upsertReferralLinkValidationRule:get */
       SELECT
         id,
@@ -40,7 +40,8 @@ export async function upsertReferralLinkValidationRule(
   const exampleUrls = data.example_urls ?? null
 
   return withReferralLinkEligibilityMutationLock({}, async query => {
-    const { rows } = await query(sql`/* upsertReferralLinkValidationRule:insert */
+    const { rows } =
+      await query<ReferralLinkValidationRule>(sql`/* upsertReferralLinkValidationRule:insert */
       INSERT INTO referral_program_link_validations_rules (
         referral_program_link_validation_id,
         hostname,
