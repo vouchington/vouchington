@@ -161,6 +161,7 @@ DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics();
 
 COMMENT ON TABLE review_succession_topics IS 'Immutable nonempty topic snapshot for one automatic review-succession epoch. topic_id is a retained identity and does not authorize a deleted topic.';
+COMMENT ON COLUMN review_succession_topics.review_succession_id IS 'Automatic review-succession epoch that owns this immutable topic snapshot.';
 COMMENT ON COLUMN review_succession_topics.topic_id IS 'Retained topic identity in the exact archive-time set.';
 COMMENT ON COLUMN review_successions.automatically_restored_at IS 'Terminal timestamp when reconciliation restored the predecessor.';
 COMMENT ON COLUMN review_successions.manual_override_at IS 'Terminal timestamp when a manual archive or unarchive revoked automatic restoration authority.';
