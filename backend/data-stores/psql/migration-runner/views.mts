@@ -4,7 +4,6 @@ import type { QueryExecutor } from '../types.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
 import { splitSqlStatements } from './sql-statements.mts'
 import {
-  buildDropViewStatement,
   buildDropViewsStatement,
   extractViewDeclarations,
   type ManagedViewDeclaration,
