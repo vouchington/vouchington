@@ -6,13 +6,22 @@ import {
 } from '../../index.mts'
 import { createCopyrightFormIntake } from '../../../services/copyright-notices/form-intakes.mts'
 import { appendCopyrightFormScreening } from '../../../services/copyright-notices/form-screenings.mts'
-import { listCopyrightStaffQueue } from '../../../services/copyright-notices/read-models-staff.mts'
+import {
+  copyrightStaffQueueCursorScope,
+  listCopyrightStaffQueue,
+} from '../../../services/copyright-notices/read-models-staff.mts'
+import { decodeScopedPreciseTimestampCursor } from '../../../modules/pagination/index.mts'
+import { readCopyrightStaffQueueCursorBefore } from '../../data-stores/psql/copyright-notice-reads.mts'
 
 export async function isTestCopyrightStaffCaseQueued(
   noticeId: string,
   currentUser: Parameters<typeof listCopyrightStaffQueue>[0],
 ): Promise<boolean> {
-  let after: { timestamp: string; id: string } | undefined
+  let after: { timestamp: string; id: string } = decodeScopedPreciseTimestampCursor(
+    await readCopyrightStaffQueueCursorBefore([noticeId]),
+    copyrightStaffQueueCursorScope,
+    'Invalid copyright staff queue fixture cursor',
+  )
   for (;;) {
     const page = await listCopyrightStaffQueue(currentUser, { limit: 100, after })
     if (page.cases.some(item => item.id === noticeId)) return true
