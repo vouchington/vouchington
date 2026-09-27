@@ -1,4 +1,4 @@
-Do a web design audit. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Do a web design audit. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 Start the managed local stack with `./dev/initialize web` followed by `./dev/tmux`; do not start
 individual services as an agent fallback. Inspect the affected route in Chrome or Playwright after

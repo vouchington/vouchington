@@ -8,7 +8,7 @@ Automation prompt text lives here so workflow YAML stays focused on triggers, pe
 | -------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Code review inline overlay | [code-review-inline-comments.md](code-review-inline-comments.md)   | Default `inline_prompt_path` overlay for the `code-review` composite action; see the file itself for the full contract and consumers                                          |
 | Scheduled prompts          | [scheduled/](scheduled/) (indexed in [SCHEDULED.md](SCHEDULED.md)) | [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml) and the [workflow inventory](../../.github/workflows/README.md)                                        |
-| Automation templates       | [automation](automation/)                                          | Templates rendered by the `jonathanong/auto-harness/actions/harness-render-prompt` action before calling [harness-dispatch.yml](../../.github/workflows/harness-dispatch.yml) |
+| Automation templates       | [automation templates](automation/README.md)                       | Templates rendered by the `jonathanong/auto-harness/actions/harness-render-prompt` action before calling [harness-dispatch.yml](../../.github/workflows/harness-dispatch.yml) |
 
 Automation templates use `{{UPPER_SNAKE_CASE}}` placeholders. Workflows render them with the `jonathanong/auto-harness/actions/harness-render-prompt` action, passing short values as `vars` lines (`NAME=value`) and multiline or user-provided values as `var-files` lines (`NAME=path`). The action prepends the Auto Harness session preamble and appends the CI merge-authority guard.
 
@@ -16,8 +16,8 @@ The main-branch fix template is [fix-main.md](automation/fix-main.md), and merge
 are triaged with [merge-queue-ejection.md](automation/merge-queue-ejection.md). Scheduled runs use the
 [scheduled prompt template](automation/scheduled-prompt.md) or the
 [scheduled issue template](automation/scheduled-issue.md), depending on the selected prompt scope.
-Scheduled prompt references include [supply-chain security](scheduled/supply-chain-security.md)
-and [UI internationalization](scheduled/ui-internationalization.md).
+See the complete [Scheduled Prompt Catalog](SCHEDULED.md) for all scheduled prompt files and
+their scope boundaries; do not maintain a second partial prompt list here.
 
 These templates are Vitest fixtures, not docs-only markdown. `TEST_FIXTURE_DOCS` in
 [`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) keeps a pull request that

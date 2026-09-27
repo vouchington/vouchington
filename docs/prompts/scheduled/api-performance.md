@@ -1,6 +1,6 @@
-Review API performance. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review API performance. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
-- Check one backend API surface against [API Performance Requirements](../../requirements/platform/api-performance.md), including round-trip budget, batching, caching, and README performance docs.
+- Check one backend API surface against [API Performance Requirements](../../requirements/platform/api-performance.md), including round-trip budget, batching, caching, and canonical endpoint performance docs linked from source READMEs.
 - Look for N+1 hydration, unnecessary sequential awaits, missing `*Batch()`/`*CachedBatch()` usage, or public logged-out GETs missing appropriate cache behavior.
 - For an awaited loop, prefer a set-based or provider/queue bulk operation first, then bounded concurrency for independent local work. Retain a statement-local suppression only for dependent retry, cursor, transaction, stream, or backpressure flows, and state that invariant in the directive.
 - Keep authorization, personalized fields, and freshness semantics unchanged unless the selected fix explicitly targets them.

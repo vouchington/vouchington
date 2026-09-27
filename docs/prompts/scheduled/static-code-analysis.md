@@ -1,4 +1,4 @@
-Review static analysis coverage. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review static analysis coverage. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 References:
 

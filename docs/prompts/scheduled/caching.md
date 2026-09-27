@@ -1,4 +1,4 @@
-Review cross-tier caching coherence. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review cross-tier caching coherence. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Check [Caching Strategy](../../overview/architecture/caching-strategy.md) and [Anonymous HTML edge caching vs. CSP nonces](../../overview/architecture/anon-html-edge-caching-csp.md) against one boundary that spans tiers. Tier-internal work belongs elsewhere: backend API round-trips in [api-performance.md](api-performance.md), Worker routing/headers in [cloudflare-worker.md](cloudflare-worker.md), Valkey internals in [valkey.md](valkey.md), and cache-sensitive indexing in [seo-indexing.md](seo-indexing.md).
 - Prioritize cross-tier coherence that the per-tier prompts miss: `cache-key`/`Vary` correctness (`cloudflare-worker/src/cache-no-vary-search.mts`), TTL alignment between edge (`cloudflare-worker/src/cache-policy.mts`), backend `Cache-Control` (`backend/config/http-cache.mts`), and Valkey entity/search TTLs, as well as Cache-Tag purge coverage (`ts-shared/cache/cache-tags.mts`, `backend/services/entity-cache/invalidate.mts`).

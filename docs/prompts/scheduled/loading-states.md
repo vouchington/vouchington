@@ -1,4 +1,4 @@
-Review loading states and rendering strategy in `web/**`. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review loading states and rendering strategy in `web/**`. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Every list-route group whose pages (and all sub-routes) never call `notFound()` or `redirect()` must have a `loading.tsx` rendering a skeleton. Never add `loading.tsx` to a segment (or ancestor group) whose descendants call `notFound()` or `redirect()` — streaming commits HTTP 200 before either can fire.
 - Skeleton components must have Storybook stories. Add `data-pw` only for a real behavioral Playwright consumer; follow [Test Value and Safe Reduction](../../development/reference-tests-value-and-reduction.md).

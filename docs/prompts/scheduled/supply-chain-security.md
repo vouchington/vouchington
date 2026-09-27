@@ -1,4 +1,4 @@
-Review supply-chain and CI/CD security. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review supply-chain and CI/CD security. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Harden a GitHub Actions workflow: tighten a job's `permissions`/`GITHUB_TOKEN` toward least privilege, narrow a `pull_request_target` or `workflow_run` trigger and its fork-PR checkout/secret exposure, or move untrusted `${{ github.event.* }}` values out of `run:` steps into env vars. Action SHA-pinning is already enforced by no-mistakes `github-actions-pinned-hash` — do not re-propose it; instead vet any newly added third-party action.
 - Triage a dependency vulnerability surfaced by GitHub Dependabot or advisory alerts, prioritizing by severity and real exploitability in our usage. Do not run `pnpm audit` or an independent OSV npm scan: Dependabot is the repository's sole npm vulnerability detector. This is distinct from `dependencies.md` (unused-dep hygiene) and from Dependabot version bumps.

@@ -1,4 +1,4 @@
-Review the agent sandbox and permission configuration across Claude, Codex, Grok, and Cursor for staleness, breadth drift, and cross-harness parity gaps. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review the agent sandbox and permission configuration across Claude, Codex, Grok, and Cursor for staleness, breadth drift, and cross-harness parity gaps. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - This prompt owns `.claude/settings.json` (`permissions.allow` / `deny` / `defaultMode`,
   `sandbox.excludedCommands`, `sandbox.filesystem.allowWrite`, `sandbox.credentials.envVars`),

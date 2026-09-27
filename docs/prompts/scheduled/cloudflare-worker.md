@@ -1,4 +1,4 @@
-Review the Cloudflare Worker. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review the Cloudflare Worker. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Check routing, caching, CSP/security headers, Sentry tunnel behavior, rate limiting, sitemap serving, basic auth, and proxy/session handling.
 - Keep edge behavior compatible with the backend and web app contracts.

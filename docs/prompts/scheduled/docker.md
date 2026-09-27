@@ -1,4 +1,4 @@
-Review the Docker images. Pick exactly one concrete, bounded improvement that is safe to ship in one PR, only after completing the applicable preflight evidence below: target/stage ancestry and Hadolint/static evidence for any image change.
+Review the Docker images. Pick at most one concrete, bounded improvement that is safe to ship in one PR, only after completing the applicable preflight evidence below: target/stage ancestry and Hadolint/static evidence for any image change.
 
 - Check [Deployment](../../overview/infrastructure/deployment.md); the build target is AWS ECS Fargate ARM64. (Deployment cost figures moved to the private `vouchington/vouchington-docs` repo.)
 - When `backend/Dockerfile` is affected or for any backend image change, run `docker buildx build --call=targets --file backend/Dockerfile .` to enumerate available build targets.
