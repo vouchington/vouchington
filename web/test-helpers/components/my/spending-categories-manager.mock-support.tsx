@@ -23,28 +23,32 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
-  TopicAutocomplete: ({
-    value,
-    onChange,
-    placeholder,
-  }: {
-    value?: string
-    onChange?: (id: string, name: string) => void
-    placeholder?: string
-  }) => (
-    <div data-testid='mock-topic-autocomplete'>
-      <Input
-        type='text'
-        placeholder={placeholder}
-        aria-label={placeholder ?? 'Spending category'}
-        value={value ?? ''}
-        onChange={event => onChange?.(event.target.value, 'Mocked Topic')}
-        data-testid='mock-topic-autocomplete-input'
-      />
-    </div>
-  ),
-}))
+vi.mock(
+  import('@/components/posts/topic-autocomplete'),
+  () =>
+    ({
+      TopicAutocomplete: ({
+        value,
+        onChange,
+        placeholder,
+      }: {
+        value?: string | null
+        onChange?: (id: string, name: string) => void
+        placeholder?: string
+      }) => (
+        <div data-testid='mock-topic-autocomplete'>
+          <Input
+            type='text'
+            placeholder={placeholder}
+            aria-label={placeholder ?? 'Spending category'}
+            value={value ?? ''}
+            onChange={event => onChange?.(event.target.value, 'Mocked Topic')}
+            data-testid='mock-topic-autocomplete-input'
+          />
+        </div>
+      ),
+    }) as unknown as typeof import('@/components/posts/topic-autocomplete'),
+)
 
 vi.mock(import('@/components/ui/select'), () => {
   const triggerMock = (_props: { id?: string; children?: ReactNode }) => null
