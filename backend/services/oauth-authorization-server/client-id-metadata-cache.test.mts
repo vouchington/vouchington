@@ -3,7 +3,7 @@ import {
   beginClientIdMetadataRefresh,
   getClientIdMetadataExpiry,
 } from './client-id-metadata-cache.mts'
-import { parseClientIdMetadataUrl } from './client-id-metadata-document.mts'
+import { parseClientIdMetadataUrl } from './client-id-metadata-url.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 
 describe('Client ID Metadata Document cache', () => {
