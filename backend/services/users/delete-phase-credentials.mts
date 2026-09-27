@@ -1,5 +1,6 @@
 import sql from 'sql-template-strings'
 import { deleteBlueskyDataForUserBatch } from './delete-bluesky-data.mts'
+import { revokeOAuthCredentialsForDeletedUserBatch } from '@services/oauth-authorization-server'
 import { sanitizeOAuthAccountPii } from './delete-oauth-pii.mts'
 import { withUserDeletionTransaction } from './delete-phase-transaction.mts'
 
@@ -63,6 +64,8 @@ export async function processUserDeletionCredentialsBatch(userId: string, batchS
       if ((result.rowCount ?? 0) > 0) return { hasMore: true }
     }
     if (await deleteBlueskyDataForUserBatch(userId, batchSize, query)) return { hasMore: true }
+    if (await revokeOAuthCredentialsForDeletedUserBatch(userId, batchSize, query))
+      return { hasMore: true }
     await sanitizeOAuthAccountPii(userId, query)
     return { hasMore: false }
   })

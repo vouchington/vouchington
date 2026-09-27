@@ -1,6 +1,7 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { OAUTH_ACCESS_TOKEN_PREFIX, OAUTH_SECRET_PURPOSES } from './constants.mts'
+import { lockOAuthParticipantUsers } from './active-users.mts'
 import { getOAuthResourceUrl, type OAuthResourceAudience } from './resources.mts'
 import type { OAuthAccessPrincipal } from './types.mts'
 
@@ -13,7 +14,13 @@ export async function validateOAuthAccessToken(
   rawToken: string,
   audience: OAuthResourceAudience,
 ): Promise<OAuthAccessPrincipal | null> {
-  const result = await write<OAuthAccessPrincipal>(
+  await using query = await beginTransaction()
+  const tokenHash = hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken)
+  const activeParticipantIds = await lockOAuthParticipantUsers(
+    await readAccessTokenParticipants(tokenHash, query),
+    query,
+  )
+  const result = await query<OAuthAccessPrincipal & { owner_user_id: string | null }>(
     `/* validateOAuthAccessToken */ UPDATE oauth_access_tokens AS access
      SET last_used_at = CURRENT_TIMESTAMP
      FROM oauth_grants AS oauth_grant, oauth_clients AS client
@@ -24,6 +31,14 @@ export async function validateOAuthAccessToken(
        AND access.expires_at > CURRENT_TIMESTAMP
        AND oauth_grant.revoked_at IS NULL
        AND client.revoked_at IS NULL
+       AND EXISTS (
+         SELECT 1 FROM users WHERE users.id = oauth_grant.user_id AND users.deleted_at IS NULL
+       )
+       AND (
+         client.owner_user_id IS NULL OR EXISTS (
+           SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL
+         )
+       )
        AND NOT EXISTS (
          SELECT 1
          FROM user_suspensions AS suspension
@@ -31,8 +46,41 @@ export async function validateOAuthAccessToken(
            AND suspension.lifted_at IS NULL
        )
        AND access.resource = $2
-     RETURNING client.client_id, oauth_grant.user_id, access.resource, access.scopes, access.expires_at`,
-    [hashToken(OAUTH_SECRET_PURPOSES.accessToken, rawToken), getOAuthResourceUrl(audience)],
+     RETURNING client.client_id, client.owner_user_id, oauth_grant.user_id, access.resource,
+       access.scopes, access.expires_at`,
+    [tokenHash, getOAuthResourceUrl(audience)],
   )
-  return result.rows[0] ?? null
+  const principal = result.rows[0]
+  if (
+    !principal ||
+    !activeParticipantIds.has(principal.user_id) ||
+    (principal.owner_user_id && !activeParticipantIds.has(principal.owner_user_id))
+  ) {
+    await query.commit()
+    return null
+  }
+  await query.commit()
+  return {
+    client_id: principal.client_id,
+    user_id: principal.user_id,
+    resource: principal.resource,
+    scopes: principal.scopes,
+    expires_at: principal.expires_at,
+  }
+}
+
+async function readAccessTokenParticipants(
+  tokenHash: string,
+  query: TransactionQuery,
+): Promise<(string | null)[]> {
+  const result = await query<{ user_id: string; owner_user_id: string | null }>(
+    `/* validateOAuthAccessToken participants */ SELECT oauth_grant.user_id, client.owner_user_id
+     FROM oauth_access_tokens AS access
+     JOIN oauth_grants AS oauth_grant ON oauth_grant.id = access.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
+     WHERE access.token_hash = $1`,
+    [tokenHash],
+  )
+  const row = result.rows[0]
+  return row ? [row.user_id, row.owner_user_id] : []
 }

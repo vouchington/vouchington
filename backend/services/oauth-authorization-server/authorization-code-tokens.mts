@@ -3,6 +3,10 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES, REFRESH_TOKEN_TTL_MS } from './constants.mts'
+import {
+  lockOAuthParticipantUsers,
+  readOAuthAuthorizationCodeParticipantUserIds,
+} from './active-users.mts'
 import { authenticateLockedOAuthClient } from './clients.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
@@ -21,6 +25,8 @@ type AuthorizationCodeRow = {
   expires_at: Date
   consumed_at: Date | null
   grant_revoked_at: Date | null
+  user_id: string
+  owner_user_id: string | null
 }
 
 export async function exchangeOAuthAuthorizationCode(input: {
@@ -32,10 +38,25 @@ export async function exchangeOAuthAuthorizationCode(input: {
   resource?: string
 }): Promise<OAuthTokenResponse> {
   await using query = await beginTransaction()
-  const client = await authenticateLockedOAuthClient(input.clientId, input.clientSecret, query)
+  const activeParticipantIds = await lockOAuthParticipantUsers(
+    await readOAuthAuthorizationCodeParticipantUserIds(input.code, input.clientId, query),
+    query,
+  )
+  const client = await authenticateLockedOAuthClient(
+    input.clientId,
+    input.clientSecret,
+    query,
+    activeParticipantIds,
+  )
   const verifier = validatePkceVerifier(input.codeVerifier)
   const code = await lockAuthorizationCode(input.code, query)
   if (!code) throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')
+  if (
+    !activeParticipantIds.has(code.user_id) ||
+    (code.owner_user_id && !activeParticipantIds.has(code.owner_user_id))
+  ) {
+    throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')
+  }
   assertCodeExchange(code, client, input, verifier)
   assertTokenRequestResource(input.resource, code.resource)
 
@@ -86,7 +107,9 @@ async function lockAuthorizationCode(
        code.code_challenge,
        code.expires_at,
        code.consumed_at,
-       oauth_grant.revoked_at AS grant_revoked_at
+       oauth_grant.revoked_at AS grant_revoked_at,
+       oauth_grant.user_id,
+       client.owner_user_id
      FROM oauth_authorization_codes AS code
      JOIN oauth_grants AS oauth_grant ON oauth_grant.id = code.grant_id
      JOIN oauth_clients AS client ON client.id = oauth_grant.client_id

@@ -108,6 +108,31 @@ export async function revokeTestOAuthClient(id: string): Promise<void> {
   )
 }
 
+/** Holds an OAuth client row lock while an OAuth operation has already acquired participant locks. */
+export async function startPausedTestOAuthClientUpdate(
+  clientId: string,
+): Promise<{ completed: Promise<void>; holderProcessId: number; release(): void }> {
+  const release = Promise.withResolvers<void>()
+  const locked = Promise.withResolvers<number>()
+  const completed = (async () => {
+    await using transaction = await beginTransaction()
+    await transaction(
+      `/* startPausedTestOAuthClientUpdate */ UPDATE oauth_clients
+       SET client_name = client_name WHERE client_id = $1`,
+      [clientId],
+    )
+    locked.resolve(await getTestPostgresBackendProcessId(transaction))
+    await release.promise
+    await transaction.commit()
+  })()
+  void completed.catch(locked.reject)
+  return {
+    completed,
+    holderProcessId: await locked.promise,
+    release: () => release.resolve(),
+  }
+}
+
 /** Marks a client as described by a client metadata document rather than registered via DCR. */
 export async function setTestOAuthClientMetadataUrl(
   id: string,

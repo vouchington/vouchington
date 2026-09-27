@@ -3,6 +3,10 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { AUTHORIZATION_CODE_TTL_MS, OAUTH_SECRET_PURPOSES } from './constants.mts'
+import {
+  lockOAuthParticipantUsers,
+  readOAuthAuthorizationRequestParticipantUserIds,
+} from './active-users.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
@@ -17,8 +21,8 @@ type AuthorizationRequestRow = {
   resource: string
   scopes: ApiScope[]
   code_challenge: string
+  owner_user_id: string | null
 }
-
 export async function decideOAuthAuthorizationRequest(
   userId: string,
   requestId: string,
@@ -26,11 +30,20 @@ export async function decideOAuthAuthorizationRequest(
   browserBindingHash: string,
 ): Promise<{ redirect_uri: string }> {
   await using query = await beginTransaction()
+  const activeParticipantIds = await lockOAuthParticipantUsers(
+    await readOAuthAuthorizationRequestParticipantUserIds(requestId, userId, query),
+    query,
+  )
   const request = await lockAuthorizationRequest(userId, requestId, browserBindingHash, query)
   if (!request) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
-
+  if (
+    !activeParticipantIds.has(request.user_id) ||
+    (request.owner_user_id && !activeParticipantIds.has(request.owner_user_id))
+  ) {
+    throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
+  }
   if (
     decision === 'deny' ||
     !(await mayUserAuthorizeOAuthResource(request.user_id, request.resource, query))
@@ -39,12 +52,10 @@ export async function decideOAuthAuthorizationRequest(
     await query.commit()
     return { redirect_uri: buildAuthorizationRedirect(request, { error: 'access_denied' }) }
   }
-
   const rawCode = await approveAuthorizationRequest(request, query)
   await query.commit()
   return { redirect_uri: buildAuthorizationRedirect(request, { code: rawCode }) }
 }
-
 async function denyAuthorizationRequest(
   request: AuthorizationRequestRow,
   query: TransactionQuery,
@@ -57,7 +68,6 @@ async function denyAuthorizationRequest(
     [request.id],
   )
 }
-
 async function approveAuthorizationRequest(
   request: AuthorizationRequestRow,
   query: TransactionQuery,
@@ -143,7 +153,7 @@ async function lockAuthorizationRequest(
   query: TransactionQuery,
 ): Promise<AuthorizationRequestRow | null> {
   const result = await query<AuthorizationRequestRow>(
-    `/* lockAuthorizationRequest */ SELECT request.*
+    `/* lockAuthorizationRequest */ SELECT request.*, client.owner_user_id
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1

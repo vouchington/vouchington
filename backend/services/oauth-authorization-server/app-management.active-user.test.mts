@@ -48,8 +48,10 @@ describe('owned OAuth app management after the owner is deleted', () => {
     await expect(listOwnedOAuthApps(owner.id, { limit: 10 })).resolves.toMatchObject({
       results: [{ id: app.id, client_name: app.client_name }],
     })
-    await expect(
-      authenticateOAuthClient(app.client_id, secret ?? undefined),
-    ).resolves.toBeUndefined()
+    await expect(authenticateOAuthClient(app.client_id, secret ?? undefined)).rejects.toMatchObject(
+      {
+        code: 'invalid_client',
+      },
+    )
   })
 })

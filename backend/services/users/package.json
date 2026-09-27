@@ -48,6 +48,7 @@
     "@services/mfa": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
+    "@services/oauth-authorization-server": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/recently-viewed": "workspace:^",
     "@services/user-consents": "workspace:^",
