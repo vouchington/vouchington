@@ -35,7 +35,10 @@ export async function listAvailableNotificationPushIntents(
     cursor?.updatedAt && cursor.userId && cursor.notificationId
       ? sharedDbCursorScope(cursor.notificationId)
       : sharedDbIdsScope(page.notificationIds)
-  observeSharedDbScope('listAvailableNotificationPushIntents', cursorScope)
+  observeSharedDbScope(
+    'listAvailableNotificationPushIntents',
+    page.notificationIds ? sharedDbIdsScope(page.notificationIds) : cursorScope,
+  )
   const idScope = page.notificationIds ? [...page.notificationIds] : null
   const scanBefore = page.scanBefore ?? null
   const afterUpdatedAt = page.after?.updatedAt ?? null

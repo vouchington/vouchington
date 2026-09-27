@@ -40,7 +40,12 @@ delivery recovery/rearm, OAuth exchange recovery/expiry deletion, notification p
 recovery, and stale chat generation selection. It does **not** prove every SQL query scoped.
 
 These service calls must bind owned IDs/keys before their `ORDER BY`/`LIMIT` or use a complete
-bound keyset cursor. Timestamps, scan snapshots, and page sizes alone are not ownership scopes.
+bound keyset cursor where the catalog policy allows one. The staff email intake queue and
+notification push intent recovery require explicit owned IDs in shared-DB tests: a cursor advances
+ordering but does not establish ownership. The staff queue intentionally has no production ID
+filter, so its exact global-pagination cases use the disposable database runner in
+`test-helpers/vitest-isolated-database-case.mts`; the push recovery test retains its owned
+notification IDs on every page. Timestamps, scan snapshots, and page sizes alone are not ownership scopes.
 Explicit empty-ID inputs return before SQL. Production global calls remain legal. Tests should
 assert an owned and an equally eligible unrelated fixture, verifying the latter is excluded and
 unchanged; mutating sweeps also need a before/after row or token assertion.
@@ -55,8 +60,9 @@ only the typed event observer. The
 `backend-data-stores` runner composes this check with the existing GlideMQ attachment guard.
 `test-helpers/vitest-shared-db-scope-guard.integration.test.mts` exercises swallowed test,
 `afterAll`, setup, collection, reset-modules, and clean-next-file cases in a one-fork subprocess.
-The intentional global staff media-replay route assertion runs in a separate child Vitest process
-against a newly created local database. Its lifecycle checks nonexistence, migrates the
+The intentional global staff media-replay and email-intake queue assertions run as exact registered
+cases in separate child Vitest processes against newly created local databases. Each lifecycle
+checks nonexistence, migrates the
 new database (including migration-owned invariant seeds), uses a distinct GlideMQ queue prefix,
 then drops only that exact database after the child exits. The case belongs to
 `backend-data-stores`; a direct or full project run spawns the disposable child before touching

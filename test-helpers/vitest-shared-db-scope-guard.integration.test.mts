@@ -167,10 +167,50 @@ import { observeSharedDbScope } from ${JSON.stringify(observerPath)}
 it('uses owned bounds', () => {
   ${scopeCall('listCopyrightStaffQueue', `{ kind: 'cursor', id: 'owned-id' }`)}
   ${scopeCall('getRecoverableOAuthAuthorizationIds', `{ kind: 'ids', ids: ['owned-id'] }`)}
+  ${scopeCall('searchCopyrightStaffEmailIntakes', `{ kind: 'ids', ids: ['owned-id'] }`)}
+  ${scopeCall('listAvailableNotificationPushIntents', `{ kind: 'ids', ids: ['owned-id'] }`)}
 })`,
       },
     ])
     expect(result.exitCode).toBe(0)
     expect(result.output).not.toContain('[vitest-shared-db-scope]')
+  })
+
+  it.each([
+    ['searchCopyrightStaffEmailIntakes', 'copyright_notice_email_intakes', `{ kind: 'global' }`],
+    [
+      'searchCopyrightStaffEmailIntakes',
+      'copyright_notice_email_intakes',
+      `{ kind: 'ids', ids: [] }`,
+    ],
+    [
+      'searchCopyrightStaffEmailIntakes',
+      'copyright_notice_email_intakes',
+      `{ kind: 'cursor', id: 'unrelated-id' }`,
+    ],
+    ['listAvailableNotificationPushIntents', 'notification_push_intents', `{ kind: 'global' }`],
+    [
+      'listAvailableNotificationPushIntents',
+      'notification_push_intents',
+      `{ kind: 'ids', ids: [] }`,
+    ],
+    [
+      'listAvailableNotificationPushIntents',
+      'notification_push_intents',
+      `{ kind: 'cursor', id: 'unrelated-id' }`,
+    ],
+  ] as const)('rejects %s calls with %s scope', async (operation, table, scope) => {
+    const result = await runFixture([
+      {
+        name: 'cursor-only.test.mts',
+        source: `import { it } from 'vitest'
+import { observeSharedDbScope } from ${JSON.stringify(observerPath)}
+it('catches an unowned call', () => {
+  try { ${scopeCall(operation, scope)} } catch {}
+})`,
+      },
+    ])
+    expect(result.exitCode).not.toBe(0)
+    expect(result.output).toContain(`[vitest-shared-db-scope] ${operation} on ${table}`)
   })
 })
