@@ -201,6 +201,23 @@ describe('agent workflow documentation', () => {
     expect(implementation).toContain('Screenshot attachment:')
   })
 
+  it('keeps stack polling on the stack worker and allows a queued-lower upper fast-forward', () => {
+    const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
+    const stacked = normalizedMarkdown('.agents/skills/stacked-prs/SKILL.md')
+    const beforePushing = normalizedMarkdown('.agents/skills/agent-workflow/before-pushing.md')
+
+    expect(gitAndPrs).toContain('The parent session does not run the poll')
+    expect(gitAndPrs).toContain(
+      'pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status',
+    )
+    expect(gitAndPrs).not.toContain('the shepherd loop, the ownership view')
+    expect(stacked).toContain('One worker per native stack')
+    expect(stacked).toContain('### Upper-only fast-forward')
+    expect(stacked).not.toContain('the shepherd loop itself stays with this session')
+    expect(beforePushing).toContain('upper-only fast-forward')
+    expect(beforePushing).toContain('Do not `gh stack sync`')
+  })
+
   it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
     const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
     const rerunReference = normalizedMarkdown(
