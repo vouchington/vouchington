@@ -1,8 +1,6 @@
 import type { MessageKey } from '@ts-shared/ui-messages'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
-import { EmptyState } from '@/components/shared/empty-state'
-import { ListSearchError } from '@/components/shared/list-search-error'
-import { RssFeedListItem } from '@/components/sources/rss-feed-list-item'
+import { BrowseFeedResults } from '@/components/sources/browse-feed-results'
 import { getRssFeeds } from '@/lib/api/server/rss-feeds'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
@@ -18,7 +16,6 @@ import { BrowsePageHeader, type BrowseRouteKey } from '@/components/shared/brows
 import { AddSourceButton } from '@/components/sources/add-source-button'
 import type { AddSourceKind } from '@/components/sources/add-source-content'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import type { SentimentChoice } from '@/lib/api/client/elections'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 
 export interface BrowseFeedPageConfig {
@@ -82,11 +79,6 @@ export async function BrowseFeedPage({
     tail: [{ name: breadcrumbName, path: config.path }],
   })
 
-  const bookmarks = feeds?.bookmarks ?? {}
-  const hostnameElections = feeds?.hostname_elections ?? {}
-  const topicElections = feeds?.topic_elections ?? {}
-  const electionVotes = feeds?.election_votes ?? {}
-
   return (
     <PageWithAside showFooter={config.showFooter}>
       <div className='space-y-4'>
@@ -116,45 +108,17 @@ export async function BrowseFeedPage({
           <BrowsePageHeader routeKey={config.routeKey} />
           <AddSourceButton kind={config.sourceKind} />
         </div>
-
-        <div
-          className='space-y-4'
-          data-pw={listTestId}
-        >
-          {searchError && (
-            <ListSearchError
-              t={t}
-              message={searchError}
-            />
-          )}
-          {feeds && feeds.results.length === 0 && (
-            <EmptyState
-              title={t(config.emptyTitleKey)}
-              description={q ? t(config.emptySearchKey) : t(config.emptyDefaultKey)}
-              icon='search'
-            />
-          )}
-          {feeds &&
-            feeds.results.map(feed => (
-              <RssFeedListItem
-                key={feed.id}
-                feed={feed}
-                isFollowing={bookmarks[feed.id]?.follow === true}
-                isFollowingTopic={bookmarks[feed.topic.id]?.follow === true}
-                hostnameElection={
-                  config.includeHostnameElections && feed.hostname?.id
-                    ? hostnameElections[feed.hostname.id]
-                    : undefined
-                }
-                topicElection={feed.topic ? topicElections[feed.topic.id] : undefined}
-                electionVoteChoice={
-                  feed.topic
-                    ? (electionVotes[feed.topic.id]?.choice as SentimentChoice | undefined)
-                    : undefined
-                }
-              />
-            ))}
-        </div>
+        <BrowseFeedResults
+          listTestId={listTestId}
+          t={t}
+          q={q}
+          searchError={searchError}
+          feeds={feeds}
+          emptyTitleKey={config.emptyTitleKey}
+          emptySearchKey={config.emptySearchKey}
+          emptyDefaultKey={config.emptyDefaultKey}
+          includeHostnameElections={config.includeHostnameElections}
+        />
       </div>
     </PageWithAside>
   )
