@@ -39,13 +39,11 @@ function assessment(overrides: Partial<RecaptchaAssessment> = {}): RecaptchaAsse
   return { valid: true, action: 'create_post', score: 0.9, reasons: [], ...overrides }
 }
 
-let originalNodeEnv: string | undefined
-
 describe('assessRecaptchaToken', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    originalNodeEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv('NODE_ENV', 'production')
     mockGetRecaptchaConfig.mockReturnValue(config())
     mockHasCredentials.mockReturnValue(true)
     mockIsLockedOut.mockResolvedValue(false)
@@ -53,7 +51,7 @@ describe('assessRecaptchaToken', () => {
   })
 
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv
+    vi.unstubAllEnvs()
   })
 
   function call(overrides: Partial<Parameters<typeof assessRecaptchaToken>[0]> = {}) {
@@ -75,7 +73,7 @@ describe('assessRecaptchaToken', () => {
     })
 
     it('skips outside production (dev/test never call the paid API)', async () => {
-      process.env.NODE_ENV = 'test'
+      vi.stubEnv('ENVIRONMENT', 'test')
       await call()
       expect(mockFetchAssessment).not.toHaveBeenCalled()
     })
