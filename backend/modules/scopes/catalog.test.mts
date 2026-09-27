@@ -16,6 +16,7 @@ describe('listScopeCatalog', () => {
       resource: 'cards',
       action: 'write',
       audience: 'user',
+      description_key: null,
       requires: 'cards:read',
       surfaces: ['api-key', 'oauth'],
     })
@@ -23,6 +24,24 @@ describe('listScopeCatalog', () => {
     expect(rss).toMatchObject({ audience: 'api', requires: null })
     rss?.surfaces.push('oauth')
     expect(SCOPE_DEFINITIONS['rss:read'].surfaces).toEqual(['api-key'])
+  })
+
+  it('projects stable descriptions only for MCP umbrella scopes', () => {
+    const catalog = listScopeCatalog()
+
+    expect(catalog.find(entry => entry.scope === 'mcp.user:read')?.description_key).toBe(
+      'mcp_user_full_access',
+    )
+    expect(catalog.find(entry => entry.scope === 'mcp.user:write')?.description_key).toBe(
+      'mcp_user_full_access',
+    )
+    expect(catalog.find(entry => entry.scope === 'mcp.admin:read')?.description_key).toBe(
+      'mcp_admin_full_access',
+    )
+    expect(catalog.find(entry => entry.scope === 'mcp.admin:write')?.description_key).toBe(
+      'mcp_admin_full_access',
+    )
+    expect(catalog.find(entry => entry.scope === 'cards:read')?.description_key).toBeNull()
   })
 
   it('pairs every write scope with a read prerequisite that validates', () => {

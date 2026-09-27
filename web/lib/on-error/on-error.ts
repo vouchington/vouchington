@@ -6,18 +6,22 @@ import { getRateLimitMessage, isRateLimitError } from '@/lib/api/rate-limit-erro
 
 export interface OnErrorOptions {
   fallback: string
+  /** Replaces server prose for known API error codes while preserving expected-error handling. */
+  displayMessageByCode?: Readonly<Record<string, string>>
   tags?: Record<string, string>
   extra?: Record<string, unknown>
   skipSentry?: boolean
 }
 
 export default function onError(err: unknown, options: OnErrorOptions): string {
-  const { fallback, tags, extra, skipSentry } = options
+  const { fallback, displayMessageByCode, tags, extra, skipSentry } = options
   let message: string
   if (isRateLimitError(err)) {
     message = getRateLimitMessage(err)
   } else if (err instanceof ApiError) {
-    message = getApiErrorMessage(err, fallback)
+    message =
+      (err.code === undefined ? undefined : displayMessageByCode?.[err.code]) ??
+      getApiErrorMessage(err, fallback)
   } else {
     message = fallback
   }

@@ -37,6 +37,19 @@ describe('GET /api/v1/my/oauth-grants', () => {
     await createRequest().get('/api/v1/my/oauth-grants').expect(401)
   })
 
+  it('returns null last use for a consented app before token use', async () => {
+    const unusedGrantUser = await createTestUser()
+    const flow = await createTestApprovedOAuthAuthorization(unusedGrantUser)
+    const request = createRequest()
+    await request.authenticateAs(unusedGrantUser)
+
+    const page = await request.get('/api/v1/my/oauth-grants?limit=100').expect(200)
+    const grant = page.body.results.find(
+      (candidate: ListedGrant) => candidate.client.client_id === flow.client.client_id,
+    ) as ListedGrant & { last_used_at: string | null }
+    expect(grant.last_used_at).toBeNull()
+  })
+
   it('pages the current user’s authorized apps', async () => {
     const first = await authorize(user)
     const second = await authorize(user)

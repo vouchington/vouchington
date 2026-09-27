@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { ApiError } from '@/lib/api/error'
 import { getOAuthGrants, revokeOAuthGrant } from '@/lib/api/client/oauth-grants'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import onError, { onSuccess } from '@/lib/on-error'
@@ -33,6 +34,10 @@ export function ConnectedAppsManager({ initialData }: { initialData: ListRespons
       setRevokedIds(prev => new Set(prev).add(id))
       onSuccess(t('extracted.my.connectedAppsManager.accessRevoked_42849e0b'))
     } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setRevokedIds(prev => new Set(prev).add(id))
+        return
+      }
       onError(error, {
         fallback: t('extracted.my.connectedAppsManager.failedToRevokeAccess_d461cbfc'),
       })

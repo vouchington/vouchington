@@ -44,7 +44,7 @@ async function withClientMetadataErrors<T>(ctx: Context, run: () => Promise<T>):
     return await run()
   } catch (error) {
     if (!(error instanceof OAuthProtocolError)) throw error
-    ctx.throw(422, error.message)
+    ctx.throw(422, error.message, error.code)
   }
 }
 

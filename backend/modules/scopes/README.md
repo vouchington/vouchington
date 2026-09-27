@@ -8,7 +8,11 @@ The validator rejects duplicates, missing prerequisite scopes, unsupported crede
 mixed audiences unless the caller explicitly permits an OAuth grant to span audiences.
 
 `listScopeCatalog()` projects the catalogue into the wire shape served by
-[`GET /api/v1/scopes`](../../api/v1/scopes/README.md), so clients build pickers from data.
+[`GET /api/v1/scopes`](../../api/v1/scopes/README.md), so clients build pickers from data. Its
+nullable `description_key` is stable presentation metadata, not server-owned display text.
+`mcp_user_full_access` and `mcp_admin_full_access` distinguish the two MCP umbrella meanings;
+all other entries return `null`. Each client maps recognized identifiers through its own typed
+localized catalogue and rejects unknown identifiers rather than rendering server English.
 
 API-key type and owner-role policy remains in `@services/api-keys`. MCP tool records declare their
 required canonical scopes in registry metadata; the registry validates surface audience and both

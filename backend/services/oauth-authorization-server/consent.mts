@@ -179,8 +179,7 @@ async function upsertGrant(
      VALUES ($1, $2, $3, $4::text[])
      ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL
      DO UPDATE SET scopes = EXCLUDED.scopes,
-                   consented_at = CURRENT_TIMESTAMP,
-                   last_used_at = CURRENT_TIMESTAMP
+                   consented_at = CURRENT_TIMESTAMP
      RETURNING id`,
     [request.user_id, request.client_id, request.resource, request.scopes],
   )

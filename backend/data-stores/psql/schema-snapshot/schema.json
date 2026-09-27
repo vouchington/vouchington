@@ -56382,11 +56382,11 @@
         "last_used_at": {
           "collation": null,
           "comment": "Time at which the grant most recently issued or refreshed tokens.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },

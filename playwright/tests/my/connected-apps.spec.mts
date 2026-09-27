@@ -51,7 +51,7 @@ test.describe('My Connected Apps', () => {
     ).toHaveCount(0)
   })
 
-  test('keeps the app listed when the grant was already revoked elsewhere', async ({ page }) => {
+  test('removes the app when the grant was already revoked elsewhere', async ({ page }) => {
     const { client, row } = await openConnectedAppWithGrant(page)
     await expect(row).toBeVisible()
     await revokeTestOAuthGrant(client.client_id)
@@ -61,8 +61,6 @@ test.describe('My Connected Apps', () => {
     await row.getByTestId('connected-app-revoke-confirm-button').click()
     expect((await revocation).status()).toBe(404)
 
-    await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'not found' })).toBeVisible()
-    await expect(row).toBeVisible()
-    await expect(row.getByTestId('connected-app-revoke-button')).toBeVisible()
+    await expect(row).toHaveCount(0)
   })
 })

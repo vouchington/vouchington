@@ -3,6 +3,7 @@ import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
+import { ApiError } from '@/lib/api/error'
 import type { ListResponse } from '@/types/api-responses'
 import type { IssuedOAuthApp, OAuthApp } from '@/types/oauth-apps'
 import type { ScopeCatalogResponse } from '@/types/scopes'
@@ -95,6 +96,7 @@ describe('OAuthAppsManager', () => {
     renderManager()
 
     expect(screen.getByText('You have not registered any OAuth apps.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('keeps Register disabled until the details and a scope are filled in', () => {
@@ -109,6 +111,25 @@ describe('OAuthAppsManager', () => {
     expect(register).toBeDisabled()
     fireEvent.click(screen.getByRole('checkbox', { name: 'mcp.user Read' }))
     expect(register).toBeEnabled()
+  })
+
+  it('blocks duplicate redirect URIs and localizes a server redirect error', async () => {
+    renderManager()
+    fillRegisterForm()
+    fireEvent.change(screen.getByLabelText('Redirect URIs'), {
+      target: { value: 'https://example.com/callback\nhttps://example.com:443/callback' },
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent('Redirect URIs must be unique.')
+    expect(screen.getByRole('button', { name: 'Register app' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Redirect URIs'), {
+      target: { value: 'https://example.com/new-callback' },
+    })
+    mockCreate.mockRejectedValueOnce(
+      new ApiError('redirect_uris contains an invalid URI', 422, { code: 'invalid_redirect_uri' }),
+    )
+    await submitRegisterForm()
+    expect(toast.error).toHaveBeenCalledWith('Enter a valid redirect URI.')
   })
 
   it('registers a confidential app and shows its client secret once', async () => {

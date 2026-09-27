@@ -53,9 +53,12 @@ no OAuth protected resource serves the RSS feeds.
 ### Scope catalogue
 
 `GET /api/v1/scopes` lists every canonical scope with its resource, action, audience, prerequisite
-(`requires`) and the credential surfaces (`api-key`, `oauth`) that accept it. The hosted web picker
-renders this list instead of hard-coding scope strings. Native API-key creation currently has no
-scope picker or catalogue consumer; see the [client parity matrix](../CLIENT-PARITY-MATRIX.md#mcp-relation-and-consent-disposition).
+(`requires`), the credential surfaces (`api-key`, `oauth`) that accept it, and an optional stable
+description key. The MCP user and administrator umbrella resources have different description
+keys. Each client resolves those keys through its typed localization catalogue instead of deriving
+the audience label or rendering server-owned English copy. Web and native pickers consume this
+catalogue rather than hard-coding scope strings; see the
+[client parity matrix](../CLIENT-PARITY-MATRIX.md#api-key-and-connected-app-contract-handoff).
 See the [Scopes API](../../../backend/api/v1/scopes/README.md).
 
 MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can only be created by administrators.
@@ -104,7 +107,8 @@ RSS feed endpoints are rate-limited to **3 requests per minute** per identity pe
 
 1. Go to Settings > API Keys (`/my/api-keys`)
 2. Click "Create API Key"
-3. Choose an RSS feed or MCP server key, pick the MCP key's scopes, then enter a label
+3. Choose an RSS feed or MCP server key, pick the MCP key's scopes, then enter a label. The label
+   example follows the chosen key type, such as an RSS reader for RSS or an MCP client for MCP.
 4. Copy the raw key immediately (it won't be shown again)
 
 An RSS key always carries `rss:read`. An MCP key's scope picker renders the

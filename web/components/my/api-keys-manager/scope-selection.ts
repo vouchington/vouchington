@@ -1,9 +1,15 @@
-import type { ScopeAudience, ScopeCatalogEntry, ScopeCredentialSurface } from '@/types/scopes'
+import type {
+  ScopeAudience,
+  ScopeCatalogEntry,
+  ScopeCredentialSurface,
+  ScopeDescriptionKey,
+} from '@/types/scopes'
 
 /** The backend accepts exactly this scope set for an RSS key. */
 export const RSS_KEY_SCOPES: readonly string[] = ['rss:read']
 
 export interface ScopeResourceRow {
+  descriptionKey: ScopeDescriptionKey | null
   resource: string
   /** `mcp.<audience>` resources grant every tool of their audience and render first. */
   umbrella: boolean
@@ -30,7 +36,12 @@ export function scopeResourceRows(
   const rows = new Map<string, ScopeResourceRow>()
   for (const entry of catalog) {
     if (!entry.surfaces.includes(surface) || !audiences.includes(entry.audience)) continue
-    const row = rows.get(entry.resource) ?? {
+    const existing = rows.get(entry.resource)
+    if (existing && existing.descriptionKey !== entry.description_key) {
+      throw new Error(`Scope resource ${entry.resource} has inconsistent description keys`)
+    }
+    const row = existing ?? {
+      descriptionKey: entry.description_key,
       resource: entry.resource,
       umbrella: entry.resource === `mcp.${entry.audience}`,
       read: null,

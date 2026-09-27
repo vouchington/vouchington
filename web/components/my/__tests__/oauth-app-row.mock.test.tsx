@@ -4,6 +4,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { ApiError } from '@/lib/api/error'
 import type { ListResponse } from '@/types/api-responses'
 import type { OAuthApp } from '@/types/oauth-apps'
 import { OAuthAppsManager } from '../oauth-apps-manager'
@@ -257,5 +258,40 @@ describe('OAuthAppRow', () => {
 
     expect(toast.error).toHaveBeenCalledWith('Failed to revoke the OAuth app')
     expect(screen.getByText('Fixture Agent')).toBeInTheDocument()
+  })
+
+  it('reconciles a missing app after an update race', async () => {
+    mockUpdate.mockRejectedValueOnce(new ApiError('OAuth app not found', 404))
+    const row = renderApp()
+    await click('Edit', row)
+    fireEvent.change(within(row).getByLabelText('App name'), {
+      target: { value: 'Renamed Agent' },
+    })
+    await click('Save', row)
+
+    expect(screen.queryByText('Fixture Agent')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a missing app after a secret rotation race', async () => {
+    mockRotate.mockRejectedValueOnce(new ApiError('OAuth app not found', 404))
+    const row = renderApp()
+    await click('Rotate secret', row)
+    await click('Confirm', row)
+
+    expect(screen.queryByText('Fixture Agent')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Client secret')).not.toBeInTheDocument()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a missing app after a revoke race', async () => {
+    mockRevoke.mockRejectedValueOnce(new ApiError('OAuth app not found', 404))
+    const row = renderApp()
+    await click('Revoke', row)
+    await click('Confirm', row)
+
+    expect(screen.queryByText('Fixture Agent')).not.toBeInTheDocument()
+    expect(toast.error).not.toHaveBeenCalled()
   })
 })

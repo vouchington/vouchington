@@ -62,13 +62,17 @@ export function ConnectedAppRow({ grant, onRevoke }: ConnectedAppRowProps) {
           ))}
         </div>
         <p className='text-xs text-muted-foreground'>
-          {t(
-            'extracted.connectedAppsManager.connectedAppRow.authorizedConsentedatLastUsedLastusedat_45a0956c',
-            {
-              consentedAt: formatUtcDate(grant.consented_at, uiLocale),
-              lastUsedAt: formatUtcDate(grant.last_used_at, uiLocale),
-            },
-          )}
+          {grant.last_used_at
+            ? t(
+                'extracted.connectedAppsManager.connectedAppRow.authorizedConsentedatLastUsedLastusedat_45a0956c',
+                {
+                  consentedAt: formatUtcDate(grant.consented_at, uiLocale),
+                  lastUsedAt: formatUtcDate(grant.last_used_at, uiLocale),
+                },
+              )
+            : t('settings.connectedApps.authorizedConsentedatNotUsedYet', {
+                consentedAt: formatUtcDate(grant.consented_at, uiLocale),
+              })}
         </p>
       </div>
       <div className='flex shrink-0 flex-wrap items-center gap-2'>

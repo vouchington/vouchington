@@ -2,7 +2,6 @@ import { listScopeCatalog } from '@modules/scopes'
 import type { ApiFixtureCase } from './types.mts'
 
 const timestamp = '2026-09-01T12:00:00.000Z'
-const lastUsedAt = '2026-09-20T08:30:00.000Z'
 const userId = '00000000-0000-7000-8000-000000000001'
 const apiKeyId = '00000000-0000-7000-8000-000000000701'
 const grantId = '00000000-0000-7000-8000-000000000711'
@@ -72,7 +71,7 @@ export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
           resource: 'https://voucha.ai/api/v1/mcp',
           scopes: ['mcp.user:read', 'mcp.user:write'],
           consented_at: timestamp,
-          last_used_at: lastUsedAt,
+          last_used_at: null,
         },
       ],
       page_info: {

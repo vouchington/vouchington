@@ -1,47 +1,31 @@
 import { invalidRedirectUri } from './errors.mts'
+import {
+  MAX_OAUTH_REDIRECT_URIS,
+  validateOAuthRedirectUris,
+  type OAuthRedirectUriValidationCode,
+} from '@ts-shared/utils/oauth-redirect-uri-validation'
 
-const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1'])
-const MAX_URI_LENGTH = 2048
-export const MAX_REDIRECT_URIS = 10
+export const MAX_REDIRECT_URIS = MAX_OAUTH_REDIRECT_URIS
 
 export function validateRedirectUris(values: unknown): string[] {
-  if (!Array.isArray(values) || values.length === 0 || values.length > MAX_REDIRECT_URIS) {
-    throw invalidRedirectUri(
-      `redirect_uris must contain between 1 and ${MAX_REDIRECT_URIS} entries`,
-    )
-  }
-  const redirectUris = values.map(value => {
-    if (typeof value !== 'string' || value.length > MAX_URI_LENGTH) {
-      throw invalidRedirectUri('redirect_uris contains an invalid URI')
-    }
-    let uri: URL
-    try {
-      uri = new URL(value)
-    } catch {
-      throw invalidRedirectUri('redirect_uris contains an invalid URI')
-    }
-    if (value.includes('*') || uri.pathname.includes('*')) {
-      throw invalidRedirectUri('redirect URIs cannot contain wildcards')
-    }
-    if (uri.username || uri.password || uri.hash) {
-      throw invalidRedirectUri('redirect URIs cannot contain userinfo or fragments')
-    }
-    const loopback = isLoopbackHostname(uri.hostname)
-    if (uri.protocol !== 'https:' && !(uri.protocol === 'http:' && loopback)) {
-      throw invalidRedirectUri('redirect URIs must use HTTPS or loopback HTTP')
-    }
-    const serialized = uri.toString()
-    if (serialized.length > MAX_URI_LENGTH) {
-      throw invalidRedirectUri('redirect_uris contains an invalid URI')
-    }
-    return serialized
-  })
-  if (new Set(redirectUris).size !== redirectUris.length) {
-    throw invalidRedirectUri('redirect_uris contains duplicates')
-  }
-  return redirectUris
+  const result = validateOAuthRedirectUris(values)
+  if (result.valid) return result.redirectUris
+  throw invalidRedirectUri(redirectUriErrorDescription(result.code))
 }
 
-function isLoopbackHostname(hostname: string): boolean {
-  return LOOPBACK_HOSTNAMES.has(hostname) || hostname === '[::1]'
+function redirectUriErrorDescription(code: OAuthRedirectUriValidationCode): string {
+  switch (code) {
+    case 'invalid_count':
+      return `redirect_uris must contain between 1 and ${MAX_REDIRECT_URIS} entries`
+    case 'wildcard':
+      return 'redirect URIs cannot contain wildcards'
+    case 'userinfo_or_fragment':
+      return 'redirect URIs cannot contain userinfo or fragments'
+    case 'invalid_scheme':
+      return 'redirect URIs must use HTTPS or loopback HTTP'
+    case 'duplicate':
+      return 'redirect_uris contains duplicates'
+    case 'invalid_uri':
+      return 'redirect_uris contains an invalid URI'
+  }
 }

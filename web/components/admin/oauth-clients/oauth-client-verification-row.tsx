@@ -6,6 +6,7 @@ import { BadgeCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { UserLink } from '@/components/users/user-link'
+import { ApiError } from '@/lib/api/error'
 import { unverifyOAuthClient, verifyOAuthClient } from '@/lib/api/client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
@@ -47,6 +48,7 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
           'extracted.oauthClients.oauthClientVerificationRow.failedToUpdateTheVerification_4330b584',
         ),
       })
+      if (error instanceof ApiError && error.status === 409) router.refresh()
     } finally {
       setBusy(false)
     }

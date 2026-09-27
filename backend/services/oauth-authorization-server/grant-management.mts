@@ -2,9 +2,9 @@ import { read, write } from '@data-stores/psql'
 import type { OAuthGrantView, OAuthManagementPage } from './management-types.mts'
 
 /**
- * Lists the apps a user has authorized. Bearer use only touches the access token, so
- * `last_used_at` is the later of the grant's own timestamp (consent, code and refresh exchange)
- * and its newest access-token use.
+ * Lists the apps a user has authorized. Consent does not count as use. Code and refresh exchange
+ * touch the grant timestamp, while bearer use only touches the access token, so `last_used_at`
+ * reports the latest real use signal.
  */
 export async function listUserOAuthGrants(
   currentUserId: string,
@@ -22,7 +22,11 @@ export async function listUserOAuthGrants(
        oauth_grant.resource,
        oauth_grant.scopes,
        oauth_grant.consented_at,
-       GREATEST(oauth_grant.last_used_at, token_use.last_used_at) AS last_used_at
+       CASE
+         WHEN oauth_grant.last_used_at IS NULL THEN token_use.last_used_at
+         WHEN token_use.last_used_at IS NULL THEN oauth_grant.last_used_at
+         ELSE GREATEST(oauth_grant.last_used_at, token_use.last_used_at)
+       END AS last_used_at
      FROM oauth_grants AS oauth_grant
      JOIN oauth_clients AS client
        ON client.id = oauth_grant.client_id

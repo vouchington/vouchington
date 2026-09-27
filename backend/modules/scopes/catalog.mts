@@ -4,6 +4,7 @@ import {
   type ScopeAction,
   type ScopeAudience,
   type ScopeCredentialSurface,
+  type ScopeDescriptionKey,
 } from './scopes.mts'
 
 /**
@@ -15,6 +16,7 @@ export type ScopeCatalogEntry = {
   resource: string
   action: ScopeAction
   audience: ScopeAudience
+  description_key: ScopeDescriptionKey | null
   requires: string | null
   surfaces: ScopeCredentialSurface[]
 }
@@ -27,6 +29,7 @@ export function listScopeCatalog(): ScopeCatalogEntry[] {
       resource: definition.resource,
       action: definition.action,
       audience: definition.audience,
+      description_key: definition.descriptionKey ?? null,
       requires: definition.requires ?? null,
       surfaces: [...definition.surfaces],
     }

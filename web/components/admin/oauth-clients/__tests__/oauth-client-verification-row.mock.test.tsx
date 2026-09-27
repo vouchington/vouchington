@@ -4,6 +4,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { ApiError } from '@/lib/api/error'
 import type { ListResponse } from '@/types/api-responses'
 import type { AdminOAuthClientListItem } from '@/types/oauth-apps'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
@@ -142,6 +143,16 @@ describe('OAuthClientVerificationRow', () => {
     expect(toast.error).toHaveBeenCalledWith('Failed to update the verification')
     expect(mockNav.refresh).not.toHaveBeenCalled()
     expect(screen.getByText('Unverified')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Verify' })).toBeEnabled()
+  })
+
+  it('refreshes authoritative review data after a verification conflict', async () => {
+    mockVerify.mockRejectedValueOnce(new ApiError('OAuth app changed', 409))
+    renderRow()
+    await click('Verify')
+
+    expect(toast.error).toHaveBeenCalledWith('OAuth app changed')
+    expect(mockNav.refresh).toHaveBeenCalledOnce()
     expect(screen.getByRole('button', { name: 'Verify' })).toBeEnabled()
   })
 })

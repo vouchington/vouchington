@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { OAuthApp, UpdateOAuthAppInput } from '@/types/oauth-apps'
 import { OAuthAppDetailsFields } from './oauth-app-details-fields'
-import { hasValidOAuthAppDetails, parseRedirectUris } from './oauth-app-fields'
+import {
+  hasValidOAuthAppDetails,
+  parseRedirectUris,
+  redirectUriValidationMessage,
+  validateOAuthRedirectUris,
+} from './oauth-app-fields'
 
 interface EditOAuthAppFormProps {
   app: OAuthApp
@@ -19,7 +24,9 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
   const [name, setName] = useState(app.client_name)
   const [redirectUris, setRedirectUris] = useState(() => app.redirect_uris.join('\n'))
   const [saving, setSaving] = useState(false)
+  const [redirectUrisTouched, setRedirectUrisTouched] = useState(false)
   const uris = parseRedirectUris(redirectUris)
+  const redirectUriValidation = validateOAuthRedirectUris(uris)
   const changes: UpdateOAuthAppInput = {
     ...(name.trim() !== app.client_name && { client_name: name.trim() }),
     ...(uris.join('\n') !== app.redirect_uris.join('\n') && { redirect_uris: uris }),
@@ -46,8 +53,16 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
         idPrefix={`oauth-app-edit-${app.id}`}
         name={name}
         redirectUris={redirectUris}
+        redirectUriError={
+          !redirectUrisTouched || redirectUriValidation.valid
+            ? undefined
+            : redirectUriValidationMessage(t, redirectUriValidation.code)
+        }
         setName={setName}
-        setRedirectUris={setRedirectUris}
+        setRedirectUris={value => {
+          setRedirectUrisTouched(true)
+          setRedirectUris(value)
+        }}
       />
       {app.verified_at && (
         <p className='text-xs text-muted-foreground'>
