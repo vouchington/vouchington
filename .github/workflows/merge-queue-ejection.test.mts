@@ -70,12 +70,24 @@ describe('merge-queue ejection workflow', () => {
     }
   })
 
-  it('grants write access only to the failure comment', () => {
+  it('grants write access only to the session link and the failure comment', () => {
     expect(workflow.permissions).toEqual({ contents: 'read' })
     for (const [name, job] of jobs) {
-      const expected = name === 'escalate' ? { 'pull-requests': 'write' } : { contents: 'read' }
+      const expected =
+        name === 'escalate'
+          ? { 'pull-requests': 'write' }
+          : name === 'comment-session'
+            ? { issues: 'write', 'pull-requests': 'write' }
+            : { contents: 'read' }
       expect(job.permissions).toEqual(expected)
     }
+    expect(workflow.jobs['comment-session']?.steps?.at(-1)?.uses).toBe(
+      './.github/actions/comment-harness-session',
+    )
+    expect(workflow.jobs['comment-session']?.steps?.at(-1)?.with).toMatchObject({
+      target: '${{ github.event.pull_request.number }}',
+      'session-url': '${{ needs.dispatch.outputs.session-url }}',
+    })
   })
 
   it('dispatches a triage session that checks out main, not the ejected head', () => {

@@ -234,6 +234,11 @@ completed deploy`, so Automation Fix Main can never legally subscribe to itself,
   finishes starts a fresh triage. Fix Main still owns failures on `main` itself.
 - Dependabot revalidates the exact open bot-authored PR ref/SHA immediately before dispatch. The
   agent modifies that branch only; it cannot create a second PR.
+- After a successful dispatch that already names an issue or pull request, Fix Dependabot, Fix
+  Issue, Plan, and Merge Queue Ejection post one idempotent eyes comment linking the Auto Harness
+  session. Shepherd records that same session on its checkpoint comment instead of posting a second
+  one. Fix Main and Scheduled Prompts have no existing issue or pull request at dispatch time; the
+  agent opens the result.
 - `/fix`, `/plan`, and `/shepherd` prompts carry the exact triggering comment ID so the agent can
   revalidate the command and author association before publication.
 - Shepherd creates a provenance-bound checkpoint comment before dispatch, then re-fetches and

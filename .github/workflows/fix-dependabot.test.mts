@@ -216,4 +216,21 @@ describe('fix-dependabot workflow', () => {
     expect(commentStep?.run).toContain('Dependabot auto-fix could not complete')
     expect(commentStep?.run).toContain('**Failing run:** $FAILING_RUN_URL')
   })
+
+  it('posts the session link after a successful dispatch', () => {
+    const commentJob = parsed.jobs?.['comment-session']
+    const commentStep = commentJob?.steps?.find(
+      step => step.uses === './.github/actions/comment-harness-session',
+    )
+
+    expect(commentJob?.needs).toEqual(['triage-and-rerun', 'dispatch'])
+    expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")
+    expect(commentJob?.['runs-on']).toEqual('ubuntu-slim')
+    expect(commentJob?.permissions).toEqual({ issues: 'write', 'pull-requests': 'write' })
+    expect(commentStep?.with).toMatchObject({
+      target: '${{ needs.triage-and-rerun.outputs.pr_number }}',
+      'session-id': '${{ needs.dispatch.outputs.session-id }}',
+      'session-url': '${{ needs.dispatch.outputs.session-url }}',
+    })
+  })
 })

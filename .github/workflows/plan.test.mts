@@ -178,6 +178,20 @@ describe('plan workflow', () => {
     expect(dispatchJob?.with?.['prompt']).toBe('${{ needs.render-prompt.outputs.prompt }}')
   })
 
+  it('posts the session link on the issue after a successful dispatch', () => {
+    const commentJob = workflow.jobs?.['comment-session']
+    const commentStep = commentJob?.steps?.find(
+      step => step.uses === './.github/actions/comment-harness-session',
+    )
+
+    expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")
+    expect(commentJob?.permissions).toEqual({ issues: 'write', 'pull-requests': 'write' })
+    expect(commentStep?.with).toMatchObject({
+      target: '${{ github.event.issue.number }}',
+      'session-url': '${{ needs.dispatch.outputs.session-url }}',
+    })
+  })
+
   it('comments for immediate dispatch failures', () => {
     const escalateJob = workflow.jobs?.['escalate']
     const commentStep = escalateJob?.steps?.find(step => step.name?.includes('Comment failure'))
