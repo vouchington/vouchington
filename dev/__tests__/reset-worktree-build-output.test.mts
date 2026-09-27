@@ -76,7 +76,7 @@ async function makeFakeBin() {
 if [ "$1" = "-C" ]; then repo="$2"; shift 2; fi
 case "$*" in
   "rev-parse --show-toplevel") printf '%s' "\${repo:-$(pwd)}" ;;
-  "diff-index --quiet HEAD --"|"status --porcelain --untracked-files=normal"|"fetch origin main"|"checkout -B "*|"reset --hard origin/main"|"clean -fd") : ;;
+  "diff-index --quiet HEAD --"|"status --porcelain --untracked-files=normal"|"fetch origin main"|"checkout -B "*|"reset --hard origin/main"|"clean -fd"|"diff --name-only --diff-filter=ACDMRTUXB "*) : ;;
   *) printf 'unexpected git invocation: %s\n' "$*" >&2; exit 1 ;;
 esac
 `,
@@ -112,6 +112,8 @@ async function makeRepo() {
     'lib/worktree-resource-env.sh',
     'lib/db-name-from-url.sh',
     'lib/git-index-lock.sh',
+    'lib/protected-checkout.sh',
+    'protected-checkout-paths.txt',
   ]) {
     const destination = join(repo, 'dev', relativePath)
     await mkdir(dirname(destination), { recursive: true })

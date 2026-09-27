@@ -22,12 +22,10 @@ import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import type { DomainActionsAside as DomainActionsAsideComponent } from '@/components/domains/domain-actions-aside'
 import type { DomainDetailTabs as DomainDetailTabsComponent } from '@/components/domains/domain-detail-tabs'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const DomainDetailTabs = nextDynamic<Parameters<typeof DomainDetailTabsComponent>[0]>(() =>
   import('@/components/domains/domain-detail-tabs').then(m => ({ default: m.DomainDetailTabs })),
 )
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const DomainActionsAside = nextDynamic<Parameters<typeof DomainActionsAsideComponent>[0]>(() =>
   import('@/components/domains/domain-actions-aside').then(m => ({
     default: m.DomainActionsAside,

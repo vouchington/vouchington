@@ -18,7 +18,6 @@ import { findInteractiveMergeConfirm } from './policy/github-merge-authority.mts
 import { gitWorktreeDiffNames } from './local-process.mts'
 import { extractToolCommand } from './hook-payload.mts'
 import { findProtectedCheckoutBlock } from './policy/protected-checkout.mts'
-import { protectedCheckoutPathspecFile } from './policy/protected-checkout-paths.mts'
 import {
   type PreToolUseOptions,
   renderConfirmDisposition,
@@ -142,8 +141,7 @@ export function preToolUseOutput(
 ): PreToolUseResult {
   const block = findPreToolUseBlock(payload, {
     automationContext: options.automationContext,
-    protectedCheckoutDiff: (cwd, target) =>
-      gitWorktreeDiffNames(cwd, target, protectedCheckoutPathspecFile()),
+    protectedCheckoutDiff: (cwd, target) => gitWorktreeDiffNames(cwd, target),
     sessionOwners: options.sessionOwners,
   })
   if (block === null) {

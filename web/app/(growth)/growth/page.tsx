@@ -9,7 +9,6 @@ import type GrowthDashboardComponent from '@/components/admin/growth/growth-dash
 
 export const metadata: Metadata = createNoIndexMetadata('Growth Dashboard')
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const GrowthDashboard = nextDynamic<Parameters<typeof GrowthDashboardComponent>[0]>(
   () => import('@/components/admin/growth/growth-dashboard'),
 )

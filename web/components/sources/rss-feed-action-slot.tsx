@@ -9,7 +9,6 @@ import {
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const FollowButton = nextDynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(m => ({ default: m.FollowButton })),
 )

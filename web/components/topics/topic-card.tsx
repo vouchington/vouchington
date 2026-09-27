@@ -24,11 +24,9 @@ import { useAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { EntityBookmarkButton as EntityBookmarkButtonComponent } from '@/components/shared/entity-bookmark-button'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(mod => mod.FollowButton),
 )
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const EntityBookmarkButton = dynamic<Parameters<typeof EntityBookmarkButtonComponent>[0]>(() =>
   import('@/components/shared/entity-bookmark-button').then(mod => mod.EntityBookmarkButton),
 )

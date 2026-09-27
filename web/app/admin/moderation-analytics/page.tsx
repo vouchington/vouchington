@@ -13,7 +13,6 @@ import type ModerationAnalyticsDashboardComponent from '@/components/admin/moder
 
 export const metadata: Metadata = createNoIndexMetadata('Moderation Analytics | Admin')
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const ModerationAnalyticsDashboard = nextDynamic<
   Parameters<typeof ModerationAnalyticsDashboardComponent>[0]
 >(() => import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'))
