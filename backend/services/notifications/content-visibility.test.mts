@@ -4,7 +4,7 @@ import { listNotifications } from './list.mts'
 import { deleteNotification, markNotificationRead } from './mutations.mts'
 import { reconcileNotificationsForPost } from './reconcile-post.mts'
 import { reconcileNotificationsForRssFeedItem } from './reconcile-rss-feed-item.mts'
-import { cleanupRetainedIdentityRoots } from '@services/data-retention/cleanup-retained-identities'
+import { cleanupRetainedIdentityRoots } from '../data-retention/cleanup-retained-identities.mts'
 import {
   createTestManualPostNotification,
   createTestManualRssFeedItemNotification,
