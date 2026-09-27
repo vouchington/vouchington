@@ -54,8 +54,9 @@ app
 
     const membership = await getCommunityMember(community.id, currentUser.id)
 
-    const rawBody: unknown = await ctx.request.json('1mb')
-    if (rawBody === null || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+    const rawBody = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const parsedBody: unknown = rawBody
+    if (parsedBody === null || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) {
       ctx.assert(
         currentUserCanUpdateCommunity(currentUser, community, membership),
         403,
@@ -63,11 +64,11 @@ app
       )
       validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
         path: ctx.params,
-        body: rawBody,
+        body: parsedBody,
       })
       ctx.throw(422, 'Invalid request body')
     }
-    const body = rawBody as Record<string, unknown>
+    const body = rawBody
     const { archive, ...updateBody } = body
     if (archive !== undefined && typeof archive !== 'boolean') {
       ctx.throw(422, 'archive must be a boolean')
