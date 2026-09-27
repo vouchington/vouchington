@@ -128,20 +128,24 @@ export async function runTestActionAfterMembershipUserLock<T>(
     await transaction.commit()
   }
   await locked.promise
-  const action = startAction()
+  const actionOutcome = Promise.allSettled([Promise.resolve().then(startAction)] as const)
   let releasedAt: Date
   try {
-    await waitForMembershipUserLock(action)
+    await waitForMembershipUserLock(actionOutcome)
     await delay(100)
     releasedAt = new Date()
   } finally {
     release.resolve()
     await lockTransaction
   }
-  return { releasedAt, result: await action }
+  const [outcome] = await actionOutcome
+  if (outcome.status === 'rejected') throw outcome.reason
+  return { releasedAt, result: outcome.value }
 }
 
-async function waitForMembershipUserLock(action: Promise<unknown>): Promise<void> {
+async function waitForMembershipUserLock(
+  actionOutcome: Promise<[PromiseSettledResult<unknown>]>,
+): Promise<void> {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const { rows } = await write<{ blocked: boolean }>(
       sql`/* waitForMembershipUserLock */ SELECT EXISTS (
@@ -150,10 +154,12 @@ async function waitForMembershipUserLock(action: Promise<unknown>): Promise<void
           AND query LIKE '%/* expireElapsedMemberships: lock user */%'
       ) AS blocked`,
     )
-    if (rows[0]?.blocked) return
-    const stillWaiting = await Promise.race([action.then(() => false), delay(10).then(() => true)])
-    if (!stillWaiting)
+    const [outcome] = await Promise.race([actionOutcome, Promise.resolve([undefined] as const)])
+    if (outcome?.status === 'rejected') throw outcome.reason
+    if (outcome?.status === 'fulfilled')
       throw new Error('Membership action completed before waiting for the recipient lock')
+    if (rows[0]?.blocked) return
+    await delay(10)
   }
   throw new Error('Membership action did not wait for the recipient lock')
 }
