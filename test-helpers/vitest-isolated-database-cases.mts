@@ -33,6 +33,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright email intake queue pagination uses the UUID tie-breaker when two intakes share a received timestamp',
   },
+  'copyright-cache-policy': {
+    file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
+    fullName:
+      'copyright API cache policy marks member, staff, and raw-email responses private and no-store',
+  },
 } as const
 
 export type IsolatedDatabaseCaseId = keyof typeof isolatedDatabaseCases

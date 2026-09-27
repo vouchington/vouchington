@@ -54,6 +54,11 @@ describe('isolated database case selection', () => {
         fullName: `copyright email intake queue pagination ${title}`,
       })
     }
+    expect(getIsolatedDatabaseCase('copyright-cache-policy')).toEqual({
+      file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
+      fullName:
+        'copyright API cache policy marks member, staff, and raw-email responses private and no-store',
+    })
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })
 
