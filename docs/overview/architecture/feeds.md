@@ -11,9 +11,11 @@ flowchart TD
     subgraph Posts["Post feed - getPostFeedIds (sort=new default, or hot)"]
         PR["Relation CTEs: followed_users/topics, excluded_users/topics, hidden_posts, excluded_hostname_ids"] --> PE
         PE["eligible_posts CTE: visibility, mute/block, hostname block, post_type, search filters"] --> PDirect
-        PE --> PShared
         PDirect["direct_candidate_posts -> direct_posts (follow-match via followed_users/topics)"] --> PCombined
-        PShared["shared_posts (post_feed_shares JOIN eligible_posts)"] --> PCombined
+        PR --> PTargets
+        PTargets["Enabled shares: recipient deliveries -> distinct target IDs"] --> PEligibleTargets
+        PEligibleTargets["Indexed target/root probes using the same eligibility builder"] --> PShared
+        PShared["shared_posts: eligible targets rejoin separate delivery events"] --> PCombined
         PCombined["combined_posts = direct_posts UNION ALL shared_posts"] --> PSort
         PSort{"sort=hot or sort=new?"}
         PSort -- hot --> PHot["ORDER BY hot_score DESC (3-day half-life)"]
@@ -68,6 +70,18 @@ flowchart TD
 
 Users can share posts or RSS feed items with their followers. Share requests persist a bounded follower-distribution intent and workers fan it out in chunks to `post_feed_shares` and `rss_feed_item_feed_shares`. Only public, broadly-visible posts can be shared, users cannot share their own posts, and shared post deliveries still respect the post's current broadcast audience if the creator later tightens visibility.
 
+Post feeds include share delivery only for `follow_users` and `any`; `follow_topics` and `all`
+omit the share CTEs and union arm. Enabled shares first materialize recipient deliveries after
+sharer exclusions, delivery-time cutoff, and chronological cursor filtering. Distinct target IDs
+then drive indexed post/root eligibility probes through the same
+[eligibility SELECT builder](../../../backend/services/feeds/posts/get-ids/eligible-posts-cte.mts)
+used by direct posts. The lateral lookup returns at most the one row identified by the post's
+primary key, keeping eligibility work bounded without materializing the broad direct cohort.
+Eligible targets rejoin their deliveries, so repeated shares and a direct delivery of the same
+post remain separate events. Hot pagination applies the final score/delivery-ID boundary and
+does not push a timestamp cursor into share candidates. An old post can appear through a recent
+share because the share cutoff uses delivery time rather than target creation time.
+
 ## Post Feed Sort Options
 
 - `sort=new` (default) — chronological descending. Cursor encodes `{ timestamp: number, id: string }`.
@@ -97,7 +111,9 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 - PostgreSQL JIT compilation can dominate execution time at these plan sizes (JIT is disabled during profiling).
 - `relation__user__*` tables use plain B-tree indexes, so privacy filter lookups hit a single index scan. They were previously hash-partitioned (HASH partitioning is now forbidden repo-wide) and de-partitioned after this caused broadcast checks to fan out across all 8 partitions — see [entity-relations.md](entity-relations.md#table-structure), [partitioning-strategy.md](partitioning-strategy.md), and the measured incident in [feeds/README.md#performance](../../../backend/services/feeds/README.md#performance).
 - The post feed composes viewer-aware publication eligibility once per candidate and resolved root.
-- Feed services share common eligibility CTEs across direct and shared deliveries to avoid repeating the same mute/block/visibility anti-joins.
+- Post feeds reuse one eligibility builder for direct candidates and distinct share targets; the
+  [EXPLAIN gates](../../../backend/scripts/explain-analyze/README.md) bound target probes and
+  reject delivery joins that repeatedly rescan the eligible-target spool.
 - RSS feed pagination uses the `LIMIT + 1` pattern instead of a full-window row count so `has_next_page` does not require counting the full candidate set.
 
 ## Story Clustering

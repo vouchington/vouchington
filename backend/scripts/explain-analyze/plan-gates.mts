@@ -13,6 +13,7 @@ import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-remote-fol
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-review-succession-gate.mts'
 import { assertRssFeedCandidatesAreSetBased } from './plan-rss-feed-candidates-gate.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-rss-recency-cursor-gate.mts'
+import { assertPostShareEligibilityIsTargetBounded } from './plan-post-share-targets-gate.mts'
 
 const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
   'relation__post__category__topic',
@@ -64,6 +65,7 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   assertTopicViewerCountsDiscussionsUsesCandidateBind(result)
   assertRssFeedCandidatesAreSetBased(result)
   assertRssRecencyLateCursorPlan(result)
+  assertPostShareEligibilityIsTargetBounded(result)
   assertPaginationPlanShape(result)
 }
 

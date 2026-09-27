@@ -51,6 +51,14 @@ population. Ordinary, heavy-follow, and sparse scenarios capture the first and c
 and reject repeated direct stories or delivery IDs across them. The skewed story is exhausted by
 its single canonical delivery, so it asserts `has_next_page=false` instead of replaying an empty
 continuation. Global RSS recency and semantic search keep their independent pagination gates.
+Post-share scenarios seed sparse and dense repeated deliveries to old targets through
+`seed-data/post-feed-shares.mts`, alongside disabled branches and a recipient with no shares.
+Both chronological and hot scenarios capture first and continuation pages. Their gates require
+the exact seeded distinct-target population, indexed post/root probes bounded by that population,
+and zero target/root work for an empty share cohort. They also reject joins that multiply
+eligible-target spool reads or join-filter rejections by delivery count. Disabled scenarios
+must omit share relations and CTEs from the plan; SQL builder tests prove the corresponding
+CTEs and union arm are absent from the generated query. Timing and buffers remain diagnostic.
 The verified OAuth-client scenario interleaves a small active verified subset through a larger
 unverified population and uses a late keyset cursor with exactly 102 verified rows remaining.
 Its pagination gate requires

@@ -13,7 +13,27 @@ import {
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,
 } from '@services/entity-relations/metadata'
 
+export type PostFeedEligibilityOptions = {
+  currentUser: Pick<PrivateUser, '__entity_type' | 'id' | 'roles'>
+  postTypes: PostFeedOptions['post_types']
+  sort: string
+  textSearchQuery: PostFeedOptions['text_search_query']
+  universalTopicIds: PostFeedOptions['universal_topic_ids']
+  hashtagTopicIds: PostFeedOptions['hashtag_topic_ids']
+  hashtagAliasIds: PostFeedOptions['hashtag_alias_ids']
+  hasUnknownHashtag: PostFeedOptions['has_unknown_hashtag']
+}
+
 export function appendEligiblePostsCTE(
+  query: SQLStatement,
+  options: PostFeedEligibilityOptions,
+): void {
+  query.append(sql`, eligible_posts AS NOT MATERIALIZED (`)
+  appendEligiblePostsSelect(query, options)
+  query.append(sql`)`)
+}
+
+export function appendEligiblePostsSelect(
   query: SQLStatement,
   {
     currentUser,
@@ -24,23 +44,14 @@ export function appendEligiblePostsCTE(
     hashtagTopicIds,
     hashtagAliasIds,
     hasUnknownHashtag,
-  }: {
-    currentUser: Pick<PrivateUser, '__entity_type' | 'id' | 'roles'>
-    postTypes: PostFeedOptions['post_types']
-    sort: string
-    textSearchQuery: PostFeedOptions['text_search_query']
-    universalTopicIds: PostFeedOptions['universal_topic_ids']
-    hashtagTopicIds: PostFeedOptions['hashtag_topic_ids']
-    hashtagAliasIds: PostFeedOptions['hashtag_alias_ids']
-    hasUnknownHashtag: PostFeedOptions['has_unknown_hashtag']
-  },
+  }: PostFeedEligibilityOptions,
+  targetPostId?: SQLStatement,
 ): void {
   const discoveryEligibility = buildViewerPostDiscoveryEligibilityFilter('posts', 'root_post', {
     currentUserId: currentUser.id,
     isAdministrator: currentUser.roles.includes('administrator'),
   })
-  query.append(sql`,
-    eligible_posts AS NOT MATERIALIZED (
+  query.append(sql`
       SELECT
         posts.id,
         posts.post_type,
@@ -56,7 +67,10 @@ export function appendEligiblePostsCTE(
   query.append(sql`
       FROM posts
       JOIN posts root_post ON root_post.id = COALESCE(posts.root_id, posts.id)
-      WHERE NOT EXISTS (
+      WHERE 1 = 1`)
+  if (targetPostId) query.append(sql` AND posts.id = `).append(targetPostId)
+  query.append(sql`
+      AND NOT EXISTS (
         SELECT 1 FROM hidden_posts WHERE hidden_posts.post_id = posts.id
       )
       AND NOT EXISTS (
@@ -137,6 +151,4 @@ export function appendEligiblePostsCTE(
       )
     `)
   }
-  query.append(sql`
-    )`)
 }

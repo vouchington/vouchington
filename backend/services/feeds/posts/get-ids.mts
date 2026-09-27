@@ -26,7 +26,7 @@ export async function getPostFeedIds(
     communityId: options.community_id,
     currentUserId: currentUser.id,
   })
-  appendEligiblePostsCTE(query, {
+  const eligibilityOptions = {
     currentUser,
     postTypes: post_types,
     sort,
@@ -35,9 +35,11 @@ export async function getPostFeedIds(
     hashtagTopicIds: options.hashtag_topic_ids,
     hashtagAliasIds: options.hashtag_alias_ids,
     hasUnknownHashtag: options.has_unknown_hashtag,
-  })
+  }
+  appendEligiblePostsCTE(query, eligibilityOptions)
   appendPostFeedDeliveryCTEs(query, {
     currentUserId: currentUser.id,
+    eligibilityOptions,
     cursor,
     feedType: feed_type,
     includeSharedPosts: feed_type === 'follow_users' || feed_type === 'any',
