@@ -29,4 +29,22 @@ describe('collectConfigInventory shared reader', () => {
     expect(inventory.envVars).toEqual([expect.objectContaining({ name: 'SHARED_READER_ENV' })])
     expect(fixture.ctx.readTrackedFile).toHaveBeenCalledTimes(2)
   })
+
+  it('reads package-manager gates only from pnpm-workspace.yaml', async () => {
+    const fixture = await makeRepoFixture({
+      'package.json': 'minimumReleaseAge: 2880\n',
+      'pnpm-workspace.yaml': 'minimumReleaseAge: 1440\n',
+    })
+    testDirs.push(fixture.dir)
+
+    const inventory = await collectConfigInventory(fixture.ctx)
+
+    expect(inventory.packageGates).toEqual([
+      {
+        name: 'minimumReleaseAge',
+        values: ['1440'],
+        files: ['pnpm-workspace.yaml'],
+      },
+    ])
+  })
 })

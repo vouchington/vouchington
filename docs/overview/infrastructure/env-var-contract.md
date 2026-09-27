@@ -31,8 +31,9 @@ Main helpers:
 ## Consumers
 
 - [`static-code-analysis/config-inventory/`](../../../static-code-analysis/config-inventory/) loads
-  typed metadata before scanning tracked files, then merges that metadata with observed usage from
-  code, docs, workflows, Dockerfiles, and package scripts.
+  typed metadata, then asks `vouchington-tooling/config-inventory` to scan tracked files.
+  Vouchington supplies file roles and merges that discovery with observed usage from code, docs,
+  workflows, Dockerfiles, and package scripts.
 - Vouchington uses the contract for local setup output and web build-argument validation. When a
   change affects deployment configuration, hand the affected names, sensitivity, and surfaces to
   the separate `vouchington-infra` repository; that handoff is manual, not an import or automated
@@ -40,9 +41,10 @@ Main helpers:
 
 ## Regex Discovery
 
-`./dev/config-inventory` still scans tracked repository text for observed env usage. That scan is
-intentional: the typed catalog describes where a variable belongs, while regex discovery catches
-actual readers, docs, workflow declarations, Docker build args, and stale or undocumented usage.
+`./dev/config-inventory` still scans tracked repository text for observed env usage through
+`vouchington-tooling/config-inventory`. That scan is intentional: the typed catalog describes where
+a variable belongs, while regex discovery catches actual readers, docs, workflow declarations,
+Docker build args, and stale or undocumented usage.
 
 Constant indirection is typed and explicit. `collectTypedEnvVarConstants()` publishes the supported
 constant-to-env-name aliases used by config-inventory for `process.env[CONST_NAME]` and local env

@@ -1,185 +1,117 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import { collectDynamicConfigsFromFile, mergeDynamicConfigRows } from './dynamic-configs.mts'
-import { compileEnvVarReferenceMatchers } from './env-reference-matchers.mts'
 import {
-  collectEnvVarReferencesFromFile,
-  collectEnvVarsFromFile,
-  seedTypedEnvContractEntries,
-  toEnvVarRow,
-} from './env-vars.mts'
-import { collectEnvVarPrefixReadersFromFile } from './env-prefix-readers.mts'
-import { collectPackageGatesFromFile } from './package-gates.mts'
+  collectConfigInventory as collectPublishedConfigInventory,
+  type ConfigSourceRules,
+} from 'vouchington-tooling/config-inventory'
+import { classifyEnvVar } from './classify.mts'
+import { collectDynamicConfigReferences } from './dynamic-configs.mts'
+import { bucketsForFile, isEnvInventoryDoc, isGithubYaml } from './env-source-buckets.mts'
+import { loadTypedEnvContractData } from './load-typed-env-contract.mts'
+import { GENERIC_REVIEW_REASON, reviewReasonForEnvVar } from './review-reasons.mts'
 import { shouldSkipFile } from './shared.mts'
-import type {
-  ConfigInventory,
-  EnvVarAccumulator,
-  PackageGateInventoryRow,
-  TypedEnvContractEntry,
-} from './types.mts'
+import type { ConfigInventory, EnvVarInventoryRow } from './types.mts'
 
-const TYPED_ENV_CONTRACT_ENTRYPOINT = 'ts-shared/env-contract/index.mts'
+const ENV_HELPER_NAMES = ['getNonEmptyEnv', 'getEnv', 'parseEnvPositiveInt'] as const
+const SENSITIVITY_ORDER = ['internal', 'public', 'secret'] as const
+const RESERVED_ENV_NAMES = new Set(['ARG', 'ENV'])
+const MARKDOWN_ENV_NAME_PATTERN = /`([A-Z][A-Z0-9_]{2,})`/g
+
+function readSource(ctx: SharedContext, file: string): string | null {
+  if (ctx.readTrackedFile) {
+    const contents = ctx.readTrackedFile(file)
+    return typeof contents === 'string' ? contents : null
+  }
+  const fullPath = join(ctx.repoRoot, file)
+  if (!existsSync(fullPath)) return null
+  return readFileSync(fullPath, 'utf8')
+}
 
 export async function collectConfigInventory(ctx: SharedContext): Promise<ConfigInventory> {
-  const envVars = new Map<string, EnvVarAccumulator>()
-  const dynamicDefinitions = new Map<string, Set<string>>()
-  const dynamicRegistry = new Map<string, Set<string>>()
-  const packageGates = new Map<string, PackageGateInventoryRow>()
-  const textFiles: Array<{ file: string; source: string }> = []
-
-  for (const file of ctx.trackedFiles) {
-    const fullPath = join(ctx.repoRoot, file)
-    if (!existsSync(fullPath) || shouldSkipFile(file)) continue
-
-    let source: string
-    try {
-      const fileContents = ctx.readTrackedFile
-        ? ctx.readTrackedFile(file)
-        : readFileSync(fullPath, 'utf8')
-      if (typeof fileContents !== 'string') continue
-      source = fileContents
-    } catch {
-      continue
-    }
-    textFiles.push({ file, source })
-
-    collectDynamicConfigsFromFile(file, source, dynamicDefinitions, dynamicRegistry)
-    collectPackageGatesFromFile(file, source, packageGates)
-  }
-
   const typedContract = await loadTypedEnvContractData(ctx.repoRoot)
-  seedTypedEnvContractEntries(envVars, typedContract.entries)
-
-  const envConstants = new Map(typedContract.constants)
-  for (const { file, source } of textFiles)
-    collectEnvVarsFromFile(file, source, envVars, envConstants)
-  for (const { file, source } of textFiles)
-    collectEnvVarPrefixReadersFromFile(file, source, envVars, envConstants)
-  const referenceMatchers = compileEnvVarReferenceMatchers(envVars)
-  for (const { file, source } of textFiles)
-    collectEnvVarReferencesFromFile(file, source, envVars, referenceMatchers)
+  const inventory = collectPublishedConfigInventory(
+    {
+      trackedFiles: ctx.trackedFiles,
+      readTrackedFile(file) {
+        const contents = readSource(ctx, file)
+        if (contents === null) return null
+        if (file.endsWith('.md') && !isEnvInventoryDoc(file)) {
+          // Inventory docs mint backtick names. Other Markdown only attaches references.
+          return contents.replaceAll(MARKDOWN_ENV_NAME_PATTERN, '$1')
+        }
+        return contents
+      },
+    },
+    {
+      describeFile,
+      envContract: typedContract.entries,
+      envConstants: typedContract.constants,
+      envHelperNames: ENV_HELPER_NAMES,
+      sensitivityOrder: SENSITIVITY_ORDER,
+      collectDynamicConfigs: collectDynamicConfigReferences,
+      annotateEnv(row) {
+        const classifications = classifyEnvVar(row.name, row)
+        return {
+          classifications,
+          reviewReason:
+            reviewReasonForEnvVar(row.name) ??
+            (classifications.includes('review-required') ? GENERIC_REVIEW_REASON : null),
+        }
+      },
+    },
+  )
 
   return {
-    envVars: [...envVars.values()]
-      .map(toEnvVarRow)
-      .toSorted((a, b) => a.name.localeCompare(b.name)),
-    dynamicConfigs: mergeDynamicConfigRows(dynamicDefinitions, dynamicRegistry),
-    packageGates: [...packageGates.values()].toSorted((a, b) => a.name.localeCompare(b.name)),
+    dynamicConfigs: inventory.dynamicConfigs,
+    packageGates: inventory.packageGates,
+    envVars: inventory.envVars.flatMap(row => {
+      const localRow: EnvVarInventoryRow = {
+        ...row,
+        classifications: classifyEnvVar(row.name, row),
+      }
+      return keepInventoryRow(localRow) ? [localRow] : []
+    }),
   }
 }
 
-async function loadTypedEnvContractData(
-  repoRoot: string,
-): Promise<{ entries: TypedEnvContractEntry[]; constants: Map<string, string> }> {
-  const entrypoint = join(repoRoot, TYPED_ENV_CONTRACT_ENTRYPOINT)
-  if (!existsSync(entrypoint)) return { entries: [], constants: new Map<string, string>() }
-
-  const contractModule = await importTypedEnvContract(entrypoint)
-  const [entries, constants] = await Promise.all([
-    normalizeTypedEnvContractEntries(
-      readFirstExport(contractModule, [
-        'ENV_VAR_CONTRACT',
-        'collectTypedEnvContractEntries',
-        'typedEnvContractEntries',
-      ]),
-    ),
-    normalizeTypedEnvContractConstants(
-      readFirstExport(contractModule, [
-        'ENV_VAR_CONSTANTS',
-        'collectTypedEnvVarConstants',
-        'typedEnvVarConstants',
-      ]),
-    ),
-  ])
-  return { entries, constants }
+/**
+ * Markdown files skip ordinary `process.env` discovery. Only canonical inventory docs mint
+ * backtick names; other Markdown attaches references to names discovered elsewhere.
+ */
+function describeFile(file: string): ConfigSourceRules | null {
+  if (shouldSkipFile(file)) return null
+  const referenceBuckets = bucketsForFile(file)
+  const rules: ConfigSourceRules = {}
+  if (referenceBuckets.length > 0) rules.referenceBuckets = referenceBuckets
+  if (file.startsWith('cloudflare-worker/')) rules.workerBindings = true
+  if (file === '.env.example' || file.endsWith('/.dev.vars')) rules.localAssignments = true
+  if (file === 'dev/initialize') rules.shellExports = true
+  if (file === 'cloudflare-worker/wrangler.local.jsonc') rules.jsonBindings = true
+  if (file.endsWith('Dockerfile')) rules.docker = true
+  if (isGithubYaml(file)) rules.workflow = true
+  if (file.endsWith('.md')) rules.markdown = true
+  if (file.endsWith('package.json')) rules.packageManifest = true
+  if (file === 'pnpm-workspace.yaml') rules.packageManagerConfig = true
+  return rules
 }
 
-async function importTypedEnvContract(entrypoint: string): Promise<Record<string, unknown>> {
-  try {
-    return (await import(pathToFileURL(entrypoint).href)) as Record<string, unknown>
-  } catch (error) {
-    throw new Error(`failed to load typed env contract at ${entrypoint}`, { cause: error })
-  }
+function keepInventoryRow(row: EnvVarInventoryRow): boolean {
+  if (RESERVED_ENV_NAMES.has(row.name)) return false
+  if (!isDocumentationOnly(row)) return true
+  return row.docs.some(isEnvInventoryDoc)
 }
 
-function readFirstExport(module: Record<string, unknown>, names: readonly string[]): unknown {
-  for (const name of names) {
-    if (name in module) return module[name]
-  }
-  return undefined
-}
-
-async function normalizeTypedEnvContractEntries(value: unknown): Promise<TypedEnvContractEntry[]> {
-  const resolved = await resolveExportValue(value)
-  if (!Array.isArray(resolved)) return []
-  return resolved.flatMap(entry => normalizeTypedEnvContractEntry(entry))
-}
-
-function normalizeTypedEnvContractEntry(entry: unknown): TypedEnvContractEntry[] {
-  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return []
-  const raw = entry as Record<string, unknown>
-  const name = typeof raw.name === 'string' ? raw.name : ''
-  if (!name) return []
-  return [
-    {
-      name,
-      contractKey:
-        typeof raw.contractKey === 'string'
-          ? raw.contractKey
-          : typeof raw.key === 'string'
-            ? raw.key
-            : undefined,
-      sourceOfTruth:
-        typeof raw.sourceOfTruth === 'string'
-          ? raw.sourceOfTruth
-          : typeof raw.source === 'string'
-            ? raw.source
-            : undefined,
-      sensitivity: typeof raw.sensitivity === 'string' ? raw.sensitivity : undefined,
-      runtimeSurfaces: normalizeStringArray(raw.runtimeSurfaces ?? raw.surfaces),
-    },
-  ]
-}
-
-async function normalizeTypedEnvContractConstants(value: unknown): Promise<Map<string, string>> {
-  const resolved = await resolveExportValue(value)
-  if (resolved == null) return new Map<string, string>()
-  if (resolved instanceof Map) {
-    return new Map(
-      [...resolved.entries()].flatMap(([key, envName]) =>
-        typeof key === 'string' && typeof envName === 'string' ? [[key, envName]] : [],
-      ),
-    )
-  }
-  if (Array.isArray(resolved)) {
-    return new Map(
-      resolved.flatMap(entry => {
-        if (!Array.isArray(entry) || entry.length < 2) return []
-        const [key, envName] = entry
-        return typeof key === 'string' && typeof envName === 'string' ? [[key, envName]] : []
-      }),
-    )
-  }
-  if (typeof resolved === 'object') {
-    return new Map(
-      Object.entries(resolved as Record<string, unknown>).flatMap(([key, envName]) =>
-        typeof envName === 'string' ? [[key, envName]] : [],
-      ),
-    )
-  }
-  return new Map<string, string>()
-}
-
-async function resolveExportValue(value: unknown): Promise<unknown> {
-  if (typeof value === 'function') return resolveExportValue(value())
-  if (value instanceof Promise) return value
-  return value
-}
-
-function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.flatMap(entry => (typeof entry === 'string' ? [entry] : []))
+function isDocumentationOnly(row: EnvVarInventoryRow): boolean {
+  return (
+    row.contractKey === null &&
+    row.runtimeSurfaces.length === 0 &&
+    row.readers.length === 0 &&
+    row.localSetup.length === 0 &&
+    row.deployment.length === 0 &&
+    row.dockerBuildArgs.length === 0 &&
+    row.workflows.length === 0 &&
+    row.packageGates.length === 0
+  )
 }
