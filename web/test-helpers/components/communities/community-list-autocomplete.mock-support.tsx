@@ -1,12 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { createContext, use } from 'react'
+import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-
-import { CommunityListAutocomplete } from '../../community-list-autocomplete'
-
-// Mock Popover components to avoid portal/DOM issues in tests.
 vi.mock(import('@/components/ui/popover'), () => {
   const PopoverContext = createContext(false)
   return {
@@ -21,7 +18,6 @@ vi.mock(import('@/components/ui/popover'), () => {
   } as unknown as typeof import('@/components/ui/popover')
 })
 
-// Mock cmdk-based Command components to avoid ResizeObserver dependency
 vi.mock(
   import('@/components/ui/command'),
   () =>
@@ -42,7 +38,7 @@ vi.mock(
         onKeyDown?: (e: React.KeyboardEvent) => void
         disabled?: boolean
       }) => (
-        <input
+        <Input
           placeholder={placeholder}
           aria-label={placeholder ?? 'Command search'}
           value={value}
@@ -64,12 +60,13 @@ vi.mock(
         onSelect?: () => void
       }) => (
         <li>
-          <button
+          <Button
             type='button'
+            variant='ghost'
             onClick={onSelect}
           >
             {children}
-          </button>
+          </Button>
         </li>
       ),
     }) as unknown as typeof import('@/components/ui/command'),
@@ -124,17 +121,20 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
-import { fetchTopics } from '@/lib/api/client/topics'
-
+import { fetchHostnames } from '@/lib/api/client/hostnames'
+import { fetchPosts } from '@/lib/api/client/posts'
 import { searchRssFeedsClient } from '@/lib/api/client/rss-feeds'
+import { fetchTopics } from '@/lib/api/client/topics'
+import { fetchUrls } from '@/lib/api/client/urls'
 
-const mockFetchTopics = vi.mocked(fetchTopics)
+export const mockFetchTopics = vi.mocked(fetchTopics)
+export const mockSearchRssFeeds = vi.mocked(searchRssFeedsClient)
+export const mockFetchPosts = vi.mocked(fetchPosts)
+export const mockFetchHostnames = vi.mocked(fetchHostnames)
+export const mockFetchUrls = vi.mocked(fetchUrls)
+export const AUTOCOMPLETE_WAIT_TIMEOUT = 2000
 
-const mockSearchRssFeeds = vi.mocked(searchRssFeedsClient)
-
-const AUTOCOMPLETE_WAIT_TIMEOUT = 2000
-
-const baseTopic = {
+export const baseTopic = {
   __entity_type: 'topic' as const,
   id: 'topic-1',
   name: 'Chase Sapphire Reserve',
@@ -153,7 +153,7 @@ const baseTopic = {
   updated_by: { id: 'user-1', display_name: null, display_name_url_id: null },
 }
 
-const baseRssFeed = {
+export const baseRssFeed = {
   __entity_type: 'rss_feed' as const,
   id: 'feed-1',
   title: 'The Points Guy',
@@ -168,61 +168,3 @@ const baseRssFeed = {
   hostname: null,
   topic: { id: 'topic-2', name: 'Travel', slug: 'travel', topic_type: 'general' },
 }
-
-describe('CommunityListAutocomplete', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('calls onSelect with topic id when topic is clicked', async () => {
-    mockFetchTopics.mockResolvedValueOnce({
-      topics: { 'topic-1': baseTopic },
-      results: [
-        {
-          __entity_type: 'topic',
-          id: 'topic-1',
-          ranking: 1,
-          name: 'Chase Sapphire Reserve',
-          slug: 'chase-sapphire-reserve',
-          topic_type: 'card',
-        },
-      ],
-      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-      topics_metrics: {},
-    })
-
-    const handleSelect = vi.fn<VitestLooseMock>()
-    render(
-      <CommunityListAutocomplete
-        itemType='topic'
-        onSelect={handleSelect}
-      />,
-    )
-    fireEvent.change(screen.getByPlaceholderText('Search topics...'), {
-      target: { value: 'chase' },
-    })
-    await waitFor(() => expect(screen.getByText('Chase Sapphire Reserve')).toBeDefined(), {
-      timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-    })
-    fireEvent.click(screen.getByText('Chase Sapphire Reserve'))
-    expect(handleSelect).toHaveBeenCalledWith('topic-1')
-  })
-
-  it('searches rss feeds and shows results', async () => {
-    mockSearchRssFeeds.mockResolvedValueOnce([baseRssFeed])
-
-    render(
-      <CommunityListAutocomplete
-        itemType='rss_feed'
-        onSelect={vi.fn<VitestLooseMock>()}
-      />,
-    )
-    fireEvent.change(screen.getByPlaceholderText('Search sources...'), {
-      target: { value: 'points' },
-    })
-
-    await waitFor(() => expect(screen.getByText('The Points Guy')).toBeDefined(), {
-      timeout: AUTOCOMPLETE_WAIT_TIMEOUT,
-    })
-  })
-})
