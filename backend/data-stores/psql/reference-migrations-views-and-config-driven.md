@@ -157,8 +157,8 @@ the first-deploy checklist in the private `vouchington-infra` repository), which
 organization access. This is a manual-only operator procedure, not an automatic migration-failure
 action or a receiver rerun.
 
-Production has not launched. If a database must become durable in the future, establish its
-deployment and migration policy before treating it as an exception to this prelaunch workflow.
+Production has not launched. Rebuild the disposable database. Do not add a compatibility migration
+or a rollout plan for a later durable cutover.
 
 ### What `db:migrate` creates
 

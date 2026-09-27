@@ -19,7 +19,9 @@ Before adding or changing a Vitest test, fixture, or mock here, load the
 - Parse worktrees through [`lib/git-worktrees.sh`](lib/git-worktrees.sh). The main worktree owns the
   shared `voucha` database and `voucha-valkey` container; never bypass the command-specific main-reset
   guard or export `FORCE_MAIN_RESET=1` globally. Full clones under `.grok/worktrees` or
-  `${TMPDIR:-/tmp}` are not the main worktree.
+  `${TMPDIR:-/tmp}` are not the main worktree. A non-main worktree database and Valkey are
+  ephemeral: drop and recreate them when stale, and do not ask. See
+  [Ephemeral worktree databases](../CLAUDE.md).
 - Keep shell scripts compatible with macOS Bash 3.2 and shellcheck. For conditionally populated
   arrays under `set -u`, use `"${arr[@]+"${arr[@]}"}"`. Never assign `status` or `pipestatus`
   in scripts or ad-hoc commands: zsh treats them as read-only builtins, and shellcheck does

@@ -18,7 +18,7 @@
 - Check that material implementation, scope, validation, or review-resolution decisions follow the shared feedback hierarchy: human intervention, accepted plan, GitHub issues, then AI reviewers.
 - Check that material decisions are recorded on the accepted plan issue when one exists, and in the shepherd journal when the PR is being managed through `pr-shepherd`. If neither record exists yet, they should be captured in the saved plan or PR notes.
 - Independently question the premise and approach even when the diff follows the accepted plan: ask whether the change should exist, whether a simpler or better approach would solve the underlying problem, and which assumptions the plan or implementation inherited. Bring a fresh perspective instead of limiting review to the requested solution.
-- Independently read applicable local instructions and check the actual schema/interface against them; do not merely verify agreement with the Plan. For database changes, trace identifier readers and joins, then inspect their concrete foreign-key coverage, constraints, and deletion behavior against the owning schema rules. A typed union or `CHECK` is not proof that a generic type-plus-ID relationship is allowed; labeling a joined identifier historical does not justify missing foreign keys. Verify any compatibility/activation/nullability rationale against established launch state, rather than inferring a live rollout from infrastructure. Missing evidence for a policy exception is a finding, not an implicit exemption.
+- Independently read applicable local instructions and check the actual schema/interface against them; do not merely verify agreement with the Plan. For database changes, trace identifier readers and joins, then inspect their concrete foreign-key coverage, constraints, and deletion behavior against the owning schema rules. A typed union or `CHECK` is not proof that a generic type-plus-ID relationship is allowed; labeling a joined identifier historical does not justify missing foreign keys. Flag a compatibility shim, dual reader or writer, activation flag, leftover old path, or rollout plan. The app has not launched; infrastructure is not evidence of a live rollout. An existing external protocol, exact replay envelope, or security key rotation can keep its current verifier.
 - Treat a no-change recommendation or alternative approach as advisory unless it exposes a correctness, security, or plan-adherence blocker. The accepted plan remains authoritative under the shared feedback hierarchy.
 - Leave inline comments on specific changed lines. Use GitHub suggestions when the fix is small and unambiguous.
 - Do not replace inline findings with a high-level summary. Summaries are optional and secondary to actionable inline comments.
@@ -46,8 +46,8 @@ PR-description standard this rubric evaluates against.
 
 Evaluate description quality, root-cause analysis, scope discipline, validation,
 appropriate test coverage, self-contained hand-off context (could another agent
-pick this PR up cold from its description and linked issues alone), rollout and
-deploy-safety framing, and shepherd or CI corrections already present in the
+pick this PR up cold from its description and linked issues alone), absence of a product
+rollout or compatibility narrative on this unlaunched app, and shepherd or CI corrections already present in the
 review history. Refresh the assessment with synchronous steering or check changes
 made during triage, but do not wait for a newly dispatched asynchronous shepherd.
 A useful recommendation must include the PR number, concrete evidence, verified

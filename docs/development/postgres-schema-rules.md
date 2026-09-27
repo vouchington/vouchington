@@ -6,12 +6,14 @@ Each rule links the tracking issue for its static-analysis guard / fix.
 
 ## Prelaunch relational storage
 
-Voucha has not launched. Change the canonical schema creators and current callers together, then
-rebuild disposable databases. Migrations still provide deterministic fresh installation, a ledger,
-checksum verification, transactional execution, and current seeds/views. They are not a sequence of
-upgrade deployments to preserve historical app contracts. Do not add backfills, dual writes,
-compatibility readers, or activation stages for old application versions. Keep external protocols,
-security key rotation, and exact replay envelopes where those contracts actually require them.
+Voucha has not launched. Change the canonical schema creators and current callers together, delete
+the path that change replaces, then rebuild disposable databases. Do not ask before recreating a
+non-main worktree database; it holds disposable local state. Migrations still provide deterministic
+fresh installation, a ledger, checksum verification, transactional execution, and current
+seeds/views. They are not a sequence of upgrade deployments to preserve historical app contracts.
+Do not add backfills, dual writes, compatibility readers, activation stages, or a rollout plan for
+old application versions. Keep external protocols, security key rotation, and exact replay
+envelopes where those contracts actually require them.
 
 Application-owned business facts belong in typed columns or child tables. Every internal entity
 reference needs a concrete foreign key and supporting index, including references stored in a

@@ -3,7 +3,8 @@
 [Back to Tests and Checks](tests.md#local-web-validation-recovery)
 
 Use this table before debugging a local web validation failure as an application bug. These
-recoveries target known setup and host-environment failure modes. For CI (not local)
+recoveries target known setup and host-environment failure modes. A non-main worktree database and
+Valkey are ephemeral; run `./dev/reset` from this table without asking. For CI (not local)
 infrastructure-failure signatures such as Docker socket errors, runner loss, and Storybook
 timeouts, see
 [Classifying Transient Infrastructure Failures](ci.md#classifying-transient-infrastructure-failures).
