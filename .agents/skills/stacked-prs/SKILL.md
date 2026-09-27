@@ -138,6 +138,26 @@ field as a negative result.
 The shape: shepherding a layer to ready and merging a layer are different acts. The first covers
 every PR this agent owns in the stack at once; the second is serial and is never the agent's decision.
 
+### Who runs the stack
+
+One worker per native stack. That worker implements the stack and runs its shepherd poll. The parent
+does not run `pnpm exec pr-shepherd`. The parent reconciles open stacks, starts a worker when the
+stack's first owned pull request exists, and asks the human each merge question.
+
+Independent stacks run at the same time, one worker each. Dependent unmerged work is the next layer
+of the same stack (`gh stack add`), in the same worktree. A second stack whose base is an unmerged
+head is not a stack this procedure can drain.
+
+A lower layer is in decent shape when it is committed, the before-push checks have passed, its pull
+request is open with an updated body, and the worker has started shepherding. Start the next layer
+then. Decent shape does not require green CI, ready-for-review, the ready-delay, or a merge.
+
+A ready, mergeable, or queued lower layer blocks only a git operation that would rewrite that layer.
+Keep shepherding and reviewing every other owned layer. One poll process runs for the stack. The
+parent does not start a second poll for it.
+
+The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn another stack.
+
 ### A. Establish scope
 
 1. Resolve the stack: `gh api repos/{o}/{r}/pulls/<any-layer> --jq '.stack.number'`. Empty → not
@@ -158,29 +178,56 @@ every PR this agent owns in the stack at once; the second is serial and is never
      remotely; that is acceptable, because the human is present to restate it if a compaction drops it.
    - **Degrade explicitly.** A body with no matching `Agent:` line, or one naming a harness with no
      session id, is **not owned** — report it as "ownership unverifiable", never poll it.
+   - **A parent may assign its stack to one worker.** The assignment lists the pull request numbers
+     and the provenance session id already stamped on those bodies. The worker treats that list as
+     assigned. It does not need its own session id on the `Agent:` line. `dev/pr-description.mts update`
+     preserves an existing `Agent:` line. The worker still refuses a layer outside the list.
+     pr-shepherd's `owned` mark stays author-equals-viewer; a layer that mark omits stays untouched.
 
 ### B. Shepherd the owned PRs
 
-Shepherd every owned layer in one pr-shepherd invocation over that explicit PR set — the canonical
-command in [Git And PRs](../agent-workflow/git-and-prs.md) with each owned PR URL — and follow the
-pr-shepherd plugin skill and the CLI's printed `## Instructions`. pr-shepherd owns its actions, exit
+The stack worker runs one `pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status` for the
+assigned stack — the canonical command in [Git And PRs](../agent-workflow/git-and-prs.md) — and follows
+the pr-shepherd plugin skill and the CLI's printed `## Instructions`. pr-shepherd owns its actions, exit
 codes, stack routing, and merge-command output; this page adds only Vouchington's ownership, git, and
 merge policy:
 
 - **Owned layers only.** Apply code fixes, rebases, pushes, and review mutations only to owned
   layers. Report work pr-shepherd surfaces on an unowned layer to the human instead.
-- **Fix on the owning layer.** Commit there, then `gh stack sync`, `gh stack rebase --upstack`, and
-  `gh stack push` **once**, and rerun the shepherd. Bounded implementation work may be dispatched to a
-  subagent; the shepherd loop itself stays with this session.
+- **Fix on the owning layer.** Commit there, then `./dev/rebase-onto-main --stack` (or
+  `gh stack rebase --upstack` when upper layers must move), `gh stack sync` when there are no local
+  stack commits, and `gh stack push` **once**, and rerun the shepherd.
+- **Shepherd starts with the first pull request.** Do not wait until the last layer is written.
+  While the poll is inside a pure wait and the worktree is clean, commit the next layer once the
+  lower layer is in decent shape. On `FIX_CODE`, finish those instructions on the owning layer
+  before more upper edits. A ready-delay schedules the rerun; continue work already owned on a
+  later layer, and do not invent unrelated work.
 - **Merging is the human's decision, per layer.** Never run a merge command pr-shepherd prints without
   that layer's explicit approval and the checks in
   [Merge the bottom layer as soon as it is ready](#merge-the-bottom-layer-as-soon-as-it-is-ready):
   `gh stack merge <pr>` lands that PR and every layer below it.
 
-**Mutating git does not parallelize.** A layer fix runs `gh stack sync` / `gh stack rebase --upstack`
-/ `gh stack push` inside the one shared worktree for this stack. At most one owned layer may be in that
-sync/rebase/push phase at a time; stop the shepherd across it, because other layers' branches can be
-rewritten underneath it, and rerun it after the push lands.
+**Mutating git does not parallelize.** A layer fix runs `./dev/rebase-onto-main --stack`,
+`gh stack sync`, `gh stack rebase --upstack`, or `gh stack push` inside the one shared worktree for
+this stack. Stop the poll before that mutation, because other layers' branches can be rewritten
+underneath it. Discard a poll result that was in flight across the mutation, then start the poll
+again after the push lands. At most one of those git mutations runs at a time.
+
+### Upper-only fast-forward
+
+A queued lower layer, or any lower layer that must not be rewritten, does not stop an upper-only
+fast-forward or upper review and CI work that does not write git.
+
+Before that push, read the forge and capture the parent head, the parent base, the upper remote
+head, and the stack order. Read those four again immediately before the push. Push only when all
+four still match the capture, the local upper commit is a fast-forward of that remote head, and
+that commit still contains the parent. If any value differs, or the lower layer merges or leaves
+the queue while the push is being prepared, stop and read the forge again. Do not push from the
+stale capture.
+
+Do not amend, force-push, `gh stack sync`, `gh stack rebase`, or `./dev/rebase-onto-main --stack`
+a queued parent. Those commands rewrite it. When the lower layer changes, re-read topology before
+any branch work that depends on the new parent.
 
 **Escalations persist to the PR, not the transcript.** When a layer needs a human — ready and waiting
 on a merge decision, or genuinely blocked — apply the `needs-human` label and post **one** comment per
