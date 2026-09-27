@@ -9,7 +9,6 @@ import {
   createSupersessionAuditor,
   findSupersessionHits,
   parseAuditDecisions,
-  runAdvisorySupersessionSearch,
   validateAuditHits,
   type SupersessionDecision,
   type SupersessionHit,
