@@ -13,6 +13,7 @@ import type { Post } from '@/types/posts'
 import {
   buildTopicRecommendationMutationInput,
   getRecommendationFormDefaults,
+  readTopicRecommendationFormValues,
 } from './topic-recommendation-form-codecs'
 import { TopicRecommendationFormFields } from './topic-recommendation-form-fields'
 import { TopicRecommendationDuplicateCheck } from './topic-recommendation-duplicate-check'
@@ -75,12 +76,9 @@ export function TopicRecommendationForm({ recommendation, initialType }: Props) 
     setIsSubmitting(true)
 
     const formData = new FormData(event.currentTarget)
-    const title = String(formData.get('title') ?? '').trim()
-    const markdown = String(formData.get('markdown') ?? '').trim()
-    const topicTitle = String(formData.get('topic_title') ?? '').trim()
-    const topicSlug = String(formData.get('topic_slug') ?? '').trim()
+    const values = readTopicRecommendationFormValues(formData)
 
-    if (!topicTitle || !topicSlug || !markdown) {
+    if (!values.topic_title || !values.topic_slug || !values.markdown) {
       onError(new Error('Validation failed'), {
         fallback: t(
           'extracted.topicRecommendations.topicRecommendationForm.topicTitleSlugAndRecommendationBody_4bcc3eb8',
@@ -91,15 +89,7 @@ export function TopicRecommendationForm({ recommendation, initialType }: Props) 
       return
     }
 
-    const topicHostname = String(formData.get('topic_hostname') ?? '').trim()
-    const topicType = String(formData.get('topic_type') ?? 'topic').trim() as
-      | 'topic'
-      | 'referral_program'
-      | 'card'
-    const exampleReferralLink = String(formData.get('example_referral_link') ?? '').trim()
-    const landingPageUrlsRaw = String(formData.get('landing_page_urls') ?? '').trim()
-
-    if (topicType === 'referral_program' && !exampleReferralLink) {
+    if (values.topic_type === 'referral_program' && !values.example_referral_link) {
       onError(new Error('Validation failed'), {
         fallback: t(
           'extracted.topicRecommendations.topicRecommendationForm.anExampleReferralLinkIsRequired_4b219499',
@@ -110,7 +100,7 @@ export function TopicRecommendationForm({ recommendation, initialType }: Props) 
       return
     }
 
-    if (topicType === 'card' && !landingPageUrlsRaw) {
+    if (values.topic_type === 'card' && !values.landing_page_urls) {
       onError(new Error('Validation failed'), {
         fallback: t(
           'extracted.topicRecommendations.topicRecommendationForm.atLeastOneLandingPageUrl_6b275758',
@@ -122,17 +112,8 @@ export function TopicRecommendationForm({ recommendation, initialType }: Props) 
     }
 
     const payload = buildTopicRecommendationMutationInput({
-      title,
-      markdown,
-      topic_title: topicTitle,
-      topic_slug: topicSlug,
-      topic_markdown: String(formData.get('topic_markdown') ?? '').trim(),
-      topic_hostname: topicHostname,
-      topic_hostnames: String(formData.get('topic_hostnames') ?? ''),
+      ...values,
       topic_aliases: defaults.topic_aliases,
-      topic_type: topicType,
-      example_referral_link: exampleReferralLink,
-      landing_page_urls: landingPageUrlsRaw,
     })
 
     pendingPayloadRef.current = payload

@@ -6,7 +6,16 @@ interface StructuredDataScriptProps {
 }
 
 export function StructuredDataScript({ data, nonce }: StructuredDataScriptProps) {
-  const type = String(data['@type'] ?? 'json').replace(/[^a-zA-Z0-9]/g, '-')
+  const rawType = data['@type']
+  const typeName =
+    typeof rawType === 'string'
+      ? rawType
+      : Array.isArray(rawType) &&
+          rawType.length > 0 &&
+          rawType.every((part): part is string => typeof part === 'string')
+        ? rawType.join('-')
+        : 'json'
+  const type = typeName.replace(/[^a-zA-Z0-9]/g, '-')
   return (
     <script
       data-pw='structured-data-script'

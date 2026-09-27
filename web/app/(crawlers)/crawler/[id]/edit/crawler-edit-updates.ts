@@ -1,3 +1,5 @@
+import { getFormText } from '@/lib/form-data'
+
 export function buildCrawlerUpdates(formData: FormData, crawlerType: string) {
   return {
     description: formData.get('description'),
@@ -10,9 +12,7 @@ export function buildCrawlerUpdates(formData: FormData, crawlerType: string) {
 }
 
 function formLines(formData: FormData, name: string) {
-  return formData
-    .get(name)
-    ?.toString()
-    .split('\n')
+  return getFormText(formData, name)
+    ?.split('\n')
     .filter((line: string) => line.trim())
 }

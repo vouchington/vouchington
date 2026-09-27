@@ -43,6 +43,7 @@ const mockGet = vi.mocked(getApiKeys)
 const mockRevoke = vi.mocked(revokeApiKey)
 const mockToastSuccess = vi.mocked(toast.success)
 const mockToastError = vi.mocked(toast.error)
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
 
 const initialApiKeys: ApiKey[] = [
   {
@@ -82,11 +83,9 @@ describe('ApiKeysManager Integration Flow', () => {
     vi.clearAllMocks()
 
     // Mock navigator clipboard API
-    vi.stubGlobal('navigator', {
-      ...navigator,
-      clipboard: {
-        writeText: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
-      },
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn<VitestLooseMock>().mockResolvedValue(undefined) },
     })
 
     mockGet.mockResolvedValue({
@@ -113,7 +112,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
+    restoreNavigatorClipboard()
   })
 
   it('renders loading state initially then loads and displays API keys', async () => {
@@ -231,3 +230,11 @@ describe('ApiKeysManager Integration Flow', () => {
     })
   })
 })
+
+function restoreNavigatorClipboard() {
+  if (originalClipboardDescriptor) {
+    Object.defineProperty(navigator, 'clipboard', originalClipboardDescriptor)
+  } else {
+    Reflect.deleteProperty(navigator, 'clipboard')
+  }
+}

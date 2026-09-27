@@ -17,9 +17,16 @@ describe('AutocompleteShowcase', () => {
     const originalFetch: typeof fetch = function (this: Window, input, init) {
       expect(this).toBe(window)
       return Promise.resolve(
-        new Response(JSON.stringify({ input: String(input), hasInit: init !== undefined }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            input:
+              typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+            hasInit: init !== undefined,
+          }),
+          {
+            status: 200,
+          },
+        ),
       )
     }
     window.fetch = originalFetch
@@ -52,7 +59,13 @@ describe('AutocompleteShowcase', () => {
       expect(this).toBe(window)
       fallbackCalls += 1
       return Promise.resolve(
-        new Response(JSON.stringify({ input: String(input) }), { status: 200 }),
+        new Response(
+          JSON.stringify({
+            input:
+              typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+          }),
+          { status: 200 },
+        ),
       )
     }
     window.fetch = originalFetch

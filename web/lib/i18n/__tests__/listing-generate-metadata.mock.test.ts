@@ -81,7 +81,7 @@ describe('listing generateMetadata', () => {
     const metadata = await Promise.all(generators.map(generate => generate()))
     expect(metadata).toHaveLength(generators.length)
     for (const entry of metadata) {
-      expect(String(entry.title ?? '')).not.toBe('')
+      expect(entry.title).toBeTruthy()
     }
   })
 })

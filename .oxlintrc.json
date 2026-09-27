@@ -513,11 +513,9 @@
     "typescript/no-redundant-type-constituents": "off",
     "typescript/unbound-method": "off",
     "typescript/consistent-return": "off",
-    // 34 findings / 22 files on 2026-08-19; keep staged off for a dedicated remediation.
-    "typescript/no-base-to-string": "off",
+    "typescript/no-base-to-string": "error",
     "typescript/no-unnecessary-type-parameters": "off",
-    // All 7 live hits on 2026-08-19 were test Location/class spreads, not production.
-    "typescript/no-misused-spread": "off",
+    "typescript/no-misused-spread": "error",
     "typescript/no-unnecessary-type-conversion": "error",
     "typescript/restrict-template-expressions": "off",
     "unicorn/no-new-array": "off",

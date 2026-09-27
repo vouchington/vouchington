@@ -31,4 +31,17 @@ describe('StructuredDataScript', () => {
     const script = container.querySelector<HTMLScriptElement>('[data-pw="structured-data-script"]')
     expect(script?.innerHTML).toContain(`line\\u2028paragraph\\u2029`)
   })
+
+  it('uses string-array types in the DOM id without changing JSON-LD', () => {
+    const { container } = render(<StructuredDataScript data={{ '@type': ['Thing', 'Person'] }} />)
+    const script = container.querySelector<HTMLScriptElement>('script[data-pw]')
+
+    expect(script?.id).toBe('ld-Thing-Person')
+    expect(JSON.parse(script?.textContent ?? '')).toEqual({ '@type': ['Thing', 'Person'] })
+  })
+
+  it('falls back to a stable DOM id for unsupported type values', () => {
+    const { container } = render(<StructuredDataScript data={{ '@type': { name: 'Thing' } }} />)
+    expect(container.querySelector<HTMLScriptElement>('script[data-pw]')?.id).toBe('ld-json')
+  })
 })

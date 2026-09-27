@@ -55,7 +55,7 @@ describe('searchHnDiscussionsForUrls', () => {
 
   it('merges unique threads and fails closed on HTTP errors', async () => {
     const fetchMock = vi.fn<typeof fetch>(async input => {
-      const url = String(input)
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
       if (url.includes(encodeURIComponent('https://example.com/fail'))) {
         return new Response('nope', { status: 500 })
       }

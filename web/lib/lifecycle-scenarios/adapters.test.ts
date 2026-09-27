@@ -59,6 +59,12 @@ describe('web lifecycle adapters', () => {
     )
   })
 
+  it('formats an object-valued unknown private-post action', () => {
+    expect(() =>
+      webPrivatePostCollection(scenarioInput({ action: { type: { nested: 'archive' } } })),
+    ).toThrow('Unknown web private-post lifecycle action: {"nested":"archive"}')
+  })
+
   it('confirms a report penalty only when the authoritative count exceeds its baseline', async () => {
     await expect(
       webIntegrityReconciliation(

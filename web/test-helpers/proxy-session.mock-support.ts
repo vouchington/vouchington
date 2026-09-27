@@ -50,7 +50,8 @@ vi.mock(import('@ts-shared/session-jwt'), () => ({
 const originalConsoleError = console.error
 
 const consoleSpy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-  const message = String(args[0] ?? '')
+  const message =
+    args[0] instanceof Error ? args[0].message : typeof args[0] === 'string' ? args[0] : ''
   if (message.includes('Session validation failed')) return
   if (message.includes('Attribution request failed')) return
   originalConsoleError(...args)

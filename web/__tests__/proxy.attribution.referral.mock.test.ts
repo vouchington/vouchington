@@ -4,7 +4,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const originalConsoleError = console.error
 
 vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-  const message = String(args[0] ?? '')
+  const message =
+    args[0] instanceof Error ? args[0].message : typeof args[0] === 'string' ? args[0] : ''
   if (message.includes('Session validation failed')) return
   if (message.includes('Attribution request failed')) return
   originalConsoleError(...args)

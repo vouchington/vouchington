@@ -9,8 +9,9 @@ vi.mock(
 )
 
 const mockNav = createNavMock()
+const originalLocationHref = window.location.href
+const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 const originalCloseDescriptor = Object.getOwnPropertyDescriptor(window, 'close')
-const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 const originalOpenerDescriptor = Object.getOwnPropertyDescriptor(window, 'opener')
 
 describe('Apple callback page', () => {
@@ -18,6 +19,7 @@ describe('Apple callback page', () => {
     vi.clearAllMocks()
     mockNav.reset()
     mockNav.setSearchParams('id_token=apple-id-token&state=return-state&userName=Ada%20Lovelace')
+    window.history.replaceState(null, '', originalLocationHref)
     Object.defineProperty(window, 'close', {
       configurable: true,
       value: vi.fn<VitestLooseMock>(),
@@ -26,17 +28,14 @@ describe('Apple callback page', () => {
 
   afterEach(() => {
     restoreWindowProperty('close', originalCloseDescriptor)
-    restoreWindowProperty('location', originalLocationDescriptor)
+    restoreWindowProperty('location', originalWindowLocationDescriptor)
     restoreWindowProperty('opener', originalOpenerDescriptor)
+    window.history.replaceState(null, '', originalLocationHref)
   })
 
   it('redirects to the Apple native callback URL when no opener exists', async () => {
     const mockLocationAssign = vi.fn<VitestLooseMock>()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: mockLocationAssign },
-      writable: true,
-    })
+    setLocationMethod('assign', mockLocationAssign)
 
     render(<AppleCallbackPage />)
 
@@ -54,16 +53,13 @@ describe('Apple callback page', () => {
 
   it('redirects fragment callback params to the Apple native callback URL', async () => {
     mockNav.setSearchParams('')
+    window.history.replaceState(
+      null,
+      '',
+      '#id_token=fragment-token&state=fragment-state&name=Ada%20Lovelace',
+    )
     const mockLocationAssign = vi.fn<VitestLooseMock>()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: {
-        ...window.location,
-        assign: mockLocationAssign,
-        hash: '#id_token=fragment-token&state=fragment-state&name=Ada%20Lovelace',
-      },
-      writable: true,
-    })
+    setLocationMethod('assign', mockLocationAssign)
 
     render(<AppleCallbackPage />)
 
@@ -81,11 +77,7 @@ describe('Apple callback page', () => {
       value: { postMessage: vi.fn<VitestLooseMock>() },
     })
     const mockLocationAssign = vi.fn<VitestLooseMock>()
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: mockLocationAssign },
-      writable: true,
-    })
+    setLocationMethod('assign', mockLocationAssign)
 
     render(<AppleCallbackPage />)
 
@@ -115,4 +107,18 @@ function restoreWindowProperty(
   } else {
     delete (window as Window & Partial<Record<typeof propertyName, unknown>>)[propertyName]
   }
+}
+
+function setLocationMethod(method: 'assign', implementation: typeof window.location.assign) {
+  const realLocation = window.location
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: {
+      origin: realLocation.origin,
+      get hash() {
+        return realLocation.hash
+      },
+      [method]: implementation,
+    },
+  })
 }

@@ -17,23 +17,18 @@ vi.mock(import('@/lib/api/client/copyright-notices'), () => ({
 const mockReplayAction = vi.mocked(replayCopyrightActionIntent)
 const mockReplayDelivery = vi.mocked(replayCopyrightDeliveryIntent)
 const mockList = vi.mocked(listCopyrightReviewQueue)
-const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
+const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
 describe('CopyrightStaffQueue recovery actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockReplayAction.mockResolvedValue(undefined)
     mockReplayDelivery.mockResolvedValue(undefined)
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, reload: vi.fn<VitestLooseMock>() },
-      writable: true,
-    })
+    setLocationMethod('reload', vi.fn<VitestLooseMock>())
   })
 
   afterEach(() => {
-    if (originalLocationDescriptor)
-      Object.defineProperty(window, 'location', originalLocationDescriptor)
+    restoreWindowLocation()
   })
 
   // Each retry renders its own queue: a retry keeps every Retry button disabled until its transition
@@ -83,6 +78,19 @@ describe('CopyrightStaffQueue recovery actions', () => {
     await waitFor(() => expect(screen.getAllByText('Original photograph.')).toHaveLength(2))
   })
 })
+
+function setLocationMethod(method: 'reload', implementation: typeof window.location.reload) {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: { [method]: implementation },
+  })
+}
+
+function restoreWindowLocation() {
+  if (originalWindowLocationDescriptor) {
+    Object.defineProperty(window, 'location', originalWindowLocationDescriptor)
+  }
+}
 
 function makeNotice(): CopyrightStaffQueueItem {
   return {

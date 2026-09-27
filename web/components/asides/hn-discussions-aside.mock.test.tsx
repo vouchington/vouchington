@@ -22,8 +22,14 @@ vi.mock(
   () =>
     ({
       useTranslations: () => (key: string, params?: Record<string, unknown>) => {
-        if (key.includes('pointsPoints')) return `${String(params?.points ?? '')} points`
-        if (key.includes('commentsComments')) return `${String(params?.comments ?? '')} comments`
+        if (key.includes('pointsPoints')) {
+          const points = params?.points
+          return `${typeof points === 'number' || typeof points === 'string' ? points : ''} points`
+        }
+        if (key.includes('commentsComments')) {
+          const comments = params?.comments
+          return `${typeof comments === 'number' || typeof comments === 'string' ? comments : ''} comments`
+        }
         if (key.includes('hackerNews_')) return 'Hacker News'
         return key
       },
