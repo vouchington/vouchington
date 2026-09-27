@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { QUEUE_NAME } from '@queues/elections/config'
+import { QUEUE_NAME } from '../queues/elections/config.mts'
 import { getOrCreateQueue } from '../../test-helpers/glide-mq-vitest-internals.mts'
 import { onceElectionVoteStatsCompleted } from './election-vote-stats.mts'
-import type { EntityRelationElectionTable } from '@queues/elections/types'
+import type { EntityRelationElectionTable } from '../queues/elections/types.mts'
 import { elections as electionsWorker } from '../workers/elections/workers.mts'
 
 const JOB_NAME = 'processUpdateElectionVoteStats'
