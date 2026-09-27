@@ -15,11 +15,15 @@ export async function getApplication(
 ): Promise<CommunityApplication | null> {
   const { rows } = await read(
     sql`/* getApplication */
-    SELECT *
+    SELECT `
+      .append(communityApplicationColumns)
+      .append(
+        sql`
     FROM community_applications
     WHERE id = ${id}
     LIMIT 1
     `,
+      ),
     options,
   )
   return (rows[0] as CommunityApplication) ?? null
