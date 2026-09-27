@@ -9,6 +9,10 @@ owns SQL fragments used to exercise query builders. The main helper barrel expor
 directly from its owner. Membership schema tests import purchase-intent fixtures and verification
 assertions from their separate owners under `data-stores/psql/`.
 
+Route suites that jscpd reports together call one registrar from a literal `describe` in each
+test file. The registrars live next to this README: vote lists, scoped credential pagination,
+community claim and escalation routes, RSS feeds, landing-page analytics, and similarity search.
+
 ## `onceEntityListenerCompleted`
 
 Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.
