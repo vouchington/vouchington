@@ -10053,6 +10053,9 @@ importers:
       '@services/oauth-accounts':
         specifier: workspace:^
         version: link:../oauth-accounts
+      '@services/oauth-authorization-server':
+        specifier: workspace:^
+        version: link:../oauth-authorization-server
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication

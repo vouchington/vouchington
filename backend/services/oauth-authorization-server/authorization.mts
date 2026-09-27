@@ -2,6 +2,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
 import { assertClientAuthorizationRequest, getOAuthClient } from './clients.mts'
+import { lockOAuthParticipantUsers } from './active-users.mts'
 import { OAuthProtocolError, invalidRequest } from './errors.mts'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
@@ -57,15 +58,27 @@ export async function beginOAuthAuthorizationRequest(
 ): Promise<{ request_id: string }> {
   const validated = await validateOAuthAuthorizationRequest(input)
   const { client, codeChallenge, resource, scopes, state } = validated
-  if (!(await mayUserAuthorizeOAuthResource(input.userId, resource))) {
+  await using query = await beginTransaction()
+  const activeParticipantIds = await lockOAuthParticipantUsers(
+    [input.userId, client.owner_user_id],
+    query,
+  )
+  const lockedClient = await getOAuthClient(input.clientId, query)
+  if (
+    !lockedClient ||
+    !activeParticipantIds.has(input.userId) ||
+    (lockedClient.owner_user_id && !activeParticipantIds.has(lockedClient.owner_user_id))
+  ) {
+    throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
+  }
+  assertClientAuthorizationRequest(lockedClient, input.redirectUri, scopes)
+  if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
-
-  await using query = await beginTransaction()
   const browserBindingHash = createOAuthBrowserBindingHash(input.deviceId, input.sessionId)
   await query(
     `/* beginOAuthAuthorizationRequest lock */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [`oauth-authorization-request:${browserBindingHash}:${client.id}`],
+    [`oauth-authorization-request:${browserBindingHash}:${lockedClient.id}`],
   )
   await query(
     `/* beginOAuthAuthorizationRequest supersede */ UPDATE oauth_authorization_requests
@@ -74,7 +87,7 @@ export async function beginOAuthAuthorizationRequest(
        AND client_id = $2
        AND approved_at IS NULL
        AND denied_at IS NULL`,
-    [browserBindingHash, client.id],
+    [browserBindingHash, lockedClient.id],
   )
   const result = await query<{ id: string }>(
     `/* beginOAuthAuthorizationRequest insert */ INSERT INTO oauth_authorization_requests (
@@ -83,7 +96,7 @@ export async function beginOAuthAuthorizationRequest(
      ) VALUES ($1, $2, $3, $4, $5, $6, $7::text[], $8, $9)
      RETURNING id`,
     [
-      client.id,
+      lockedClient.id,
       input.userId,
       browserBindingHash,
       input.redirectUri,
@@ -141,6 +154,14 @@ export async function getOAuthAuthorizationRequestForUser(
        AND request.denied_at IS NULL
        AND request.expires_at > CURRENT_TIMESTAMP
        AND client.revoked_at IS NULL
+       AND EXISTS (
+         SELECT 1 FROM users WHERE users.id = request.user_id AND users.deleted_at IS NULL
+       )
+       AND (
+         client.owner_user_id IS NULL OR EXISTS (
+           SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL
+         )
+       )
        AND request.redirect_uri = ANY(client.redirect_uris)`,
     [requestId, userId, browserBindingHash],
   )

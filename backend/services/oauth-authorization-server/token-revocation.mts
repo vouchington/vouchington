@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { authenticateLockedOAuthClient } from './clients.mts'
+import { lockOAuthParticipantUsers } from './active-users.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 
@@ -10,9 +11,30 @@ export async function revokeOAuthToken(input: {
   token: string
 }): Promise<void> {
   await using query = await beginTransaction()
-  const client = await authenticateLockedOAuthClient(input.clientId, input.clientSecret, query)
   const accessHash = hashToken(OAUTH_SECRET_PURPOSES.accessToken, input.token)
   const refreshHash = hashToken(OAUTH_SECRET_PURPOSES.refreshToken, input.token)
+  const activeParticipantIds = await lockOAuthParticipantUsers(
+    await readTokenParticipants(accessHash, refreshHash, input.clientId, query),
+    query,
+  )
+  const client = await authenticateLockedOAuthClient(
+    input.clientId,
+    input.clientSecret,
+    query,
+    activeParticipantIds,
+  )
+  if (
+    !(await tokenParticipantsAreActive(
+      accessHash,
+      refreshHash,
+      client.id,
+      activeParticipantIds,
+      query,
+    ))
+  ) {
+    await query.commit()
+    return
+  }
 
   const access = await query<{
     client_id: string
@@ -69,4 +91,67 @@ export async function revokeOAuthToken(input: {
     if (familyId) await revokeOAuthRefreshFamily(familyId, query, false)
   }
   await query.commit()
+}
+
+async function readTokenParticipants(
+  accessHash: string,
+  refreshHash: string,
+  inputClientId: string,
+  query: Parameters<typeof lockOAuthParticipantUsers>[1],
+): Promise<(string | null)[]> {
+  const artifacts = await query<{ user_id: string; owner_user_id: string | null }>(
+    `/* revokeOAuthToken participants */ SELECT oauth_grant.user_id, client.owner_user_id
+     FROM oauth_access_tokens AS access
+     JOIN oauth_grants AS oauth_grant ON oauth_grant.id = access.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
+     WHERE access.token_hash = $1
+     UNION ALL
+     SELECT oauth_grant.user_id, client.owner_user_id
+     FROM oauth_refresh_tokens AS refresh
+     JOIN oauth_refresh_token_families AS family ON family.id = refresh.family_id
+     JOIN oauth_grants AS oauth_grant ON oauth_grant.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
+     WHERE refresh.token_hash = $2`,
+    [accessHash, refreshHash],
+  )
+  const client = await query<{ owner_user_id: string | null }>(
+    `/* revokeOAuthToken input client participant */ SELECT owner_user_id FROM oauth_clients WHERE client_id = $1`,
+    [inputClientId],
+  )
+  return [
+    ...artifacts.rows.flatMap(row => [row.user_id, row.owner_user_id]),
+    client.rows[0]?.owner_user_id ?? null,
+  ]
+}
+
+async function tokenParticipantsAreActive(
+  accessHash: string,
+  refreshHash: string,
+  clientId: string,
+  activeParticipantIds: ReadonlySet<string>,
+  query: Parameters<typeof lockOAuthParticipantUsers>[1],
+): Promise<boolean> {
+  const result = await query<{ user_id: string; owner_user_id: string | null }>(
+    `/* revokeOAuthToken active participants */ SELECT oauth_grant.user_id, client.owner_user_id
+     FROM oauth_access_tokens AS access
+     JOIN oauth_grants AS oauth_grant ON oauth_grant.id = access.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
+     WHERE access.token_hash = $1 AND client.id = $3
+     UNION ALL
+     SELECT oauth_grant.user_id, client.owner_user_id
+     FROM oauth_refresh_tokens AS refresh
+     JOIN oauth_refresh_token_families AS family ON family.id = refresh.family_id
+     JOIN oauth_grants AS oauth_grant ON oauth_grant.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
+     WHERE refresh.token_hash = $2 AND client.id = $3`,
+    [accessHash, refreshHash, clientId],
+  )
+  return (
+    result.rows.length === 0 ||
+    result.rows.every(
+      row =>
+        activeParticipantIds.has(row.user_id) &&
+        (!row.owner_user_id || activeParticipantIds.has(row.owner_user_id)),
+    )
+  )
 }

@@ -1,6 +1,7 @@
 import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { hardDeleteTestPost } from './posts-deletion.mts'
+import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 
 export async function countTestBlueskyLinkAuthorizationsForUser(userId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`
@@ -31,15 +32,20 @@ export async function startPausedTestUserDeletionWriter(
 /** Holds the production user-lifecycle lock across an uncommitted soft deletion. */
 export async function startPausedTestUserSoftDeletion(
   userId: string,
-): Promise<{ release(): void; completed: Promise<void> }> {
-  return startPausedTestUserDeletionWriter(async query => {
+): Promise<{ completed: Promise<void>; holderProcessId: number; release(): void }> {
+  let holderProcessId: number | undefined
+  const paused = await startPausedTestUserDeletionWriter(async query => {
     await query(sql`/* startPausedTestUserSoftDeletion:lock */
       SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
     `)
+    holderProcessId = await getTestPostgresBackendProcessId(query)
     await query(sql`/* startPausedTestUserSoftDeletion:delete */
       UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}
     `)
   })
+  if (holderProcessId === undefined)
+    throw new Error('Test deletion did not acquire a PostgreSQL backend')
+  return { ...paused, holderProcessId }
 }
 
 export async function countTestUserDeletionEntityRelationVotes(userId: string): Promise<number> {

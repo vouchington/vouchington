@@ -39,10 +39,8 @@ Valkey entry cannot bypass that privacy fence. The request boundary also attempt
 Cloudflare user-tag purge immediately after commit. A successful purge completes its recorded work;
 a failed purge remains pending for the background deletion worker instead of being acknowledged.
 
-Mutations that can create user-owned deletion data acquire the same user-scoped transaction lock
-and reject a deleted owner before writing. This serializes an in-flight mutation ahead of the
-deletion request or rejects it after the privacy fence, preventing a completed phase from being
-repopulated while later phases run.
+Writers of user-owned deletion data take the user-scoped lock and reject deleted owners. In-flight
+writes finish before the deletion fence; later writes fail, so completed phases cannot be repopulated.
 
 The `user-deletions` worker then commits one bounded phase page at a time. Each job carries the
 request ID and an exact processing-attempt fencing token; the successor is enqueued only after the
@@ -81,13 +79,14 @@ payment/support audit without retaining either deleted account identifier.
 4. Entity-relation vote targets are durably recorded, their votes are removed in bounded pages, and
    only recorded targets are recomputed.
 5. Email addresses, phone numbers, passkeys, social links, OAuth PII, Bluesky data, referral
-   attribution, and data-export rows are drained idempotently. Claimed exports first record their
+   attribution, data-export rows, and [OAuth credentials](../security/OAUTH-AUTHORIZATION-SERVER.md#account-deletion)
+   are drained idempotently. Claimed exports first record their
    deterministic S3 key as durable deletion work, so an in-flight worker cannot leave an orphaned
    archive after its request is expired.
 6. Stripe customers and ready export objects are sanitized/deleted from durable work records, and
    the Cloudflare user cache tag is purged.
 7. A final transaction acquires the user and author lifecycle locks, verifies every phase is empty,
-   performs an independent residual-data sweep across deletion-owned tables, and sets
+   performs an independent residual-data sweep across deletion-owned tables and OAuth credentials, and sets
    `user_deletion_requests.completed_at` only when both checks are empty. It also clears the copied
    prior username, redacts completed external-work keys while retaining non-identifying audit
    metadata and timestamps, and deletes the fully recomputed relation-impact worklist so its vote-

@@ -16,8 +16,10 @@ export async function getTestPostgresBackendProcessId(query: QueryExecutor): Pro
 /** Returns the backend PID holding an exact session advisory lock owned by this test. */
 export async function getTestPostgresAdvisoryLockHolderProcessId(input: {
   key: string
+  mode?: 'exclusive' | 'shared'
   namespace?: number
 }): Promise<number> {
+  const lockMode = input.mode === 'shared' ? 'ShareLock' : 'ExclusiveLock'
   const result =
     input.namespace === undefined
       ? await write<{ process_id: number }>(sql`
@@ -25,7 +27,7 @@ export async function getTestPostgresAdvisoryLockHolderProcessId(input: {
           SELECT pid::integer AS process_id
           FROM pg_locks
           WHERE locktype = 'advisory'
-            AND mode = 'ExclusiveLock'
+            AND mode = ${lockMode}
             AND granted
             AND objsubid = 1
             AND classid::bigint = ((hashtextextended(${input.key}, 0) >> 32) & 4294967295)
@@ -36,7 +38,7 @@ export async function getTestPostgresAdvisoryLockHolderProcessId(input: {
           SELECT pid::integer AS process_id
           FROM pg_locks
           WHERE locktype = 'advisory'
-            AND mode = 'ExclusiveLock'
+            AND mode = ${lockMode}
             AND granted
             AND objsubid = 2
             AND classid = ${input.namespace}::oid

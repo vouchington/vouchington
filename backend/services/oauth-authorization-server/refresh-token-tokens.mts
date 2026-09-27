@@ -2,7 +2,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { authenticateLockedOAuthClient } from './clients.mts'
+import { authenticateRefreshClientAfterParticipantFence } from './refresh-client-authority.mts'
 import { OAuthProtocolError } from './errors.mts'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
@@ -24,6 +24,8 @@ type RefreshTokenRow = {
   token_revoked_at: Date | null
   family_revoked_at: Date | null
   grant_revoked_at: Date | null
+  user_id: string
+  owner_user_id: string | null
 }
 
 export async function exchangeOAuthRefreshToken(input: {
@@ -34,9 +36,18 @@ export async function exchangeOAuthRefreshToken(input: {
   scope?: string
 }): Promise<OAuthTokenResponse> {
   await using query = await beginTransaction()
-  const client = await authenticateLockedOAuthClient(input.clientId, input.clientSecret, query)
+  const { activeParticipantIds, client } = await authenticateRefreshClientAfterParticipantFence(
+    input,
+    query,
+  )
   const token = await lockRefreshToken(input.refreshToken, query)
   if (!token) throw new OAuthProtocolError('invalid_grant', 'refresh token is invalid')
+  if (
+    !activeParticipantIds.has(token.user_id) ||
+    (token.owner_user_id && !activeParticipantIds.has(token.owner_user_id))
+  ) {
+    throw new OAuthProtocolError('invalid_grant', 'refresh token is invalid')
+  }
   assertRefreshClient(token, client)
 
   if (token.consumed_at) {
@@ -77,10 +88,13 @@ async function lockRefreshToken(
        refresh.consumed_at,
        refresh.revoked_at AS token_revoked_at,
        family.revoked_at AS family_revoked_at,
-       oauth_grant.revoked_at AS grant_revoked_at
+       oauth_grant.revoked_at AS grant_revoked_at,
+       oauth_grant.user_id,
+       client.owner_user_id
      FROM oauth_refresh_tokens AS refresh
      JOIN oauth_refresh_token_families AS family ON family.id = refresh.family_id
      JOIN oauth_grants AS oauth_grant ON oauth_grant.id = family.grant_id
+     JOIN oauth_clients AS client ON client.id = oauth_grant.client_id
      WHERE refresh.token_hash = $1
        AND NOT EXISTS (
          SELECT 1

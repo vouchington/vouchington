@@ -41,6 +41,8 @@ OpenID Connect, ID-token, or UserInfo flows.
   remains origin-guarded.
 - Suspended users cannot begin or decide consent, exchange a previously approved code, refresh a
   token, or authenticate with an existing access token.
+- Deleted grant subjects and apps owned by deleted users lose OAuth authority when the account-deletion
+  fence commits, before the worker begins credential cleanup.
 
 ## Client types
 
@@ -56,9 +58,8 @@ and records `owner_user_id`; rotation replaces the stored client-secret hash and
 secret once, and renaming a client or replacing its redirect URIs clears `verified_at` and
 `verified_by_id` in the same update. Every owner mutation first takes the account-deletion lock
 (`fn_lock_active_user_for_mutation`), so a request that authenticated just before the owner's
-deletion committed cannot change the app or mint a secret afterwards. Account deletion does not yet
-revoke the apps the account owns; [#710](https://github.com/vouchington/vouchington/issues/710)
-tracks it.
+deletion committed cannot change the app or mint a secret afterwards. Account deletion revokes
+the apps the account owns in bounded worker batches.
 
 Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
 ([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
@@ -90,6 +91,29 @@ Clients are retired through `revoked_at` and never deleted, because
 [content provenance](../content/content-provenance.md) references the client that created each
 row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
 name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents ship.
+
+## Account deletion
+
+Bearer validation, code exchange, refresh, revocation, and consent acquire shared account-deletion
+locks for their participating users before locking OAuth artifacts. Independent grants under one
+app owner can proceed concurrently; deletion and owned-client registration or management take
+exclusive locks and serialize with those requests. Participants are locked in UUID order and
+rechecked after the locks are acquired. A deleted grant subject cannot exchange or refresh
+credentials; an authenticated client whose owner is deleted fails as
+`invalid_client` before grant validation, regardless of participant UUID order. A valid client
+receives a successful no-op revocation for a deleted grant subject. Bearer validation rejects both
+deleted subjects and clients with deleted owners. Pending consent cannot be approved or resumed
+after its client owner is deleted, and no new authorization can begin for that client.
+
+The deletion worker revokes owned clients, the subject's grants, and each grant's token families,
+access tokens, and refresh tokens in separate bounded pages. An owned client's other users' grants
+are not traversed; the client revocation already makes them unusable. Newly revoked families emit
+one immutable `refresh_family_revoked` event each, in the same transaction as the mutation. Retries
+preserve existing revocation timestamps and do not duplicate events. Finalization independently
+checks all five active credential types, including unrevoked expired children beneath revoked
+parents. Hard user deletion leaves revoked clients with `owner_user_id = NULL` for provenance and
+retains append-only OAuth evidence. The [account-deletion requirements](../users/ACCOUNT-DELETION-DATA-REQUEST.md#deletion-cascade)
+describe the surrounding lifecycle.
 
 ## Protected resources and discovery
 

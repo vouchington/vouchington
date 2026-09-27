@@ -97,7 +97,13 @@ export async function getOAuthClient(
     `/* getOAuthClient */ SELECT *
      FROM oauth_clients
      WHERE client_id = $1
-       AND revoked_at IS NULL`,
+       AND revoked_at IS NULL
+       AND (
+         owner_user_id IS NULL
+         OR EXISTS (
+           SELECT 1 FROM users WHERE users.id = oauth_clients.owner_user_id AND users.deleted_at IS NULL
+         )
+       )`,
     [clientId],
   )
   return result.rows[0] ?? null
@@ -121,6 +127,7 @@ export async function authenticateLockedOAuthClient(
   clientId: string,
   clientSecret: string | undefined,
   query: TransactionQuery,
+  activeParticipantIds: ReadonlySet<string>,
 ): Promise<OAuthClient> {
   const result = await query<OAuthClient>(
     `/* authenticateLockedOAuthClient */ SELECT *
@@ -132,6 +139,9 @@ export async function authenticateLockedOAuthClient(
   )
   const client = result.rows[0]
   if (!client) throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
+  if (client.owner_user_id && !activeParticipantIds.has(client.owner_user_id)) {
+    throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
+  }
   assertOAuthClientAuthentication(client, clientSecret)
   return client
 }
