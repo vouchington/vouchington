@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 import { reconcileDeliveryRepairMarker } from './delivery-repair-markers.mts'
@@ -10,7 +10,7 @@ export async function repairFailedImageDeliveryMutation(input: {
   imageIds?: string[]
 }): Promise<void> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  const { rows } = await read<{ delivery_key: string; marker_token: string }>(sql`
+  const { rows } = await write<{ delivery_key: string; marker_token: string }>(sql`
     /* repairFailedImageDeliveryMutation */
     SELECT DISTINCT marker.delivery_key, marker.marker_token
     FROM media_delivery_repair_markers marker

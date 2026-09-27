@@ -11,6 +11,15 @@ Client → CloudFront → Lambda Function URL → Lambda → (cache|origin) S3 �
 - `pnpm run typecheck:lambdas` — typecheck Lambda workspaces
 - `pnpm run test:lambdas` — run Lambda tests; append test paths to narrow the run
 
+The [placement smoke monitor](../../monitors/lambdas/image-resize.mts) probes a random canonical
+missing tuple and a removed generic image route through CloudFront; both must return exactly 404.
+A configured `TEST_IMAGE_PLACEMENT_PATH` must name a current exact placement route (no query string)
+with an allowed registry tuple and existing source; that optional probe requires 200 and `image/*`.
+`LAMBDA_FUNCTION_URL` optionally verifies unsigned direct access returns exactly 403 using the same
+canonical missing tuple. Lambda parsing rejects removed generic routes with 400; the edge denies
+them with 404 before cache or origin lookup. These checks require the coordinated placement-only
+edge contract, not a compatibility route. Run the monitor only against an authorized environment.
+
 ## Runtime Configuration
 
 `index.mts` wires the Lambda with `{ source, sideload }` config. The deployment owned by

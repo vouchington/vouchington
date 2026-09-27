@@ -75,7 +75,8 @@ leaves publication/retries to the existing outbox. The staged publisher always o
 it cannot see or publish an allow from an uncommitted first registry insert. That insert's rollback
 leaves no marker and no prior permission to restore. Historical revisions cannot borrow a current
 revision or sibling binding and remain withheld.
-Immediate rollback repair uses the same persisted wakeups and exact reconciler; it never manufactures
+Immediate rollback repair reads independently committed markers from the primary database, then
+uses the same persisted wakeups and exact reconciler; it never manufactures
 an allow from a separate image-wide eligibility query.
 
 ```mermaid
