@@ -11,8 +11,8 @@
         "dev/agent-issue-labels/**/*.mts",
         "dev/otel-register.mts",
         "test-helpers/glide-mq-vitest-shim.mts",
-        // The disposable media-replay helper passes this config by CLI path to a child Vitest.
-        "test-helpers/vitest.config.isolated-global-media-replay.mts",
+        // The disposable database case helper passes this config by CLI path to a child Vitest.
+        "test-helpers/vitest.config.isolated-database-case.mts",
         // Reached only through backend-data-stores' string-valued Vitest `runner` config.
         "test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts",
       ],

@@ -205,9 +205,12 @@ after `afterAll`, including setup/import failures, and retains per-file reported
 leaked GlideMQ workers. The catalog is intentionally finite, not a SQL-wide interception rule;
 new global-head or sweep services require an explicit catalog and bound-scope review. See the
 [parallel-safety reference](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#catalogued-shared-db-scan-guard).
-The intentionally global copyright media-replay HTTP case runs in a fresh local database via
-`test-helpers/vitest-isolated-global-media-replay.mts`; it retains its real route/audit assertions
-without scanning or mutating another test's registry records.
+Intentionally global cases run through `test-helpers/vitest-isolated-database-case.mts` against a
+fresh, disposable local database. The registered cases are the copyright media-replay HTTP route
+and the ActivityPub inbox expiry batch. Their real route/audit and lease-aware deletion assertions
+run without scanning or mutating another test's shared fixtures.
+`VITEST_ISOLATED_DATABASE_CASE` and `VITEST_ISOLATED_DATABASE_CHILD` are harness-owned, validated
+child markers, not settings for test authors to supply.
 
 ### Exact global AI-usage aggregates
 
