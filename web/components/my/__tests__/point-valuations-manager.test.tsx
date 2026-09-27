@@ -5,7 +5,6 @@ import {
   initialPointValuations,
   installPointValuationMockResponses,
   mockCreatePointValuation,
-  mockDeletePointValuation,
   mockPointValuationOnError,
   mockPointValuationOnSuccess,
   mockUpdatePointValuation,

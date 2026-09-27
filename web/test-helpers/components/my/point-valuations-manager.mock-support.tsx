@@ -1,5 +1,6 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { vi } from 'vitest'
+import { Input } from '@/components/ui/input'
 import type { PointValuation } from '@/types/my'
 
 vi.mock(import('@/lib/on-error'), () => ({
@@ -13,7 +14,7 @@ vi.mock(import('@/lib/on-error/on-success'), () => ({
 vi.mock(import('@/components/posts/topic-autocomplete'), () => ({
   TopicAutocomplete: ({ value, onChange, placeholder }: any) => (
     <div data-testid='mock-topic-autocomplete'>
-      <input
+      <Input
         type='text'
         placeholder={placeholder}
         aria-label={placeholder ?? 'Rewards program'}
