@@ -128,10 +128,12 @@ candidate's current body/state and each Plan before writing, then updates only i
 `github-actions[bot]` marker comment. Snapshot read batches are concurrency-bounded by the Node-only
 [batch mapper](../../ci/plan-completion-batch.mts), preserve discovery order, and stop before any
 comment write if a read fails. Plan titles use the validator's case-insensitive `Plan:` convention
-during both discovery and revalidation. The advisory never edits a PR body or closes a Plan; a clear
-marker means only that the snapshot found no current warning, so planned-but-unopened work still
-needs a human audit. GitHub suppresses downstream pushes made with `GITHUB_TOKEN`; supported human
-and interactive merges already produce the required main-push event.
+during both discovery and revalidation. Discovery validates each row's shape but filters by its
+observed state, so a closed row returned during GitHub's paginated open-issue snapshot does not
+abort the audit. The advisory never edits a PR body or closes a Plan; a clear marker means only that
+the snapshot found no current warning, so planned-but-unopened work still needs a human audit.
+GitHub suppresses downstream pushes made with `GITHUB_TOKEN`; supported human and interactive merges
+already produce the required main-push event.
 
 A failure whose only failed job is `audit`, and whose terminal step is `actions/setup-node`
 after the node-versions download while adding Node to the tool cache, is catalogued as
