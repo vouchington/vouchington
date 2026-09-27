@@ -42,6 +42,7 @@ import {
   makeCopyrightEmailQueueItem,
   makeCopyrightEmailQueuePage,
 } from '@/test-helpers/components/copyright/copyright-email-review'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 
 describe('copyright notice server API helpers', () => {
   beforeEach(() => {
@@ -94,12 +95,16 @@ describe('copyright notice server API helpers', () => {
     expect(mockGet).toHaveBeenCalledWith('/api/v1/copyright-email-intakes/review-queue')
   })
 
-  it('renders an unpaginated email intake queue as its final page', async () => {
-    const items = [makeCopyrightEmailQueueItem()]
-    mockGet.mockResolvedValue({ copyright_email_intakes: items })
-
-    await expect(getCopyrightEmailIntakeReviewQueue()).resolves.toEqual(
-      makeCopyrightEmailQueuePage(items, { start_cursor: null }),
-    )
+  it('preserves the canonical empty email intake page', async () => {
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: makeCopyrightEmailQueuePage([], {
+        has_next_page: false,
+        start_cursor: null,
+        end_cursor: null,
+      }),
+      call: () => getCopyrightEmailIntakeReviewQueue(),
+      expectedArgs: ['/api/v1/copyright-email-intakes/review-queue'],
+    })
   })
 })
