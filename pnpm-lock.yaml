@@ -146,8 +146,8 @@ importers:
         specifier: 1.63.0
         version: 1.63.0
       pr-shepherd:
-        specifier: ^0.55.0
-        version: 0.55.0
+        specifier: ^0.55.1
+        version: 0.55.1
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -1570,8 +1570,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: 0.0.10
-        version: 0.0.10
+        specifier: 0.0.11
+        version: 0.0.11
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -2389,8 +2389,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/pagination':
-        specifier: 0.0.0
-        version: 0.0.0
+        specifier: 0.0.1
+        version: 0.0.1
 
   backend/modules/queue-config: {}
 
@@ -12654,8 +12654,8 @@ importers:
         specifier: 0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: 0.0.10
-        version: 0.0.10
+        specifier: 0.0.11
+        version: 0.0.11
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -18082,16 +18082,16 @@ packages:
     resolution: {integrity: sha512-I46h8Se7jv81xCD5/4CvRb1BtCcQYjHscEy8BjxmSga1LGi4KiHmeNC0KVqxLSmypi4aUQmrsldij5BhStTkog==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/pagination@0.0.0':
-    resolution: {integrity: sha512-urjsGWeQeRg0ffn5VlM7dxJeqbV0IT0KPXfCOB4/mPcjRe/+H3GXDEniO6Y1ncWm8bns6ykO6X4a2yPl+hYJzQ==}
+  '@vouchington/pagination@0.0.1':
+    resolution: {integrity: sha512-RofnzQB1ioA0fxRKI0gIqyIwlQNEolfj4JKYpzew7iLWWNI/ki/UQX5Xu1KQ0El0jkO1FJjB0sKvkk5CWYFvlg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/phone-validation@0.0.0':
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.10':
-    resolution: {integrity: sha512-Oa+85WehxEWenJuOUsC9cYjzpf8BgZEBdt38Iijt29Ce7/k71gPIerAPwh4hhnVQLgY+yC7TEvCgYWV1dT0ZGg==}
+  '@vouchington/postgres@0.0.11':
+    resolution: {integrity: sha512-lb00LmwIgkGeC+ZIihLuLsS97FdOSIYXOXzr61JL86zXK5MVmUGQo7wGuCZb2cjcmmyTYBb6A4/PVdXWku8CXg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.1':
@@ -20790,8 +20790,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  pr-shepherd@0.55.0:
-    resolution: {integrity: sha512-hYb86BNZRCwKBvzZ8gWLX2ZwumUhYP3Ljj5uIry4GjHzyHxx3WortidmQv8bxI4SeXb5HkJpGFkDNQwSnfvIwg==}
+  pr-shepherd@0.55.1:
+    resolution: {integrity: sha512-WmOQamfE9Wfg/Ws2n3EWzGYuCLUbFBoluPQlkcP8FjquyyzsA4XFmNjR5SyQYCeGHc5Frg9OqhxKq5h5F21+CQ==}
     engines: {node: '>=22.18.0'}
     hasBin: true
 
@@ -27145,7 +27145,7 @@ snapshots:
 
   '@vouchington/memberships@0.2.0': {}
 
-  '@vouchington/pagination@0.0.0':
+  '@vouchington/pagination@0.0.1':
     dependencies:
       http-errors: 2.0.1
 
@@ -27153,7 +27153,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.10':
+  '@vouchington/postgres@0.0.11':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.0
@@ -30112,7 +30112,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  pr-shepherd@0.55.0:
+  pr-shepherd@0.55.1:
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.1(zod@4.6.5)
       picomatch: 4.0.7

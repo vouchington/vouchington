@@ -10,8 +10,8 @@ The module is a compatibility adapter over [`@vouchington/pagination`](https://w
 - **Cursor parameters**: Forward continuation uses `after`; bidirectional endpoints may also use
   `before`. Never expose a generic `cursor` query parameter. Existing migrations may accept
   legacy cursor parameter names through parser config without advertising them in query metadata.
-- **Cursor format**: Opaque, unpadded base64url-encoded JSON. Decoders retain legacy standard-base64
-  compatibility; callers must never construct cursors or expose raw database parameters.
+- **Cursor format**: Opaque, unpadded base64url-encoded JSON. Decoding rejects padding and the
+  standard base64 alphabet. Callers must never construct cursors or expose raw database parameters.
 - **Limit range**: 1-100, clamped automatically
 - **Validation**: Parser ignores invalid filter values (e.g. unsupported `sort` or `time_range`) and falls back to defaults; throws 400 for invalid cursor format or a limit that is not a positive integer
 - **Response format**: Always return `{ results: T[], page_info: PageInfo }`

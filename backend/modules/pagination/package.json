@@ -17,6 +17,6 @@
     "@ts-shared/feed-capabilities": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/pagination": "0.0.0"
+    "@vouchington/pagination": "0.0.1"
   }
 }

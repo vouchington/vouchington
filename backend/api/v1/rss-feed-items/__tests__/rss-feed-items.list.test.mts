@@ -172,19 +172,16 @@ describe('RSS Feed Items Routes', () => {
       expect(page3.body.results[0].id).not.toBe(page1.body.results[0].id)
       expect(page3.body.results[0].id).not.toBe(page2.body.results[0].id)
 
-      // Beyond last page: reuse the last item's cursor to verify empty results
-      // Manually build a cursor from the last result to request beyond it
-      const lastResult = page3.body.results[0]
-      const beyondCursor = Buffer.from(
-        JSON.stringify({
-          timestamp: new Date(lastResult.published_at).getTime(),
-          id: lastResult.id,
-        }),
-      ).toString('base64')
+      // Beyond the last page. limit=1 makes this page's start cursor the last row.
+      expect(page3.body.page_info.start_cursor).toEqual(expect.any(String))
 
       const beyondPage = await request
         .get('/api/v1/rss-feed-items')
-        .query({ rss_feeds: feedId, limit: '1', after: beyondCursor })
+        .query({
+          rss_feeds: feedId,
+          limit: '1',
+          after: page3.body.page_info.start_cursor,
+        })
         .expect(200)
 
       expect(beyondPage.body.results).toHaveLength(0)

@@ -1,4 +1,5 @@
 import { expect, it, describe } from 'vitest'
+import { encodeCursor } from '@modules/pagination'
 import { getPostIds } from '../get-ids.mts'
 import {
   createTestPost,
@@ -23,7 +24,7 @@ describe('get-ids.pagination-and-following.generated', () => {
   })
 
   it('getPostIds throws HTTP 400 on wrong cursor type for sort=new', async () => {
-    const scoreCursor = Buffer.from(JSON.stringify({ score: 42, id: 'test' })).toString('base64')
+    const scoreCursor = encodeCursor({ score: 42, id: 'test' })
 
     await expect(
       getPostIds(undefined, {
@@ -38,7 +39,7 @@ describe('get-ids.pagination-and-following.generated', () => {
   })
 
   it('getPostIds throws HTTP 400 on wrong cursor type for sort=best', async () => {
-    const simpleCursor = Buffer.from(JSON.stringify({ id: 'test' })).toString('base64')
+    const simpleCursor = encodeCursor({ id: 'test' })
 
     await expect(
       getPostIds(undefined, {
@@ -53,7 +54,7 @@ describe('get-ids.pagination-and-following.generated', () => {
   })
 
   it('getPostIds throws HTTP 400 on wrong cursor type for sort=relevance', async () => {
-    const scoreCursor = Buffer.from(JSON.stringify({ score: 42, id: 'test' })).toString('base64')
+    const scoreCursor = encodeCursor({ score: 42, id: 'test' })
 
     await expect(
       getPostIds(undefined, {

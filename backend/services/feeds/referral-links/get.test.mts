@@ -144,7 +144,7 @@ describe('getReferralLinksFeed', () => {
 
   it('throws 400 for invalid cursor shape', async () => {
     const viewer = await createTestUser()
-    const badCursor = Buffer.from(JSON.stringify({ wrong: 'thing' })).toString('base64')
+    const badCursor = encodeCursor({ wrong: 'thing' })
 
     await expect(
       getReferralLinksFeed(viewer, 'follow_users', { after: badCursor }),
@@ -153,7 +153,7 @@ describe('getReferralLinksFeed', () => {
 
   it('throws 400 for non-UUID cursor id', async () => {
     const viewer = await createTestUser()
-    const badCursor = Buffer.from(JSON.stringify({ id: 'not-a-uuid' })).toString('base64')
+    const badCursor = encodeCursor({ id: 'not-a-uuid' })
 
     await expect(
       getReferralLinksFeed(viewer, 'follow_users', { after: badCursor }),
