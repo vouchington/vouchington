@@ -39,7 +39,8 @@ export async function stagePostImagePlacementDeliveryRecords(
           THEN NULL ELSE media_delivery_registry_records.projected_at END,
         invalidated_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
           THEN NULL ELSE media_delivery_registry_records.invalidated_at END,
-        next_attempt_at = NULL, failure_message = NULL
+        delivery_attempt_count = 0, next_attempt_at = NULL, failure_message = NULL
+    WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
   `)
 }
 
@@ -112,7 +113,14 @@ export async function stageImagePlacementDeliveryRecord(
       generation = CASE WHEN ${forceGeneration} THEN media_delivery_registry_records.generation + 1
         ELSE media_delivery_registry_records.generation END,
       next_attempt_at = NULL, failure_message = NULL
+    WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
+      OR ${forceGeneration}
     RETURNING generation
   `)
-  return { deliveryKey, generation: rows[0]!.generation }
+  if (rows[0]) return { deliveryKey, generation: rows[0].generation }
+  const { rows: currentRows } = await query<{ generation: string }>(sql`
+    /* stageImagePlacementDeliveryRecord:current */
+    SELECT generation FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
+  `)
+  return { deliveryKey, generation: currentRows[0]!.generation }
 }

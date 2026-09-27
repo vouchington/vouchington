@@ -14,6 +14,8 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/aws": "workspace:^",
+    "@modules/pagination": "workspace:^",
+    "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

@@ -4,9 +4,11 @@ import sql from 'sql-template-strings'
 import type { ImageDeliveryRecord, MediaDeliveryDependencies } from './delivery-registry-types.mts'
 import { publishStagedMediaDeliveryRecord } from './delivery-registry-publish.mts'
 
-const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
-const MAX_ATTEMPTS = 5
-const RETRY_BASE_MS = 60 * 1000
+import {
+  MEDIA_DELIVERY_MAX_ATTEMPTS as MAX_ATTEMPTS,
+  MEDIA_DELIVERY_RETRY_MS as RETRY_BASE_MS,
+  mediaDeliveryClaimable,
+} from './delivery-registry-policy.mts'
 
 export async function processMediaDeliveryRegistryRecord(
   deliveryKey: string,
@@ -35,13 +37,13 @@ async function claimMediaDeliveryRegistryRecord(
   now: Date,
 ): Promise<ImageDeliveryRecord | null> {
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<ImageDeliveryRecord>(sql`/* claimMediaDeliveryRegistryRecord */
+  const statement = sql`/* claimMediaDeliveryRegistryRecord */
     WITH candidate AS (
       SELECT delivery_key FROM media_delivery_registry_records
       WHERE delivery_key = ${deliveryKey}
-        AND ((state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ${now}))
-          OR (state = 'claimed' AND claimed_at <= ${new Date(now.getTime() - CLAIM_TIMEOUT_MS)}))
-        AND delivery_attempt_count < ${MAX_ATTEMPTS}
+        AND `
+  statement.append(mediaDeliveryClaimable(now))
+  statement.append(sql`
       FOR UPDATE SKIP LOCKED
     )
     UPDATE media_delivery_registry_records record
@@ -52,6 +54,7 @@ async function claimMediaDeliveryRegistryRecord(
     RETURNING record.delivery_key, record.desired_state, record.route_kind,
       record.placement_id, record.placement_revision, record.asset_id, record.generation
   `)
+  const { rows } = await transaction<ImageDeliveryRecord>(statement)
   await transaction.commit()
   return rows[0] ?? null
 }

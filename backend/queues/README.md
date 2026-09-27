@@ -1,5 +1,10 @@
 # Systems Summary
 
+Media-registry recovery in the [notifications queue](notifications/README.md) dispatches bounded
+pages through cutoff-scoped continuation jobs. Its durable registry terminalizes abandoned final
+claims for operator replay; continuation retries preserve the same cursor and cutoff. See the
+[media-delivery safety protocol](../services/media-delivery-safety/README.md).
+
 All active workers, classified by
 [`worker-queue-policy.json`](../modules/worker-queue-inventory/worker-queue-policy.json), plus a
 processor reference with default priorities. Infrastructure decides the deployed worker topology;

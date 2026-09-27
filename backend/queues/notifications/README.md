@@ -103,6 +103,14 @@ Required environment variables:
 
 ## Related
 
+Media delivery recovery uses the existing reconciliation job with two payload forms: an empty
+root payload, or an exact `scanBefore` plus opaque `after` cursor continuation. Root throttling and
+cursor-specific continuation deduplication have separate identities. Continuations keep the root
+retry and retention policy, and never use a stable custom job ID. Failed pages replay safely;
+terminal registry failures require the existing operator replay. See the
+[media-delivery safety protocol](../../services/media-delivery-safety/README.md) and
+[worker recovery](../../workers/notifications/README.md).
+
 - Service: [../../services/notifications/README.md](../../services/notifications/README.md)
 - Emails: [../emails/README.md](../emails/README.md)
 - Worker entry: [../../entrypoints/worker-io/README.md](../../entrypoints/worker-io/README.md)

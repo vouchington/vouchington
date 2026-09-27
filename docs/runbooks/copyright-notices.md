@@ -119,6 +119,11 @@ publishing recovery; never manufacture an allow or manually advance a generation
 [media-delivery safety protocol](../../backend/services/media-delivery-safety/README.md) for the
 publication fence, repair markers, and bounded reconciliation contract.
 
+The same protocol describes abandoned final claims: reconciliation marks them failed while
+preserving generation and attempt evidence. After investigating the provider failure, use the
+existing media-delivery registry replay control to reopen failed records. A stale final claim no
+longer needs manual database repair, and exhausted records cannot block later recovery pages.
+
 Before enabling copyright intake, audit any historical blocked restores whose qualifying hold lacks
 restriction provenance. This read-only query identifies candidates; it cannot infer a safe binding,
 because a later restriction on the same target may be unrelated to the hold. Counsel and the
