@@ -21,7 +21,7 @@ cross-file contract in [authorization.mts](./authorization.mts).
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Schema: [../../data-stores/psql/migrations/0500-00-00-lists.sql](../../data-stores/psql/migrations/0500-00-00-lists.sql)
 - View: [../../data-stores/psql/views/2026-06-28-list-items.sql](../../data-stores/psql/views/2026-06-28-list-items.sql)
 - API routes: [../../api/v1/lists/README.md](../../api/v1/lists/README.md)

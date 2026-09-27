@@ -48,4 +48,4 @@ changed fields, who changed them, and when.
 
 - Service: [../../../services/dynamic-config-admin/README.md](../../../services/dynamic-config-admin/README.md)
 - Audit: [../../../services/dynamic-config-audit/README.md](../../../services/dynamic-config-audit/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

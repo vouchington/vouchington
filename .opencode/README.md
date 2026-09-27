@@ -3,11 +3,12 @@
 OpenCode is a first-class local assistant in this repository. It does **not**
 get copied hooks, skills, or `AGENTS.md`.
 
-- Read checked-in `CLAUDE.md` files unless `OPENCODE_DISABLE_CLAUDE_CODE` is set.
+- Read checked-in `AGENTS.md` files. OpenCode prefers `AGENTS.md` over `CLAUDE.md`.
 - Skills load from [`.agents/skills/`](../.agents/skills) and Claude-compat
-  [`.claude/skills/`](../.claude/skills).
+  [`.claude/skills/`](../.claude/skills). `OPENCODE_DISABLE_CLAUDE_CODE` disables that
+  Claude-compat layer; it does not disable `AGENTS.md`.
 - Project config: [`opencode.json`](../opencode.json) at the repository root (`autoupdate: false`). It
   registers the local Agent Blackboard wrapper in the V1 `mcp` object and allows exactly its eight
   current provider tools. Local users `/connect` for a provider; this tree does not pin a default model.
-- Do not add `AGENTS.md`; OpenCode would prefer it over `CLAUDE.md`.
+- Do not add `CLAUDE.md`. It is gitignored.
 - Capability map: [agent-harness-parity.md](../docs/development/agent-harness-parity.md).

@@ -1,6 +1,6 @@
 # Codex configuration
 
-Codex reads checked-in `CLAUDE.md` files and discovers local adapters under `.agents/skills/`.
+Codex reads checked-in `AGENTS.md` files and discovers local adapters under `.agents/skills/`.
 Install the required public plugins once per Codex environment:
 
 ```bash

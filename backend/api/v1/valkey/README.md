@@ -71,4 +71,4 @@ than the former per-prefix implementation.
 - Service: [../../../services/valkey-admin/](../../../services/valkey-admin/README.md)
 - Entity cache: [../../../services/entity-cache/](../../../services/entity-cache/README.md)
 - Bloom filter config: [../dynamic-config/README.md](../dynamic-config/README.md) namespace `bloom-filter-config`
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

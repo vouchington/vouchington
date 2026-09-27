@@ -134,4 +134,4 @@ Response includes `results` and `page_info`.
 ## Related
 
 - Service: [../../services/rss-feed-items/](../../../services/rss-feed-items/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

@@ -12,8 +12,8 @@ Claude Code and Codex load `vouchington-database:postgres-node-performance-tunin
 
 ## Vouchington additions
 
-Read [`backend/data-stores/psql/CLAUDE.md`](../../../backend/data-stores/psql/CLAUDE.md) and the
-nearest owning `CLAUDE.md` before changing a query, index, connection route, or migration.
+Read [`backend/data-stores/psql/AGENTS.md`](../../../backend/data-stores/psql/AGENTS.md) and the
+nearest owning `AGENTS.md` before changing a query, index, connection route, or migration.
 
 Before optimizing a proposed schema, check identifier/relationship shape and deletion semantics
 against those instructions. Performance evidence cannot justify a prohibited schema pattern or
@@ -54,6 +54,6 @@ any step is a no-op and must not ship. Analyze every relation participating in a
 plan. Keep partition-local estimates and attachment lifecycle in view rather than assuming a parent
 object repairs every child plan.
 
-See also the local [querying rules](../../../backend/data-stores/psql/CLAUDE.md#querying-rules),
+See also the local [querying rules](../../../backend/data-stores/psql/AGENTS.md#querying-rules),
 [partition-pruning hints](../../../docs/overview/architecture/partition-pruning-hints.md), and
 [test-value gate](../../../docs/development/reference-tests-value-and-reduction.md).

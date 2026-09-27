@@ -10,6 +10,6 @@ Shared low-level utilities for the HTML and RSS crawler services — URL fetchin
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - HTML crawler service: [../crawler-html/README.md](../crawler-html/README.md)
 - RSS crawler service: [../crawler-rss/README.md](../crawler-rss/README.md)

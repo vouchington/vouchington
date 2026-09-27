@@ -179,7 +179,7 @@ describe('workflow automation safety', () => {
       '.github/workflows/reference-workflow-automation-map.md',
       'utf8',
     )
-    const workflowInstructions = readFileSync('.github/workflows/CLAUDE.md', 'utf8')
+    const workflowInstructions = readFileSync('.github/workflows/AGENTS.md', 'utf8')
     const fixedBranchAutomation = readFileSync(
       '.github/workflows/reference-fixed-branch-automation-prs.md',
       'utf8',

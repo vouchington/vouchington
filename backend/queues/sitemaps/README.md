@@ -22,5 +22,5 @@ ordering key still serializes rebuilds within the target day lane. Other callers
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Sitemaps service: [../../services/sitemaps/README.md](../../services/sitemaps/README.md)

@@ -28,5 +28,5 @@ and prevent gaps or duplicates.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Agents service: [../agents/README.md](../agents/README.md)

@@ -117,7 +117,7 @@
     "jsx-a11y/role-supports-aria-props": "error",
     "jsx-a11y/scope": "error",
     "jsx-a11y/tabindex-no-positive": "error",
-    // React Compiler (reactCompiler: true in web/next.config.ts) memoizes inside every component automatically. These react-perf rules are intentionally off — do not re-enable. See web/CLAUDE.md.
+    // React Compiler (reactCompiler: true in web/next.config.ts) memoizes inside every component automatically. These react-perf rules are intentionally off — do not re-enable. See web/AGENTS.md.
     "react-perf/jsx-no-jsx-as-prop": "off",
     "react-perf/jsx-no-new-array-as-prop": "off",
     "react-perf/jsx-no-new-function-as-prop": "off",

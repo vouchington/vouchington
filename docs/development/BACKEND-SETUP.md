@@ -1,6 +1,6 @@
 # Backend Setup
 
-Workspace instructions: [backend/CLAUDE.md](../../backend/CLAUDE.md). For agent-run full-site
+Workspace instructions: [backend/AGENTS.md](../../backend/AGENTS.md). For agent-run full-site
 startup and browser validation, use the
 [local-site-testing skill](../../.agents/skills/local-site-testing/SKILL.md).
 
@@ -67,7 +67,7 @@ Agent-created temporary or subagent worktrees are not this path; they go under t
 
 Run `./dev/tmux` from outside tmux. It creates one session per canonical worktree with windows in this order: `nextjs`, `backend`, `worker`, `cloudflare`, `lambdas`.
 
-See [dev/CLAUDE.md](../../dev/CLAUDE.md) for all commands (`./dev/stop-services`, `./dev/status`, `./dev/reset`, `./dev/teardown`, `./dev/cleanup`).
+See [dev/AGENTS.md](../../dev/AGENTS.md) for all commands (`./dev/stop-services`, `./dev/status`, `./dev/reset`, `./dev/teardown`, `./dev/cleanup`).
 
 If a PostgreSQL view change cannot be applied with `CREATE OR REPLACE VIEW` alone, rerun the schema update with:
 

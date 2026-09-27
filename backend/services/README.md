@@ -151,9 +151,9 @@ for the full static-analysis catalog.
 - [Post publication reconciliation](post-publication/README.md) — Durable capture, projection, and shadow-repair services
 - [Runtime request validation](runtime-request-validation/README.md) — Generated-contract validation for third-party API routes
 - [Backend Vitest test authoring skill](../../.agents/skills/backend-vitest-test-authoring/SKILL.md) — Tests, fixtures, integration boundaries, and provider mocks
-- [Agent conventions](CLAUDE.md) — Service authoring rules for agents
+- [Agent conventions](AGENTS.md) — Service authoring rules for agents
 - [Systems (Job Queues)](../queues/README.md) — Background job processing
-- [API Routes](../api/CLAUDE.md) — HTTP endpoint conventions
+- [API Routes](../api/AGENTS.md) — HTTP endpoint conventions
 - [Data Stores](../data-stores/psql/README.md) — PostgreSQL schema and migrations
 - [Error Module](../modules/on-error/README.md) — Centralized error handling
 - [Documentation](../../docs/README.md) — Full documentation index

@@ -87,7 +87,7 @@ before/after.
 Pre-launch staging data is disposable; canonical schema edits require an operator-controlled rebuild.
 
 Two independent checks now catch this drift instead of letting it pass silently. See
-[Migration Rules](CLAUDE.md#migration-rules) for the in-place-edit policy these checks back up.
+[Migration Rules](AGENTS.md#migration-rules) for the in-place-edit policy these checks back up.
 
 The structural snapshot includes column ordinal positions. Refining an unpublished migration after
 local application must preserve the canonical `CREATE TABLE` column order: an incrementally patched

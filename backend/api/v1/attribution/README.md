@@ -45,4 +45,4 @@ Records the referrer and landing URL for a session, enabling attribution of sign
 ## Related
 
 - Service: [../../services/attribution/](../../../services/attribution/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

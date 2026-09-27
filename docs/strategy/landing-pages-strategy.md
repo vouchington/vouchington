@@ -145,5 +145,5 @@ See [Feedback Loops](feedback-loops.md) for the full gap analysis.
 - [Referral Links](../requirements/users/REFERRAL-LINKS.md) — referral submission, ranking, and attribution
 - [Landing Page Analytics](../requirements/admin/LANDING-PAGE-ANALYTICS.md) — owner-facing analytics requirements
 - [Feedback loops](feedback-loops.md) — growth feedback loop inventory
-- [Web rules](../../web/CLAUDE.md) — landing page UI and routing conventions
-- [Backend rules](../../backend/CLAUDE.md) — attribution and service conventions
+- [Web rules](../../web/AGENTS.md) — landing page UI and routing conventions
+- [Backend rules](../../backend/AGENTS.md) — attribution and service conventions

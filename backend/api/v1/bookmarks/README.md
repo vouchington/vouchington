@@ -34,4 +34,4 @@ Removes a bookmark relation. Returns `204 No Content`.
 
 - Service: [../../services/bookmarks/](../../../services/bookmarks/README.md)
 - Entity relations: [../entity-relations/README.md](../entity-relations/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

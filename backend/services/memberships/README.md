@@ -227,4 +227,4 @@ creates a fresh append-only projection and reactivation outbox.
 - Entitlement helpers: [../../modules/membership-helpers/README.md](../../modules/membership-helpers/README.md)
 - Job queue: [../../queues/memberships/README.md](../../queues/memberships/README.md)
 - Stripe: [../stripe/README.md](../stripe/README.md)
-- Database schema: [../../data-stores/psql/CLAUDE.md](../../data-stores/psql/CLAUDE.md)
+- Database schema: [../../data-stores/psql/AGENTS.md](../../data-stores/psql/AGENTS.md)

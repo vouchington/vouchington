@@ -2,7 +2,7 @@
 
 [Back to Transient-Retry Rule Catalogue](README.md#rule-consolidation-concepts)
 
-The scoped [automatic invariants](CLAUDE.md#scoped-invariants) require one rule per consumer and
+The scoped [automatic invariants](AGENTS.md#scoped-invariants) require one rule per consumer and
 root cause, not per status code or URL. This section explains the concepts behind that rule.
 
 ### What "same root cause" means

@@ -80,4 +80,4 @@ Administrators receive the raw crawl row and sideloaded image.
 
 - Service: [backend/services/urls/README.md](../../../services/urls/README.md), [backend/services/crawls/README.md](../../../services/crawls/README.md)
 - Hostnames: [../hostnames/README.md](../hostnames/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

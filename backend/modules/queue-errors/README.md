@@ -63,4 +63,4 @@ through `wrapHttpForRetry`.
 
 - Parent: [../README.md](../README.md)
 - Error handling: [../on-error/README.md](../on-error/README.md)
-- Queue system conventions: [../../queues/CLAUDE.md](../../queues/CLAUDE.md)
+- Queue system conventions: [../../queues/AGENTS.md](../../queues/AGENTS.md)

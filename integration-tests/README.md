@@ -1,6 +1,6 @@
 # Integration Tests
 
-Fetch-based full-stack and API-helper integration tests. See [web/CLAUDE.md](web/CLAUDE.md) for agent conventions.
+Fetch-based full-stack and API-helper integration tests. See [web/AGENTS.md](web/AGENTS.md) for agent conventions.
 
 ## No-Mock Policy
 
@@ -79,6 +79,6 @@ No setup step required — tests start an in-process backend server on an epheme
 
 ## Related
 
-- [Web integration CLAUDE.md](web/CLAUDE.md) — Agent conventions and rules
+- [Web integration AGENTS.md](web/AGENTS.md) — Agent conventions and rules
 - [Playwright](../playwright/README.md) — Browser and interaction tests
 - [Backend test helpers](../backend/test-helpers/README.md) — Shared entity factories

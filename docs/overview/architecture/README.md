@@ -45,4 +45,4 @@ System design, pipelines, and application-layer patterns for Voucha.
 ## Sync Rule
 
 When architecture decisions change, update the relevant doc here and cross-link from
-`docs/requirements/`, `backend/services/`, or the relevant workspace `CLAUDE.md`.
+`docs/requirements/`, `backend/services/`, or the relevant workspace `AGENTS.md`.

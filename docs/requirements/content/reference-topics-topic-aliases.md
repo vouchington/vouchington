@@ -186,9 +186,9 @@ The canonical views (`view_topics`, `view_embedded_topics` in [backend/data-stor
 
 ## Related
 
-- [Web topic display-name rules](../../../web/lib/topics/CLAUDE.md) — scoped implementation invariants
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web topic display-name rules](../../../web/lib/topics/AGENTS.md) — scoped implementation invariants
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

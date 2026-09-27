@@ -35,6 +35,6 @@ connection reset / context deadline exceeded / connection closed / unexpected EO
 a genuinely new member of this root-cause class — add it as a marker inside
 `aws-transport-fingerprints.mts`, not a copy of the string list in a new consumer file. A new
 AWS-facing command/action consumer is still a new rule under the
-[scoped invariants](CLAUDE.md#scoped-invariants), while terminal variants from the same consumer and
+[scoped invariants](AGENTS.md#scoped-invariants), while terminal variants from the same consumer and
 root cause belong in one rule. Each consumer calls the same shared predicate instead of inlining its
 own marker list.

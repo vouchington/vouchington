@@ -19,7 +19,7 @@ type TraversalResponse = {
 }
 
 // The shared staff report queue is dirty and parallel: other tests leave pending reports behind
-// and never clean up (see backend/test-helpers/CLAUDE.md). These traversals only assert
+// and never clean up (see backend/test-helpers/AGENTS.md). These traversals only assert
 // properties scoped to the clusters this file owns, so they tolerate that foreign noise instead
 // of requiring a quiet table.
 const SEEK_LIMIT = 100

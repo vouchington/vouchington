@@ -20,6 +20,6 @@ can only be constructed one way.
 
 ## Related
 
-- Backend rules: [../../CLAUDE.md](../../CLAUDE.md)
+- Backend rules: [../../AGENTS.md](../../AGENTS.md)
 - Fediverse federation roadmap: [../../../docs/overview/architecture/fediverse-federation.md](../../../docs/overview/architecture/fediverse-federation.md)
 - HTTP Signatures: [../http-signatures/README.md](../http-signatures/README.md)

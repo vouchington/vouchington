@@ -60,7 +60,7 @@ direct expiry timestamps. Both scope deletion to test-owned SQL windows; the exp
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Privacy requirements: [../../../docs/requirements/users/PRIVACY.md](../../../docs/requirements/users/PRIVACY.md)
 - Account-deletion lifecycle: [../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - Account data requests system: [../../queues/account-data-requests/README.md](../../queues/account-data-requests/README.md)

@@ -90,7 +90,7 @@ The user creation path is implemented in
 email/phone signups recover from unique-constraint races by refetching the winning user through the
 primary-read lookup path in
 [`backend/services/users/get.mts`](../../../backend/services/users/get.mts). Backend workspace
-conventions for this area live in [`backend/CLAUDE.md`](../../../backend/CLAUDE.md).
+conventions for this area live in [`backend/AGENTS.md`](../../../backend/AGENTS.md).
 
 #### Disposable email blocking
 

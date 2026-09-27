@@ -11,5 +11,5 @@ CRUD and search for boilerplate removal rules — CSS selectors used to strip re
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Boilerplate removal system: [../../queues/crawl-boilerplate-removal/README.md](../../queues/crawl-boilerplate-removal/README.md)

@@ -38,7 +38,7 @@ compare representative before/after output. Report deferred findings and the pos
 observe when a safe PR-local verification is impossible.
 
 Read [CI development guidance](../../../docs/development/ci.md) and the scoped
-[workflow instructions](../../../.github/workflows/CLAUDE.md). Download representative archives
+[workflow instructions](../../../.github/workflows/AGENTS.md). Download representative archives
 rather than streaming whole runs into context, preserve diagnostics while separating infrastructure
 noise from real failures, and Return a short verdict to the calling session. Use the local
 transient-classification reference only to diagnose existing CI behavior; this adapter does not

@@ -169,8 +169,8 @@ await navigateTo(page, '/some-path')
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

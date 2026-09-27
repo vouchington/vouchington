@@ -405,6 +405,6 @@ verification coverage in backend route/service tests.
 ## Related
 
 - [Playwright authoring skill](../.agents/skills/playwright-authoring/SKILL.md) — implementation checklist
-- [Agent conventions and rules](CLAUDE.md) — Scope, authentication, selectors, and reliability requirements
-- [GitHub Workflows](../.github/workflows/CLAUDE.md) — CI workflow reference
+- [Agent conventions and rules](AGENTS.md) — Scope, authentication, selectors, and reliability requirements
+- [GitHub Workflows](../.github/workflows/AGENTS.md) — CI workflow reference
 - [Helpers API](helpers/README.md) — Reference for helper functions in [`playwright/helpers/`](helpers/)

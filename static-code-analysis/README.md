@@ -4,7 +4,7 @@ Static-analysis tools, policy checks, link checks, and invariant tests for repos
 Before authoring or changing a guard, use the
 [static-analysis-checklist skill](../.agents/skills/static-analysis-checklist/SKILL.md) and read the
 placement, authoring, rollout, and cleanup sections below. Scoped repository-state invariants remain
-in [CLAUDE.md](CLAUDE.md).
+in [AGENTS.md](AGENTS.md).
 
 ## Dependency License Policy
 
@@ -103,8 +103,8 @@ matrix run the same check. See [CI static analysis](../docs/development/ci.md#st
 and [local static analysis](../docs/development/tests.md#linters-and-static-analysis).
 
 - **Reachability**: every included Markdown document must be discoverable from a tracked
-  `CLAUDE.md` link, either directly or through exactly one `README.md` intermediary
-  (`CLAUDE.md → README.md → document`), at a maximum graph depth of two.
+  `AGENTS.md` link, either directly or through exactly one `README.md` intermediary
+  (`AGENTS.md → README.md → document`), at a maximum graph depth of two.
 - **Structure budget**: a document exceeding 180 Rust-counted lines or 12,000 Unicode scalars may
   contain at most one GFM table and one Mermaid fence. Smaller documents are not subject to this
   budget.
@@ -353,7 +353,7 @@ leave terminal preparation/merge failures unsuppressed. Generic missing/over-cap
 step-exceeds-job checks live in `github-actions-job-timeouts`. Workflow tests must not restate
 `timeout-minutes` literals; that is `github-actions-test-timeout-literals`.
 
-Repo-owned checks must skip gitignored and untracked files; see [CLAUDE.md](CLAUDE.md) for authoring rules. Generic filesystem rules such as backend alias mapping, config path references, local docs, shellcheck, extension policy, git identity mutation, lockfiles, package registry-only policy, workspace package.json coverage, queue/worker layout, Rust line-count, Rust no-inline-tests, CLAUDE.md / AGENTS.md size checks, and the binding-aware Vitest and Playwright call boundaries for real timers, fixed sleeps, and integration-test mocks are rules in `no-mistakes check` (configured via [`.no-mistakes.yml`](../.no-mistakes.yml)) and enforced in CI. Tracked `.patch` and `.diff` artifacts are banned by `banned-paths` in [`.no-mistakes.yml`](../.no-mistakes.yml) (case-insensitive globs). Pnpm `patchedDependencies` and `allowUnusedPatches` remain covered by `no-mistakes`. Fix the underlying problem upstream or file and link a Vouchington issue labeled `dependencies` instead of carrying a local patch. Offline Markdown local-link validation runs in static-analysis CI so deleting or renaming tracked files cannot leave stale docs links until the standalone online link workflow runs.
+Repo-owned checks must skip gitignored and untracked files; see [AGENTS.md](AGENTS.md) for authoring rules. Generic filesystem rules such as backend alias mapping, config path references, local docs, shellcheck, extension policy, git identity mutation, lockfiles, package registry-only policy, workspace package.json coverage, queue/worker layout, Rust line-count, Rust no-inline-tests, AGENTS.md size checks, and the binding-aware Vitest and Playwright call boundaries for real timers, fixed sleeps, and integration-test mocks are rules in `no-mistakes check` (configured via [`.no-mistakes.yml`](../.no-mistakes.yml)) and enforced in CI. Tracked `.patch` and `.diff` artifacts are banned by `banned-paths` in [`.no-mistakes.yml`](../.no-mistakes.yml) (case-insensitive globs). Pnpm `patchedDependencies` and `allowUnusedPatches` remain covered by `no-mistakes`. Fix the underlying problem upstream or file and link a Vouchington issue labeled `dependencies` instead of carrying a local patch. Offline Markdown local-link validation runs in static-analysis CI so deleting or renaming tracked files cannot leave stale docs links until the standalone online link workflow runs.
 
 The lifecycle-scenario guard validates the Draft 2020-12 schema and code-owned family consumer
 policy for `api-fixtures/v1/lifecycle-scenarios.json`. It rejects missing, duplicate, unknown, or

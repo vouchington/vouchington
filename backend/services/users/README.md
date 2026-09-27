@@ -24,7 +24,7 @@ Core user service — authentication flows, authorization, profile management, s
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Auth overview: [../../../docs/overview/architecture/auth-overview.md](../../../docs/overview/architecture/auth-overview.md)
 - Auth requirements: [../../../docs/requirements/security/AUTH.md](../../../docs/requirements/security/AUTH.md)
 - Users requirements: [../../../docs/requirements/users/USERS.md](../../../docs/requirements/users/USERS.md)

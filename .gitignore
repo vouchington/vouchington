@@ -29,8 +29,11 @@ dev/certs/
 .claude/scheduled_tasks.lock
 .claude/.cc-writes/
 agents.md
-AGENTS.md
+!**/AGENTS.md
 !backend/data-stores/psql/schema-snapshot/markdown/tables/agents.md
+# Agent instructions live in AGENTS.md. CLAUDE.md overrides AGENTS.md in Claude Code.
+CLAUDE.md
+Claude.md
 .serena/
 .claire/
 .codex/worktrees
@@ -90,4 +93,3 @@ test-report.junit.xml
 cloudflare-worker/.dev.vars
 tmp/
 coverage-artifacts/
-

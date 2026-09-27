@@ -47,7 +47,7 @@ test.describe('Publisher Type vote persistence', () => {
     await expect(confirmButton).toBeVisible()
     await expect(confirmButton).toHaveAttribute('aria-pressed', 'false')
 
-    // Register the response listener BEFORE the click (required per Playwright CLAUDE.md)
+    // Register the response listener BEFORE the click (required per Playwright AGENTS.md)
     const voteResponse = page.waitForResponse(
       res =>
         res.url().includes('/api/v1/entity-relations/') &&

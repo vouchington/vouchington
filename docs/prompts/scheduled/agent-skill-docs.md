@@ -1,10 +1,10 @@
 Review the agent instruction layer for contradictions, stale carve-outs, and unclear guidance. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
 
-- Review `.agents/skills/**/*.md`, `CLAUDE.md`, and related workflow docs for instructions that overlap, conflict, or have drifted from current repo behavior.
+- Review `.agents/skills/**/*.md`, `AGENTS.md`, and related workflow docs for instructions that overlap, conflict, or have drifted from current repo behavior.
 - Use this prompt for agent-facing instruction contradictions or drift; use [docs.md](docs.md) for general documentation hygiene, README coverage, link linting, and bidirectional docs links.
 - Prefer fixing the narrowest file that owns the rule instead of spreading the same clarification across multiple docs.
 - Classify each candidate before editing: keep an automatically scoped invariant in the nearest
-  `CLAUDE.md`; route task-triggered procedure to an existing skill; move commands, examples, and
+  `AGENTS.md`; route task-triggered procedure to an existing skill; move commands, examples, and
   explanation to canonical docs or a README; or create a thin new skill only when no existing skill
   has an adequate trigger.
 - Treat an existing skill as adequate when its description already triggers on the task's specific
@@ -34,4 +34,4 @@ dotnet-clients/Voucha.DotNet.sln --configuration Release`. Make explicit that Vo
   structural invariant and remove the unreachable branch.
 - Compare `.codex/agents/*.toml` model, reasoning-effort, and sandbox settings with the agent-workflow
   routing table, and fix one concrete mapping drift.
-- Review the three lifecycle checklist skills (`git-commit-checklist`, `package-json-checklist`, `github-actions-checklist` in `.agents/skills/`) and their matching `docs/checklists/**` pages and `.codex/agents/**` adapters for consistency: principles match, cross-links are bidirectional, and nothing has drifted from the `CLAUDE.md` pointers or authoritative source docs.
+- Review the three lifecycle checklist skills (`git-commit-checklist`, `package-json-checklist`, `github-actions-checklist` in `.agents/skills/`) and their matching `docs/checklists/**` pages and `.codex/agents/**` adapters for consistency: principles match, cross-links are bidirectional, and nothing has drifted from the `AGENTS.md` pointers or authoritative source docs.

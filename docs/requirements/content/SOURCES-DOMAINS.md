@@ -143,8 +143,8 @@ Accessible from the intent sidebars (requires auth).
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 - [My API import/export contract](../../../backend/api/v1/my/reference-post-api-v1-my-import-rss-feeds.md)
 - [User import/export service](../../../backend/services/user-import-export/README.md)
 - [Native client architecture](../../overview/architecture/native-clients.md)

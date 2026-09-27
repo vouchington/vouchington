@@ -6,9 +6,9 @@ description: Use when adding or changing Voucha GlideMQ queues, enqueue APIs, wo
 # Voucha Queue Authoring
 
 Follow [`docs/checklists/backend-queues.md`](../../../docs/checklists/backend-queues.md) and the
-scoped rules under [`backend/queues/`](../../../backend/queues/CLAUDE.md),
-[`backend/workers/`](../../../backend/workers/CLAUDE.md), and
-[`backend/flows/`](../../../backend/flows/CLAUDE.md).
+scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
+[`backend/workers/`](../../../backend/workers/AGENTS.md), and
+[`backend/flows/`](../../../backend/flows/AGENTS.md).
 
 1. Keep enqueue configuration and payload types in the queue package, processor orchestration in the
    worker package, business logic and durable idempotency in services, and flow producers in

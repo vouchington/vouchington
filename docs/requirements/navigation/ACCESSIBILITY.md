@@ -83,8 +83,8 @@ them, while retaining WCAG 2.0 and 2.1 A/AA checks.
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [Components](COMPONENTS.md) — UI component patterns and guidelines
 - [SEO](../seo/SEO.md) — Search engine optimization requirements

@@ -7,7 +7,7 @@ This package is the Vouchington adapter over [`@vouchington/postgres`](https://g
 It constructs the process singleton (`voucha` database name, `@modules/on-error`, analytics
 sampling) after local worktree connection guards, and keeps product migrations, views, snapshots,
 and EXPLAIN ANALYZE capture here. Agent-only migration and query-change rules live in
-[CLAUDE.md](./CLAUDE.md).
+[AGENTS.md](./AGENTS.md).
 
 ## Contents
 

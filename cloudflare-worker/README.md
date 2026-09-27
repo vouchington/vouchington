@@ -1,6 +1,6 @@
 # Cloudflare Worker
 
-A Cloudflare Worker that sits on top of [`backend/`](../backend/) and [`web/`](../web/). See [CLAUDE.md](CLAUDE.md) for agent conventions.
+A Cloudflare Worker that sits on top of [`backend/`](../backend/) and [`web/`](../web/). See [AGENTS.md](AGENTS.md) for agent conventions.
 
 ## Contents
 

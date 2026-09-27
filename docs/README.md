@@ -9,7 +9,7 @@ such as "Read this section", "click here", or "learn more"; preserve old parent 
 with an explicit HTML anchor on the corresponding contents entry when splitting or reorganizing a
 document.
 
-Cross-link related docs bidirectionally instead of duplicating their content, and add a compact Mermaid diagram to any doc explaining a complex system (multiple components, async handoffs, or state transitions). Index new agent-facing pages here and in [catalog/README.md](catalog/README.md); `CLAUDE.md` points at the catalog, not each page. Instruction placement (what belongs in `CLAUDE.md` vs a skill vs `docs/**`) is in [CLAUDE.md](CLAUDE.md). See the [agent-workflow skill](../.agents/skills/agent-workflow/implementation.md) and the [docs scheduled prompt](prompts/scheduled/docs.md) for the full convention.
+Cross-link related docs bidirectionally instead of duplicating their content, and add a compact Mermaid diagram to any doc explaining a complex system (multiple components, async handoffs, or state transitions). Index new agent-facing pages here and in [catalog/README.md](catalog/README.md); `AGENTS.md` points at the catalog, not each page. Instruction placement (what belongs in `AGENTS.md` vs a skill vs `docs/**`) is in [AGENTS.md](AGENTS.md). See the [agent-workflow skill](../.agents/skills/agent-workflow/implementation.md) and the [docs scheduled prompt](prompts/scheduled/docs.md) for the full convention.
 
 ## Development
 
@@ -29,12 +29,12 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [Backend Setup](development/BACKEND-SETUP.md) — Shared secrets, database, Valkey, migrations
 - [Monorepo](development/MONOREPO.md) — Monorepo structure and conventions
 - [Tests and Checks](development/tests.md) — Local commands for every check (concise, agent-readable)
-- [Web Agent Rules](development/web-agent-rules.md) — Navigation, rendering, forms, completeness sweeps, and component/test conventions expanded from `web/CLAUDE.md`
+- [Web Agent Rules](development/web-agent-rules.md) — Navigation, rendering, forms, completeness sweeps, and component/test conventions expanded from `web/AGENTS.md`
 - [CI Reference](development/ci.md) — CI workflow files, configs, coverage thresholds, and workspace matrix
 - [Host Locks](development/host-locks.md) — Hosted-runner retirement boundary for repository CI locking and port allocation
 - [Merge Authority](development/merge-authority.md) — Env-aware merge-policy hook (blocked in GitHub Actions, human-confirmed interactively), automation PR labeling, and the #7848 bypass-actor residual
 - [Agent Sandbox](development/agent-sandbox.md) — OS-level sandbox containment model for Claude and Codex, the [hook threat model](development/agent-sandbox.md#hook-threat-model) (a guardrail, not a security boundary), per-command bypass rationale (gh/docker/pnpm/git), and why the credentialed-CI threat is already contained
-- [Agent Harness Parity](development/agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor vs OpenCode capability map; Grok and Cursor run Claude hooks through Claude-compat, OpenCode reads `CLAUDE.md` without copied hooks
+- [Agent Harness Parity](development/agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor vs OpenCode capability map; Grok and Cursor run Claude hooks through Claude-compat, OpenCode reads `AGENTS.md` without copied hooks
 - [First-Party Dependencies](development/first-party-dependencies.md) — Package → upstream repo map for packages authored by Jonathan Ong
 - [Documentation Moved to vouchington-docs](development/docs-moved-to-vouchington-docs.md) — Registry of paths deliberately absent from this repo, where each went, and why
 - [Finite Enum Ripple Checklist](development/finite-enum-ripple-checklist.md) — Required scan surfaces for topic type, post type, route slug, and other closed-string-set removals or renames
@@ -115,7 +115,7 @@ Cross-link related docs bidirectionally instead of duplicating their content, an
 - [SSE compliance status](development/reference-runtime-timeouts-sse-compliance-status.md)
 - [Tunable performance knobs](development/reference-runtime-timeouts-tunable-knobs.md)
 - [Vendored](development/reference-runtime-timeouts-vendored.md)
-- [CLAUDE.md and AGENTS.md Size Cap](development/reference-tests-claude-md-and-agents-md-size-cap.md)
+- [AGENTS.md Size Cap](development/reference-tests-claude-md-and-agents-md-size-cap.md)
 - [Test Command Matrix](development/reference-tests-command-matrix.md)
 - [E2E and Visual](development/reference-tests-e2e-and-visual.md)
 - [First-Push Deterministic Preflight](development/reference-tests-first-push-deterministic-preflight.md)

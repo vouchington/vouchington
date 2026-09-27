@@ -33,8 +33,8 @@ Closing the feedback gap — making the invisible visible — is the single high
 
 ## Related
 
-- [Backend rules](../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../web/CLAUDE.md) — UI and routing conventions
+- [Backend rules](../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../web/AGENTS.md) — UI and routing conventions
 
 - [docs/overview/architecture/ai-agents.md](../overview/architecture/ai-agents.md)
 - [docs/overview/architecture/auth-overview.md](../overview/architecture/auth-overview.md)

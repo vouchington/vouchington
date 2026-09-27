@@ -50,4 +50,4 @@ Optional source filter allows users to see recommendations from a single weighti
 ## Related
 
 - API: [../../api/v1/rss-feeds/README.md](../../api/v1/rss-feeds/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

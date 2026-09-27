@@ -37,7 +37,7 @@ const countedRoots = [
 
 const countedRootFiles = [
   '.jscpd.json',
-  'CLAUDE.md',
+  'AGENTS.md',
   'README.md',
   'commitlint.config.mts',
   'knip.jsonc',

@@ -29,4 +29,4 @@ within one filesystem. It does not load JSONL partitions into process memory.
 ## Related
 
 - Data stores overview: [../README.md](../README.md)
-- Local rules: [CLAUDE.md](CLAUDE.md)
+- Local rules: [AGENTS.md](AGENTS.md)

@@ -47,6 +47,6 @@
 - [Community moderation results](../../../docs/requirements/moderation/reference-community-moderation-api-routes.md#get-apiv1communitiesslugpostspostidmoderation-results)
 - Real OpenAI integration tests: `pnpm run test:backend:openai` with `OPENAI_API_KEY`
 - System: [../../queues/openai-moderation/](../../queues/openai-moderation/README.md) - Moderation job queue
-- Posts Service: [../posts/CLAUDE.md](../posts/CLAUDE.md)
+- Posts Service: [../posts/AGENTS.md](../posts/AGENTS.md)
 - Entity Listeners: [../../queues/entity-listeners/README.md](../../queues/entity-listeners/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

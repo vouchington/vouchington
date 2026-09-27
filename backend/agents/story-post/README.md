@@ -30,4 +30,4 @@ Uses the story `id` as the `safety_identifier` (not a dedicated system user).
 ## Related
 
 - Story clustering agent: [../story-clustering/README.md](../story-clustering/README.md)
-- Agents overview: [../CLAUDE.md](../CLAUDE.md)
+- Agents overview: [../AGENTS.md](../AGENTS.md)

@@ -8,6 +8,6 @@ Microsoft OAuth provider — exchanges authorization codes with PKCE via the Mic
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - OAuth service: [../oauth/README.md](../oauth/README.md)
 - Auth requirements: [../../../docs/requirements/security/AUTH.md](../../../docs/requirements/security/AUTH.md)

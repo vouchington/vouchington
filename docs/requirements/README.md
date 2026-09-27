@@ -3,10 +3,10 @@
 Feature specifications, rules, and policies for the Voucha web product.
 
 **Structure:** cross-cut matrices (files that every feature doc links to) live at this folder's
-root. Feature-specific requirements live in domain subfolders. The root `CLAUDE.md` "Key
+root. Feature-specific requirements live in domain subfolders. The root `AGENTS.md` "Key
 References" section points directly at the root-level matrices — moving them would require updating
 those pointers. Files in `moderation/` are additionally guard-pinned; see
-[moderation/CLAUDE.md](./moderation/CLAUDE.md).
+[moderation/AGENTS.md](./moderation/AGENTS.md).
 
 ## Cross-Cut Matrices
 
@@ -67,5 +67,5 @@ those pointers. Files in `moderation/` are additionally guard-pinned; see
 ## Related
 
 - [Documentation index](../README.md) — repo-wide docs index
-- [Web rules](../../web/CLAUDE.md) — frontend requirements implementation conventions
-- [Backend rules](../../backend/CLAUDE.md) — backend requirements implementation conventions
+- [Web rules](../../web/AGENTS.md) — frontend requirements implementation conventions
+- [Backend rules](../../backend/AGENTS.md) — backend requirements implementation conventions

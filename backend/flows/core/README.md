@@ -21,6 +21,6 @@ enqueuePostAutotaggerFlow
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Autotagger queue: [../../queues/ai-agents/README.md](../../queues/ai-agents/README.md)
 - Bedrock embeddings queue: [../../queues/bedrock-embeddings/README.md](../../queues/bedrock-embeddings/README.md)

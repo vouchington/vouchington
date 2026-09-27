@@ -13,4 +13,4 @@ Search engine optimization, public web specifications, and SEO reference resourc
 ## Sync Rule
 
 When SEO metadata conventions, robots rules, or public web specifications change, update the
-relevant doc here and cross-link from `web/CLAUDE.md` and relevant route files.
+relevant doc here and cross-link from `web/AGENTS.md` and relevant route files.

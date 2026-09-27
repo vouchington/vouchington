@@ -69,7 +69,7 @@ triage flow; `ready-and-shepherd` remains a mechanical handoff.
 
 ### Automated Review Prompt
 
-The verbatim prompt used by automated code review workflows lives in [`code-review-prompt.md`](code-review-prompt.md). It instructs the AI reviewer to ultrathink, scope reads to linked issues, the PR's own description, and workspace `CLAUDE.md` files, cover necessity/alternatives/correctness/security/performance/simplification/plan-adherence/requirement-coverage dimensions, and write findings to `code-review-payload.json`. The reviewer is purely advisory: it never approves, blocks, or is a required check. See the vouchington-tooling reusable
+The verbatim prompt used by automated code review workflows lives in [`code-review-prompt.md`](code-review-prompt.md). It instructs the AI reviewer to ultrathink, scope reads to linked issues, the PR's own description, and workspace `AGENTS.md` files, cover necessity/alternatives/correctness/security/performance/simplification/plan-adherence/requirement-coverage dimensions, and write findings to `code-review-payload.json`. The reviewer is purely advisory: it never approves, blocks, or is a required check. See the vouchington-tooling reusable
 [`code-review.yml`](https://github.com/vouchington/vouchington-tooling/blob/main/.github/workflows/code-review.yml)
 workflow; no workflow in this repository currently calls it.
 

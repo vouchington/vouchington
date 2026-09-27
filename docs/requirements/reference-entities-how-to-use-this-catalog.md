@@ -16,7 +16,7 @@
 - [Entity × Lifecycle Flow Matrix](./ENTITY-LIFECYCLE-MATRIX.md) — lifecycle flows per entity
 - [Entity Relations](../overview/architecture/entity-relations.md) — entity-type vocabulary for the
   relation graph (broader than URL-routing; includes non-routed relation objects)
-- [Entity Link Helpers](../../web/lib/links/CLAUDE.md) — code-level helper API reference
+- [Entity Link Helpers](../../web/lib/links/AGENTS.md) — code-level helper API reference
 
 ---
 
@@ -44,7 +44,7 @@ template directly** — use `topicHref` or `createTopicPathname`.
 > **Topic URL primitives:** `topicIdOrSlug(topic)` returns the slug-preferred identifier
 > for URL construction; `topicApiId(topic)` returns the UUID-only identifier required by
 > `getEntityRelations` and API endpoints (UUID semantics documented in
-> [Entity Link Helpers](../../web/lib/links/CLAUDE.md)).
+> [Entity Link Helpers](../../web/lib/links/AGENTS.md)).
 
 All helpers live in: `web/lib/links/entity-href.ts`
 

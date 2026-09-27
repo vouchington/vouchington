@@ -17,6 +17,6 @@ Validates referral program links against configurable rules and checks whether U
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - User referral program links: [../user-referral-program-links/README.md](../user-referral-program-links/README.md)
 - Referral links requirements: [../../../docs/requirements/users/REFERRAL-LINKS.md](../../../docs/requirements/users/REFERRAL-LINKS.md)

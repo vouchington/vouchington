@@ -1,7 +1,7 @@
 import type { PostResponseBody } from '@/types/api-responses'
 import type { Post, PostType } from '@/types/posts'
 
-// `comment` requires root-post context (see backend/services/posts/CLAUDE.md).
+// `comment` requires root-post context (see backend/services/posts/AGENTS.md).
 type RoutablePostType = Exclude<PostType, 'comment'>
 
 const POST_TYPE_PATHS: Record<RoutablePostType, string> = {

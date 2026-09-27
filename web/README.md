@@ -86,9 +86,9 @@ drift. See [`web/components/shared/time-ago.tsx`](components/shared/time-ago.tsx
 - Shared library catalog: [lib/README.md](lib/README.md)
 - Error handling helpers: [lib/on-error/README.md](lib/on-error/README.md)
 - API-response test helpers: [test-helpers/api-responses/README.md](test-helpers/api-responses/README.md)
-- Storybook: [CLAUDE.md](storybook/CLAUDE.md) / [README.md](storybook/README.md)
-- Entity link helpers: [CLAUDE.md](lib/links/CLAUDE.md) / [README.md](lib/links/README.md)
-- Route factories: [lib/routes/CLAUDE.md](lib/routes/CLAUDE.md)
+- Storybook: [AGENTS.md](storybook/AGENTS.md) / [README.md](storybook/README.md)
+- Entity link helpers: [AGENTS.md](lib/links/AGENTS.md) / [README.md](lib/links/README.md)
+- Route factories: [lib/routes/AGENTS.md](lib/routes/AGENTS.md)
 - Entity anatomy (fields, states, surfaces): [anatomy/README.md](../docs/requirements/anatomy/README.md)
 - Content safety: [content-rendering.md](../docs/overview/architecture/content-rendering.md)
 - Expanded web agent rules: [web-agent-rules.md](../docs/development/web-agent-rules.md)
@@ -106,5 +106,5 @@ drift. See [`web/components/shared/time-ago.tsx`](components/shared/time-ago.tsx
 - [Security](../docs/requirements/security/SECURITY.md) — Security requirements
 - [Deployment](../docs/overview/infrastructure/deployment.md) — Platform and traffic routing
 - [All docs](../docs/README.md)
-- [Repo-wide rules](../CLAUDE.md)
-- [Agent conventions](CLAUDE.md) — Development conventions for agents
+- [Repo-wide rules](../AGENTS.md)
+- [Agent conventions](AGENTS.md) — Development conventions for agents

@@ -118,5 +118,5 @@ Ranked by likelihood and impact:
 - [Feedback loops](feedback-loops.md) — growth, engagement, trust, and monetization feedback loops
 - [Trust system](../requirements/trust-safety/trust-system.md) — trust and reputation phases
 - [Messaging constitution](MESSAGING.md) — how this positioning translates into brand voice and copy
-- [Backend rules](../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../web/CLAUDE.md) — product-surface UI conventions
+- [Backend rules](../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../web/AGENTS.md) — product-surface UI conventions

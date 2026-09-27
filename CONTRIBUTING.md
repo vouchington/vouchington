@@ -29,7 +29,7 @@ canonical source for how work here is planned, implemented, and shipped:
 - [Git and PRs](.agents/skills/agent-workflow/git-and-prs.md)
 
 Root project principles and directory-scoped rules are in
-[CLAUDE.md](CLAUDE.md).
+[AGENTS.md](AGENTS.md).
 
 ## Pull requests
 

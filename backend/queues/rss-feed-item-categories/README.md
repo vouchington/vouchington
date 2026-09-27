@@ -22,6 +22,6 @@ Reconciles durable RSS feed item category snapshots and backfills categories whe
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - RSS feed items service: [../../services/rss-feed-items/README.md](../../services/rss-feed-items/README.md)
 - Topic aliases system: [../topic-aliases/README.md](../topic-aliases/README.md)

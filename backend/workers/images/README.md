@@ -20,5 +20,5 @@ The processor function `processExtractImageMetadata` is internal to this package
 ## Related
 
 - Shared queue surface (API-safe): [../images/README.md](../images/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Images service: [../../services/images/README.md](../../services/images/README.md)

@@ -130,4 +130,4 @@ A full-featured queue management UI is available at `/admin/mq-dashboard` (requi
 
 - Service: [../../../services/queue-monitoring/](../../../services/queue-monitoring/README.md)
 - GlideMQ Dashboard: [../../../entrypoints/api/glidemq-dashboard.mts](../../../entrypoints/api/glidemq-dashboard.mts)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

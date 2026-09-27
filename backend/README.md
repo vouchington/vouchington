@@ -1,6 +1,6 @@
 # Voucha Server
 
-Node.js backend consisting of an HTTP server and GlideMQ workers. See [CLAUDE.md](CLAUDE.md) for agent conventions.
+Node.js backend consisting of an HTTP server and GlideMQ workers. See [AGENTS.md](AGENTS.md) for agent conventions.
 
 ## Commands
 
@@ -85,22 +85,22 @@ Full usage: [modules/pagination/README.md](modules/pagination/README.md)
 ## Data Stores
 
 - **PostgreSQL** (schema reference, migrations, query rules): [data-stores/psql/README.md](data-stores/psql/README.md)
-- **Valkey** (batching, Lua scripts, read/write clients): [data-stores/valkey/CLAUDE.md](data-stores/valkey/CLAUDE.md)
+- **Valkey** (batching, Lua scripts, read/write clients): [data-stores/valkey/AGENTS.md](data-stores/valkey/AGENTS.md)
 
 ## Related
 
 When working in backend/, follow the links below to read relevant context. Update wiki docs (README.md, docs/\*\*) when changes affect documented behavior.
 
-- **API routes**: [api/CLAUDE.md](api/CLAUDE.md)
-- **Business logic**: [services/CLAUDE.md](services/CLAUDE.md)
-- **Job queues (GlideMQ)**: [queues/CLAUDE.md](queues/CLAUDE.md)
-- **Job workers**: [workers/CLAUDE.md](workers/CLAUDE.md)
-- **Flow producers**: [flows/CLAUDE.md](flows/CLAUDE.md)
-- **API entry**: [entrypoints/api/CLAUDE.md](entrypoints/api/CLAUDE.md)
+- **API routes**: [api/AGENTS.md](api/AGENTS.md)
+- **Business logic**: [services/AGENTS.md](services/AGENTS.md)
+- **Job queues (GlideMQ)**: [queues/AGENTS.md](queues/AGENTS.md)
+- **Job workers**: [workers/AGENTS.md](workers/AGENTS.md)
+- **Flow producers**: [flows/AGENTS.md](flows/AGENTS.md)
+- **API entry**: [entrypoints/api/AGENTS.md](entrypoints/api/AGENTS.md)
 - **CPU worker entry**: [entrypoints/worker-cpu/README.md](entrypoints/worker-cpu/README.md)
 - **IO worker entry**: [entrypoints/worker-io/README.md](entrypoints/worker-io/README.md)
 - **PostgreSQL schema**: [data-stores/psql/README.md](data-stores/psql/README.md)
-- **Valkey**: [data-stores/valkey/CLAUDE.md](data-stores/valkey/CLAUDE.md)
+- **Valkey**: [data-stores/valkey/AGENTS.md](data-stores/valkey/AGENTS.md)
 - **Reusable modules**: [modules/README.md](modules/README.md)
 - **Shared types**: [types/README.md](types/README.md)
 - **Test helpers**: [test-helpers/README.md](test-helpers/README.md)

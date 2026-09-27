@@ -24,4 +24,4 @@ For example, for a certain domain, we'd simplify the crawling by having a global
 - Crawls: [../crawls/README.md](../crawls/README.md)
 - Crawl Chunks: [../crawl-chunks/README.md](../crawl-chunks/README.md)
 - URLs: [../urls/README.md](../urls/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

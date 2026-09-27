@@ -23,4 +23,4 @@ Returns the current user's individual record, creating it if it does not exist.
 - Service: [../../services/individuals-households/](../../../services/individuals-households/README.md)
 - Households: [../households/README.md](../households/README.md)
 - Financial profile: [../my/README.md](../my/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

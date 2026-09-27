@@ -1,6 +1,6 @@
 # Backend API route catalog
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../activitypub/README.md`](../activitypub/README.md)
 - [`../bluesky/README.md`](../bluesky/README.md)

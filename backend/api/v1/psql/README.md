@@ -67,4 +67,4 @@ Response: `{ success: boolean }`
 
 - Service: [../../../services/psql-admin/](../../../services/psql-admin/README.md)
 - System: [../../../queues/psql/](../../../queues/psql/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

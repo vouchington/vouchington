@@ -36,4 +36,4 @@ Called by `GET /api/v1/rss-feeds/trending` endpoint.
 ## Related
 
 - API: [../../api/v1/rss-feeds/README.md](../../api/v1/rss-feeds/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

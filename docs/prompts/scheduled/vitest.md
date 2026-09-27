@@ -13,20 +13,20 @@ Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe
 - Treat cohort interference as leakage only when it changes the test-owned contribution, removes
   unrelated rows during ownership-scoped cleanup, or fails a cohort-independent assertion. Trace
   each leaked row to the fixture or test that created it, fix the query scoping or cleanup boundary,
-  and record the required isolation invariant in its owning reference doc or nearest `CLAUDE.md`
+  and record the required isolation invariant in its owning reference doc or nearest `AGENTS.md`
   using the follow-up durability rule below. Do not mask the leak with broad cleanup, indiscriminate
   reruns, or timeout increases.
 - Find any failures and make them more reliable.
 - Find opportunities to make tests faster or leaner.
 - Review `--coverage` reports and add tests for increased coverage.
-- Review CLAUDE.md and README.md files for any incongruence between tests and requirements.
+- Review AGENTS.md and README.md files for any incongruence between tests and requirements.
 - Avoid increasing a per-test or per-file timeout to paper over a real failure; the global
   `teardownTimeout: 20_000` in `vitest.config.mts` is a deliberate, already-justified exception that
   bounds teardown across all pool types, not a precedent for further timeout increases.
 - Prefer creating new entities in the test instead of reusing entities.
 - Use randomized IDs to avoid conflicts.
 - If a prior PR's `## Follow-ups` section named a specific follow-up action, verify the owning
-  reference doc or a `CLAUDE.md` actually records it (`git log` on the prior fix commits, then
+  reference doc or a `AGENTS.md` actually records it (`git log` on the prior fix commits, then
   grep those files) before landing another attempt at the same signature; report and durably
   document any missing follow-up there. Do not block the test fix on filing a GitHub issue —
   this prompt has no issue-publication path.
@@ -55,5 +55,5 @@ Review Vitest tests. Pick exactly one concrete, bounded improvement that is safe
   bounded only by the repository-owned `VITEST_MAX_WORKERS` environment policy via
   `parseVitestMaxWorkers()`, and
   `dev/vitest-config.test.mts` bans a hardcoded `maxWorkers` literal.
-- Record any deferred follow-up in the owning reference doc or a `CLAUDE.md`, not only in a PR body
+- Record any deferred follow-up in the owning reference doc or a `AGENTS.md`, not only in a PR body
   or issue comment — a PR body is exactly what a later scheduled run cannot read.

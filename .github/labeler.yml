@@ -23,7 +23,7 @@ web:
 agents:
   - changed-files:
       - any-glob-to-any-file:
-          - '**/CLAUDE.md'
+          - '**/AGENTS.md'
           - '.agents/**'
           - '.claude/**'
           - '.codex/**'

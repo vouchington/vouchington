@@ -30,4 +30,4 @@ The tiered SLA policy, `mv_rss_feed_crawl_tiers`, and the 01:00 UTC refresh job 
 - Service: [../../services/rss-feeds/README.md](../../services/rss-feeds/README.md)
 - RSS Feed Items: [../../services/rss-feed-items/README.md](../../services/rss-feed-items/README.md)
 - Crawling spec: [../../../docs/requirements/content/RSS-FEED-CRAWLING.md](../../../docs/requirements/content/RSS-FEED-CRAWLING.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

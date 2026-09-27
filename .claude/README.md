@@ -64,6 +64,6 @@ eight current provider tools. The local wrapper and tool inventory are documente
 
 ## See Also
 
-- [Root CLAUDE.md](../CLAUDE.md) — agent entrypoint, workspace index, and shared Claude/Codex/Grok/Cursor/OpenCode workflow policy.
+- [Root AGENTS.md](../AGENTS.md) — agent entrypoint, workspace index, and shared Claude/Codex/Grok/Cursor/OpenCode workflow policy.
 - [`.agents/skills/`](../.agents/skills) — shared skill source for entries that must be available to Claude, Codex, Grok, Cursor, and OpenCode, including local-site-testing, retrospective, and retrospective-distill workflows.
 - [Agent Harness Parity](../docs/development/agent-harness-parity.md) — Grok reuses this tree through Claude-compat; do not copy hooks or skills into `.grok/`. Grok prefix-matches `permissions.deny` with no word boundary, so do not add a deny that is a prefix of a sanctioned command (`Bash(git push --force)` blocks `--force-with-lease`). Use `Bash(*git push --force)` for the no-arg form.

@@ -110,8 +110,8 @@
 
 - [Client Parity Matrix](../CLIENT-PARITY-MATRIX.md)
 - [Client feature parity contract](../client-feature-parity.json)
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [Routes](./ROUTES.md)
 - [Topbar & Search](./TOPBAR-SEARCH.md)

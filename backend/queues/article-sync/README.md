@@ -13,4 +13,4 @@ Enqueues background jobs for syncing S3 markdown articles into posts.
 - Worker: [../../workers/article-sync/README.md](../../workers/article-sync/README.md)
 - Service: [../../services/articles/](../../services/articles/)
 - API: [../../api/v1/admin/README.md](../../api/v1/admin/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

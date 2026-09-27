@@ -11,6 +11,6 @@ without a DLQ replay.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Worker: [../../workers/user-deletions/README.md](../../workers/user-deletions/README.md)
 - Requirements: [../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md)

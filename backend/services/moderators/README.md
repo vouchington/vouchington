@@ -9,6 +9,6 @@ Moderator-specific post-tagging actions — delegates to the posts service with 
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Posts service: [../posts/README.md](../posts/README.md)
 - Topics service: [../topics/README.md](../topics/README.md)

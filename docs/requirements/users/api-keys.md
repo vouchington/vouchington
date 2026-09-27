@@ -160,5 +160,5 @@ Append `apikey=YOUR_KEY` to the query string:
 
 - [backend/services/api-keys/README.md](../../../backend/services/api-keys/README.md) — service implementation and key hashing
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
-- [Backend rules](../../../backend/CLAUDE.md) — workspace service and API conventions
-- [API keys service rules](../../../backend/services/api-keys/CLAUDE.md) — service-specific coding rules
+- [Backend rules](../../../backend/AGENTS.md) — workspace service and API conventions
+- [API keys service rules](../../../backend/services/api-keys/AGENTS.md) — service-specific coding rules

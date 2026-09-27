@@ -24,6 +24,6 @@ Malformed feed bodies emit failed RSS crawler analytics with `error_type='ParseF
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Crawler utils: [../crawler-utils/README.md](../crawler-utils/README.md)
 - RSS feeds system: [../../queues/rss-feeds/README.md](../../queues/rss-feeds/README.md)

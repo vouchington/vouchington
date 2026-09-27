@@ -198,7 +198,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   function handleRerun(reportId: string) {
     setRerunningId(reportId)
     // Wrap the entire async sequence so controls stay disabled until both the POST
-    // and the follow-up router.refresh() transition complete (web/CLAUDE.md rule 29).
+    // and the follow-up router.refresh() transition complete (web/AGENTS.md rule 29).
     startRefreshTransition(async () => {
       try {
         await rerunReportJudgement(reportId)

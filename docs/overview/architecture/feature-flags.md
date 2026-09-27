@@ -94,4 +94,4 @@ namespace value. Public reads started after that write remain eligible to refres
 - `backend/data-stores/valkey/dynamic-config.mts` -- `DynamicConfig` class
 - [backend/api/v1/feature-flags/README.md](../../../backend/api/v1/feature-flags/README.md) -- read endpoint
 - [backend/api/v1/dynamic-config/README.md](../../../backend/api/v1/dynamic-config/README.md) -- admin write endpoint and history
-- [Web rules](../../../web/CLAUDE.md) -- UI conventions for feature flags
+- [Web rules](../../../web/AGENTS.md) -- UI conventions for feature flags

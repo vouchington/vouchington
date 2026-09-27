@@ -11,7 +11,7 @@ See also:
 - [Tool registry source](../../../../backend/tools/registry/index.mts)
 - [Tool type definitions](../../../../backend/tools/types.mts)
 - [Tool implementation directory](../../../../backend/tools/)
-- [Agents that use these tools](../../../../backend/agents/CLAUDE.md)
+- [Agents that use these tools](../../../../backend/agents/AGENTS.md)
 
 ---
 

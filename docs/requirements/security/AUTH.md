@@ -136,7 +136,7 @@ Prerequisites:
 - [Auth overview](../../overview/architecture/auth-overview.md) — authentication architecture and edge/session flow
 - [Security](SECURITY.md) — auth security requirements
 - [Signed-out actions](../navigation/SIGNED_OUT_ACTIONS.md) — anonymous CTA behavior
-- [Web rules](../../../web/CLAUDE.md) — auth UI and client data-loading conventions
-- [Backend rules](../../../backend/CLAUDE.md) — auth service and API conventions
+- [Web rules](../../../web/AGENTS.md) — auth UI and client data-loading conventions
+- [Backend rules](../../../backend/AGENTS.md) — auth service and API conventions
 - [OAuth broker rollout](../../operations/oauth-authorization-broker-rollout.md) — rollout,
   rollback, and recovery verification

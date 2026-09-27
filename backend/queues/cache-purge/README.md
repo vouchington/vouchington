@@ -37,6 +37,6 @@ full cached HTML page on every vote would fight the point of caching. See
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Entity cache service: [../../services/entity-cache/README.md](../../services/entity-cache/README.md)
 - Worker purge route: [../../../cloudflare-worker/src/cache-purge-route.mts](../../../cloudflare-worker/src/cache-purge-route.mts)

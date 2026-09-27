@@ -15,7 +15,7 @@ sequence are part of [Linters and Static Analysis](reference-tests-linters-and-s
 - <a id="local-web-validation-recovery"></a>[Local Web Validation Recovery](reference-tests-local-web-validation-recovery.md)
 - <a id="first-push-deterministic-preflight"></a>[First-Push Deterministic Preflight](reference-tests-first-push-deterministic-preflight.md)
 - <a id="linters-and-static-analysis"></a>[Linters and Static Analysis](reference-tests-linters-and-static-analysis.md)
-- <a id="claudemd-and-agentsmd-size-cap"></a>[CLAUDE.md and AGENTS.md Size Cap](reference-tests-claude-md-and-agents-md-size-cap.md)
+- <a id="claudemd-and-agentsmd-size-cap"></a>[AGENTS.md Size Cap](reference-tests-claude-md-and-agents-md-size-cap.md)
 - <a id="vitest-projects"></a>[Vitest Projects](reference-tests-vitest-projects.md)
 - <a id="pools-isolation-and-vitest-5"></a>[Pools, Isolation, and Vitest 5](reference-tests-vitest-projects.md#pools-isolation-and-vitest-5)
 - <a id="parallel-safety-and-test-root-hygiene"></a>[Parallel-Safety and Test-Root Hygiene](reference-tests-parallel-safety-and-test-root-hygiene.md)

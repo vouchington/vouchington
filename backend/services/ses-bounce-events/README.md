@@ -17,5 +17,5 @@ Records and retrieves AWS SES bounce, complaint, and delivery notification event
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - AWS module: [../../modules/aws/README.md](../../modules/aws/README.md)

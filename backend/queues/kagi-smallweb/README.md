@@ -10,6 +10,6 @@ Triggers periodic synchronization of RSS feeds from Kagi Small Web feed lists.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Kagi Small Web service: [../../services/kagi-smallweb/README.md](../../services/kagi-smallweb/README.md)
 - RSS feeds system: [../rss-feeds/README.md](../rss-feeds/README.md)

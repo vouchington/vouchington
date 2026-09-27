@@ -44,8 +44,8 @@ sources of truth for what Vouchington has adapted.
 
 ```mermaid
 flowchart LR
-  claudeMd[CLAUDE.md] --> claude[Claude Code]
-  claudeMd --> codex[Codex fallback]
+  claudeMd[AGENTS.md] --> claude[Claude Code]
+  claudeMd --> codex[Codex]
   claudeMd --> grok[Grok native names]
   claudeMd --> cursor[Cursor CLI]
   claudeMd --> opencode[OpenCode]
@@ -71,7 +71,7 @@ flowchart LR
 
 | Capability    | Claude                                                                                                                       | Codex                                                                                                                                                                          | Grok                                                                                                                                                                                                                             |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Instructions  | Nested `CLAUDE.md`                                                                                                           | `project_doc_fallback_filenames = ["CLAUDE.md"]`                                                                                                                               | Native `CLAUDE.md` / `Claude.md`. Do not add tracked `AGENTS.md`                                                                                                                                                                 |
+| Instructions  | Nested `AGENTS.md`. `CLAUDE.md` is gitignored                                                                                | Nested `AGENTS.md`. No `project_doc_fallback_filenames`                                                                                                                        | Nested `AGENTS.md`. Do not add `CLAUDE.md`                                                                                                                                                                                       |
 | Skills        | Vouchington domain plugin + `.claude/skills` → `.agents/skills` overlays; blackboard also reads its installed provider skill | Vouchington domain plugin + Skill tool / local overlays; blackboard also reads its installed provider skill                                                                    | `.agents/skills` overlays load installed Vouchington and agent-blackboard provider skills                                                                                                                                        |
 | Custom agents | `.claude/agents/github-issue-agent.md`                                                                                       | `.codex/agents/*.toml`                                                                                                                                                         | Reuses the Claude agent via compat. Codex agents are not loaded                                                                                                                                                                  |
 | Hooks         | `.claude/settings.json`                                                                                                      | `.codex/config.toml`                                                                                                                                                           | Reuses Claude hooks via compat; the PreToolUse command sets `timeout: 30`                                                                                                                                                        |
@@ -95,7 +95,7 @@ keeps its separate caller-owned order in `dev/retrospective-transcript-facts/res
 
 ### Cursor capability surface
 
-- Instructions: checked-in `CLAUDE.md`; do not add tracked `AGENTS.md`.
+- Instructions: checked-in `AGENTS.md`. Do not add `CLAUDE.md`.
 - Hooks: Claude-compat runs `.claude/settings.json`; see
   [Cursor through Claude-compat](#cursor-through-claude-compat).
 - Sandbox: native [`.cursor/sandbox.json`](../../.cursor/sandbox.json), with documented
@@ -104,8 +104,8 @@ keeps its separate caller-owned order in `dev/retrospective-transcript-facts/res
 
 ### OpenCode capability surface
 
-- Instructions: checked-in `CLAUDE.md` unless `OPENCODE_DISABLE_CLAUDE_CODE` is set; do not add
-  tracked `AGENTS.md`.
+- Instructions: checked-in `AGENTS.md`. Do not add `CLAUDE.md`. `OPENCODE_DISABLE_CLAUDE_CODE`
+  disables Claude-compat skills only.
 - Hooks: no copied hook or skill tree.
 - Sandbox: provider/client-managed local execution; the repository does not add a second sandbox
   policy.
@@ -179,15 +179,15 @@ Native files under [`.cursor/`](../../.cursor/README.md) own everything else:
   via the generic `setup-worktree` command array. Do not use `setup-worktree-unix` with an
   array: Cursor CLI (`2026.08.11-e8db854`) treats that key as a script path and crashes.
 
-Do not add tracked `AGENTS.md` or a second `.cursor/skills/` tree. Cursor already reads
-`CLAUDE.md` and `.agents/skills`; reusable workflow overlays load their canonical skill from the
+Do not add `CLAUDE.md` or a second `.cursor/skills/` tree. Cursor reads
+`AGENTS.md` and `.agents/skills`; reusable workflow overlays load their canonical skill from the
 installed `vouchington-tooling` package.
 
 ## OpenCode local harness
 
-OpenCode is a first-class local assistant. It already reads `CLAUDE.md` and
-`.claude/skills` unless `OPENCODE_DISABLE_CLAUDE_CODE` is set. Do not copy
-hooks, skills, or `AGENTS.md` into [`.opencode/`](../../.opencode/README.md).
+OpenCode is a first-class local assistant. It reads nested `AGENTS.md` files.
+`OPENCODE_DISABLE_CLAUDE_CODE` disables Claude-compat skills, not `AGENTS.md`. Do not copy
+hooks or skills into [`.opencode/`](../../.opencode/README.md), and do not add `CLAUDE.md`.
 
 - Config: [`opencode.json`](../../opencode.json) (`autoupdate: false`) uses its V1 `mcp` object for
   Agent Blackboard and exact `agent-blackboard_<tool>` allow permissions. Leave the local model unset;

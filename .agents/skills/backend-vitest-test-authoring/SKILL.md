@@ -12,7 +12,7 @@ Claude Code and Codex load `vouchington-testing:backend-vitest-test-authoring`; 
 
 ## Vouchington additions
 
-Read the nearest backend `CLAUDE.md`, then
+Read the nearest backend `AGENTS.md`, then
 [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the shared mock-boundary and
 naming contract, and [`docs/development/tests.md`](../../../docs/development/tests.md) for project
 selection, parallel safety, and validation commands. Use

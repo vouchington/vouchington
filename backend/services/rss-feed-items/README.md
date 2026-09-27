@@ -196,4 +196,4 @@ The admin API (`GET/POST/DELETE /api/v1/rss-feed-categories`) and page (`/rss-fe
   - [../../queues/rss-feeds/README.md](../../queues/rss-feeds/README.md) - Fetching queue
   - [../../queues/bedrock-embeddings/README.md](../../queues/bedrock-embeddings/README.md) - Embedding queue
 - URLs: [../urls/README.md](../urls/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

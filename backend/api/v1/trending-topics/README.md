@@ -32,4 +32,4 @@ Cached (short TTL) for unauthenticated users.
 ## Related
 
 - Service: [../../services/trending-topics/](../../../services/trending-topics/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

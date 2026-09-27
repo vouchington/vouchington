@@ -49,5 +49,5 @@ workflow is `pnpm run explain:seed`, `pnpm run explain:run`, and `pnpm run expla
 ## Related
 
 - [Partitioning Strategy](partitioning-strategy.md)
-- [Database Rules](../../../backend/data-stores/psql/CLAUDE.md)
+- [Database Rules](../../../backend/data-stores/psql/AGENTS.md)
 - [PostgreSQL queue](../../../backend/queues/psql/README.md)

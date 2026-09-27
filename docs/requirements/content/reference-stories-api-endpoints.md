@@ -16,8 +16,8 @@
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - Feed queries: [../../overview/architecture/feeds.md](../../overview/architecture/feeds.md)
 - News discussions: [NEWS-DISCUSSIONS.md](NEWS-DISCUSSIONS.md)

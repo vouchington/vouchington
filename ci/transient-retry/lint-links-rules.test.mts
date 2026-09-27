@@ -21,7 +21,7 @@ describe('lint-links-github-5xx', () => {
     '2026-06-21T05:33:49.8304710Z Issues found in 2 inputs. Find details below.',
     '2026-06-21T05:33:49.8317150Z [.github/workflows/COVERAGE.md]:',
     '2026-06-21T05:33:49.8318880Z [500] https://github.com/nalexn/ViewInspector (at 35:62) | Error (cached)',
-    '2026-06-21T05:33:49.8323550Z [docs/CLAUDE.md]:',
+    '2026-06-21T05:33:49.8323550Z [docs/AGENTS.md]:',
     '2026-06-21T05:33:49.8330930Z [500] https://github.com/nalexn/ViewInspector (at 44:1) | Rejected status code: 500 Internal Server Error',
     '2026-06-21T05:33:49.8432760Z ##[error]Process completed with exit code 2.',
   ].join('\n')

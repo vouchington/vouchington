@@ -19,7 +19,7 @@ commits.
 - Update seed data and CSV-backed import data, including dev seeds, Playwright seeds, explain-analyze
   seeds, and validation scripts.
 - Update docs that name the values, especially requirement matrices, route docs, SEO/sitemap docs,
-  and workspace `CLAUDE.md` files.
+  and workspace `AGENTS.md` files.
 - If a value is renamed, check both the old and new value. If a value is removed, check the removed
   value and any old route slug.
 

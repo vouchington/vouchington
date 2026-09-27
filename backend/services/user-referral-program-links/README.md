@@ -18,6 +18,6 @@ Every read and `RETURNING` that feeds a response selects `userReferralLinkColumn
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Prioritized referral links: [../prioritized-referral-links/README.md](../prioritized-referral-links/README.md)
 - Referral links requirements: [../../../docs/requirements/users/REFERRAL-LINKS.md](../../../docs/requirements/users/REFERRAL-LINKS.md)

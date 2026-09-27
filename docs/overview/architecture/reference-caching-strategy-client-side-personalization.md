@@ -78,8 +78,8 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
 ## Related
 
 - [Anonymous HTML edge caching vs. CSP nonces](./anon-html-edge-caching-csp.md) — why anon HTML is cacheable despite the per-request CSP nonce, and the placeholder-nonce safety argument
-- [Backend rules](../../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../../web/CLAUDE.md) — UI and routing conventions
+- [Backend rules](../../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
 - [docs/overview/architecture/ai-agents.md](./ai-agents.md)
 - [docs/overview/architecture/auth-overview.md](./auth-overview.md)

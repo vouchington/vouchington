@@ -75,8 +75,8 @@ Administrators can always view all user content regardless of privacy settings.
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 - [User Relation Matrix](./USER-RELATION-MATRIX.md)
 - [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
 

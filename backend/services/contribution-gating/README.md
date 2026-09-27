@@ -36,7 +36,7 @@ provider addresses. X is excluded. Missing verified email returns the dedicated
 ## Related
 
 - Contribution limits matrix: [../../../docs/requirements/trust-safety/CONTRIBUTION-LIMITS.md](../../../docs/requirements/trust-safety/CONTRIBUTION-LIMITS.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Memberships: [../memberships/README.md](../memberships/README.md)
 - Users service: [../users/README.md](../users/README.md)
 

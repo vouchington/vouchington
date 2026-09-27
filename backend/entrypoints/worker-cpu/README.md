@@ -47,6 +47,6 @@ never commit or log it. Local and CI workers leave the variable unset.
 ## Related
 
 - Shared worker framework: [../../worker-runtime/](../../worker-runtime/)
-- Worker packages: [../../workers/CLAUDE.md](../../workers/CLAUDE.md)
-- Queue packages: [../../queues/CLAUDE.md](../../queues/CLAUDE.md)
-- Local entrypoint rules: [CLAUDE.md](CLAUDE.md)
+- Worker packages: [../../workers/AGENTS.md](../../workers/AGENTS.md)
+- Queue packages: [../../queues/AGENTS.md](../../queues/AGENTS.md)
+- Local entrypoint rules: [AGENTS.md](AGENTS.md)

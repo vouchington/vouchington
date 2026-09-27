@@ -82,8 +82,8 @@ To add a new public page to the static sitemap, append its path to `STATIC_PAGE_
 - [Sitemap service](../../../backend/services/sitemaps/README.md) — Sitemap generation logic
 - [PostgreSQL system](../../../backend/queues/psql/README.md) — Nightly job that triggers sitemap generation
 - [SEO requirements](../../requirements/seo/SEO.md) — Sitemap eligibility tied to indexability rules
-- [Backend rules](../../../backend/CLAUDE.md) — service and caching conventions
-- [Web rules](../../../web/CLAUDE.md) — SEO metadata and sitemap-linked indexability rules
+- [Backend rules](../../../backend/AGENTS.md) — service and caching conventions
+- [Web rules](../../../web/AGENTS.md) — SEO metadata and sitemap-linked indexability rules
 
 ## Google News Sitemaps
 

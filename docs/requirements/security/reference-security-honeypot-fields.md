@@ -123,8 +123,8 @@ Before deploying to production, verify:
   credential-shaped URL discovery and exact-host security review
 - [Networking](../../overview/infrastructure/networking.md) — audited external API IPv6 support and direct-call decisions
 - [Next.js CVE tracking](./SECURITY-NEXTJS-CVES.md) — patch floor, per-CVE status, and edge mitigation reference for Next.js advisories
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

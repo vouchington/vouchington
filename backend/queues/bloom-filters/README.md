@@ -46,5 +46,5 @@ backfill now also self-heals a lost delete job rather than only relying on the T
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [Bloom Filter Config Service](../../services/bloom-filter-config/README.md)

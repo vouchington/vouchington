@@ -21,7 +21,7 @@ Use this checklist when adding a dependency, editing a workspace `package.json`,
 ## See Also
 
 - [package-json-checklist skill](../../.agents/skills/package-json-checklist/SKILL.md) — skill entry point
-- [backend/CLAUDE.md](../../backend/CLAUDE.md) — new service registration rules
+- [backend/AGENTS.md](../../backend/AGENTS.md) — new service registration rules
 - [docs/development/first-party-dependencies.md](../development/first-party-dependencies.md) — first-party package map
 - [docs/development/dependency-updates.md](../development/dependency-updates.md) — Dependabot/Renovate coverage, pinning style, and docs pinning policy
-- [CLAUDE.md](../../CLAUDE.md) — root instructions
+- [AGENTS.md](../../AGENTS.md) — root instructions

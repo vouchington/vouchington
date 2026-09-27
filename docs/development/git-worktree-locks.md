@@ -189,5 +189,5 @@ no stale reset lock to clear with `./dev/unstick-locks`.
 
 ## See Also
 
-- [dev/CLAUDE.md](../../dev/CLAUDE.md) — worktree setup and initialization; `./dev/unstick-locks` command
+- [dev/AGENTS.md](../../dev/AGENTS.md) — worktree setup and initialization; `./dev/unstick-locks` command
 - Original diagnosis (formerly filed as jonathanong/filaments#2290)

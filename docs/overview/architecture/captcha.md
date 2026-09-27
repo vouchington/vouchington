@@ -105,7 +105,7 @@ Every failure path fails open: reCAPTCHA must never break content creation.
 Runtime knobs live in Valkey **DynamicConfig** (admin-editable + audited via
 `/api/v1/dynamic-config/namespaces/…`; edited through `/admin/dynamic-config`).
 They are DynamicConfig values, **not feature flags** — backend behaviour must never be gated by a
-feature flag (`backend/api/CLAUDE.md`).
+feature flag (`backend/api/AGENTS.md`).
 
 ### Turnstile
 

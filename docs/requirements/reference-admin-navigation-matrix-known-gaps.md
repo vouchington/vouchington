@@ -24,5 +24,5 @@ Resolved: gap #1 (`crawler`) shipped as the `/crawlers` index page (`web/app/(cr
 - [memberships](./users/memberships.md) — membership grant/management
 - [HOSTNAME-BLOCKING](./content/HOSTNAME-BLOCKING.md) — domain blocking and crawler management
 - [RSS-FEED-CATEGORY-ALIASES](./content/RSS-FEED-CATEGORY-ALIASES.md) — unmapped RSS feed category triage
-- [Web rules](../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../backend/AGENTS.md) — service, API, and data conventions

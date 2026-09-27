@@ -42,7 +42,7 @@ within the client's existing bounded retry schedule. Non-idempotent requests and
 throw a response-rejection error. Accepted responses, including non-2xx responses, retain their
 original body and fetch metadata.
 
-Read [CLAUDE.md](CLAUDE.md) before changing suite setup, artifacts, data ownership, tracing, or
+Read [AGENTS.md](AGENTS.md) before changing suite setup, artifacts, data ownership, tracing, or
 failure behavior.
 
 ## Authentication Isolation

@@ -14,15 +14,15 @@ Claude Code and Codex load `vouchington-workflow:agent-workflow`; Grok, Cursor, 
 
 The remaining rules are Vouchington-only SDLC and safety policy.
 
-This is the shared workflow for Claude Code, Codex, Grok, Cursor, and OpenCode agents working in this repository. It is referenced from [`.husky/CLAUDE.md`](../../../.husky/CLAUDE.md). Codex, Grok, and Cursor read checked-in `CLAUDE.md` files; do not add generated `AGENTS.md` copies of repo or workspace agent instructions. See [agent-harness-parity.md](../../../docs/development/agent-harness-parity.md).
+This is the shared workflow for Claude Code, Codex, Grok, Cursor, and OpenCode agents working in this repository. It is referenced from [`.husky/AGENTS.md`](../../../.husky/AGENTS.md). Every harness reads checked-in `AGENTS.md` files. Do not add `CLAUDE.md`; it is gitignored and Claude Code would read it instead of `AGENTS.md`. See [agent-harness-parity.md](../../../docs/development/agent-harness-parity.md).
 
 Related local instructions:
 
-- Root entrypoint: [CLAUDE.md](../../../CLAUDE.md)
+- Root entrypoint: [AGENTS.md](../../../AGENTS.md)
 - Cursor CLI config: [`.cursor/README.md`](../../../.cursor/README.md)
-- Worktree and local services: [dev/CLAUDE.md](../../../dev/CLAUDE.md)
+- Worktree and local services: [dev/AGENTS.md](../../../dev/AGENTS.md)
 - Before-push commands: [before-pushing.md](before-pushing.md)
-- Git hooks: [`.husky/CLAUDE.md`](../../../.husky/CLAUDE.md)
+- Git hooks: [`.husky/AGENTS.md`](../../../.husky/AGENTS.md)
 - Documentation index: [docs/README.md](../../../docs/README.md)
 - Planning artifact and schema: [planning skill](../planning/SKILL.md)
 
@@ -41,7 +41,7 @@ Related local instructions:
 - Google Gemini — does not support privacy mode for personal accounts.
 - Z.AI — does not support privacy mode except for enterprise accounts.
 
-This repository keeps agent instructions in checked-in `CLAUDE.md` files. Codex reads those files through `project_doc_fallback_filenames = ["CLAUDE.md"]` in [.codex/config.toml](../../../.codex/config.toml). Grok and Cursor load `CLAUDE.md` natively. Do not add tracked generated `AGENTS.md` copies of repo or workspace agent instructions; `CLAUDE.md` is the shared project-instruction source for Claude, Codex, Grok, and Cursor.
+This repository keeps agent instructions in checked-in `AGENTS.md` files. Codex, Grok, Cursor, and OpenCode read those files natively. Claude Code reads them because `CLAUDE.md` is absent. [.codex/config.toml](../../../.codex/config.toml) does not set `project_doc_fallback_filenames`. Do not add `CLAUDE.md`.
 
 ## Feedback And Decision Hierarchy
 

@@ -1,6 +1,6 @@
 # Agents Architecture
 
-Agent modification rules live in [CLAUDE.md](CLAUDE.md). Load
+Agent modification rules live in [AGENTS.md](AGENTS.md). Load
 [backend-vitest-test-authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md) before
 changing agent tests or external-provider mocks.
 

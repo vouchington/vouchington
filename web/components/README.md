@@ -1,6 +1,6 @@
 # Web Components
 
-Top-level component taxonomy for [`web/components/`](./). See [../CLAUDE.md](../CLAUDE.md) for agent conventions.
+Top-level component taxonomy for [`web/components/`](./). See [../AGENTS.md](../AGENTS.md) for agent conventions.
 
 ## Subdirectory Map
 
@@ -46,7 +46,7 @@ Top-level component taxonomy for [`web/components/`](./). See [../CLAUDE.md](../
 
 ## Related
 
-- Web agent rules: [../CLAUDE.md](../CLAUDE.md)
+- Web agent rules: [../AGENTS.md](../AGENTS.md)
 - Layout and responsive rules: [Mobile Responsiveness](../../docs/requirements/navigation/MOBILE.md)
 - Aside inventory: [../../docs/requirements/navigation/ASIDES.md](../../docs/requirements/navigation/ASIDES.md)
 - UI component patterns: [../../docs/requirements/navigation/COMPONENTS.md](../../docs/requirements/navigation/COMPONENTS.md)

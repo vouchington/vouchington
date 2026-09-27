@@ -18,6 +18,6 @@ This module keeps Voucha environment names, cache behavior, and product-facing e
 
 ## Related
 
-- Backend rules: [../../CLAUDE.md](../../CLAUDE.md)
+- Backend rules: [../../AGENTS.md](../../AGENTS.md)
 - Security requirements: [../../../docs/requirements/security/SECURITY.md](../../../docs/requirements/security/SECURITY.md)
 - Environment variables: [../../../docs/overview/infrastructure/environment-variables.md](../../../docs/overview/infrastructure/environment-variables.md)

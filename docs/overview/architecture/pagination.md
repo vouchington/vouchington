@@ -146,9 +146,9 @@ export — prefer the named export at every genuinely provably-empty site so the
 
 ## Related Guidance
 
-- [Root repository rules](../../../CLAUDE.md)
-- [Backend rules](../../../backend/CLAUDE.md) and [API route rules](../../../backend/api/CLAUDE.md)
-- [Web rules](../../../web/CLAUDE.md) and [route requirements](../../requirements/navigation/ROUTES.md)
+- [Root repository rules](../../../AGENTS.md)
+- [Backend rules](../../../backend/AGENTS.md) and [API route rules](../../../backend/api/AGENTS.md)
+- [Web rules](../../../web/AGENTS.md) and [route requirements](../../requirements/navigation/ROUTES.md)
 - [User settings workflows](../../requirements/users/USER_SETTINGS.md)
 - [native client rules](https://github.com/vouchington/vouchington-clients), and
   [native parity checklist](../../checklists/native-parity-interactions.md)

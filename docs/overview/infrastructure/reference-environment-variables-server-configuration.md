@@ -19,4 +19,4 @@
 - [docs/overview/architecture/ai-agents.md](../architecture/ai-agents.md)
 - [docs/overview/architecture/auth-overview.md](../architecture/auth-overview.md)
 - [docs/development/local-env-vars.md](../../development/local-env-vars.md)
-- [backend/CLAUDE.md](../../../backend/CLAUDE.md)
+- [backend/AGENTS.md](../../../backend/AGENTS.md)

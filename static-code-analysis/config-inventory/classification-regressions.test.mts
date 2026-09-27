@@ -156,7 +156,7 @@ describe('config inventory classification regressions', () => {
       ].join('\n'),
       'backend/test-helpers/examples.glide-mq-testing.md':
         'Deprecated example: `if (process.env.BULLMQ_INLINE_MODE) {}`\n',
-      'dev/CLAUDE.md': '`WORKER_CONCURRENCY_MAX`\n`WORKER_CONCURRENCY_SCALE`\n',
+      'dev/AGENTS.md': '`WORKER_CONCURRENCY_MAX`\n`WORKER_CONCURRENCY_SCALE`\n',
       'docs/overview/infrastructure/environment-variables.md':
         '`ARG`\n`ENV`\n`WORKER_CONCURRENCY_MAX`\n`WORKER_CONCURRENCY_BLOOM_FILTERS`\n./dev/config-inventory\n',
       'ts-shared/env-contract/index.mts': [
@@ -189,7 +189,7 @@ describe('config inventory classification regressions', () => {
         expect.objectContaining({ name: 'BULLMQ_INLINE_MODE' }),
         expect.objectContaining({
           name: 'WORKER_CONCURRENCY_MAX',
-          localSetup: ['dev/CLAUDE.md'],
+          localSetup: ['dev/AGENTS.md'],
         }),
         expect.objectContaining({ name: 'WORKER_CONCURRENCY_SCALE' }),
       ]),

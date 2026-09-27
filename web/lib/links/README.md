@@ -1,6 +1,6 @@
 # Entity Link Helpers Reference
 
-Full exported helper list from `entity-href.ts`. Directory-scoped invariants: [CLAUDE.md](CLAUDE.md).
+Full exported helper list from `entity-href.ts`. Directory-scoped invariants: [AGENTS.md](AGENTS.md).
 
 ## Usage
 
@@ -54,4 +54,4 @@ Full exported helper list from `entity-href.ts`. Directory-scoped invariants: [C
 
 ## See Also
 
-- Usage rules (which helper to call from which context): [CLAUDE.md](CLAUDE.md)
+- Usage rules (which helper to call from which context): [AGENTS.md](AGENTS.md)

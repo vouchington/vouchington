@@ -39,10 +39,10 @@ See [Source Item Anatomy — List-Item / Card Anatomy](../anatomy/source-item.md
 
 ## Component Rules
 
-See [web/components/news/CLAUDE.md](../../../web/components/news/CLAUDE.md) for component-level implementation rules.
+See [web/components/news/AGENTS.md](../../../web/components/news/AGENTS.md) for component-level implementation rules.
 
 ## Related
 
 - Story schema and clustering: [stories.md](stories.md)
 - Per-item Discuss and news card behavior: [NEWS-DISCUSSIONS.md](NEWS-DISCUSSIONS.md)
-- Component rules: [web/components/news/CLAUDE.md](../../../web/components/news/CLAUDE.md)
+- Component rules: [web/components/news/AGENTS.md](../../../web/components/news/AGENTS.md)

@@ -82,8 +82,8 @@ Without a working GTM host at `g.voucha.ai`, the browser will fail to load the G
 
 ## Related
 
-- [Backend rules](../../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../../web/CLAUDE.md) — UI and routing conventions
+- [Backend rules](../../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
 - [docs/overview/architecture/ai-agents.md](./ai-agents.md)
 - [docs/overview/architecture/auth-overview.md](./auth-overview.md)

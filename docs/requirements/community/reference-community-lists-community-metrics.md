@@ -19,8 +19,8 @@ Metrics are returned in `GET /api/v1/communities/:idOrSlug` (always) and uncondi
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - Service: [backend/services/communities/list-items/README.md](../../../backend/services/communities/list-items/README.md)
 - Metrics service: `backend/services/communities/metrics.mts`

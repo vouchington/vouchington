@@ -44,4 +44,4 @@ authored to satisfy the same (now-wrong) literal, so the suite stayed green fore
 replacing all seven per-test title/timeout-digit regexes with the project-derived matcher above, and
 by `repo-owned-literal-freshness.test.mts`'s freshness + completeness guard, which fails the moment a
 repo-owned literal like this one goes stale instead of staying silently green. See
-`ci/transient-retry/CLAUDE.md`'s invariant on this.
+`ci/transient-retry/AGENTS.md`'s invariant on this.

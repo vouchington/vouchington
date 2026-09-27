@@ -176,4 +176,4 @@ Soft-deletes a conversation. The conversation is hidden from list endpoints but 
 
 - Service: [../../services/conversations-messages/](../../../services/conversations-messages/README.md)
 - Chat agent: [../../agents/chat/README.md](../../../agents/chat/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

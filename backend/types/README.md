@@ -77,7 +77,7 @@ do not add tests for a dependency's own runtime behavior. See the
 
 ## Related
 
-- Backend context: [../CLAUDE.md](../CLAUDE.md)
-- Services (consume these types): [../services/CLAUDE.md](../services/CLAUDE.md)
-- API routes (consume these types): [../api/CLAUDE.md](../api/CLAUDE.md)
+- Backend context: [../AGENTS.md](../AGENTS.md)
+- Services (consume these types): [../services/AGENTS.md](../services/AGENTS.md)
+- API routes (consume these types): [../api/AGENTS.md](../api/AGENTS.md)
 - TypeScript standards: [../../docs/overview/architecture/typescript-standards.md](../../docs/overview/architecture/typescript-standards.md)

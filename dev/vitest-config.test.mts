@@ -176,7 +176,7 @@ describe('Vitest project exclude invariant', () => {
 describe('Vitest fileParallelism invariant', () => {
   it('fileParallelism is never false in any vitest config file', () => {
     // All projects must allow parallel file execution. DB safety comes from randomized IDs
-    // (the dirty-DB design in backend/test-helpers/CLAUDE.md), not serial ordering.
+    // (the dirty-DB design in backend/test-helpers/AGENTS.md), not serial ordering.
     // Concurrency is throttled only by the repo-owned VITEST_MAX_WORKERS environment policy — see the
     // 'Vitest worker-count invariant' describe block below for why a project-level
     // `maxWorkers` literal is both banned and non-functional.

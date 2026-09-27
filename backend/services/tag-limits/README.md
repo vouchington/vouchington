@@ -44,4 +44,4 @@ The limit is enforced against a live count, not a rolling quota — there is no 
 - Entity relations: [../entity-relations/README.md](../entity-relations/README.md)
 - Contribution gating (unrelated daily quota for user-subject vouch tags): [../contribution-gating/README.md](../contribution-gating/README.md)
 - Autotagger paid limits (the separate, LLM-driven cap): [../autotagger/README.md](../autotagger/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

@@ -31,5 +31,5 @@ Resolved: gap #3 (`post` Archive/Unarchive, formerly filed as jonathanong/filame
 - [Community Lists](./community/community-lists.md) — curated list management
 - [Community Moderation](./moderation/community-moderation.md) — mod queue, prompts, and enforcement
 - [Entity Relations](../overview/architecture/entity-relations.md) — predicate vocabulary and relation tables
-- [Backend rules](../../backend/CLAUDE.md) — vote and permission API conventions
-- [Web rules](../../web/CLAUDE.md) — UI, routing, and client conventions
+- [Backend rules](../../backend/AGENTS.md) — vote and permission API conventions
+- [Web rules](../../web/AGENTS.md) — UI, routing, and client conventions

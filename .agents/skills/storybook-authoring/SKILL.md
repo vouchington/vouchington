@@ -12,7 +12,7 @@ Claude Code and Codex load `vouchington-testing:storybook-authoring`; Grok, Curs
 
 ## Vouchington additions
 
-Read [`web/storybook/CLAUDE.md`](../../../web/storybook/CLAUDE.md) before editing. Stories run
+Read [`web/storybook/AGENTS.md`](../../../web/storybook/AGENTS.md) before editing. Stories run
 twice: under `web-storybook` (Node, light) and `web-storybook-browser` (Vitest + Playwright
 Chromium). Use [`web/storybook/README.md`](../../../web/storybook/README.md) when diagnosing
 browser-runner or Vite failures.
@@ -71,6 +71,6 @@ viteFinal`) — the former covers Vitest browser-mode, the latter covers Storybo
 - **Don't rely on `window` in module top-level code.** Browser mode renders headless Chromium;
   module-side reads of `window.innerWidth` fire before tests configure anything.
 - **`data-testid` is allowed only for play-function markers and `vi.mock` stubs.** Production
-  component code must use `data-pw` (see [`web/CLAUDE.md`](../../../web/CLAUDE.md)).
+  component code must use `data-pw` (see [`web/AGENTS.md`](../../../web/AGENTS.md)).
 
 Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) gate: static JSX belongs in Storybook when it owns the observable component contract, rather than duplicating it in browser tests.

@@ -34,5 +34,5 @@ Publicly cacheable (`Cache-Control: public, max-age=60` for unauthenticated requ
 ## Related
 
 - Service: [../../../services/countries/README.md](../../../services/countries/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)
 - Backend API: [../../README.md](../../README.md)

@@ -9,6 +9,6 @@ Retrieves prioritized referral links for display, ordered across six priority gr
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - User referral program links: [../user-referral-program-links/README.md](../user-referral-program-links/README.md)
 - Referral links requirements: [../../../docs/requirements/users/REFERRAL-LINKS.md](../../../docs/requirements/users/REFERRAL-LINKS.md)

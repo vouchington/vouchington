@@ -26,7 +26,7 @@ Routes, navigation patterns, UI components, keyboard shortcuts, accessibility, a
 ## Sync Rule
 
 When route shapes, navigation intents, or UI component APIs change, update the relevant doc here
-and cross-link from `web/CLAUDE.md` and the relevant page or component.
+and cross-link from `web/AGENTS.md` and the relevant page or component.
 
 ## Guard-pinned files
 

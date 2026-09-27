@@ -38,7 +38,7 @@ trackAuthSessionEvent({ did, sid, uid, eventType: 'created' })
 
 ## Related
 
-- Agent conventions: [CLAUDE.md](CLAUDE.md)
-- Data store: [../../data-stores/analytics/CLAUDE.md](../../data-stores/analytics/CLAUDE.md)
+- Agent conventions: [AGENTS.md](AGENTS.md)
+- Data store: [../../data-stores/analytics/AGENTS.md](../../data-stores/analytics/AGENTS.md)
 - Analytics pipeline: [../../../docs/overview/architecture/analytics-pipeline.md](../../../docs/overview/architecture/analytics-pipeline.md)
-- Backend context: [../../CLAUDE.md](../../CLAUDE.md)
+- Backend context: [../../AGENTS.md](../../AGENTS.md)

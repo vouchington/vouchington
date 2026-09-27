@@ -106,8 +106,8 @@ When a bloom filter is not ready, a background job (`enqueueBackfillUserBookmark
 
 ## Related Services
 
-- [Backend rules](../../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../../web/CLAUDE.md) — UI and routing conventions
+- [Backend rules](../../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
 - [backend/services/bookmarks/README.md](../../../backend/services/bookmarks/README.md) -- upsert, get, bloom filter, counts
 - [backend/services/entity-relations/README.md](../../../backend/services/entity-relations/README.md) -- underlying relation storage

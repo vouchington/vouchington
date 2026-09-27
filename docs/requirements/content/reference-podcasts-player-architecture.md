@@ -111,7 +111,7 @@ same REST API contract.
 Endpoint factories are defined. The response models live in
 `VouchaModels/PodcastPlaybackPosition.swift` and `VouchaModels/PodcastChapter.swift`.
 The contract must remain stable so the Swift client needs no update when the contract is already consumed.
-See the [Swift client instructions](https://github.com/vouchington/vouchington-clients/blob/main/swift-clients/CLAUDE.md).
+See the [Swift client instructions](https://github.com/vouchington/vouchington-clients/blob/main/swift-clients/AGENTS.md).
 
 `PodcastPlaybackController` owns resume, visible-chapter loading, chapter seeking, and playback
 speed. `PodcastMiniPlayerView` renders the chapter and speed controls.

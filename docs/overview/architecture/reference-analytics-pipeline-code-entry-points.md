@@ -6,7 +6,7 @@
 
 - Data store (emit/query/shutdown): [backend/data-stores/analytics/](../../../backend/data-stores/analytics/)
 - Typed emit wrappers: [backend/services/analytics/](../../../backend/services/analytics/)
-- Agent conventions: [backend/data-stores/analytics/CLAUDE.md](../../../backend/data-stores/analytics/CLAUDE.md), [backend/services/analytics/CLAUDE.md](../../../backend/services/analytics/CLAUDE.md)
+- Agent conventions: [backend/data-stores/analytics/AGENTS.md](../../../backend/data-stores/analytics/AGENTS.md), [backend/services/analytics/AGENTS.md](../../../backend/services/analytics/AGENTS.md)
 
 ## Backends
 

@@ -43,4 +43,4 @@ Missing either form leaves the corresponding cache stale for up to the `urls_loo
 - URL Hostnames: [../urls-hostnames/README.md](../urls-hostnames/README.md)
 - URL Domain Blacklist: [../urls-domains-blacklist/README.md](../urls-domains-blacklist/README.md)
 - URL Domain Robots: [../urls-domains-robots/README.md](../urls-domains-robots/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

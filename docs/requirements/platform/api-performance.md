@@ -101,7 +101,7 @@ transaction client, mutate a shared cursor, or depend on provider retry ordering
 ## Related
 
 - API route reference: [backend/api/README.md](../../../backend/api/README.md)
-- Backend workspace rules: [backend/CLAUDE.md](../../../backend/CLAUDE.md)
-- API modification rules: [backend/api/CLAUDE.md](../../../backend/api/CLAUDE.md)
+- Backend workspace rules: [backend/AGENTS.md](../../../backend/AGENTS.md)
+- API modification rules: [backend/api/AGENTS.md](../../../backend/api/AGENTS.md)
 - Valkey caching: [backend/data-stores/valkey/README.md](../../../backend/data-stores/valkey/README.md)
 - Rate limiting: [docs/overview/architecture/rate-limiting.md](../../overview/architecture/rate-limiting.md)

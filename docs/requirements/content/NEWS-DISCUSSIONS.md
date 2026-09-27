@@ -29,7 +29,7 @@ RSS feed item detail is rendered as a URL-addressable modal on top of news/feed/
 
 ### News Item Cards
 
-See [Source Item Anatomy — List-Item / Card Anatomy](../anatomy/source-item.md#list-item--card-anatomy) for the card element breakdown (title, header row, snippet, action row, story cluster rendering, and official-source badge placement). Implementation rules for `web/components/feed/` live in [`web/components/feed/CLAUDE.md`](../../../web/components/feed/CLAUDE.md).
+See [Source Item Anatomy — List-Item / Card Anatomy](../anatomy/source-item.md#list-item--card-anatomy) for the card element breakdown (title, header row, snippet, action row, story cluster rendering, and official-source badge placement). Implementation rules for `web/components/feed/` live in [`web/components/feed/AGENTS.md`](../../../web/components/feed/AGENTS.md).
 
 Layout contracts on `NewsItemCard`:
 
@@ -166,9 +166,9 @@ Added to RSS feed item responses (auth-required for search endpoint):
 
 ## Related
 
-- [News component rules](../../../web/components/news/CLAUDE.md) — component-level implementation rules for `web/components/news/`
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [News component rules](../../../web/components/news/AGENTS.md) — component-level implementation rules for `web/components/news/`
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

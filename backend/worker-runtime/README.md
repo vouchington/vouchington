@@ -92,10 +92,10 @@ staging and production.
 
 ## See Also
 
-- Worker entrypoints: [`../entrypoints/worker-cpu/`](../entrypoints/worker-cpu/CLAUDE.md),
-  [`../entrypoints/worker-io/`](../entrypoints/worker-io/CLAUDE.md)
-- Queue packages: [`../queues/CLAUDE.md`](../queues/CLAUDE.md)
-- Worker packages: [`../workers/CLAUDE.md`](../workers/CLAUDE.md)
+- Worker entrypoints: [`../entrypoints/worker-cpu/`](../entrypoints/worker-cpu/AGENTS.md),
+  [`../entrypoints/worker-io/`](../entrypoints/worker-io/AGENTS.md)
+- Queue packages: [`../queues/AGENTS.md`](../queues/AGENTS.md)
+- Worker packages: [`../workers/AGENTS.md`](../workers/AGENTS.md)
 - Worker queue inventory and placement policy:
   [`../modules/worker-queue-inventory/README.md`](../modules/worker-queue-inventory/README.md)
 - Heartbeat queue: [`../queues/heartbeat/README.md`](../queues/heartbeat/README.md)

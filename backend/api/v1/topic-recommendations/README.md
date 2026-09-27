@@ -101,4 +101,4 @@ Approval creates the type-specific extension row (`topics__referral_programs` or
 
 - Service: [../../../services/topic-recommendations/](../../../services/topic-recommendations/README.md)
 - Post service: [../../../services/posts/](../../../services/posts/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

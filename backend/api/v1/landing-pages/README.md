@@ -56,4 +56,4 @@ and returns `200 { ok: true }` without recording analytics.
 ## Related
 
 - Service: [../../../services/landing-page-analytics/](../../../services/landing-page-analytics/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

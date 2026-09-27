@@ -40,5 +40,5 @@ computePostChanges(before, after) // utility to diff two post states
 ## Related
 
 - Topic Revisions: [`../topic-revisions/README.md`](../topic-revisions/README.md)
-- Posts Service: [`../posts/CLAUDE.md`](../posts/CLAUDE.md)
+- Posts Service: [`../posts/AGENTS.md`](../posts/AGENTS.md)
 - Post Lifecycle: [`../../../docs/overview/architecture/post-lifecycle.md`](../../../docs/overview/architecture/post-lifecycle.md)

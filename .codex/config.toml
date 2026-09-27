@@ -1,5 +1,4 @@
-# Codex reads this repo's checked-in CLAUDE.md files directly.
-project_doc_fallback_filenames = ["CLAUDE.md"]
+# Codex reads checked-in AGENTS.md files. Do not add a CLAUDE.md fallback.
 plan_mode_reasoning_effort = "xhigh"
 model_reasoning_effort = "medium"
 model = "gpt-6-astra"

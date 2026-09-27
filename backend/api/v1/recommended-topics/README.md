@@ -32,4 +32,4 @@ Response is streamed and includes: `results`, `page_info`, `topics`, `topics_met
 ## Related
 
 - Service: [../../services/recommended-topics/](../../../services/recommended-topics/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

@@ -70,4 +70,4 @@ Manage households and their memberships.
 
 - Service: [../../services/individuals-households/](../../../services/individuals-households/README.md)
 - Individuals: [../individuals/README.md](../individuals/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

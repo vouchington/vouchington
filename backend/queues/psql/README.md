@@ -47,5 +47,5 @@ refresh while the hourly schedule remains a recovery path.
 
 ## Related
 
-- Database: [../../data-stores/psql/CLAUDE.md](../../data-stores/psql/CLAUDE.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Database: [../../data-stores/psql/AGENTS.md](../../data-stores/psql/AGENTS.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

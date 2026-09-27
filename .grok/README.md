@@ -3,7 +3,7 @@
 Grok is a first-class local assistant in this repository. It does **not** get
 copied hooks, skills, or permission allowlists.
 
-- Read checked-in `CLAUDE.md` files. Do not add tracked `AGENTS.md` copies.
+- Read checked-in `AGENTS.md` files. Do not add `CLAUDE.md`; it is gitignored and would take precedence in Claude Code.
 - Skills load from [`.agents/skills/`](../.agents/skills).
 - Hooks, permissions, and `github-issue-agent` load through Claude-compat from
   [`.claude/`](../.claude).

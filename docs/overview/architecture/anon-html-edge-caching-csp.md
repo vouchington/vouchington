@@ -228,6 +228,6 @@ why this stays a deferred option rather than a permanent rejection.
 ## Related
 
 - [Caching strategy](./caching-strategy.md) — cache tiers, TTLs, `Cache-Tag` purge, what's cached today
-- [`cloudflare-worker/CLAUDE.md`](../../../cloudflare-worker/CLAUDE.md) — placeholder-nonce operational rule
+- [`cloudflare-worker/AGENTS.md`](../../../cloudflare-worker/AGENTS.md) — placeholder-nonce operational rule
 - [Security requirements](../../requirements/security/SECURITY.md)
 - [CSRF](../../requirements/security/CSRF.md) — why Voucha has no anti-forgery tokens to worry about here

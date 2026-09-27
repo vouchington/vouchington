@@ -1,6 +1,6 @@
 # Web Library
 
-Shared utilities and helpers for [`web/`](../). See [../CLAUDE.md](../CLAUDE.md) for agent conventions.
+Shared utilities and helpers for [`web/`](../). See [../AGENTS.md](../AGENTS.md) for agent conventions.
 
 ## Module Index
 
@@ -26,7 +26,7 @@ Shared utilities and helpers for [`web/`](../). See [../CLAUDE.md](../CLAUDE.md)
 
 ## Related
 
-- Web agent rules: [../CLAUDE.md](../CLAUDE.md)
+- Web agent rules: [../AGENTS.md](../AGENTS.md)
 - Integration tests covering [`api/`](api/): [../../integration-tests/web-api/](../../integration-tests/web-api/)
 - Feature flags overview: [../../docs/overview/architecture/feature-flags.md](../../docs/overview/architecture/feature-flags.md)
 - Shared feature flag cookie primitives: [../../ts-shared/feature-flags/index.mts](../../ts-shared/feature-flags/index.mts)

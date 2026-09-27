@@ -11,5 +11,5 @@ Generates personalized topic recommendations for users based on configurable sea
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Topics service: [../topics/README.md](../topics/README.md)

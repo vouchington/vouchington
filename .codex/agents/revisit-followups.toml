@@ -1,5 +1,5 @@
 name = "revisit-followups"
-description = "Scan merged-PR Shepherd Journals + CLAUDE.md + closed-issue bodies/comments for deferred follow-ups; file the actionable ones as issues."
+description = "Scan merged-PR Shepherd Journals + AGENTS.md + closed-issue bodies/comments for deferred follow-ups; file the actionable ones as issues."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 developer_instructions = """

@@ -4,11 +4,11 @@ This document is the authoritative policy for which action buttons are visible t
 
 Code entry points: [web/components/shared/follow-button.tsx](../../../web/components/shared/follow-button.tsx) · [web/components/votes/score-vote.tsx](../../../web/components/votes/score-vote.tsx) · [web/lib/permissions/can-see-downvotes.ts](../../../web/lib/permissions/can-see-downvotes.ts) · [web/components/shared/hide-button.tsx](../../../web/components/shared/hide-button.tsx) · [web/components/news/news-item-actions.tsx](../../../web/components/news/news-item-actions.tsx)
 
-See also: [web/CLAUDE.md](../../../web/CLAUDE.md) · [docs/requirements/security/AUTH.md](../security/AUTH.md) · [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md)
+See also: [web/AGENTS.md](../../../web/AGENTS.md) · [docs/requirements/security/AUTH.md](../security/AUTH.md) · [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md)
 
 ## Policy
 
-**Vote and follow buttons are always visible** — they serve as signup CTAs. Clicking them when signed out navigates to `/login?next=<current-path>&intent=<action>` via a `<Link>` anchor (not `router.push`, not a modal). This matches the no-auth-context pattern in `web/CLAUDE.md` and preserves the user’s return path after login.
+**Vote and follow buttons are always visible** — they serve as signup CTAs. Clicking them when signed out navigates to `/login?next=<current-path>&intent=<action>` via a `<Link>` anchor (not `router.push`, not a modal). This matches the no-auth-context pattern in `web/AGENTS.md` and preserves the user’s return path after login.
 
 **Hide and Save buttons are never rendered for signed-out users** — these are personal feed preferences that are meaningless without an account. Gate at the call site: `{isLoggedIn && <HideButton … />}` and `{isLoggedIn && <SaveButton … />}`.
 
@@ -77,5 +77,5 @@ The `SaveButton` component has no `disabled` prop — it assumes a signed-in cal
 
 - [Auth](../security/AUTH.md) — manual authentication QA checklist
 - [Actions](ACTIONS.md) — action-button placement and tooltip requirements
-- [Web rules](../../../web/CLAUDE.md) — signed-out UI and no-auth-context patterns
-- [Backend rules](../../../backend/CLAUDE.md) — vote and permission API conventions
+- [Web rules](../../../web/AGENTS.md) — signed-out UI and no-auth-context patterns
+- [Backend rules](../../../backend/AGENTS.md) — vote and permission API conventions

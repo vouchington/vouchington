@@ -15,7 +15,7 @@ code, so ambiguous failures require a fresh authorization rather than a transpor
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - OAuth service: [../oauth/README.md](../oauth/README.md)
 - Find your friends system: [../../queues/find-your-friends/README.md](../../queues/find-your-friends/README.md)
 - Auth requirements: [../../../docs/requirements/security/AUTH.md](../../../docs/requirements/security/AUTH.md)

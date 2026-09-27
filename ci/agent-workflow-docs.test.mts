@@ -172,7 +172,7 @@ describe('agent workflow documentation', () => {
       .filter(Boolean)
       .filter(path => existsSync(join(repoRoot, path)))
 
-    expect(paths).toContain('web/CLAUDE.md')
+    expect(paths).toContain('web/AGENTS.md')
     for (const path of paths) {
       expect(readRepoFile(path)).not.toContain('pr:attach-screenshots -- ')
     }

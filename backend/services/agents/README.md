@@ -9,5 +9,5 @@ CRUD and prompt management for retained AI agents.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Conversations: [../conversations-messages/README.md](../conversations-messages/README.md)

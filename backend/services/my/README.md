@@ -14,5 +14,5 @@ Current-user ("my") account management — identity, email addresses, profile, p
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Users service: [../users/README.md](../users/README.md)

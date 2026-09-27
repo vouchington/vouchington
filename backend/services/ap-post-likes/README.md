@@ -4,7 +4,7 @@ Isolated ledger for remote ActivityPub `Like`/`Undo(Like)` activity against loca
 Backed by `ap_posts` and `ap_post_likes` (migration `0563`) — deliberately **not** `post_votes`.
 See `docs/overview/architecture/fediverse-federation.md`'s Like reuse-mapping row:
 `post_votes.user_id` has no polymorphic slot for a non-`users` actor (no polymorphic
-relationships — see `data-stores/psql/CLAUDE.md`), and a remote actor must never move local
+relationships — see `data-stores/psql/AGENTS.md`), and a remote actor must never move local
 `votes_score_net` ranking. `ap_posts.ap_likes_score`/`ap_likes_count` are trigger-maintained from
 `ap_post_likes` by `fn_sync_ap_post_likes` — nothing in this package writes `ap_posts` directly.
 

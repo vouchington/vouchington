@@ -20,7 +20,7 @@ service persists both before the application-owned `crawl_embeds` queue performs
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Generic extraction: [`@vouchington/crawler-html`](https://github.com/vouchington/vouchington-platform/tree/main/packages/crawler-html)
 - Generic embed resolution: [`@vouchington/embeds`](https://github.com/vouchington/vouchington-platform/tree/main/packages/embeds)
 - Application embed policy: [../crawl-embeds/README.md](../crawl-embeds/README.md)

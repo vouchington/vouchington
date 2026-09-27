@@ -50,4 +50,4 @@ Conditional-required validation is enforced in `normalizeTopicRecommendationValu
 ## Related
 
 - API: [../../api/v1/topic-recommendations/README.md](../../api/v1/topic-recommendations/README.md)
-- Posts: [../posts/CLAUDE.md](../posts/CLAUDE.md)
+- Posts: [../posts/AGENTS.md](../posts/AGENTS.md)

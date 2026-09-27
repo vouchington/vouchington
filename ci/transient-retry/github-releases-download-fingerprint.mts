@@ -1,5 +1,5 @@
 /**
- * Shared "GitHub Releases CDN flake" classifier (see CLAUDE.md § "How to broaden a
+ * Shared "GitHub Releases CDN flake" classifier (see AGENTS.md § "How to broaden a
  * fingerprint"). Several tools (gitleaks, Lychee, and Trivy) each download a
  * pinned asset from `.../releases/download/...` at CI setup time and can hit the same class
  * of transient CDN failure — an HTTP 5xx/000 response, a curl transport failure, or a

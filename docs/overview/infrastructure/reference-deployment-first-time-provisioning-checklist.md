@@ -85,6 +85,6 @@ deploy backend acceptance of the new value at or before the web starts requestin
 - [Environment Variables](environment-variables.md) — runtime configuration inventory
 - [Local Env Vars](../../development/local-env-vars.md) — local setup matrix for credentials and config
 - [Infrastructure](infrastructure.md) — AWS and edge resource overview
-- [Cloudflare Worker rules](../../../cloudflare-worker/CLAUDE.md) — edge routing, auth, and cache policy
-- [Backend rules](../../../backend/CLAUDE.md) — service startup and production checks
-- [Web rules](../../../web/CLAUDE.md) — Next.js build and runtime conventions
+- [Cloudflare Worker rules](../../../cloudflare-worker/AGENTS.md) — edge routing, auth, and cache policy
+- [Backend rules](../../../backend/AGENTS.md) — service startup and production checks
+- [Web rules](../../../web/AGENTS.md) — Next.js build and runtime conventions

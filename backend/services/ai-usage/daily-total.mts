@@ -37,7 +37,7 @@ let dailyAiCostTotalRefresh: Pick<DailyAiCostTotalCacheEntry, 'day' | 'promise'>
  *
  * `ai_usage_records.id` is UUIDv7 with no index on `created_at` (a `GENERATED ... STORED` column)
  * -- the window below is an id-range against the primary key via `getUtcDayUuidv7Bounds`, per
- * backend/data-stores/psql/CLAUDE.md's "query by id, not created_at" rule. The table sits in
+ * backend/data-stores/psql/AGENTS.md's "query by id, not created_at" rule. The table sits in
  * `DEFERRED_LEDGER_PARTITION_TABLES` with a single DEFAULT partition, so partition pruning cannot
  * help here -- the in-process cache below keeps the aggregation off the per-job hot path.
  *

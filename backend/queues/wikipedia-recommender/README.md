@@ -9,5 +9,5 @@ not depend on it.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Scheduled-job tombstone contract: [../../modules/scheduled-job-manifest/README.md](../../modules/scheduled-job-manifest/README.md)

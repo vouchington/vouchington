@@ -16,6 +16,6 @@ const isEnabled = await bloomFilterConfig.get('entity_cache')
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Bloom filters system: [../../queues/bloom-filters/README.md](../../queues/bloom-filters/README.md)
 - Entity cache: [../entity-cache/README.md](../entity-cache/README.md)

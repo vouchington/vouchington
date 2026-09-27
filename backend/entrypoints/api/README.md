@@ -56,5 +56,5 @@ The command exposes no arbitrary Valkey command or pattern surface. Operators mu
 ## Related
 
 - API routes: [../../api/README.md](../../api/README.md)
-- Local entrypoint rules: [CLAUDE.md](CLAUDE.md)
+- Local entrypoint rules: [AGENTS.md](AGENTS.md)
 - Valkey admin service: [../../services/valkey-admin/README.md](../../services/valkey-admin/README.md)

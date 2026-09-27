@@ -26,6 +26,6 @@ Supported post types come from `SITEMAP_CONFIG.POST_TYPES`; supported dynamic fa
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Sitemaps system: [../../queues/sitemaps/README.md](../../queues/sitemaps/README.md)
 - AWS module (S3 storage): [../../modules/aws/README.md](../../modules/aws/README.md)
