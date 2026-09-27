@@ -17,10 +17,7 @@ import {
   createBackendProgramCompilerHost,
   createTrackedBackendProgramForTest,
 } from './backend-program.mts'
-import {
-  backendProgramProbesAreFresh,
-  trackBackendProgramCompilerHost,
-} from './backend-program-freshness.mts'
+import { compilerHostProbesAreFresh, trackCompilerHost } from 'vouchington-tooling/compiler-build'
 
 const compilerOptions = {
   module: ts.ModuleKind.NodeNext,
@@ -50,9 +47,9 @@ describe('tracked backend program compiler host', () => {
     })
 
     expect(program.getSourceFile(entry)).toBeDefined()
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(true)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(true)
     writeFileSync(entry, 'export const value = 2\n')
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
 
   it('tracks package.json decisions made by real NodeNext resolution', () => {
@@ -75,7 +72,7 @@ describe('tracked backend program compiler host', () => {
       JSON.stringify({ name: 'example-package', types: './other.d.ts' }),
     )
     writeFileSync(join(packageRoot, 'other.d.ts'), 'export declare const value: string\n')
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
     expect(
       compileProgram(entry)
         .program.getSourceFiles()
@@ -88,13 +85,13 @@ describe('tracked backend program compiler host', () => {
     writeFileSync(entry, "import './missing-file.mjs'\nimport './missing-dir/value.mjs'\n")
     const missingFileSnapshot = compile(entry)
     writeFileSync(join(root, 'missing-file.mts'), 'export const found = true\n')
-    expect(backendProgramProbesAreFresh(missingFileSnapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(missingFileSnapshot)).toBe(false)
 
     rmSync(join(root, 'missing-file.mts'))
     const missingDirectorySnapshot = compile(entry)
     mkdirSync(join(root, 'missing-dir'))
     writeFileSync(join(root, 'missing-dir/value.mts'), 'export const found = true\n')
-    expect(backendProgramProbesAreFresh(missingDirectorySnapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(missingDirectorySnapshot)).toBe(false)
   })
 
   it('captures a read beneath a non-directory as a stable missing input', () => {
@@ -103,7 +100,7 @@ describe('tracked backend program compiler host', () => {
     const tracker = createBackendProgramCompilerHost(compilerOptions)
 
     expect(tracker.host.readFile(join(notDirectory, 'missing.mts'))).toBeUndefined()
-    expect(backendProgramProbesAreFresh(tracker.snapshot())).toBe(true)
+    expect(compilerHostProbesAreFresh(tracker.snapshot())).toBe(true)
   })
 
   it('tracks directory listing outcomes', () => {
@@ -115,7 +112,7 @@ describe('tracked backend program compiler host', () => {
     const snapshot = tracker.snapshot()
     mkdirSync(join(root, 'added-directory'))
     writeFileSync(join(root, 'added.mts'), 'export const added = true\n')
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
 
   it('tracks realpath outcomes', () => {
@@ -131,7 +128,7 @@ describe('tracked backend program compiler host', () => {
 
     unlinkSync(link)
     symlinkSync(secondTarget, link)
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
   it('marks a build-time read mutation unstable for immediate replay', () => {
     const entry = join(root, 'entry.mts')
@@ -147,7 +144,7 @@ describe('tracked backend program compiler host', () => {
     })
 
     expect(probeSnapshot.stableDuringCapture).toBe(false)
-    expect(backendProgramProbesAreFresh(probeSnapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(probeSnapshot)).toBe(false)
   })
   it('preserves the concrete structural filesystem host it decorates', () => {
     const calls: string[] = []
@@ -168,7 +165,7 @@ describe('tracked backend program compiler host', () => {
         return 'preserved'
       },
     }
-    const tracker = trackBackendProgramCompilerHost(host)
+    const tracker = trackCompilerHost(host)
 
     expect(tracker.host).toBe(host)
     expect(tracker.host.customHostMethod()).toBe('preserved')
@@ -179,7 +176,7 @@ describe('tracked backend program compiler host', () => {
     expect(calls).toEqual(['fileExists:tracked:source.mts', 'readFile:tracked:source.mts'])
     const snapshot = tracker.snapshot()
     directories = ['a', 'z']
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(true)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(true)
     expect(calls).toEqual([
       'fileExists:tracked:source.mts',
       'readFile:tracked:source.mts',
@@ -187,12 +184,12 @@ describe('tracked backend program compiler host', () => {
       'readFile:tracked:source.mts',
     ])
     directories = ['b']
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
   it('replays a stable virtual structural host when no disk metadata exists', () => {
     const virtualPath = join(root, 'virtual.mts')
     let contents = 'export const value = 1\n'
-    const tracker = trackBackendProgramCompilerHost({
+    const tracker = trackCompilerHost({
       fileExists: () => true,
       readFile: path => (path === virtualPath ? contents : undefined),
     })
@@ -200,16 +197,16 @@ describe('tracked backend program compiler host', () => {
     expect(tracker.host.readFile(virtualPath)).toBe(contents)
     const snapshot = tracker.snapshot()
 
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(true)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(true)
     contents = 'export const value = 2\n'
 
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
   it('replays virtual content through a symlink loop without probing disk metadata', () => {
     const loopPath = join(root, 'virtual-loop.mts')
     symlinkSync(loopPath, loopPath)
     let contents = 'export const value = 1\n'
-    const tracker = trackBackendProgramCompilerHost({
+    const tracker = trackCompilerHost({
       fileExists: () => true,
       readFile: path => (path === loopPath ? contents : undefined),
     })
@@ -218,13 +215,13 @@ describe('tracked backend program compiler host', () => {
     const snapshot = tracker.snapshot()
     contents = 'export const value = 2\n'
 
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
   it('replays overlay content when the backing disk path exists', () => {
     const overlayPath = join(root, 'overlay.mts')
     writeFileSync(overlayPath, 'export const diskValue = true\n')
     let contents = 'export const overlayValue = 1\n'
-    const tracker = trackBackendProgramCompilerHost({
+    const tracker = trackCompilerHost({
       fileExists: () => true,
       readFile: path => (path === overlayPath ? contents : undefined),
     })
@@ -233,13 +230,13 @@ describe('tracked backend program compiler host', () => {
     const snapshot = tracker.snapshot()
     contents = 'export const overlayValue = 2\n'
 
-    expect(backendProgramProbesAreFresh(snapshot)).toBe(false)
+    expect(compilerHostProbesAreFresh(snapshot)).toBe(false)
   })
   it('uses the metadata fast path only for explicitly disk-backed reads', () => {
     const diskPath = join(root, 'disk-backed.mts')
     writeFileSync(diskPath, 'export const value = true\n')
     let reads = 0
-    const tracker = trackBackendProgramCompilerHost(
+    const tracker = trackCompilerHost(
       {
         fileExists: () => true,
         readFile: path => {
@@ -251,7 +248,7 @@ describe('tracked backend program compiler host', () => {
     )
 
     expect(tracker.host.readFile(diskPath)).toBe('export const value = true\n')
-    expect(backendProgramProbesAreFresh(tracker.snapshot())).toBe(true)
+    expect(compilerHostProbesAreFresh(tracker.snapshot())).toBe(true)
     expect(reads).toBe(1)
   })
   it('treats a missing replay input as stale while preserving unexpected failures', () => {
@@ -259,7 +256,7 @@ describe('tracked backend program compiler host', () => {
     const unexpected = new Error('unexpected replay failure')
 
     expect(
-      backendProgramProbesAreFresh({
+      compilerHostProbesAreFresh({
         probes: [
           {
             key: 'removed-input',
@@ -273,7 +270,7 @@ describe('tracked backend program compiler host', () => {
       }),
     ).toBe(false)
     expect(() =>
-      backendProgramProbesAreFresh({
+      compilerHostProbesAreFresh({
         probes: [
           {
             key: 'failed-input',

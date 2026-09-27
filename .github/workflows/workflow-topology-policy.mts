@@ -1,6 +1,7 @@
 import type { WorkflowTopology, WorkflowTopologyIndex } from 'no-mistakes'
+import { evaluateGraphPolicy } from 'vouchington-tooling/workflow-policy'
+
 import { evaluateLockPolicy } from './workflow-topology-policy-concurrency.mts'
-import { evaluateGraphPolicy } from './workflow-topology-policy-graph.mts'
 import { jobInventory, unlockedWorkflowReasons } from './workflow-topology-policy-inventory.mts'
 import { routePolicy } from './workflow-topology-policy-routes.mts'
 import type { WorkflowTopologyPolicy } from './workflow-topology-policy-types.mts'

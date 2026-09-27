@@ -75,7 +75,7 @@ module.exports = {
       // position, so it has no such blind spot.
       //
       // The `.test.mts`/`.spec.mts` alternative has the same problem: api-fixtures/
-      // contains dozens of *.test.mts contract tests (e.g. backend-program-freshness.test.mts),
+      // contains dozens of *.test.mts contract tests (e.g. backend-program.probes.test.mts),
       // and doNotFollow stops dependency-cruiser from resolving a matched module's own
       // imports at all -- so a test file directly importing `typescript` would be
       // invisible to no-api-fixtures-typescript-reachability.cjs (empirically confirmed:

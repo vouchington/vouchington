@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createWorkflowTopologyIndex, type WorkflowTopology } from 'no-mistakes'
-import { evaluateGraphPolicy } from './workflow-topology-policy-graph.mts'
+import { evaluateGraphPolicy } from 'vouchington-tooling/workflow-policy'
 import type { WorkflowTopologyPolicy } from './workflow-topology-policy-types.mts'
 import { BASE_PERMISSIONS } from './workflow-secrets-test-fixtures.mts'
 

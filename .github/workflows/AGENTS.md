@@ -31,6 +31,9 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   trigger `paths:`, and `nightly.yml` calls every area workflow. `area-workflows.test.mts` and
   `area-coverage.test.mts` enforce the DAG, triggers, literal concurrency prefixes, and coverage
   wiring.
+- Graph, lock, `if:` entailment, permission comparison, and secret-readiness checks run through
+  `vouchington-tooling/workflow-policy`. This repository still owns the workflow inventory,
+  unlocked-workflow reasons, concurrency intent table, secret inventory, and workflow file reads.
 - Treat runner labels, runner-demand budgets, and concurrency as shared-capacity contracts. Follow
   [the canonical checklist](../../docs/checklists/github-actions.md) and update its documented
   policy/test touch points instead of copying label arrays or group expressions here.

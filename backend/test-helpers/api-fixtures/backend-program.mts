@@ -5,10 +5,11 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 import {
-  backendProgramProbesAreFresh,
-  trackBackendProgramCompilerHost,
-  type BackendProgramProbeSnapshot,
-} from './backend-program-freshness.mts'
+  compilerHostProbesAreFresh,
+  trackCompilerHost,
+  type CompilerHostProbeSnapshot,
+} from 'vouchington-tooling/compiler-build'
+
 import { settleBackendProgramBuild } from './backend-program-settlement.mts'
 import { formatDiagnostics, normalizePath } from './response-contract-registration.mts'
 import { backendApiRouteRootFileNames } from './route-file-roots.mts'
@@ -25,7 +26,7 @@ export type BackendProgram = {
 }
 
 type CachedBackendProgram = BackendProgram & {
-  probeSnapshot: BackendProgramProbeSnapshot
+  probeSnapshot: CompilerHostProbeSnapshot
   rootSignature: string
 }
 
@@ -47,7 +48,7 @@ export function loadBackendProgram(): BackendProgram {
   if (cachedProgram && !simulateInputChange) {
     if (
       cachedProgram.rootSignature === configuration.rootSignature &&
-      backendProgramProbesAreFresh(cachedProgram.probeSnapshot)
+      compilerHostProbesAreFresh(cachedProgram.probeSnapshot)
     ) {
       return cachedProgram
     }
@@ -79,7 +80,7 @@ function buildBackendProgram(configuration: BackendProgramConfiguration): Cached
         configuration: confirmedConfiguration,
         settled:
           currentConfiguration.rootSignature === confirmedConfiguration.rootSignature &&
-          backendProgramProbesAreFresh(probeSnapshot),
+          compilerHostProbesAreFresh(probeSnapshot),
       }
     },
   })
@@ -139,7 +140,7 @@ export function createTrackedBackendProgramForTest(
   rootNames: string[],
   options: ts.CompilerOptions,
   hooks?: { afterRead?(path: string): boolean | void },
-): { probeSnapshot: BackendProgramProbeSnapshot; program: ts.Program } {
+): { probeSnapshot: CompilerHostProbeSnapshot; program: ts.Program } {
   const tracker = createBackendProgramCompilerHost(options, hooks)
   const program = ts.createProgram({ host: tracker.host, options, rootNames })
   return { probeSnapshot: tracker.snapshot(), program }
@@ -148,8 +149,8 @@ export function createTrackedBackendProgramForTest(
 export function createBackendProgramCompilerHost(
   options: ts.CompilerOptions,
   hooks?: { afterRead?(path: string): boolean | void },
-): { host: ts.CompilerHost; snapshot(): BackendProgramProbeSnapshot } {
-  return trackBackendProgramCompilerHost(ts.createCompilerHost(options, true), {
+): { host: ts.CompilerHost; snapshot(): CompilerHostProbeSnapshot } {
+  return trackCompilerHost(ts.createCompilerHost(options, true), {
     ...hooks,
     readFileReplay: 'when-filesystem-metadata-stable',
   })

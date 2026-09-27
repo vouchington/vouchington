@@ -8,7 +8,7 @@ import {
 } from 'no-mistakes'
 import type { ConcurrencyPolicy } from './concurrency-topology-policy.mts'
 import { evaluateLockPolicy } from './workflow-topology-policy-concurrency.mts'
-import { evaluateGraphPolicy } from './workflow-topology-policy-graph.mts'
+import { evaluateGraphPolicy } from 'vouchington-tooling/workflow-policy'
 import type { WorkflowTopologyPolicy } from './workflow-topology-policy-types.mts'
 import { BASE_PERMISSIONS } from './workflow-secrets-test-fixtures.mts'
 
