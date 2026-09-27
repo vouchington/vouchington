@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { InvalidStoredChatHistoryError } from '../build-input.mts'
 import { streamChatResponse } from '../stream.mts'
 
 import { createTestUser } from '@voucha/test-helpers'
@@ -35,15 +36,14 @@ describe('streamChatResponse', () => {
 
   it('fails closed on malformed stored history before calling OpenAI', async () => {
     const conversation = await createConversation(testUser.id, 'Malformed history failure')
-    await createConversationMessage(conversation.id, testUser.id, {
-      role: 'system',
-      content: 'sensitive malformed content',
-    })
     const message = await createConversationMessage(conversation.id, testUser.id, {
       role: 'assistant',
       content: null,
     })
+    const invalidHistory = new InvalidStoredChatHistoryError()
+    invalidHistory.cause = 'sensitive malformed content'
     const runToolLoopStreaming = vi.fn<VitestLooseMock>()
+    const buildChatInput = vi.fn<VitestLooseMock>().mockRejectedValue(invalidHistory)
 
     const events = []
     for await (const event of streamChatResponse({
@@ -54,6 +54,7 @@ describe('streamChatResponse', () => {
       deps: {
         checkMessageSafety: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
         runToolLoopStreaming,
+        buildChatInput,
       },
     })) {
       events.push(event)
