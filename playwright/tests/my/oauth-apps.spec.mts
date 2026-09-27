@@ -131,19 +131,20 @@ test.describe('My OAuth Apps', () => {
     await expect(row).toContainText('post-relations.owned-private:write')
   })
 
-  test('keeps the form filled when the API rejects a redirect URI', async ({ page }) => {
+  test('blocks an invalid redirect URI with localized inline guidance', async ({ page }) => {
     await withCleanUser(page)
     await navigateTo(page, '/my/api-keys')
     const name = `Playwright rejected app ${randomSuffix()}`
     const form = page.getByTestId('oauth-app-register-form')
 
     await fillRegisterForm(form, name, 'http://example.com/callback')
-    const registration = waitForOAuthAppRequest(page, 'POST', /^\/api\/v1\/my\/oauth-apps$/)
-    await form.getByTestId('oauth-app-register-button').click()
-    expect((await registration).status()).toBe(422)
 
-    await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'HTTPS' })).toBeVisible()
+    await expect(form.getByRole('alert')).toContainText('Use HTTPS, or HTTP on localhost.')
+    await expect(form.getByTestId('oauth-app-register-button')).toBeDisabled()
     await expect(form.getByTestId('oauth-app-name-input')).toHaveValue(name)
+    await expect(form.getByTestId('oauth-app-redirect-uris-input')).toHaveValue(
+      'http://example.com/callback',
+    )
     await expect(oauthAppRows(page, name)).toHaveCount(0)
   })
 
@@ -175,7 +176,7 @@ test.describe('My OAuth Apps', () => {
     await expect(oauthAppRows(page, renamed)).toHaveCount(0)
   })
 
-  test('keeps the edit form open when the app was revoked elsewhere', async ({ page }) => {
+  test('removes the app when it was revoked elsewhere', async ({ page }) => {
     const { app, row } = await openSettingsWithOwnedApp(page)
     await revokeTestOAuthClient(app.id)
 
@@ -183,7 +184,6 @@ test.describe('My OAuth Apps', () => {
     await renameApp(row, `Renamed Playwright OAuth app ${randomSuffix()}`)
     expect((await update).status()).toBe(404)
 
-    await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'not found' })).toBeVisible()
-    await expect(row.getByTestId('oauth-app-edit-form')).toBeVisible()
+    await expect(row).toHaveCount(0)
   })
 })
