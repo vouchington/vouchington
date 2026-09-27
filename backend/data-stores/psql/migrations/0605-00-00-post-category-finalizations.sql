@@ -41,6 +41,7 @@ BEFORE UPDATE ON post_category_finalization_actors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_category_finalization_actors IS 'Finalization-owned editors whose hashtag relation votes must be finalized. user_id is a retained identity and does not authorize a deleted user.';
+COMMENT ON COLUMN post_category_finalization_actors.post_id IS 'Finalization row these editors belong to. Deleting the finalization removes the actor set.';
 COMMENT ON COLUMN post_category_finalization_actors.user_id IS 'Retained user identity of an editor included in this finalization.';
 
 CREATE TABLE IF NOT EXISTS post_category_finalization_admission_topics (
@@ -59,6 +60,7 @@ BEFORE UPDATE ON post_category_finalization_admission_topics
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_category_finalization_admission_topics IS 'Create-time explicit and data-point topic snapshot for admission-response repair. Zero rows with a non-null admission_response_generation is an explicit empty snapshot.';
+COMMENT ON COLUMN post_category_finalization_admission_topics.post_id IS 'Finalization whose create-time topic snapshot these rows belong to.';
 COMMENT ON COLUMN post_category_finalization_admission_topics.topic_id IS 'Retained topic identity captured at create time. It does not authorize a deleted topic.';
 
 CREATE OR REPLACE FUNCTION fn_post_category_finalization_actor_ids(target_post_id UUID)

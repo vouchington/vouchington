@@ -91,8 +91,48 @@ BEFORE UPDATE ON post_data_point_facts
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE post_data_point_facts IS 'One typed fact row per data-point post. Presence absent omits the API key, null stores JSON null, and present stores the typed value.';
+COMMENT ON COLUMN post_data_point_facts.post_id IS 'Data-point post that owns this single fact row. The row is deleted with the post.';
 COMMENT ON COLUMN post_data_point_facts.vertical IS 'Must equal posts.data_point_vertical. Credit-card and bank-account fields are mutually exclusive.';
+COMMENT ON COLUMN post_data_point_facts.schema_version IS 'Stored fact shape version. Only version 1 is accepted.';
+COMMENT ON COLUMN post_data_point_facts.result IS 'Application outcome. Credit-card and bank-account facts use different allowed result sets.';
+COMMENT ON COLUMN post_data_point_facts.currency IS 'Parent currency code for every present money value on this row: usd, cad, eur, gbp, aud, or jpy.';
+COMMENT ON COLUMN post_data_point_facts.credit_score_range IS 'Present score band: 300-579, 580-669, 670-739, 740-799, or 800-850. Null unless presence is present.';
 COMMENT ON COLUMN post_data_point_facts.credit_score_range_presence IS 'absent omits the key, null stores JSON null, present stores credit_score_range. Credit-card facts require present.';
+COMMENT ON COLUMN post_data_point_facts.stated_income_range_presence IS 'Presence of the stated-income range. absent or null clears both ends; present requires a minimum.';
+COMMENT ON COLUMN post_data_point_facts.stated_income_minimum_amount IS 'Lower bound stored when the stated-income range is present.';
+COMMENT ON COLUMN post_data_point_facts.stated_income_minimum_currency IS 'Currency of the stated-income minimum. Equals the row currency when the range is present.';
+COMMENT ON COLUMN post_data_point_facts.stated_income_maximum_presence IS 'Presence of the stated-income maximum. null is an open upper bound; present stores the maximum. Null when the range is absent or null.';
+COMMENT ON COLUMN post_data_point_facts.stated_income_maximum_amount IS 'Upper bound stored when stated_income_maximum_presence is present.';
+COMMENT ON COLUMN post_data_point_facts.stated_income_maximum_currency IS 'Currency of the stated-income maximum. Equals the row currency when that maximum is present.';
+COMMENT ON COLUMN post_data_point_facts.existing_relationship IS 'Whether the applicant already had an account with this issuer or bank. Null omits the API key.';
+COMMENT ON COLUMN post_data_point_facts.hard_inquiries_12m IS 'Present count of hard inquiries in the last 12 months. Credit-card only.';
+COMMENT ON COLUMN post_data_point_facts.hard_inquiries_12m_presence IS 'Presence of hard_inquiries_12m. Bank-account facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.cards_opened_24m IS 'Present count of cards opened in the prior 24 months. Credit-card only.';
+COMMENT ON COLUMN post_data_point_facts.cards_opened_24m_presence IS 'Presence of cards_opened_24m. Bank-account facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.credit_limit_amount IS 'Approved credit limit stored when credit_limit_presence is present.';
+COMMENT ON COLUMN post_data_point_facts.credit_limit_currency IS 'Currency of credit_limit_amount. Equals the row currency when present, otherwise null.';
+COMMENT ON COLUMN post_data_point_facts.credit_limit_presence IS 'Presence of the credit limit. Bank-account facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.total_credit_limit_amount IS 'Total credit limit across cards, stored as the API key total_credit_limit_all_cards.';
+COMMENT ON COLUMN post_data_point_facts.total_credit_limit_currency IS 'Currency of total_credit_limit_amount. Equals the row currency when present.';
+COMMENT ON COLUMN post_data_point_facts.total_credit_limit_presence IS 'Presence of total_credit_limit_all_cards. Bank-account facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.years_of_credit_history IS 'Present whole years of credit history, from 0 through 100. Credit-card only.';
+COMMENT ON COLUMN post_data_point_facts.years_of_credit_history_presence IS 'Presence of years_of_credit_history. Bank-account facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.is_business_application IS 'Whether this was a business-card application. Null on bank-account facts and when the API key is omitted.';
+COMMENT ON COLUMN post_data_point_facts.application_method IS 'Present application channel: online, in_branch, phone, or pre_approved. Credit-card only.';
+COMMENT ON COLUMN post_data_point_facts.application_method_presence IS 'Presence of application_method. Bank-account facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.application_date IS 'Present application calendar date, reconstructed as YYYY-MM-DD.';
+COMMENT ON COLUMN post_data_point_facts.application_date_presence IS 'Presence of application_date.';
+COMMENT ON COLUMN post_data_point_facts.account_type IS 'Present bank-account type: checking, savings, cd, or money_market. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.account_type_presence IS 'Presence of account_type. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.bonus_amount IS 'Present bank-account sign-up bonus amount. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.bonus_currency IS 'Currency of bonus_amount. Equals the row currency when present.';
+COMMENT ON COLUMN post_data_point_facts.bonus_amount_presence IS 'Presence of bonus_amount. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.bonus_requirements IS 'Present bank-account bonus requirement text, at most 500 characters. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.bonus_requirements_presence IS 'Presence of bonus_requirements. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.minimum_balance_amount IS 'Present minimum balance required to avoid fees. API key minimum_balance_requirement. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.minimum_balance_currency IS 'Currency of minimum_balance_amount. Equals the row currency when present.';
+COMMENT ON COLUMN post_data_point_facts.minimum_balance_presence IS 'Presence of minimum_balance_requirement. Credit-card facts must be absent.';
+COMMENT ON COLUMN post_data_point_facts.direct_deposit_setup IS 'Whether direct deposit was set up. Null on credit-card facts and when the API key is omitted.';
 
 CREATE OR REPLACE FUNCTION fn_data_point_presence_ok(presence TEXT, value_is_null BOOLEAN)
 RETURNS BOOLEAN
