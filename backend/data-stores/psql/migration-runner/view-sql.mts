@@ -1,5 +1,10 @@
 import { parseSync, type RangeVar } from '@libpg-query/parser'
 
+export type ManagedViewDeclaration = {
+  name: string
+  type: 'materialized view' | 'view'
+}
+
 /**
  * Returns a PostgreSQL-quoted identifier. Simple lowercase names are returned unquoted;
  * names containing uppercase, spaces, punctuation, or other special characters are
@@ -21,14 +26,14 @@ function buildViewRef(view: RangeVar & { relname: string }): string {
 }
 
 /**
- * Extracts the qualified names of all views declared by CREATE [OR REPLACE] VIEW
- * statements in the given SQL string. Comments and string literals are ignored
- * (the real PostgreSQL 18 parser handles all quoting and comment forms correctly).
+ * Extracts typed declarations from CREATE [OR REPLACE] VIEW and CREATE MATERIALIZED VIEW
+ * statements in the given SQL string. Comments and string literals are ignored (the real
+ * PostgreSQL 18 parser handles all quoting and comment forms correctly).
  *
  * Requires loadSqlParserModule() from sql-statements.mts to have resolved
  * before the first call.
  */
-export function extractViewNames(sql: string): string[] {
+export function extractViewDeclarations(sql: string): ManagedViewDeclaration[] {
   if (!sql.trim()) return []
   let result
   try {
@@ -36,19 +41,37 @@ export function extractViewNames(sql: string): string[] {
   } catch {
     return []
   }
-  const names: string[] = []
+  const declarations: ManagedViewDeclaration[] = []
   for (const stmt of result.stmts ?? []) {
     const node = stmt.stmt
-    if (!node || !('ViewStmt' in node)) continue
-    const view = node.ViewStmt.view
-    if (!view?.relname) continue
-    names.push(buildViewRef(view as RangeVar & { relname: string }))
+    if (!node) continue
+    if ('ViewStmt' in node) {
+      const view = node.ViewStmt.view
+      if (view?.relname) {
+        declarations.push({
+          name: buildViewRef(view as RangeVar & { relname: string }),
+          type: 'view',
+        })
+      }
+      continue
+    }
+    if ('CreateTableAsStmt' in node && node.CreateTableAsStmt.objtype === 'OBJECT_MATVIEW') {
+      const view = node.CreateTableAsStmt.into?.rel
+      if (view?.relname) {
+        declarations.push({
+          name: buildViewRef(view as RangeVar & { relname: string }),
+          type: 'materialized view',
+        })
+      }
+    }
   }
-  return names
+  return declarations
 }
 
-export function buildDropViewsStatement(viewNames: string[]): string | null {
-  const uniqueViewNames = [...new Set(viewNames)]
-  if (uniqueViewNames.length === 0) return null
-  return `DROP VIEW IF EXISTS ${uniqueViewNames.join(', ')};`
+export function extractViewNames(sql: string): string[] {
+  return extractViewDeclarations(sql).map(declaration => declaration.name)
+}
+
+export function buildDropViewStatement(declaration: ManagedViewDeclaration): string {
+  return `DROP ${declaration.type.toUpperCase()} IF EXISTS ${declaration.name};`
 }
