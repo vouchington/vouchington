@@ -40,6 +40,13 @@ export type GitHubWorkflowPolicyOptions = {
    * supplies it, from its own checkout.
    */
   sessionOwners?: () => ReadonlySet<string> | undefined
+  /**
+   * Worktree paths that differ from a checkout target. Undefined means the caller has no
+   * reader (unit tests): a resolved target is allowed, and a fetch followed by a tree update
+   * is still refused. A reader result of undefined means git could not answer and the hook
+   * refuses. Only pre-tool-use.mts passes the real reader.
+   */
+  protectedCheckoutDiff?: (cwd: string, target: string) => readonly string[] | undefined
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

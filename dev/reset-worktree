@@ -21,6 +21,8 @@ Resets a worktree to a clean state for the next agent task:
   - Tears down only DB + Valkey + services proven to belong to this worktree
     (preserves .env so port reuse works)
   - Creates a new random branch, then hard-resets it to origin/main
+    unless a sandbox-protected path differs while SANDBOX_RUNTIME or
+    CURSOR_SANDBOX is set (that checkout can stop halfway)
   - Removes worktree-local generated build and test output
   - Runs ./dev/initialize monorepo so pnpm exec tools work immediately
   - Clears the tmux window and pane title (if running inside tmux)
@@ -65,6 +67,8 @@ fi
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
 # shellcheck source=lib/git-index-lock.sh
 source "$REPO_ROOT/dev/lib/git-index-lock.sh"
+# shellcheck source=lib/protected-checkout.sh
+source "$REPO_ROOT/dev/lib/protected-checkout.sh"
 
 # Keep the entire reset exclusive to this worktree (#10849). The lock file
 # can remain between runs and needs no stale-lock cleanup.
@@ -165,6 +169,9 @@ if $FORCE; then
     git -C "$REPO_ROOT" clean -fd
 else
     git -C "$REPO_ROOT" checkout -B "$NEW_BRANCH"
+fi
+if ! protected_checkout_allow "$REPO_ROOT" origin/main; then
+    exit 2
 fi
 git -C "$REPO_ROOT" reset --hard origin/main
 echo -e "${GREEN}✓ Now on '$NEW_BRANCH' at origin/main${NC}\n"
