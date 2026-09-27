@@ -38,15 +38,17 @@ export const jobInventory = {
   '.github/workflows/cleanup-artifacts.yml': jobs('cleanup-run cleanup-sweep'),
   '.github/workflows/harness-dispatch.yml': jobs('dispatch'),
   '.github/workflows/fix-dependabot.yml': jobs(
-    'check-duplicates dispatch escalate render-prompt revalidate-dispatch triage-and-rerun',
+    'check-duplicates comment-session dispatch escalate render-prompt revalidate-dispatch triage-and-rerun',
   ),
-  '.github/workflows/fix-issue.yml': jobs('dispatch escalate gate render-prompt'),
+  '.github/workflows/fix-issue.yml': jobs('comment-session dispatch escalate gate render-prompt'),
   '.github/workflows/fix-main-self-retry.yml': jobs('escalate-retry-failure retry'),
   '.github/workflows/fix-main.yml': jobs(
     'classify-self-failure dispatch escalate related-candidates render-prompt triage-and-rerun',
   ),
-  '.github/workflows/merge-queue-ejection.yml': jobs('dispatch escalate render-prompt'),
-  '.github/workflows/plan.yml': jobs('dispatch escalate gate render-prompt'),
+  '.github/workflows/merge-queue-ejection.yml': jobs(
+    'comment-session dispatch escalate render-prompt',
+  ),
+  '.github/workflows/plan.yml': jobs('comment-session dispatch escalate gate render-prompt'),
   '.github/workflows/plan-completion.yml': jobs('audit'),
   '.github/workflows/shepherd.yml': jobs(
     'checkpoint-dispatch dispatch escalate gate render-prompt',
