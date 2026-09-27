@@ -1,7 +1,6 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { collectPlanNodes } from './plan-nodes.mts'
 import { isBoundedStoryPresentationSort } from './story-presentation-sort.mts'
-import { assertRssRecencyLateCursorPlan } from './plan-rss-recency-cursor-gate.mts'
 
 const PAGINATION_INDEXES_BY_SCENARIO = new Map<string, string[]>([
   ['direct-message-inbox-page', ['idx_conversations__direct_message_updated']],
@@ -22,10 +21,6 @@ const STORY_PROJECTION_SOURCE_CHILD_INDEX_SUFFIX = '_story_id_id_url_id_idx'
 const OAUTH_CLIENT_VERIFICATION_INDEX = 'idx_oauth_clients__verified_active_id'
 
 export function assertPaginationPlanShape(result: ExplainResult): void {
-  if (result.scenario_id === 'rss-feed-items-search-global-late-cursor') {
-    assertRssRecencyLateCursorPlan(result)
-    return
-  }
   if (result.scenario_id === 'oauth-client-verification-verified-page') {
     assertOAuthClientVerificationPlan(result)
     return

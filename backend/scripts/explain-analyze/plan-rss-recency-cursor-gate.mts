@@ -3,6 +3,7 @@ import { collectPlanNodes } from './plan-nodes.mts'
 import { RSS_RECENCY_LATE_CURSOR_PAGE_SIZE } from './seed-data/common.mts'
 
 export function assertRssRecencyLateCursorPlan(result: ExplainResult): void {
+  if (result.scenario_id !== 'rss-feed-items-search-global-late-cursor') return
   const nodes = collectPlanNodes(result.plan)
   const scans = nodes.filter(node =>
     String(node['Relation Name'] ?? '').startsWith('rss_feed_items'),
