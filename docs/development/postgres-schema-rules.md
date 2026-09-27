@@ -29,7 +29,7 @@ The canonical user, topic, post, and RSS-item creators register their concrete r
 inside the live-row insertion transaction. Live rows FK back to that owner; deletion may remove the
 live row while a request, audit record, or publication bridge keeps the owner. Root reservation is
 not proof that the live entity exists or that an operation is authorized. The independent bounded
-[retained-identity cleanup](../../backend/services/data-retention/README.md#key-exports) removes
+[retained-identity cleanup](../overview/architecture/services/data-retention/README.md#key-exports) removes
 an owner only after its live row and every durable reference have gone; audit rows have no inferred
 expiry.
 
