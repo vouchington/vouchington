@@ -57,7 +57,9 @@ describe('collectConfigInventory shared reader', () => {
 
     expect(role?.workflows).toEqual(expect.arrayContaining(['.github/workflows/build-backend.yml']))
     expect(
-      checkWorkflowEnvReferences(ctx, inventory).filter(error => error.includes('AWS_TEST_ROLE_ARN')),
+      checkWorkflowEnvReferences(ctx, inventory).filter(error =>
+        error.includes('AWS_TEST_ROLE_ARN'),
+      ),
     ).toEqual([])
   })
 })
