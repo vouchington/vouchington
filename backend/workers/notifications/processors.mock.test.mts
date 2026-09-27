@@ -9,11 +9,13 @@ import { createTestUserDirect } from '@voucha/test-helpers'
 import {
   enqueueContinueNotificationPushIntentReconciliation,
   enqueueDeliverNotificationPushIntent,
+  type ReconcileNotificationPushIntentsData,
 } from '@queues/notifications/enqueues'
 import { PRIORITY_DEFAULT, QUEUE_NAME } from '@queues/notifications/config'
 import { notifications } from '@queues/notifications/queues'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
+import { listAvailableNotificationPushIntents } from '@services/notifications-push'
 import { getOrCreateQueue } from '../../../test-helpers/glide-mq-vitest-internals.mts'
 import {
   processDeliverNotificationPushIntent,
@@ -34,12 +36,8 @@ type RecordedEnqueue =
   | ({ kind: 'delivery'; data: { userId: string; notificationId: string } } & EnqueueResult)
   | ({
       kind: 'continuation'
-      data: {
-        scanBefore: string
-        after: { updatedAt: string; userId: string; notificationId: string }
-      }
+      data: Required<ReconcileNotificationPushIntentsData>
     } & EnqueueResult)
-
 describe('notification push-intent recovery across pages', () => {
   beforeEach(() => {
     vi.stubEnv('WEB_PUSH_PUBLIC_KEY', 'test-public-key')
@@ -63,7 +61,7 @@ describe('notification push-intent recovery across pages', () => {
           await expect(
             processReconcileNotificationPushIntents(
               { scanBefore: fixture.scanBefore, after: fixture.after },
-              recoveryDependencies(enqueues),
+              recoveryDependencies(enqueues, fixture.notificationIds),
             ),
           ).resolves.toEqual({ enqueued: 100 })
           const firstPage = enqueues.filter(
@@ -99,21 +97,20 @@ describe('notification push-intent recovery across pages', () => {
             name: 'processReconcileNotificationPushIntents',
             opts: { priority: PRIORITY_DEFAULT },
           })
+          const pendingStates = fixture.notificationIds.map(notification_id => ({
+            notification_id,
+            status: 'pending',
+          }))
           await expect(
             getTestNotificationPushRecoveryIntentStates({
               userId: recipient.id,
               notificationIds: fixture.notificationIds,
             }),
-          ).resolves.toEqual(
-            fixture.notificationIds.map(notification_id => ({
-              notification_id,
-              status: 'pending',
-            })),
-          )
+          ).resolves.toEqual(pendingStates)
           await expect(
             processReconcileNotificationPushIntents(
               firstContinuation!.data,
-              recoveryDependencies(enqueues),
+              recoveryDependencies(enqueues, fixture.notificationIds),
             ),
           ).resolves.toEqual({ enqueued: 1 })
           const secondPage = enqueues
@@ -231,8 +228,12 @@ describe('notification push-intent recovery across pages', () => {
     ).resolves.toEqual([])
   }, 30_000)
 })
-function recoveryDependencies(enqueues: RecordedEnqueue[]) {
+function recoveryDependencies(enqueues: RecordedEnqueue[], notificationIds: readonly string[]) {
   return {
+    listAvailableNotificationPushIntents: (
+      limit: number,
+      page: Parameters<typeof listAvailableNotificationPushIntents>[1],
+    ) => listAvailableNotificationPushIntents(limit, { ...page, notificationIds }),
     enqueueDeliverNotificationPushIntent: (userId: string, notificationId: string) => {
       const recorded: RecordedEnqueue = {
         kind: 'delivery',
@@ -245,10 +246,9 @@ function recoveryDependencies(enqueues: RecordedEnqueue[]) {
       )
       return recorded.completion
     },
-    enqueueContinueNotificationPushIntentReconciliation: (data: {
-      scanBefore: string
-      after: { updatedAt: string; userId: string; notificationId: string }
-    }) => {
+    enqueueContinueNotificationPushIntentReconciliation: (
+      data: Required<ReconcileNotificationPushIntentsData>,
+    ) => {
       const recorded: RecordedEnqueue = { kind: 'continuation', data }
       enqueues.push(recorded)
       recorded.completion = captureEnqueue(

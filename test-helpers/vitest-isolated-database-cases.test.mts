@@ -17,7 +17,7 @@ const childEnv = {
 }
 
 describe('isolated database case selection', () => {
-  it('registers only exact media replay and ActivityPub expiry tests', () => {
+  it('registers only exact isolated database tests', () => {
     expect(makeIsolatedDatabaseName('a'.repeat(24))).toBe(databaseName)
     expect(() => makeIsolatedDatabaseName('shared_database')).toThrow(
       'Invalid isolated database suffix',
@@ -31,6 +31,33 @@ describe('isolated database case selection', () => {
       file: 'backend/services/ap-inbox-activities/durable-delivery-storage.test.mts',
       fullName:
         'ActivityPub inbox durable storage bounds deletes expired rows in deterministic lease-aware locked batches',
+    })
+    expect(getIsolatedDatabaseCase('copyright-staff-email-intakes')).toEqual({
+      file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
+      fullName:
+        'searchCopyrightStaffEmailIntakes hides the queue from non-reviewers and lists unreviewed parsed intakes for staff',
+    })
+    for (const [caseId, title] of [
+      [
+        'copyright-email-queue-exact-limit',
+        'ends on an exact-limit final page with no next cursor',
+      ],
+      ['copyright-email-queue-partial', 'ends on a partial final page'],
+      ['copyright-email-queue-walk', 'walks every owned intake one page at a time without repeats'],
+      [
+        'copyright-email-queue-tie',
+        'uses the UUID tie-breaker when two intakes share a received timestamp',
+      ],
+    ] as const) {
+      expect(getIsolatedDatabaseCase(caseId)).toEqual({
+        file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
+        fullName: `copyright email intake queue pagination ${title}`,
+      })
+    }
+    expect(getIsolatedDatabaseCase('copyright-cache-policy')).toEqual({
+      file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
+      fullName:
+        'copyright API cache policy marks member, staff, and raw-email responses private and no-store',
     })
     expect(() => getIsolatedDatabaseCase('other')).toThrow('Unknown isolated database case')
   })

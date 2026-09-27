@@ -4,11 +4,9 @@ import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import {
-  copyrightStaffEmailIntakeQueueCursorScope,
-  createCopyrightEmailIntake,
-} from '@services/copyright-notices'
-import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
+import { createCopyrightEmailIntake } from '@services/copyright-notices'
+import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
+import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
 describe('copyright API cache policy', () => {
   beforeEach(() => {
@@ -22,6 +20,10 @@ describe('copyright API cache policy', () => {
   })
 
   it('marks member, staff, and raw-email responses private and no-store', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-cache-policy') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-cache-policy')
+      return
+    }
     const member = createRequest()
     await member.authenticateAs(await createTestUser())
     expect(
@@ -30,17 +32,10 @@ describe('copyright API cache policy', () => {
 
     const moderator = createRequest()
     await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
-    const after = encodeScopedPreciseTimestampCursor(
-      new Date(Date.now() + 1000 * 365 * 24 * 60 * 60 * 1000).toISOString().replace(/Z$/, '000Z'),
-      crypto.randomUUID(),
-      copyrightStaffEmailIntakeQueueCursorScope,
-    )
     expect(
-      (
-        await moderator
-          .get(`/api/v1/copyright-email-intakes/review-queue?after=${encodeURIComponent(after)}`)
-          .expect(200)
-      ).headers['cache-control'],
+      (await moderator.get('/api/v1/copyright-email-intakes/review-queue').expect(200)).headers[
+        'cache-control'
+      ],
     ).toBe('private, no-store')
 
     const bytes = Buffer.from('From: claimant@example.test\r\n\r\nCopyright notice')
@@ -63,5 +58,5 @@ describe('copyright API cache policy', () => {
       'content-disposition': 'attachment; filename="original-email.eml"',
       'x-content-type-options': 'nosniff',
     })
-  })
+  }, 240_000)
 })

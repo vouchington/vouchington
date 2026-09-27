@@ -10,6 +10,12 @@ import { installSharedDbScopeObserver } from './vitest-shared-db-scope-observer.
 describe('shared database scope observer', () => {
   it('leaves deliberate global production calls legal without an observer', () => {
     expect(() => observeSharedDbScope('listCopyrightStaffQueue', { kind: 'global' })).not.toThrow()
+    expect(() =>
+      observeSharedDbScope('searchCopyrightStaffEmailIntakes', { kind: 'global' }),
+    ).not.toThrow()
+    expect(() =>
+      observeSharedDbScope('listAvailableNotificationPushIntents', { kind: 'global' }),
+    ).not.toThrow()
   })
 
   it('reports bound ids and keyset cursors to a registered observer', () => {

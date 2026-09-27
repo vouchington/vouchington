@@ -9,6 +9,35 @@ const isolatedDatabaseCases = {
     fullName:
       'ActivityPub inbox durable storage bounds deletes expired rows in deterministic lease-aware locked batches',
   },
+  'copyright-staff-email-intakes': {
+    file: 'backend/services/copyright-notices/email-intakes-staff-queue.test.mts',
+    fullName:
+      'searchCopyrightStaffEmailIntakes hides the queue from non-reviewers and lists unreviewed parsed intakes for staff',
+  },
+  'copyright-email-queue-exact-limit': {
+    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
+    fullName:
+      'copyright email intake queue pagination ends on an exact-limit final page with no next cursor',
+  },
+  'copyright-email-queue-partial': {
+    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
+    fullName: 'copyright email intake queue pagination ends on a partial final page',
+  },
+  'copyright-email-queue-walk': {
+    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
+    fullName:
+      'copyright email intake queue pagination walks every owned intake one page at a time without repeats',
+  },
+  'copyright-email-queue-tie': {
+    file: 'backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts',
+    fullName:
+      'copyright email intake queue pagination uses the UUID tie-breaker when two intakes share a received timestamp',
+  },
+  'copyright-cache-policy': {
+    file: 'backend/api/v1/copyright-notices/copyright-cache.test.mts',
+    fullName:
+      'copyright API cache policy marks member, staff, and raw-email responses private and no-store',
+  },
 } as const
 
 export type IsolatedDatabaseCaseId = keyof typeof isolatedDatabaseCases

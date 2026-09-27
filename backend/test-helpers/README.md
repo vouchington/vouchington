@@ -334,9 +334,12 @@ and any other test's unreadable row fails the request. Seek to the test's own ro
 `@voucha/test-helpers/data-stores/psql/copyright-notice-reads` returns an `after` cursor positioned
 just before the oldest of the given notices, so every page starts at rows the test created.
 The staff email intake queue (`GET /api/v1/copyright-email-intakes/review-queue`) applies the same
-rule with an `after` cursor encoded just before the test's own `received_at`; a test that asserts a
-final page instead receives its intakes about 1000 years ahead so it owns the queue tail (see
-`backend/api/v1/copyright-notices/email-intake-queue-pagination.test.mts`).
+keyset ordering, but its global query cannot prove fixture ownership from an `after` cursor alone.
+Its exact global pagination cases run against fresh disposable databases through
+`test-helpers/vitest-isolated-database-case.mts`; shared-DB calls to this cataloged operation are
+rejected by the test guard. For notification push intent recovery, pass the test's owned
+`notificationIds` on every page, including pages with an `after` cursor. A cursor only advances
+ordering; it does not exclude another fixture's eligible row.
 
 ### "No more results" assumptions
 

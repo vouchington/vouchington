@@ -19,40 +19,65 @@ describe('listAvailableNotificationPushIntents', () => {
     )
   })
 
-  it('returns a pending unleased durable intent', async () => {
-    const recipient = await createTestUserDirect()
+  it('continues only owned pending intents past eligible earlier and later peers', async () => {
     const follower = await createTestUserDirect()
-    const [notification] = await createFollowNotification(
-      recipient.id,
-      follower.id,
-      follower.username,
-    )
-    const unrelatedRecipient = await createTestUserDirect()
-    const [unrelatedNotification] = await createFollowNotification(
-      unrelatedRecipient.id,
-      follower.id,
-      follower.username,
-    )
-    const firstPage = await listAvailableNotificationPushIntents(100_000, {
-      notificationIds: [notification!.id],
+    const fixtures: Array<{ userId: string; notificationId: string }> = []
+    for (let index = 0; index < 6; index += 1) {
+      const recipient = await createTestUserDirect()
+      const [notification] = await createFollowNotification(
+        recipient.id,
+        follower.id,
+        follower.username,
+      )
+      fixtures.push({ userId: recipient.id, notificationId: notification!.id })
+    }
+    const all = await listAvailableNotificationPushIntents(6, {
+      notificationIds: fixtures.map(fixture => fixture.notificationId),
     })
-    const ownIntent = firstPage.find(intent => intent.notification_id === notification!.id)
-    expect(ownIntent).toMatchObject({ user_id: recipient.id, notification_id: notification!.id })
-    expect(firstPage.map(intent => intent.notification_id)).not.toContain(unrelatedNotification!.id)
-    const nextPage = await listAvailableNotificationPushIntents(100_000, {
-      scanBefore: ownIntent!.scan_before,
-      after: {
-        updatedAt: ownIntent!.updated_at,
-        userId: ownIntent!.user_id,
-        notificationId: ownIntent!.notification_id,
-      },
+    expect(all).toHaveLength(6)
+    const [lower, owned, upper] = [all.slice(0, 2), all.slice(2, 4), all.slice(4)]
+    const ownedIds = owned.map(intent => intent.notification_id)
+    const scanBefore = all[0]!.scan_before
+    const beforeFirstPeer = {
+      ...toCursor(lower[0]!),
+      updatedAt: new Date(Date.parse(lower[0]!.updated_at) - 1).toISOString(),
+    }
+    const firstPage = await listAvailableNotificationPushIntents(1, {
+      notificationIds: ownedIds,
+      scanBefore,
+      after: beforeFirstPeer,
     })
-    expect(nextPage.map(intent => intent.notification_id)).not.toContain(notification!.id)
-    expect(
-      await getTestNotificationPushIntent(unrelatedRecipient.id, unrelatedNotification!.id),
-    ).toMatchObject({ status: 'pending' })
+    expect(firstPage.map(intent => intent.notification_id)).toEqual([ownedIds[0]])
+    const secondPage = await listAvailableNotificationPushIntents(1, {
+      notificationIds: ownedIds,
+      scanBefore,
+      after: toCursor(firstPage[0]!),
+    })
+    expect(secondPage.map(intent => intent.notification_id)).toEqual([ownedIds[1]])
+    const finalPage = await listAvailableNotificationPushIntents(1, {
+      notificationIds: ownedIds,
+      scanBefore,
+      after: toCursor(secondPage[0]!),
+    })
+    expect(finalPage).toEqual([])
+    expect([...firstPage, ...secondPage].map(intent => intent.notification_id)).toEqual(ownedIds)
+    for (const peer of [...lower, ...upper]) {
+      expect(await getTestNotificationPushIntent(peer.user_id, peer.notification_id)).toMatchObject(
+        {
+          status: 'pending',
+        },
+      )
+    }
   })
 })
+
+function toCursor(intent: { updated_at: string; user_id: string; notification_id: string }) {
+  return {
+    updatedAt: intent.updated_at,
+    userId: intent.user_id,
+    notificationId: intent.notification_id,
+  }
+}
 
 describe('createNotificationPushIntents', () => {
   it('creates the missing durable intent for a pre-capture notification', async () => {

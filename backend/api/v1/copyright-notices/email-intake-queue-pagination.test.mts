@@ -4,15 +4,11 @@ import { createTestUser } from '@voucha/test-helpers'
 import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices'
 import { createParsedCopyrightEmailIntake } from '@services/copyright-notices/email-intake-test-fixtures'
+import { getIsolatedDatabaseCaseMode } from '../../../../test-helpers/vitest-isolated-database-cases.mts'
+import { runIsolatedDatabaseCase } from '../../../../test-helpers/vitest-isolated-database-case.mts'
 
-// Only this file writes copyright email intakes received about 1000 years from now. The staff email
-// queue is global and oldest-first, so a test owns the queue tail only while no later intake exists:
-// vitest runs these tests one at a time, and `reserveFarFutureRows` starts every test's intakes after
-// those of every earlier test, in this run and in earlier runs against the same database.
-const farFutureOffsetMs = 1000 * 365 * 24 * 60 * 60 * 1000
 const otherCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
 const queuePath = '/api/v1/copyright-email-intakes/review-queue'
-let lastReservedMs = 0
 
 type QueuePage = {
   copyright_email_intakes: Array<{ id: string; received_at: string; review_path: string }>
@@ -21,6 +17,10 @@ type QueuePage = {
 
 describe('copyright email intake queue pagination', () => {
   it('ends on an exact-limit final page with no next cursor', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-email-queue-exact-limit') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-email-queue-exact-limit')
+      return
+    }
     const { ids, after } = await createOwnedIntakes(4)
     const request = await createModeratorRequest()
 
@@ -38,9 +38,13 @@ describe('copyright email intake queue pagination', () => {
       start_cursor: expect.any(String),
       end_cursor: null,
     })
-  })
+  }, 240_000)
 
   it('ends on a partial final page', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-email-queue-partial') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-email-queue-partial')
+      return
+    }
     const { ids, after } = await createOwnedIntakes(4)
     const request = await createModeratorRequest()
 
@@ -51,9 +55,13 @@ describe('copyright email intake queue pagination', () => {
     expect(second.copyright_email_intakes.map(intake => intake.id)).toEqual(ids.slice(3))
     expect(second.page_info.has_next_page).toBe(false)
     expect(second.page_info.end_cursor).toBeNull()
-  })
+  }, 240_000)
 
   it('walks every owned intake one page at a time without repeats', async () => {
+    if (getIsolatedDatabaseCaseMode('copyright-email-queue-walk') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-email-queue-walk')
+      return
+    }
     const { ids, after } = await createOwnedIntakes(4)
     const request = await createModeratorRequest()
 
@@ -65,10 +73,14 @@ describe('copyright email intake queue pagination', () => {
       cursor = page.page_info.end_cursor
     }
     expect(walked).toEqual(ids)
-  })
+  }, 240_000)
 
   it('uses the UUID tie-breaker when two intakes share a received timestamp', async () => {
-    const receivedAt = new Date(reserveFarFutureRows(1))
+    if (getIsolatedDatabaseCaseMode('copyright-email-queue-tie') === 'parent') {
+      await runIsolatedDatabaseCase('copyright-email-queue-tie')
+      return
+    }
+    const receivedAt = new Date()
     const ids = [await createParsedIntake(receivedAt), await createParsedIntake(receivedAt)].sort()
     const request = await createModeratorRequest()
 
@@ -80,7 +92,7 @@ describe('copyright email intake queue pagination', () => {
     const page = await getPage(request, { limit: 1, after })
     expect(page.copyright_email_intakes.map(intake => intake.id)).toEqual([ids[1]])
     expect(page.page_info.has_next_page).toBe(false)
-  })
+  }, 240_000)
 
   it('rejects malformed and cross-scope cursors and a non-positive limit', async () => {
     const request = await createModeratorRequest()
@@ -97,7 +109,7 @@ describe('copyright email intake queue pagination', () => {
 })
 
 async function createOwnedIntakes(count: number): Promise<{ ids: string[]; after: string }> {
-  const baseMs = reserveFarFutureRows(count)
+  const baseMs = Date.now()
   const ids: string[] = []
   for (let index = 0; index < count; index += 1) {
     ids.push(await createParsedIntake(new Date(baseMs + index)))
@@ -108,12 +120,6 @@ async function createOwnedIntakes(count: number): Promise<{ ids: string[]; after
     copyrightStaffEmailIntakeQueueCursorScope,
   )
   return { ids, after }
-}
-
-function reserveFarFutureRows(count: number): number {
-  const baseMs = Math.max(Date.now() + farFutureOffsetMs, lastReservedMs + 1)
-  lastReservedMs = baseMs + count - 1
-  return baseMs
 }
 
 async function createParsedIntake(receivedAt: Date): Promise<string> {

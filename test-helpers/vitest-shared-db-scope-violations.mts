@@ -38,13 +38,17 @@ export function markSharedDbScopeViolationsReported(filepath: string): void {
 
 export function rejectUnscopedSharedDbCall(event: SharedDbScopeEvent): void {
   const scope = event.scope
+  const requiresIds =
+    event.operation === 'searchCopyrightStaffEmailIntakes' ||
+    event.operation === 'listAvailableNotificationPushIntents'
   if (
     (scope.kind === 'ids' && scope.ids.length > 0 && scope.ids.every(id => id.length > 0)) ||
-    (scope.kind === 'cursor' && scope.id.length > 0)
+    (!requiresIds && scope.kind === 'cursor' && scope.id.length > 0)
   )
     return
 
-  const message = `[vitest-shared-db-scope] ${event.operation} on ${event.table} requires fixture IDs or a real keyset cursor`
+  const requiredScope = requiresIds ? 'fixture IDs' : 'fixture IDs or a real keyset cursor'
+  const message = `[vitest-shared-db-scope] ${event.operation} on ${event.table} requires ${requiredScope}`
   const filepath = expect.getState().testPath
   if (!filepath) throw new Error(`Shared DB scope violation has no active test file: ${message}`)
   ;(sharedDbScopeViolations() as SharedDbScopeViolation[]).push({ event, message, filepath })
