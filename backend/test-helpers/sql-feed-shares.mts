@@ -1,5 +1,20 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
+
+export async function insertPostFeedShareForTest(params: {
+  recipientUserId: string
+  sharedByUserId: string
+  postId: string
+  sortAt?: Date
+}): Promise<string> {
+  const id = uuidv7()
+  await write(sql`/* insertPostFeedShareForTest */
+    INSERT INTO post_feed_shares (recipient_user_id, id, shared_by_user_id, post_id, sort_at)
+    VALUES (${params.recipientUserId}, ${id}, ${params.sharedByUserId}, ${params.postId}, ${params.sortAt ?? new Date()})
+  `)
+  return id
+}
 
 export async function getPostShareRecipientIdsForTest(params: {
   sharedByUserId: string

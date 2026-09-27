@@ -65,6 +65,7 @@ export {
 export { getPublicBaseTableNamesForTest } from './sql-postgres.mts'
 export {
   getPostShareRecipientIdsForTest,
+  insertPostFeedShareForTest,
   getPostShareRowsForTest,
   getRssFeedItemShareRecipientIdsForTest,
   getManualSendNotificationRowsForTest,

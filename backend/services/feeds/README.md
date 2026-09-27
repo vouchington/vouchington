@@ -117,6 +117,11 @@ partitioning comment in
 
 Post and RSS item shares use UUIDv7-ordered latest-share lookups to enforce the
 once-per-day duplicate-share window while preserving index use on share tables.
+Post feeds omit disabled share branches and evaluate enabled share eligibility once per
+distinct target using the direct branch's predicate builder. Delivery events remain separate;
+recent shares can carry old targets. The
+[query pipeline](../../../docs/overview/architecture/feeds.md#share-actions) describes cutoff,
+cursor, and indexed target/root lookup behavior.
 
 ## Related
 

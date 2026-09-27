@@ -6,10 +6,12 @@ import type { PostFeedCursor } from './feed-cursor.mts'
 import { appendSharedPosts } from './shared-posts-cte.mts'
 import { buildDirectTopicsFilter } from './topic-match-filter.mts'
 import { buildBroadcastVisibilityFilter } from './visibility-filter.mts'
+import type { PostFeedEligibilityOptions } from './eligible-posts-cte.mts'
 export function appendPostFeedDeliveryCTEs(
   query: SQLStatement,
   {
     currentUserId,
+    eligibilityOptions,
     cursor,
     feedType,
     includeSharedPosts,
@@ -19,6 +21,7 @@ export function appendPostFeedDeliveryCTEs(
     timeRange,
   }: {
     currentUserId: string
+    eligibilityOptions: PostFeedEligibilityOptions
     cursor: PostFeedCursor
     feedType: PostFeedOptions['feed_type']
     includeSharedPosts: boolean
@@ -36,14 +39,14 @@ export function appendPostFeedDeliveryCTEs(
     minScoreFollowUsers,
     sort,
   })
-  appendSharedPosts(query, { currentUserId, cursor, includeSharedPosts, sort, timeRange })
+  if (includeSharedPosts)
+    appendSharedPosts(query, { currentUserId, cursor, eligibilityOptions, sort, timeRange })
   query.append(sql`
     ),
     combined_posts AS (
-      SELECT * FROM direct_posts
-      UNION ALL
-      SELECT * FROM shared_posts
-    )`)
+      SELECT * FROM direct_posts`)
+  if (includeSharedPosts) query.append(sql` UNION ALL SELECT * FROM shared_posts`)
+  query.append(sql`)`)
 }
 
 function appendDirectCandidatePosts(

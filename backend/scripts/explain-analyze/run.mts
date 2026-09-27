@@ -18,6 +18,7 @@ import { runReviewSuccessionScenarios } from './run-scenarios/review-successions
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
 import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
+import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 
 async function main() {
   prepareOutputDir()
@@ -25,6 +26,7 @@ async function main() {
     await assertSeedAnchorMatches()
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
+    await runPostFeedShareScenarios()
     await runSearchAndFacetScenarios()
     await runOAuthClientVerificationScenarios()
     await runEntityAndCommunityScenarios()
