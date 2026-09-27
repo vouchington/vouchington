@@ -13,6 +13,10 @@ import {
 } from './client-metadata-validation.mts'
 import { validateRedirectUris } from './redirect-uri-validation.mts'
 import { parseOAuthScopes } from './validation.mts'
+import {
+  resolveClientIdMetadataDocument,
+  type ClientIdMetadataDependencies,
+} from './client-id-metadata-document.mts'
 import type { OAuthClient, RegisteredOAuthClient } from './types.mts'
 
 export async function registerOAuthClient(
@@ -109,6 +113,16 @@ export async function getOAuthClient(
   return result.rows[0] ?? null
 }
 
+export async function getOAuthClientForAuthorization(
+  clientId: string,
+  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
+): Promise<OAuthClient | null> {
+  return (
+    (await resolveClientIdMetadataDocument(clientId, clientIdMetadataDependencies)) ??
+    getOAuthClient(clientId)
+  )
+}
+
 export async function authenticateOAuthClient(
   clientId: string,
   clientSecret: string | undefined,
@@ -118,11 +132,7 @@ export async function authenticateOAuthClient(
   assertOAuthClientAuthentication(client, clientSecret)
 }
 
-/**
- * Authenticates a token-endpoint client against its row, share-locked until `query` commits. A
- * secret rotation or revocation therefore waits for this transaction, or this read waits for it
- * and rejects the replaced secret, so no token is issued to a secret after its rotation returns.
- */
+/** Authenticates against a share-locked client row until `query` commits. */
 export async function authenticateLockedOAuthClient(
   clientId: string,
   clientSecret: string | undefined,

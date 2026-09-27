@@ -63,6 +63,7 @@ describe('OAuth consent', () => {
     await expect(
       getOAuthAuthorizationRequestForUser(owner.id, pending.requestId, pending.bindingHash),
     ).resolves.toMatchObject({
+      client_hostname: null,
       client_name: pending.client.client_name,
       resource: TEST_OAUTH_RESOURCE,
     })

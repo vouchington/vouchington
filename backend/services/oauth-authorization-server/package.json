@@ -26,6 +26,7 @@
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
+    "ssrf-guard": "^1.0.0",
     "uuid": "^14.0.2"
   },
   "devDependencies": {

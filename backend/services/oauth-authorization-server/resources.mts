@@ -61,6 +61,7 @@ export function buildOAuthAuthorizationServerMetadata() {
     revocation_endpoint_auth_methods_supported: ['client_secret_basic', 'none'],
     scopes_supported: OAUTH_RESOURCE_AUDIENCES.flatMap(listOAuthResourceScopes).sort(),
     authorization_response_iss_parameter_supported: true,
+    client_id_metadata_document_supported: true,
   }
 }
 

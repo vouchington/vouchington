@@ -151,7 +151,7 @@ describe('content provenance schema', () => {
     await expect(fixture.deleteOAuthClient()).rejects.toMatchObject({ code: '23001' })
   })
 
-  it('keeps each OAuth client metadata URL a unique, canonical HTTPS URL with a path', async () => {
+  it('keeps each OAuth client metadata URL a unique, exact HTTPS URL with a path', async () => {
     const metadataUrl = `https://agent.example/${randomUUID()}/client.json`
     await expect(insertContentProvenanceOAuthClient({ metadataUrl })).resolves.toEqual(
       expect.any(String),
@@ -159,6 +159,11 @@ describe('content provenance schema', () => {
     await expect(
       insertContentProvenanceOAuthClient({
         metadataUrl: `https://agent.example:8443/${randomUUID()}.json?v=1`,
+      }),
+    ).resolves.toEqual(expect.any(String))
+    await expect(
+      insertContentProvenanceOAuthClient({
+        metadataUrl: `https://Agent.example/${randomUUID()}.json`,
       }),
     ).resolves.toEqual(expect.any(String))
     await expect(insertContentProvenanceOAuthClient({ metadataUrl })).rejects.toMatchObject({
@@ -170,9 +175,9 @@ describe('content provenance schema', () => {
       'https://agent.example',
       'https://user@agent.example/client.json',
       'https://agent.example/client.json#fragment',
-      'https://Agent.example/client.json',
       'https://agent.example/client file.json',
       'https://agent.example/client\tfile.json',
+      'https://agent.example\\other.example/client.json',
       'https://agent.example/../client.json',
       'https://agent.example/clients/./client.json',
       'https://agent.example/clients/..',

@@ -13,6 +13,17 @@ export function validateRedirectUris(values: unknown): string[] {
   throw invalidRedirectUri(redirectUriErrorDescription(result.code))
 }
 
+/**
+ * CIMD redirect URIs use OAuth simple string comparison. Validate each URL without serializing it,
+ * because URL serialization can change a default port or hostname casing and thereby change which
+ * request string is authorized.
+ */
+export function validateClientIdMetadataRedirectUris(values: unknown): string[] {
+  const result = validateOAuthRedirectUris(values, { serialize: false })
+  if (result.valid) return result.redirectUris
+  throw invalidRedirectUri(redirectUriErrorDescription(result.code))
+}
+
 function redirectUriErrorDescription(code: OAuthRedirectUriValidationCode): string {
   switch (code) {
     case 'invalid_count':

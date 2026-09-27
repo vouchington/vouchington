@@ -142,7 +142,17 @@ export async function setTestOAuthClientMetadataUrl(
 ): Promise<void> {
   await write(
     `/* setTestOAuthClientMetadataUrl */ UPDATE oauth_clients
-     SET metadata_url = $2
+     SET client_id = $2,
+         metadata_url = $2,
+         metadata_refresh_generation = nextval('oauth_client_metadata_refresh_generation_seq'),
+         metadata_refreshed_at = CURRENT_TIMESTAMP,
+         metadata_expires_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes',
+         owner_user_id = NULL,
+         client_type = 'public',
+         token_endpoint_auth_method = 'none',
+         client_secret_hash = NULL,
+         verified_at = NULL,
+         verified_by_id = NULL
      WHERE id = $1`,
     [id, metadataUrl],
   )

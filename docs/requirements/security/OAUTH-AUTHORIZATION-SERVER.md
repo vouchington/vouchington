@@ -5,8 +5,9 @@ from the social OAuth clients used to sign users into Voucha.
 
 ## Supported flow
 
-Third-party clients register through `POST /register`, start authorization at `GET /authorize`,
-collect consent in the signed-in Voucha session, and exchange the resulting code at `POST /token`.
+Third-party clients register through `POST /register` or identify themselves with an HTTPS Client
+ID Metadata Document URL, start authorization at `GET /authorize`, collect consent in the signed-in
+Voucha session, and exchange the resulting code at `POST /token`.
 Authorization code exchange always requires S256 PKCE. Successful exchanges return opaque access
 and rotating refresh tokens. `POST /revoke` revokes either token class without revealing whether a
 presented token existed.
@@ -61,6 +62,33 @@ secret once, and renaming a client or replacing its redirect URIs clears `verifi
 deletion committed cannot change the app or mint a secret afterwards. Account deletion revokes
 the apps the account owns in bounded worker batches.
 
+### Client ID Metadata Documents
+
+An HTTPS URL with a path may be used directly as `client_id`. Voucha fetches that exact URL through
+the SSRF-safe, DNS-pinned HTTP boundary and never follows redirects. Userinfo, fragments, dot path
+segments, private or special-use targets, non-200 responses, non-JSON responses, documents larger
+than 5 KiB, and responses exceeding the 5-second header or 5-second body budget are rejected. The
+document's `client_id` must equal the requested URL byte for byte.
+
+CIMD clients are public, secretless clients and still require S256 PKCE. Their names, redirect URIs,
+grant types, response types, and scopes use the RFC 7591 validators, except redirect strings remain
+unserialized so authorization can use simple string comparison. Shared-secret methods and values,
+and private key material embedded in JWK metadata, are rejected. Public JWK metadata is permitted
+but does not change Voucha's supported `none` authentication method.
+
+A validated document is upserted into `oauth_clients` under the exact URL so the existing request,
+grant, token, evidence, and provenance foreign keys remain authoritative. Cache freshness respects
+HTTP cache directives with a 5-minute default and 1-hour ceiling after response age is deducted.
+`no-cache`, `no-store`, and zero remaining freshness require another fetch for the next
+authorization. Failed or invalid refreshes abort authorization and cannot authorize an error
+redirect through stale metadata. Database-ordered refresh generations prevent an older concurrent
+response from overwriting a newer validated representation; the fetch-start timestamp remains the
+recorded refresh time.
+
+Consent uses a reviewed display name only when the exact document URL is in
+`known-clients.mts`. Otherwise it uses the URL hostname, and the hostname is always visible. RFC
+7591 registration and owned-app clients retain their existing behavior.
+
 Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
 ([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
 `verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
@@ -94,7 +122,10 @@ prunable.
 Clients are retired through `revoked_at` and never deleted, because
 [content provenance](../content/content-provenance.md) references the client that created each
 row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
-name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents ship.
+name the client. `metadata_url` is the exact identifier URL for Client ID Metadata Document clients
+and stays `NULL` for dynamically registered and owned clients. `metadata_refresh_generation`
+orders concurrent document updates, `metadata_refreshed_at` records the winning fetch's start time,
+and `metadata_expires_at` controls reuse for new authorization requests.
 
 ## Account deletion
 
@@ -127,7 +158,8 @@ describe the surrounding lifecycle.
 - The issuer is the configured site origin, never the request `Host`. Authorization responses,
   including errors, carry the RFC 9207 `iss` parameter.
 - Discovery documents are anonymous and publicly cacheable:
-  - RFC 8414 authorization-server metadata at `/.well-known/oauth-authorization-server`
+  - RFC 8414 authorization-server metadata at `/.well-known/oauth-authorization-server` advertises
+    `client_id_metadata_document_supported: true`.
   - RFC 9728 protected-resource metadata at `/.well-known/oauth-protected-resource/api/v1/mcp` and
     `/.well-known/oauth-protected-resource/api/v1/admin/mcp`. There is no root document, because two
     resources share one origin.
@@ -156,10 +188,6 @@ The MCP routes accept an OAuth access token or an MCP API key as the bearer cred
 - Role and plan denials, JSON-RPC batches, and API keys keep in-band JSON-RPC errors: re-consent
   cannot fix a role or plan, a batch has no single tool to step up for, and an API key cannot be
   re-authorized.
-
-## Ownership boundaries
-
-Client ID Metadata Documents and client and grant management UX are layered follow-up work.
 
 ## Related
 

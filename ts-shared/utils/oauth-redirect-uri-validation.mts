@@ -19,7 +19,10 @@ export type OAuthRedirectUriValidationResult =
  * Validates OAuth redirect URIs without runtime-specific APIs so the web form and server share one
  * contract. The backend adapts its stable protocol descriptions from the returned error code.
  */
-export function validateOAuthRedirectUris(values: unknown): OAuthRedirectUriValidationResult {
+export function validateOAuthRedirectUris(
+  values: unknown,
+  options: { serialize?: boolean } = {},
+): OAuthRedirectUriValidationResult {
   if (!Array.isArray(values) || values.length === 0 || values.length > MAX_OAUTH_REDIRECT_URIS) {
     return { valid: false, code: 'invalid_count' }
   }
@@ -50,11 +53,11 @@ export function validateOAuthRedirectUris(values: unknown): OAuthRedirectUriVali
       return { valid: false, code: 'invalid_scheme' }
     }
 
-    const serialized = uri.toString()
-    if (serialized.length > MAX_OAUTH_REDIRECT_URI_LENGTH) {
+    const redirectUri = options.serialize === false ? value : uri.toString()
+    if (redirectUri.length > MAX_OAUTH_REDIRECT_URI_LENGTH) {
       return { valid: false, code: 'invalid_uri' }
     }
-    redirectUris.push(serialized)
+    redirectUris.push(redirectUri)
   }
 
   if (new Set(redirectUris).size !== redirectUris.length) {

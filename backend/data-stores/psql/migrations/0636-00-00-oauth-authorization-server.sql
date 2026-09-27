@@ -1,17 +1,23 @@
+CREATE SEQUENCE IF NOT EXISTS oauth_client_metadata_refresh_generation_seq AS BIGINT;
+
 CREATE TABLE IF NOT EXISTS oauth_clients (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   metadata_url TEXT,
+  metadata_refresh_generation BIGINT,
+  metadata_refreshed_at TIMESTAMPTZ,
+  metadata_expires_at TIMESTAMPTZ,
   verified_at TIMESTAMPTZ,
   verified_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT oauth_clients_metadata_url_check CHECK (
     metadata_url IS NULL OR (
       char_length(metadata_url) <= 2048
-      AND metadata_url ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?/[^#[:space:][:cntrl:]]*$'
+      AND metadata_url ~ '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'
+      AND position(chr(92) IN metadata_url) = 0
       AND metadata_url !~ '/\.\.?(/|\?|$)'
     )
   ),
   CONSTRAINT oauth_clients_verified_by_id_check CHECK (verified_by_id IS NULL OR verified_at IS NOT NULL),
-  client_id TEXT NOT NULL UNIQUE CHECK (client_id ~ '^voucha_[A-Za-z0-9_-]{32,}$'),
+  client_id TEXT NOT NULL UNIQUE,
   owner_user_id UUID REFERENCES users ON DELETE SET NULL,
   client_name TEXT NOT NULL CHECK (char_length(client_name) BETWEEN 1 AND 120),
   client_type TEXT NOT NULL CHECK (client_type IN ('public', 'confidential')),
@@ -35,6 +41,28 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
       client_type = 'confidential'
       AND token_endpoint_auth_method = 'client_secret_basic'
       AND client_secret_hash IS NOT NULL
+    )
+  ),
+  CHECK (
+    (
+      metadata_url IS NULL
+      AND metadata_refresh_generation IS NULL
+      AND metadata_refreshed_at IS NULL
+      AND metadata_expires_at IS NULL
+      AND client_id ~ '^voucha_[A-Za-z0-9_-]{32,}$'
+    )
+    OR (
+      metadata_url IS NOT NULL
+      AND client_id = metadata_url
+      AND metadata_refresh_generation IS NOT NULL
+      AND metadata_refreshed_at IS NOT NULL
+      AND metadata_expires_at IS NOT NULL
+      AND owner_user_id IS NULL
+      AND client_type = 'public'
+      AND token_endpoint_auth_method = 'none'
+      AND client_secret_hash IS NULL
+      AND verified_at IS NULL
+      AND verified_by_id IS NULL
     )
   )
 );
@@ -294,7 +322,7 @@ ON oauth_access_tokens (refresh_family_id, grant_id);
 CREATE INDEX IF NOT EXISTS idx_oauth_access_tokens__expiry
 ON oauth_access_tokens (expires_at, id);
 
-COMMENT ON TABLE oauth_clients IS 'Dynamically registered clients for the Voucha OAuth authorization server.';
+COMMENT ON TABLE oauth_clients IS 'Dynamically registered and Client ID Metadata Document clients for the Voucha OAuth authorization server.';
 COMMENT ON TABLE oauth_authorization_requests IS 'Short-lived browser consent requests bound to one Voucha user session.';
 COMMENT ON TABLE oauth_grants IS 'Durable user consent for one client, resource, and canonical scope set.';
 COMMENT ON TABLE oauth_authorization_server_events IS 'Append-only durable evidence of OAuth consent and token revocation lifecycle events; identity columns intentionally have no foreign keys so retention and identity deletion cannot erase the audit record.';
@@ -303,7 +331,10 @@ COMMENT ON TABLE oauth_refresh_token_families IS 'Rotating refresh-token family 
 COMMENT ON TABLE oauth_refresh_tokens IS 'Single-use refresh tokens stored only as purpose-bound hashes.';
 COMMENT ON TABLE oauth_access_tokens IS 'Opaque access tokens stored only as purpose-bound hashes.';
 
-COMMENT ON COLUMN oauth_clients.client_id IS 'Public OAuth client identifier issued at registration.';
+COMMENT ON COLUMN oauth_clients.client_id IS 'Public OAuth client identifier issued at registration or the exact Client ID Metadata Document URL.';
+COMMENT ON COLUMN oauth_clients.metadata_refresh_generation IS 'Database-ordered generation of the newest Client ID Metadata Document fetch applied to this row; NULL for registered clients.';
+COMMENT ON COLUMN oauth_clients.metadata_refreshed_at IS 'Fetch-start time of the newest Client ID Metadata Document representation applied to this row; NULL for registered clients.';
+COMMENT ON COLUMN oauth_clients.metadata_expires_at IS 'Time after which the stored Client ID Metadata Document must be refreshed for a new authorization; NULL for registered clients.';
 COMMENT ON COLUMN oauth_clients.owner_user_id IS 'Voucha user that owns the client when registration is authenticated.';
 COMMENT ON COLUMN oauth_clients.client_name IS 'Display-safe client name shown during consent.';
 COMMENT ON COLUMN oauth_clients.client_type IS 'Public or confidential OAuth client classification.';

@@ -75,3 +75,10 @@ their localization catalogues. Their connected-app surfaces paginate active gran
 consent from nullable last use, and retain truthful state when revocation fails. Developer-owned
 OAuth app management and administrator verification remain web-only. Native delivery is tracked by
 [vouchington-clients#177](https://github.com/vouchington/vouchington-clients/issues/177).
+
+### Client ID Metadata Document boundary
+
+Native OAuth coordinators open the hosted browser flow rather than render consent copy. Client ID
+Metadata Document consent name and hostname changes therefore remain in that hosted browser
+surface and do not change native REST DTOs or fixture consumers. A discovered native DTO or
+consumer change requires the normal linked client validation PR.
