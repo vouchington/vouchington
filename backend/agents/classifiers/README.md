@@ -18,6 +18,10 @@ State and question text use the branded `ClassifierSafeText` contract. Callers s
 every external post, RSS, topic, and community-authored fragment with
 `sanitizeClassifierExternalContent`, then interpolate only those safe fragments into the static
 `classifierPrompt` template tag. Choice criteria are bounded opaque keys, never external labels.
+For fixed operator-owned policy and questions, `renderFixedClassifierRequest` places the policy
+once outside the sanitized external state wrapper and retains each question independently. It
+accepts only trusted configuration instructions, not raw subject content; the post-classifier builder
+checks those instructions against its compiled catalog before rendering.
 
 The caller pairs that policy with a C1 client fixed to the same transport/model route. This package
 never constructs, replaces, or falls back from that client.
@@ -31,3 +35,7 @@ token fallback.
 Every shard uses the supplied structured-decision client in sequence. The package validates exact
 answer and candidate coverage before calling `@services/classifiers` once. That service owns the
 stable-batch replay check and its single PostgreSQL transaction.
+
+`prepareSingleCallClassifierDecision` performs the same validation and one provider call but
+returns the complete durable decision input without persisting it. Callers that must atomically
+combine a decision with another receipt use that prepared input in their own transaction.

@@ -30,6 +30,16 @@ export type ModerationPromptJobData = {
   source?: 'baseline' | 'community'
 }
 
+export type PostClassifierDispatcherJobData = { postId: string }
+
+export type PostClassifierJobData = {
+  applicationId: string
+  postId: string
+  inputSha256: string
+  configurationSha256: string
+  detectorPackageVersion: string
+}
+
 export type CommunityModerationDispatcherJobData = {
   postId: string
   communityId: string
@@ -77,6 +87,7 @@ export type CopyrightFormScreeningJobData = { submission_id: string }
 export type CopyrightAppealRecommendationJobData = { submission_id: string }
 
 export type BackfillReportJudgementsJobData = Record<string, never>
+export type ReconcilePostClassifierApplicationsJobData = Record<string, never>
 
 export type AutoDispatchJudgementJobData = {
   judgement_id: string
@@ -101,6 +112,8 @@ export type AIAgentJobData = (
   | AutotaggerRssFeedItemJobData
   | ModerationDispatcherJobData
   | ModerationPromptJobData
+  | PostClassifierDispatcherJobData
+  | PostClassifierJobData
   | CommunityModerationDispatcherJobData
   | CommunityModerationPromptJobData
   | ReportJudgementJobData
@@ -112,6 +125,7 @@ export type AIAgentJobData = (
   | StoryClusteringJobData
   | StoryPostJobData
   | BackfillReportJudgementsJobData
+  | ReconcilePostClassifierApplicationsJobData
   | AutoDispatchJudgementJobData
 ) &
   OpenAiSpendCapDelayedData

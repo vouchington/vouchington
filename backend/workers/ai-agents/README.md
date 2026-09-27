@@ -2,6 +2,13 @@
 
 Worker package for AI agent jobs such as chat, moderation, story clustering, autotagging, and recommendations.
 
+`post-classifier-dispatcher` reserves one immutable receipt after the safety and spam clearance
+path has approved the current post revision, then awaits its child enqueue. `post-classifier`
+re-reads primary state, checks the receipt's content and configuration fingerprints, claims a
+60-second lease, and bounds local/provider execution to 55 seconds. Completion applies classifier
+votes and tags only; it never writes clearance, review, or publication state. The five-minute
+`reconcile-post-classifier-applications` job streams incomplete receipt identities from Postgres.
+
 ## Exports
 
 - `ai_agents` - worker instance for the `ai_agents` queue.

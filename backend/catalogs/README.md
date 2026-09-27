@@ -19,6 +19,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../agents/dispute-resolution/README.md`](../agents/dispute-resolution/README.md)
 - [`../agents/moderation/README.md`](../agents/moderation/README.md)
 - [`../agents/politics-averse/README.md`](../agents/politics-averse/README.md)
+- [`../agents/post-classifier/README.md`](../agents/post-classifier/README.md)
 - [`../agents/profile-agent/README.md`](../agents/profile-agent/README.md)
 - [`../agents/report-judgement/README.md`](../agents/report-judgement/README.md)
 - [`../agents/research-agent/README.md`](../agents/research-agent/README.md)

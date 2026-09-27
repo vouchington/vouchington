@@ -17,6 +17,7 @@ import {
 } from '@queues/language-detection/enqueues'
 import { enqueueBackfillFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
+import { enqueueReconcilePostClassifierApplications } from '@queues/ai-agents/enqueues/reconcile-post-classifier-applications'
 import { enqueueBackfillReportIntegrity } from '@queues/report-integrity/enqueues'
 import {
   enqueueBackfillBlueskyDisconnectRequests,
@@ -33,6 +34,14 @@ import { POST_PUBLICATION_BACKFILLS } from './backfills-post-publication.mts'
 
 export const CORE_BACKFILLS: BackfillEntry[] = [
   ...POST_PUBLICATION_BACKFILLS,
+  {
+    id: 'post-classifier-applications',
+    queue_name: 'ai_agents',
+    job_name: 'reconcile-post-classifier-applications',
+    description: 'Re-enqueue incomplete post classifier receipts from their durable identity',
+    source_table: 'post_classifier_applications',
+    trigger: createBackfillTrigger(enqueueReconcilePostClassifierApplications),
+  },
   {
     id: 'crawl-embeds-pending',
     queue_name: 'crawl_embeds',

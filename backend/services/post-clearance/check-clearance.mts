@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueModerationDispatcher } from '@queues/ai-agents/enqueues/moderation'
+import { enqueuePostClassifierDispatcher } from '@queues/ai-agents/enqueues/post-classifier'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
@@ -16,7 +16,7 @@ export async function checkPostClearance(postId: string): Promise<void> {
 
   const row = updatedRows[0]
   if (row) await invalidate.posts(postId)
-  if (row?.clearance_status === 'approved') void enqueueModerationDispatcher(postId)
+  if (row?.clearance_status === 'approved') await enqueuePostClassifierDispatcher(postId)
 }
 
 async function applyClearanceDecision(

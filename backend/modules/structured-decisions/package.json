@@ -8,6 +8,11 @@
   "type": "module",
   "main": "index.mts",
   "exports": {
+    "./transport": {
+      "types": "./transport.mts",
+      "import": "./transport.mts",
+      "default": "./transport.mts"
+    },
     ".": {
       "types": "./index.mts",
       "import": "./index.mts",

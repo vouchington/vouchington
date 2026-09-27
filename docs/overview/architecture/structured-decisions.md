@@ -17,7 +17,10 @@ flowchart LR
 Callers explicitly select one transport. The client makes exactly one attempt per call and never
 retries; optional `beforeAttempt`/`onBilledResponse`/`onUnknownBilledAttempt` hooks let a caller
 record billed usage and enforce a spend cap without this module ever importing a billing service
-itself. Every returned answer must
+itself. `@agents/_shared/structured-decision-billing-hooks.mts` owns that reusable composition for
+agent callers; `@agents/post-classifier` uses its fixed OpenRouter/Jev client factory in the
+post-classifier worker for remote candidate sets. Local-only post-classifier work makes no provider
+wired into a queue dispatch. Every returned answer must
 match one requested ID and primitive, use valid probabilities, and completely cover the request.
 Partial, malformed, duplicate, unknown, and non-normalized results reject as a whole.
 Each normalized answer also retains its validated native provider fragment so the classifier layer
@@ -60,7 +63,7 @@ must reference that immutable snapshot, so a concurrent threshold replacement ca
 invalidate in-flight lineage. Its ordered call
 rows represent one unsharded call or multiple context-window shards. Results remain one row per
 candidate and preserve both the scalar probability used by C4 and the raw native answer. Fixed
-moderation candidates reference their stored candidate row; dynamically prefiltered tagging and
+fixed classifiers reference their stored candidate row; dynamically prefiltered tagging and
 story candidates leave that reference null and use the concrete result owner directly. Topic and
 story results are sibling UUIDv7 RANGE parents, partitioned directly by `topic_id` and `story_id`;
 that keeps pruning and foreign keys concrete without a polymorphic result owner. Result scope must
@@ -116,6 +119,12 @@ caught or packed around ahead of time — it surfaces as an ordinary `Structured
 the caller's own retry/queue semantics (for C6, the receipt lease expiring and a fresh dispatch
 attempt) are what recover from it, rather than the call layer itself ever splitting an
 over-budget request into shards.
+
+`prepareSingleCallClassifierDecision` performs that same configuration, binding, provider, and
+coverage validation but returns the fully bound persistence input without writing it. A caller
+that needs one transaction for classifier results and another durable receipt can persist the
+prepared input through its owned transaction; `executeSingleCallClassifierDecision` remains the
+ordinary convenience wrapper that prepares once and calls classifier persistence once.
 
 ## Related
 

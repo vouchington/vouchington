@@ -135,6 +135,39 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Re-enqueue incomplete post classifier applications",
+        "id": "reconcilePostClassifierApplications",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "ai_agents",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "reconcilePostClassifierApplications",
+    "template": {
+      "data": {},
+      "name": "reconcile-post-classifier-applications",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Re-enqueue unassessed copyright email and form agent work",
         "id": "reconcileCopyrightAgentDispatches",
         "kind": "scheduled-jobs",
@@ -3081,6 +3114,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileCopyrightAgentDispatches",
+  },
+  {
+    "description": "Re-enqueue incomplete post classifier applications",
+    "id": "reconcilePostClassifierApplications",
+    "job_name": "reconcile-post-classifier-applications",
+    "queue_name": "ai_agents",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueReconcilePostClassifierApplications",
   },
   {
     "description": "Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)",

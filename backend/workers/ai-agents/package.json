@@ -23,6 +23,7 @@
     "@agents/copyright-form-screening": "workspace:^",
     "@agents/dispute-resolution": "workspace:^",
     "@agents/moderation": "workspace:^",
+    "@agents/post-classifier": "workspace:^",
     "@agents/report-judgement": "workspace:^",
     "@agents/story-post": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
@@ -34,6 +35,7 @@
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/notifications": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
@@ -47,6 +49,7 @@
     "@services/moderation-threads": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/openai-background-responses": "workspace:^",
+    "@services/post-classifier": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
@@ -59,11 +62,13 @@
     "p-map": "7.0.8"
   },
   "devDependencies": {
+    "@modules/structured-decisions": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
   }
 }

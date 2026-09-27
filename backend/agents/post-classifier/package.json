@@ -1,0 +1,39 @@
+{
+  "name": "@agents/post-classifier",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Post classification and automatic topic-tagging orchestration",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@agents/_shared": "workspace:^",
+    "@agents/classifiers": "workspace:^",
+    "@modules/structured-decisions": "workspace:^",
+    "@services/ai-usage": "workspace:^",
+    "@services/classifiers": "workspace:^",
+    "@services/moderation": "workspace:^",
+    "@services/post-classifier": "workspace:^",
+    "@services/posts": "workspace:^",
+    "@voucha/types": "workspace:^"
+  },
+  "devDependencies": {
+    "@data-stores/valkey": "workspace:^",
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
+  }
+}

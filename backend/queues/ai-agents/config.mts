@@ -14,6 +14,9 @@ export type AIAgentJobName =
   | 'autotagger-rss-feed-item'
   | 'moderation-dispatcher'
   | 'moderation-prompt'
+  | 'post-classifier-dispatcher'
+  | 'post-classifier'
+  | 'reconcile-post-classifier-applications'
   | 'community-moderation-dispatcher'
   | 'community-moderation-prompt'
   | 'report-judgement'
@@ -36,6 +39,9 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   'moderation-prompt': 3,
   'community-moderation-prompt': 3,
   'moderation-dispatcher': 8,
+  'post-classifier-dispatcher': 8,
+  'post-classifier': 3,
+  'reconcile-post-classifier-applications': 100,
   'community-moderation-dispatcher': 8,
   'report-judgement': 9,
   'dispute-resolution': 9,
@@ -96,6 +102,11 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   'moderation-prompt': true,
   'community-moderation-prompt': true,
   'moderation-dispatcher': false,
+  // The dispatcher only reserves durable intent. The child can finish local-only/effect replay
+  // without provider spend; its structured-decision client performs the authoritative pre-call cap check.
+  'post-classifier-dispatcher': false,
+  'post-classifier': false,
+  'reconcile-post-classifier-applications': false,
   'community-moderation-dispatcher': true,
   'report-judgement': true,
   'dispute-resolution': true,

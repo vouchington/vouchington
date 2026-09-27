@@ -22,12 +22,17 @@ import { processAppealResolution } from './processors/process-appeal-resolution.
 import { processCopyrightEmailIntake } from './processors/process-copyright-email-intake.mts'
 import { processCopyrightFormScreening } from './processors/process-copyright-form-screening.mts'
 import { processCopyrightAppealRecommendation } from './processors/process-copyright-appeal-recommendation.mts'
+import {
+  processPostClassifier,
+  processPostClassifierDispatcher,
+} from './processors/process-post-classifier.mts'
 import { processBackfillReportJudgements } from './processors/process-backfill-report-judgements.mts'
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
 import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
 import { processReconcileChatRuntimeGenerations } from './processors/process-reconcile-chat-runtime-generations.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
+import { processReconcilePostClassifierApplications } from './processors/process-reconcile-post-classifier-applications.mts'
 
 export type ProcessAIAgentDependencies = {
   processReconcileChatRuntimeGenerations: typeof processReconcileChatRuntimeGenerations
@@ -63,6 +68,16 @@ export function processAIAgent(
       return processModerationPrompt(
         job as Job<import('@queues/ai-agents/types').ModerationPromptJobData>,
       )
+    case 'post-classifier-dispatcher':
+      return processPostClassifierDispatcher(
+        job as Job<import('@queues/ai-agents/types').PostClassifierDispatcherJobData>,
+      )
+    case 'post-classifier':
+      return processPostClassifier(
+        job as Job<import('@queues/ai-agents/types').PostClassifierJobData>,
+      )
+    case 'reconcile-post-classifier-applications':
+      return processReconcilePostClassifierApplications()
     case 'community-moderation-dispatcher':
       return processCommunityModerationDispatcher(
         job as Job<import('@queues/ai-agents/types').CommunityModerationDispatcherJobData>,
