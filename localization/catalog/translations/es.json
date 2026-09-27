@@ -2719,6 +2719,7 @@
 {"id":"copy.extracted.notifications.inboxButton.markAllAsRead_d7592650","value":"Marcar todo como leído"},
 {"id":"copy.extracted.notifications.inboxButton.noUnreadNotifications_7b967630","value":"Sin notificaciones sin leer."},
 {"id":"copy.extracted.notifications.inboxButton.openInbox_0f7bb6eb","value":"Abrir bandeja de entrada"},
+{"id":"copy.extracted.notifications.inboxButton.openWithUnreadBadge","value":"Abrir bandeja de entrada, {badge} sin leer"},
 {"id":"copy.extracted.notifications.inboxButton.viewAllNotifications_13af64d6","value":"Ver todas las notificaciones"},
 {"id":"copy.extracted.notifications.notificationList.noNotificationsYet_37ecf360","value":"Sin notificaciones aún"},
 {"id":"copy.extracted.notifications.notificationList.whenYouGetNotificationsTheyLl_1e10cd76","value":"Cuando recibas notificaciones, aparecerán aquí."},

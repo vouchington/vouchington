@@ -144,6 +144,30 @@ describe('inbox-button', () => {
       })
     })
 
+    it('includes the visible unread badge in the inbox button accessible name', async () => {
+      mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue({
+        ...emptySummary,
+        unread_count: 2,
+      })
+      render(<InboxButton />)
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Open inbox, 2 unread' })).toBeInTheDocument()
+      })
+    })
+
+    it('includes the capped 9+ badge in the inbox button accessible name', async () => {
+      mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue({
+        ...emptySummary,
+        unread_count: 15,
+      })
+      render(<InboxButton />)
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Open inbox, 9+ unread' })).toBeInTheDocument()
+      })
+    })
+
     it('shows 9+ when unread count exceeds 9', async () => {
       mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue({
         ...emptySummary,

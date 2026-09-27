@@ -4,6 +4,7 @@
 
 - Logged-in users have a top-right inbox button in the top bar
 - The inbox shows the unread count
+- That visible badge is part of the button's accessible name, including the `9+` cap, so screen readers hear the same count the badge shows
 - The inbox dropdown previews the newest unread notifications
 - The dropdown includes `Mark all as read`
 - The dropdown links to `/my/notifications`
