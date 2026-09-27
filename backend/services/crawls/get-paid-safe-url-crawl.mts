@@ -13,7 +13,7 @@ export const getPublicUrlCrawlDetailById = async (
     throw createError(422, `Invalid crawl ID or URL ID: ${crawlId}, ${urlId}`)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(
     `/* getPublicUrlCrawlDetailById */
     SELECT id, created_at, response_status_code, completed_at, title, lang
     FROM crawls
@@ -37,7 +37,7 @@ export const getLatestSuccessfulPublicUrlCrawlSummary = async (
     throw createError(422, `Invalid URL ID: ${urlId}`)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(
     `/* getLatestSuccessfulPublicUrlCrawlSummary */
     SELECT id, created_at, response_status_code, completed_at, title, lang
     FROM crawls

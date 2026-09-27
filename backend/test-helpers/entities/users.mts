@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'node:assert'
 import type { BasicUser, PrivateUser } from '@voucha/types/entities/user'
@@ -102,6 +102,17 @@ export async function countUserRoleAssignments(userId: string, roleSlug: string)
   `)
 
   return rows[0]?.count ?? 0
+}
+
+export async function getTestUserRoleSlugs(userId: string): Promise<string[]> {
+  const { rows } = await read<{ slug: string }>(sql`/* getTestUserRoleSlugs */
+    SELECT role.slug
+    FROM user_roles grant_row
+    JOIN user_roles_types role ON role.id = grant_row.role_type_id
+    WHERE grant_row.user_id = ${userId}
+    ORDER BY role.slug
+  `)
+  return rows.map(row => row.slug)
 }
 
 // is_system = TRUE so callers that look this fixture up via getSystemUserByUsername /

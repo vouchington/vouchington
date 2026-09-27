@@ -99,5 +99,6 @@ describe('toolsSearchPostsSemantic publication eligibility', () => {
     )
     expect(reviews).toHaveLength(reviewCount)
     expect(reviews.every(result => result.post_type === 'review')).toBe(true)
+    expect(reviews.every(result => Number.isFinite(result.distance))).toBe(true)
   })
 })

@@ -74,7 +74,7 @@ describe('extension table key columns', () => {
 })
 
 async function getTableColumns(tableName: string): Promise<TableColumn[]> {
-  const { rows } = await read(
+  const { rows } = await read<TableColumn>(
     `
       SELECT
         column_name,

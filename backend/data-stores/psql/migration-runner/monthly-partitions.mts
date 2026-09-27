@@ -104,7 +104,7 @@ async function getExistingManagedMonthlyPartitions(
     return []
   }
 
-  const { rows } = await write(
+  const { rows } = await write<ExistingMonthlyPartitionRow>(
     `/* getExistingManagedMonthlyPartitions */
       SELECT
         parent.relname AS parent_table,

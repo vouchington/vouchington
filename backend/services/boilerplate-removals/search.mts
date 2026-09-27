@@ -59,7 +59,7 @@ export const searchParentPathsNeedingBoilerplateRemoval = async (
     LIMIT ${limit}
   `)
 
-  const { rows } = await read(query, undefined, options.queryOptions ?? {})
+  const { rows } = await read<ParentPathCandidate>(query, undefined, options.queryOptions ?? {})
 
   return rows
 }

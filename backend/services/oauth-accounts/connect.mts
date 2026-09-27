@@ -88,7 +88,7 @@ export async function getOAuthAccountByProviderUserId(
   providerUserId: string,
 ): Promise<OAuthAccount | null> {
   const config = providerTableConfigs[provider]
-  const { rows } = await read(
+  const { rows } = await read<OAuthAccount>(
     `/* getOAuthAccountByProviderUserId */ SELECT
       user_id,
       ${config.providerUserIdColumn} AS provider_user_id,

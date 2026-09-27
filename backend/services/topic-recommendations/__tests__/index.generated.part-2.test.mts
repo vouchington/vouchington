@@ -105,7 +105,7 @@ describe('index.generated', () => {
       const cachedApprovedPost = await getPostByAnyCached(approved.id)
 
       expect(createdTopic?.slug).toBe(approved.topic_recommendation?.topic_slug)
-      expect(createdTopic?.created_by.id).toBe(admin.id)
+      expect(createdTopic?.created_by?.id).toBe(admin.id)
       expect(createdTopic?.aliases).toContain(cleanAlias)
       expect(refreshedPost?.topic_recommendation?.status).toBe('approved')
       expect(cachedApprovedPost?.topic_recommendation?.status).toBe('approved')
@@ -133,7 +133,7 @@ describe('index.generated', () => {
 
       expect(createdTopic?.name).toBe(latestTitle)
       expect(createdTopic?.slug).toBe(latestSlug)
-      expect(createdTopic?.created_by.id).toBe(admin.id)
+      expect(createdTopic?.created_by?.id).toBe(admin.id)
       expect(approvedPost?.topic_recommendation?.topic_title).toBe(latestTitle)
       expect(approvedPost?.topic_recommendation?.topic_slug).toBe(latestSlug)
     })

@@ -23,6 +23,14 @@ type SearchRssFeedItemsDependencies = {
   getCachedSearchEmbedding: typeof getCachedSearchEmbedding
 }
 
+type RecencySearchRow = {
+  id: string
+  published_at: Date
+  cursor_published_at: string
+  story_id: string | null
+  has_next_page: boolean
+}
+
 export type SearchRssFeedItemsOptions = {
   rss_feed_ids?: string[]
   topic_ids?: string[]
@@ -105,22 +113,22 @@ export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}
   `)
   appendRssFeedItemsPageClauses(query, safeLimit)
 
-  const { rows } = await read(query)
+  const { rows } = await read<RecencySearchRow>(query)
   const hasNextPage = rows.some(row => row.has_next_page === true)
 
   const results = rows.map(row => ({
     __entity_type: 'rss_feed_item' as const,
-    id: row.id as string,
-    published_at: row.published_at as Date,
-    story_id: (row.story_id as string | null) ?? null,
+    id: row.id,
+    published_at: row.published_at,
+    story_id: row.story_id ?? null,
   }))
 
   return {
     results,
     page_info: buildRssFeedItemSearchPageInfo(
       rows.map(row => ({
-        id: row.id as string,
-        cursor_published_at: row.cursor_published_at as string,
+        id: row.id,
+        cursor_published_at: row.cursor_published_at,
       })),
       hasNextPage,
       getRssFeedItemSearchCursorScope(options),

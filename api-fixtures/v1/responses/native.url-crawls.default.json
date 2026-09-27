@@ -42,8 +42,6 @@
       "embeddings_generated_at": null,
       "etag": null,
       "has_pending_embeddings": false,
-      "html_sha256": null,
-      "html_snapshot_uploaded_at": null,
       "id": "crawl-1",
       "lang": "en",
       "last_modified_at": null,

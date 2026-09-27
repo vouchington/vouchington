@@ -2692,6 +2692,85 @@
         ],
         "type": "object"
       },
+      "ConversationWithoutChannelType": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_response_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "created_at",
+          "created_by_id",
+          "deleted_at",
+          "deleted_by_id",
+          "id",
+          "last_response_id",
+          "title",
+          "updated_at",
+          "updated_by_id"
+        ],
+        "type": "object"
+      },
       "CopyrightEmailIntakeQueueResponse": {
         "additionalProperties": false,
         "properties": {
@@ -3775,7 +3854,14 @@
             ]
           },
           "crawler_id": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "created_at": {
             "type": "string"
@@ -15030,7 +15116,14 @@
               "type": "string"
             },
             "created_by": {
-              "$ref": "#/components/schemas/BasicUser"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BasicUser"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "hero_image_id": {
               "anyOf": [
@@ -15174,7 +15267,14 @@
               "type": "string"
             },
             "updated_by": {
-              "$ref": "#/components/schemas/BasicUser"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BasicUser"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "required": [
@@ -17913,7 +18013,14 @@
             "type": "object"
           },
           "bookmarks__updated_at": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "count": {
             "additionalProperties": false,
@@ -17970,7 +18077,14 @@
             "type": "object"
           },
           "ratings__updated_at": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "viewer_count": {
             "additionalProperties": false,
@@ -18451,6 +18565,196 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UrlCrawlHistory": {
+        "additionalProperties": false,
+        "properties": {
+          "__entity_type": {
+            "const": "crawl"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "crawler_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "embed_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResolvedEmbed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embed_oembed_resolved_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "embed_oembed_url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "embeddings_generated_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "etag": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "has_pending_embeddings": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "links": {
+            "$ref": "#/components/schemas/CrawlerHtmlStructuredObject"
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "meta_tags": {
+            "$ref": "#/components/schemas/CrawlerHtmlStructuredObject"
+          },
+          "network_error": {
+            "anyOf": [
+              {
+                "const": "dns"
+              },
+              {
+                "const": "ssrf"
+              },
+              {
+                "const": "timeout"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "redirect_url_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "request_headers": {
+            "$ref": "#/components/schemas/Record_string_string"
+          },
+          "response_headers": {
+            "$ref": "#/components/schemas/Record_string_string"
+          },
+          "response_status_code": {
+            "type": "number"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "url_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "__entity_type",
+          "completed_at",
+          "crawler_id",
+          "created_at",
+          "embed_metadata",
+          "embed_oembed_resolved_at",
+          "embed_oembed_url",
+          "embeddings_generated_at",
+          "etag",
+          "has_pending_embeddings",
+          "id",
+          "lang",
+          "last_modified_at",
+          "links",
+          "markdown",
+          "meta_tags",
+          "network_error",
+          "redirect_url_id",
+          "request_headers",
+          "response_headers",
+          "response_status_code",
+          "title",
+          "url_id"
+        ],
         "type": "object"
       },
       "UrlEmbed": {
@@ -19929,7 +20233,17 @@
             "const": "hostname"
           },
           "blocked": {
-            "type": "boolean"
+            "anyOf": [
+              {
+                "const": false
+              },
+              {
+                "const": true
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "crawlable": {
             "anyOf": [
@@ -20036,7 +20350,17 @@
             "const": "hostname"
           },
           "blocked": {
-            "type": "boolean"
+            "anyOf": [
+              {
+                "const": false
+              },
+              {
+                "const": true
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "crawlable": {
             "anyOf": [
@@ -20248,7 +20572,14 @@
                 "type": "string"
               },
               "created_by": {
-                "$ref": "#/components/schemas/BasicUser"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/BasicUser"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "hero_image_id": {
                 "anyOf": [
@@ -20392,7 +20723,14 @@
                 "type": "string"
               },
               "updated_by": {
-                "$ref": "#/components/schemas/BasicUser"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/BasicUser"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
@@ -20513,7 +20851,14 @@
                           "type": "string"
                         },
                         "created_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hero_image_id": {
                           "anyOf": [
@@ -20657,7 +21002,14 @@
                           "type": "string"
                         },
                         "updated_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -42163,7 +42515,14 @@
                           "type": "string"
                         },
                         "created_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hero_image_id": {
                           "anyOf": [
@@ -42307,7 +42666,14 @@
                           "type": "string"
                         },
                         "updated_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -43204,7 +43570,14 @@
                                   "type": "string"
                                 },
                                 "created_by": {
-                                  "$ref": "#/components/schemas/BasicUser"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/BasicUser"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "hero_image_id": {
                                   "anyOf": [
@@ -43348,7 +43721,14 @@
                                   "type": "string"
                                 },
                                 "updated_by": {
-                                  "$ref": "#/components/schemas/BasicUser"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/BasicUser"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -43449,7 +43829,14 @@
                                   "type": "string"
                                 },
                                 "created_by": {
-                                  "$ref": "#/components/schemas/BasicUser"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/BasicUser"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "hero_image_id": {
                                   "anyOf": [
@@ -43593,7 +43980,14 @@
                                   "type": "string"
                                 },
                                 "updated_by": {
-                                  "$ref": "#/components/schemas/BasicUser"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/BasicUser"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -47980,7 +48374,7 @@
                     },
                     "results": {
                       "items": {
-                        "$ref": "#/components/schemas/Conversation"
+                        "$ref": "#/components/schemas/ConversationWithoutChannelType"
                       },
                       "type": "array"
                     }
@@ -62190,7 +62584,14 @@
                           "type": "string"
                         },
                         "created_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hero_image_id": {
                           "anyOf": [
@@ -62334,7 +62735,14 @@
                           "type": "string"
                         },
                         "updated_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -62658,7 +63066,14 @@
                               "type": "string"
                             },
                             "created_by": {
-                              "$ref": "#/components/schemas/BasicUser"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/BasicUser"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "hero_image_id": {
                               "anyOf": [
@@ -62802,7 +63217,14 @@
                               "type": "string"
                             },
                             "updated_by": {
-                              "$ref": "#/components/schemas/BasicUser"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/BasicUser"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -64901,7 +65323,14 @@
                           "type": "string"
                         },
                         "created_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hero_image_id": {
                           "anyOf": [
@@ -65045,7 +65474,14 @@
                           "type": "string"
                         },
                         "updated_by": {
-                          "$ref": "#/components/schemas/BasicUser"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BasicUser"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -65553,7 +65989,7 @@
                         },
                         "results": {
                           "items": {
-                            "$ref": "#/components/schemas/CrawlBasic"
+                            "$ref": "#/components/schemas/UrlCrawlHistory"
                           },
                           "type": "array"
                         }
@@ -69912,7 +70348,14 @@
                             "type": "string"
                           },
                           "created_by": {
-                            "$ref": "#/components/schemas/BasicUser"
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/BasicUser"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "hero_image_id": {
                             "anyOf": [
@@ -70056,7 +70499,14 @@
                             "type": "string"
                           },
                           "updated_by": {
-                            "$ref": "#/components/schemas/BasicUser"
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/BasicUser"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [

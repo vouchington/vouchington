@@ -124,7 +124,10 @@ export async function getPostModerationCompletion(
   openai_omni_moderation_completed: boolean
   spam_detection_completed: boolean
 } | null> {
-  const { rows } = await read(
+  const { rows } = await read<{
+    openai_omni_moderation_completed: boolean
+    spam_detection_completed: boolean
+  }>(
     sql`/* getPostModerationCompletion */
       SELECT
         EXISTS (

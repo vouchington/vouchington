@@ -11,7 +11,7 @@ export async function getApprovedReviewsForPost(
   options: QueryOptions = {},
 ): Promise<string[]> {
   const runQuery = options.readOnly === false ? write : read
-  const { rows } = await runQuery(
+  const { rows } = await runQuery<{ community_id: string }>(
     sql`/* getApprovedReviewsForPost */
     SELECT community_id
     FROM community_post_reviews

@@ -110,7 +110,7 @@ export async function getModerationPromptStatus(promptId: string): Promise<{
   activated_at: Date | null
   deactivated_at: Date | null
 } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read<{ activated_at: Date | null; deactivated_at: Date | null }>(sql`
     SELECT activated_at, deactivated_at
     FROM agent_prompts
     WHERE id = ${promptId}

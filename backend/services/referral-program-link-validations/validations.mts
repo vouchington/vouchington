@@ -10,14 +10,14 @@ export type ReferralLinkValidation = {
   id: string
   slug: string
   user_help_text: string
-  updated_at: string
+  updated_at: Date
 }
 
 export async function getReferralLinkValidationBySlug(
   slug: string,
   options?: QueryOptions,
 ): Promise<ReferralLinkValidation | null> {
-  const { rows } = await read(
+  const { rows } = await read<ReferralLinkValidation>(
     sql`/* getReferralLinkValidationBySlug */
       SELECT id, slug, user_help_text, updated_at
       FROM referral_program_link_validations
@@ -34,7 +34,7 @@ async function getReferralLinkValidationById(
   options?: QueryOptions,
 ): Promise<ReferralLinkValidation | null> {
   validateUUID(id)
-  const { rows } = await read(
+  const { rows } = await read<ReferralLinkValidation>(
     sql`/* getReferralLinkValidationById */
       SELECT id, slug, user_help_text, updated_at
       FROM referral_program_link_validations
@@ -69,7 +69,7 @@ export async function createReferralLinkValidation(
 
   const userHelpText = data.user_help_text?.trim() ?? ''
 
-  const { rows } = await write(
+  const { rows } = await write<ReferralLinkValidation>(
     sql`/* createReferralLinkValidation */
       INSERT INTO referral_program_link_validations (slug, user_help_text)
       VALUES (${slug}, ${userHelpText})
@@ -138,7 +138,7 @@ export async function updateReferralLinkValidation(
 
   query.append(sql` WHERE id = ${validationId} RETURNING id, slug, user_help_text, updated_at`)
 
-  const { rows } = await write(query)
+  const { rows } = await write<ReferralLinkValidation>(query)
 
   return rows[0] ?? null
 }

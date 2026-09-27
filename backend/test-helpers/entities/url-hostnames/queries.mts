@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 export async function getCrawlableHostnames(hostnameIds: string[]): Promise<Array<{ id: string }>> {
   if (hostnameIds.length === 0) return []
-  const result = await read(sql`
+  const result = await read<{ id: string }>(sql`
     SELECT id
     FROM url_hostnames
     WHERE crawlable = true

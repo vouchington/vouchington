@@ -17,7 +17,7 @@ export type TopicWithRedirect = {
 }
 
 export async function getTopicBySlug(slug: string): Promise<Topic | null> {
-  const { rows } = await read(
+  const { rows } = await read<Topic>(
     `/* getTopicBySlug */
     WITH candidates AS (
       SELECT t.id, 0 AS priority

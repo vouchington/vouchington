@@ -68,7 +68,7 @@ async function retainRssFeedHardDeleteItemImpacts(
   let afterItemId: string | null = null
   while (true) {
     // oxlint-disable-next-line no-await-in-loop -- each retained item-impact page is bounded.
-    const result = await query(
+    const result = await query<{ rss_feed_item_id: string }>(
       `/* getRssFeedHardDeleteItemImpacts */
       SELECT source.rss_feed_item_id
       FROM rss_feed_item_sources source

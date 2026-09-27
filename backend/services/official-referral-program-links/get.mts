@@ -6,7 +6,7 @@ import { officialReferralLinkColumns } from './columns.mts'
 export async function getOfficialReferralLink(
   linkId: string,
 ): Promise<OfficialReferralLink | null> {
-  const { rows } = await read(
+  const { rows } = await read<OfficialReferralLink>(
     sql`/* getOfficialReferralLink */
     SELECT `
       .append(officialReferralLinkColumns('l'))
@@ -27,7 +27,7 @@ export async function getOfficialReferralLink(
 export async function getOfficialReferralLinks(
   referralProgramId: string,
 ): Promise<OfficialReferralLink[]> {
-  const { rows } = await read(
+  const { rows } = await read<OfficialReferralLink>(
     sql`/* getOfficialReferralLinks */
     SELECT `
       .append(officialReferralLinkColumns('l'))

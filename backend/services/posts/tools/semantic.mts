@@ -24,7 +24,7 @@ type SearchPostsSemanticDependencies = {
   queryPosts: typeof read
 }
 
-export async function queryPostsSemantic<Row extends pg.QueryResultRow = any>(
+export async function queryPostsSemantic<Row extends pg.QueryResultRow = pg.QueryResultRow>(
   input: QueryInput,
   valuesOrOptions?: QueryValues | QueryOptions,
   options: QueryOptions = {},
@@ -59,7 +59,7 @@ type PostSemanticSearchResult = {
 }
 
 type PostSemanticSearchRow = Omit<PostSemanticSearchResult, 'distance'> & {
-  distance: string | number
+  distance: number
 }
 
 export async function toolsSearchPostsSemantic(

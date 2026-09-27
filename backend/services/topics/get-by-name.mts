@@ -36,7 +36,7 @@ export async function topicNameExists(name: string): Promise<boolean> {
 export async function getTopicByName(
   name: string,
 ): Promise<Pick<Topic, 'id' | 'name' | 'slug' | 'topic_type'> | null> {
-  const { rows } = await read(
+  const { rows } = await read<Pick<Topic, 'id' | 'name' | 'slug' | 'topic_type'>>(
     `/* getTopicByName */
     SELECT id, name, slug, topic_type
     FROM topics

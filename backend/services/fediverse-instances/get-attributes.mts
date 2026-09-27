@@ -20,7 +20,7 @@ export type FediverseInstanceAttributes = {
 export async function getFediverseInstanceAttributes(
   topicId: string,
 ): Promise<FediverseInstanceAttributes | null> {
-  const { rows } = await read(sql`/* getFediverseInstanceAttributes */
+  const { rows } = await read<FediverseInstanceAttributes>(sql`/* getFediverseInstanceAttributes */
     SELECT
       software,
       protocol,

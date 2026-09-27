@@ -11,6 +11,24 @@ import createError from 'http-errors'
 import { buildTopicMetricsBatchQuery } from './metrics-batch-query.mts'
 import type { TopicMetrics } from './types.mts'
 
+type TopicMetricsBatchRow = {
+  id: string
+  input_order: number
+  count__discussions: string
+  count__reviews: string
+  count__data_points: string
+  count__news: string
+  count__latest: string
+  ratings__count__1: number | null
+  ratings__count__2: number | null
+  ratings__count__3: number | null
+  ratings__count__4: number | null
+  ratings__count__5: number | null
+  ratings__updated_at: Date | null
+  bookmarks__follow_count: number | null
+  bookmarks__updated_at: Date | null
+}
+
 export const getTopicMetricsByAnyBatch = async (
   idsOrSlugs: string[],
   options: QueryOptions = {},
@@ -29,7 +47,7 @@ export const getTopicMetricsByAnyBatch = async (
     { cteName: 'input_data', sqlType: 'uuid', inputs: partitions.get('id') ?? [] },
     { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
   ])
-  const { rows } = await read(
+  const { rows } = await read<TopicMetricsBatchRow>(
     buildTopicMetricsBatchQuery(inputCtes.ctes),
     inputCtes.values,
     options,

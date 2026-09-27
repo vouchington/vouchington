@@ -66,7 +66,11 @@ async function mergeBlacklistSources(options: QueryOptions): Promise<void> {
 export const getAllBlacklistSources = async (): Promise<
   Array<{ id: string; name: string; url: string }>
 > => {
-  const result = await read(sql`/* getAllBlacklistSources */
+  const result = await read<{
+    id: string
+    name: string
+    url: string
+  }>(sql`/* getAllBlacklistSources */
     SELECT id, name, url FROM domain_blacklist_sources
     ORDER BY id
   `)
@@ -76,7 +80,12 @@ export const getAllBlacklistSources = async (): Promise<
 export const getBlacklistSourceById = async (
   id: DomainBlacklistSourceId,
 ): Promise<{ id: string; type: DomainBlacklistType; name: string; url: string } | null> => {
-  const result = await read(sql`/* getBlacklistSourceById */
+  const result = await read<{
+    id: string
+    type: DomainBlacklistType
+    name: string
+    url: string
+  }>(sql`/* getBlacklistSourceById */
     SELECT id, type, name, url FROM domain_blacklist_sources
     WHERE id = ${id}
   `)
@@ -91,7 +100,7 @@ type SourceCacheHeaders = {
 export const getSourceCacheHeaders = async (
   sourceId: DomainBlacklistSourceId,
 ): Promise<SourceCacheHeaders | null> => {
-  const result = await read(sql`/* getSourceCacheHeaders */
+  const result = await read<SourceCacheHeaders>(sql`/* getSourceCacheHeaders */
     SELECT etag, last_modified_at FROM domain_blacklist_sources
     WHERE id = ${sourceId}
   `)

@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import type pg from 'pg'
 import assert from 'http-assert'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -94,7 +95,7 @@ export const getPublicUserByAny = async (
     JOIN user_data ON user_data.id = view_users_public.id
     LIMIT 1
   `
-  const { rows } = await runUserLookupQuery(query, values, options)
+  const { rows } = await runUserLookupQuery<PublicUser>(query, values, options)
   return rows[0] || null
 }
 
@@ -116,13 +117,17 @@ export const getPrivateUserByAny = async (
     JOIN user_data ON user_data.id = view_users_private.id
     LIMIT 1
   `
-  const { rows } = await runUserLookupQuery(query, values, options)
+  const { rows } = await runUserLookupQuery<PrivateUser>(query, values, options)
   return rows[0] || null
 }
 
-function runUserLookupQuery(query: string, values: string[], options: QueryOptions) {
+function runUserLookupQuery<Row extends pg.QueryResultRow>(
+  query: string,
+  values: string[],
+  options: QueryOptions,
+) {
   const runQuery = options.readOnly === false ? write : read
-  return runQuery(query, values, options)
+  return runQuery<Row>(query, values, options)
 }
 
 // Route handlers must use these wrappers when the input comes from a :idOrSlug

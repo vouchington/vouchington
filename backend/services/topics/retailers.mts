@@ -38,14 +38,14 @@ export async function updateRetailerAttributes(
 }
 
 export async function getRetailerCountries(topic: Topic): Promise<Country[]> {
-  const { rows } = await read(sql`/* getRetailerCountries */
+  const { rows } = await read<Country>(sql`/* getRetailerCountries */
     SELECT c.id, c.name, c.code
     FROM countries c
     JOIN retailer_countries rc ON rc.country_id = c.id
     WHERE rc.retailer_id = ${topic.id}
     ORDER BY c.name ASC
   `)
-  return rows as Country[]
+  return rows
 }
 
 export async function updateRetailerCountries(
@@ -67,7 +67,7 @@ export async function updateRetailerCountries(
   const uniqueCountryIds = [...new Set(countryIds)]
 
   if (uniqueCountryIds.length > 0) {
-    const { rows } = await read(sql`/* updateRetailerCountries validate */
+    const { rows } = await read<{ id: number }>(sql`/* updateRetailerCountries validate */
       SELECT id FROM countries WHERE id = ANY(${uniqueCountryIds}::int[])
     `)
     const foundIds = new Set(rows.map((r: { id: number }) => r.id))

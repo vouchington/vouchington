@@ -17,7 +17,7 @@ export const createCrawl = async (
     throw createError(422, `Invalid crawler ID: ${crawlerId}`)
   }
 
-  const { rows } = await write(
+  const { rows } = await write<Omit<CrawlBasic, '__entity_type'>>(
     `/* createCrawl */
     INSERT INTO crawls (
       url_id,

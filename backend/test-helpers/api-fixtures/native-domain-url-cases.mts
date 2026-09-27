@@ -10,6 +10,12 @@ import {
 } from './native-domain-url-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
+const {
+  html_sha256: _htmlSha256,
+  html_snapshot_uploaded_at: _htmlSnapshotUploadedAt,
+  ...nativeCrawlHistory
+} = nativeLatestCrawl
+
 const sharedCase: Pick<ApiFixtureCase, 'auth' | 'status' | 'consumers'> = {
   auth: 'fixture-user',
   status: 200,
@@ -154,7 +160,7 @@ export const nativeDomainUrlApiFixtureCases: ApiFixtureCase[] = [
     auth: 'fixture-admin',
     migratedFrom: ['web/types/api-responses/urls-onboarding-and-trends.ts'],
     body: {
-      results: [nativeLatestCrawl],
+      results: [nativeCrawlHistory],
       page_info: nativePageInfo,
     },
   },

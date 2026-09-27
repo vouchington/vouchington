@@ -11,6 +11,8 @@ type SearchCrawlsForUrlOptions = {
   limit?: number
 }
 
+type UrlCrawlHistory = Omit<CrawlBasic, 'html_sha256' | 'html_snapshot_uploaded_at'>
+
 function getUrlCrawlCursorScope(urlId: string): string {
   return `url:${urlId}:crawls`
 }
@@ -19,7 +21,7 @@ export async function searchCrawlsForUrl(
   urlId: string,
   options: SearchCrawlsForUrlOptions = {},
 ): Promise<{
-  results: CrawlBasic[]
+  results: UrlCrawlHistory[]
   page_info: PageInfo
 }> {
   const { after } = options
@@ -71,7 +73,7 @@ export async function searchCrawlsForUrl(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read<Omit<UrlCrawlHistory, '__entity_type'>>(query)
   const crawls = rows.map(row => ({
     __entity_type: 'crawl' as const,
     ...row,
@@ -129,7 +131,7 @@ export async function searchPublicUrlCrawlsForUrl(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read<Omit<PaidSafeUrlCrawlHistory, '__entity_type'>>(query)
   const crawls = rows.map(row => ({
     __entity_type: 'crawl' as const,
     ...row,

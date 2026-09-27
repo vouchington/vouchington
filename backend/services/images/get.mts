@@ -1,5 +1,6 @@
 import { read, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
+import type { ImageLookupRow, ImageUploadState } from './get-types.mts'
 
 type GetImageOptions = {
   includeQuarantinePending?: boolean
@@ -8,7 +9,7 @@ type GetImageOptions = {
 export const getImageByAny = async (
   string: string | Buffer,
   { includeQuarantinePending = false }: GetImageOptions = {},
-) => {
+): Promise<ImageLookupRow | null> => {
   if (!string) return null
 
   const filters = ['deleted_at IS NULL']
@@ -25,7 +26,7 @@ export const getImageByAny = async (
 
   if (values.length === 0) return null
 
-  const result = await read(
+  const result = await read<ImageLookupRow>(
     `/* getImageByAny */
     SELECT
       id,
@@ -59,7 +60,7 @@ export const getImageById = async (
   id: string,
   includeDeleted = false,
   { includeQuarantinePending = false }: GetImageOptions = {},
-) => {
+): Promise<(ImageLookupRow & ImageUploadState) | null> => {
   const filters = []
   const values = []
 
@@ -70,7 +71,7 @@ export const getImageById = async (
   }
   if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
-  const result = await read(
+  const result = await read<ImageLookupRow & ImageUploadState>(
     `/* getImageById */
     SELECT
       id,
@@ -109,14 +110,14 @@ export const getImageByIdFromPrimary = async (
   id: string,
   includeDeleted = false,
   { includeQuarantinePending = false }: GetImageOptions = {},
-) => {
+): Promise<(ImageLookupRow & ImageUploadState) | null> => {
   const filters = [`id = $1`]
   if (!includeDeleted) {
     filters.push('deleted_at IS NULL')
   }
   if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
-  const result = await write(
+  const result = await write<ImageLookupRow & ImageUploadState>(
     `/* getImageByIdFromPrimary */
     SELECT
       id,
@@ -154,7 +155,7 @@ export const getImageByHash = async (
   hash: Buffer,
   includeDeleted = false,
   { includeQuarantinePending = false }: GetImageOptions = {},
-) => {
+): Promise<(ImageLookupRow & ImageUploadState) | null> => {
   const filters = []
   const values = []
   filters.push(`sha_256 = $${values.push(hash)}`)
@@ -164,7 +165,7 @@ export const getImageByHash = async (
   }
   if (!includeQuarantinePending) filters.push('quarantine_pending_at IS NULL')
 
-  const result = await write(
+  const result = await write<ImageLookupRow & ImageUploadState>(
     `/* getImageByHash */
     SELECT
       id,

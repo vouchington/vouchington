@@ -17,7 +17,7 @@ export type CrawlBasic = {
   url_id: string
   id: string
   created_at: Date
-  crawler_id: string
+  crawler_id: string | null
   last_modified_at: Date | null
   etag: string | null
   html_sha256: Buffer | null

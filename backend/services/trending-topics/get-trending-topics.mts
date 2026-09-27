@@ -8,7 +8,7 @@ import {
   POST_TOPIC_CATEGORY_RELATION_TABLE,
 } from '@services/entity-relations/metadata'
 import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
-import type { TrendingTopicsOptions, TrendingTopicsResult } from './types.mts'
+import type { TrendingTopicMetric, TrendingTopicsOptions, TrendingTopicsResult } from './types.mts'
 
 const TIME_RANGE_MS = {
   day: 24 * 60 * 60 * 1000,
@@ -107,7 +107,7 @@ export async function getTrendingTopics(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read<TrendingTopicMetric>(query)
 
   // Check if there are more results than requested
   const hasNextPage = rows.length > safeLimit

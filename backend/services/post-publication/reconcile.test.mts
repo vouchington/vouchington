@@ -252,7 +252,7 @@ describe('post publication reconciliation', () => {
 
     const stalePost = {
       id: post.id,
-      parent_id: post.parent_id,
+      parent_id: post.parent_id ?? null,
       root_id: post.root_id,
       created_by_id: post.created_by_id,
       community_id: post.community_id,

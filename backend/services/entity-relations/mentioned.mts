@@ -19,17 +19,11 @@ export async function getExistingMentionedRelations(postId: string) {
   }
 
   const { query, values } = buildMentionedRelationsQuery(relations, postId)
-  const { rows } = await read(query, values)
+  const { rows } = await read<{ subject_type: string; subject_id: string }>(query, values)
 
-  const users = rows.flatMap((r: { subject_type: string; subject_id: string }) =>
-    r.subject_type === 'user' ? [r.subject_id] : [],
-  )
-  const topics = rows.flatMap((r: { subject_type: string; subject_id: string }) =>
-    r.subject_type === 'topic' ? [r.subject_id] : [],
-  )
-  const posts = rows.flatMap((r: { subject_type: string; subject_id: string }) =>
-    r.subject_type === 'post' ? [r.subject_id] : [],
-  )
+  const users = rows.flatMap(r => (r.subject_type === 'user' ? [r.subject_id] : []))
+  const topics = rows.flatMap(r => (r.subject_type === 'topic' ? [r.subject_id] : []))
+  const posts = rows.flatMap(r => (r.subject_type === 'post' ? [r.subject_id] : []))
 
   return { users, topics, posts }
 }

@@ -9,7 +9,7 @@ export async function createAgentPrompt(
   model_provider: AgentModelProvider,
   created_by_id: string | null = null,
 ): Promise<AgentPrompt> {
-  const { rows } = await write(sql`/* createAgentPrompt */
+  const { rows } = await write<AgentPrompt>(sql`/* createAgentPrompt */
     INSERT INTO agent_prompts (
       agent_id,
       prompt,
@@ -46,7 +46,7 @@ export async function updateAgentPrompt(
     return null
   }
 
-  const { rows } = await write(sql`/* updateAgentPrompt */
+  const { rows } = await write<AgentPrompt>(sql`/* updateAgentPrompt */
     UPDATE agent_prompts
     SET activated_at = CASE WHEN ${updates.active} THEN CURRENT_TIMESTAMP ELSE NULL END,
         deactivated_at = CASE WHEN ${updates.active} THEN NULL ELSE CURRENT_TIMESTAMP END,

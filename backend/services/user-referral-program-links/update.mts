@@ -37,7 +37,7 @@ export async function updateUserReferralLink(
     assert(label.length <= 255, 422, 'label must be 255 characters or less')
   }
 
-  const { rows } = await write(
+  const { rows } = await write<UserReferralLink>(
     sql`/* updateUserReferralLink */
       UPDATE user_referral_program_links
       SET label = ${label}

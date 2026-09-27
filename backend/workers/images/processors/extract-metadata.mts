@@ -80,7 +80,7 @@ export async function processExtractImageMetadata(
   imageId: string,
   deps: Partial<ProcessExtractImageMetadataDeps> = {},
 ): Promise<void> {
-  const resolvedDeps = { ...defaultDeps, ...deps }
+  const resolvedDeps: ProcessExtractImageMetadataDeps = { ...defaultDeps, ...deps }
   const image = await resolvedDeps.getImageById(imageId)
   if (!image) return
   const uploadStatus = deriveUploadStatus(image)

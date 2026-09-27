@@ -91,7 +91,7 @@ export async function getTopicIdsByAnyBatch(identifiers: string[]): Promise<Arra
     { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
   ])
 
-  const { rows } = await read(
+  const { rows } = await read<{ topic_id: string; input_order: number }>(
     `/* getTopicIdsByAnyBatch */
     -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes.ctes} interpolation breaks structural
     -- SQL parsing; id_lookups/slug_candidates below are manually verified to filter both deleted_at
@@ -151,5 +151,5 @@ export async function getTopicIdsByAnyBatch(identifiers: string[]): Promise<Arra
     inputCtes.values,
   )
 
-  return scatterOrderedRows(identifiers.length, rows, row => row.topic_id as string)
+  return scatterOrderedRows(identifiers.length, rows, row => row.topic_id)
 }

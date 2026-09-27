@@ -101,7 +101,7 @@ export async function setTestAgentModerationTransparencyCategory(
 export async function getTestAgentModerationTransparencyStamp(
   moderationId: string,
 ): Promise<{ category: string | null; communityId: string | null } | null> {
-  const { rows } = await read(sql`
+  const { rows } = await read<{ category: string | null; communityId: string | null }>(sql`
     SELECT moderation_transparency_category AS category,
       moderation_transparency_community_id AS "communityId"
     FROM agent_moderations

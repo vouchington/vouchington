@@ -8,6 +8,10 @@ Language detection separates fixture creation from state assertions, and `sql-qu
 owns SQL fragments used to exercise query builders. The main helper barrel exports each helper
 directly from its owner. Membership schema tests import purchase-intent fixtures and verification
 assertions from their separate owners under `data-stores/psql/`.
+The [PostgreSQL row-contract probe](data-stores/psql/query-row-contract.mts) keeps its read-only SQL
+and explicit projection type inside a focused helper. Its owning PSQL test imports that helper by
+relative path, following other PSQL tests without adding a `@data-stores/psql` →
+`@voucha/test-helpers` package dependency cycle; the test only asserts the returned parser values.
 
 ## `onceEntityListenerCompleted`
 

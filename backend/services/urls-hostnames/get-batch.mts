@@ -38,7 +38,7 @@ export const getUrlHostnamesByAnyBatch = async (
     { cteName: 'hostname_input', sqlType: 'text', inputs: partitions.get('hostname') ?? [] },
   ])
 
-  const { rows } = await read(
+  const { rows } = await read<ViewHostname & { input_order: number }>(
     `/* getUrlHostnamesByAnyBatch */
     WITH ${inputCtes.ctes},
     id_lookups AS (

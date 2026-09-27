@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
-import type { SearchRssFeedsOptions } from './types.mts'
+import type { SearchRssFeedsOptions, ViewRssFeed } from './types.mts'
 export type { SearchRssFeedsOptions }
 
 export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
@@ -188,6 +188,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   // Browse path: outer ORDER BY for deterministic end_cursor (join doesn't preserve CTE order).
   if (!hasTextSearch) query.append(sql` ORDER BY view_rss_feeds.id DESC`)
 
-  const { rows } = await read(query)
+  const { rows } = await read<ViewRssFeed>(query)
   return rows
 }

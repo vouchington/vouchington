@@ -13,7 +13,7 @@ export const getCrawlById = async (
     throw createError(422, `Invalid crawl ID or URL ID: ${crawlId}, ${urlId}`)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getCrawlById */
     SELECT
       id,
@@ -64,7 +64,7 @@ export const getLatestSuccessfulCrawl = async (
     throw createError(422, `Invalid URL ID: ${urlId}`)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getLatestSuccessfulCrawl */
     SELECT
       id,
@@ -117,7 +117,7 @@ export const getLatestHtmlSnapshotCrawl = async (
     throw createError(422, `Invalid URL ID: ${urlId}`)
   }
 
-  const { rows } = await read(
+  const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
     `/* getLatestHtmlSnapshotCrawl */
     SELECT
       id,

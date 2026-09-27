@@ -12,7 +12,7 @@ export async function getValidationInfoForReferralProgram(
   options?: QueryOptions,
 ): Promise<ReferralProgramValidationInfo | null> {
   validateUUID(referralProgramId)
-  const { rows } = await read(
+  const { rows } = await read<ReferralProgramValidationInfo>(
     sql`/* getValidationInfoForReferralProgram */
       SELECT
         rpv.user_help_text,

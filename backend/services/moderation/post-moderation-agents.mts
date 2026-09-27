@@ -56,7 +56,7 @@ export async function getModeratorConfig(
 
   query.append(sql` ORDER BY a.id, p.activated_at DESC, p.id DESC LIMIT 1`)
 
-  const { rows } = await read(query)
+  const { rows } = await read<ActiveModeratorConfig>(query)
   return rows[0] || null
 }
 
@@ -70,7 +70,12 @@ export async function checkExistingModeration(
   prompt_id: string
   flagged: boolean
 } | null> {
-  const { rows } = await read(sql`/* checkExistingModeration */
+  const { rows } = await read<{
+    post_id: string
+    input_sha256: Buffer
+    prompt_id: string
+    flagged: boolean
+  }>(sql`/* checkExistingModeration */
     SELECT post_id, input_sha256, prompt_id, flagged
     FROM agent_moderations
     WHERE post_id = ${postId}
@@ -113,7 +118,7 @@ export async function getAlreadyModeratedPromptIds(
   promptIds: string[],
 ): Promise<Set<string>> {
   if (promptIds.length === 0) return new Set()
-  const { rows } = await read(sql`/* getAlreadyModeratedPromptIds */
+  const { rows } = await read<{ prompt_id: string }>(sql`/* getAlreadyModeratedPromptIds */
     SELECT DISTINCT prompt_id
     FROM agent_moderations
     WHERE post_id = ${postId}
@@ -151,7 +156,11 @@ export async function insertPostModerationAgent(
   input_sha256: Buffer
   prompt_id: string
 } | null> {
-  const { rows } = await write(sql`/* insertPostModerationAgent */
+  const { rows } = await write<{
+    post_id: string
+    input_sha256: Buffer
+    prompt_id: string
+  }>(sql`/* insertPostModerationAgent */
     INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, flagged)
     SELECT ${postId}, ${inputSha256}, ${promptId}, ${moderatorId}, ${JSON.stringify(results)}::jsonb, ${flagged}
     WHERE EXISTS (

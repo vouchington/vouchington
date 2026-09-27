@@ -8,7 +8,7 @@ export async function getPendingApplicationForUser(
   userId: string,
   options?: QueryOptions,
 ): Promise<CommunityApplication | null> {
-  const { rows } = await (options?.query ?? read)(
+  const { rows } = await (options?.query ?? read)<CommunityApplication>(
     sql`/* getPendingApplicationForUser */
     SELECT * FROM community_applications
     WHERE community_id = ${communityId}
@@ -18,7 +18,7 @@ export async function getPendingApplicationForUser(
     LIMIT 1
     `,
   )
-  return (rows[0] as CommunityApplication) ?? null
+  return rows[0] ?? null
 }
 
 export async function getPendingApplicationCommunityIds(
@@ -27,7 +27,7 @@ export async function getPendingApplicationCommunityIds(
   options?: QueryOptions,
 ): Promise<Set<string>> {
   if (communityIds.length === 0) return new Set()
-  const { rows } = await (options?.query ?? read)(
+  const { rows } = await (options?.query ?? read)<{ community_id: string }>(
     sql`/* getPendingApplicationCommunityIds */
     SELECT DISTINCT community_id FROM community_applications
     WHERE user_id = ${userId}

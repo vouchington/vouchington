@@ -14,7 +14,7 @@ export class CircularCanonicalReferenceError extends Error {
 const MAX_CANONICAL_CHAIN_DEPTH = 10
 
 async function getCanonicalCycleUrls(urlId: string, canonicalUrlId: string) {
-  const urlData = await read(
+  const urlData = await read<{ id: string; url: string }>(
     `/* getCanonicalCycleUrls */ SELECT id, url FROM urls WHERE id = ANY($1)`,
     [[urlId, canonicalUrlId]],
   )

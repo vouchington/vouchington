@@ -1,7 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
-import { getSystemUserByUsername } from '@services/users/system-users'
+import { getSystemUserForAuthorization } from '@services/users/system-users'
 import {
   getEntityRelationMetadataOrThrow,
   type EntityRelationMetadata,
@@ -28,7 +28,7 @@ async function getMapperContext(): Promise<{
   relation: EntityRelationMetadata
 } | null> {
   if (mapperContext) return mapperContext
-  const mapper = await getSystemUserByUsername(RSS_FEED_COLLABORATIVE_CATEGORIZER_USERNAME)
+  const mapper = await getSystemUserForAuthorization(RSS_FEED_COLLABORATIVE_CATEGORIZER_USERNAME)
   if (!mapper) return null
   const relation = getEntityRelationMetadataOrThrow({
     subjectType: 'rss_feed_item',

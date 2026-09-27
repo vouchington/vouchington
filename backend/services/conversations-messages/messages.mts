@@ -45,6 +45,6 @@ async function fetchConversationMessagesByConversationId(
     query.append(sql` LIMIT ${limit + (options.probeForNextPage ? 1 : 0)}`)
   }
 
-  const { rows } = await executeQuery(query)
+  const { rows } = await executeQuery<ConversationMessage>(query)
   return rows.toReversed()
 }

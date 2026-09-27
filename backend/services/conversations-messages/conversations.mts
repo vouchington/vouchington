@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import type { Conversation } from './types.mts'
 
 type SimpleCursor = { id: string }
+type ConversationWithoutChannelType = Omit<Conversation, 'channel_type'>
 
 export async function getConversationById(id: string): Promise<Conversation | null> {
   return fetchConversationById(read, id)
@@ -13,7 +14,7 @@ export async function getConversationByIdForMutation(id: string): Promise<Conver
 }
 
 async function fetchConversationById(query: typeof read, id: string): Promise<Conversation | null> {
-  const { rows } = await query(sql`/* fetchConversationById */
+  const { rows } = await query<Conversation>(sql`/* fetchConversationById */
     SELECT
       id,
       channel_type,
@@ -36,8 +37,9 @@ async function fetchConversationById(query: typeof read, id: string): Promise<Co
 export async function getConversationByCreatedByAndTitle(
   createdById: string,
   title: string,
-): Promise<Conversation | null> {
-  const { rows } = await read(sql`/* getConversationByCreatedByAndTitle */
+): Promise<ConversationWithoutChannelType | null> {
+  const { rows } =
+    await read<ConversationWithoutChannelType>(sql`/* getConversationByCreatedByAndTitle */
     SELECT
       id,
       title,
@@ -64,7 +66,7 @@ export async function getConversationsByCreatedById(
     limit?: number
     after?: SimpleCursor
   },
-): Promise<Conversation[]> {
+): Promise<ConversationWithoutChannelType[]> {
   const limit = Math.max(1, Math.min(options?.limit ?? 50, 100))
   const query = sql`/* getConversationsByCreatedById */
     SELECT
@@ -90,7 +92,7 @@ export async function getConversationsByCreatedById(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read<ConversationWithoutChannelType>(query)
   return rows
 }
 

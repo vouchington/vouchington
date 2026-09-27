@@ -37,17 +37,17 @@ export async function insertTestUserReferralProgramLink(opts: {
 
 export type ReferralLinkCrawlStatus = {
   consecutive_crawl_failures: number
-  last_crawl_success_at: string | null
-  last_crawl_failure_at: string | null
-  activated_at: string | null
-  deactivated_at: string | null
+  last_crawl_success_at: Date | null
+  last_crawl_failure_at: Date | null
+  activated_at: Date | null
+  deactivated_at: Date | null
 }
 
 /**
  * Get crawl-status columns for a referral link
  */
 export async function getReferralLinkCrawlStatus(linkId: string): Promise<ReferralLinkCrawlStatus> {
-  const { rows } = await read(
+  const { rows } = await read<ReferralLinkCrawlStatus>(
     sql`/* getReferralLinkCrawlStatus */
     SELECT consecutive_crawl_failures, last_crawl_success_at, last_crawl_failure_at,
            activated_at, deactivated_at

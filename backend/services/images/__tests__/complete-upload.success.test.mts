@@ -188,7 +188,7 @@ describe('completeImageUpload - success path', () => {
     // Verify the result reflects the processing handoff
     expect(result.id).toBe(image_id)
     expect(deriveUploadStatus(result)).toBe('processing')
-    expect(Buffer.from(result.sha_256, 'hex')).toEqual(mockHash)
+    expect(result.sha_256).toEqual(mockHash)
 
     // Verify S3 was called
     expect(getFromS3Spy).toHaveBeenCalledWith(
@@ -214,7 +214,7 @@ describe('completeImageUpload - success path', () => {
     // Verify database row reflects processing + persisted hash
     const updatedImage = await getImageById(image_id)
     expect(updatedImage && deriveUploadStatus(updatedImage)).toBe('processing')
-    expect(Buffer.from(updatedImage?.sha_256 || '', 'hex')).toEqual(mockHash)
+    expect(updatedImage?.sha_256).toEqual(mockHash)
     expect(updatedImage?.upload_source_deleted_at).toBeInstanceOf(Date)
   })
 

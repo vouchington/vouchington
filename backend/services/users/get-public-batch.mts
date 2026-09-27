@@ -36,7 +36,7 @@ export const getPublicUsersByAnyBatch = async (
     { cteName: 'username_input', sqlType: 'text', inputs: partitions.get('username') ?? [] },
   ])
 
-  const { rows } = await read(
+  const { rows } = await read<PublicUser & { input_order: number }>(
     `/* getPublicUsersByAnyBatch */
     WITH ${inputCtes.ctes},
     id_lookups AS (

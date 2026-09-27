@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 export async function getPostDeletedById(
   postId: string,
 ): Promise<{ deleted_by_id: string | null } | null> {
-  const { rows } = await read(sql`/* getPostDeletedById */
+  const { rows } = await read<{ deleted_by_id: string | null }>(sql`/* getPostDeletedById */
     SELECT deleted_by_id
     FROM posts
     WHERE id = ${postId}
@@ -15,7 +15,10 @@ export async function getPostDeletedById(
 export async function getPostArchivedFields(
   postId: string,
 ): Promise<{ archived_at: Date | null; archived_by_id: string | null } | null> {
-  const { rows } = await read(sql`/* getPostArchivedFields */
+  const { rows } = await read<{
+    archived_at: Date | null
+    archived_by_id: string | null
+  }>(sql`/* getPostArchivedFields */
     SELECT archived_at, archived_by_id
     FROM posts
     WHERE id = ${postId}
@@ -35,7 +38,10 @@ export async function getTestPostCreationSourceUrlId(postId: string): Promise<st
 export async function getPostLockedFields(
   postId: string,
 ): Promise<{ locked_at: Date | null; locked_by_id: string | null } | null> {
-  const { rows } = await read(sql`/* getPostLockedFields */
+  const { rows } = await read<{
+    locked_at: Date | null
+    locked_by_id: string | null
+  }>(sql`/* getPostLockedFields */
     SELECT pl.created_at AS locked_at, pl.locked_by_id
     FROM posts p
     LEFT JOIN LATERAL (

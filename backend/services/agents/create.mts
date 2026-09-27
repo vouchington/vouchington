@@ -9,7 +9,7 @@ export async function createSystemAgent(
   createdById: string,
   options?: QueryOptions,
 ): Promise<{ id: string }> {
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     sql`/* createSystemAgent */
     INSERT INTO agents (system_user_id, agent_type, created_by_id)
     VALUES (${systemUserId}, ${agentType}, ${createdById})

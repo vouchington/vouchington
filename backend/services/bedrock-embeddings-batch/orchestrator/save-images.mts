@@ -50,7 +50,7 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
       ON CONFLICT (image_sha_256) DO NOTHING`,
   )
 
-  const { rows } = await write(
+  const { rows } = await write<{ id: string }>(
     `/* applyImageBatchUpdates */ UPDATE images
       SET bedrock_nova_multimodal_v1_embedding = u.embedding,
         bedrock_nova_multimodal_v1_embedding_created_at = NOW()

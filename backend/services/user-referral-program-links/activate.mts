@@ -24,7 +24,7 @@ export async function activateUserReferralLink(
   assertUserReferralLinkScope(currentUser, link, scope)
   assert(!link.parent_link_id, 403, 'Child referral links are managed via their parent')
 
-  const { rows } = await write(
+  const { rows } = await write<UserReferralLink>(
     sql`/* activateUserReferralLink */
       UPDATE user_referral_program_links
       SET activated_at = CURRENT_TIMESTAMP,
@@ -52,7 +52,7 @@ export async function deactivateUserReferralLink(
   assertUserReferralLinkScope(currentUser, link, scope)
   assert(!link.parent_link_id, 403, 'Child referral links are managed via their parent')
 
-  const { rows } = await write(
+  const { rows } = await write<UserReferralLink>(
     sql`/* deactivateUserReferralLink */
       UPDATE user_referral_program_links
       SET activated_at = NULL,

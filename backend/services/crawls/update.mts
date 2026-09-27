@@ -82,7 +82,7 @@ export const updateCrawl = async (
   values.push(urlId)
   values.push(crawlId)
 
-  const { rows } = await write(
+  const { rows } = await write<Omit<CrawlBasic, '__entity_type'>>(
     `/* updateCrawl */
     UPDATE crawls
     SET ${setClauses.join(', ')}

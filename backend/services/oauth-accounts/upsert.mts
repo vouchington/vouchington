@@ -128,7 +128,7 @@ export async function upsertOAuthAccount(
 
   const persistence = options.authorizationId
     ? persistAuthorizedOAuthAccount()
-    : write(query, values)
+    : write<OAuthAccount>(query, values)
   const { rows } = await persistence
   if (!rows[0]) throw createHttpError(500, 'Failed to upsert OAuth account')
   if (rows[0].user_id) await invalidateVerifiedEmailCache(rows[0].user_id).catch(onError)
@@ -139,8 +139,8 @@ export async function upsertOAuthAccount(
       connectionTimeoutMs: 10_000,
       statementTimeoutMs: 2_000,
     })
-    const result = await transactionQuery(query, values)
-    const account = result.rows[0] as OAuthAccount | undefined
+    const result = await transactionQuery<OAuthAccount>(query, values)
+    const account = result.rows[0]
     if (!account) throw createHttpError(500, 'Failed to upsert OAuth account')
     if (!options.authorizationId || !options.authorizationClaimId) {
       throw new Error('authorizationClaimId is required with authorizationId')

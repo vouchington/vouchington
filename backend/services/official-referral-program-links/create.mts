@@ -49,7 +49,7 @@ export async function createOfficialReferralLink(
   const vouchaUser = await getPrivateUserByAny('voucha')
   assert(vouchaUser, 500, 'Voucha system user not found')
 
-  const { rows } = await write(
+  const { rows } = await write<Omit<OfficialReferralLink, 'url'>>(
     sql`/* createOfficialReferralLink */
     INSERT INTO user_referral_program_links (
       user_id,
