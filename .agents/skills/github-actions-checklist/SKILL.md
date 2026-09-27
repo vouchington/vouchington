@@ -1,6 +1,6 @@
 ---
 name: github-actions-checklist
-description: Use when editing a Vouchington GitHub Actions workflow or composite action. Loads the portable workflow checklist, then applies local CI policy.
+description: Edit Vouchington GitHub Actions workflows and composite actions.
 ---
 
 # Vouchington GitHub Actions Adapter

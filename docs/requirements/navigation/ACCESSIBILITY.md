@@ -17,7 +17,7 @@ them, while retaining WCAG 2.0 and 2.1 A/AA checks.
 - Required fields must use the `required` attribute or `aria-required="true"`.
 - Validation errors must be announced to screen readers (via `aria-describedby` or `aria-live`).
 - Use shadcn/ui form components (`<Input>`, `<Label>`, `<Select>`, `<Textarea>`) which handle accessibility attributes.
-- Helper text adjacent to a checkbox or radio control must sit inside the same `<label>` as the control so that the full visible row (including description text and padding area) is a single click/tap target — meeting the ≥ 44×44px touch-target requirement. See [Checkbox and radio rows](reference-components-page-layout-primitives.md#checkbox--radio-rows).
+- Helper text adjacent to a checkbox or radio control must sit inside the same `<label>` as the control so that the full visible row (including description text and padding area) is a single click/tap target — meeting the ≥ 44×44px touch-target requirement. See [Checkbox and radio rows](./reference-components-page-layout-primitives.md#checkbox--radio-rows).
 
 ## Motion Preferences
 

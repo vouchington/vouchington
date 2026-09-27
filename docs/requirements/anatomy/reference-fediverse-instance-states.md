@@ -14,4 +14,4 @@
 until Phase C's outbound integration exists.
 
 Fediverse instances also inherit topic lifecycle states (Active / Merged / Soft-deleted); see
-[topic.md](topic.md#states).
+[topic.md](./topic.md#states).

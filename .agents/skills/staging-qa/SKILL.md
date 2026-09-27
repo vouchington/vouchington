@@ -1,10 +1,6 @@
 ---
 name: staging-qa
-description: |
-  Live browser QA of https://staging.voucha.ai. Use when walking
-  docs/requirements/user-flows/ on staging, checking Stripe test checkout,
-  correlating CloudWatch or Sentry logs, or filing confirmed staging bugs.
-  Not for the local stack.
+description: Verify staging.voucha.ai browser flows, test checkout, and correlated logs.
 user-invocable: true
 ---
 

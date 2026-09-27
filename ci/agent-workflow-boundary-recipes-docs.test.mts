@@ -45,7 +45,7 @@ describe('agent workflow boundary recipes documentation', () => {
   })
 
   it('routes planning and before-push discovery through the endpoint recipe', () => {
-    expect(beforePushing).toContain('[Endpoint Migration](impact-recipes.md#endpoint-migration)')
+    expect(beforePushing).toContain('[impact recipe](impact-recipes.md)')
     expect(planningDiscovery).toContain(
       '[Endpoint Migration](../../agent-workflow/impact-recipes.md#endpoint-migration)',
     )

@@ -4,8 +4,8 @@
 
 Playwright reliability patterns for mutation-completion waits, async RSS import route mocks,
 discoverable passkey route mocking, and scoped Radix Select option locators live in
-[playwright/README.md](testing/playwright/README.md). Helper exports are listed in
-[playwright/helpers/README.md](testing/playwright/helpers/README.md).
+[docs/development/testing/playwright/README.md](testing/playwright/README.md). Helper exports are listed in
+[docs/development/testing/playwright/helpers/README.md](testing/playwright/helpers/README.md).
 
 ### Deterministic test preconditions
 

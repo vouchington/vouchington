@@ -14,4 +14,4 @@
 
 The paid transparency API is an aggregate release, not a moderation queue or a community record
 feed. It applies the shared 48-hour delay, cohort-of-20 suppression, and nearest-five rounding
-before data leaves `@services/moderation-analytics`; see [Moderation Analytics](MODERATION-ANALYTICS.md).
+before data leaves `@services/moderation-analytics`; see [Moderation Analytics](./MODERATION-ANALYTICS.md).

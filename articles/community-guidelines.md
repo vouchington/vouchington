@@ -80,4 +80,4 @@ evidence, or agent analysis.
 
 Members may appeal eligible warnings, bans, and post removals. Verified topic representatives may file disputes about reviews they believe are legally or factually problematic.
 
-See [How Moderation Works](how-moderation-works.md), the [Terms of Service](terms-of-service.md), and the [Privacy Policy](privacy-policy.md) for more detail.
+See [How Moderation Works](./how-moderation-works.md), the [Terms of Service](./terms-of-service.md), and the [Privacy Policy](./privacy-policy.md) for more detail.

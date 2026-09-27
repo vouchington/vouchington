@@ -1,38 +1,14 @@
-# Agent Hooks and Harness Config
+# Agent hooks and harness config
 
-`dev/codex-hooks` is the one policy engine for Claude, Codex, Grok, and Cursor. Threat model:
-[agent-sandbox.md](../../docs/development/agent-sandbox.md#hook-threat-model). Per-harness wiring:
-[agent-harness-parity.md](../../docs/development/agent-harness-parity.md).
-
-Before adding or changing a Vitest test, fixture, or mock for these hooks, load the
-[vitest-test-authoring skill](../../.agents/skills/vitest-test-authoring/SKILL.md).
-
-## Scoped invariants
-
-- Hooks catch a cooperative agent's honest mistakes; they are not a security boundary. Do not add
-  parsing for obfuscated or indirect forms (nested shells, `xargs` placeholders, `eval`, variable
-  executables, reordered gh options, wrapper grammars). Close such reports as out of scope.
-- Native harness config first: `.claude/settings.json` permissions (Grok applies them through
-  Claude-compat; Cursor does too), `.codex/rules/default.rules`, `.cursor/cli.json`.
-  Codex allow prefixes run outside its OS sandbox; every allow must be covered by Claude
-  `sandbox.excludedCommands` (enforced by `dev/agent-sandbox-config.test.mts`).
-  `.claude/settings.json` is the sole Claude/Cursor/Grok hook source: never add `.cursor/hooks.json`
-  or `.grok/hooks/`. Hook code holds only what none of them can express. Every Claude deny must
-  hold under Grok's prefix matcher (`dev/claude-settings-grok-bash-deny.test.mts`).
-- A PreToolUse block exits 2 with the reason on stderr. Cursor also needs the deny JSON on stdout;
-  keep both streams in the shared result instead of adding a runtime-specific hook entrypoint.
-- Block coarsely, allow precisely. Any block in the command beats an allow. The only allow is a
-  single plain merge in an attended Claude session; it needs a positive attended signal, never
-  merely the absence of `CI`.
-- Policy decisions are local: `dev/codex-hooks` uses no shell child-process APIs and runs no `gh`,
-  git network subcommands, or HTTP (`ast-grep-rules/codex-hooks-no-network.yml`).
-  [`local-process.mts`](local-process.mts) is the sole child-process owner and exposes only closed,
-  operation-specific local commands; hook modules never import `child_process` directly, and the
-  boundary exposes no generic executable or argv. Add a typed operation there instead of parsing a
-  command line in an AST rule. Network-backed checks belong in the validators or CI.
-  Journal checkpoints (`dev/journal-checkpoint`) may write to agent-blackboard from a hook because
-  they fail open and never affect an allow or block.
-- Do not duplicate enforcement another owner has (oxlint `max-lines`, no-mistakes doc size, CI).
-- Checkout refusal for sandbox-protected paths uses `dev/protected-checkout-paths.txt`. That list
-  is the OS deny (`SANDBOX_RUNTIME`, `CURSOR_SANDBOX`), not `PROTECTED_HOOK_*` in
-  `policy/protected-hook-paths.mts`.
+- `dev/codex-hooks` is the shared Claude/Codex/Grok/Cursor policy engine; use [threat model](../../docs/development/agent-sandbox.md#hook-threat-model), [harness wiring](../../docs/development/agent-harness-parity.md), and [Vitest authoring](../../.agents/skills/vitest-test-authoring/SKILL.md) for tests/fixtures/mocks.
+- Hooks prevent cooperative mistakes, not hostile bypass. Obfuscated/indirect forms (nested shells, xargs, eval, variable executables, reordered gh options, wrappers) remain out of scope.
+- Prefer native permissions: `.claude/settings.json` (also Grok/Cursor), `.codex/rules/default.rules`, `.cursor/cli.json`. Every Codex outside-sandbox allow is covered by Claude `sandbox.excludedCommands` (`dev/agent-sandbox-config.test.mts`).
+- `.claude/settings.json` alone owns Claude/Cursor/Grok hooks; never add `.cursor/hooks.json` or `.grok/hooks/`. Hook code covers only policy native config cannot express. Claude denies also hold under Grok prefix matching (`dev/claude-settings-grok-bash-deny.test.mts`).
+- PreToolUse blocks exit 2 with stderr reason; Cursor also gets stdout deny JSON through the shared result, never a separate runtime entrypoint.
+- Any block wins over allows. The only allow is a single plain merge in attended Claude, requiring a positive attended signal, never mere absence of `CI`.
+- Policy has no network/shell child-process APIs. [`local-process.mts`](local-process.mts) alone exposes closed, typed, operation-specific local commands; no direct `child_process` imports or generic executable/argv boundary. Extend typed operations instead of AST command parsing; validators/CI own network checks (`codex-hooks-no-network.yml`).
+- `dev/journal-checkpoint` may write fail-open Blackboard checkpoints because they never affect allow/block decisions.
+- Checkout refusal for sandbox-protected paths uses `dev/protected-checkout-paths.txt`. That OS
+  deny uses `SANDBOX_RUNTIME` and `CURSOR_SANDBOX`; it is distinct from the Edit/Write deny list
+  in `policy/protected-hook-paths.mts` (`PROTECTED_HOOK_*`).
+- Do not duplicate existing oxlint line limits, no-mistakes doc limits, or CI enforcement.

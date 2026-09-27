@@ -20,11 +20,11 @@
 
 ## Related
 
-- [AI Agents](ai-agents.md)
-- [Auth Overview](auth-overview.md)
-- [Feeds](feeds.md)
-- [Notifications](notifications.md)
-- [Caching Strategy](caching-strategy.md)
+- [AI Agents](./ai-agents.md)
+- [Auth Overview](./auth-overview.md)
+- [Feeds](./feeds.md)
+- [Notifications](./notifications.md)
+- [Caching Strategy](./caching-strategy.md)
 - [Backend rules](../../../backend/AGENTS.md) — workspace service and data conventions
 - [Backend services rules](../../../backend/services/AGENTS.md) — authorization patterns and mocking policy
 - [Backend systems rules](../../../backend/queues/AGENTS.md) — queue configuration and job patterns

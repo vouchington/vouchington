@@ -23,6 +23,6 @@
 
 - Feed queries: [../../overview/architecture/feeds.md](../../overview/architecture/feeds.md)
 - News discussions: [NEWS-DISCUSSIONS.md](NEWS-DISCUSSIONS.md)
-- Source story UI and discussion model: [news-story-clusters.md](news-story-clusters.md)
-- Stories service: [../../backend/services/stories/README.md](../../overview/architecture/services/stories/README.md)
-- Story clustering system: [../../backend/queues/ai-agents/README.md](../../overview/architecture/queues/ai-agents/README.md)
+- Source story UI and discussion model: [news-story-clusters.md](./news-story-clusters.md)
+- Stories service: [../../docs/overview/architecture/services/stories/README.md](../../overview/architecture/services/stories/README.md)
+- Story clustering system: [../../docs/overview/architecture/queues/ai-agents/README.md](../../overview/architecture/queues/ai-agents/README.md)

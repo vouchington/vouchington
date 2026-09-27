@@ -19,7 +19,7 @@
 
 ## Keyboard Shortcuts
 
-All global keyboard shortcuts — see [KEYBOARD-SHORTCUTS.md](KEYBOARD-SHORTCUTS.md):
+All global keyboard shortcuts — see [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md):
 
 - `⌘K` / `Ctrl+K` — open search
 - `⌘/` / `Ctrl+/` — toggle sidebar
@@ -56,4 +56,4 @@ For authenticated users, results within each group are sorted so followed or sav
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/overview/architecture/search.md](../../overview/architecture/search.md)
-- [docs/requirements/navigation/ACCESSIBILITY.md](ACCESSIBILITY.md)
+- [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)

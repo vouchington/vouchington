@@ -1,12 +1,4 @@
-# Lambda Packages
+# Lambda packages
 
-Before adding or changing a Lambda that bridges an AWS event to the backend, load the
-[event-ingress-routing skill](../.agents/skills/event-ingress-routing/SKILL.md) — it decides
-in-VPC enqueue-only Lambda vs. public endpoint and requires a Lambda in this path to enqueue
-only, never do external IO.
-
-- [Lambda package reference](README.md)
-
-## Relocated reference navigation
-
-- [Lambda package docs](../docs/overview/infrastructure/lambdas/README.md)
+- Load [event-ingress-routing](../.agents/skills/event-ingress-routing/SKILL.md) before adding/changing AWS→backend bridges; it owns in-VPC Lambda vs public endpoint placement.
+- Bridging Lambdas enqueue only, never perform external IO. Use [Lambda package docs](../docs/overview/infrastructure/lambdas/README.md).

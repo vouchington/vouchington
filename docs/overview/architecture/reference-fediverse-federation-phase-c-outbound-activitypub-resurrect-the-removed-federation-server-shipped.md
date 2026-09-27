@@ -85,7 +85,7 @@ reverifying; an inactive checkpointed actor is a terminal rejection without netw
 applies the sender limit once through a per-delivery Valkey decision preserved for the active
 window. A closed typed lifecycle facade owns every timestamp transition and fencing-token rotation;
 the canonical state model is documented in
-[`backend/services/ap-inbox-activities/README.md`](services/ap-inbox-activities/README.md#durable-delivery-lifecycle).
+[`docs/overview/architecture/services/ap-inbox-activities/README.md`](services/ap-inbox-activities/README.md#durable-delivery-lifecycle).
 The activity-id reservation, core database effect, and fenced envelope completion commit in one
 transaction. Duplicate Follow recovery performs its guarded relation replay in that transaction,
 while only the Accept enqueue is post-commit. A five-minute reconciler recovers lost or stale jobs;

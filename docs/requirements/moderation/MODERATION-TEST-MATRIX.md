@@ -4,7 +4,7 @@
 
 See also:
 
-- [Moderation Flows](MODERATION-FLOWS.md) — canonical system overview and pipeline diagram
+- [Moderation Flows](./MODERATION-FLOWS.md) — canonical system overview and pipeline diagram
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — discrete engagement actions including Report
 - [Entity × Lifecycle Matrix](../ENTITY-LIFECYCLE-MATRIX.md) — lifecycle flows and authorization tiers
 

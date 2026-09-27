@@ -1,23 +1,8 @@
-# API Keys
+# API keys
 
-Single owner of API key format, validation, and storage.
-Requirements: [../../../docs/requirements/users/api-keys.md](../../../docs/requirements/users/api-keys.md).
-
-## Rules
-
-- All callers must go through `validateApiKey()` from `@services/api-keys` — never SHA-256 a raw key and query `api_keys` directly.
-- Key format and validation-stage details are canonical in [README.md](README.md). When adding a new type, update `API_KEY_TYPES` in `format.mts` and the `api_key_types` PostgreSQL enum together.
-- **Validation order (do not reorder):** (1) `validateApiKeyChecksum` — structural parse + HMAC verify, no I/O; (2) bloom filter probe — Valkey; (3) `getApiKeyByHash` — Postgres; (4) permission check. The bloom + checksum fast-paths prevent invalid-key floods from hitting Postgres.
-- On `revokeApiKey`: no bloom action — `revoked_at IS NULL` index filter handles invalidation; weekly rebuild trims revoked entries.
-- API keys are one-way and one-time display. Do not add any API, export, log, or test helper that recovers or returns raw keys after creation.
-- `API_KEY_CHECKSUM_SECRET` is long-lived — treat rotation as requiring a key migration.
-
-## See Also
-
-- Parent services: [../AGENTS.md](../AGENTS.md)
-- Requirements: [../../../docs/requirements/users/api-keys.md](../../../docs/requirements/users/api-keys.md)
-- Service reference: [README.md](README.md)
-
-## Relocated reference navigation
-
-- [README.md](../../../docs/overview/architecture/services/api-keys/README.md)
+- All callers use `validateApiKey()` from `@services/api-keys`; never hash raw keys and query `api_keys` directly.
+- Update `API_KEY_TYPES` in `format.mts` and PostgreSQL `api_key_types` together. Format/stages belong in [README.md](../../../docs/overview/architecture/services/api-keys/README.md); product contract belongs in [requirements](../../../docs/requirements/users/api-keys.md).
+- Preserve validation order: `validateApiKeyChecksum` structural/HMAC verification (no I/O) → Valkey Bloom probe → Postgres `getApiKeyByHash` → permissions.
+- Revocation does not update Bloom: `revoked_at IS NULL` invalidates reads; weekly rebuild removes revoked entries.
+- Raw keys are one-way and displayed once at creation; no API/export/log/test helper may recover or return them afterward.
+- `API_KEY_CHECKSUM_SECRET` is long-lived; rotation requires key migration.

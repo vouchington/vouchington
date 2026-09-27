@@ -109,9 +109,9 @@ Bedrock access is role-based in ECS. `vouchington-infra` OpenTofu creates the ba
 
 ## Related
 
-- [backend/services/bedrock-embeddings/README.md](services/bedrock-embeddings/README.md) — Dedup contract, centralized table, bloom filter, testing
-- [backend/queues/bedrock-embeddings/README.md](queues/bedrock-embeddings/README.md) — Real-time single pipeline queue config and processors
-- [backend/queues/bedrock-embeddings-batch/README.md](queues/bedrock-embeddings-batch/README.md) — Batch pipeline schedulers, ordering lanes, and processors
+- [docs/overview/architecture/services/bedrock-embeddings/README.md](services/bedrock-embeddings/README.md) — Dedup contract, centralized table, bloom filter, testing
+- [docs/overview/architecture/queues/bedrock-embeddings/README.md](queues/bedrock-embeddings/README.md) — Real-time single pipeline queue config and processors
+- [docs/overview/architecture/queues/bedrock-embeddings-batch/README.md](queues/bedrock-embeddings-batch/README.md) — Batch pipeline schedulers, ordering lanes, and processors
 - [Backend rules](../../../backend/AGENTS.md) — workspace service and data conventions
 - [AI Agents rules](../../../backend/agents/AGENTS.md) — agent patterns and tool loop design
 - [Backend services rules](../../../backend/services/AGENTS.md) — mocking policy for external API calls

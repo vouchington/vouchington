@@ -22,7 +22,7 @@ that already apply to any topic row regardless of `topic_type`.
 Voting reuses existing elections — no new vote infrastructure. The topic-level vote uses the
 generic `topic` vote endpoint (`PUT /api/v1/topics/:id/vote`); the hostname trust badge uses the
 generic `hostname` vote endpoint (`PUT /api/v1/hostnames/:id/vote`) — same as
-[domain](domain.md#actions) semantic trust choice. See [topic](../reference-topic.md) and [domain](../reference-domain.md).
+[domain](./domain.md#actions) semantic trust choice. See [topic](../reference-topic.md) and [domain](../reference-domain.md).
 
 Admin allowlist decisions are gated by `currentUserCanModifyFediverseInstanceIntegrationStatus`
 (administrator role only) and written via the service-layer
@@ -43,6 +43,6 @@ instances the equivalent flow is not yet built.
 
 ## Related
 
-- [topic](topic.md) — base entity; fediverse instances inherit topic lifecycle and actions
-- [source](source.md) — structurally analogous topic type (extension table + auto-created, non-manually-assignable `topic_type`)
-- [domain](domain.md) — hostname trust badge shown in instance list rows and used for the hostname-level vote
+- [topic](./topic.md) — base entity; fediverse instances inherit topic lifecycle and actions
+- [source](./source.md) — structurally analogous topic type (extension table + auto-created, non-manually-assignable `topic_type`)
+- [domain](./domain.md) — hostname trust badge shown in instance list rows and used for the hostname-level vote

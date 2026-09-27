@@ -78,6 +78,6 @@ shows `Reported` for the current detail session.
 
 ## Related
 
-- [source](source.md) — sources whose homepage hostname is this domain
-- [fediverse-instance](fediverse-instance.md) — fediverse instances whose `hostname_id` is this domain; also uses this domain's trust badge as the hostname-vote
-- [url](url.md) — individual URLs under this domain
+- [source](./source.md) — sources whose homepage hostname is this domain
+- [fediverse-instance](./fediverse-instance.md) — fediverse instances whose `hostname_id` is this domain; also uses this domain's trust badge as the hostname-vote
+- [url](./url.md) — individual URLs under this domain

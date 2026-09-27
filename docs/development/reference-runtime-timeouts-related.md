@@ -13,5 +13,5 @@
 - [Networking / VPC / ALB](../overview/infrastructure/networking.md) — topology context for the
   [SSE / long-lived connection principle](reference-runtime-timeouts-principle-sse-long-lived-connection-duration-under-fargate-spot.md#principle-sse--long-lived-connection-duration-under-fargate-spot);
   Fargate Spot capacity provider strategy lives in `vouchington-infra/opentofu/locals.tf`.
-- [`backend/modules/utils/README.md`](../overview/architecture/backend/modules/utils/README.md) — module index
+- [`docs/overview/architecture/backend/modules/utils/README.md`](../overview/architecture/backend/modules/utils/README.md) — module index
   including `http-dispatchers.mts`.

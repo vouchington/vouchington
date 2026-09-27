@@ -31,7 +31,7 @@
 ## Detail Anatomy
 
 **Sidebar asides** (topic detail pages, in render order) — inherited from the generic
-[topic detail layout](topic.md#detail-anatomy):
+[topic detail layout](./topic.md#detail-anatomy):
 
 1. About card — description + "Updated on … by …" line
 2. Referral CTA — logged-out viewers with `?referrer=` param

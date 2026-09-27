@@ -110,7 +110,7 @@ Use a responsive grid layout (`grid-cols-1 md:grid-cols-2`) instead of full-widt
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- Service: [backend/services/communities/README.md](../../overview/architecture/services/communities/README.md)
+- Service: [docs/overview/architecture/services/communities/README.md](../../overview/architecture/services/communities/README.md)
 - API routes: [backend/api/v1/communities/README.md](../../../backend/api/v1/communities/README.md)
-- Community list requirements: [docs/requirements/community/community-lists.md](community-lists.md)
+- Community list requirements: [docs/requirements/community/community-lists.md](./community-lists.md)
 - Docs index: [docs/README.md](../README.md)

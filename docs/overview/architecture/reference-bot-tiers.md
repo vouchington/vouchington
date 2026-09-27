@@ -34,7 +34,7 @@ CSP is no longer stripped on writeback/added after lookup — `CachedOrigin` sta
 web HTML response with a fixed placeholder nonce (instead of a real one) in both the body and the
 `Content-Security-Policy` header it emits, and the gateway's `addSecurityHeaders()` unconditionally
 rebuilds that header with a fresh real nonce on every response, on both the dispatch and bypass
-paths. See [Anonymous HTML edge caching vs. CSP nonces](anon-html-edge-caching-csp.md) for the
+paths. See [Anonymous HTML edge caching vs. CSP nonces](./anon-html-edge-caching-csp.md) for the
 full mechanism and its safety properties.
 
 The worker overwrites the backend's `max-age` with its own edge TTL. The backend's `Cache-Control` header signals "this response is publicly cacheable" rather than dictating the exact edge TTL.

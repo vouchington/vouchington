@@ -1,33 +1,8 @@
 # Playwright
 
-Browser and hydration test suite. Before changing specs, helpers, fixtures, authentication, selectors,
-waits, or reliability patterns, read the
-[playwright-authoring skill](../.agents/skills/playwright-authoring/SKILL.md) — it owns those rules.
-Use [README.md](README.md) and [tests.md](../docs/development/tests.md) for commands and patterns.
-Use the [local-site-testing skill](../.agents/skills/local-site-testing/SKILL.md) for local browser QA;
-do not replace the managed workflow with manual server startup.
-
-Playwright always runs against production builds: `node server.js` (Next.js standalone) and
-`wrangler dev dist/index.js --no-bundle` (CF Worker). Never uses `next dev` or on-the-fly
-`wrangler dev`.
-
-Global setup must call `pinPlaywrightSeedCrawlAnchor()` before seeding so worker processes reuse
-the same crawl IDs for the full run.
-
-## Scope
-
-- **Playwright**: rendered UI behavior, layout geometry, responsive overflow, localStorage/cookie behavior, focus, keyboard/pointer interaction, client-side navigation, hydration warnings, console/page errors, browser network observations.
-- **Not Playwright**: status codes, redirects, headers/cache, `robots.txt`, metadata, canonical links, JSON-LD, static copy → use [`integration-tests/web/`](../integration-tests/web) instead.
-
-## See Also
-
-- Test suite reference: [tests/README.md](tests/README.md)
-- Patterns for authentication, waiting, locator strategy, mobile viewports, hydration, CF Worker logs, CAPTCHA, async work: [README.md](README.md)
-- Helper functions: [helpers/README.md](helpers/README.md)
-
-## Relocated reference navigation
-
-- [Suite docs](../docs/development/testing/playwright/README.md)
-- [spec inventory](../docs/development/testing/playwright/tests/README.md)
-- [helpers](../docs/development/testing/playwright/helpers/README.md)
-- [web integration tests](../integration-tests/web/)
+- Load [Playwright authoring](../.agents/skills/playwright-authoring/SKILL.md) for specs/helpers/fixtures/auth/selectors/waits/reliability. [Suite docs](../docs/development/testing/playwright/README.md), [test commands](../docs/development/tests.md), [spec inventory](../docs/development/testing/playwright/tests/README.md), and [helpers](../docs/development/testing/playwright/helpers/README.md) own references.
+- Local QA uses [managed site testing](../.agents/skills/local-site-testing/SKILL.md), never manual server startup.
+- Always test production builds: Next standalone `node server.js` and `wrangler dev dist/index.js --no-bundle`; never `next dev` or on-the-fly Worker builds.
+- Global setup calls `pinPlaywrightSeedCrawlAnchor()` before seeding so all workers share crawl IDs.
+- Own rendered UI/layout/responsive overflow, storage/cookies, focus/input, navigation, hydration, console/page errors, and browser network observations.
+- Status/redirect/header/cache/robots/metadata/canonical/JSON-LD/static-copy tests belong in [web integration tests](../integration-tests/web/).

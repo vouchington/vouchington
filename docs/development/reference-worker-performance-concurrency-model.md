@@ -10,7 +10,7 @@ concurrency in this order:
 2. Otherwise `round(baseline * WORKER_CONCURRENCY_SCALE)`, clamped to `[1, max]`.
 
 `max` defaults to `25` and can be lowered globally via `WORKER_CONCURRENCY_MAX`. The
-`backend/queues/README.md` Active Workers table is the source of truth for baselines; worker
+`docs/overview/architecture/queues/README.md` Active Workers table is the source of truth for baselines; worker
 index tests in `backend/entrypoints/worker-cpu/` and `backend/entrypoints/worker-io/` lock
 baselines to the helper's resolution behavior.
 

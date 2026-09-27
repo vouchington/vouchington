@@ -26,7 +26,7 @@ with the body (every inline script blocked, page broken) or CSP has to be relaxe
 ## Invariance audit: what actually varies per-request in anon HTML
 
 Anonymous personalization in this app is `localStorage`-only — see
-[caching-strategy.md § Client-Side Personalization](caching-strategy.md#client-side-personalization).
+[caching-strategy.md § Client-Side Personalization](./caching-strategy.md#client-side-personalization).
 The cache key is URL + `ctx.props` only (audience/RSC/UI-locale — see below), never cookies. Every
 per-request/per-visitor value in the anon SSR body was inventoried:
 
@@ -135,7 +135,7 @@ degrades _only on disclosure_ and is _recoverable by rotation_ — see below.
 receiver and **regenerated every deploy**, not pinned to one static value. Rotating it bounds any disclosure
 to a single deploy window. Rotation also invalidates the placeholder baked into already-cached
 anon HTML from before the rotation — see
-[`caching-strategy.md`](caching-strategy.md#cache-invalidation) for how that interacts with the
+[`caching-strategy.md`](./caching-strategy.md#cache-invalidation) for how that interacts with the
 Cache-Tag purge path and the (not-yet-shipped) TTL raise.
 
 ## What's not (yet) covered: RSC navigation
@@ -190,7 +190,7 @@ Two more corrections to the original reasoning:
   `sentry-trace`/`baggage` meta tags. Eliminating the rewrite means both jobs need a new home; the
   Sentry-meta strip already has one — render-time suppression, with the Worker-side strip itself
   tracked for removal once both sides are confirmed live (see
-  [caching-strategy.md](caching-strategy.md#cache-invalidation) and the deploy-overlap note above).
+  [caching-strategy.md](./caching-strategy.md#cache-invalidation) and the deploy-overlap note above).
 
 **Why it's deferred, not adopted, even with the corrected cost analysis:**
 
@@ -227,7 +227,7 @@ why this stays a deferred option rather than a permanent rejection.
 
 ## Related
 
-- [Caching strategy](caching-strategy.md) — cache tiers, TTLs, `Cache-Tag` purge, what's cached today
+- [Caching strategy](./caching-strategy.md) — cache tiers, TTLs, `Cache-Tag` purge, what's cached today
 - [`cloudflare-worker/AGENTS.md`](../../../cloudflare-worker/AGENTS.md) — placeholder-nonce operational rule
 - [Security requirements](../../requirements/security/SECURITY.md)
 - [CSRF](../../requirements/security/CSRF.md) — why Voucha has no anti-forgery tokens to worry about here

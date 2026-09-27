@@ -4,14 +4,14 @@ Cross-cut reference that maps every admin-only entity to the admin pages and com
 
 See also:
 
-- [Entity × Action Matrix](ENTITY-ACTION-MATRIX.md) — user-facing entity actions (upvote/save/hide/follow/subscribe/report)
-- [Entity × Lifecycle Flow Matrix](ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and entry-point components
-- [Sidebar](navigation/SIDEBAR.md) — sidebar visibility matrix and section ordering
-- [Routes](navigation/ROUTES.md) — complete route inventory
-- [Actions](navigation/ACTIONS.md) — placement principles, tooltip rules, and per-entity action tables
-- [memberships](users/memberships.md) — membership grant/management
-- [HOSTNAME-BLOCKING](content/HOSTNAME-BLOCKING.md) — domain blocking and crawler management
-- [RSS-FEED-CATEGORY-ALIASES](content/RSS-FEED-CATEGORY-ALIASES.md) — unmapped RSS feed category triage
+- [Entity × Action Matrix](./ENTITY-ACTION-MATRIX.md) — user-facing entity actions (upvote/save/hide/follow/subscribe/report)
+- [Entity × Lifecycle Flow Matrix](./ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and entry-point components
+- [Sidebar](./navigation/SIDEBAR.md) — sidebar visibility matrix and section ordering
+- [Routes](./navigation/ROUTES.md) — complete route inventory
+- [Actions](./navigation/ACTIONS.md) — placement principles, tooltip rules, and per-entity action tables
+- [memberships](./users/memberships.md) — membership grant/management
+- [HOSTNAME-BLOCKING](./content/HOSTNAME-BLOCKING.md) — domain blocking and crawler management
+- [RSS-FEED-CATEGORY-ALIASES](./content/RSS-FEED-CATEGORY-ALIASES.md) — unmapped RSS feed category triage
 - Components: `web/components/app-sidebar/admin-sections.tsx`, `web/components/command-search-data.ts`
 
 Authorization tiers for routes in this document:

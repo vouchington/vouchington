@@ -124,7 +124,7 @@ change-detector is permanently "changed" → every recompute rewrites the row an
 refresh, defeating the debounced/no-op path. Pick one type (`DOUBLE PRECISION` for weighted sums) and
 use it for the column, the compute, and the comparison.
 
-This generalizes the existing vote-score rule in [psql AGENTS.md](../../backend/data-stores/psql/AGENTS.md#querying-rules).
+This generalizes the existing vote-score rule in [psql AGENTS.md](../../backend/data-stores/psql/AGENTS.md).
 Tracked by #7354.
 
 ## Large aggregation recomputes read the replica and absorb lag asynchronously

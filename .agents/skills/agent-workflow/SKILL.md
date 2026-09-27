@@ -1,70 +1,44 @@
 ---
 name: agent-workflow
-description: |
-  Shared workflow rules for Claude Code, Codex, Grok, Cursor, and OpenCode agents. Load before starting
-  any implementation task: worktree setup, planning, coding, testing, code review,
-  before-push commands, git, and PR conventions.
+description: Apply Voucha workflow constraints when planning, implementing, reviewing, or publishing repository changes.
 ---
 
-# Vouchington Agent Workflow Adapter
+# Vouchington workflow
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:agent-workflow`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Load `vouchington-workflow:agent-workflow`, or
+`node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md` when the plugin is unavailable.
+If neither canonical source is readable, report the missing prerequisite; do not apply this overlay alone.
+Apply these local additions after the canonical skill. Resolve references relative to their owner;
+do not reload a canonical skill or adapter already read in this task.
 
-The remaining rules are Vouchington-only SDLC and safety policy.
+## Local constraints
 
-This is the shared workflow for Claude Code, Codex, Grok, Cursor, and OpenCode agents working in this repository. It is referenced from [`.husky/AGENTS.md`](../../../.husky/AGENTS.md). Every harness reads checked-in `AGENTS.md` files. Do not add `CLAUDE.md`; it is gitignored and Claude Code would read it instead of `AGENTS.md`. See [agent-harness-parity.md](../../../docs/development/agent-harness-parity.md).
+- Read the target files' complete `AGENTS.md` ancestry before editing, including
+  [skill-authoring instructions](../AGENTS.md) for skills. Startup context is not a repository-wide
+  instruction scan; see [harness loading](../../../docs/development/agent-harness-parity.md).
+- For repository work, use the corresponding local skill adapter before its canonical plugin.
+  `nextjs-vitest-test-authoring` maps to the local `web-vitest-test-authoring` adapter.
+- Follow human direction, then the accepted plan, linked issues, and advisory AI reviews. Record
+  material decisions with the saved plan or PR; do not duplicate them across mandatory ledgers.
+- Keep the prelaunch, relational-storage, and client-parity constraints in [AGENTS.md](../../../AGENTS.md).
+- Keep writes serial within a shared worktree; the coordinator also serializes DB/Valkey-backed
+  tests. Delegate bounded work when it improves execution or independent verification.
+- A permission-layer refusal is not a reason to delegate or disguise the same action. Report it.
+  Follow an explicitly supplied safe alternative or documented sandbox retry for environment errors;
+  see [agent sandbox](../../../docs/development/agent-sandbox.md).
 
-Related local instructions:
+## Read only the current phase
 
-- Root entrypoint: [AGENTS.md](../../../AGENTS.md)
-- Cursor CLI config: [`.cursor/README.md`](../../../docs/development/harnesses/cursor.md)
-- Worktree and local services: [dev/AGENTS.md](../../../dev/AGENTS.md)
-- Before-push commands: [before-pushing.md](before-pushing.md)
-- Git hooks: [`.husky/AGENTS.md`](../../../.husky/AGENTS.md)
-- Documentation index: [docs/README.md](../../../docs/README.md)
-- Planning artifact and schema: [planning skill](../planning/SKILL.md)
+- Setup, freshness, and local services: [start of work](start-of-work.md).
+- A plan is needed: [planning](../planning/SKILL.md); save it outside Git.
+- Implementation and validation: [implementation](implementation.md).
+- Substantive or risky review: [code review](code-review.md).
+- Commit and push: [before pushing](before-pushing.md).
+- PR creation, shepherding, and merge authority: [Git and PRs](git-and-prs.md).
+- Native stack: [stacked PRs](../stacked-prs/SKILL.md).
 
-## AI Coding Assistants
-
-**Allowed (with privacy mode enabled):**
-
-- Cursor
-- Codex
-- Claude Code
-- Grok — enable `/privacy` coding-data and training opt-out
-- OpenCode — first-class local harness; skills from `.agents/skills`; no copied hooks. Local models via `/connect`.
-
-**Disallowed:**
-
-- Google Gemini — does not support privacy mode for personal accounts.
-- Z.AI — does not support privacy mode except for enterprise accounts.
-
-This repository keeps agent instructions in checked-in `AGENTS.md` files. Codex, Grok, Cursor, and OpenCode read those files natively. Claude Code reads them because `CLAUDE.md` is absent. [.codex/config.toml](../../../.codex/config.toml) does not set `project_doc_fallback_filenames`. Do not add `CLAUDE.md`.
-
-## Feedback And Decision Hierarchy
-
-- When instructions, reviews, or artifacts conflict, resolve decisions in this order: human intervention, accepted plan, GitHub issues, then AI reviewers.
-- Human intervention means explicit human direction in chat, GitHub comments, GitHub reviews, or shepherd-mediated instructions. It overrides the accepted plan, linked issues, and AI reviewer feedback unless the human says otherwise.
-- The accepted plan is the next source of truth. If implementation direction, scope, or validation changes after plan acceptance, record what changed and why before continuing.
-- GitHub issues are authoritative for unresolved requirements not superseded by human direction or the accepted plan text, which is often recorded in a `Plan:` issue. Treat other linked source issues and follow-up issues as part of the decision record, below the accepted plan.
-- AI reviewers are advisory. Use their feedback when it improves the PR without conflicting with higher-priority sources, and escalate instead of applying AI reviewer feedback that contradicts human direction, the accepted plan, or linked issue requirements.
-- When making a material implementation, scope, validation, or review-resolution decision, comment on the accepted plan issue if one exists. If the PR is under `pr-shepherd`, also record the decision in the shepherd journal when applicable. If neither record exists yet, capture the decision in the saved plan or PR notes once that artifact is created.
-- Long-running pr-shepherd sessions run until pr-shepherd itself reaches `CANCEL` or `ESCALATE`, per the termination contract and stop/re-arm rules in [Git And PRs](git-and-prs.md). Do not turn session hooks, repeated CLI ticks, or follow-up issues into implicit authorization to keep polling a blocker that pr-shepherd has not escalated.
-- Before absorbing a newly discovered blocker, reproduce it against refreshed `origin/main` and search for an existing fix or issue. If an existing fix resolves the blocker, use and retest it. Otherwise, whether or not an issue exists, ask whether to widen the accepted scope or only link or record a follow-up. Filing an issue records work but does not amend the accepted plan or authorize implementation.
-- **A tool call refused by the session's own permission or approval layer stops the work and gets reported**, whatever the tool. Do not ask another agent, subagent, or session to run it, and do not restructure, split, or re-encode the command to get past the gate: a nested agent starts with no knowledge of the refusal, so delegating one is indistinguishable from never having been refused, and nothing downstream can catch it. Report it plainly, with the exact command, so a human can run it or grant the escalation. This is distinct from a sandbox-environment block that has a documented retry path — unsandboxed retry, a Codex approval prefix, or the narrowest escalated edit, per [Start Of Work](start-of-work.md) — which continues past that workaround; a permission-layer refusal has none, and gets surfaced instead of worked around. It is also distinct from a static-verifiability guard that rejects a command's **shape** rather than the action — the worktree-isolation verifier refusing `env -C <path> <cmd>` as too complex to prove it stays in the worktree, while `git -C`/`pnpm -C <path>` parse cleanly. The test for which one you hit is whether **the refusal itself named the acceptable alternative**: a shape guard prescribes the replacement, so using that replacement is compliance; a permission refusal prescribes nothing, so any substitute is one you invented, and inventing one is the evasion this rule forbids. When you do switch forms, say so and quote the original refusal, so the distinction is auditable rather than asserted.
-
-## Sub-docs
-
-Load the relevant sub-doc for each phase of work:
-
-| Phase                                                        | Sub-doc                                      |
-| ------------------------------------------------------------ | -------------------------------------------- |
-| Start of work and discovery lifecycle                        | [start-of-work.md](start-of-work.md)         |
-| Plan artifact, schema, and Plan issue                        | [planning skill](../planning/SKILL.md)       |
-| Implementation, testing, static-analysis, repo-wide commands | [implementation.md](implementation.md)       |
-| Code review                                                  | [code-review.md](code-review.md)             |
-| Before pushing, cheap local commands                         | [before-pushing.md](before-pushing.md)       |
-| Git, PRs, Codex workflow, session close-out                  | [git-and-prs.md](git-and-prs.md)             |
-| Native GitHub stack CLI mechanics                            | [stacked-prs skill](../stacked-prs/SKILL.md) |
+Use the [skill catalog](../../catalog/README.md) to select another task-specific procedure rather
+than loading every phase or checklist. Harness setup and privacy requirements are owned by
+[harness parity](../../../docs/development/agent-harness-parity.md#privacy).

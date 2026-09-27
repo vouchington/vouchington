@@ -85,8 +85,8 @@ authenticated user is eligible to create that post type there.
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- Service: [backend/services/memberships/README.md](../../overview/architecture/services/memberships/README.md)
-- Job queue: [backend/queues/memberships/README.md](../../overview/architecture/queues/memberships/README.md)
-- API routes: [backend/api/v1/memberships/README.md](../api/v1/memberships/README.md)
-- Stripe service: [backend/services/stripe/README.md](../../overview/architecture/services/stripe/README.md)
+- Service: [docs/overview/architecture/services/memberships/README.md](../../overview/architecture/services/memberships/README.md)
+- Job queue: [docs/overview/architecture/queues/memberships/README.md](../../overview/architecture/queues/memberships/README.md)
+- API routes: [docs/requirements/api/v1/memberships/README.md](../api/v1/memberships/README.md)
+- Stripe service: [docs/overview/architecture/services/stripe/README.md](../../overview/architecture/services/stripe/README.md)
 - Database migrations: `backend/data-stores/psql/migrations/0170-*`

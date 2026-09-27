@@ -1,15 +1,15 @@
 # Entity × Lifecycle Flow Matrix
 
-Sibling to the [Entity × Action Matrix](ENTITY-ACTION-MATRIX.md), which covers atomic engagement actions (Upvote, Save, Hide, Follow, Subscribe, Share, Report). This doc covers **multi-step lifecycle flows** — Create, Edit, Delete, Archive, Approve/Reject, Suspend, Transfer — each with its own page/route and authorization gate.
+Sibling to the [Entity × Action Matrix](./ENTITY-ACTION-MATRIX.md), which covers atomic engagement actions (Upvote, Save, Hide, Follow, Subscribe, Share, Report). This doc covers **multi-step lifecycle flows** — Create, Edit, Delete, Archive, Approve/Reject, Suspend, Transfer — each with its own page/route and authorization gate.
 
 See also:
 
-- [Entity × Action Matrix](ENTITY-ACTION-MATRIX.md) — discrete engagement actions (upvote/save/hide/follow/subscribe/report)
-- [Admin Navigation Matrix](ADMIN-NAVIGATION-MATRIX.md) — admin-only entity pages, actions, and navigation paths
-- [Routes](navigation/ROUTES.md) — complete route inventory
+- [Entity × Action Matrix](./ENTITY-ACTION-MATRIX.md) — discrete engagement actions (upvote/save/hide/follow/subscribe/report)
+- [Admin Navigation Matrix](./ADMIN-NAVIGATION-MATRIX.md) — admin-only entity pages, actions, and navigation paths
+- [Routes](./navigation/ROUTES.md) — complete route inventory
 - [Entity Relations](../overview/architecture/entity-relations.md) — canonical predicate vocabulary and entity-type list
-- [Actions](navigation/ACTIONS.md) — action button placement principles and tooltip rules
-- [Signed-out Actions](navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility
+- [Actions](./navigation/ACTIONS.md) — action button placement principles and tooltip rules
+- [Signed-out Actions](./navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility
 
 ---
 

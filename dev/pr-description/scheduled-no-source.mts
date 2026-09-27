@@ -3,13 +3,14 @@ import {
   type IssueReferenceLookup,
   formatReferenceKey,
 } from './closing-refs.mts'
-import { extractRelatedIssuesSection } from './content-policy.mts'
 import { sanitizedLines } from './sanitized-lines.mts'
 
 // This module holds two independent "no closing keyword required" exceptions to the
 // git-and-prs.md closing-reference rule. Each pairs an exact visible line with an exact HTML
 // comment marker so the check can't be satisfied by accident, plus one extra structural
 // requirement unique to its own scenario (see each function below).
+const RELATED_ISSUES_HEADING_RE = /^##\s+Related\s+issues\s*$/i
+
 const SCHEDULED_NO_SOURCE_VISIBLE_LINE = 'No source issue; scheduled prompt run.'
 const SCHEDULED_NO_SOURCE_MARKER = '<!-- related-issues-validation: no-source-scheduled-prompt -->'
 const SCHEDULED_WORKSPACE_SETUP_LINE = 'Workspace setup: Auto Harness scheduled prompt'
@@ -29,14 +30,18 @@ const STANDALONE_ROOT_CAUSE_REF_RE =
   /^Refs:?[ \t]+(?:(?<owner>[\w.-]+)\/(?<repo>[\w.-]+))?#(?<number>\d+)$/i
 const FIX_MAIN_WORKSPACE_SETUP_LINE = 'Workspace setup: Automation fix-main run'
 
-function extractRelatedIssuesLines(body: string): string[] {
-  const section = extractRelatedIssuesSection(body)
-  return section === undefined ? [] : sanitizedLines(section)
+export function extractRelatedIssuesLines(bodyLines: string[]): string[] {
+  const sections = bodyLines.join('\n').split(/^(?=##\s)/m)
+  const section = sections.find(candidate => {
+    const [heading = ''] = candidate.split(/\r?\n/, 1)
+    return RELATED_ISSUES_HEADING_RE.test(heading)
+  })
+  return section?.split(/\r?\n/) ?? []
 }
 
 export function isScheduledPromptNoSourceBody(body: string): boolean {
   const bodyLines = sanitizedLines(body)
-  const relatedIssuesLines = extractRelatedIssuesLines(body)
+  const relatedIssuesLines = extractRelatedIssuesLines(bodyLines)
 
   return (
     relatedIssuesLines.some(
@@ -124,7 +129,7 @@ function findAdjacentRootCauseRef(relatedIssuesLines: string[]): ClosingIssueRef
 
 export function isFixMainInterimClassifierNoClosingRefBody(body: string): boolean {
   const bodyLines = sanitizedLines(body)
-  const relatedIssuesLines = extractRelatedIssuesLines(body)
+  const relatedIssuesLines = extractRelatedIssuesLines(bodyLines)
 
   return (
     findAdjacentRootCauseRef(relatedIssuesLines) !== undefined &&
@@ -144,7 +149,7 @@ export function extractFixMainInterimClassifierRootCauseRef(
 ): ClosingIssueReference | undefined {
   if (!isFixMainInterimClassifierNoClosingRefBody(body)) return undefined
 
-  return findAdjacentRootCauseRef(extractRelatedIssuesLines(body))
+  return findAdjacentRootCauseRef(extractRelatedIssuesLines(sanitizedLines(body)))
 }
 
 const FIX_MAIN_ROOT_CAUSE_CONTEXT_LABEL =

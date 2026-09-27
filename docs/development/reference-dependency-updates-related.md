@@ -4,4 +4,4 @@
 
 - Dependabot config: [`.github/dependabot.yml`](../../.github/dependabot.yml)
 - Renovate config: [`renovate.json`](../../renovate.json)
-- CI workflows: [`.github/workflows/`](../../.github/workflows)
+- CI workflows: [`.github/workflows/`](../../.github/workflows/)

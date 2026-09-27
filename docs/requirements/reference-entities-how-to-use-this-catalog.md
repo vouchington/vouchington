@@ -11,9 +11,9 @@
 
 ## See Also
 
-- [Routes](navigation/ROUTES.md) — route inventory and slug-preference rule
-- [Entity × Action Matrix](ENTITY-ACTION-MATRIX.md) — entity × surface × action
-- [Entity × Lifecycle Flow Matrix](ENTITY-LIFECYCLE-MATRIX.md) — lifecycle flows per entity
+- [Routes](./navigation/ROUTES.md) — route inventory and slug-preference rule
+- [Entity × Action Matrix](./ENTITY-ACTION-MATRIX.md) — entity × surface × action
+- [Entity × Lifecycle Flow Matrix](./ENTITY-LIFECYCLE-MATRIX.md) — lifecycle flows per entity
 - [Entity Relations](../overview/architecture/entity-relations.md) — entity-type vocabulary for the
   relation graph (broader than URL-routing; includes non-routed relation objects)
 - [Entity Link Helpers](../../web/lib/links/AGENTS.md) — code-level helper API reference

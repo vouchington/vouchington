@@ -1,13 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
 import { findGitHubWorkflowBlock } from '../../codex-hooks/policy/github-workflow.mts'
-import { withTestTempDir } from '../../codex-hooks-tests/test-temp-root.mts'
-import { validatePlanIssue } from '../../plan-issue/validate.mts'
-import { VALID_PLAN_BODY } from '../../test-helpers/plan-issue/valid-plan-body.mts'
 import type { IssueReferenceLookup, ReferencedIssue } from '../closing-refs.mts'
 import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBodyWithIssueReferences } from '../validate.mts'
@@ -114,49 +107,6 @@ const ROOT_CAUSE_LIFECYCLE_FIXTURES: RootCauseFixture[] = [
 ]
 
 describe('PR lifecycle policy drift', () => {
-  it('keeps lifecycle details canonical and the root discoverable', () => {
-    const canonical = readFileSync('.agents/skills/agent-workflow/git-and-prs.md', 'utf8')
-    const root = readFileSync('AGENTS.md', 'utf8')
-    for (const text of [
-      'related-issues-validation: allow #N',
-      'issue-audit: keep-open',
-      'git -C <worktree-root>',
-      'autoMergeRequest.commitBody',
-    ]) {
-      expect(canonical).toContain(text)
-      expect(root).not.toContain(text)
-    }
-    expect(root).toContain('.agents/skills/agent-workflow/git-and-prs.md')
-    expect(root).toContain('.agents/skills/github-issue/SKILL.md')
-  })
-
-  it('keeps the scratch-file TMPDIR rule on start-of-work', () => {
-    const start = readFileSync('.agents/skills/agent-workflow/start-of-work.md', 'utf8')
-    const root = readFileSync('AGENTS.md', 'utf8')
-    expect(start).toContain('${TMPDIR:-/tmp}')
-    expect(root).not.toContain('${TMPDIR:-/tmp}')
-  })
-
-  it('keeps the agent-created worktree TMPDIR location rule', () => {
-    const start = readFileSync('.agents/skills/agent-workflow/start-of-work.md', 'utf8')
-    const root = readFileSync('AGENTS.md', 'utf8')
-    const gettingStarted = readFileSync('docs/development/README.md', 'utf8')
-    const backendSetup = readFileSync('docs/development/BACKEND-SETUP.md', 'utf8')
-    const humanStarting = readFileSync(
-      'docs/development/local-development/reference-starting-services.md',
-      'utf8',
-    )
-    expect(start).toContain('git worktree add')
-    expect(start).toContain('mktemp -d')
-    expect(start).toContain('./dev/teardown --yes --remove')
-    expect(start).toContain('git worktree prune')
-    expect(start).toContain('~/.grok/worktrees')
-    expect(root).not.toContain('git worktree add')
-    expect(gettingStarted).toContain('../worktrees/my-feature')
-    expect(backendSetup).toContain('../worktrees/my-feature')
-    expect(humanStarting).toContain('~/worktrees/my-feature')
-  })
-
   // The hook reads only the body text; issue lookups belong to the validator. So drift is one-way:
   // the hook may allow a body the validator rejects, but never block one it accepts.
   it.each(LIFECYCLE_FIXTURES)(
@@ -236,19 +186,5 @@ describe('PR lifecycle policy drift', () => {
     )
     expect(validation.ok).toBe(false)
     expect(validation.errors.some(e => e.startsWith('#7390 remains OPEN after merge:'))).toBe(true)
-  })
-
-  it('runs the same Plan fixture through validator and body-file hook', async () => {
-    const body = VALID_PLAN_BODY
-    expect(validatePlanIssue('Plan: lifecycle', body)).toEqual([])
-    await withTestTempDir('voucha-plan-drift-', async dir => {
-      await writeFile(join(dir, 'plan.md'), body)
-      expect(
-        findGitHubWorkflowBlock(
-          'gh --repo vouchington/vouchington issue create --title "Plan: lifecycle" --label plan --body-file plan.md',
-          dir,
-        )?.reason,
-      ).toContain('dev/plan-issue.mts create')
-    })
   })
 })

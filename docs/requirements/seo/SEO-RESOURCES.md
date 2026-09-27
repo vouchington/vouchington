@@ -4,7 +4,7 @@ A curated list of external references that inform Voucha's SEO and AI-search str
 
 ## Related
 
-- [SEO requirements](SEO.md) — How these references translate into Voucha's public page, structured data, robots, and AI-search rules
+- [SEO requirements](./SEO.md) — How these references translate into Voucha's public page, structured data, robots, and AI-search rules
 - [Sitemaps overview](../../overview/architecture/sitemaps.md) — Sitemap generation, indexability, and public URL eligibility details tied to search visibility
 
 ## Google Search Central

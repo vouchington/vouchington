@@ -1,6 +1,6 @@
 ---
 name: postgres-node-performance-tuning
-description: PostgreSQL performance policy for Vouchington Node.js services, including local query helpers, replica routing, EXPLAIN gates, and large-data worker placement.
+description: Tune Vouchington PostgreSQL queries, replicas, and large-data Node.js workloads.
 ---
 
 # Vouchington PostgreSQL Performance Adapter
@@ -54,6 +54,6 @@ any step is a no-op and must not ship. Analyze every relation participating in a
 plan. Keep partition-local estimates and attachment lifecycle in view rather than assuming a parent
 object repairs every child plan.
 
-See also the local [querying rules](../../../backend/data-stores/psql/AGENTS.md#querying-rules),
+See also the local [querying rules](../../../backend/data-stores/psql/AGENTS.md),
 [partition-pruning hints](../../../docs/overview/architecture/partition-pruning-hints.md), and
 [test-value gate](../../../docs/development/reference-tests-value-and-reduction.md).

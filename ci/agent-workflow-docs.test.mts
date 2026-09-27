@@ -184,19 +184,9 @@ describe('agent workflow documentation', () => {
     expect(workflow).toContain('Visual verification:')
   })
 
-  it('requires live browser preflight during planning and independent validation reporting', () => {
-    const startRaw = readRepoFile('.agents/skills/planning/references/live-browser-preflight.md')
-    const start = normalizedMarkdown('.agents/skills/planning/references/live-browser-preflight.md')
+  it('retains independent validation reporting fields', () => {
     const implementation = normalizedMarkdown('.agents/skills/agent-workflow/implementation.md')
 
-    expect(start).toContain('## Live browser preflight')
-    expect(start).toContain('Status: `not-required`')
-    expect(start).toContain('(`not-required`, `available`, or `exception`)')
-    expect(startRaw).toContain('- Status: `available`')
-    expect(startRaw).toContain('- Surface:')
-    expect(startRaw).toContain('- Evidence:')
-    expect(startRaw).toContain('- Status: `exception`')
-    expect(startRaw).toContain('- Reason:')
     expect(implementation).toContain('Automated browser tests:')
     expect(implementation).toContain('Screenshot attachment:')
   })

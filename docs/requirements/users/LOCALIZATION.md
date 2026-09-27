@@ -357,7 +357,7 @@ The local stack still requires user-local S3 bucket names, including `S3_BUCKET_
 
 - [Client Parity Matrix](../CLIENT-PARITY-MATRIX.md)
 - [Client feature parity contract](../client-feature-parity.json)
-- [User Preferences](PREFERENCES.md)
+- [User Preferences](./PREFERENCES.md)
 - [SEO](../seo/SEO.md)
 - [Content Rendering](../../overview/architecture/content-rendering.md)
 - [Translation Catalog and Locale Checks](../../development/tests.md#translation-catalog-and-locale-checks)

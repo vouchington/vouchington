@@ -37,14 +37,14 @@ is driven by the autotagger rather than feed-parsed data:
 - Feed-level categories (`rss_feed_categories`) are **not** shown directly on episode
   cards; they only seed the autotagger's candidate pool.
 
-See [NEWS-DISCUSSIONS.md § Category Display](NEWS-DISCUSSIONS.md#category-display) for
+See [NEWS-DISCUSSIONS.md § Category Display](./NEWS-DISCUSSIONS.md#category-display) for
 the full ordering and display rules.
 
 ## See Also
 
-- [Sources & Domains](SOURCES-DOMAINS.md) — source submission and management
-- [RSS Feed Crawling](RSS-FEED-CRAWLING.md) — crawl pipeline and item processing
-- [RSS Feed Category Aliases](RSS-FEED-CATEGORY-ALIASES.md) — admin category mapping
-- [TOPICS.md § Type vs facet](reference-topics-topic-types.md#type-vs-facet) — decision rule used here
+- [Sources & Domains](./SOURCES-DOMAINS.md) — source submission and management
+- [RSS Feed Crawling](./RSS-FEED-CRAWLING.md) — crawl pipeline and item processing
+- [RSS Feed Category Aliases](./RSS-FEED-CATEGORY-ALIASES.md) — admin category mapping
+- [TOPICS.md § Type vs facet](./reference-topics-topic-types.md#type-vs-facet) — decision rule used here
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — podcast episode actions
 - [Entity × Lifecycle Flow Matrix](../ENTITY-LIFECYCLE-MATRIX.md) — podcast Listen flow

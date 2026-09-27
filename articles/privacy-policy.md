@@ -119,7 +119,7 @@ You can manage notification preferences in your account settings.
 
 ## 3. Cookies and Local Storage
 
-We use cookies and local storage to operate the platform. For a complete list of cookies, their purposes, and durations, see our [Cookie Policy](cookie-policy.md).
+We use cookies and local storage to operate the platform. For a complete list of cookies, their purposes, and durations, see our [Cookie Policy](./cookie-policy.md).
 
 ### Session Cookies
 

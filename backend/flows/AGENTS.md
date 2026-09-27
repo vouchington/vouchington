@@ -1,20 +1,5 @@
-# Flow Packages
+# Flow packages
 
-`backend/flows/core` owns shared `FlowProducer` instances and producer-only flow enqueue APIs that
-coordinate jobs across queue packages. Do not add workers or processors under `backend/flows/*`;
-execution belongs in `backend/workers/*`.
-
-Load [voucha-queue-authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md) and follow the
-[backend queue checklist](../../docs/checklists/backend-queues.md) before changing a flow. Flow
-packages contain only `queues.mts`, `enqueues.mts`, optional `types.mts`, and `package.json`.
-
-## See Also
-
-- Shared flow package: [core/README.md](core/README.md)
-- [Queue packages](../queues/AGENTS.md)
-- [Worker packages](../workers/AGENTS.md)
-- [Backend context](../AGENTS.md)
-
-## Relocated reference navigation
-
-- [core docs](../../docs/overview/architecture/queues/flows/core/README.md)
+- Load [queue authoring](../../.agents/skills/voucha-queue-authoring/SKILL.md) and [the queue checklist](../../docs/checklists/backend-queues.md) before changing flows.
+- `backend/flows/core` owns shared `FlowProducer` instances and producer-only cross-queue enqueue APIs. Execution belongs in `backend/workers/*`; never add flow workers/processors.
+- Flow packages contain only `queues.mts`, `enqueues.mts`, optional `types.mts`, and `package.json`. Use [core docs](../../docs/overview/architecture/queues/flows/core/README.md), [queues](../queues/AGENTS.md), and [workers](../workers/AGENTS.md) for boundaries.

@@ -52,5 +52,5 @@ When swapping a plain text input for an async autocomplete (remount-after-mutati
 
 ## Related
 
-- [docs/requirements/navigation/ACCESSIBILITY.md](ACCESSIBILITY.md)
+- [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)

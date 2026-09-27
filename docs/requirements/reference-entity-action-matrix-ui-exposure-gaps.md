@@ -12,19 +12,19 @@ No open gaps — the last tracked gap (formerly filed as jonathanong/filaments#3
 
 ## Related
 
-- [Entity × Lifecycle Flow Matrix](ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and page/component entry points
-- [ACTIONS.md](navigation/ACTIONS.md) — placement principles, tooltip rules, per-entity action button tables
-- [ENTITY-ACTION-ICONS.md](navigation/ENTITY-ACTION-ICONS.md) — canonical icon choices for user-facing entity/action controls
-- [SIGNED_OUT_ACTIONS.md](navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility
-- [ROUTES.md](navigation/ROUTES.md) — route inventory
-- [NEWS-DISCUSSIONS.md](content/NEWS-DISCUSSIONS.md) — RSS item card and modal actions
-- [COMMENTS.md](content/COMMENTS.md) — comment node actions
-- [POSTS.md](content/POSTS.md) — post creation and display
-- [TOPICS.md](content/TOPICS.md) — topic management
-- [USERS.md](users/USERS.md) — user profile routes and management
-- [SOURCES-DOMAINS.md](content/SOURCES-DOMAINS.md) — source directory and domain pages
-- [COMMUNITIES.md](community/COMMUNITIES.md) — community join/leave and moderation
-- [community-lists.md](community/community-lists.md) — proxy follow/mute on curated lists
+- [Entity × Lifecycle Flow Matrix](./ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and page/component entry points
+- [ACTIONS.md](./navigation/ACTIONS.md) — placement principles, tooltip rules, per-entity action button tables
+- [ENTITY-ACTION-ICONS.md](./navigation/ENTITY-ACTION-ICONS.md) — canonical icon choices for user-facing entity/action controls
+- [SIGNED_OUT_ACTIONS.md](./navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility
+- [ROUTES.md](./navigation/ROUTES.md) — route inventory
+- [NEWS-DISCUSSIONS.md](./content/NEWS-DISCUSSIONS.md) — RSS item card and modal actions
+- [COMMENTS.md](./content/COMMENTS.md) — comment node actions
+- [POSTS.md](./content/POSTS.md) — post creation and display
+- [TOPICS.md](./content/TOPICS.md) — topic management
+- [USERS.md](./users/USERS.md) — user profile routes and management
+- [SOURCES-DOMAINS.md](./content/SOURCES-DOMAINS.md) — source directory and domain pages
+- [COMMUNITIES.md](./community/COMMUNITIES.md) — community join/leave and moderation
+- [community-lists.md](./community/community-lists.md) — proxy follow/mute on curated lists
 - [Entity Relations](../overview/architecture/entity-relations.md) — predicate vocabulary and relation tables
 - [Bookmarks](../overview/architecture/bookmarks.md) — bookmark system implementation
 - [Backend rules](../../backend/AGENTS.md) — vote and permission API conventions

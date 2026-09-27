@@ -4,12 +4,12 @@ Cross-cut reference that maps every user-facing entity to the pages and componen
 
 See also:
 
-- [Entity × Lifecycle Flow Matrix](ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and entry-point components
-- [Admin Navigation Matrix](ADMIN-NAVIGATION-MATRIX.md) — admin-only entity pages, actions, and navigation paths
-- [Actions](navigation/ACTIONS.md) — placement principles, tooltip rules, and per-entity action tables for Topics, Users, Posts
-- [Entity × Action Icons](navigation/ENTITY-ACTION-ICONS.md) — canonical icon choices for user-facing entity/action controls
-- [Signed-out Actions](navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility policy
-- [Routes](navigation/ROUTES.md) — route inventory
+- [Entity × Lifecycle Flow Matrix](./ENTITY-LIFECYCLE-MATRIX.md) — Create, Edit, Delete, Archive, Approve flows per entity with authorization tiers and entry-point components
+- [Admin Navigation Matrix](./ADMIN-NAVIGATION-MATRIX.md) — admin-only entity pages, actions, and navigation paths
+- [Actions](./navigation/ACTIONS.md) — placement principles, tooltip rules, and per-entity action tables for Topics, Users, Posts
+- [Entity × Action Icons](./navigation/ENTITY-ACTION-ICONS.md) — canonical icon choices for user-facing entity/action controls
+- [Signed-out Actions](./navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility policy
+- [Routes](./navigation/ROUTES.md) — route inventory
 - [Entity Relations](../overview/architecture/entity-relations.md) — canonical predicate vocabulary and relation-table structure
 
 ---

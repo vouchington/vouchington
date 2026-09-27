@@ -1,6 +1,6 @@
 ---
 name: backend-vitest-test-authoring
-description: Use when adding or changing backend tests, test fixtures, backend test helpers, integration boundaries, provider mocks, database or Valkey setup, or Vitest project selection.
+description: Author backend Vitest tests, fixtures, provider mocks, and database or queue boundaries.
 ---
 
 # Backend Vitest Test Authoring

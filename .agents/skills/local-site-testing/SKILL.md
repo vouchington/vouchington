@@ -1,10 +1,6 @@
 ---
 name: local-site-testing
-description: |
-  Set up, start, inspect, and test the Voucha local web stack. Use when Codex or
-  Claude needs to run the site locally, open browser/UI flows, use the managed
-  ./dev/tmux stack, recover local web validation failures,
-  avoid descriptor leaks, or verify Cloudflare Worker HTTPS routing.
+description: Initialize, run, inspect, and recover the Voucha local web stack.
 user-invocable: true
 ---
 
@@ -12,7 +8,7 @@ user-invocable: true
 
 Use this skill for full-site local validation. It complements the repo workflow in
 [agent-workflow](../agent-workflow/SKILL.md) and the command reference in
-[dev/README.md](../../../docs/development/local-development/README.md).
+[local-development index](../../../docs/development/local-development/README.md).
 
 ## Setup
 
@@ -55,7 +51,7 @@ Cloudflare Worker URL printed by `./dev/tmux`. For browser-grade validation, tha
 certs are missing; use that HTTP URL only as a process liveness fallback, then run the local setup
 script or regenerate `dev/certs/localhost*.pem` before validating browser behavior. Do not start or
 restart individual web services manually; recover the managed stack with `./dev/tmux` or the
-lifecycle commands in [`dev/README.md`](../../../docs/development/local-development/README.md).
+lifecycle commands in [`local-development index`](../../../docs/development/local-development/README.md).
 
 The Cloudflare Worker is the only supported browser entry point. Use HTTPS for full-site validation:
 

@@ -6,13 +6,13 @@ Repo-scoped Claude Code configuration. Each subdirectory is loaded by Claude Cod
 
 | Directory                 | Loaded as                                 | Purpose                                                                                                                          |
 | ------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| [`agents/`](agents)       | Subagents available via the Agent tool.   | `github-issue-agent` for searching, creating, updating, and linking GitHub issues.                                               |
-| [`skills/`](skills)       | Skill packs invokable via the Skill tool. | Entries symlink to [`.agents/skills/`](../.agents/skills); migrated reusable adapters load their canonical upstream skill first. |
+| [`agents/`](agents/)      | Subagents available via the Agent tool.   | `github-issue-agent` for searching, creating, updating, and linking GitHub issues.                                               |
+| [`skills/`](skills/)      | Skill packs invokable via the Skill tool. | Entries symlink to [`.agents/skills/`](../.agents/skills); migrated reusable adapters load their canonical upstream skill first. |
 | `worktrees/` (gitignored) | Per-worktree state.                       | Symlinks to active worktrees managed by `dev/initialize`.                                                                        |
 
 ## Key Rules
 
-- Any `.md` file inside [`agents/`](agents) becomes a subagent — do not put a `README.md` there.
+- Any `.md` file inside [`agents/`](agents/) becomes a subagent — do not put a `README.md` there.
 
 ## Required agent plugins
 

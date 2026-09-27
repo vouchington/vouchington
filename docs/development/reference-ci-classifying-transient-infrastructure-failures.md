@@ -157,7 +157,7 @@ retry or Fix Main dispatch. The generic Docker rows are not yet
 fingerprinted (the verbatim log strings from the source incidents are unrecoverable after the 1-day
 artifact retention window); they are documented here for human judgment until a real log fixture is
 captured and added as a code rule. To add a new signature, see
-[`ci/transient-retry/README.md`](ci/transient-retry/README.md) — include a real log fingerprint
+[`docs/development/ci/transient-retry/README.md`](ci/transient-retry/README.md) — include a real log fingerprint
 and `exampleRunIds` so the automation and this table stay in sync.
 
 A backend unit shard that fails with `Worker exited unexpectedly` after every test passed (#8259)

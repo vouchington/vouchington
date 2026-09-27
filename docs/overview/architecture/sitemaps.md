@@ -76,7 +76,7 @@ To add a new public page to the static sitemap, append its path to `STATIC_PAGE_
 
 ## Related
 
-- Cloudflare Worker routing: [cloudflare-worker/README.md](../infrastructure/cloudflare-worker/README.md)
+- Cloudflare Worker routing: [docs/overview/infrastructure/cloudflare-worker/README.md](../infrastructure/cloudflare-worker/README.md)
 - SEO requirements: [../../requirements/seo/SEO.md](../../requirements/seo/SEO.md)
 - Post visibility rules: [../../requirements/content/POSTS.md](../../requirements/content/POSTS.md)
 - [Sitemap service](services/sitemaps/README.md) — Sitemap generation logic

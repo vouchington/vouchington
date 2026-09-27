@@ -162,7 +162,7 @@ Append `apikey=YOUR_KEY` to the query string:
 
 ## Related
 
-- [backend/services/api-keys/README.md](../../overview/architecture/services/api-keys/README.md) — service implementation and key hashing
+- [docs/overview/architecture/services/api-keys/README.md](../../overview/architecture/services/api-keys/README.md) — service implementation and key hashing
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [Backend rules](../../../backend/AGENTS.md) — workspace service and API conventions
 - [API keys service rules](../../../backend/services/api-keys/AGENTS.md) — service-specific coding rules

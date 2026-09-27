@@ -1,11 +1,4 @@
 # GitHub Actions
 
-Use [workflows/README.md](workflows/README.md) for the workflow documentation index. Composite
-actions live in [actions/](actions).
-
-Before adding or changing a Vitest test, fixture, or mock here, load the
-[vitest-test-authoring skill](../.agents/skills/vitest-test-authoring/SKILL.md).
-
-## Relocated reference navigation
-
-- [composite actions](actions/)
+- Use [workflow docs](workflows/README.md) and [composite actions](actions/) for their owners.
+- Load [Vitest authoring](../.agents/skills/vitest-test-authoring/SKILL.md) before changing tests, fixtures, or mocks.
