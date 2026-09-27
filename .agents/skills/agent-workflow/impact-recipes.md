@@ -15,9 +15,9 @@ owning Vitest project in [VITEST.md](../../../.github/workflows/VITEST.md), matc
 ## Endpoint Migration
 
 Use this when changing a URL, hostname, origin, endpoint path, or credential-shaped URL literal.
-Classify every match as updated, intentionally retained for a compatible reader, generated at
-runtime, or a non-consumer with evidence; `git grep` searches tracked dotfiles as well as ordinary
-source files.
+Classify every match as updated, generated at runtime, or a non-consumer with evidence. Retain a
+reader only when an existing external protocol, already-issued URL, or key-rotation list requires
+it. `git grep` searches tracked dotfiles as well as ordinary source files.
 
 1. Search old and new values, then classify URL producers and consumers:
 
@@ -40,15 +40,12 @@ source files.
    identity-only references as evidence-backed non-consumers rather than changing them by string
    resemblance.
 
-2. Verify the current interface and consumer lifetime rather than assuming deploy order. For this
-   unlaunched app, update current producers and consumers together; do not add readers for historical
-   application versions. Account for independently deployed current artifacts, already-issued URLs,
-   external protocols, key rotation, and rollback where applicable. Link the evidence to
+2. Verify the current interface and consumer lifetime rather than assuming deploy order. Follow
+   [One current contract](../../../AGENTS.md). Link the evidence to
    [Networking](../../../docs/overview/infrastructure/networking.md),
    [Security](../../../docs/requirements/security/SECURITY.md), and
    [Deployment decoupling](../../../docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
-   The endpoint change is complete only when its actual current consumers remain safe through the
-   chosen rollout and rollback window.
+   The endpoint change is complete when every current consumer uses the new contract.
 
 3. Before the first commit or push that changes endpoint or credential-shaped literals, run this
    exact local scan, classify any finding without exposing secret material, and record the result:

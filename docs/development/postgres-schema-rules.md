@@ -12,6 +12,9 @@ checksum verification, transactional execution, and current seeds/views. They ar
 upgrade deployments to preserve historical app contracts. Do not add backfills, dual writes,
 compatibility readers, or activation stages for old application versions. Keep external protocols,
 security key rotation, and exact replay envelopes where those contracts actually require them.
+Launch behavior and worktree-database recovery follow
+[One current contract](../../AGENTS.md) and
+[Ephemeral worktree databases](../../AGENTS.md).
 
 Application-owned business facts belong in typed columns or child tables. Every internal entity
 reference needs a concrete foreign key and supporting index, including references stored in a

@@ -40,6 +40,7 @@ used by managed views. First rerun `./dev/initialize web`; for known non-main dr
 the worktree database before migrations. If validation still reports missing schema, blocked view
 recreation, or stale columns, run `./dev/reset` or
 `source .env && pnpm run db:clean && pnpm run db:migrate`, then rerun the failing DB-backed check.
+Follow [Ephemeral worktree databases](../../AGENTS.md) before running that reset.
 
 The committed schema snapshot (`backend/data-stores/psql/schema-snapshot/schema.json` and the
 generated `backend/data-stores/psql/schema-snapshot/markdown/` tree) is checked separately with

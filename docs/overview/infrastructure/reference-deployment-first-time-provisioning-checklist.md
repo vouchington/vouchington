@@ -44,9 +44,10 @@ Worker deployment values. Vouchington contains only identifier-free local defaul
 
 Voucha has not launched. Schema and application changes use one canonical fresh-bootstrap contract,
 with disposable staging databases rebuilt when necessary. Do not introduce migration-deployment
-stages, backfills, or old/new readers merely for prior application versions. The deployment receiver
+stages, backfills, or old/new readers for prior application versions. The deployment receiver
 still orders independently built artifacts when a current interface spans them. Preserve external
-protocol compatibility and security key rotation where those have independent consumers. See the
+protocol compatibility and security key rotation where those have independent consumers. Follow
+[One current contract](../../../AGENTS.md) and the
 [prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
 
 The repo's concrete precedent is HMAC key rotation for signed sideload image URLs
@@ -77,7 +78,7 @@ deploy backend acceptance of the new value at or before the web starts requestin
 ## Related
 
 - [Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) —
-  endpoint inventory plus independent rollout and rollback evidence
+  current producers and consumers, including an already-issued URL or key-rotation list
 
 - The `vouchington-infra` Operator Secrets Checklist (`opentofu/OPERATOR-SECRETS-CHECKLIST.md` in
   the private `vouchington-infra` repository) — condensed what-do-I-set checklist for standing up

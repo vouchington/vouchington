@@ -18,6 +18,6 @@
 ## Related
 
 [Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) —
-endpoint inventory plus independent rollout and rollback evidence
+current producers and consumers, including an already-issued URL or key-rotation list
 
 - [First-Time Provisioning Checklist](reference-deployment-first-time-provisioning-checklist.md)

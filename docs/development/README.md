@@ -183,6 +183,8 @@ the hook interface is documented in the [`dev/` command catalog](../../dev/READM
 
 **Migrations fail after rebase:**
 
+Follow [Ephemeral worktree databases](../../AGENTS.md) before running this.
+
 ```bash
 source .env && pnpm run db:clean && pnpm run db:migrate
 ```
