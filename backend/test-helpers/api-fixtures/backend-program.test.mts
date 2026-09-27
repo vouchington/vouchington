@@ -7,11 +7,13 @@ import {
 } from './backend-program.mts'
 import { COLD_BACKEND_PROGRAM_TIMEOUT_MS } from './cold-build-budget.mts'
 import { MAXIMUM_BACKEND_PROGRAM_BUILD_ATTEMPTS } from './backend-program-settlement.mts'
-import { loadBackendQueryContracts } from './query-contract-registry.mts'
-import { loadRegisteredRouteCatalog } from './registered-route-catalog.mts'
-import { loadBackendRequestContracts } from './request-contract-registry.mts'
+import {
+  loadBackendQueryContracts,
+  loadBackendRequestContracts,
+  loadBackendResponseContracts,
+  loadRegisteredRouteCatalog,
+} from './backend-contract-catalog.mts'
 import { resetBackendContractDiscoveryCachesForTest } from './reset-backend-contract-caches-for-test.mts'
-import { loadBackendResponseContracts } from './response-contract-registry.mts'
 
 describe('loadBackendProgram build count', () => {
   afterEach(() => {

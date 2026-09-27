@@ -25,17 +25,18 @@ whatever unrelated test-helper files it would otherwise have accumulated.
 
 ## Backend Response Contracts
 
-Generic contract-schema extraction, fixture-contract validation, schema-lock hashing, virtual
-program matrices, and generated-file IO live in `vouchington-tooling` (`contract-schema` and
-`api-fixtures` subpaths). This directory injects Voucha knobs (`ApiUuidContract` /
-`ApiArrayContract`, route-shape and status helpers, discriminator keys) and keeps program loaders,
-AST registries, fixture cases, and generate CLIs.
+Generic contract-schema extraction, the `app.route`/`ctx` discovery engine, fixture-contract
+validation, schema-lock hashing, virtual program matrices, and generated-file IO live in
+`vouchington-tooling` (`contract-schema`, `api-contract-discovery`, and `api-fixtures` subpaths).
+This directory injects Voucha knobs (`ApiUuidContract` / `ApiArrayContract`), keeps the shared
+compiler program and its result cache, and owns fixture cases plus the generate CLIs.
 
 Backend TypeScript response expressions are authoritative. During generation,
-`response-contract-registry.mts` resolves each fixture's method and route to the corresponding
-`ctx.json(...)`, streamed JSON object, 204 response, or explicit `apiResponse(...)` variant. It then
-extracts a structural JSON schema from the inferred TypeScript type and validates the fixture in
-both directions:
+`vouchington-tooling/api-contract-discovery` resolves each fixture's method and route to the
+corresponding `ctx.json(...)`, streamed JSON object, 204 response, or explicit `apiResponse(...)`
+variant. `backend-contract-catalog.mts` supplies the shared program, route files, and Voucha schema
+aliases, then extracts a structural JSON schema from the inferred TypeScript type. Generation
+validates the fixture in both directions:
 
 - the fixture method and normalized route shape must match the exact keyed backend emission;
 - the fixture status must be one of that exact emission's declared statuses, rather than any status

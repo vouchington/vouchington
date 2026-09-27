@@ -5,7 +5,7 @@ import { writeGeneratedFiles } from 'vouchington-tooling/api-fixtures'
 
 import { apiFixtureCases } from './cases.mts'
 import { validateFixtureContracts } from './fixture-contract-validation.mts'
-import { loadBackendResponseContracts } from './response-contract-registry.mts'
+import { loadBackendResponseContracts } from './backend-contract-catalog.mts'
 import { buildApiFixtureSchemaLock, responseSchemaFor } from './schema-lock.mts'
 import type { ApiFixtureManifest } from './types.mts'
 

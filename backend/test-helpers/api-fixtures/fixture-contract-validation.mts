@@ -1,7 +1,9 @@
 import { validateFixtureContracts as validateFixtureContractsFromTooling } from 'vouchington-tooling/api-fixtures'
 
-import { routeShape } from './registered-route-catalog.mts'
-import { responseStatusCodesForContract } from './response-contract-status.mts'
+import {
+  responseStatusCodesForContract,
+  routeShape,
+} from 'vouchington-tooling/api-contract-discovery'
 import type { BackendResponseContract } from './response-contract-types.mts'
 import type { ResolvedApiFixtureCase } from './types.mts'
 

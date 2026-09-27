@@ -466,10 +466,10 @@ execution while allowing a watch rerun of the same file. The lifecycle rule requ
 `import.meta` argument so a synthetic owner cannot bypass that cardinality check. Each virtual file is an
 independent module, and diagnostics are checked when that source is requested, so one expected
 failure case does not poison its siblings.
-`request-contract-registry.test.mts` follows this virtual-only rule. Its production Bluesky and
-Fediverse request-body spot checks belong to `openapi/write-openapi.test.mts`, which resolves them
-from the real OpenAPI document that file already builds and rejects missing or unavailable bodies;
-do not add a second full backend-program load to the request inference suite.
+The generic virtual discovery suites now live in `vouchington-tooling/api-contract-discovery`.
+Production Bluesky and Fediverse request-body spot checks belong to `openapi/write-openapi.test.mts`,
+which resolves them from the real OpenAPI document that file already builds and rejects missing or
+unavailable bodies; do not add a second full backend-program load to the request inference suite.
 The scope-aware Oxlint `voucha/backend-contract-program-construction-location` rule keeps TypeScript
 compiler-host, program, and language-service factories owned by only `backend-program.mts` and
 `virtual-program.mts`, including bracket and optional access, aliases, lexical shadows, and

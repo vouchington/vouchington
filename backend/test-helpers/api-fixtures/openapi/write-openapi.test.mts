@@ -18,7 +18,9 @@ import type {
   OpenApiSchema,
 } from 'vouchington-tooling/openapi-document'
 import { openApiPaths, writeOpenApi } from './write-openapi.mts'
-import { loadRegisteredRouteCatalog, routeShape } from '../registered-route-catalog.mts'
+import { routeShape } from 'vouchington-tooling/api-contract-discovery'
+
+import { loadRegisteredRouteCatalog } from '../backend-contract-catalog.mts'
 import { COLD_OPENAPI_BUILD_TIMEOUT_MS } from '../cold-build-budget.mts'
 import { getBackendProgramBuildCount, getBackendProgramEntryCount } from '../backend-program.mts'
 import { assertContentRequestContractCoverage } from './content-request-contract-coverage.mts'
