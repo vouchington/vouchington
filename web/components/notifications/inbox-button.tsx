@@ -18,10 +18,21 @@ import { NotificationRow } from './notification-row'
 import { useInboxButton } from './use-inbox-button'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
+function unreadInboxBadge(unreadCount: number): string | null {
+  if (unreadCount <= 0) return null
+  if (unreadCount > 9) return '9+'
+  return String(unreadCount)
+}
+
 export function InboxButton() {
   const t = useTranslations()
   const { push } = useRouter()
   const inbox = useInboxButton()
+  const unreadBadge = unreadInboxBadge(inbox.summary.unread_count)
+  const openInboxLabel =
+    unreadBadge === null
+      ? t('extracted.notifications.inboxButton.openInbox_0f7bb6eb')
+      : t('extracted.notifications.inboxButton.openWithUnreadBadge', { badge: unreadBadge })
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -36,13 +47,13 @@ export function InboxButton() {
                 variant='ghost'
                 size='icon'
                 className='relative'
-                aria-label={t('extracted.notifications.inboxButton.openInbox_0f7bb6eb')}
+                aria-label={openInboxLabel}
                 data-pw='inbox-open-button'
               >
                 <Bell className='h-4 w-4' />
-                {inbox.summary.unread_count > 0 && (
+                {unreadBadge !== null && (
                   <span className='absolute right-1 top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-destructive-foreground'>
-                    {inbox.summary.unread_count > 9 ? '9+' : inbox.summary.unread_count}
+                    {unreadBadge}
                   </span>
                 )}
               </Button>
