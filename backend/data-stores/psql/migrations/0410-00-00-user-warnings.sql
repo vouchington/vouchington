@@ -40,17 +40,8 @@ COMMENT ON COLUMN user_warnings.public_message IS 'Optional public message shown
 COMMENT ON COLUMN user_warnings.report_id IS 'The moderation report that triggered this warning, if any.';
 COMMENT ON COLUMN user_warnings.case_id IS 'The moderation case this warning belongs to.';
 
--- Add the user_warning entity type to the notifications enum. This value is also present in
--- the edited-in-place 0120 baseline for fresh databases; this ALTER is for databases whose
--- notifications table was created before the 0120 edit.
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'user_warning';
-
 -- Add the FK from notifications.user_warning_id to user_warnings. The column was declared in
 -- 0120 without a FK because user_warnings did not exist at that point.
--- guardrails: allow-alter-table
-ALTER TABLE notifications
-  DROP CONSTRAINT IF EXISTS notifications_user_warning_id_fkey;
-
 ALTER TABLE notifications
   ADD CONSTRAINT notifications_user_warning_id_fkey
   FOREIGN KEY (user_warning_id) REFERENCES user_warnings (id) ON DELETE CASCADE NOT VALID;

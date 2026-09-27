@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS images (
 
   -- image data
   data JSONB NOT NULL, -- raw sharp metadata,
-  sha_256 BYTEA NOT NULL CHECK (octet_length(sha_256) = 32) UNIQUE, -- sha 256 sum of the image data
+  sha_256 BYTEA CHECK (octet_length(sha_256) = 32) UNIQUE, -- sha 256 sum of the image data
 
   -- upload lifecycle tracking
   s3_key TEXT NOT NULL,
@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS images (
   upload_completed_at TIMESTAMPTZ,
   upload_failed_at TIMESTAMPTZ,
   upload_error TEXT,
+  upload_staged_at TIMESTAMPTZ,
+  upload_source_deleted_at TIMESTAMPTZ,
+  CONSTRAINT chk_images__completed_requires_sha_256 CHECK (upload_completed_at IS NULL OR sha_256 IS NOT NULL),
 
   CONSTRAINT chk_images__upload_lifecycle CHECK (
     (upload_started_at IS NOT NULL OR (upload_completed_at IS NULL AND upload_failed_at IS NULL))
@@ -82,7 +85,9 @@ COMMENT ON COLUMN users.profile_image_id IS 'The user''s profile image. NULL if 
 
 COMMENT ON TABLE images IS 'Uploaded images with S3 storage, metadata, and moderation results.';
 COMMENT ON COLUMN images.data IS 'Raw sharp (image processing library) metadata as JSONB.';
-COMMENT ON COLUMN images.sha_256 IS 'SHA-256 hash of the original image file bytes. Unique, used for deduplication.';
+COMMENT ON COLUMN images.sha_256 IS 'SHA-256 hash of the original image file bytes. NULL until completion freezes and hashes the staged upload.';
+COMMENT ON COLUMN images.upload_staged_at IS 'When the private browser upload staging source was created.';
+COMMENT ON COLUMN images.upload_source_deleted_at IS 'Durable evidence that the browser-writable source object was deleted. NULL keeps the source eligible for bounded reconciliation.';
 COMMENT ON COLUMN images.s3_key IS 'S3 object key where the image is stored.';
 COMMENT ON COLUMN images.upload_started_at IS 'When upload processing began (S3 object received and hash calculation started). NULL = pending.';
 COMMENT ON COLUMN images.upload_completed_at IS 'When upload processing finished successfully. NULL until complete.';

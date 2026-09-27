@@ -10,13 +10,13 @@ Not partitioned — growth: unbounded.
 | -------------------------------- | -------------------------- | -------- | ----------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
 | `id`                             | `uuid`                     | no       | `uuidv7()`                          |          |           |           |                                                                                                  |
 | `membership_provider_lineage_id` | `uuid`                     | no       |                                     |          |           |           | Provider lineage claimed by this binding.                                                        |
+| `originating_invoice_id`         | `text`                     | yes      |                                     |          |           |           | Stripe invoice that established the bound provider lineage for deterministic reversal targeting. |
 | `user_id`                        | `uuid`                     | yes      |                                     |          |           |           | Bound Voucha user; cleared only after final account purge.                                       |
 | `source_kind`                    | `membership_source_kinds`  | no       | `'direct'::membership_source_kinds` |          |           |           | Direct owner or family-recipient binding class for the lineage.                                  |
 | `bound_at`                       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                 |          |           |           | When the lineage became bound to this user.                                                      |
 | `released_at`                    | `timestamp with time zone` | yes      |                                     |          |           |           | When final account deletion released this binding.                                               |
 | `release_reason`                 | `text`                     | yes      |                                     |          |           |           | Auditable reason the lineage binding was released.                                               |
 | `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`        |          | virtual   |           |                                                                                                  |
-| `originating_invoice_id`         | `text`                     | yes      |                                     |          |           |           | Stripe invoice that established the bound provider lineage for deterministic reversal targeting. |
 
 **Primary key:** `PRIMARY KEY (id)`
 

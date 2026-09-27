@@ -7,7 +7,7 @@
 -- ============================================================================
 
 DO $$ BEGIN
-  CREATE TYPE conversation_channel_types AS ENUM ('chat', 'customer_support', 'crm', 'direct_message', 'modmail', 'mod_internal');
+  CREATE TYPE conversation_channel_types AS ENUM ('chat', 'direct_message', 'modmail', 'mod_internal');
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
@@ -131,11 +131,11 @@ CREATE INDEX IF NOT EXISTS idx_conversations__assigned_mod_id ON conversations (
 CREATE INDEX IF NOT EXISTS idx_conversations__unresolved
 ON conversations (id DESC) WHERE resolved_at IS NULL;
 
-COMMENT ON TABLE conversations IS 'Threaded conversations that can be associated with a post or RSS feed item. Also used for customer support threads when participants include a support_contact or admin.';
-COMMENT ON COLUMN conversations.channel_type IS 'Conversation channel: chat for user/agent chat, customer_support for support email threads, crm for outreach timelines.';
+COMMENT ON TABLE conversations IS 'Threaded conversations that can be associated with a post or RSS feed item.';
+COMMENT ON COLUMN conversations.channel_type IS 'Conversation channel: chat for user and agent chat, direct_message, modmail, or mod_internal.';
 COMMENT ON COLUMN conversations.title IS 'User-provided title for the conversation.';
 COMMENT ON COLUMN conversations.last_response_id IS 'The last OpenAI response ID for this conversation, used to chain turns via previous_response_id.';
-COMMENT ON COLUMN conversations.created_by_id IS 'The registered user who started the conversation. NULL for conversations initiated by an anonymous support contact, or if the creating user was hard-deleted (ON DELETE SET NULL).';
+COMMENT ON COLUMN conversations.created_by_id IS 'The registered user who started the conversation. NULL if the creating user was hard-deleted (ON DELETE SET NULL).';
 COMMENT ON COLUMN conversations.resolved_at IS 'When set, the conversation is resolved. Derived status: open = NULL, resolved = set.';
 COMMENT ON COLUMN conversations.resolved_by_id IS 'The user who marked this conversation as resolved.';
 COMMENT ON COLUMN conversations.post_id IS 'Optional post this conversation is about.';
@@ -153,13 +153,8 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
   PRIMARY KEY (conversation_id, id),
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  -- At most one identity at DB level (service layer enforces exactly one at write time).
-  -- ON DELETE SET NULL may orphan a message (0 identities) when a user/contact is deleted.
+  -- ON DELETE SET NULL preserves a message after its author is deleted.
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
-  support_contact_id UUID REFERENCES support_contacts ON DELETE SET NULL,
-  crm_contact_id UUID REFERENCES crm_contacts ON DELETE SET NULL,
-  CONSTRAINT chk_conversation_messages__sender
-    CHECK (num_nonnulls(created_by_id, support_contact_id, crm_contact_id) <= 1),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
@@ -173,7 +168,6 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
   body_html TEXT,
 
   -- Email transport metadata (populated for email-channel messages)
-  email_provider crm_email_providers,
   email_message_id TEXT,
   email_subject TEXT,
   email_from TEXT,
@@ -229,29 +223,18 @@ CREATE INDEX IF NOT EXISTS idx_conv_messages__created_by_id
 ON conversation_messages (created_by_id)
 WHERE created_by_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_conv_messages__support_contact_id
-ON conversation_messages (support_contact_id)
-WHERE support_contact_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_conv_messages__crm_contact_id
-ON conversation_messages (crm_contact_id)
-WHERE crm_contact_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_conv_messages__email_message_id
 ON conversation_messages (email_message_id)
 WHERE email_message_id IS NOT NULL;
 
 COMMENT ON TABLE conversation_messages IS 'Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages use content JSONB; email-channel messages use body_text/body_html.';
 COMMENT ON COLUMN conversation_messages.conversation_id IS 'The conversation this message belongs to; also the partition key.';
-COMMENT ON COLUMN conversation_messages.created_by_id IS 'The registered user who sent this message. Mutually exclusive with support_contact_id.';
-COMMENT ON COLUMN conversation_messages.support_contact_id IS 'The email-identified support contact who sent this message. Mutually exclusive with created_by_id.';
-COMMENT ON COLUMN conversation_messages.crm_contact_id IS 'The CRM contact who sent this message. Mutually exclusive with created_by_id and support_contact_id.';
+COMMENT ON COLUMN conversation_messages.created_by_id IS 'The registered user who sent this message. NULL when the sender is unavailable.';
 COMMENT ON COLUMN conversation_messages.kind IS 'Message kind: chat, email, or internal note.';
 COMMENT ON COLUMN conversation_messages.direction IS 'Email/note direction. inbound = external contact, outbound = internal/admin authored.';
 COMMENT ON COLUMN conversation_messages.content IS 'Message content stored as JSONB. Used for chat messages.';
 COMMENT ON COLUMN conversation_messages.body_text IS 'Plain text message body. Used for email-channel messages.';
 COMMENT ON COLUMN conversation_messages.body_html IS 'HTML message body. Used for email-channel messages.';
-COMMENT ON COLUMN conversation_messages.email_provider IS 'Email provider used for email-channel messages.';
 COMMENT ON COLUMN conversation_messages.email_message_id IS 'Email Message-ID header for threading inbound replies.';
 COMMENT ON COLUMN conversation_messages.email_subject IS 'Subject line from the email.';
 COMMENT ON COLUMN conversation_messages.email_from IS 'Sender address from the email.';
@@ -275,7 +258,8 @@ DO $$ BEGIN
     'max_topics',
     'max_iterations',
     'stalled',
-    'error'
+    'error',
+    'superseded'
   );
 EXCEPTION
   WHEN duplicate_object THEN null;
@@ -289,7 +273,7 @@ CREATE TABLE IF NOT EXISTS conversation_message_agentic_runs (
     REFERENCES conversation_messages (conversation_id, id) ON DELETE CASCADE,
 
   -- NOTE: agent_id should match conversation_messages.created_by_id
-  model_name agent_models NOT NULL,
+  model_name TEXT NOT NULL,
   model_provider agent_model_providers NOT NULL,
 
   input JSONB NOT NULL, -- only include the _new_ input, exclude the previous
@@ -383,19 +367,15 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
--- Participants in a conversation: registered users or email-identified support contacts
+-- Participants in a conversation are registered users.
 CREATE TABLE IF NOT EXISTS conversation_participants (
   conversation_id UUID NOT NULL REFERENCES conversations ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
   PRIMARY KEY (conversation_id, id),
 
-  -- Exactly one identity must be set.
-  -- CASCADE: deleting a user/contact removes their participant entry; identity-less rows cannot exist.
-  user_id UUID REFERENCES users ON DELETE CASCADE,
-  support_contact_id UUID REFERENCES support_contacts ON DELETE CASCADE,
-  crm_contact_id UUID REFERENCES crm_contacts ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   CONSTRAINT chk_conversation_participants__identity
-    CHECK (num_nonnulls(user_id, support_contact_id, crm_contact_id) = 1),
+    CHECK (user_id IS NOT NULL),
 
   role conversation_participant_roles NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -416,35 +396,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_conv_participants__conversation_user
 ON conversation_participants (conversation_id, user_id)
 WHERE user_id IS NOT NULL AND removed_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_conv_participants__conversation_contact
-ON conversation_participants (conversation_id, support_contact_id)
-WHERE support_contact_id IS NOT NULL AND removed_at IS NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_conv_participants__conversation_crm_contact
-ON conversation_participants (conversation_id, crm_contact_id)
-WHERE crm_contact_id IS NOT NULL AND removed_at IS NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_conv_participants__crm_contact_active
-ON conversation_participants (crm_contact_id)
-WHERE crm_contact_id IS NOT NULL AND removed_at IS NULL;
-
 CREATE INDEX IF NOT EXISTS idx_conv_participants__user_id
 ON conversation_participants (user_id, conversation_id DESC)
 WHERE user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_conv_participants__support_contact_id
-ON conversation_participants (support_contact_id, conversation_id DESC)
-WHERE support_contact_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_conv_participants__crm_contact_id
-ON conversation_participants (crm_contact_id, conversation_id DESC)
-WHERE crm_contact_id IS NOT NULL;
-
-COMMENT ON TABLE conversation_participants IS 'Participants in a conversation. Each participant is a registered user, support contact, or CRM contact. Enables multi-party threads.';
+COMMENT ON TABLE conversation_participants IS 'Registered-user participants in a conversation. Enables multi-party threads.';
 COMMENT ON COLUMN conversation_participants.conversation_id IS 'The conversation this participant belongs to.';
-COMMENT ON COLUMN conversation_participants.user_id IS 'Registered user participant. Mutually exclusive with contact identities.';
-COMMENT ON COLUMN conversation_participants.support_contact_id IS 'Email-identified support contact. Mutually exclusive with user_id and crm_contact_id.';
-COMMENT ON COLUMN conversation_participants.crm_contact_id IS 'CRM contact participant. Mutually exclusive with user_id and support_contact_id.';
+COMMENT ON COLUMN conversation_participants.user_id IS 'Registered user participant.';
 COMMENT ON COLUMN conversation_participants.role IS 'owner = conversation initiator; admin = support staff.';
 COMMENT ON COLUMN conversation_participants.removed_at IS 'When set, this participant has been removed from the conversation (soft-remove).';
 COMMENT ON COLUMN conversation_participants.removed_by_id IS 'The user who removed this participant. NULL if removed_at is not set, or if the actor was hard-deleted.';

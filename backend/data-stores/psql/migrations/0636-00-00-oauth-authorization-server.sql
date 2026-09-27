@@ -1,5 +1,16 @@
 CREATE TABLE IF NOT EXISTS oauth_clients (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
+  metadata_url TEXT,
+  verified_at TIMESTAMPTZ,
+  verified_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT oauth_clients_metadata_url_check CHECK (
+    metadata_url IS NULL OR (
+      char_length(metadata_url) <= 2048
+      AND metadata_url ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?/[^#[:space:][:cntrl:]]*$'
+      AND metadata_url !~ '/\.\.?(/|\?|$)'
+    )
+  ),
+  CONSTRAINT oauth_clients_verified_by_id_check CHECK (verified_by_id IS NULL OR verified_at IS NOT NULL),
   client_id TEXT NOT NULL UNIQUE CHECK (client_id ~ '^voucha_[A-Za-z0-9_-]{32,}$'),
   owner_user_id UUID REFERENCES users ON DELETE SET NULL,
   client_name TEXT NOT NULL CHECK (char_length(client_name) BETWEEN 1 AND 120),

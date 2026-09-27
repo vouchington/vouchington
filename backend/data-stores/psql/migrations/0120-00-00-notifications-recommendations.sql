@@ -13,7 +13,7 @@
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_entity_types') THEN
-    CREATE TYPE notification_entity_types AS ENUM ('post', 'rss_feed_item', 'follow', 'referral_signup', 'referral_click', 'moderation_report', 'review_dispute', 'user_warning', 'moderation_appeal', 'community_ban', 'direct_message', 'modmail', 'critical_moderation_alert', 'community_application_decision', 'community_role_change', 'community_ownership_transfer', 'community_activity_digest');
+    CREATE TYPE notification_entity_types AS ENUM ('post', 'rss_feed_item', 'follow', 'referral_signup', 'referral_click', 'moderation_report', 'review_dispute', 'user_warning', 'moderation_appeal', 'community_ban', 'direct_message', 'modmail', 'critical_moderation_alert', 'community_application_decision', 'community_role_change', 'community_ownership_transfer', 'community_activity_digest', 'copyright_notice');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_delivery_types') THEN
@@ -30,13 +30,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: ensure critical_moderation_alert is present on existing DBs where the type predates this edit
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'critical_moderation_alert';
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'community_application_decision';
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'community_role_change';
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'community_ownership_transfer';
-ALTER TYPE notification_entity_types ADD VALUE IF NOT EXISTS 'community_activity_digest';
-
 CREATE TABLE IF NOT EXISTS notifications (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
@@ -45,6 +38,18 @@ CREATE TABLE IF NOT EXISTS notifications (
   entity_type notification_entity_types NOT NULL,
   post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
   rss_feed_item_id UUID REFERENCES rss_feed_items(id) ON DELETE SET NULL,
+  publication_post_id UUID,
+  publication_rss_feed_item_id UUID,
+  copyright_notice_id uuid,
+  CONSTRAINT notifications_copyright_notice_entity_shape CHECK (
+    (entity_type = 'copyright_notice'
+      AND copyright_notice_id IS NOT NULL
+      AND post_id IS NULL AND rss_feed_item_id IS NULL AND actor_user_id IS NULL
+      AND moderation_report_id IS NULL AND review_dispute_id IS NULL AND user_warning_id IS NULL
+      AND moderation_appeal_id IS NULL AND community_ban_id IS NULL AND conversation_id IS NULL
+      AND community_id IS NULL)
+    OR (entity_type <> 'copyright_notice' AND copyright_notice_id IS NULL)
+  ),
   actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   moderation_report_id UUID,
   review_dispute_id uuid,
@@ -470,7 +475,6 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   topic_markdown TEXT,
   aliases TEXT[] NOT NULL DEFAULT '{}',
   hostname_id UUID REFERENCES url_hostnames(id) ON DELETE SET NULL,
-  topic_wikipedia_pageid TEXT,
   topic_type post_topic_recommendation_topic_types NOT NULL DEFAULT 'topic',
   example_referral_link TEXT,
   landing_page_urls TEXT[] NOT NULL DEFAULT '{}',
@@ -488,7 +492,6 @@ CREATE TABLE IF NOT EXISTS post_topic_recommendations (
   CHECK (char_length(TRIM(topic_title)) > 0),
   CHECK (char_length(topic_slug) > 0),
   CHECK (topic_markdown IS NULL OR topic_markdown = TRIM(topic_markdown)),
-  CHECK (topic_wikipedia_pageid IS NULL OR topic_wikipedia_pageid = TRIM(topic_wikipedia_pageid)),
   CHECK (example_referral_link IS NULL OR example_referral_link = TRIM(example_referral_link)),
   CHECK (
     approval_error_message IS NULL
@@ -550,14 +553,13 @@ CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__hostname_id
 ON post_topic_recommendations (hostname_id)
 WHERE hostname_id IS NOT NULL;
 
-COMMENT ON TABLE post_topic_recommendations IS 'AI-generated topic recommendations attached to posts, pending admin review. Range-partitioned by post_id.';
+COMMENT ON TABLE post_topic_recommendations IS 'User- and admin-created topic recommendations attached to posts, pending admin review. Range-partitioned by post_id.';
 COMMENT ON COLUMN post_topic_recommendations.post_id IS 'The post this topic recommendation is attached to (also primary key and partition key).';
 COMMENT ON COLUMN post_topic_recommendations.topic_title IS 'Proposed display name for the new topic.';
 COMMENT ON COLUMN post_topic_recommendations.topic_slug IS 'Proposed URL slug for the new topic.';
 COMMENT ON COLUMN post_topic_recommendations.topic_markdown IS 'Optional markdown description for the proposed topic.';
 COMMENT ON COLUMN post_topic_recommendations.aliases IS 'Alternative names or aliases for the proposed topic.';
 COMMENT ON COLUMN post_topic_recommendations.hostname_id IS 'Primary hostname associated with this topic recommendation.';
-COMMENT ON COLUMN post_topic_recommendations.topic_wikipedia_pageid IS 'Wikipedia page ID if the topic maps to a Wikipedia article.';
 COMMENT ON COLUMN post_topic_recommendations.approval_error_message IS 'Error message if automatic approval failed.';
 COMMENT ON COLUMN post_topic_recommendations.reviewed_at IS 'When an admin reviewed this recommendation.';
 COMMENT ON COLUMN post_topic_recommendations.reviewed_by_id IS 'The admin who reviewed this recommendation.';

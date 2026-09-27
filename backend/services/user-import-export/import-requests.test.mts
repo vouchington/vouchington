@@ -9,7 +9,6 @@ import {
   getTopicFollowExistsForTest,
   getTopicImportRequestForTest,
   getTopicImportRequestByRecommendationForTest,
-  getTopicImportRequestCountByRecommendationForTest,
   insertPendingTopicImportRequestForTest,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
@@ -51,26 +50,6 @@ describe('user import requests', () => {
       input_value: topicName,
     })
     expect(request?.followed_at).toBeNull()
-  })
-
-  it('accepts a repeated legacy audit insert without duplicating a recommendation request', async () => {
-    const recommendation = await createTopicRecommendation(
-      user,
-      {
-        topic_title: `Legacy audit ${randomUUID()}`,
-        topic_slug: `legacy-audit-${randomUUID()}`,
-        markdown: 'Legacy audit writer coverage.',
-      },
-      { skipCreatedEvents: true },
-    )
-    const inputValue = `Legacy audit ${randomUUID()}`
-
-    await insertPendingTopicImportRequestForTest(user.id, recommendation.id, inputValue)
-    await insertPendingTopicImportRequestForTest(user.id, recommendation.id, inputValue)
-
-    await expect(
-      getTopicImportRequestCountByRecommendationForTest(user.id, recommendation.id),
-    ).resolves.toBe(1)
   })
 
   it('records followed topic imports', async () => {

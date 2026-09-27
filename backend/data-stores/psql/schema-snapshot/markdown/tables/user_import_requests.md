@@ -51,4 +51,3 @@ _none_
 **Triggers:**
 
 - `trigger_user_import_requests_updated_at`: `CREATE TRIGGER trigger_user_import_requests_updated_at BEFORE UPDATE ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
-- `user_import_requests_deduplicate_topic_recommendation`: `CREATE TRIGGER user_import_requests_deduplicate_topic_recommendation BEFORE INSERT ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_deduplicate_user_import_topic_recommendation()`

@@ -37,10 +37,6 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_crawlers__created_by_id
   ON crawlers (created_by_id)
   WHERE created_by_id IS NOT NULL;
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_crm_contacts__created_by_id
-  ON crm_contacts (created_by_id)
-  WHERE created_by_id IS NOT NULL;
-
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_images__created_by_id
   ON images (created_by_id)
   WHERE created_by_id IS NOT NULL;
@@ -160,10 +156,6 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_report_abuse_penalties__user_id
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_retailer_countries__country_id
   ON retailer_countries (country_id)
   WHERE country_id IS NOT NULL;
-
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_support_inbound_email_message_ids__support_thread_id
-  ON support_inbound_email_message_ids (support_thread_id)
-  WHERE support_thread_id IS NOT NULL;
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_url_hostname_blocks__url_hostname_id
   ON url_hostname_blocks (url_hostname_id)
