@@ -13,7 +13,7 @@ Every CI job targets around 8 minutes of execution time via fewer, longer-runnin
 minutes is a hard performance ceiling, not a timeout or CI failure threshold. The read-only
 [`ci-job-runtime-audit.mts`](../../ci/ci-job-runtime-audit.mts) command is a thin wrapper over
 `vouchington-tooling/gha-runtime-audit`. It checks successful jobs in each workflow's 10 most recent
-completed in-scope runs: area-workflow pull requests and merge groups, plus `Main CI (*)` pushes on
+completed in-scope runs: area-workflow pull requests plus `Main CI (*)` pushes on
 `main`. The audit's main-targeting sample is narrower than the area workflow triggers so the 10-run
 horizon stays comparable.
 It retains up to the latest five successful executions for each exact job name within that horizon; it

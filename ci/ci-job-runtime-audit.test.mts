@@ -30,7 +30,7 @@ function makeJob(runId: number, name: string, seconds: number, queueMinutes = 0)
 function makeRun(
   id: number,
   name: string,
-  event: 'pull_request' | 'merge_group' | 'push',
+  event: 'pull_request' | 'push',
   branch = 'main',
 ): unknown {
   return {
@@ -88,7 +88,7 @@ function makeExecutor(
 }
 
 describe('CI job runtime audit wrapper', () => {
-  it('keeps area pull_request and merge_group plus Main CI push filters', () => {
+  it('keeps area pull_request plus Main CI push filters', () => {
     expect(vouchingtonRuntimeAuditOptions).toEqual({
       branch: 'main',
       workflows: [
@@ -98,22 +98,15 @@ describe('CI job runtime audit wrapper', () => {
         { name: 'Cloudflare Worker', event: 'pull_request' },
         { name: 'Lambdas', event: 'pull_request' },
         { name: 'Tooling', event: 'pull_request' },
-        { name: 'Static', event: 'merge_group' },
-        { name: 'Backend', event: 'merge_group' },
-        { name: 'Web', event: 'merge_group' },
-        { name: 'Cloudflare Worker', event: 'merge_group' },
-        { name: 'Lambdas', event: 'merge_group' },
-        { name: 'Tooling', event: 'merge_group' },
         { name: /^Main CI \(.+\)$/, event: 'push' },
       ],
       medianThresholdSeconds: 480,
     })
   })
 
-  it('scopes area PR and merge-group runs plus main, excluding other workflows', async () => {
+  it('scopes area pull-request runs plus main, excluding other workflows', async () => {
     const runs = [
       ...[16, 15, 14, 13, 12, 11].map(id => makeRun(id, 'Backend', 'pull_request')),
-      ...[10, 9, 8, 7, 6, 5].map(id => makeRun(id, 'Backend', 'merge_group')),
       makeRun(17, 'Backend', 'pull_request', 'release'),
       makeRun(2, 'Main CI (web)', 'push'),
       makeRun(18, 'Main CI (web)', 'push', 'release'),
