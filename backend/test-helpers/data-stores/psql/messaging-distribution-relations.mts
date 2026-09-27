@@ -51,7 +51,7 @@ export async function insertAllFollowersDistributionWithRecipient(
   senderUserId: string,
   postId: string,
   recipientUserId: string,
-): Promise<unknown> {
+): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query<{ id: string }>(
     sql`/* insertAllFollowersDistributionWithRecipient */ INSERT INTO follower_distributions
@@ -71,7 +71,7 @@ export async function insertDuplicateSelectedRecipient(
   senderUserId: string,
   postId: string,
   recipientUserId: string,
-): Promise<unknown> {
+): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query<{ id: string }>(
     sql`/* insertDuplicateSelectedRecipient */ INSERT INTO follower_distributions
@@ -90,7 +90,7 @@ export async function insertDuplicateSelectedRecipient(
 export async function insertUnknownSelectedRecipient(
   senderUserId: string,
   postId: string,
-): Promise<unknown> {
+): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query<{ id: string }>(
     sql`/* insertUnknownSelectedRecipient */ INSERT INTO follower_distributions
@@ -109,7 +109,7 @@ export async function insertUnknownSelectedRecipient(
 export async function insertOversizedSelectedRecipientSet(
   senderUserId: string,
   postId: string,
-): Promise<unknown> {
+): Promise<void> {
   await using query = await beginTransaction()
   const { rows } = await query<{ id: string }>(
     sql`/* insertOversizedSelectedRecipientSet */ INSERT INTO follower_distributions
