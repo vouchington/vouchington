@@ -3,7 +3,7 @@ import {
   mockAuthState,
 } from '@/test-helpers/components/news/news-item-actions-buttons.mock-support'
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/react'
 import { NewsItemActions } from '../news-item-actions'
