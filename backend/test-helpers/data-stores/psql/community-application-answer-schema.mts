@@ -1,6 +1,6 @@
-import { insertTestCommunity } from '../../../test-helpers/entities/communities.mts'
-import { createTestUser } from '../../../test-helpers/entities/users.mts'
-import { write } from '../index.mts'
+import { write } from '@data-stores/psql'
+import { insertTestCommunity } from '../../entities/communities.mts'
+import { createTestUser } from '../../entities/users.mts'
 
 export type ApplicationFieldType =
   | 'short_text'

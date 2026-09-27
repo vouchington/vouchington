@@ -1,13 +1,13 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { insertTestCommunity } from '../../../test-helpers/entities/communities.mts'
-import { beginTransaction, onGracefulShutdown, read, write } from '../index.mts'
 import {
   insertAnswer,
   insertApplication,
   insertOption,
   insertQuestion,
   seedCommunity,
-} from './community-application-answer-schema.mts'
+} from '../../../test-helpers/data-stores/psql/community-application-answer-schema.mts'
+import { insertTestCommunity } from '../../../test-helpers/entities/communities.mts'
+import { beginTransaction, onGracefulShutdown, read, write } from '../index.mts'
 
 describe('community application answer relations', () => {
   afterAll(onGracefulShutdown)
