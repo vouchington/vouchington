@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -11,9 +11,9 @@ import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('late legal-hold and restoration concurrency', () => {
   it('serializes the placement fence before case records, leaving a concurrent restored tuple denied', async () => {
-    const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
+    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     const { moderator, notice, restorationAt, restore, target } =
-      await openHeldCounterNoticeRestore(publish)
+      await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
     const holdSubmission = await appendCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',

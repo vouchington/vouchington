@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -16,7 +16,7 @@ describe('late legal-hold edge publication', () => {
     const restored = await restorePlacementForLateHold()
     const before = await getCopyrightNoticePrivateAggregate(restored.noticeId)
     const publish = vi
-      .fn<typeof publishImagePlacementDeliveryRecord>()
+      .fn<typeof prepublishImagePlacementDenial>()
       .mockRejectedValue(new Error('DynamoDB denied the legal withholding write'))
 
     await expect(appendLateHold(restored, publish)).rejects.toThrow(
@@ -31,7 +31,7 @@ describe('late legal-hold edge publication', () => {
       expect.objectContaining({ withheld: false }),
     )
     expect(publish).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'withheld' }),
+      expect.objectContaining({ imageId: expect.any(String), revision: expect.any(Number) }),
       expect.any(Object),
     )
   })
@@ -40,11 +40,15 @@ describe('late legal-hold edge publication', () => {
     const restored = await restorePlacementForLateHold()
     const withheldStatesAtPublication: boolean[] = []
     const publish = vi
-      .fn<typeof publishImagePlacementDeliveryRecord>()
+      .fn<typeof prepublishImagePlacementDenial>()
       .mockImplementation(async input => {
-        expect(input.state).toBe('withheld')
         const placement = await getImagePlacementForCopyright(restored.placementKey)
         if (!placement) throw new Error('restored placement disappeared')
+        expect(input).toEqual({
+          placementId: placement.placementId,
+          revision: placement.revision,
+          imageId: placement.imageId,
+        })
         withheldStatesAtPublication.push(placement.withheld)
       })
 
@@ -64,9 +68,10 @@ async function restorePlacementForLateHold(): Promise<{
   restorationAt: Date
   targetId: string
 }> {
-  const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
-  const { moderator, notice, restorationAt, restore, target } =
-    await openHeldCounterNoticeRestore(publish)
+  const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
+  const { moderator, notice, restorationAt, restore, target } = await openHeldCounterNoticeRestore(
+    createTestCopyrightDeliveryDependencies(publish),
+  )
   await processCopyrightActionIntent(restore.id, restorationAt, {
     ...createTestCopyrightDeliveryDependencies(publish),
   })
@@ -81,7 +86,7 @@ async function restorePlacementForLateHold(): Promise<{
 
 async function appendLateHold(
   restored: Awaited<ReturnType<typeof restorePlacementForLateHold>>,
-  publishPlacement: typeof publishImagePlacementDeliveryRecord,
+  publishPlacement: typeof prepublishImagePlacementDenial,
 ) {
   const submission = await appendCopyrightNoticeSubmission({
     noticeId: restored.noticeId,

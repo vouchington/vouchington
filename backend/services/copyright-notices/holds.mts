@@ -15,7 +15,7 @@ import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
 import { encryptSecret } from '@modules/token-secrets'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 
 export async function appendCopyrightLegalHoldAssessment(input: {
   currentUser: PrivateUser
@@ -31,7 +31,7 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   rationale: string
   dependencies?: {
     assertLegalEnforcementEnabled?: () => void
-    publishPlacement?: typeof publishImagePlacementDeliveryRecord
+    publishPlacement?: typeof prepublishImagePlacementDenial
   }
 }): Promise<CopyrightLegalHoldAssessmentRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')

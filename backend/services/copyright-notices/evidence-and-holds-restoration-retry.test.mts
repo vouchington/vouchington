@@ -1,6 +1,8 @@
-import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
+import {
+  createTestCopyrightDeliveryDependencies,
+  type CopyrightTestDeliveryPublisher,
+} from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -103,7 +105,10 @@ describe('copyright notice restoration retries', () => {
       imposedAt: new Date('2026-07-01T12:00:00.000Z'),
       imposedById: moderator.id,
     })
-    await deliverInitialCopyrightWithhold(notice.id, async () => undefined)
+    await deliverInitialCopyrightWithhold(
+      notice.id,
+      createTestCopyrightDeliveryDependencies(async () => undefined),
+    )
     const { now: restorationAt, restore } = await createCounterNoticeRestoreIntent({
       claimant,
       noticeId: notice.id,
@@ -114,7 +119,7 @@ describe('copyright notice restoration retries', () => {
     })
     let rejectFirstAllow = true
     const publishedStates: string[] = []
-    const publish: typeof publishImagePlacementDeliveryRecord = async input => {
+    const publish: CopyrightTestDeliveryPublisher = async input => {
       publishedStates.push(input.state)
       if (input.state === 'allow' && rejectFirstAllow) {
         rejectFirstAllow = false

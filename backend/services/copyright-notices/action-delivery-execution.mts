@@ -45,7 +45,7 @@ export async function executeCopyrightActionIntent(
     }
     if (legal.action === 'restore') restorePublishedTuple = tuple
     if (deliveryKey) await dependencies.publishStagedMediaDeliveryRecord(deliveryKey)
-    else await dependencies.publishImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
+    else await dependencies.prepublishImagePlacementDenial({ ...tuple })
     const finalized = await finalizeCopyrightActionAfterDelivery(
       intent.id,
       legal.action,
@@ -53,7 +53,7 @@ export async function executeCopyrightActionIntent(
       dependencies,
     )
     if (legal.action === 'restore' && !finalized) {
-      await dependencies.publishImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
+      await dependencies.prepublishImagePlacementDenial({ ...tuple })
       return 'stale'
     }
     return finalized ? 'applied' : 'stale'

@@ -1,6 +1,6 @@
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
@@ -14,9 +14,9 @@ import { openHeldCounterNoticeRestore } from './restoration-hold-scene.mts'
 
 describe('copyright notice restoration holds', () => {
   it('re-restricts an exact restored tuple for a hold received before restoration, then restores only after resolution', async () => {
-    const publish = vi.fn<typeof publishImagePlacementDeliveryRecord>().mockResolvedValue(undefined)
+    const publish = vi.fn<typeof prepublishImagePlacementDenial>().mockResolvedValue(undefined)
     const { initialWithhold, moderator, notice, restorationAt, restore, restriction, target } =
-      await openHeldCounterNoticeRestore(publish)
+      await openHeldCounterNoticeRestore(createTestCopyrightDeliveryDependencies(publish))
     await expect(
       processCopyrightActionIntent(restore.id, restorationAt, {
         ...createTestCopyrightDeliveryDependencies(publish),

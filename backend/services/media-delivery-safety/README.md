@@ -17,7 +17,7 @@ database intended to withhold.
 
 Registry generations are database-assigned decimal values, not caller counters. The PostgreSQL
 trigger advances them for a new authority state or explicit republish and uses a nontransactional
-sequence above the legacy integer range. This prevents a deny published before a rolled-back
+sequence. This prevents a deny published before a rolled-back
 transaction from being overwritten by a reused generation; retries of the same persisted state keep
 the same generation, while the edge rejects a conflicting state at that generation.
 
@@ -55,24 +55,26 @@ footprint in canonical order. They then re-read current tuples, pre-deny those r
 the owner. Image moderation retains the same placement domain from pre-denial through unsafe
 flag/quarantine admission. An autocommit query cannot satisfy the retained-transaction contract.
 Same-value surface updates compare UUID identity under the retained owner fence and do not deny an
-unchanged route. Disabled registry publication retains repair markers without provider calls.
+unchanged route. Disabled registry publication leaves existing repair markers untouched and makes
+no provider calls.
 
 Registry rows require typed image and placement foreign keys and an exact immutable revision.
 There is no generic public-image route, media discriminator, or image-wide allow fallback.
-The [forward contraction migration](../../data-stores/psql/migrations/0735-00-00-image-placement-delivery.sql)
-runs after the retained publication identity/source migrations and preserves existing placement data and the generation sequence;
-it requires a coordinated offline cutover of every image-mutating backend and the edge route gate,
-not mixed-version operation.
+The fresh-bootstrap schema is defined by the placement, delivery registry, surface binding, and
+repair-marker creators in migrations 0647, 0648, 0649, and 0731. Runtime owner writes create their
+bindings; there is no historical population or upgrade path.
 
-An independently committed, FK-free repair marker contains only the canonical image-placement
-delivery key, rotating token, and timestamps. It precedes each owner pre-commit denial and also
+An independently committed repair marker references an already committed registry delivery key
+with an `ON DELETE RESTRICT` foreign key and contains only that key, rotating token, and timestamps.
+It precedes an owner pre-commit denial when that committed registry parent exists, and also
 precedes a publisher's local correction from stale allow to withheld, because that correction can
 roll back after the edge accepts its fresh token. Ordinary committed withheld publication does
 not create a marker. The existing reconciler consumes only the observed marker token, stages a
-fresh generation derived from committed typed binding authority, and leaves publication/retries to the existing
-outbox. Registry absence alone is not missing authority: a committed binding whose first outbox
-insert rolled back can recover. Missing/mismatched bindings receive only a fresh deny without a
-poisoned FK insert. Historical revisions cannot borrow a current revision or sibling binding.
+fresh generation derived from the registry's typed tuple and committed binding authority, and
+leaves publication/retries to the existing outbox. The staged publisher always owns its transaction;
+it cannot see or publish an allow from an uncommitted first registry insert. That insert's rollback
+leaves no marker and no prior permission to restore. Historical revisions cannot borrow a current
+revision or sibling binding and remain withheld.
 Immediate rollback repair uses the same persisted wakeups and exact reconciler; it never manufactures
 an allow from a separate image-wide eligibility query.
 

@@ -23,18 +23,6 @@ export async function lockUserProfileLinkImageOwners(
 ): Promise<void> {
   await lockSurfaceOwnerDomains({ linkIds }, query)
 }
-export async function lockTopicImageOwners(
-  topicIds: string[],
-  query: QueryExecutor,
-): Promise<void> {
-  await lockSurfaceOwnerDomains({ topicIds }, query)
-}
-export async function lockCommunityImageOwners(
-  communityIds: string[],
-  query: QueryExecutor,
-): Promise<void> {
-  await lockSurfaceOwnerDomains({ communityIds }, query)
-}
 
 type SurfaceOwnerDomains = {
   userIds?: string[]

@@ -55,8 +55,6 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'hostname_votes.session_id',
     'image_surface_placements.retired_user_id',
     'image_surface_placements.retired_user_profile_link_id',
-    'media_delivery_repair_markers.asset_id',
-    'media_delivery_repair_markers.placement_id',
     'membership_administrator_refund_operation_requests.issued_by_id',
     'membership_administrator_refund_operation_requests.membership_id',
     'membership_changes.changed_by_id',

@@ -17,12 +17,14 @@ import {
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import {
   insertTestPlacementRepairKey,
+  getTestPlacementRepairForeignKey,
   readTestPlacementDeliveryColumns,
 } from '@voucha/test-helpers/entities/placement-delivery-schema'
 import {
   getImagePlacementDeliveryKey,
   processMediaDeliveryRegistryRecord,
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
+  publishStagedMediaDeliveryRecord,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
 import { recordImageDeliveryRepairMarker } from './delivery-repair-markers.mts'
@@ -33,7 +35,7 @@ describe('concrete image placement recovery', () => {
     vi.unstubAllEnvs()
   })
 
-  it('repairs a committed placement after its first registry insert rolls back', async () => {
+  it('leaves no repair marker or allow after its first registry insert rolls back', async () => {
     const user = await createTestUserDirect()
     const [postId, imageId] = await Promise.all([
       insertTestPost({
@@ -57,24 +59,37 @@ describe('concrete image placement recovery', () => {
     const edge = installTestMediaDeliveryEdge()
     {
       await using transaction = await beginTransaction()
-      await publishImagePlacementDeliveryRecord(
-        { ...tuple, state: 'withheld' },
-        { query: transaction },
-      )
+      await prepublishImagePlacementDenial({ ...tuple }, { query: transaction })
     }
-    const denied = edge.records.get(key)!
     expect(await getTestMediaDeliveryRecord(key)).toBeNull()
-    await reconcileTestDeliveryRepairMarker(key)
+    expect(await getTestDeliveryRepairMarker(key)).toBeNull()
+    expect(edge.records.get(key)?.state).toBe('withheld')
+    expect(edge.put.mock.calls.every(([record]) => record.state === 'withheld')).toBe(true)
+
+    {
+      await using transaction = await beginTransaction()
+      await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' }, { query: transaction })
+      await expect(publishStagedMediaDeliveryRecord(key)).rejects.toThrow('Missing staged')
+      expect(edge.records.get(key)?.state).toBe('withheld')
+    }
+    expect(await getTestMediaDeliveryRecord(key)).toBeNull()
+    expect(await getTestDeliveryRepairMarker(key)).toBeNull()
+    const deniedGeneration = edge.records.get(key)!.generation
+    {
+      await using transaction = await beginTransaction()
+      await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' }, { query: transaction })
+      await transaction.commit()
+    }
+    await publishStagedMediaDeliveryRecord(key)
+    expect(edge.records.get(key)?.state).toBe('allow')
+    expect(BigInt(edge.records.get(key)!.generation)).toBeGreaterThan(BigInt(deniedGeneration))
     expect(await getTestMediaDeliveryRecord(key)).toMatchObject({
       desired_state: 'allow',
-      state: 'pending',
+      state: 'completed',
     })
-    await processMediaDeliveryRegistryRecord(key)
-    expect(edge.records.get(key)?.state).toBe('allow')
-    expect(BigInt(edge.records.get(key)!.generation)).toBeGreaterThan(BigInt(denied.generation))
   })
 
-  it('denies a key whose image belongs to a different placement without inserting an outbox row', async () => {
+  it('skips a key whose image belongs to a different placement without inserting a marker', async () => {
     const [first, sibling] = await Promise.all([
       createTestDeliverySurface(),
       createTestDeliverySurface(),
@@ -83,8 +98,7 @@ describe('concrete image placement recovery', () => {
     const key = getImagePlacementDeliveryKey(tuple)
     const edge = installTestMediaDeliveryEdge()
     await recordImageDeliveryRepairMarker(tuple)
-    await reconcileTestDeliveryRepairMarker(key)
-    expect(edge.records.get(key)?.state).toBe('withheld')
+    expect(edge.put).not.toHaveBeenCalled()
     expect(await getTestMediaDeliveryRecord(key)).toBeNull()
     expect(await getTestDeliveryRepairMarker(key)).toBeNull()
   })
@@ -117,6 +131,10 @@ describe('concrete image placement recovery', () => {
     expect(columns.media_delivery_registry_records).not.toContain('route_kind')
     expect(columns.media_delivery_registry_records).not.toContain('media_kind')
     expect(columns.media_placements).not.toContain('placement_kind')
+    expect(await getTestPlacementRepairForeignKey()).toEqual({
+      parent_table: 'media_delivery_registry_records',
+      delete_action: 'r',
+    })
   })
 
   it('rejects orphan image and placement parents in the authoritative outbox', async () => {
@@ -137,11 +155,11 @@ describe('concrete image placement recovery', () => {
     ).rejects.toMatchObject({ code: '23503' })
   })
 
-  it('rejects noncanonical and overflowing repair identities in storage', async () => {
+  it('rejects repair keys without a committed registry parent', async () => {
     const fixture = await createTestDeliverySurface()
     await expect(
       insertTestPlacementRepairKey(fixture.deliveryKey.toUpperCase()),
-    ).rejects.toMatchObject({ code: '23514' })
+    ).rejects.toMatchObject({ code: '23503' })
     await expect(
       insertTestPlacementRepairKey(
         getImagePlacementDeliveryKey({
@@ -149,6 +167,6 @@ describe('concrete image placement recovery', () => {
           revision: 2147483648,
         }),
       ),
-    ).rejects.toMatchObject({ code: '23514' })
+    ).rejects.toMatchObject({ code: '23503' })
   })
 })

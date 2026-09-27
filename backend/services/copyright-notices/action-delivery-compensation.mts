@@ -15,9 +15,8 @@ export async function compensateCopyrightActionFailure(
   if (intent.action === 'withhold')
     await repairFailedImageDeliveryMutation({ imageIds: [intent.image_id] })
   if (restorePublishedTuple) {
-    await dependencies.publishImagePlacementDeliveryRecord({
+    await dependencies.prepublishImagePlacementDenial({
       ...restorePublishedTuple,
-      state: 'withheld',
     })
   }
   const failureMessage = error instanceof Error ? error.message : String(error)

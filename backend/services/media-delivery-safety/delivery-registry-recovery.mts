@@ -14,11 +14,12 @@ export async function repairFailedImageDeliveryMutation(input: {
     /* repairFailedImageDeliveryMutation */
     SELECT DISTINCT marker.delivery_key, marker.marker_token
     FROM media_delivery_repair_markers marker
+    JOIN media_delivery_registry_records registry USING (delivery_key)
     JOIN (
       SELECT placement_id, image_id, post_id FROM image_placements
       UNION ALL SELECT placement_id, image_id, NULL::uuid FROM image_surface_placements
-    ) binding ON split_part(marker.delivery_key, ':', 2) = binding.placement_id::text
-      AND split_part(marker.delivery_key, ':', 4) = binding.image_id::text
+    ) binding ON registry.placement_id = binding.placement_id
+      AND registry.image_id = binding.image_id
     WHERE binding.post_id = ANY(${input.postIds ?? []}::uuid[])
       OR binding.image_id = ANY(${input.imageIds ?? []}::uuid[])
     ORDER BY marker.delivery_key

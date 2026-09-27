@@ -61,10 +61,12 @@ invalidation, and cross-store reconciliation. Intake must remain disabled until 
 cold-cache, warm-cache, stale-revision, mismatched-image, and direct-origin tests.
 
 The application outbox requires exact image and placement foreign keys. Independently committed
-rollback wakeups contain only the canonical delivery key, rotating token, and timestamps, never
-an uncommitted entity snapshot. Recovery re-reads committed binding authority rather than trusting
-outbox existence or borrowing another placement's revision. The coordinated offline contraction
-and recovery protocol are documented in [media-delivery safety](../../../backend/services/media-delivery-safety/README.md).
+rollback wakeups reference an already committed registry key through a restrictive foreign key and
+contain only that key, rotating token, and timestamps, never an uncommitted entity snapshot.
+Recovery joins the registry's typed tuple and rechecks committed binding authority without borrowing
+another placement's revision. An uncommitted first registry insert cannot publish an allow; its
+rollback creates no repair obligation. The fresh-bootstrap schema and recovery protocol are
+documented in [media-delivery safety](../../../backend/services/media-delivery-safety/README.md).
 
 Staff may request image-similarity candidates from existing embeddings. Candidates are advisory,
 exclude unavailable or moderated media, and return placement identifiers and state rather than S3

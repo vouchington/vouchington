@@ -2,18 +2,26 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
 
+export type CopyrightTestDeliveryPublisher = (
+  input: Parameters<CopyrightActionDeliveryDependencies['prepublishImagePlacementDenial']>[0] & {
+    state: 'allow' | 'withheld'
+  },
+  options?: Parameters<CopyrightActionDeliveryDependencies['prepublishImagePlacementDenial']>[1],
+) => Promise<void>
+
 /** External delivery seam for action tests; tuple identity still comes from the real committed outbox. */
 export function createTestCopyrightDeliveryDependencies(
-  publish: CopyrightActionDeliveryDependencies['publishImagePlacementDeliveryRecord'],
+  publish: CopyrightTestDeliveryPublisher,
 ): Pick<
   CopyrightActionDeliveryDependencies,
   | 'assertMediaDeliveryLegalEnforcementEnabled'
-  | 'publishImagePlacementDeliveryRecord'
+  | 'prepublishImagePlacementDenial'
   | 'publishStagedMediaDeliveryRecord'
 > {
   return {
     assertMediaDeliveryLegalEnforcementEnabled: () => undefined,
-    publishImagePlacementDeliveryRecord: publish,
+    prepublishImagePlacementDenial: (input, options) =>
+      publish({ ...input, state: 'withheld' }, options),
     publishStagedMediaDeliveryRecord: async deliveryKey => {
       const { rows } = await read<{
         placement_id: string

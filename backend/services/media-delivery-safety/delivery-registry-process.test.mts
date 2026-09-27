@@ -17,7 +17,7 @@ import {
   repairFailedImageDeliveryMutation,
   getImagePlacementDeliveryKey,
   processMediaDeliveryRegistryRecord,
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
   stageImagePlacementDeliveryRecord,
 } from './index.mts'
 
@@ -110,14 +110,20 @@ describe('media delivery registry processor', () => {
     vi.spyOn(mediaDeliveryRegistryProvider, 'invalidateMediaDeliveryPath').mockResolvedValue({
       $metadata: {},
     })
+    const committed = await stageImagePlacementDeliveryRecord({
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
+    await processMediaDeliveryRegistryRecord(committed.deliveryKey)
     {
       await using transaction = await beginTransaction()
-      await publishImagePlacementDeliveryRecord(
+      await prepublishImagePlacementDenial(
         {
           placementId: placement.placement_id,
           revision: placement.placement_revision,
           imageId,
-          state: 'withheld',
         },
         { query: transaction },
       )

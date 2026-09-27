@@ -128,50 +128,6 @@ CREATE TRIGGER trigger_image_surface_placements_updated_at
 BEFORE UPDATE ON image_surface_placements
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-WITH bindings AS (
-  SELECT uuidv7() AS placement_id, 'user-profile-image'::text AS surface_kind, profile_image_id AS image_id,
-    id AS user_id, NULL::uuid AS topic_id, NULL::uuid AS community_id, NULL::uuid AS user_profile_link_id
-  FROM users WHERE profile_image_id IS NOT NULL
-  UNION ALL
-  SELECT uuidv7(), 'topic-logo-image', logo_image_id, NULL, id, NULL, NULL
-  FROM topics WHERE logo_image_id IS NOT NULL
-  UNION ALL
-  SELECT uuidv7(), 'topic-hero-image', hero_image_id, NULL, id, NULL, NULL
-  FROM topics WHERE hero_image_id IS NOT NULL
-  UNION ALL
-  SELECT uuidv7(), 'community-profile-image', profile_image_id, NULL, NULL, id, NULL
-  FROM communities WHERE profile_image_id IS NOT NULL
-  UNION ALL
-  SELECT uuidv7(), 'community-banner-image', banner_image_id, NULL, NULL, id, NULL
-  FROM communities WHERE banner_image_id IS NOT NULL
-  UNION ALL
-  SELECT uuidv7(), 'user-profile-link-image', image_id, NULL, NULL, NULL, id
-  FROM user_profile_links WHERE image_id IS NOT NULL
-), registered AS (
-  INSERT INTO media_placements (id, placement_kind)
-  SELECT placement_id, 'image' FROM bindings
-  RETURNING id
-), inserted AS (
-  INSERT INTO image_surface_placements (
-    placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id
-  )
-  SELECT placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id
-  FROM bindings
-  RETURNING placement_id, image_id
-)
-INSERT INTO media_delivery_registry_records (
-  delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
-)
-SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', inserted.image_id),
-  'image', 'placement', placement.id, placement.revision, inserted.image_id,
-  CASE WHEN image.deleted_at IS NULL
-      AND image.quarantine_pending_at IS NULL
-      AND image.openai_omni_moderation_flagged IS NOT TRUE
-    THEN 'allow' ELSE 'withheld' END
-FROM inserted
-JOIN media_placements placement ON placement.id = inserted.placement_id
-JOIN images image ON image.id = inserted.image_id;
-
 CREATE OR REPLACE FUNCTION fn_sync_image_surface_placement(
   p_surface_kind text,
   p_image_id uuid,
@@ -186,10 +142,10 @@ DECLARE
   v_revision integer;
 BEGIN
   INSERT INTO media_delivery_registry_records (
-    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
+    delivery_key, placement_id, placement_revision, image_id, desired_state
   )
   SELECT concat('image-placement:', placement.id, ':', placement.revision, ':', surface.image_id),
-    'image', 'placement', placement.id, placement.revision, surface.image_id, 'withheld'
+    placement.id, placement.revision, surface.image_id, 'withheld'
   FROM media_placements placement
   JOIN image_surface_placements surface ON surface.placement_id = placement.id
   WHERE placement.retired_at IS NULL
@@ -239,7 +195,7 @@ BEGIN
   FOR UPDATE OF placement;
 
   IF v_placement_id IS NULL THEN
-    INSERT INTO media_placements (placement_kind) VALUES ('image') RETURNING id, revision INTO v_placement_id, v_revision;
+    INSERT INTO media_placements DEFAULT VALUES RETURNING id, revision INTO v_placement_id, v_revision;
     INSERT INTO image_surface_placements (
       placement_id, surface_kind, image_id, user_id, topic_id, community_id, user_profile_link_id
     ) VALUES (v_placement_id, p_surface_kind, p_image_id, p_user_id, p_topic_id, p_community_id, p_user_profile_link_id);
@@ -254,10 +210,10 @@ BEGIN
   END IF;
 
   INSERT INTO media_delivery_registry_records (
-    delivery_key, media_kind, route_kind, placement_id, placement_revision, asset_id, desired_state
+    delivery_key, placement_id, placement_revision, image_id, desired_state
   )
   SELECT concat('image-placement:', v_placement_id, ':', v_revision, ':', p_image_id),
-    'image', 'placement', v_placement_id, v_revision, p_image_id,
+    v_placement_id, v_revision, p_image_id,
     CASE WHEN image.deleted_at IS NULL
         AND image.quarantine_pending_at IS NULL
         AND image.openai_omni_moderation_flagged IS NOT TRUE
@@ -265,19 +221,6 @@ BEGIN
   FROM images image WHERE image.id = p_image_id
   ON CONFLICT (delivery_key) DO NOTHING;
 
-  INSERT INTO media_delivery_registry_records (
-    delivery_key, media_kind, route_kind, asset_id, desired_state
-  ) VALUES (concat('legacy-image:', p_image_id), 'image', 'legacy-image', p_image_id, 'withheld')
-  ON CONFLICT (delivery_key) DO UPDATE
-  SET desired_state = 'withheld',
-    state = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN 'pending' ELSE media_delivery_registry_records.state END,
-    claimed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN NULL ELSE media_delivery_registry_records.claimed_at END,
-    completed_at = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN NULL ELSE media_delivery_registry_records.completed_at END,
-    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'
-      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;
 END;
 $$;
 
@@ -387,19 +330,26 @@ CREATE OR REPLACE FUNCTION fn_image_placement_publicly_projected(
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (
     SELECT 1
-    FROM media_delivery_registry_records registry
-    JOIN images image ON image.id = p_image_id
-    WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)
-      AND registry.desired_state = 'allow'
-      AND registry.state = 'completed'
+    FROM images image
+    WHERE image.id = p_image_id
       AND image.deleted_at IS NULL
       AND image.upload_completed_at IS NOT NULL
       AND image.quarantine_pending_at IS NULL
       AND image.openai_omni_moderation_flagged = FALSE
       AND image.openai_omni_moderation_results IS NOT NULL
       AND image.openai_omni_moderation_created_at IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM media_delivery_registry_records registry
+        WHERE registry.delivery_key = concat('image-placement:', p_placement_id, ':', p_revision, ':', p_image_id)
+          AND registry.desired_state = 'allow'
+          AND registry.state = 'completed'
+      )
   );
 $$;
+
+COMMENT ON FUNCTION fn_image_placement_publicly_projected(uuid, integer, uuid)
+IS 'Projects only an exact image placement tuple that has completed its allowed edge delivery state.';
 
 COMMENT ON TABLE image_surface_placements IS 'Immutable bindings for non-post persisted public image surfaces. Each surface has typed foreign-key columns; no polymorphic owner reference is permitted.';
 COMMENT ON COLUMN image_surface_placements.placement_id IS 'Stable media placement identifier that scopes public delivery to this persisted surface use.';

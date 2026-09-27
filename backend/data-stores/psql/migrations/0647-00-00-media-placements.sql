@@ -1,6 +1,5 @@
 CREATE TABLE media_placements (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  placement_kind text NOT NULL CHECK (placement_kind IN ('image')),
   revision integer NOT NULL DEFAULT 0 CHECK (revision >= 0),
   retired_at timestamptz,
   retirement_reason text CHECK (retirement_reason IN ('asset_deleted', 'owner_removed')),
@@ -27,9 +26,6 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';
-  END IF;
-  IF NEW.placement_kind IS DISTINCT FROM OLD.placement_kind THEN
-    RAISE EXCEPTION 'media placement kind is immutable' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.revision <> OLD.revision + 1 THEN
     RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';
@@ -63,8 +59,7 @@ BEFORE UPDATE OR DELETE ON image_placements
 FOR EACH ROW EXECUTE FUNCTION fn_guard_image_placement();
 
 
-COMMENT ON TABLE media_placements IS 'Media-neutral, durable hosted-use placements. Delivery availability is revision-fenced and never inferred from an asset alone.';
-COMMENT ON COLUMN media_placements.placement_kind IS 'Typed binding kind. Additional media kinds receive their own immutable binding tables.';
+COMMENT ON TABLE media_placements IS 'Durable image-use placements; exact binding and revision authority governs public delivery.';
 COMMENT ON COLUMN media_placements.revision IS 'Monotonic delivery revision; every availability change advances it exactly once.';
 COMMENT ON COLUMN media_placements.retired_at IS 'Placement is no longer attached to its host surface; retained so stale routes fail closed.';
 COMMENT ON COLUMN media_placements.retirement_reason IS 'Why the placement retired. Owner removal supersedes an asset retirement, fencing image-delete rollback from restoring a detached use.';

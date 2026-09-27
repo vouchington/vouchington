@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { nativeUserProfileHeaderApiFixtureCases } from './native-user-profile-header-cases.mts'
-import { swiftApiFixtureCases } from './swift-cases.mts'
-import { webApiFixtureCases } from './web-cases.mts'
+import { apiFixtureCases } from './cases.mts'
 
 describe('saved image fixture identities', () => {
   it('provides canonical placement tuples for every surface consumer', () => {
-    const cases = [
-      ...nativeUserProfileHeaderApiFixtureCases,
-      ...swiftApiFixtureCases,
-      ...webApiFixtureCases,
-    ]
+    const cases = apiFixtureCases
     const surfaces = new Set<string>()
     const placements: object[] = []
     function inspect(value: unknown): void {

@@ -20,3 +20,16 @@ export async function insertTestPlacementRepairKey(deliveryKey: string): Promise
     VALUES (${deliveryKey}, nextval('media_delivery_registry_generation_sequence'))
   `)
 }
+
+export async function getTestPlacementRepairForeignKey(): Promise<{
+  parent_table: string
+  delete_action: string
+} | null> {
+  const { rows } = await read<{ parent_table: string; delete_action: string }>(sql`
+    /* getTestPlacementRepairForeignKey */
+    SELECT confrelid::regclass::text AS parent_table, confdeltype::text AS delete_action
+    FROM pg_constraint
+    WHERE conrelid = 'media_delivery_repair_markers'::regclass AND contype = 'f'
+  `)
+  return rows[0] ?? null
+}

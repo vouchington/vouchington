@@ -4,7 +4,7 @@ export {
   stagePostImagePlacementDeliveryRecords,
 } from './delivery-registry-staging.mts'
 export {
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
 } from './delivery-registry-publish.mts'
 export {

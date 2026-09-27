@@ -10,7 +10,7 @@ import {
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import { prepublishImageDeliveryDenials } from './delivery-denials.mts'
 import {
-  publishImagePlacementDeliveryRecord,
+  prepublishImagePlacementDenial,
   publishStagedMediaDeliveryRecord,
 } from './delivery-registry-publish.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
@@ -31,15 +31,15 @@ describe('publication failure and recovery boundaries', () => {
       }),
     ).rejects.toThrow('retained transaction')
     await expect(
-      publishStagedMediaDeliveryRecord(fixture.deliveryKey, { query: testDeliveryAutocommitQuery }),
+      prepublishImagePlacementDenial(fixture.tuple, { query: testDeliveryAutocommitQuery }),
     ).rejects.toThrow('retained transaction')
     expect(edge.put).not.toHaveBeenCalled()
   })
 
-  it('publishes an exact current allow through the owner boundary', async () => {
+  it('publishes an exact current allow from the committed outbox', async () => {
     const fixture = await createTestDeliverySurface()
     const edge = installTestMediaDeliveryEdge()
-    await publishImagePlacementDeliveryRecord({ ...fixture.tuple, state: 'allow' })
+    await publishStagedMediaDeliveryRecord(fixture.deliveryKey)
     expect(edge.records.get(fixture.deliveryKey)?.state).toBe('allow')
     expect(await getTestMediaDeliveryRecord(fixture.deliveryKey)).toMatchObject({
       state: 'completed',
@@ -61,7 +61,7 @@ describe('publication failure and recovery boundaries', () => {
       desired_state: 'allow',
       state: 'pending',
     })
-    await publishImagePlacementDeliveryRecord({ ...fixture.tuple, state: 'allow' })
+    await publishStagedMediaDeliveryRecord(fixture.deliveryKey)
     const restored = edge.records.get(key)!
     expect(restored.state).toBe('allow')
     expect(BigInt(restored.generation)).toBeGreaterThan(BigInt(denied.generation))

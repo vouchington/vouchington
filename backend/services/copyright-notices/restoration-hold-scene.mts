@@ -1,4 +1,4 @@
-import type { publishImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   getCopyrightNoticePrivateAggregate,
@@ -10,7 +10,7 @@ import {
 } from './evidence-and-holds-restoration-hold-fixtures.mts'
 
 export async function openHeldCounterNoticeRestore(
-  publish: typeof publishImagePlacementDeliveryRecord,
+  dependencies: Partial<CopyrightActionDeliveryDependencies>,
 ) {
   const { aggregate, assessment, claimant, moderator, notice } =
     await createCopyrightRestorationHoldFixture()
@@ -26,7 +26,7 @@ export async function openHeldCounterNoticeRestore(
     intent => intent.action === 'withhold',
   )
   if (!initialWithhold) throw new Error('initial withhold intent disappeared')
-  await deliverInitialCopyrightWithhold(notice.id, publish)
+  await deliverInitialCopyrightWithhold(notice.id, dependencies)
   const opened = await createCounterNoticeRestoreIntent({
     claimant,
     noticeId: notice.id,

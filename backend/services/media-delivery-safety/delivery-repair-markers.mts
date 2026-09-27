@@ -1,14 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
-import {
-  isMediaDeliveryRegistryPublicationEnabled,
-  putMediaDeliveryRegistryRecord,
-} from '@modules/aws/media-delivery-registry'
-import {
-  getImagePlacementDeliveryKey,
-  parseImagePlacementDeliveryKey,
-} from './delivery-registry-types.mts'
+import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
+import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 import { stageImagePlacementDeliveryRecord } from './delivery-registry-staging.mts'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import { imageDeliveryIsAuthorized } from './delivery-authority.mts'
@@ -21,17 +15,18 @@ export async function recordImageDeliveryRepairMarker(input: {
   imageId: string
 }): Promise<void> {
   const deliveryKey = getImagePlacementDeliveryKey(input)
-  parseImagePlacementDeliveryKey(deliveryKey)
   await write(sql`/* recordImageDeliveryRepairMarker */
     INSERT INTO media_delivery_repair_markers (delivery_key, marker_token)
-    VALUES (${deliveryKey}, nextval('media_delivery_registry_generation_sequence'))
+    SELECT delivery_key, nextval('media_delivery_registry_generation_sequence')
+    FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
+    ORDER BY delivery_key ASC NULLS LAST
     ON CONFLICT (delivery_key) DO UPDATE SET
       marker_token = nextval('media_delivery_registry_generation_sequence'),
       created_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
   `)
 }
 
-/** Repairs bounded committed wakeups without trusting a tuple snapshot or registry existence. */
+/** Repairs bounded wakeups through their committed registry parent. */
 export async function reconcileMediaDeliveryRepairMarkers(
   limit: number,
   deliveryKeys?: readonly string[],
@@ -56,47 +51,35 @@ export async function reconcileMediaDeliveryRepairMarkers(
 
 export async function reconcileDeliveryRepairMarker(marker: DeliveryRepairMarker): Promise<void> {
   if (!isMediaDeliveryRegistryPublicationEnabled()) return
-  const tuple = parseImagePlacementDeliveryKey(marker.delivery_key)
   await using transaction = await beginTransaction()
+  const { rows } = await transaction<{
+    placement_id: string
+    placement_revision: number
+    image_id: string
+  }>(sql`/* reconcileDeliveryRepairMarker:registry */
+    SELECT registry.placement_id, registry.placement_revision, registry.image_id
+    FROM media_delivery_repair_markers marker
+    JOIN media_delivery_registry_records registry USING (delivery_key)
+    WHERE marker.delivery_key = ${marker.delivery_key}
+      AND marker.marker_token = ${marker.marker_token}::bigint
+  `)
+  const record = rows[0]
+  if (!record) return
+  // ast-grep-ignore: no-three-sequential-awaits -- retain the placement fence before legal authority proof and fresh registry staging
   await lockImageDeliveryMutation(transaction, {
-    placementIds: [tuple.placementId],
+    placementIds: [record.placement_id],
     placementOnly: true,
   })
-  const { rows } = await transaction<{ image_id: string; placement_id: string }>(sql`
-    /* reconcileDeliveryRepairMarker:binding */
-    SELECT binding.image_id, placement.id AS placement_id
-    FROM media_placements placement
-    JOIN (SELECT placement_id, image_id FROM image_placements
-      UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
-      ON binding.placement_id = placement.id
-    JOIN images image ON image.id = binding.image_id
-    WHERE placement.id = ${tuple.placementId}::uuid AND binding.image_id = ${tuple.imageId}::uuid
-  `)
-  const binding = rows[0]
-  if (binding) {
-    const allowed = await imageDeliveryIsAuthorized(transaction, {
-      placement_id: binding.placement_id,
-      placement_revision: tuple.revision,
-      image_id: binding.image_id,
-    })
-    await stageImagePlacementDeliveryRecord(
-      { ...tuple, state: allowed ? 'allow' : 'withheld' },
-      { query: transaction, forceGeneration: true },
-    )
-  } else {
-    // Never-committed or mismatched identities cannot enter the FK-backed outbox.
-    const { rows: generations } = await transaction<{ generation: string }>(sql`
-      /* reconcileDeliveryRepairMarker:missingGeneration */
-      SELECT nextval('media_delivery_registry_generation_sequence')::text AS generation
-    `)
-    const generation = generations[0]?.generation
-    if (!generation) throw new Error('Unable to allocate a fresh image delivery repair generation')
-    await putMediaDeliveryRegistryRecord({
-      deliveryKey: marker.delivery_key,
-      state: 'withheld',
-      generation,
-    })
-  }
+  const allowed = await imageDeliveryIsAuthorized(transaction, record)
+  await stageImagePlacementDeliveryRecord(
+    {
+      placementId: record.placement_id,
+      revision: record.placement_revision,
+      imageId: record.image_id,
+      state: allowed ? 'allow' : 'withheld',
+    },
+    { query: transaction, forceGeneration: true },
+  )
   await transaction(sql`/* reconcileDeliveryRepairMarker:consume */
     DELETE FROM media_delivery_repair_markers
     WHERE delivery_key = ${marker.delivery_key} AND marker_token = ${marker.marker_token}::bigint
