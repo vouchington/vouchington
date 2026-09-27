@@ -68,19 +68,6 @@ export async function beginClientIdMetadataRefresh(
   return { generation: refresh.generation, startedAt: refresh.started_at }
 }
 
-export async function getClientIdMetadataClient(
-  clientId: string,
-  query: QueryExecutor,
-): Promise<OAuthClient | null> {
-  const result = await query<OAuthClient>(
-    `/* getClientIdMetadataClient */ SELECT *
-     FROM oauth_clients
-     WHERE client_id = $1 AND metadata_url = $1 AND revoked_at IS NULL`,
-    [clientId],
-  )
-  return result.rows[0] ?? null
-}
-
 export async function upsertClientIdMetadataClient(
   metadataUrl: string,
   metadata: ValidatedClientIdMetadata,
