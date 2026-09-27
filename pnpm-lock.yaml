@@ -1262,9 +1262,6 @@ importers:
       '@services/passkeys':
         specifier: workspace:^
         version: link:../services/passkeys
-      '@services/platform-stats':
-        specifier: workspace:^
-        version: link:../services/platform-stats
       '@services/podcast-playback-positions':
         specifier: workspace:^
         version: link:../services/podcast-playback-positions
