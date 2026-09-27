@@ -1497,9 +1497,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
-      '@workers/elections':
-        specifier: workspace:^
-        version: link:../workers/elections
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../workers/entity-listeners
@@ -11328,9 +11325,6 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
