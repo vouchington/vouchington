@@ -1,5 +1,9 @@
 import { write } from '@data-stores/psql'
-import { observeSharedDbScope, sharedDbCursorScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+  sharedDbIdsScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 import { decodeScopedAliasCursor, encodeScopedAliasCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
@@ -65,7 +69,10 @@ export async function listRecoverableMediaDeliveryRegistryKeys(input: {
     ? decodeScopedAliasCursor(input.after, scope, 'Invalid media recovery cursor').alias
     : null
   if (deliveryKeys?.length === 0)
-    return { results: [], page_info: { has_next_page: false, start_cursor: null, end_cursor: null } }
+    return {
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
   observeSharedDbScope(
     'listRecoverableMediaDeliveryRegistryKeys',
     deliveryKeys ? sharedDbIdsScope(deliveryKeys) : sharedDbCursorScope(after),

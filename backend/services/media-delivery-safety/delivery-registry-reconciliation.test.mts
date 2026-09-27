@@ -34,11 +34,13 @@ describe('scoped media delivery reconciliation', () => {
       ),
     )
     expect(
-      (await listRecoverableMediaDeliveryRegistryKeys({
-        limit: 100,
-        scanBefore: await getMediaDeliveryRegistryScanBefore(),
-        deliveryKeys: [selected.deliveryKey],
-      })).results,
+      (
+        await listRecoverableMediaDeliveryRegistryKeys({
+          limit: 100,
+          scanBefore: await getMediaDeliveryRegistryScanBefore(),
+          deliveryKeys: [selected.deliveryKey],
+        })
+      ).results,
     ).toEqual([selected.deliveryKey])
     await Promise.all(
       [selected, unrelated].map(placement =>
