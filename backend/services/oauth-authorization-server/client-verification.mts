@@ -17,32 +17,64 @@ export const OAUTH_CLIENT_VERIFICATION_FILTERS: readonly OAuthClientVerification
 ]
 
 const OAUTH_CLIENT_VERIFICATION_LIST_SQL = {
-  all: `/* listOAuthClientsForVerification */ SELECT id, client_id, client_name, client_type,
-       redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
-     FROM oauth_clients
-     WHERE metadata_url IS NULL
-       AND revoked_at IS NULL
-       AND ($1::uuid IS NULL OR id < $1::uuid)
-     ORDER BY id DESC
-     LIMIT $2`,
-  unverified: `/* listOAuthClientsForVerification */ SELECT id, client_id, client_name, client_type,
-       redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
-     FROM oauth_clients
-     WHERE metadata_url IS NULL
-       AND revoked_at IS NULL
-       AND verified_at IS NULL
-       AND ($1::uuid IS NULL OR id < $1::uuid)
-     ORDER BY id DESC
-     LIMIT $2`,
-  verified: `/* listOAuthClientsForVerification */ SELECT id, client_id, client_name, client_type,
-       redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
-     FROM oauth_clients
-     WHERE metadata_url IS NULL
-       AND revoked_at IS NULL
-       AND verified_at IS NOT NULL
-       AND ($1::uuid IS NULL OR id < $1::uuid)
-     ORDER BY id DESC
-     LIMIT $2`,
+  all: {
+    first: `/* listOAuthClientsForVerification first */ SELECT id, client_id, client_name,
+         client_type, redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
+       FROM oauth_clients
+       WHERE metadata_url IS NULL
+         AND revoked_at IS NULL
+       ORDER BY id DESC
+       LIMIT $1`,
+    continuation: `/* listOAuthClientsForVerification continuation */ SELECT id, client_id,
+         client_name, client_type, redirect_uris, scopes, owner_user_id, verified_at,
+         verified_by_id, created_at
+       FROM oauth_clients
+       WHERE metadata_url IS NULL
+         AND revoked_at IS NULL
+         AND id < $1::uuid
+       ORDER BY id DESC
+       LIMIT $2`,
+  },
+  unverified: {
+    first: `/* listOAuthClientsForVerification first */ SELECT id, client_id, client_name,
+         client_type, redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
+       FROM oauth_clients
+       WHERE metadata_url IS NULL
+         AND revoked_at IS NULL
+         AND verified_at IS NULL
+       ORDER BY id DESC
+       LIMIT $1`,
+    continuation: `/* listOAuthClientsForVerification continuation */ SELECT id, client_id,
+         client_name, client_type, redirect_uris, scopes, owner_user_id, verified_at,
+         verified_by_id, created_at
+       FROM oauth_clients
+       WHERE metadata_url IS NULL
+         AND revoked_at IS NULL
+         AND verified_at IS NULL
+         AND id < $1::uuid
+       ORDER BY id DESC
+       LIMIT $2`,
+  },
+  verified: {
+    first: `/* listOAuthClientsForVerification first */ SELECT id, client_id, client_name,
+         client_type, redirect_uris, scopes, owner_user_id, verified_at, verified_by_id, created_at
+       FROM oauth_clients
+       WHERE metadata_url IS NULL
+         AND revoked_at IS NULL
+         AND verified_at IS NOT NULL
+       ORDER BY id DESC
+       LIMIT $1`,
+    continuation: `/* listOAuthClientsForVerification continuation */ SELECT id, client_id,
+         client_name, client_type, redirect_uris, scopes, owner_user_id, verified_at,
+         verified_by_id, created_at
+       FROM oauth_clients
+       WHERE metadata_url IS NULL
+         AND revoked_at IS NULL
+         AND verified_at IS NOT NULL
+         AND id < $1::uuid
+       ORDER BY id DESC
+       LIMIT $2`,
+  },
 } as const
 
 /** Administrator verification of client names is the gate for naming a client publicly. */
@@ -58,10 +90,11 @@ export async function listOAuthClientsForVerification(options: {
   limit: number
   afterId?: string
 }): Promise<OAuthManagementPage<AdminOAuthClientView>> {
-  const { rows } = await read<AdminOAuthClientView>(
-    OAUTH_CLIENT_VERIFICATION_LIST_SQL[options.verification],
-    [options.afterId ?? null, options.limit + 1],
-  )
+  const queries = OAUTH_CLIENT_VERIFICATION_LIST_SQL[options.verification]
+  const { rows } =
+    options.afterId === undefined
+      ? await read<AdminOAuthClientView>(queries.first, [options.limit + 1])
+      : await read<AdminOAuthClientView>(queries.continuation, [options.afterId, options.limit + 1])
   return { results: rows.slice(0, options.limit), hasNextPage: rows.length > options.limit }
 }
 

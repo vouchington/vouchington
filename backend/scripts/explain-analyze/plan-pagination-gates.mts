@@ -81,16 +81,18 @@ export function assertPaginationPlanShape(result: ExplainResult): void {
 
 function assertOAuthClientVerificationPlan(result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
-  const usesVerifiedIndex = nodes.some(
+  const verifiedIndexNode = nodes.find(
     node => node['Index Name'] === OAUTH_CLIENT_VERIFICATION_INDEX,
   )
+  const cursorIndexCondition = String(verifiedIndexNode?.['Index Cond'] ?? '')
+  const usesCursorAsIndexBound = /\bid\s*</u.test(cursorIndexCondition)
   const scansOAuthClients = nodes.some(
     node => node['Node Type'] === 'Seq Scan' && node['Relation Name'] === 'oauth_clients',
   )
   const explicitSort = nodes.some(node => String(node['Node Type'] ?? '').includes('Sort'))
-  if (!usesVerifiedIndex || scansOAuthClients || explicitSort) {
+  if (!verifiedIndexNode || !usesCursorAsIndexBound || scansOAuthClients || explicitSort) {
     throw new Error(
-      `${result.name} must page verified oauth_clients through ${OAUTH_CLIENT_VERIFICATION_INDEX} without an oauth_clients sequential scan or explicit Sort`,
+      `${result.name} must page verified oauth_clients through ${OAUTH_CLIENT_VERIFICATION_INDEX} with the cursor in its Index Cond and without an oauth_clients sequential scan or explicit Sort`,
     )
   }
 }

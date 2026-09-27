@@ -43,8 +43,8 @@ both CI plan-cache modes.
 The verified OAuth-client scenario interleaves a small active verified subset through a larger
 unverified population and uses a late keyset cursor with exactly 102 verified rows remaining.
 Its pagination gate requires
-`idx_oauth_clients__verified_active_id`, with no `oauth_clients` sequential scan or explicit sort,
-in both plan-cache modes.
+`idx_oauth_clients__verified_active_id`, the late cursor as an index condition, and no
+`oauth_clients` sequential scan or explicit sort in both plan-cache modes.
 
 ### Isolated topic-metrics benchmark
 

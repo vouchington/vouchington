@@ -92,6 +92,7 @@ describe('verified OAuth client listing EXPLAIN plan', () => {
         'Node Type': 'Index Scan',
         'Relation Name': 'oauth_clients',
         'Index Name': 'idx_oauth_clients__verified_active_id',
+        'Index Cond': '(id < $1)',
       },
     })
     expect(() => assertPaginationPlanShape(indexed)).not.toThrow()
@@ -101,10 +102,45 @@ describe('verified OAuth client listing EXPLAIN plan', () => {
         'Node Type': 'Index Scan',
         'Relation Name': 'oauth_clients',
         'Index Name': 'oauth_clients_pkey',
+        'Index Cond': '(id < $1)',
       },
     })
     expect(() => assertPaginationPlanShape(wrongIndex)).toThrow(
       'idx_oauth_clients__verified_active_id',
+    )
+  })
+
+  it('requires the continuation cursor to be an index condition', () => {
+    const filtered = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients WHERE id < $1 ORDER BY id DESC LIMIT $2',
+      {
+        Plan: {
+          'Node Type': 'Index Scan',
+          'Relation Name': 'oauth_clients',
+          'Index Name': 'idx_oauth_clients__verified_active_id',
+          Filter: '(id < $1)',
+          'Rows Removed by Filter': 1000,
+        },
+      },
+    )
+    expect(() => assertPaginationPlanShape(filtered)).toThrow('cursor in its Index Cond')
+
+    const unrelatedIdCondition = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients WHERE id < $1 ORDER BY id DESC LIMIT $2',
+      {
+        Plan: {
+          'Node Type': 'Index Scan',
+          'Relation Name': 'oauth_clients',
+          'Index Name': 'idx_oauth_clients__verified_active_id',
+          'Index Cond': '(id = owner_user_id)',
+          Filter: '(id < $1)',
+        },
+      },
+    )
+    expect(() => assertPaginationPlanShape(unrelatedIdCondition)).toThrow(
+      'cursor in its Index Cond',
     )
   })
 
@@ -131,6 +167,7 @@ describe('verified OAuth client listing EXPLAIN plan', () => {
               'Node Type': 'Index Scan',
               'Relation Name': 'oauth_clients',
               'Index Name': 'idx_oauth_clients__verified_active_id',
+              'Index Cond': '(id < $1)',
             },
           ],
         },
