@@ -12740,9 +12740,6 @@ importers:
 
   ts-shared/cache:
     dependencies:
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../utils
       '@vouchington/utils':
         specifier: 0.5.3
         version: 0.5.3
