@@ -13,7 +13,6 @@ Not partitioned — growth: unbounded.
 | `created_via_oauth_client_id` | `uuid`                      | yes      |                              |          |           |           | Immutable OAuth client that created the row through the API or MCP; NULL for session, API-key, and system writes. |
 | `community_id`                | `uuid`                      | no       |                              |          |           |           | The community being applied to.                                                                                   |
 | `user_id`                     | `uuid`                      | no       |                              |          |           |           | The user who submitted the application.                                                                           |
-| `answers`                     | `jsonb`                     | no       |                              |          |           |           | JSON object with answers keyed by question ID.                                                                    |
 | `reviewed_at`                 | `timestamp with time zone`  | yes      |                              |          |           |           | When a moderator reviewed the application.                                                                        |
 | `reviewed_by_id`              | `uuid`                      | yes      |                              |          |           |           | Moderator who reviewed the application.                                                                           |
 | `approved_at`                 | `timestamp with time zone`  | yes      |                              |          |           |           | When the application was approved. Mutually exclusive with rejected_at.                                           |
@@ -26,7 +25,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `community_applications_identity_key`: `UNIQUE (community_id, id)`
 
 **Check constraints:**
 
@@ -46,6 +46,7 @@ _none_
 
 **Indexes:**
 
+- `community_applications_identity_key`: `CREATE UNIQUE INDEX community_applications_identity_key ON public.community_applications USING btree (community_id, id)`
 - `community_applications_pkey`: `CREATE UNIQUE INDEX community_applications_pkey ON public.community_applications USING btree (id)`
 - `idx_comm_apps__pending`: `CREATE UNIQUE INDEX idx_comm_apps__pending ON public.community_applications USING btree (community_id, user_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_community_applications__community_id`: `CREATE INDEX idx_community_applications__community_id ON public.community_applications USING btree (community_id)`
