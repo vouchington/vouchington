@@ -1,16 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-import React from 'react'
-
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-
-import { PostForm } from '../../post-form'
-
+/* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import type { Ref } from 'react'
+import { vi } from 'vitest'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { Post } from '@/types/posts'
 
-const mockRouterPush = vi.fn<VitestLooseMock>()
-
-const mockRouterBack = vi.fn<VitestLooseMock>()
+export const mockRouterPush = vi.fn<VitestLooseMock>()
+export const mockRouterBack = vi.fn<VitestLooseMock>()
 
 vi.mock(
   import('next/navigation'),
@@ -64,65 +60,67 @@ vi.mock(import('@/lib/api/client/entity-relations'), () => ({
   createEntityRelation: vi.fn<VitestLooseMock>(),
 }))
 
-const { mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+const { mockToastError: toastError, mockToastSuccess: toastSuccess } = vi.hoisted(() => ({
   mockToastError: vi.fn<VitestLooseMock>(),
   mockToastSuccess: vi.fn<VitestLooseMock>(),
 }))
+
+export const mockToastError = toastError
 
 vi.mock(
   import('sonner'),
   () =>
     ({
-      toast: { error: mockToastError, success: mockToastSuccess },
+      toast: { error: toastError, success: toastSuccess },
     }) as unknown as typeof import('sonner'),
 )
 
-vi.mock(import('../../topic-autocomplete'), () => ({
+vi.mock(import('../../../components/posts/topic-autocomplete'), () => ({
   TopicAutocomplete: ({
     onChange,
     inputRef,
   }: {
     onChange: (id: string, name: string) => void
-    inputRef?: React.Ref<HTMLInputElement>
+    inputRef?: Ref<HTMLInputElement>
   }) => (
     <div>
-      <input
+      <Input
         type='text'
         ref={inputRef}
         aria-label='Search topics'
         data-testid='topic-search-input'
         readOnly
       />
-      <button
+      <Button
         type='button'
+        variant='ghost'
         data-testid='topic-autocomplete'
         onClick={() => onChange('topic-1', 'Test Topic')}
       >
         Topic Autocomplete
-      </button>
+      </Button>
     </div>
   ),
 }))
 
+import { createEntityRelation } from '@/lib/api/client/entity-relations'
+import { updateMyFinancialProfile } from '@/lib/api/client/financial-profile'
+import { previewMarkdown } from '@/lib/api/client/markdown'
 import { createPost, updatePost } from '@/lib/api/client/posts'
 
-import { previewMarkdown } from '@/lib/api/client/markdown'
+export const mockCreatePost = vi.mocked(createPost)
+export const mockUpdatePost = vi.mocked(updatePost)
+export const mockPreviewMarkdown = vi.mocked(previewMarkdown)
+export const mockUpdateMyFinancialProfile = vi.mocked(updateMyFinancialProfile)
+export const mockCreateEntityRelation = vi.mocked(createEntityRelation)
 
-import { updateMyFinancialProfile } from '@/lib/api/client/financial-profile'
+// Valid review content: >= 150 chars, >= 30 words, >= 3 sentences.
+export const VALID_REVIEW_CONTENT =
+  'This credit card offers fantastic rewards and I have been using it for over a year now. ' +
+  'The annual fee is absolutely worth every penny when you factor in all the benefits available. ' +
+  'The customer service team is very helpful and responsive, making it my top recommendation.'
 
-import { createEntityRelation } from '@/lib/api/client/entity-relations'
-
-const mockCreatePost = vi.mocked(createPost)
-
-const mockUpdatePost = vi.mocked(updatePost)
-
-const mockPreviewMarkdown = vi.mocked(previewMarkdown)
-
-const mockUpdateMyFinancialProfile = vi.mocked(updateMyFinancialProfile)
-
-const mockCreateEntityRelation = vi.mocked(createEntityRelation)
-
-const mockDiscussion: Post = {
+export const mockDiscussion: Post = {
   id: 'post-1',
   post_type: 'discussion',
   title: 'Existing Title',
@@ -138,42 +136,6 @@ const mockDiscussion: Post = {
   broadcast: 'everyone',
   privacy: 'public',
   is_anonymous: false,
-
   community_id: null,
-
   clearance_status: 'approved',
 }
-
-describe('PostForm', () => {
-  beforeEach(() => {
-    mockRouterPush.mockClear()
-    mockRouterBack.mockClear()
-    mockCreatePost.mockClear()
-    mockUpdatePost.mockClear()
-    mockToastError.mockClear()
-    mockPreviewMarkdown.mockClear()
-    mockUpdateMyFinancialProfile.mockClear()
-    mockCreateEntityRelation.mockClear()
-  })
-
-  it('discussion submit skips empty category rows', async () => {
-    mockCreatePost.mockResolvedValue({ post: { ...mockDiscussion, id: 'new-post' } })
-    mockCreateEntityRelation.mockResolvedValue({
-      created_at: '2024-01-01T00:00:00Z',
-      created_by_id: 'user-1',
-      object_data: {},
-    })
-
-    render(<PostForm postType='discussion' />)
-
-    fireEvent.change(screen.getByPlaceholderText('Write your post...'), {
-      target: { value: 'Some content here' },
-    })
-    fireEvent.click(screen.getByText('Post'))
-
-    await waitFor(() => {
-      expect(mockCreatePost).toHaveBeenCalled()
-    })
-    expect(mockCreateEntityRelation).not.toHaveBeenCalled()
-  })
-})
