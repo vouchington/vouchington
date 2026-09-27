@@ -3,15 +3,13 @@ import {
   resetPostDetailRenderingMocks,
 } from '@/test-helpers/components/posts/post-detail-rendering.mock-support'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/react'
 
 import { PostDetailView as PostDetail } from '../post-detail-view'
 
 import type { Post } from '@/types/posts'
-
-import type { User } from '@/types/user'
 
 describe('PostDetail rendering', () => {
   beforeEach(() => {

@@ -9,7 +9,7 @@ import {
   mockUploadImageFile,
 } from '@/test-helpers/components/posts/post-form-images.mock-support'
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 

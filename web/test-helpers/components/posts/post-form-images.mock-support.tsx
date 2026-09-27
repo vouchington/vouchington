@@ -56,7 +56,6 @@ const { mockToastError: toastError, mockToastSuccess: toastSuccess } = vi.hoiste
 }))
 
 export const mockToastError = toastError
-export const mockToastSuccess = toastSuccess
 
 vi.mock(
   import('sonner'),

@@ -11,10 +11,9 @@ import {
   mockUpdatePost,
 } from '@/test-helpers/components/posts/post-form.mock-support'
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { PostForm } from '../../post-form'
-import type { Post } from '@/types/posts'
 
 describe('PostForm submission', () => {
   beforeEach(() => {

@@ -14,8 +14,6 @@ import { render, screen } from '@testing-library/react'
 
 import { PostDetailView as PostDetail } from '../post-detail-view'
 
-import type { Post } from '@/types/posts'
-
 import type { User } from '@/types/user'
 
 describe('PostDetail rendering', () => {

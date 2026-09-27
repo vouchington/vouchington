@@ -20,8 +20,6 @@ import {
   expectTextareaCmdEnterSubmits,
 } from '@/test-helpers/form-keyboard'
 
-import type { Post } from '@/types/posts'
-
 describe('PostForm', () => {
   beforeEach(() => {
     mockRouterPush.mockClear()
