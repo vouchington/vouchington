@@ -31,6 +31,7 @@
     "@services/images": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
     "@services/notifications": "workspace:^",
+    "@services/post-publication": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",

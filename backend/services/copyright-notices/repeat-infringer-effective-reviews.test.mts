@@ -1,14 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  softDeleteUser,
+  getTestPostImagePlacement,
+  insertTestPost,
+  insertTestImage,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
 import {
   confirmTestRepeatInfringerNoticesConcurrently,
-  confirmTestRepeatInfringerRestriction,
-  createTestRepeatInfringerNotice,
   readTestRepeatInfringerOpenReviewIds,
-  reviewTestRepeatInfringerAppeal,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
 import {
+  acceptCopyrightNoticeAndImposeRestriction,
+  appendCopyrightSubmissionAssessment,
+  createCopyrightAppeal,
+  createCopyrightNoticeAggregate,
+  getCopyrightNoticePrivateAggregate,
+  reviewCopyrightAppeal,
   completeCopyrightMandatoryHumanReview,
   getCopyrightRepeatInfringerAccount,
   recordCopyrightRepeatInfringerDisposition,
@@ -176,3 +186,103 @@ describe('copyright effective incident authority', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 })
+
+async function createTestRepeatInfringerNotice(ownerIds: string[], moderator: PrivateUser) {
+  const targets = await Promise.all(
+    ownerIds.map(async ownerId => {
+      const postId = await insertTestPost({
+        title: `copyright ${crypto.randomUUID()}`,
+        slug: `copyright-${crypto.randomUUID()}`,
+        createdById: ownerId,
+        markdown: 'image',
+      })
+      const imageId = await insertTestImage(ownerId)
+      await insertTestPostImage({ postId, imageId })
+      const placement = await getTestPostImagePlacement(postId, imageId)
+      if (!placement) throw new Error('Test placement missing')
+      return {
+        placementKey: `image-placement:${placement.placement_id}`,
+        placementRevision: placement.placement_revision,
+        imageId,
+        hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
+      }
+    }),
+  )
+  const notice = await createCopyrightNoticeAggregate({
+    jurisdiction: 'us_dmca',
+    receivedAt: new Date(),
+    claimantUserId: null,
+    claimantDisplayName: 'Claimant',
+    claimantContactCiphertext: crypto.randomUUID(),
+    workDescription: crypto.randomUUID(),
+    policyVersion: 'test-v1',
+    initialSubmission: {
+      kind: 'notice',
+      sourceKind: 'signed_in_form',
+      bodyCiphertext: crypto.randomUUID(),
+    },
+    targets,
+  })
+  const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
+  if (!aggregate) throw new Error('Test notice missing')
+  const assessment = await appendCopyrightSubmissionAssessment({
+    submissionId: aggregate.submissions[0]!.id,
+    assessedAt: new Date(),
+    currentUser: moderator,
+    substantiallyCompliant: true,
+  })
+  const restrictions = []
+  const targetsByPlacement = new Map(
+    aggregate.targets.map(target => [target.placement_key, target]),
+  )
+  for (const target of targets) {
+    const saved = targetsByPlacement.get(target.placementKey)
+    if (!saved) throw new Error('Test target missing')
+    const restriction = await acceptCopyrightNoticeAndImposeRestriction({
+      noticeId: notice.id,
+      targetId: saved.id,
+      assessmentId: assessment.id,
+      imposedAt: new Date(),
+      imposedById: null,
+    })
+    restrictions.push({ id: restriction.id, targetId: saved.id })
+  }
+  return { noticeId: notice.id, restrictions }
+}
+
+async function confirmTestRepeatInfringerRestriction(
+  fixture: Awaited<ReturnType<typeof createTestRepeatInfringerNotice>>,
+  moderator: PrivateUser,
+  index = 0,
+) {
+  return completeCopyrightMandatoryHumanReview({
+    currentUser: moderator,
+    noticeId: fixture.noticeId,
+    restrictionId: fixture.restrictions[index]!.id,
+    action: 'confirm',
+    rationale: 'The reviewed restriction is appropriate.',
+    reviewedAt: new Date(),
+  })
+}
+
+async function reviewTestRepeatInfringerAppeal(
+  fixture: Awaited<ReturnType<typeof createTestRepeatInfringerNotice>>,
+  poster: PrivateUser,
+  moderator: PrivateUser,
+  action: 'confirm' | 'reverse',
+  index = 0,
+) {
+  const restriction = fixture.restrictions[index]!
+  const appeal = await createCopyrightAppeal(poster, fixture.noticeId, crypto.randomUUID(), {
+    reason: 'Please review the restriction.',
+    targetIds: [restriction.targetId],
+  })
+  return reviewCopyrightAppeal({
+    submissionId: appeal.submission.id,
+    currentUser: moderator,
+    recommendationId: null,
+    manualFallbackReason: 'The record supports a manual review.',
+    rationale: 'The evidence was reviewed.',
+    decisions: [{ restrictionId: restriction.id, action }],
+  })
+}
