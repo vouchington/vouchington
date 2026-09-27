@@ -11,6 +11,7 @@ import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SyncArticlesButton } from '../sync-articles-button'
+import { ApiError } from '@/lib/api/error'
 
 describe('SyncArticlesButton', () => {
   beforeEach(() => {
@@ -83,7 +84,6 @@ describe('SyncArticlesButton', () => {
   })
 
   it('shows "already triggered recently" toast on 409', async () => {
-    const { ApiError } = await import('@/lib/api/error')
     mockedTrigger.mockRejectedValueOnce(new ApiError('Conflict', 409))
 
     render(<SyncArticlesButton />)
@@ -122,7 +122,6 @@ describe('SyncArticlesButton', () => {
   })
 
   it('surfaces stream-open failures through the REST status probe', async () => {
-    const { ApiError } = await import('@/lib/api/error')
     mockedTrigger.mockResolvedValueOnce({ jobId: 'job-open-fail' })
     mockedGetStatus.mockRejectedValueOnce(new ApiError('Unauthorized', 401))
 

@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
 
 import { PlanCards } from '../plan-cards'
+import type { SubscriptionMembership } from '@/types/api-responses'
 
 describe('PlanCards', () => {
   it('marks Free as current plan when user has no paid membership', () => {

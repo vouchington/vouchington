@@ -4,6 +4,11 @@ import { act, fireEvent, screen } from '@testing-library/react'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+interface Item {
+  id: string
+  label: string
+}
+
 describe('EntityAutocomplete', () => {
   afterEach(() => {
     vi.useRealTimers()

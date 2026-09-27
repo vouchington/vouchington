@@ -1,6 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { MouseEventHandler, ReactNode } from 'react'
 import { vi } from 'vitest'
+import { createUserPathname } from '@/lib/links/entity-href'
 
 const scoreVoteProps = vi.hoisted(() => [] as Array<{ existingVoteChoice?: string }>)
 
@@ -115,7 +116,7 @@ vi.mock(
       }) => (
         <a
           data-testid='user-link'
-          href={`/user/${user.username ?? user.id}/${tab ?? ''}`}
+          href={createUserPathname(user, tab ? `/${tab}` : '')}
           className={className}
           onClick={onClick}
         >

@@ -6,6 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { EntityAutocomplete } from '../entity-autocomplete'
 
+interface Item {
+  id: string
+  label: string
+}
+
 function EntityAutocompleteStoryFixture() {
   return (
     <EntityAutocomplete<Item>

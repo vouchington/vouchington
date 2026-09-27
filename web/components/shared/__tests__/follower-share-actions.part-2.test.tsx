@@ -1,7 +1,4 @@
-import {
-  mockAuth,
-  toast,
-} from '@/test-helpers/components/shared/follower-share-actions.mock-support'
+import { mockAuth } from '@/test-helpers/components/shared/follower-share-actions.mock-support'
 
 import { FollowerShareActions } from '../follower-share-actions'
 
