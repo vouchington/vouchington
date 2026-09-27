@@ -8,9 +8,10 @@ import type { CommunityApplicationQuestion } from '../types.mts'
 import {
   assertApplicationQuestionInputs,
   type ApplicationQuestionFieldType,
+  type ApplicationQuestionInput,
 } from './question-input.mts'
 
-export type { ApplicationQuestionInput } from './question-input.mts'
+export type { ApplicationQuestionInput }
 
 export async function getApplicationQuestions(
   communityId: string,

@@ -218,9 +218,6 @@ CREATE TABLE IF NOT EXISTS community_application_questions (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_q__comm_order ON community_application_questions (community_id, order_index) WHERE deleted_at IS NULL;
 
--- RI-usable index for the community_id FK (the unique index above carries a predicate, so it isn't RI-usable)
-CREATE INDEX IF NOT EXISTS idx_community_application_questions__community_id ON community_application_questions (community_id);
-
 COMMENT ON TABLE community_application_questions IS 'Configurable questions shown to users applying to join a community.';
 COMMENT ON COLUMN community_application_questions.community_id IS 'The community this question belongs to.';
 COMMENT ON COLUMN community_application_questions.question IS 'The question text shown to applicants.';
@@ -295,8 +292,8 @@ CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_apps__pending ON community_applications (community_id, user_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
 
--- RI-usable indexes for the community_id/user_id FKs (the unique index above carries a predicate, so it isn't RI-usable)
-CREATE INDEX IF NOT EXISTS idx_community_applications__community_id ON community_applications (community_id);
+-- RI-usable index for the user_id FK. community_applications_identity_key already leads with community_id;
+-- the pending unique index is partial, so it is not RI-usable.
 CREATE INDEX IF NOT EXISTS idx_community_applications__user_id ON community_applications (user_id);
 
 COMMENT ON TABLE community_applications IS 'Membership applications submitted by users to join a community.';
