@@ -97,9 +97,10 @@ async function main(): Promise<void> {
   if (!(await isGitRepo())) return
 
   // The Claude Code sandbox unsets AGENT_BLACKBOARD_TOKEN (sandbox.credentials.envVars
-  // "deny") and blocks egress to the deployment, so a sandboxed run cannot tell "the
-  // deployment is down" apart from "I was never given the credential to check". Reporting
-  // that as an outage is a false stop-work directive — see docs/development/agent-blackboard.md.
+  // deny; docs/development/agent-sandbox.md#sandbox-credential-deny-list) and blocks egress
+  // to the deployment, so a sandboxed run cannot tell "the deployment is down" apart from
+  // "I was never given the credential to check". Reporting that as an outage is a false
+  // stop-work directive — see docs/development/agent-blackboard.md.
   if (process.env.SANDBOX_RUNTIME) {
     emitContext(
       'agent-blackboard probe skipped: it ran inside the Claude Code sandbox, which unsets ' +

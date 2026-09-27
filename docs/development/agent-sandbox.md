@@ -30,7 +30,9 @@ Every agent tool call in this repo passes through two layers that don't overlap:
 2. **The OS sandbox** (Landlock/seccomp on Linux, the App Sandbox on macOS) — filesystem
    read/write scoping and network allowlisting at the kernel/OS level. This is what
    `sandbox.excludedCommands` bypasses. An excluded command still goes through the hook above; it
-   just isn't also confined by the OS. Codex allow prefix rules also bypass this layer.
+   just isn't also confined by the OS. Codex allow prefix rules also bypass this layer. The same
+   layer unsets `sandbox.credentials.envVars` before a sandboxed command starts
+   ([Sandbox credential deny list](#sandbox-credential-deny-list)).
 
 Narrowing `excludedCommands` only affects layer 2. It does not add or remove any semantic gate.
 
@@ -153,6 +155,43 @@ residual if that env is set; do not grant `/run/user` (formerly filed as jonatha
 [`dev/agent-workspace-sandbox-config.test.mts`](../../dev/agent-workspace-sandbox-config.test.mts) requires the three
 workspace-write lists to stay equal and every Codex writable root to appear in Claude `allowWrite`.
 
+## Sandbox credential deny list
+
+Claude's OS sandbox unsets every name in [`.claude/settings.json`](../../.claude/settings.json)
+`sandbox.credentials.envVars` before a sandboxed command starts. Each entry is `mode` `deny`.
+A command in `sandbox.excludedCommands` runs outside that sandbox and still receives the
+variables. `dev/check-blackboard.mts` stays excluded for that reason: a sandboxed probe cannot
+tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
+([Stop-work gate](agent-blackboard.md#stop-work-gate)).
+
+Codex `[mcp_servers.agent-blackboard].env_vars` forwards `AGENT_BLACKBOARD_URL` and
+`AGENT_BLACKBOARD_TOKEN` into the MCP server. That pass-through is a separate control. Grok
+[`.grok/sandbox.toml`](../../.grok/sandbox.toml) and Cursor
+[`.cursor/sandbox.json`](../../.cursor/sandbox.json) configure writable roots and have no
+credential unset list. This deny list stays on Claude.
+
+[`.claude/settings.json`](../../.claude/settings.json) is the runtime list. The table below is
+the rationale inventory.
+[`dev/agent-sandbox-credentials.test.mts`](../../dev/agent-sandbox-credentials.test.mts) requires
+the two name sets to stay equal, in the same order. Remove a name only when
+[system-dependencies.md](system-dependencies.md), or an equivalent page for the supported local
+environments, shows that credential is obsolete. A missing reference in this repository is not
+that evidence: a developer shell can export a credential this checkout never reads.
+
+<!-- sandbox-credentials-env-vars -->
+
+| Name                                 | Why a sandboxed command must not receive it                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `AGENT_BLACKBOARD_ADMIN_CREDENTIALS` | Admin credential named by [credential recovery](agent-blackboard.md#credential-recovery).                                      |
+| `AGENT_BLACKBOARD_TOKEN`             | Hosted blackboard client credential. The sandboxed SessionStart probe skips instead of treating a withheld token as an outage. |
+| `CLAUDE_CODE_OAUTH_TOKEN`            | Ambient Claude Code credential. This checkout does not issue it.                                                               |
+| `CLOUDSDK_PROXY_PASSWORD`            | Ambient Google Cloud SDK proxy password. This checkout does not issue it.                                                      |
+| `CODEX_FIX_TOKEN`                    | Ambient local credential. This checkout does not issue it.                                                                     |
+| `GH_SESSION_TOKEN`                   | Screenshot-upload session token ([Screenshot Upload Credentials](first-party-dependencies.md#screenshot-upload-credentials)).  |
+| `GITHUB_PERSONAL_ACCESS_TOKEN`       | Ambient GitHub personal access token. Local `gh` reads `~/.config/gh`.                                                         |
+| `SENTRY_AUTH_TOKEN`                  | Source-map upload token used by image publication ([CI](ci.md)). A local shell may export it as well.                          |
+| `SONAR_TOKEN`                        | Ambient Sonar token. This checkout does not issue it.                                                                          |
+
 ## Claude review-skip for dev/ commands
 
 Claude `permissions.allow` pre-approves every `dev/` entrypoint with two blanket rules,
@@ -249,5 +288,7 @@ full decision criteria on when an escalation is a genuine bypass candidate worth
   workspace writable-root parity and shared hook-source guard.
 - [`dev/claude-settings-dev-allow.test.mts`](../../dev/claude-settings-dev-allow.test.mts) — the
   `dev/` allow (blanket plus narrow unsandboxed) and `/../` deny guard.
+- [`dev/agent-sandbox-credentials.test.mts`](../../dev/agent-sandbox-credentials.test.mts) — the
+  `sandbox.credentials.envVars` deny-list guard.
 - [Agent Harness Parity](agent-harness-parity.md) — Claude vs Codex vs Grok vs Cursor sandbox and hook reuse.
 - [`.cursor/README.md`](../../.cursor/README.md) — Cursor CLI sandbox, hooks, and worktree setup.
