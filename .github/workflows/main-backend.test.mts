@@ -75,8 +75,8 @@ describe('main-backend workflow', () => {
     // the only deployable build happened afterwards in the infrastructure repository and never
     // passed through this repository's smoke tests or scans. It now builds and publishes the
     // images that actually get deployed, making the tested image and the deployed image the
-    // same artifact. The build/validate/publish logic lives in publish-backend-images.yml, which
-    // shares the build-backend-images composite action with build-backend.yml's PR validation path.
+    // same artifact. The unified publish-backend-images.yml workflow uses the same composite
+    // action for pull-request validation, merge-group publication, and main reuse fallback.
     expect(publishJob).toContain('uses: ./.github/workflows/publish-backend-images.yml')
     expect(publishJob).toContain('trusted_secret_context: true')
 

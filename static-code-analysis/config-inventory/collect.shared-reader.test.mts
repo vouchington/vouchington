@@ -50,12 +50,20 @@ describe('collectConfigInventory shared reader', () => {
     ])
   })
 
-  it('retains the documented AWS test-role contract for workflow consumers', async () => {
+  it('retains the documented no-ECR AWS test-role contract for image publishers', async () => {
     const ctx = await buildSharedContext(process.cwd())
     const inventory = await collectConfigInventory(ctx)
     const role = inventory.envVars.find(row => row.name === 'AWS_TEST_ROLE_ARN')
 
-    expect(role?.workflows).toEqual(expect.arrayContaining(['.github/workflows/build-backend.yml']))
+    expect(role).toEqual(
+      expect.objectContaining({
+        docs: expect.arrayContaining(['docs/development/reference-ci-ci-job-conditions.md']),
+        workflows: expect.arrayContaining([
+          '.github/workflows/publish-backend-images.yml',
+          '.github/workflows/publish-web-images.yml',
+        ]),
+      }),
+    )
     expect(
       checkWorkflowEnvReferences(ctx, inventory).filter(error =>
         error.includes('AWS_TEST_ROLE_ARN'),

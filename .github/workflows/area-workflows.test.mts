@@ -57,8 +57,10 @@ describe('area workflows', () => {
   // only the nightly run; the live topology check also rejects any grant beyond what it needs.
   it.each(areas)(
     'passes $area exactly the secrets and permissions it needs',
-    ({ caller, workflow }) => {
-      const secrets = Object.keys(workflow.on?.workflow_call?.secrets ?? {})
+    ({ area, caller, workflow }) => {
+      const secrets = Object.keys(workflow.on?.workflow_call?.secrets ?? {}).filter(
+        secret => !(area === 'web' && secret === 'SENTRY_AUTH_TOKEN'),
+      )
       const required: Record<string, string> = {}
       for (const job of Object.values(workflow.jobs ?? {})) {
         for (const [scope, level] of Object.entries(job.permissions ?? {})) {
@@ -69,6 +71,7 @@ describe('area workflows', () => {
       expect(caller.secrets ?? {}).toEqual(
         Object.fromEntries(secrets.map(secret => [secret, `\${{ secrets.${secret} }}`])),
       )
+      expect(Object.hasOwn(caller.secrets ?? {}, 'SENTRY_AUTH_TOKEN')).toBe(false)
       expect(caller.permissions ?? {}).toEqual(required)
     },
   )

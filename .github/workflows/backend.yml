@@ -101,17 +101,16 @@ jobs:
       actions: read
       contents: read
 
-  # Docker image validation. On pull requests it runs only when the image build inputs change; a
-  # merge group builds whenever any source baked into the image changed.
-  build-backend:
+  # Pull requests validate the image without registry writes. Merge groups publish the exact
+  # validated images so main can reuse their trusted immutable digests.
+  validate-backend-images:
     needs: [changes, static-backend]
     if: >-
       needs.changes.outputs.trusted-secret-context == 'true' &&
-      (
-        (github.event_name == 'pull_request' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-backend-infra == 'true')) ||
-        (github.event_name == 'merge_group' && (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-backend == 'true'))
-      )
-    uses: ./.github/workflows/build-backend.yml
+      github.event_name == 'pull_request' &&
+      startsWith(github.ref, 'refs/pull/') &&
+      (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-backend-infra == 'true')
+    uses: ./.github/workflows/publish-backend-images.yml
     with:
       trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
     secrets:
@@ -120,6 +119,26 @@ jobs:
       actions: read
       contents: read
       id-token: write
+      packages: read
+
+  publish-backend-images:
+    needs: [changes, static-backend]
+    if: >-
+      needs.changes.outputs.trusted-secret-context == 'true' &&
+      github.event_name == 'merge_group' &&
+      startsWith(github.ref, 'refs/heads/gh-readonly-queue/main/') &&
+      (needs.changes.outputs.workflow-action-changes == 'true' || needs.changes.outputs.build-backend == 'true')
+    uses: ./.github/workflows/publish-backend-images.yml
+    with:
+      trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
 
   coverage:
     needs: [static-backend, test-backend-modules, test-backend-unit, test-backend-credentialed]
@@ -166,7 +185,8 @@ jobs:
         test-postgres-schema,
         backend-smoke,
         test-explain-analyze,
-        build-backend,
+        validate-backend-images,
+        publish-backend-images,
         coverage,
       ]
     runs-on: ubuntu-latest
@@ -180,4 +200,4 @@ jobs:
         timeout-minutes: 1
         with:
           results: >-
-            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-backend-credentialed":{"result":"${{ needs.test-backend-credentialed.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"build-backend":{"result":"${{ needs.build-backend.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}
+            {"changes":{"result":"${{ needs.changes.result }}"},"static-backend":{"result":"${{ needs.static-backend.result }}"},"test-backend-modules":{"result":"${{ needs.test-backend-modules.result }}"},"test-backend-unit":{"result":"${{ needs.test-backend-unit.result }}"},"test-backend-credentialed":{"result":"${{ needs.test-backend-credentialed.result }}"},"test-postgres-schema":{"result":"${{ needs.test-postgres-schema.result }}"},"backend-smoke":{"result":"${{ needs.backend-smoke.result }}"},"test-explain-analyze":{"result":"${{ needs.test-explain-analyze.result }}"},"validate-backend-images":{"result":"${{ needs.validate-backend-images.result }}"},"publish-backend-images":{"result":"${{ needs.publish-backend-images.result }}"},"coverage":{"result":"${{ needs.coverage.result }}"}}

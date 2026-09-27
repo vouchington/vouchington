@@ -1,7 +1,7 @@
 # Single authoritative dockerignore for the monorepo. Used by both
 # `backend/Dockerfile` and `web/Dockerfile`, with build context set to
-# the repo root in `.github/workflows/build-backend.yml` and
-# `.github/workflows/build-web.yml`. Do not add per-workspace
+# the repo root by `.github/actions/build-backend-images/action.yml` and
+# `.github/actions/build-web-images/action.yml`. Do not add per-workspace
 # `.dockerignore` files; BuildKit's `<dockerfile>.dockerignore`
 # precedence makes parallel rules silently override this file and
 # diverge over time.

@@ -19,11 +19,18 @@ owned by that area, then its required gate reports the result. Codecov is inform
 not gate a pull request or merge group.
 
 Trusted Docker validation builds in
-[`build-backend.yml`](../../.github/workflows/build-backend.yml) and
-[`build-web.yml`](../../.github/workflows/build-web.yml) pass `secrets.AWS_TEST_ROLE_ARN` to
+[`publish-backend-images.yml`](../../.github/workflows/publish-backend-images.yml) and
+[`publish-web-images.yml`](../../.github/workflows/publish-web-images.yml) pass `secrets.AWS_TEST_ROLE_ARN` to
 [`setup-aws`](../../.github/actions/setup-aws/action.yml) for OIDC test and smoke credentials.
 The PR-assumable test role has no ECR authentication or image-push permissions; validation builds
 load their images locally rather than publishing runtime artifacts.
+
+The same reusable workflows publish the smoke-tested and scanned images from trusted merge-group
+runs. Main resolves and verifies those immutable digests first, builds only when an authenticated
+manifest lookup proves a target is absent, and publishes only the remaining missing targets. The
+shared runtime-image path filters select both merge-group publication and main deployment intent;
+test-only and documentation-only main runs keep their validation coverage without requesting an
+image fallback or completed-deploy dispatch.
 
 Main workflows retain their own path-scoped triggers and completed-run deployment receiver. They
 are not a continuation of pull-request or merge-group CI. See [area test suites](ci.md#area-test-suites)

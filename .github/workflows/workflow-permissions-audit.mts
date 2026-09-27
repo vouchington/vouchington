@@ -33,5 +33,7 @@ export function callerCalleePermissionMismatches(topology: WorkflowTopology): st
     documents[callerPath] ??= readWorkflow(callerPath)
     documents[callee.path] ??= readWorkflow(callee.path)
   }
-  return publishedCallerCalleePermissionMismatches(topology, documents)
+  return publishedCallerCalleePermissionMismatches(topology, documents, {
+    comparison: 'inheritance-aware',
+  })
 }

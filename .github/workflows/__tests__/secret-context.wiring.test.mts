@@ -75,9 +75,11 @@ describe('secret-backed workflow context gates (wiring and routing)', () => {
 
   it('skips orchestrated secret-backed jobs on untrusted bot or fork PRs', () => {
     const guardedJobs = [
-      ['backend', 'build-backend'],
+      ['backend', 'validate-backend-images'],
+      ['backend', 'publish-backend-images'],
       ['backend', 'test-backend-credentialed'],
-      ['web', 'build-web'],
+      ['web', 'validate-web-images'],
+      ['web', 'publish-web-images'],
       ['web', 'test-playwright-credentialed'],
     ]
 

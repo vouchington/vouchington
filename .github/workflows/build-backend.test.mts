@@ -35,11 +35,10 @@ type Workflow = {
 
 type CompositeAction = { runs?: { steps?: Step[] } }
 
-// The image builds, smoke tests, and Trivy gate all live in the composite action that
-// build-backend.yml (and publish-backend-images.yml) delegate to -- only the job-level
-// declarations (services, env) stay in the calling workflow file.
+// The image builds, smoke tests, and Trivy gate all live in the composite action that the unified
+// validation/publication workflow delegates to. Only job-level declarations stay in the workflow.
 function readBuildBackendWorkflow(): Workflow {
-  return load(readFileSync('.github/workflows/build-backend.yml', 'utf8')) as Workflow
+  return load(readFileSync('.github/workflows/publish-backend-images.yml', 'utf8')) as Workflow
 }
 
 function readBuildBackendImagesSteps(): Step[] {
@@ -51,7 +50,7 @@ function readBuildBackendImagesSteps(): Step[] {
 
 const deployedNativeAddonSmoke = readFileSync('ci/check-deployed-worker-native-addons.mjs', 'utf8')
 
-describe('build-backend workflow', () => {
+describe('backend image workflow', () => {
   it('runs the deployed Valkey diagnostic in a fresh API image container', () => {
     const step = readBuildBackendImagesSteps().find(
       candidate => candidate.name === 'Run API smoke test',

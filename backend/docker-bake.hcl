@@ -1,13 +1,13 @@
-// Bake plan for the backend API and worker images. build-backend.yml selects
-// one Bake invocation for either API + worker-cpu or all three images, so the
-// cache-busted shared builder stage executes once per validation run.
+// Bake plan for the backend API and worker images. The build-backend-images
+// composite action selects one Bake invocation for either API + worker-cpu or
+// all three images, so the cache-busted shared builder stage executes once per run.
 //
 // Tags and OCI labels are layered in from `docker/metadata-action@v6`
 // bake-files at workflow time, so this HCL file does not hard-code tags.
 //
-// Public validation exports local images only. #10864 owns the durable,
-// repository-independent remote cache and performance design. Private
-// infrastructure owns production image publication.
+// Validation exports local images only; retained publisher workflows push verified
+// images to GHCR. #10864 owns the durable, repository-independent remote cache and
+// performance design. Private infrastructure owns production ECR promotion.
 
 variable "GIT_COMMIT" {
   default = ""

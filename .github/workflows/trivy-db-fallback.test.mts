@@ -34,8 +34,8 @@ function buildSteps(path: string): WorkflowStep[] {
 }
 
 describe('Trivy database fallback workflow contract', () => {
-  // build-backend.yml and build-web.yml each delegate their image build, smoke tests, and Trivy
-  // gate to a composite action, which is shared with the matching publish-*-images.yml workflow.
+  // The unified publisher workflows delegate image build, smoke tests, and Trivy gates to these
+  // validation-only composite actions.
   const buildWorkflowPaths = [
     '.github/actions/build-backend-images/action.yml',
     '.github/actions/build-web-images/action.yml',
