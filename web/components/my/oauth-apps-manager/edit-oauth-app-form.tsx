@@ -24,6 +24,7 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
   const [name, setName] = useState(app.client_name)
   const [redirectUris, setRedirectUris] = useState(() => app.redirect_uris.join('\n'))
   const [saving, setSaving] = useState(false)
+  const [redirectUrisTouched, setRedirectUrisTouched] = useState(false)
   const uris = parseRedirectUris(redirectUris)
   const redirectUriValidation = validateOAuthRedirectUris(uris)
   const changes: UpdateOAuthAppInput = {
@@ -53,12 +54,15 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
         name={name}
         redirectUris={redirectUris}
         redirectUriError={
-          redirectUriValidation.valid
+          !redirectUrisTouched || redirectUriValidation.valid
             ? undefined
             : redirectUriValidationMessage(t, redirectUriValidation.code)
         }
         setName={setName}
-        setRedirectUris={setRedirectUris}
+        setRedirectUris={value => {
+          setRedirectUrisTouched(true)
+          setRedirectUris(value)
+        }}
       />
       {app.verified_at && (
         <p className='text-xs text-muted-foreground'>

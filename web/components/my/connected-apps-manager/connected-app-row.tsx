@@ -70,7 +70,7 @@ export function ConnectedAppRow({ grant, onRevoke }: ConnectedAppRowProps) {
                   lastUsedAt: formatUtcDate(grant.last_used_at, uiLocale),
                 },
               )
-            : t('my.connectedAppsManager.connectedAppRow.authorizedConsentedatNotUsedYet', {
+            : t('settings.connectedApps.authorizedConsentedatNotUsedYet', {
                 consentedAt: formatUtcDate(grant.consented_at, uiLocale),
               })}
         </p>

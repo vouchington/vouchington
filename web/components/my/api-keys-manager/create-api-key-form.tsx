@@ -97,7 +97,7 @@ export function CreateApiKeyForm({
           placeholder={
             selection.keyType === 'rss'
               ? t('extracted.apiKeysManager.createApiKeyForm.eGMyRssReader_2505383d')
-              : t('apiKeyLabelExample.mcp')
+              : t('settings.apiKeys.labelExample.mcp')
           }
           data-pw='api-keys-create-label-input'
         />

@@ -96,6 +96,7 @@ describe('OAuthAppsManager', () => {
     renderManager()
 
     expect(screen.getByText('You have not registered any OAuth apps.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('keeps Register disabled until the details and a scope are filled in', () => {

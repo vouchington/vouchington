@@ -22,17 +22,17 @@ export function redirectUriValidationMessage(
 ): string {
   switch (code) {
     case 'invalid_count':
-      return t('my.oauthAppsManager.redirectUriErrors.invalidCount')
+      return t('settings.oauthApps.redirectUriErrors.invalidCount')
     case 'invalid_uri':
-      return t('my.oauthAppsManager.redirectUriErrors.invalidUri')
+      return t('settings.oauthApps.redirectUriErrors.invalidUri')
     case 'wildcard':
-      return t('my.oauthAppsManager.redirectUriErrors.wildcard')
+      return t('settings.oauthApps.redirectUriErrors.wildcard')
     case 'userinfo_or_fragment':
-      return t('my.oauthAppsManager.redirectUriErrors.userinfoOrFragment')
+      return t('settings.oauthApps.redirectUriErrors.userinfoOrFragment')
     case 'invalid_scheme':
-      return t('my.oauthAppsManager.redirectUriErrors.invalidScheme')
+      return t('settings.oauthApps.redirectUriErrors.invalidScheme')
     case 'duplicate':
-      return t('my.oauthAppsManager.redirectUriErrors.duplicate')
+      return t('settings.oauthApps.redirectUriErrors.duplicate')
   }
 }
 

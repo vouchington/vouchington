@@ -64,7 +64,7 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
 
   function redirectUriErrorMessages() {
     return {
-      invalid_redirect_uri: t('my.oauthAppsManager.redirectUriErrors.invalidUri'),
+      invalid_redirect_uri: t('settings.oauthApps.redirectUriErrors.invalidUri'),
     }
   }
 

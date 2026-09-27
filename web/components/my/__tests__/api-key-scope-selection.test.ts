@@ -113,10 +113,10 @@ describe('oauthScopeAudiences', () => {
 describe('scopeDescriptionMessageKey', () => {
   it('maps every stable catalogue description key to web-localized copy', () => {
     expect(scopeDescriptionMessageKey('mcp_user_full_access')).toBe(
-      'scopeDescription.mcpUserFullAccess',
+      'settings.apiKeys.scopeDescription.mcpUserFullAccess',
     )
     expect(scopeDescriptionMessageKey('mcp_admin_full_access')).toBe(
-      'scopeDescription.mcpAdminFullAccess',
+      'settings.apiKeys.scopeDescription.mcpAdminFullAccess',
     )
   })
 

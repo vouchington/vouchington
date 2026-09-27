@@ -49,6 +49,7 @@ export function RegisterOAuthAppForm({
   const t = useTranslations()
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const [submitting, setSubmitting] = useState(false)
+  const [redirectUrisTouched, setRedirectUrisTouched] = useState(false)
   const uris = parseRedirectUris(draft.redirectUris)
   const redirectUriValidation = validateOAuthRedirectUris(uris)
   const canRegister = hasValidOAuthAppDetails(draft.name, uris) && draft.scopes.length > 0
@@ -66,7 +67,10 @@ export function RegisterOAuthAppForm({
       scopes: draft.scopes,
     })
     setSubmitting(false)
-    if (registered) setDraft(EMPTY_DRAFT)
+    if (registered) {
+      setDraft(EMPTY_DRAFT)
+      setRedirectUrisTouched(false)
+    }
   }
 
   return (
@@ -86,12 +90,15 @@ export function RegisterOAuthAppForm({
         name={draft.name}
         redirectUris={draft.redirectUris}
         redirectUriError={
-          redirectUriValidation.valid
+          !redirectUrisTouched || redirectUriValidation.valid
             ? undefined
             : redirectUriValidationMessage(t, redirectUriValidation.code)
         }
         setName={name => updateDraft({ name })}
-        setRedirectUris={redirectUris => updateDraft({ redirectUris })}
+        setRedirectUris={redirectUris => {
+          setRedirectUrisTouched(true)
+          updateDraft({ redirectUris })
+        }}
       />
       <ChoiceRadioGroup
         idPrefix='oauth-app-client-type'
