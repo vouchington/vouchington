@@ -11440,7 +11440,7 @@
     },
     "GET:/api/v1/copyright-notices/review-queue": {
       "bodyKind": "content",
-      "hash": "cf6778b83a2cca1f3cac21da8be7d3ca573ddc61a9fc9204031365b4358414f8",
+      "hash": "0dbcc8511172f40e05a0a2866bc42b213aa55c35514a29ba667b51c05de9c5f2",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -11884,13 +11884,49 @@
                                   "rationale": {
                                     "required": true,
                                     "schema": {
-                                      "type": "string"
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
                                     }
                                   },
                                   "recommendation": {
                                     "required": true,
                                     "schema": {
-                                      "type": "string"
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "null"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "state": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "type": "literal",
+                                          "value": "completed"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "failed"
+                                        },
+                                        {
+                                          "type": "literal",
+                                          "value": "pending"
+                                        }
+                                      ]
                                     }
                                   }
                                 },
@@ -81895,7 +81931,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "49e36db7544c9f572de666304e92b1a31d88d4eaa275d06c34031c6d57e2ea6f",
+        "hash": "417a96ad52ff3a593c26c294c1a949b8a06f07ef2ec03517b80d601c7b5ac13d",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

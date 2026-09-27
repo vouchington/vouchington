@@ -104,7 +104,9 @@ function CopyrightStaffFormReview({ canSubmit, notice, pending, rationale, submi
       heading='Pending form review'
       description={
         formReview.screening
-          ? `Agent: ${formReview.screening.recommendation}. ${formReview.screening.rationale}`
+          ? formReview.screening.state === 'completed'
+            ? `Agent: ${formReview.screening.recommendation}. ${formReview.screening.rationale}`
+            : `Screening ${formReview.screening.state}. Moderator review required.`
           : formReview.source_kind
       }
       approveLabel='Approve intake'

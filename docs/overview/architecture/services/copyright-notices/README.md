@@ -54,6 +54,13 @@ case-scoped private forwarding correspondence containing the canonical declarati
 contact details, signature, and exact target IDs and URLs; those private details never enter the
 member projection.
 
+The current screening execution, rather than the newest result UUID or any historical clear result,
+owns automatic authority. See [current screening authority](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)
+for the admission boundary and [execution services](../../../../../backend/services/copyright-notices/form-screening-executions.mts) for token fencing.
+Final restriction admission takes placement, form, notice, and assessment locks in that order.
+Human approval commits a genuine human assessment and enforcement request with its intake review.
+Human provenance is the absence of a screening FK, including after the reviewer account is erased.
+
 ## Invariants
 
 - An ordinary appeal is not a US statutory counter-notice.

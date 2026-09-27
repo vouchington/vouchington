@@ -25,6 +25,38 @@ hold, delivery, enforcement, or restoration obligations.
 No caller may update copyright tables directly. In particular, a delivery worker cannot decide that
 a counter-notice is compliant or that a hold is qualifying.
 
+## Current screening authority
+
+One [current execution](../../../backend/services/copyright-notices/form-screening-executions.mts)
+per structured form selects its immutable successful screening result. Intake commits unclaimed
+pending state before enqueue or model work. Starting a new screening immediately blocks new
+automated assessments and restriction admission. Failed attempts keep that block. Duplicate
+wakeups skip live provider claims, expired/failed retries advance the attempt token, and stale
+completion cannot select a result. Identical input and prompt may produce distinct successful
+results; only completion of the current token supplies idempotency.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: intake commits
+  Pending --> Completed: current token succeeds
+  Pending --> Failed: current token fails
+  Failed --> Pending: retry advances token
+  Completed --> Pending: new screening advances token
+  Pending --> Pending: expired claim advances token
+```
+
+Automatic authority requires a current completed clear result for the same intake, an exact
+associated current compliant assessment, complete signed-in statutory fields, and no rejected form
+review. The [canonical predicate](../../../backend/data-stores/psql/migrations/0637-00-00-copyright-structured-submissions.sql)
+is checked again under the form fence at enforcement claim and final admission. Pending/failed
+staff projections expose their state with null recommendation and rationale; stale private
+rationale never appears as current. A staff approval during either state creates human authority.
+
+Restriction admission and screening start serialize under the form fence. A restriction admitted
+first stays effective, including before its action delivery runs. A newer pending attempt blocks
+remaining targets in a partially processed request. Re-screening never lifts an existing takedown,
+changes its revision/deadline, or gates its delivery workers.
+
 ## Delivery obligations
 
 Each claimant receipt, poster restriction notice, status update, and counter-notice forwarding is
