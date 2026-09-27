@@ -7,6 +7,7 @@
 -- edited-in-place: migrated agent_models enum from gpt-5-nano/gpt-4o to gpt-5.4-nano (deprecation, see docs/development/docs-moved-to-vouchington-docs.md)
 -- edited-in-place: swapped 'english' to 'voucha_english' text search config (unaccent support)
 -- edited-in-place: removed no-op stat_posts__root_parent_deleted extended statistics (measured; kept per-column ANALYZE)
+-- edited-in-place: removed posts.structured_data; typed facts live in post_data_point_facts
 -- Merged from: 0010-00-00-posts.sql, 0270-00-00-post-data-point-topics.sql
 
 -- ==========================================================================
@@ -92,11 +93,14 @@ CREATE TABLE IF NOT EXISTS posts (
   archived_at TIMESTAMPTZ,
   archived_by_id UUID REFERENCES users ON DELETE SET NULL,
 
-  -- structured data (data point posts)
+  -- data point discriminator; one-to-one facts live in post_data_point_facts
   data_point_vertical TEXT,
-  structured_data JSONB,
-  CONSTRAINT chk_structured_data_post_type CHECK (structured_data IS NULL OR post_type = 'data_point'),
-  CONSTRAINT chk_data_point_vertical_consistency CHECK ((data_point_vertical IS NULL) = (structured_data IS NULL)),
+  CONSTRAINT chk_posts_data_point_vertical_known CHECK (
+    data_point_vertical IS NULL OR data_point_vertical IN ('credit_card', 'bank_account')
+  ),
+  CONSTRAINT chk_posts_data_point_vertical_type CHECK (
+    data_point_vertical IS NULL OR post_type = 'data_point'
+  ),
 
   -- link post: single external URL (FK to urls created in 0050; ON DELETE RESTRICT because the
   -- biconditional CHECK below forbids a NULL url_id on link posts, so SET NULL would violate it)
@@ -261,7 +265,6 @@ BEFORE UPDATE OF
   archived_at,
   archived_by_id,
   data_point_vertical,
-  structured_data,
   declared_language,
   bedrock_nova_multimodal_v1_input_sha256,
   bedrock_nova_multimodal_v1_embedding,
@@ -372,25 +375,10 @@ CREATE INDEX IF NOT EXISTS idx_posts__archived_at
 ON posts (archived_at, id DESC)
 WHERE deleted_at IS NULL AND archived_at IS NOT NULL;
 
--- GIN index for full JSONB queries on structured_data
-CREATE INDEX IF NOT EXISTS idx_posts__structured_data
-  ON posts USING GIN (structured_data jsonb_path_ops)
-  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
-
 -- filtering by vertical (most common filter)
 CREATE INDEX IF NOT EXISTS idx_posts__data_point_vertical
   ON posts (data_point_vertical, id DESC)
   WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL;
-
--- expression index for querying by topic_id stored inside structured_data
-CREATE INDEX IF NOT EXISTS idx_posts__structured_data__topic_id
-  ON posts ((structured_data->>'topic_id'))
-  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
-
--- expression index for querying by result (approved/denied/etc.) inside structured_data
-CREATE INDEX IF NOT EXISTS idx_posts__structured_data__result
-  ON posts ((structured_data->>'result'))
-  WHERE structured_data IS NOT NULL AND deleted_at IS NULL;
 
 -- root-post visibility lookups: privacy filter checks root post broadcast/creator for comments
 CREATE INDEX IF NOT EXISTS idx_posts__root_post_visibility
@@ -423,8 +411,7 @@ COMMENT ON COLUMN posts.votes_snapshot_xmax IS 'Upper transaction-ID boundary of
 COMMENT ON COLUMN posts.votes_snapshot_xip_count IS 'Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.';
 COMMENT ON COLUMN posts.archived_at IS 'Timestamp when this post was archived; NULL means not archived.';
 COMMENT ON COLUMN posts.archived_by_id IS 'User who archived this post; NULL if not archived or user was deleted.';
-COMMENT ON COLUMN posts.data_point_vertical IS 'Discriminator for the structured data point schema (credit_card, bank_account). NULL for non-data-point posts.';
-COMMENT ON COLUMN posts.structured_data IS 'Structured JSONB payload for data point posts. Schema is determined by data_point_vertical.';
+COMMENT ON COLUMN posts.data_point_vertical IS 'Discriminator for the data point fact schema (credit_card, bank_account). NULL for non-data-point posts. A non-null value requires a matching post_data_point_facts row.';
 COMMENT ON COLUMN posts.latest_clearance_change_id IS 'Most recent clearance transition for this post. FK added after post_clearance_changes because the tables reference each other.';
 COMMENT ON COLUMN posts.approved_at IS 'Set when the current derived clearance status is approved.';
 COMMENT ON COLUMN posts.rejected_at IS 'Set when the current derived clearance status is rejected.';
@@ -773,7 +760,8 @@ CREATE TABLE IF NOT EXISTS post_data_point_topics (
   order_index INT NOT NULL DEFAULT 0 CHECK (order_index >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (post_id, topic_id)
+  PRIMARY KEY (post_id, topic_id),
+  CONSTRAINT uq_post_data_point_topics__post_id__order_index UNIQUE (post_id, order_index)
 ) PARTITION BY RANGE (post_id);
 
 CREATE OR REPLACE TRIGGER trigger_post_data_point_topics_updated_at

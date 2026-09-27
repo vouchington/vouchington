@@ -53,7 +53,11 @@ export async function listLockedReviewSuccessionCandidates(
     .append(buildOtherwisePublicPostEligibilityFilter('candidate', 'root'))
     .append(sql`) AS is_otherwise_public,
       succession.id AS succession_id,
-      succession.topic_ids AS succession_topic_ids
+      (
+        SELECT ARRAY_AGG(topic.topic_id ORDER BY topic.topic_id)
+        FROM review_succession_topics topic
+        WHERE topic.review_succession_id = succession.id
+      ) AS succession_topic_ids
     FROM group_reviews grouped
     JOIN posts candidate ON candidate.id = grouped.id
     JOIN posts root ON root.id = COALESCE(candidate.root_id, candidate.id)

@@ -297,7 +297,7 @@ COMMENT ON COLUMN individual_rewards_program_point_valuations.note IS 'Free-text
 -- ============================================================================
 
 -- Self-reported financial summary that can optionally pre-fill structured data point forms.
--- Each data point captures its own snapshot in structured_data; this is just a convenience cache.
+-- Each data point captures its own snapshot in post_data_point_facts; this is just a convenience cache.
 CREATE TABLE IF NOT EXISTS individual_financial_profiles (
   individual_id UUID PRIMARY KEY REFERENCES individuals ON DELETE CASCADE,
 

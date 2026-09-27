@@ -3,6 +3,8 @@
 Root reviews with the same non-null author and exact nonempty rated-topic set form a succession
 group. Publication reconciliation chooses the newest currently public review, automatically archives
 older public predecessors, and records immutable archive-time evidence in `review_successions`.
+The exact nonempty topic set is `review_succession_topics`, each row referencing the succession and
+a retained topic identity. Later rating edits do not change that set.
 
 ```mermaid
 stateDiagram-v2

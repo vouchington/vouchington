@@ -10,7 +10,12 @@ export async function listReviewSuccessionsForPostIds(
   const ids = normalizeReviewSuccessionPostIds(postIds)
   if (ids.length === 0) return []
   const { rows } = await read<ReviewSuccession>(sql`/* listReviewSuccessionsForPostIds */
-    SELECT id, predecessor_post_id, successor_post_id, author_user_id, topic_ids,
+    SELECT id, predecessor_post_id, successor_post_id, author_user_id,
+      (
+        SELECT ARRAY_AGG(topic.topic_id ORDER BY topic.topic_id)
+        FROM review_succession_topics topic
+        WHERE topic.review_succession_id = review_successions.id
+      ) AS topic_ids,
       predecessor_archived_at, automatically_restored_at, manual_override_at
     FROM review_successions
     WHERE predecessor_post_id = ANY(${ids}::uuid[])

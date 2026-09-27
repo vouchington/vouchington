@@ -9,6 +9,8 @@ import {
   assertReviewTopicsAllowReviews,
   assertValidReviewTopicRatings,
 } from '../validate-review-topic-ratings.mts'
+import { persistPostDataPointFacts } from '@services/data-points/persist-facts'
+import type { StructuredDataPoint } from '@voucha/types/entities/data-point'
 import { insertPostDataPointTopics } from '../data-point-topics.mts'
 import { createCommunityPostReview } from '@services/communities/publications/add'
 import { createPostRevision, computePostChanges } from '@services/post-revisions'
@@ -46,7 +48,9 @@ export async function applyPostTransactionSideEffects({
     postType !== 'comment' && post.community_id
       ? createCommunityPostReview(creator.id, post.id, post.community_id, options, 'unfinalized')
       : Promise.resolve(null)
-  const changes = computePostChanges(null, post)
+  const revisionSource =
+    postType === 'data_point' ? { ...post, structured_data: updates.structured_data ?? null } : post
+  const changes = computePostChanges(null, revisionSource)
   const [, , , , , review] = await Promise.all([
     insertReviewRatings({ options, postId: post.id, postType, updates }),
     insertDataPointTopics({ options, postId: post.id, postType, updates }),
@@ -110,8 +114,9 @@ async function insertDataPointTopics({
   updates: CreatePostInput
 }): Promise<void> {
   if (postType !== 'data_point') return
-  const dpTopicIds = (updates.structured_data as { topic_ids: string[] }).topic_ids
-  await insertPostDataPointTopics(postId, dpTopicIds, options)
+  const structuredData = updates.structured_data as StructuredDataPoint
+  await persistPostDataPointFacts(postId, structuredData, options)
+  await insertPostDataPointTopics(postId, structuredData.topic_ids, options)
 }
 
 /**

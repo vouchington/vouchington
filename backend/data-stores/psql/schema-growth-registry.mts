@@ -70,6 +70,7 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['rss_feed_items', defaultRange('id')],
   ['post_review_topic_ratings', defaultRange('post_id')],
   ['post_data_point_topics', defaultRange('post_id')],
+  ['post_data_point_facts', defaultRange('post_id')],
   ['post_explicit_topic_categories', defaultRange('post_id')],
   ['post_topic_recommendations', defaultRange('post_id')],
   ['post_autotagger_results', defaultRange('post_id')],

@@ -15,17 +15,12 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'post_clearance_changes.metadata',
     'post_moderation_dispositions.evidence',
     'post_revisions.changes',
-    'posts.structured_data',
     'report_integrity_flags.details',
     'review_dispute_lifecycle_changes.metadata',
     'topic_revisions.changes',
     'vote_integrity_flags.details',
   ]),
-  uuidArray: new Set([
-    'post_category_finalizations.actor_user_ids',
-    'post_category_finalizations.admission_response_topic_ids',
-    'review_successions.topic_ids',
-  ]),
+  uuidArray: new Set<string>([]),
   missingForeignKey: new Set([
     'activitypub_distribution_checkpoints.activity_id',
     'activitypub_distribution_checkpoints.last_remote_actor_id',

@@ -39,14 +39,13 @@ export async function insertPost({
         post_type, title, markdown, created_by_id, parent_id, root_id, community_id,
         broadcast, privacy, is_anonymous, bedrock_nova_multimodal_v1_content_sha256,
         llm_moderation_content_sha256,
-        data_point_vertical, structured_data, declared_language, url_id, creation_source_url_id
+        data_point_vertical, declared_language, url_id, creation_source_url_id
       )
       VALUES (
         ${defaults.postType}, ${updates.title || ''}, ${updates.markdown || ''}, ${creator.id},
         ${scope.parentId}, ${scope.rootId}, ${scope.communityId}, ${defaults.broadcast},
         ${defaults.privacy}, ${defaults.isAnonymous}, ${embeddingContentSha},
         ${moderationContentSha}, ${updates.data_point_vertical ?? null},
-        ${updates.structured_data != null ? JSON.stringify(updates.structured_data) : null},
         ${normalizeContentLanguageTag(updates.declared_language ?? null)},
         ${defaults.postType === 'link' ? (updates.url_id ?? null) : null}, ${sourceUrlId ?? null}
       )

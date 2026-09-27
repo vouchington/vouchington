@@ -33,6 +33,7 @@ export const POST_PARTITION_TABLES: string[] = [
   'posts',
   'post_review_topic_ratings',
   'post_data_point_topics',
+  'post_data_point_facts',
   'post_explicit_topic_categories',
   'post_topic_recommendations',
   'post_autotagger_results',
