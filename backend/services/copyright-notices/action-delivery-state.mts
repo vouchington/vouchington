@@ -112,7 +112,7 @@ export async function reopenCopyrightRestoreIntentInTransaction(
     WHERE intent.copyright_restriction_id = restriction.id
       AND intent.id = ${intentId}
       AND intent.action = 'restore'
-      AND intent.state IN ('blocked', 'failed')
+      AND intent.state = 'blocked'
     RETURNING target.copyright_notice_id, intent.id)
     INSERT INTO copyright_notice_lifecycle_events (
       copyright_notice_id, event_type, copyright_notice_action_intent_id

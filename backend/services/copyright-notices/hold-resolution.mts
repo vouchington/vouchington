@@ -10,7 +10,7 @@ import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import {
   replayEligibleCopyrightRestoreIntentsInTransaction,
-  selectRetryableCopyrightRestoreIntentIds,
+  selectBlockedCopyrightRestoreIntentIds,
 } from './court-hold-restore-replay.mts'
 
 type ResolveCopyrightLegalHoldInput = {
@@ -100,7 +100,7 @@ export async function resolveCopyrightLegalHoldInTransaction(
   `)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: assessment.copyright_notice_id,
-    intentIds: await selectRetryableCopyrightRestoreIntentIds(
+    intentIds: await selectBlockedCopyrightRestoreIntentIds(
       assessment.copyright_notice_id,
       transaction,
     ),

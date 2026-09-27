@@ -6,7 +6,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
   replayEligibleCopyrightRestoreIntentsInTransaction,
-  selectRetryableCopyrightRestoreIntentIds,
+  selectBlockedCopyrightRestoreIntentIds,
 } from './court-hold-restore-replay.mts'
 import { lockCopyrightNoticeHoldPlacements } from './hold-placement-locks.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
@@ -123,7 +123,7 @@ export async function appendCopyrightLegalHoldAssessment(input: {
   `)
   const replayedIds = await replayEligibleCopyrightRestoreIntentsInTransaction({
     noticeId: submissionRows[0].copyright_notice_id,
-    intentIds: await selectRetryableCopyrightRestoreIntentIds(
+    intentIds: await selectBlockedCopyrightRestoreIntentIds(
       submissionRows[0].copyright_notice_id,
       transaction,
     ),

@@ -290,7 +290,8 @@ fenced across every placement on the case before taking the case lock. Replay re
 intent, restriction, deadline, revision and restoration authority, and rechecks their current
 validity and placement safety. Queue delivery starts only after commit. The existing reconciler
 automatically retries eligible historical blocked restorations after the filing is assessed or
-the final hold resolves; it does not periodically reopen exhausted provider failures. Unresolved
+the final hold resolves. Neither hold transitions nor periodic recovery reopen exhausted provider
+failures; these require explicit operator replay. Unresolved
 or unassessed filings and another independent restriction never lose their protective effect.
 
 ## Jurisdiction and public meaning

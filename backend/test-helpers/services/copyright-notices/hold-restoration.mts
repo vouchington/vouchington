@@ -4,6 +4,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import { resolveCopyrightLegalHoldInTransaction } from '../../../services/copyright-notices/hold-resolution.mts'
 import { lockCopyrightNoticeHoldPlacements } from '../../../services/copyright-notices/hold-placement-locks.mts'
 import { replayFailedCopyrightActionIntent } from '../../../services/copyright-notices/action-delivery-state.mts'
+import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
 import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
@@ -30,6 +31,33 @@ export async function rollbackTestCopyrightHoldResolution(
   await using transaction = await beginTransaction()
   const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
   return result.intentIds
+}
+
+/** Returns exactly the committed intent IDs the public resolution will enqueue. */
+export async function commitTestCopyrightHoldResolution(
+  input: Parameters<typeof resolveCopyrightLegalHoldInTransaction>[0],
+): Promise<string[]> {
+  await using transaction = await beginTransaction()
+  const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
+  await transaction.commit()
+  return result.intentIds
+}
+
+/** Supplies an owned candidate directly, proving the locked automatic replay rechecks its state. */
+export async function replayTestAutomaticCopyrightRestore(input: {
+  noticeId: string
+  intentId: string
+  now: Date
+}): Promise<string[]> {
+  await using transaction = await beginTransaction()
+  await lockCopyrightNoticeHoldPlacements(input.noticeId, transaction)
+  await transaction(sql`SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`)
+  return await replayEligibleCopyrightRestoreIntentsInTransaction({
+    noticeId: input.noticeId,
+    intentIds: [input.intentId],
+    now: input.now,
+    query: transaction,
+  })
 }
 
 /** Proves manual replay waits at the placement fence while its intent row remains independently lockable. */

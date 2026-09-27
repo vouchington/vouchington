@@ -14,22 +14,22 @@ import { isCurrentPlacementForIntent } from './action-delivery-mutation.mts'
 import { reopenCopyrightRestoreIntentInTransaction } from './action-delivery-state.mts'
 
 /** The caller owns the complete case placement fence and notice lock through commit. */
-export async function selectRetryableCopyrightRestoreIntentIds(
+export async function selectBlockedCopyrightRestoreIntentIds(
   noticeId: string,
   query: TransactionQuery,
 ): Promise<string[]> {
-  const { rows } = await query<{ id: string }>(sql`/* selectRetryableCopyrightRestoreIntentIds */
+  const { rows } = await query<{ id: string }>(sql`/* selectBlockedCopyrightRestoreIntentIds */
     SELECT intent.id FROM copyright_notice_action_intents intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE target.copyright_notice_id = ${noticeId}
-      AND intent.action = 'restore' AND intent.state IN ('blocked', 'failed')
+      AND intent.action = 'restore' AND intent.state = 'blocked'
     ORDER BY intent.id
   `)
   return rows.map(row => row.id)
 }
 
-/** Rechecks the original authority; resets only delivery fields and audits in the owner's transaction. */
+/** Rechecks blocked state and original authority; provider failures require explicit operator replay. */
 export async function replayEligibleCopyrightRestoreIntentsInTransaction(input: {
   noticeId: string
   intentIds: string[]
@@ -51,7 +51,7 @@ async function replayOriginalRestore(
   const statement = copyrightActionDeliveryFacts()
   statement.append(sql`/* replayEligibleCopyrightRestoreIntentsInTransaction:lock */
     WHERE intent.id = ${intentId} AND target.copyright_notice_id = ${input.noticeId}
-      AND intent.action = 'restore' AND intent.state IN ('blocked', 'failed')
+      AND intent.action = 'restore' AND intent.state = 'blocked'
     FOR UPDATE OF intent, restriction, target`)
   const { rows } = await input.query<CopyrightActionFacts>(statement)
   const facts = rows[0]
