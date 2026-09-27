@@ -253,14 +253,20 @@ outcome. It never describes the claimant as the proven owner or the poster as an
 
 ## Repeat-infringer incidents
 
-A human `confirm` or `modify` on a restriction creates one incident for the post author of that
-placement. Several targets on the same notice stay one incident. A guest placement with no author
-does not create one. Restoration does not remove the incident. `reverse` removes it, and so does a
-staff disposition of `withdrawn`, `duplicate`, or `abusive`.
+A human `confirm` on a restriction or its immutable appeal review creates one incident for the
+non-deleted post author of that placement. A `reverse` in either review is terminal for that
+restriction and dominates every confirmation. Appeal decisions synchronize incidents in the same
+transaction. Several targets on the same notice stay one incident per account; reversing one
+target preserves incidents supported by other confirmed targets. A guest placement with no author
+does not create one. Restoration does not remove the incident. A staff disposition of `withdrawn`,
+`duplicate`, or `abusive` makes its incident non-operative.
 
 The second operative incident for an account opens a staff review. Opening that review does not
-suspend or delete the account. Similarity candidates never create an incident. Retention durations
-remain an operator policy and are not stored here.
+suspend or delete the account. Incident synchronization locks all affected authors through the
+existing publication lifecycle lock before recomputing state, and the open-review unique index
+keeps concurrent confirmations at one open review. A later reversal does not close an already-open
+review; enforcing outcomes recheck the operative threshold. Similarity candidates never create an
+incident. Retention durations remain an operator policy and are not stored here.
 
 A copyright reviewer may close that review with `warning` or `no_action`, or record `withdrawn`,
 `duplicate`, or `abusive` on one incident. Each decision stores an encrypted rationale. `restrict`

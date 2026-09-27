@@ -78,5 +78,13 @@ terminate are administrator-only and suspend the account through `@services/user
 blocks unsuspend until a later reinstatement row. Account deletion refuses while an operative
 incident or an unresolved qualifying legal hold remains.
 
+[`repeat-infringer-incidents.mts`](repeat-infringer-incidents.mts) derives incidents from the initial
+restriction review and immutable appeal reviews. A reversal dominates confirmation for that exact
+restriction. Appeal review synchronizes incidents before committing. The sorted union of target
+authors and existing incident owners uses the canonical author publication lifecycle lock before
+recomputation, excludes deleted authors from desired incidents, and creates one open threshold
+review through the existing partial unique index. Reversals preserve an open review for staff
+disposition; restrict and terminate recheck the operative threshold at decision time.
+
 The durable workflow and operator recovery contract are documented in
 [`COPYRIGHT-NOTICES.md`](../../../docs/requirements/moderation/COPYRIGHT-NOTICES.md).

@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
+import { lockCopyrightRepeatInfringerNoticeAccounts } from './repeat-infringer-locks.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
 
@@ -16,7 +17,8 @@ export async function syncCopyrightRepeatInfringerIncidents(
   noticeId: string,
   transaction: OwnedTransaction,
 ): Promise<void> {
-  const changed = await transaction<{ account_user_id: string; operative: boolean }>(sql`
+  const accountIds = await lockCopyrightRepeatInfringerNoticeAccounts(noticeId, transaction)
+  await transaction(sql`
     /* syncCopyrightRepeatInfringerIncidents */
     WITH owners AS (
       SELECT DISTINCT post.created_by_id AS account_user_id
@@ -27,9 +29,20 @@ export async function syncCopyrightRepeatInfringerIncidents(
         ON target.placement_key = concat('image-placement:', placement.id)
       JOIN image_placements image_placement ON image_placement.placement_id = placement.id
       JOIN posts post ON post.id = image_placement.post_id
+      JOIN users account ON account.id = post.created_by_id AND account.deleted_at IS NULL
       WHERE target.copyright_notice_id = ${noticeId}
-        AND restriction.human_review_action IN ('confirm', 'modify')
-        AND post.created_by_id IS NOT NULL
+        AND (
+          restriction.human_review_action = 'confirm'
+          OR EXISTS (
+            SELECT 1 FROM copyright_notice_appeal_reviews review
+            WHERE review.copyright_restriction_id = restriction.id AND review.action = 'confirm'
+          )
+        )
+        AND restriction.human_review_action IS DISTINCT FROM 'reverse'
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_notice_appeal_reviews review
+          WHERE review.copyright_restriction_id = restriction.id AND review.action = 'reverse'
+        )
     ), desired AS (
       SELECT owners.account_user_id,
         NOT EXISTS (
@@ -63,25 +76,18 @@ export async function syncCopyrightRepeatInfringerIncidents(
     UNION ALL
     SELECT account_user_id, false FROM cleared
   `)
-  const newlyOperative: string[] = []
-  for (const row of changed.rows) {
-    if (row.operative) newlyOperative.push(row.account_user_id)
-  }
-  if (newlyOperative.length === 0) return
+  if (accountIds.length === 0) return
   await transaction(sql`
     /* syncCopyrightRepeatInfringerIncidents:openReview */
     INSERT INTO copyright_repeat_infringer_reviews (account_user_id, opened_at)
     SELECT incident.account_user_id, CURRENT_TIMESTAMP
     FROM copyright_repeat_infringer_incidents incident
-    JOIN jsonb_array_elements_text(${JSON.stringify(newlyOperative)}::jsonb) AS account(id)
-      ON incident.account_user_id = account.id::uuid
+    JOIN UNNEST(${accountIds}::uuid[]) AS account(id)
+      ON incident.account_user_id = account.id
     WHERE incident.operative
     GROUP BY incident.account_user_id
     HAVING count(*) >= 2
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_repeat_infringer_reviews review
-        WHERE review.account_user_id = incident.account_user_id AND review.outcome IS NULL
-      )
+    ON CONFLICT (account_user_id) WHERE outcome IS NULL DO NOTHING
   `)
 }
 
@@ -95,6 +101,14 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
+  const { rows: identities } = await transaction<{ copyright_notice_id: string }>(sql`
+    /* recordCopyrightRepeatInfringerDisposition:identity */
+    SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents
+    WHERE id = ${input.incidentId}
+  `)
+  const identity = identities[0]
+  assert(identity, 404, 'Copyright repeat-infringer incident not found')
+  await lockCopyrightRepeatInfringerNoticeAccounts(identity.copyright_notice_id, transaction)
   const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
     /* recordCopyrightRepeatInfringerDisposition */
     SELECT copyright_notice_id FROM copyright_repeat_infringer_incidents

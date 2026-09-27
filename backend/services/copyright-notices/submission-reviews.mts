@@ -13,6 +13,7 @@ import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import type { CopyrightHumanReviewAction } from './types.mts'
+import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
 
 type AppealDecision = { restrictionId: string; action: CopyrightHumanReviewAction }
 
@@ -152,6 +153,7 @@ export async function reviewCopyrightAppeal(input: {
     reviewIds.push(rows[0].id)
     if (decision.action === 'reverse') reversalRestrictionIds.push(decision.restrictionId)
   }
+  await syncCopyrightRepeatInfringerIncidents(appeal.copyright_notice_id, transaction)
   await transaction(sql`/* reviewCopyrightAppeal:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
     VALUES (${appeal.copyright_notice_id}, 'appeal_reviewed', ${input.currentUser.id},
