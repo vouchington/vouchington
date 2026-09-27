@@ -26,8 +26,10 @@ describe('searchRssFeedItems read filter', () => {
 
     const urlId1 = await createTestUrlWithHostname()
     const urlId2 = await createTestUrlWithHostname()
+    const ownedCreatedAt = new Date(Date.now() - 60_000)
 
     const readItemId = await insertTestRssFeedItem({
+      createdAt: ownedCreatedAt,
       rssFeedId: feedId,
       urlId: urlId1,
       guid: `read-filter-read-${random}`,
@@ -35,6 +37,7 @@ describe('searchRssFeedItems read filter', () => {
       contentSha256: createHash('sha256').update(`read-${random}`).digest(),
     })
     const unreadItemId = await insertTestRssFeedItem({
+      createdAt: ownedCreatedAt,
       rssFeedId: feedId,
       urlId: urlId2,
       guid: `read-filter-unread-${random}`,
@@ -44,10 +47,40 @@ describe('searchRssFeedItems read filter', () => {
 
     await markRead(user!.id, 'rss_feed_item', readItemId)
 
-    const { results } = await searchRssFeedItems({ read: true, currentUserId: user!.id })
+    const peerTopicId = await insertTestTopic({
+      name: `Read Filter Peer Topic ${random}`,
+      slug: `read-filter-peer-topic-${random}`,
+      createdById: user.id,
+    })
+    const peerFeedId = await insertTestRssFeed({
+      topicId: peerTopicId,
+      title: `Read Filter Peer Feed ${random}`,
+    })
+    const peerUrlId = await createTestUrlWithHostname()
+    const peerIds = await Promise.all(
+      Array.from({ length: 11 }, (_, index) =>
+        insertTestRssFeedItem({
+          rssFeedId: peerFeedId,
+          urlId: peerUrlId,
+          guid: `read-filter-peer-${random}-${index}`,
+          itemData: { title: `Read Peer ${random} ${index}` },
+          contentSha256: createHash('sha256').update(`read-peer-${random}-${index}`).digest(),
+        }),
+      ),
+    )
+    await Promise.all(peerIds.map(peerId => markRead(user.id, 'rss_feed_item', peerId)))
+
+    const unscoped = await searchRssFeedItems({ read: true, currentUserId: user.id })
+    expect(unscoped.results.map(result => result.id)).not.toContain(readItemId)
+
+    const { results } = await searchRssFeedItems({
+      rss_feed_ids: [feedId],
+      read: true,
+      currentUserId: user.id,
+    })
     const ids = results.map(r => r.id)
 
-    expect(ids).toContain(readItemId)
+    expect(ids).toEqual([readItemId])
     expect(ids).not.toContain(unreadItemId)
   })
 
@@ -64,8 +97,10 @@ describe('searchRssFeedItems read filter', () => {
 
     const urlId1 = await createTestUrlWithHostname()
     const urlId2 = await createTestUrlWithHostname()
+    const ownedCreatedAt = new Date(Date.now() - 60_000)
 
     const readItemId = await insertTestRssFeedItem({
+      createdAt: ownedCreatedAt,
       rssFeedId: feedId,
       urlId: urlId1,
       guid: `unread-filter-read-${random}`,
@@ -73,6 +108,7 @@ describe('searchRssFeedItems read filter', () => {
       contentSha256: createHash('sha256').update(`unread-read-${random}`).digest(),
     })
     const unreadItemId = await insertTestRssFeedItem({
+      createdAt: ownedCreatedAt,
       rssFeedId: feedId,
       urlId: urlId2,
       guid: `unread-filter-unread-${random}`,
@@ -82,10 +118,39 @@ describe('searchRssFeedItems read filter', () => {
 
     await markRead(user!.id, 'rss_feed_item', readItemId)
 
-    const { results } = await searchRssFeedItems({ read: false, currentUserId: user!.id })
+    const peerTopicId = await insertTestTopic({
+      name: `Unread Filter Peer Topic ${random}`,
+      slug: `unread-filter-peer-topic-${random}`,
+      createdById: user.id,
+    })
+    const peerFeedId = await insertTestRssFeed({
+      topicId: peerTopicId,
+      title: `Unread Filter Peer Feed ${random}`,
+    })
+    const peerUrlId = await createTestUrlWithHostname()
+    await Promise.all(
+      Array.from({ length: 11 }, (_, index) =>
+        insertTestRssFeedItem({
+          rssFeedId: peerFeedId,
+          urlId: peerUrlId,
+          guid: `unread-filter-peer-${random}-${index}`,
+          itemData: { title: `Unread Peer ${random} ${index}` },
+          contentSha256: createHash('sha256').update(`unread-peer-${random}-${index}`).digest(),
+        }),
+      ),
+    )
+
+    const unscoped = await searchRssFeedItems({ read: false, currentUserId: user.id })
+    expect(unscoped.results.map(result => result.id)).not.toContain(unreadItemId)
+
+    const { results } = await searchRssFeedItems({
+      rss_feed_ids: [feedId],
+      read: false,
+      currentUserId: user.id,
+    })
     const ids = results.map(r => r.id)
 
-    expect(ids).toContain(unreadItemId)
+    expect(ids).toEqual([unreadItemId])
     expect(ids).not.toContain(readItemId)
   })
 
