@@ -2160,7 +2160,7 @@
     },
     "GET:/api/v1/admin/oauth-clients": {
       "bodyKind": "content",
-      "hash": "c73761c7afab09c546c566182eb721e09f8942d3f76bcdbd0c1fbdb27e860eb6",
+      "hash": "499ae10a8af606fde3311137eb10810e98d9dc4adc704c5b35fe6deeda9c3e83",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -2308,6 +2308,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -2315,7 +2318,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -2517,8 +2528,16 @@
                                   "display_account": {
                                     "required": false,
                                     "schema": {
-                                      "name": "PublicDisplayAccount",
-                                      "type": "ref"
+                                      "type": "union",
+                                      "variants": [
+                                        {
+                                          "name": "PublicDisplayAccount",
+                                          "type": "ref"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "is_official_account": {
@@ -13865,7 +13884,7 @@
     },
     "GET:/api/v1/fediverse/instances": {
       "bodyKind": "content",
-      "hash": "82ff3c2d09281cbef54a8d67f314b243bd67b7143dc816f6201b57a6fba06180",
+      "hash": "057f3f22192ec20df66de51d3f17c336b2aa73be74b0ca87eff266646c8a63c2",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -13891,7 +13910,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -13988,6 +14015,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -13995,7 +14025,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -15052,7 +15090,7 @@
     },
     "GET:/api/v1/fediverse/instances/:id": {
       "bodyKind": "content",
-      "hash": "f6472f12c6c23386b64cb4cccc3545382aa077a5da757b5581e4bc4b6837e63f",
+      "hash": "6c013924d43f144253b4cb0a28bd0eb02a98eefc42af905017d604462c399236",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -15078,7 +15116,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -15175,6 +15221,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -15182,7 +15231,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -16609,7 +16666,7 @@
     },
     "GET:/api/v1/hostnames": {
       "bodyKind": "content",
-      "hash": "bf6993614404963e5c4a33257a23e5938dcc147bc5fb5f54db28371d5cc85869",
+      "hash": "e3d144d527e6f5d5f4a39c60f2edb2b3ca98930975f81e7f37abfe1cd0d02d03",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -16635,7 +16692,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -16732,6 +16797,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -16739,7 +16807,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -17447,7 +17523,7 @@
     },
     "GET:/api/v1/hostnames/:id#public": {
       "bodyKind": "content",
-      "hash": "f8cbc05f11578490442e7cf64cf8035b7466a20b8ce22bfeea53b7800bce84cc",
+      "hash": "e1ef97b07a97bc4af28f5f43a2af9809e3d93fb4ff19247b05c433865e2ef044",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -17473,7 +17549,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -17570,6 +17654,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -17577,7 +17664,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -22746,7 +22841,7 @@
     },
     "GET:/api/v1/my/friend-recommendations": {
       "bodyKind": "content",
-      "hash": "a00cf58f49f0b4b01b6a02e4bead6df32083ba75966c8be49a62328e4d88f599",
+      "hash": "90639413054cd6e18d16a2eba14d831fce830ddb80e3a48d87cbb9e3d11bde06",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -22926,6 +23021,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -22933,7 +23031,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -23083,8 +23189,16 @@
                     "display_account": {
                       "required": false,
                       "schema": {
-                        "name": "PublicDisplayAccount",
-                        "type": "ref"
+                        "type": "union",
+                        "variants": [
+                          {
+                            "name": "PublicDisplayAccount",
+                            "type": "ref"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "is_official_account": {
@@ -23183,7 +23297,7 @@
     },
     "GET:/api/v1/my/identity": {
       "bodyKind": "content",
-      "hash": "cf0290a8d2f0f0152a3571f6c8db830f14133cfb30a9df7ef7f352fa5932a513",
+      "hash": "3beb7bd88dad1a7f37467f03d0b9518b1b0e9a28738ce0da15489eab2d4daed3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -23266,7 +23380,15 @@
               "name": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -23316,8 +23438,16 @@
                   "apple_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "bad_faith_reporter_at": {
@@ -23337,8 +23467,16 @@
                   "bluesky_account": {
                     "required": false,
                     "schema": {
-                      "name": "BlueskyAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "BlueskyAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "cards_visibility": {
@@ -23439,7 +23577,15 @@
                   "email_address": {
                     "required": false,
                     "schema": {
-                      "type": "string"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "engagement_emails_enabled": {
@@ -23451,8 +23597,16 @@
                   "facebook_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "fediverse_federation_enabled": {
@@ -23478,15 +23632,31 @@
                   "github_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "google_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "hn_discussions": {
@@ -23504,7 +23674,15 @@
                   "individual_id": {
                     "required": false,
                     "schema": {
-                      "type": "string"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "is_agent": {
@@ -23543,8 +23721,16 @@
                   "linkedin_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "markdown": {
@@ -23583,8 +23769,16 @@
                   "microsoft_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "moderation_email_cadence": {
@@ -23679,7 +23873,15 @@
                   "phone_number": {
                     "required": false,
                     "schema": {
-                      "type": "string"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "processing_restricted_at": {
@@ -23897,6 +24099,9 @@
                         {
                           "type": "literal",
                           "value": "x"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -23904,7 +24109,15 @@
                   "username": {
                     "required": false,
                     "schema": {
-                      "type": "string"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "verification_completed_at": {
@@ -24048,8 +24261,16 @@
                   "x_account": {
                     "required": false,
                     "schema": {
-                      "name": "OAuthAccountInfo",
-                      "type": "ref"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "name": "OAuthAccountInfo",
+                          "type": "ref"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   }
                 },
@@ -27358,7 +27579,7 @@
     },
     "GET:/api/v1/my/referral-clicks": {
       "bodyKind": "content",
-      "hash": "ba13e4df57ff9dab9979c0203cad83ca88d31395d924d759e58cdce2af1d90f4",
+      "hash": "1a5026008f93e6faf657340117aabac656b0e07b636c6fa256defd3c54f3024a",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -27493,6 +27714,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -27500,7 +27724,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -27610,8 +27842,16 @@
                     "display_account": {
                       "required": false,
                       "schema": {
-                        "name": "PublicDisplayAccount",
-                        "type": "ref"
+                        "type": "union",
+                        "variants": [
+                          {
+                            "name": "PublicDisplayAccount",
+                            "type": "ref"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "is_official_account": {
@@ -28776,7 +29016,7 @@
     },
     "GET:/api/v1/posts": {
       "bodyKind": "content",
-      "hash": "a401286b382c588a47e9d46ad35f45f399796f5d0ceb24ca5f17cfb380cd6512",
+      "hash": "b231228abb00c9d0e5ac093173ae3c514b31320266994842c6aa17a468a8e40e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -28944,7 +29184,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -29041,6 +29289,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -29048,7 +29299,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -35447,7 +35706,7 @@
     },
     "GET:/api/v1/rss-feeds": {
       "bodyKind": "content",
-      "hash": "5851a5bed6fc8578bcc3e9901f0f9a78ad9e55bcab3aa5e8bf57465077c5c955",
+      "hash": "078a304a1fc4b8df2d26a5cef29822af458fd9f81c34aa36ba20170a22f31a8c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -35473,7 +35732,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -35570,6 +35837,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -35577,7 +35847,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -37270,7 +37548,7 @@
     },
     "GET:/api/v1/topic-recommendations/top-hashtags": {
       "bodyKind": "content",
-      "hash": "fa34e1e8ad762b089ed3cfda093201257d0242fa93ba8cc4cfd465558a625c9e",
+      "hash": "aa0f029b58efb1c576d74c394a60e25a1261c0aae5d58a2e28dc78853e97a851",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -37296,7 +37574,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -37393,6 +37679,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -37400,7 +37689,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -40539,7 +40836,7 @@
     },
     "GET:/api/v1/users#search": {
       "bodyKind": "content",
-      "hash": "7d41e67bfdbfef8149dcd0be28fdb827f6761f0795c38355c797a4d0efe7f9fb",
+      "hash": "e48e41549062c1b875af0fbdb7fd8745c7a4c853d7fefcfc3333a2cbcfe63597",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -40565,7 +40862,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -40662,6 +40967,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -40669,7 +40977,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -40819,7 +41135,15 @@
               "name": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -40929,6 +41253,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -40936,7 +41263,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -41364,8 +41699,16 @@
                             "apple_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "bad_faith_reporter_at": {
@@ -41385,8 +41728,16 @@
                             "bluesky_account": {
                               "required": false,
                               "schema": {
-                                "name": "BlueskyAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "BlueskyAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "country": {
@@ -41406,28 +41757,60 @@
                             "email_address": {
                               "required": false,
                               "schema": {
-                                "type": "string"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
                               }
                             },
                             "facebook_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "github_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "google_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "hn_discussions": {
@@ -41453,8 +41836,16 @@
                             "linkedin_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "membership_plan": {
@@ -41479,8 +41870,16 @@
                             "microsoft_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "pending_verification_session_id": {
@@ -41500,7 +41899,15 @@
                             "phone_number": {
                               "required": false,
                               "schema": {
-                                "type": "string"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "type": "null"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
                               }
                             },
                             "processing_restricted_at": {
@@ -41689,8 +42096,16 @@
                             "x_account": {
                               "required": false,
                               "schema": {
-                                "name": "OAuthAccountInfo",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "OAuthAccountInfo",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             }
                           },
@@ -41718,8 +42133,16 @@
                             "display_account": {
                               "required": false,
                               "schema": {
-                                "name": "PublicDisplayAccount",
-                                "type": "ref"
+                                "type": "union",
+                                "variants": [
+                                  {
+                                    "name": "PublicDisplayAccount",
+                                    "type": "ref"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
                               }
                             },
                             "is_official_account": {
@@ -41792,7 +42215,7 @@
     },
     "GET:/api/v1/users/:id/vouch-context": {
       "bodyKind": "content",
-      "hash": "03facfe33276d3f260c9839d4d4486de483c5e70d4444009e7f611d0f18b54b7",
+      "hash": "e47b21bab887a0514ceebfaf1433e4f47fb8c70c1ce02c072ac2b48d821baa2e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -41907,8 +42330,16 @@
                           "display_account": {
                             "required": false,
                             "schema": {
-                              "name": "PublicDisplayAccount",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "PublicDisplayAccount",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "is_official_account": {
@@ -42101,6 +42532,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42108,7 +42542,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -42250,7 +42692,7 @@
     },
     "GET:/api/v1/users/:idOrSlug": {
       "bodyKind": "content",
-      "hash": "e63e223bef042d1a68efb77002493f5816538b2a67b7f50ec3de6b50c56ac4cb",
+      "hash": "a4aaf67cefbaadda5bd6cff66056bc60a9ee9143ae619de6016628b58e768217",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -42276,7 +42718,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -42373,6 +42823,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42380,7 +42833,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -42530,7 +42991,15 @@
               "name": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -42640,6 +43109,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -42647,7 +43119,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -43550,8 +44030,16 @@
                           "apple_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "bad_faith_reporter_at": {
@@ -43571,8 +44059,16 @@
                           "bluesky_account": {
                             "required": false,
                             "schema": {
-                              "name": "BlueskyAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "BlueskyAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "country": {
@@ -43592,28 +44088,60 @@
                           "email_address": {
                             "required": false,
                             "schema": {
-                              "type": "string"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             }
                           },
                           "facebook_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "github_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "google_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "hn_discussions": {
@@ -43639,8 +44167,16 @@
                           "linkedin_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "membership_plan": {
@@ -43665,8 +44201,16 @@
                           "microsoft_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "pending_verification_session_id": {
@@ -43686,7 +44230,15 @@
                           "phone_number": {
                             "required": false,
                             "schema": {
-                              "type": "string"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             }
                           },
                           "processing_restricted_at": {
@@ -43875,8 +44427,16 @@
                           "x_account": {
                             "required": false,
                             "schema": {
-                              "name": "OAuthAccountInfo",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "OAuthAccountInfo",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           }
                         },
@@ -43901,8 +44461,16 @@
                           "display_account": {
                             "required": false,
                             "schema": {
-                              "name": "PublicDisplayAccount",
-                              "type": "ref"
+                              "type": "union",
+                              "variants": [
+                                {
+                                  "name": "PublicDisplayAccount",
+                                  "type": "ref"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "is_official_account": {
@@ -44017,7 +44585,7 @@
     },
     "GET:/api/v1/users/:idOrSlug#self": {
       "bodyKind": "content",
-      "hash": "c9b0f3c076d91f110542f6fbcafeb310b83ab7e361e7909753c4b8d17f82a08f",
+      "hash": "53d62c709e809aa4e60eaf3c0d52250f6b41b06f26539f6dc80414d376917269",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -44043,7 +44611,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -44140,6 +44716,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -44147,7 +44726,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -44297,7 +44884,15 @@
               "name": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -45103,8 +45698,16 @@
                       "apple_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "bad_faith_reporter_at": {
@@ -45124,8 +45727,16 @@
                       "bluesky_account": {
                         "required": false,
                         "schema": {
-                          "name": "BlueskyAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "BlueskyAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "country": {
@@ -45145,28 +45756,60 @@
                       "email_address": {
                         "required": false,
                         "schema": {
-                          "type": "string"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
                       },
                       "facebook_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "github_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "google_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "hn_discussions": {
@@ -45192,8 +45835,16 @@
                       "linkedin_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "membership_plan": {
@@ -45218,8 +45869,16 @@
                       "microsoft_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "pending_verification_session_id": {
@@ -45239,7 +45898,15 @@
                       "phone_number": {
                         "required": false,
                         "schema": {
-                          "type": "string"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
                       },
                       "processing_restricted_at": {
@@ -45428,8 +46095,16 @@
                       "x_account": {
                         "required": false,
                         "schema": {
-                          "name": "OAuthAccountInfo",
-                          "type": "ref"
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "OAuthAccountInfo",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       }
                     },
@@ -46268,7 +46943,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/posts/:listType": {
       "bodyKind": "content",
-      "hash": "8ebe26bca2ab589c62b8268bd502ca52a61352a183cd5dcab3bc4785ae6b54b0",
+      "hash": "3f56b802b323853a1dfe6fda7e8871f648f9a16d100427fcb567da3074d8e9f1",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -46294,7 +46969,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -46391,6 +47074,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -46398,7 +47084,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -47671,7 +48365,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/rss-feed-items/:listType": {
       "bodyKind": "content",
-      "hash": "6304ce19bab162bdd0a784efc90bc01be5c0e5fdc8d25af49ed0273d88e31bd3",
+      "hash": "d8c3df8ec6a735e2a55bddba16e5217c35fdfe9b5b75930ae9a67f7fce541b8a",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -47697,7 +48391,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -47794,6 +48496,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -47801,7 +48506,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -49970,7 +50683,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/rss-feeds/:listType": {
       "bodyKind": "content",
-      "hash": "5851a5bed6fc8578bcc3e9901f0f9a78ad9e55bcab3aa5e8bf57465077c5c955",
+      "hash": "078a304a1fc4b8df2d26a5cef29822af458fd9f81c34aa36ba20170a22f31a8c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -49996,7 +50709,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -50093,6 +50814,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -50100,7 +50824,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -51348,7 +52080,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/topics/:listType": {
       "bodyKind": "content",
-      "hash": "2ac9e7fa5380eba2caeef99b2b9e9fd5a5a1e9699dcf7c5fd0c2f3bbcbfe6427",
+      "hash": "5646920ea7606d7fee5f47fee2f8df270d07f65c4e6ecf1a7458019fdd48d2bf",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -51374,7 +52106,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -51471,6 +52211,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -51478,7 +52221,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -52227,7 +52978,7 @@
     },
     "GET:/api/v1/users/:idOrSlug/users/:listType": {
       "bodyKind": "content",
-      "hash": "399597e28d2816f7534fae9b15bb2f8accf78bb75fd3696d16902925d1438ae5",
+      "hash": "2a88c53590387938e8e685ac409dce26e29507915016dfd0666c3ecd234297db",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -52362,6 +53113,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -52369,7 +53123,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {
@@ -52546,8 +53308,16 @@
                         "display_account": {
                           "required": false,
                           "schema": {
-                            "name": "PublicDisplayAccount",
-                            "type": "ref"
+                            "type": "union",
+                            "variants": [
+                              {
+                                "name": "PublicDisplayAccount",
+                                "type": "ref"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "is_official_account": {
@@ -58571,7 +59341,7 @@
     },
     "POST:/api/v1/auth/oauth/authorizations/:flowId/complete#authenticated": {
       "bodyKind": "content",
-      "hash": "8682f53eb815254b90ab359c5cf7525abbeb98177156e54b9b645417bcda5672",
+      "hash": "43844b70d0962317077f8f569d9fec23e504e4d4c1de71fbb635317c8f56456b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -58589,7 +59359,15 @@
                   "email_address": {
                     "required": true,
                     "schema": {
-                      "type": "string"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   },
                   "id": {
@@ -58624,7 +59402,15 @@
                   "username": {
                     "required": true,
                     "schema": {
-                      "type": "string"
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   }
                 },
@@ -65068,7 +65854,7 @@
     },
     "POST:/api/v1/topics": {
       "bodyKind": "content",
-      "hash": "d8dc6fdffab34506360f394dc9940635960f602635056936ba326e87a2d7094f",
+      "hash": "94ed63fb31cb3042e5f1fc9227399e8804b8e8dd0d62350ea6c87342135b0a2f",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -65094,7 +65880,15 @@
               "individual_id": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "is_agent": {
@@ -65191,6 +65985,9 @@
                     {
                       "type": "literal",
                       "value": "x"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 }
@@ -65198,7 +65995,15 @@
               "username": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "verification_status": {

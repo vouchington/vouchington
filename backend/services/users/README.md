@@ -22,6 +22,14 @@ Core user service — authentication flows, authorization, profile management, s
 | `delete`                                           | Immediate account privacy fence and durable deletion request                          |
 | `delete-oauth-pii`                                 | GDPR erasure: scrub OAuth PII on deletion                                             |
 
+## User view row shapes
+
+The [public and private user views](../../data-stores/psql/views/2025-01-01-view-users.sql)
+return SQL `NULL` for absent display accounts, linked OAuth providers, primary contact rows, and
+nullable base-user fields. Keep those values nullable in the
+[canonical user types](../../types/entities/user.mts); JSON serialization preserves `null` rather
+than omitting a selected column.
+
 ## Related
 
 - Parent: [../AGENTS.md](../AGENTS.md)

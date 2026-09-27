@@ -17,15 +17,19 @@ function extractDescriptions(xml: string): string[] {
 
 describe('buildPostsRssFeed', () => {
   let testUser: PrivateUser
+  let testUsername: string
   let uniqueSlugPrefix: string
   let adminUser: PrivateUser
+  let adminUsername: string
   let adminSlugPrefix: string
 
   beforeAll(async () => {
-    testUser = await createTestUserDirect({ username: `rsspost${randomHex()}` })
+    testUsername = `rsspost${randomHex()}`
+    testUser = await createTestUserDirect({ username: testUsername })
     uniqueSlugPrefix = `rss-post-test-${randomHex()}`
+    adminUsername = `rsspostadmin${randomHex()}`
     adminUser = await createTestUserDirect({
-      username: `rsspostadmin${randomHex()}`,
+      username: adminUsername,
       administrator: true,
     })
     adminSlugPrefix = `rss-admin-test-${randomHex()}`
@@ -40,7 +44,7 @@ describe('buildPostsRssFeed', () => {
       markdown: 'This is **bold** and *italic* text',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
 
     expect(xml).toContain('<strong>bold</strong>')
     expect(xml).toContain('<em>italic</em>')
@@ -58,7 +62,7 @@ describe('buildPostsRssFeed', () => {
       markdown: 'Visit [Example](https://example.com) for more',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
 
     expect(xml).toContain('href="https://example.com"')
     expect(xml).toContain('Example')
@@ -75,7 +79,7 @@ describe('buildPostsRssFeed', () => {
       markdown: 'Normal text\n\n```html\n<script>alert("xss")</script>\n```',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
 
     // Script tags must not appear in description blocks
     const descriptions = extractDescriptions(xml)
@@ -94,7 +98,7 @@ describe('buildPostsRssFeed', () => {
       markdown: '<b>raw html</b> should be escaped',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
     const descriptions = extractDescriptions(xml)
 
     // Non-admin: raw HTML should be escaped, not rendered
@@ -112,7 +116,7 @@ describe('buildPostsRssFeed', () => {
       markdown: '',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
 
     // Should still produce valid XML
     expect(xml).toContain('<?xml')
@@ -128,7 +132,7 @@ describe('buildPostsRssFeed', () => {
       markdown: '![photo](https://example.com/photo.jpg)',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
     const descriptions = extractDescriptions(xml)
     const matchingDesc = descriptions.find(d => d.includes('photo'))
     expect(matchingDesc).toBeDefined()
@@ -138,9 +142,8 @@ describe('buildPostsRssFeed', () => {
 
   it('excludes deleted posts', async () => {
     const slug = `${uniqueSlugPrefix}-del-${randomHex()}`
-    const deletedUser = await createTestUserDirect({
-      username: `rssdel${randomHex()}`,
-    })
+    const deletedUsername = `rssdel${randomHex()}`
+    const deletedUser = await createTestUserDirect({ username: deletedUsername })
     const postId = await insertTestPost({
       title: `RSS Deleted Post ${randomHex()}`,
       slug,
@@ -150,14 +153,14 @@ describe('buildPostsRssFeed', () => {
 
     await deleteTestPost(postId)
 
-    const xml = await buildPostsRssFeed({ username: deletedUser.username })
+    const xml = await buildPostsRssFeed({ username: deletedUsername })
 
     // Should not contain the deleted post content
     expect(xml).not.toContain('This post is deleted')
   }, 30_000)
 
   it('produces valid RSS XML structure', async () => {
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
 
     expect(xml).toContain('<?xml version="1.0" encoding="utf-8"?>')
     expect(xml).toContain('<rss')
@@ -186,7 +189,7 @@ describe('buildPostsRssFeed', () => {
       markdown: '[link](https://example.com)',
     })
 
-    const xml = await buildPostsRssFeed({ username: testUser.username })
+    const xml = await buildPostsRssFeed({ username: testUsername })
     const descriptions = extractDescriptions(xml)
     const matchingDesc = descriptions.find(d => d.includes('example.com'))
     expect(matchingDesc).toBeDefined()
@@ -202,7 +205,7 @@ describe('buildPostsRssFeed', () => {
       markdown: '<b>admin bold</b> and *italic*',
     })
 
-    const xml = await buildPostsRssFeed({ username: adminUser.username })
+    const xml = await buildPostsRssFeed({ username: adminUsername })
     const descriptions = extractDescriptions(xml)
     const matchingDesc = descriptions.find(d => d.includes('admin bold'))
     expect(matchingDesc).toBeDefined()
@@ -221,7 +224,7 @@ describe('buildPostsRssFeed', () => {
       markdown: '[admin link](https://example.com/admin)',
     })
 
-    const xml = await buildPostsRssFeed({ username: adminUser.username })
+    const xml = await buildPostsRssFeed({ username: adminUsername })
     const descriptions = extractDescriptions(xml)
     const matchingDesc = descriptions.find(d => d.includes('example.com/admin'))
     expect(matchingDesc).toBeDefined()

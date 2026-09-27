@@ -10,7 +10,10 @@ export const SYSTEM_USERNAMES = new Set([
 ])
 
 export function isOfficialAccount(
-  user: { roles?: readonly string[]; is_agent?: boolean; username?: string } | null | undefined,
+  user:
+    | { roles?: readonly string[]; is_agent?: boolean; username?: string | null }
+    | null
+    | undefined,
 ): boolean {
   if (!user) return false
   if (user.roles?.some(role => OFFICIAL_ROLE_SLUGS.has(role))) return true

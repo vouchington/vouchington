@@ -561,7 +561,14 @@
           "type": "string"
         },
         "individual_id": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "is_agent": {
           "type": "boolean"
@@ -603,20 +610,45 @@
           "type": "array"
         },
         "use_display_name_from": {
-          "enum": [
-            "apple",
-            "facebook",
-            "github",
-            "google",
-            "linkedin",
-            "microsoft",
-            "username",
-            "x"
-          ],
-          "type": "string"
+          "anyOf": [
+            {
+              "const": "apple"
+            },
+            {
+              "const": "facebook"
+            },
+            {
+              "const": "github"
+            },
+            {
+              "const": "google"
+            },
+            {
+              "const": "linkedin"
+            },
+            {
+              "const": "microsoft"
+            },
+            {
+              "const": "username"
+            },
+            {
+              "const": "x"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "username": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "verification_status": {
           "anyOf": [
@@ -6133,7 +6165,14 @@
                 "const": "user"
               },
               "display_account": {
-                "$ref": "#/components/schemas/PublicDisplayAccount"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PublicDisplayAccount"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "id": {
                 "type": "string"
@@ -6207,20 +6246,45 @@
                 "type": "array"
               },
               "use_display_name_from": {
-                "enum": [
-                  "apple",
-                  "facebook",
-                  "github",
-                  "google",
-                  "linkedin",
-                  "microsoft",
-                  "username",
-                  "x"
-                ],
-                "type": "string"
+                "anyOf": [
+                  {
+                    "const": "apple"
+                  },
+                  {
+                    "const": "facebook"
+                  },
+                  {
+                    "const": "github"
+                  },
+                  {
+                    "const": "google"
+                  },
+                  {
+                    "const": "linkedin"
+                  },
+                  {
+                    "const": "microsoft"
+                  },
+                  {
+                    "const": "username"
+                  },
+                  {
+                    "const": "x"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "username": {
-                "type": "string"
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
               },
               "verification_status": {
                 "anyOf": [
@@ -10198,7 +10262,14 @@
           "type": "string"
         },
         "name": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "required": ["email_address", "id", "name"],
@@ -10475,20 +10546,45 @@
           "type": "array"
         },
         "use_display_name_from": {
-          "enum": [
-            "apple",
-            "facebook",
-            "github",
-            "google",
-            "linkedin",
-            "microsoft",
-            "username",
-            "x"
-          ],
-          "type": "string"
+          "anyOf": [
+            {
+              "const": "apple"
+            },
+            {
+              "const": "facebook"
+            },
+            {
+              "const": "github"
+            },
+            {
+              "const": "google"
+            },
+            {
+              "const": "linkedin"
+            },
+            {
+              "const": "microsoft"
+            },
+            {
+              "const": "username"
+            },
+            {
+              "const": "x"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "username": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "verification_status": {
           "anyOf": [
@@ -13880,7 +13976,14 @@
               "const": "user"
             },
             "display_account": {
-              "$ref": "#/components/schemas/PublicDisplayAccount"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PublicDisplayAccount"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "display_name": {
               "type": "string"
@@ -13950,20 +14053,45 @@
               "type": "array"
             },
             "use_display_name_from": {
-              "enum": [
-                "apple",
-                "facebook",
-                "github",
-                "google",
-                "linkedin",
-                "microsoft",
-                "username",
-                "x"
-              ],
-              "type": "string"
+              "anyOf": [
+                {
+                  "const": "apple"
+                },
+                {
+                  "const": "facebook"
+                },
+                {
+                  "const": "github"
+                },
+                {
+                  "const": "google"
+                },
+                {
+                  "const": "linkedin"
+                },
+                {
+                  "const": "microsoft"
+                },
+                {
+                  "const": "username"
+                },
+                {
+                  "const": "x"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "username": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "verification_status": {
               "anyOf": [
@@ -14616,7 +14744,14 @@
             "const": "user"
           },
           "display_account": {
-            "$ref": "#/components/schemas/PublicDisplayAccount"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicDisplayAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "type": "string"
@@ -14690,20 +14825,45 @@
             "type": "array"
           },
           "use_display_name_from": {
-            "enum": [
-              "apple",
-              "facebook",
-              "github",
-              "google",
-              "linkedin",
-              "microsoft",
-              "username",
-              "x"
-            ],
-            "type": "string"
+            "anyOf": [
+              {
+                "const": "apple"
+              },
+              {
+                "const": "facebook"
+              },
+              {
+                "const": "github"
+              },
+              {
+                "const": "google"
+              },
+              {
+                "const": "linkedin"
+              },
+              {
+                "const": "microsoft"
+              },
+              {
+                "const": "username"
+              },
+              {
+                "const": "x"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "username": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "verification_status": {
             "anyOf": [

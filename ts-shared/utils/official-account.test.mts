@@ -13,10 +13,12 @@ describe('isOfficialAccount', () => {
   it('returns false for regular user with no roles or is_agent', () => {
     expect(isOfficialAccount({ roles: [], username: 'regular-user' })).toBe(false)
     expect(isOfficialAccount({ roles: ['user'] })).toBe(false)
+    expect(isOfficialAccount({ roles: [], username: null })).toBe(false)
   })
 
   it('returns true for official role slugs', () => {
     expect(isOfficialAccount({ roles: ['administrator'] })).toBe(true)
+    expect(isOfficialAccount({ roles: ['administrator'], username: null })).toBe(true)
     expect(isOfficialAccount({ roles: ['investor'] })).toBe(true)
     expect(isOfficialAccount({ roles: ['customer_support'] })).toBe(true)
   })

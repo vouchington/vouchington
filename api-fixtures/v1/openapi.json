@@ -574,7 +574,14 @@
             "type": "string"
           },
           "individual_id": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "is_agent": {
             "type": "boolean"
@@ -616,20 +623,45 @@
             "type": "array"
           },
           "use_display_name_from": {
-            "enum": [
-              "apple",
-              "facebook",
-              "github",
-              "google",
-              "linkedin",
-              "microsoft",
-              "username",
-              "x"
-            ],
-            "type": "string"
+            "anyOf": [
+              {
+                "const": "apple"
+              },
+              {
+                "const": "facebook"
+              },
+              {
+                "const": "github"
+              },
+              {
+                "const": "google"
+              },
+              {
+                "const": "linkedin"
+              },
+              {
+                "const": "microsoft"
+              },
+              {
+                "const": "username"
+              },
+              {
+                "const": "x"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "username": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "verification_status": {
             "anyOf": [
@@ -6156,7 +6188,14 @@
                   "const": "user"
                 },
                 "display_account": {
-                  "$ref": "#/components/schemas/PublicDisplayAccount"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PublicDisplayAccount"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "id": {
                   "type": "string"
@@ -6230,20 +6269,45 @@
                   "type": "array"
                 },
                 "use_display_name_from": {
-                  "enum": [
-                    "apple",
-                    "facebook",
-                    "github",
-                    "google",
-                    "linkedin",
-                    "microsoft",
-                    "username",
-                    "x"
-                  ],
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "const": "apple"
+                    },
+                    {
+                      "const": "facebook"
+                    },
+                    {
+                      "const": "github"
+                    },
+                    {
+                      "const": "google"
+                    },
+                    {
+                      "const": "linkedin"
+                    },
+                    {
+                      "const": "microsoft"
+                    },
+                    {
+                      "const": "username"
+                    },
+                    {
+                      "const": "x"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "username": {
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 },
                 "verification_status": {
                   "anyOf": [
@@ -10226,7 +10290,14 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           }
         },
         "required": ["email_address", "id", "name"],
@@ -10503,20 +10574,45 @@
             "type": "array"
           },
           "use_display_name_from": {
-            "enum": [
-              "apple",
-              "facebook",
-              "github",
-              "google",
-              "linkedin",
-              "microsoft",
-              "username",
-              "x"
-            ],
-            "type": "string"
+            "anyOf": [
+              {
+                "const": "apple"
+              },
+              {
+                "const": "facebook"
+              },
+              {
+                "const": "github"
+              },
+              {
+                "const": "google"
+              },
+              {
+                "const": "linkedin"
+              },
+              {
+                "const": "microsoft"
+              },
+              {
+                "const": "username"
+              },
+              {
+                "const": "x"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "username": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "verification_status": {
             "anyOf": [
@@ -13914,7 +14010,14 @@
                 "const": "user"
               },
               "display_account": {
-                "$ref": "#/components/schemas/PublicDisplayAccount"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PublicDisplayAccount"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "display_name": {
                 "type": "string"
@@ -13984,20 +14087,45 @@
                 "type": "array"
               },
               "use_display_name_from": {
-                "enum": [
-                  "apple",
-                  "facebook",
-                  "github",
-                  "google",
-                  "linkedin",
-                  "microsoft",
-                  "username",
-                  "x"
-                ],
-                "type": "string"
+                "anyOf": [
+                  {
+                    "const": "apple"
+                  },
+                  {
+                    "const": "facebook"
+                  },
+                  {
+                    "const": "github"
+                  },
+                  {
+                    "const": "google"
+                  },
+                  {
+                    "const": "linkedin"
+                  },
+                  {
+                    "const": "microsoft"
+                  },
+                  {
+                    "const": "username"
+                  },
+                  {
+                    "const": "x"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "username": {
-                "type": "string"
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
               },
               "verification_status": {
                 "anyOf": [
@@ -14650,7 +14778,14 @@
               "const": "user"
             },
             "display_account": {
-              "$ref": "#/components/schemas/PublicDisplayAccount"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PublicDisplayAccount"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "id": {
               "type": "string"
@@ -14724,20 +14859,45 @@
               "type": "array"
             },
             "use_display_name_from": {
-              "enum": [
-                "apple",
-                "facebook",
-                "github",
-                "google",
-                "linkedin",
-                "microsoft",
-                "username",
-                "x"
-              ],
-              "type": "string"
+              "anyOf": [
+                {
+                  "const": "apple"
+                },
+                {
+                  "const": "facebook"
+                },
+                {
+                  "const": "github"
+                },
+                {
+                  "const": "google"
+                },
+                {
+                  "const": "linkedin"
+                },
+                {
+                  "const": "microsoft"
+                },
+                {
+                  "const": "username"
+                },
+                {
+                  "const": "x"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "username": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "verification_status": {
               "anyOf": [
@@ -21358,7 +21518,14 @@
                                     "const": "user"
                                   },
                                   "display_account": {
-                                    "$ref": "#/components/schemas/PublicDisplayAccount"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/PublicDisplayAccount"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "id": {
                                     "type": "string"
@@ -21432,20 +21599,45 @@
                                     "type": "array"
                                   },
                                   "use_display_name_from": {
-                                    "enum": [
-                                      "apple",
-                                      "facebook",
-                                      "github",
-                                      "google",
-                                      "linkedin",
-                                      "microsoft",
-                                      "username",
-                                      "x"
-                                    ],
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "const": "apple"
+                                      },
+                                      {
+                                        "const": "facebook"
+                                      },
+                                      {
+                                        "const": "github"
+                                      },
+                                      {
+                                        "const": "google"
+                                      },
+                                      {
+                                        "const": "linkedin"
+                                      },
+                                      {
+                                        "const": "microsoft"
+                                      },
+                                      {
+                                        "const": "username"
+                                      },
+                                      {
+                                        "const": "x"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "username": {
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
                                   },
                                   "verification_status": {
                                     "anyOf": [
@@ -25030,7 +25222,14 @@
                               "const": "user"
                             },
                             "apple_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "bad_faith_reporter_at": {
                               "anyOf": [
@@ -25043,7 +25242,14 @@
                               ]
                             },
                             "bluesky_account": {
-                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "cards_visibility": {
                               "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -25077,13 +25283,27 @@
                               "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
                             "email_address": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "engagement_emails_enabled": {
                               "type": "boolean"
                             },
                             "facebook_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "fediverse_federation_enabled": {
                               "type": "boolean"
@@ -25095,10 +25315,24 @@
                               "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
                             "github_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "google_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "hn_discussions": {
                               "type": "boolean"
@@ -25107,7 +25341,14 @@
                               "type": "string"
                             },
                             "individual_id": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "is_agent": {
                               "type": "boolean"
@@ -25126,7 +25367,14 @@
                               ]
                             },
                             "linkedin_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "markdown": {
                               "anyOf": [
@@ -25152,7 +25400,14 @@
                               ]
                             },
                             "microsoft_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "moderation_email_cadence": {
                               "enum": ["daily", "selected_days", "weekly"],
@@ -25195,7 +25450,14 @@
                               ]
                             },
                             "phone_number": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "processing_restricted_at": {
                               "anyOf": [
@@ -25308,20 +25570,45 @@
                               ]
                             },
                             "use_display_name_from": {
-                              "enum": [
-                                "apple",
-                                "facebook",
-                                "github",
-                                "google",
-                                "linkedin",
-                                "microsoft",
-                                "username",
-                                "x"
-                              ],
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "username": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "verification_completed_at": {
                               "anyOf": [
@@ -25422,7 +25709,14 @@
                               ]
                             },
                             "x_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -25544,7 +25838,14 @@
                           "const": "user"
                         },
                         "apple_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "bad_faith_reporter_at": {
                           "anyOf": [
@@ -25557,7 +25858,14 @@
                           ]
                         },
                         "bluesky_account": {
-                          "$ref": "#/components/schemas/BlueskyAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "cards_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -25591,13 +25899,27 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "email_address": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "engagement_emails_enabled": {
                           "type": "boolean"
                         },
                         "facebook_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "fediverse_federation_enabled": {
                           "type": "boolean"
@@ -25609,10 +25931,24 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "github_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "google_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hn_discussions": {
                           "type": "boolean"
@@ -25621,7 +25957,14 @@
                           "type": "string"
                         },
                         "individual_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "is_agent": {
                           "type": "boolean"
@@ -25640,7 +25983,14 @@
                           ]
                         },
                         "linkedin_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "markdown": {
                           "anyOf": [
@@ -25666,7 +26016,14 @@
                           ]
                         },
                         "microsoft_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "moderation_email_cadence": {
                           "enum": ["daily", "selected_days", "weekly"],
@@ -25709,7 +26066,14 @@
                           ]
                         },
                         "phone_number": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "processing_restricted_at": {
                           "anyOf": [
@@ -25817,20 +26181,45 @@
                           ]
                         },
                         "use_display_name_from": {
-                          "enum": [
-                            "apple",
-                            "facebook",
-                            "github",
-                            "google",
-                            "linkedin",
-                            "microsoft",
-                            "username",
-                            "x"
-                          ],
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "username": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "verification_completed_at": {
                           "anyOf": [
@@ -25931,7 +26320,14 @@
                           ]
                         },
                         "x_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -26299,7 +26695,14 @@
                           "additionalProperties": false,
                           "properties": {
                             "email_address": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "id": {
                               "type": "string"
@@ -26321,7 +26724,14 @@
                               "type": "array"
                             },
                             "username": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -26629,7 +27039,14 @@
                           "additionalProperties": false,
                           "properties": {
                             "email_address": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "id": {
                               "type": "string"
@@ -26651,7 +27068,14 @@
                               "type": "array"
                             },
                             "username": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -48306,7 +48730,14 @@
                           "const": "user"
                         },
                         "apple_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "bad_faith_reporter_at": {
                           "anyOf": [
@@ -48319,7 +48750,14 @@
                           ]
                         },
                         "bluesky_account": {
-                          "$ref": "#/components/schemas/BlueskyAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "cards_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -48353,13 +48791,27 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "email_address": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "engagement_emails_enabled": {
                           "type": "boolean"
                         },
                         "facebook_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "fediverse_federation_enabled": {
                           "type": "boolean"
@@ -48371,10 +48823,24 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "github_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "google_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hn_discussions": {
                           "type": "boolean"
@@ -48383,7 +48849,14 @@
                           "type": "string"
                         },
                         "individual_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "is_agent": {
                           "type": "boolean"
@@ -48405,7 +48878,14 @@
                           ]
                         },
                         "linkedin_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "markdown": {
                           "anyOf": [
@@ -48431,7 +48911,14 @@
                           ]
                         },
                         "microsoft_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "moderation_email_cadence": {
                           "enum": ["daily", "selected_days", "weekly"],
@@ -48474,7 +48961,14 @@
                           ]
                         },
                         "phone_number": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "processing_restricted_at": {
                           "anyOf": [
@@ -48582,20 +49076,45 @@
                           ]
                         },
                         "use_display_name_from": {
-                          "enum": [
-                            "apple",
-                            "facebook",
-                            "github",
-                            "google",
-                            "linkedin",
-                            "microsoft",
-                            "username",
-                            "x"
-                          ],
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "username": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "verification_completed_at": {
                           "anyOf": [
@@ -48696,7 +49215,14 @@
                           ]
                         },
                         "x_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -48766,7 +49292,14 @@
                           "const": "user"
                         },
                         "apple_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "bad_faith_reporter_at": {
                           "anyOf": [
@@ -48779,7 +49312,14 @@
                           ]
                         },
                         "bluesky_account": {
-                          "$ref": "#/components/schemas/BlueskyAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "cards_visibility": {
                           "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
@@ -48816,13 +49356,27 @@
                           "type": "string"
                         },
                         "email_address": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "engagement_emails_enabled": {
                           "type": "boolean"
                         },
                         "facebook_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "fediverse_federation_enabled": {
                           "type": "boolean"
@@ -48836,10 +49390,24 @@
                           "type": "string"
                         },
                         "github_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "google_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hn_discussions": {
                           "type": "boolean"
@@ -48848,7 +49416,14 @@
                           "type": "string"
                         },
                         "individual_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "is_agent": {
                           "type": "boolean"
@@ -48871,7 +49446,14 @@
                           ]
                         },
                         "linkedin_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "markdown": {
                           "anyOf": [
@@ -48897,7 +49479,14 @@
                           ]
                         },
                         "microsoft_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "moderation_email_cadence": {
                           "enum": ["daily", "selected_days", "weekly"],
@@ -48940,7 +49529,14 @@
                           ]
                         },
                         "phone_number": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "processing_restricted_at": {
                           "anyOf": [
@@ -49052,20 +49648,45 @@
                           ]
                         },
                         "use_display_name_from": {
-                          "enum": [
-                            "apple",
-                            "facebook",
-                            "github",
-                            "google",
-                            "linkedin",
-                            "microsoft",
-                            "username",
-                            "x"
-                          ],
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "username": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "verification_completed_at": {
                           "anyOf": [
@@ -49166,7 +49787,14 @@
                           ]
                         },
                         "x_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": ["is_official_account"],
@@ -64972,7 +65600,14 @@
                                   "const": "user"
                                 },
                                 "apple_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "bad_faith_reporter_at": {
                                   "anyOf": [
@@ -64985,7 +65620,14 @@
                                   ]
                                 },
                                 "bluesky_account": {
-                                  "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "cards_visibility": {
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -65019,13 +65661,27 @@
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
                                 },
                                 "email_address": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "engagement_emails_enabled": {
                                   "type": "boolean"
                                 },
                                 "facebook_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "fediverse_federation_enabled": {
                                   "type": "boolean"
@@ -65037,10 +65693,24 @@
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
                                 },
                                 "github_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "google_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "hn_discussions": {
                                   "type": "boolean"
@@ -65049,7 +65719,14 @@
                                   "type": "string"
                                 },
                                 "individual_id": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "is_agent": {
                                   "type": "boolean"
@@ -65068,7 +65745,14 @@
                                   ]
                                 },
                                 "linkedin_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "markdown": {
                                   "anyOf": [
@@ -65094,7 +65778,14 @@
                                   ]
                                 },
                                 "microsoft_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "moderation_email_cadence": {
                                   "enum": ["daily", "selected_days", "weekly"],
@@ -65137,7 +65828,14 @@
                                   ]
                                 },
                                 "phone_number": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "processing_restricted_at": {
                                   "anyOf": [
@@ -65250,20 +65948,45 @@
                                   ]
                                 },
                                 "use_display_name_from": {
-                                  "enum": [
-                                    "apple",
-                                    "facebook",
-                                    "github",
-                                    "google",
-                                    "linkedin",
-                                    "microsoft",
-                                    "username",
-                                    "x"
-                                  ],
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "const": "apple"
+                                    },
+                                    {
+                                      "const": "facebook"
+                                    },
+                                    {
+                                      "const": "github"
+                                    },
+                                    {
+                                      "const": "google"
+                                    },
+                                    {
+                                      "const": "linkedin"
+                                    },
+                                    {
+                                      "const": "microsoft"
+                                    },
+                                    {
+                                      "const": "username"
+                                    },
+                                    {
+                                      "const": "x"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "username": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "verification_completed_at": {
                                   "anyOf": [
@@ -65364,7 +66087,14 @@
                                   ]
                                 },
                                 "x_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -65402,7 +66132,14 @@
                                   "const": "user"
                                 },
                                 "display_account": {
-                                  "$ref": "#/components/schemas/PublicDisplayAccount"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/PublicDisplayAccount"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "id": {
                                   "type": "string"
@@ -65476,20 +66213,45 @@
                                   "type": "array"
                                 },
                                 "use_display_name_from": {
-                                  "enum": [
-                                    "apple",
-                                    "facebook",
-                                    "github",
-                                    "google",
-                                    "linkedin",
-                                    "microsoft",
-                                    "username",
-                                    "x"
-                                  ],
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "const": "apple"
+                                    },
+                                    {
+                                      "const": "facebook"
+                                    },
+                                    {
+                                      "const": "github"
+                                    },
+                                    {
+                                      "const": "google"
+                                    },
+                                    {
+                                      "const": "linkedin"
+                                    },
+                                    {
+                                      "const": "microsoft"
+                                    },
+                                    {
+                                      "const": "username"
+                                    },
+                                    {
+                                      "const": "x"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "username": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "verification_status": {
                                   "anyOf": [
@@ -65568,7 +66330,14 @@
                                     "const": "user"
                                   },
                                   "apple_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "bad_faith_reporter_at": {
                                     "anyOf": [
@@ -65581,7 +66350,14 @@
                                     ]
                                   },
                                   "bluesky_account": {
-                                    "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "cards_visibility": {
                                     "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -65615,13 +66391,27 @@
                                     "$ref": "#/components/schemas/UserPrivacyAudience"
                                   },
                                   "email_address": {
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
                                   },
                                   "engagement_emails_enabled": {
                                     "type": "boolean"
                                   },
                                   "facebook_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "fediverse_federation_enabled": {
                                     "type": "boolean"
@@ -65633,10 +66423,24 @@
                                     "$ref": "#/components/schemas/UserPrivacyAudience"
                                   },
                                   "github_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "google_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "hn_discussions": {
                                     "type": "boolean"
@@ -65645,7 +66449,14 @@
                                     "type": "string"
                                   },
                                   "individual_id": {
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
                                   },
                                   "is_agent": {
                                     "type": "boolean"
@@ -65664,7 +66475,14 @@
                                     ]
                                   },
                                   "linkedin_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "markdown": {
                                     "anyOf": [
@@ -65690,7 +66508,14 @@
                                     ]
                                   },
                                   "microsoft_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "moderation_email_cadence": {
                                     "enum": ["daily", "selected_days", "weekly"],
@@ -65733,7 +66558,14 @@
                                     ]
                                   },
                                   "phone_number": {
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
                                   },
                                   "processing_restricted_at": {
                                     "anyOf": [
@@ -65846,20 +66678,45 @@
                                     ]
                                   },
                                   "use_display_name_from": {
-                                    "enum": [
-                                      "apple",
-                                      "facebook",
-                                      "github",
-                                      "google",
-                                      "linkedin",
-                                      "microsoft",
-                                      "username",
-                                      "x"
-                                    ],
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "const": "apple"
+                                      },
+                                      {
+                                        "const": "facebook"
+                                      },
+                                      {
+                                        "const": "github"
+                                      },
+                                      {
+                                        "const": "google"
+                                      },
+                                      {
+                                        "const": "linkedin"
+                                      },
+                                      {
+                                        "const": "microsoft"
+                                      },
+                                      {
+                                        "const": "username"
+                                      },
+                                      {
+                                        "const": "x"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "username": {
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
                                   },
                                   "verification_completed_at": {
                                     "anyOf": [
@@ -65960,7 +66817,14 @@
                                     ]
                                   },
                                   "x_account": {
-                                    "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/OAuthAccountInfo"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -66001,7 +66865,14 @@
                                     "const": "user"
                                   },
                                   "display_account": {
-                                    "$ref": "#/components/schemas/PublicDisplayAccount"
+                                    "anyOf": [
+                                      {
+                                        "$ref": "#/components/schemas/PublicDisplayAccount"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "id": {
                                     "type": "string"
@@ -66075,20 +66946,45 @@
                                     "type": "array"
                                   },
                                   "use_display_name_from": {
-                                    "enum": [
-                                      "apple",
-                                      "facebook",
-                                      "github",
-                                      "google",
-                                      "linkedin",
-                                      "microsoft",
-                                      "username",
-                                      "x"
-                                    ],
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "const": "apple"
+                                      },
+                                      {
+                                        "const": "facebook"
+                                      },
+                                      {
+                                        "const": "github"
+                                      },
+                                      {
+                                        "const": "google"
+                                      },
+                                      {
+                                        "const": "linkedin"
+                                      },
+                                      {
+                                        "const": "microsoft"
+                                      },
+                                      {
+                                        "const": "username"
+                                      },
+                                      {
+                                        "const": "x"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   },
                                   "username": {
-                                    "type": "string"
+                                    "anyOf": [
+                                      {
+                                        "type": "null"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
                                   },
                                   "verification_status": {
                                     "anyOf": [
@@ -66234,7 +67130,14 @@
                                   "const": "user"
                                 },
                                 "apple_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "bad_faith_reporter_at": {
                                   "anyOf": [
@@ -66247,7 +67150,14 @@
                                   ]
                                 },
                                 "bluesky_account": {
-                                  "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "cards_visibility": {
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -66281,13 +67191,27 @@
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
                                 },
                                 "email_address": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "engagement_emails_enabled": {
                                   "type": "boolean"
                                 },
                                 "facebook_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "fediverse_federation_enabled": {
                                   "type": "boolean"
@@ -66299,10 +67223,24 @@
                                   "$ref": "#/components/schemas/UserPrivacyAudience"
                                 },
                                 "github_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "google_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "hn_discussions": {
                                   "type": "boolean"
@@ -66311,7 +67249,14 @@
                                   "type": "string"
                                 },
                                 "individual_id": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "is_agent": {
                                   "type": "boolean"
@@ -66330,7 +67275,14 @@
                                   ]
                                 },
                                 "linkedin_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "markdown": {
                                   "anyOf": [
@@ -66356,7 +67308,14 @@
                                   ]
                                 },
                                 "microsoft_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "moderation_email_cadence": {
                                   "enum": ["daily", "selected_days", "weekly"],
@@ -66399,7 +67358,14 @@
                                   ]
                                 },
                                 "phone_number": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "processing_restricted_at": {
                                   "anyOf": [
@@ -66512,20 +67478,45 @@
                                   ]
                                 },
                                 "use_display_name_from": {
-                                  "enum": [
-                                    "apple",
-                                    "facebook",
-                                    "github",
-                                    "google",
-                                    "linkedin",
-                                    "microsoft",
-                                    "username",
-                                    "x"
-                                  ],
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "const": "apple"
+                                    },
+                                    {
+                                      "const": "facebook"
+                                    },
+                                    {
+                                      "const": "github"
+                                    },
+                                    {
+                                      "const": "google"
+                                    },
+                                    {
+                                      "const": "linkedin"
+                                    },
+                                    {
+                                      "const": "microsoft"
+                                    },
+                                    {
+                                      "const": "username"
+                                    },
+                                    {
+                                      "const": "x"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "username": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "verification_completed_at": {
                                   "anyOf": [
@@ -66626,7 +67617,14 @@
                                   ]
                                 },
                                 "x_account": {
-                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/OAuthAccountInfo"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 }
                               },
                               "required": [
@@ -66664,7 +67662,14 @@
                                   "const": "user"
                                 },
                                 "display_account": {
-                                  "$ref": "#/components/schemas/PublicDisplayAccount"
+                                  "anyOf": [
+                                    {
+                                      "$ref": "#/components/schemas/PublicDisplayAccount"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "id": {
                                   "type": "string"
@@ -66738,20 +67743,45 @@
                                   "type": "array"
                                 },
                                 "use_display_name_from": {
-                                  "enum": [
-                                    "apple",
-                                    "facebook",
-                                    "github",
-                                    "google",
-                                    "linkedin",
-                                    "microsoft",
-                                    "username",
-                                    "x"
-                                  ],
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "const": "apple"
+                                    },
+                                    {
+                                      "const": "facebook"
+                                    },
+                                    {
+                                      "const": "github"
+                                    },
+                                    {
+                                      "const": "google"
+                                    },
+                                    {
+                                      "const": "linkedin"
+                                    },
+                                    {
+                                      "const": "microsoft"
+                                    },
+                                    {
+                                      "const": "username"
+                                    },
+                                    {
+                                      "const": "x"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "username": {
-                                  "type": "string"
+                                  "anyOf": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
                                 },
                                 "verification_status": {
                                   "anyOf": [
@@ -66857,7 +67887,14 @@
                               "const": "user"
                             },
                             "apple_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "bad_faith_reporter_at": {
                               "anyOf": [
@@ -66870,7 +67907,14 @@
                               ]
                             },
                             "bluesky_account": {
-                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/BlueskyAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "cards_visibility": {
                               "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -66904,13 +67948,27 @@
                               "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
                             "email_address": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "engagement_emails_enabled": {
                               "type": "boolean"
                             },
                             "facebook_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "fediverse_federation_enabled": {
                               "type": "boolean"
@@ -66922,10 +67980,24 @@
                               "$ref": "#/components/schemas/UserPrivacyAudience"
                             },
                             "github_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "google_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "hn_discussions": {
                               "type": "boolean"
@@ -66934,7 +68006,14 @@
                               "type": "string"
                             },
                             "individual_id": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "is_agent": {
                               "type": "boolean"
@@ -66953,7 +68032,14 @@
                               ]
                             },
                             "linkedin_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "markdown": {
                               "anyOf": [
@@ -66979,7 +68065,14 @@
                               ]
                             },
                             "microsoft_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "moderation_email_cadence": {
                               "enum": ["daily", "selected_days", "weekly"],
@@ -67022,7 +68115,14 @@
                               ]
                             },
                             "phone_number": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "processing_restricted_at": {
                               "anyOf": [
@@ -67135,20 +68235,45 @@
                               ]
                             },
                             "use_display_name_from": {
-                              "enum": [
-                                "apple",
-                                "facebook",
-                                "github",
-                                "google",
-                                "linkedin",
-                                "microsoft",
-                                "username",
-                                "x"
-                              ],
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "const": "apple"
+                                },
+                                {
+                                  "const": "facebook"
+                                },
+                                {
+                                  "const": "github"
+                                },
+                                {
+                                  "const": "google"
+                                },
+                                {
+                                  "const": "linkedin"
+                                },
+                                {
+                                  "const": "microsoft"
+                                },
+                                {
+                                  "const": "username"
+                                },
+                                {
+                                  "const": "x"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "username": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             },
                             "verification_completed_at": {
                               "anyOf": [
@@ -67249,7 +68374,14 @@
                               ]
                             },
                             "x_account": {
-                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                              "anyOf": [
+                                {
+                                  "$ref": "#/components/schemas/OAuthAccountInfo"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -67360,7 +68492,14 @@
                           "const": "user"
                         },
                         "apple_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "bad_faith_reporter_at": {
                           "anyOf": [
@@ -67373,7 +68512,14 @@
                           ]
                         },
                         "bluesky_account": {
-                          "$ref": "#/components/schemas/BlueskyAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "cards_visibility": {
                           "enum": ["everyone", "followers", "mutual_followers", "nobody", "users"],
@@ -67410,13 +68556,27 @@
                           "type": "string"
                         },
                         "email_address": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "engagement_emails_enabled": {
                           "type": "boolean"
                         },
                         "facebook_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "fediverse_federation_enabled": {
                           "type": "boolean"
@@ -67430,10 +68590,24 @@
                           "type": "string"
                         },
                         "github_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "google_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hn_discussions": {
                           "type": "boolean"
@@ -67442,7 +68616,14 @@
                           "type": "string"
                         },
                         "individual_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "is_agent": {
                           "type": "boolean"
@@ -67465,7 +68646,14 @@
                           ]
                         },
                         "linkedin_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "markdown": {
                           "anyOf": [
@@ -67491,7 +68679,14 @@
                           ]
                         },
                         "microsoft_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "moderation_email_cadence": {
                           "enum": ["daily", "selected_days", "weekly"],
@@ -67534,7 +68729,14 @@
                           ]
                         },
                         "phone_number": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "processing_restricted_at": {
                           "anyOf": [
@@ -67646,20 +68848,45 @@
                           ]
                         },
                         "use_display_name_from": {
-                          "enum": [
-                            "apple",
-                            "facebook",
-                            "github",
-                            "google",
-                            "linkedin",
-                            "microsoft",
-                            "username",
-                            "x"
-                          ],
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "username": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "verification_completed_at": {
                           "anyOf": [
@@ -67760,7 +68987,14 @@
                           ]
                         },
                         "x_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": ["is_official_account"],
@@ -68919,7 +70153,14 @@
                             "const": "user"
                           },
                           "display_account": {
-                            "$ref": "#/components/schemas/PublicDisplayAccount"
+                            "anyOf": [
+                              {
+                                "$ref": "#/components/schemas/PublicDisplayAccount"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "id": {
                             "type": "string"
@@ -68993,20 +70234,45 @@
                             "type": "array"
                           },
                           "use_display_name_from": {
-                            "enum": [
-                              "apple",
-                              "facebook",
-                              "github",
-                              "google",
-                              "linkedin",
-                              "microsoft",
-                              "username",
-                              "x"
-                            ],
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "const": "apple"
+                              },
+                              {
+                                "const": "facebook"
+                              },
+                              {
+                                "const": "github"
+                              },
+                              {
+                                "const": "google"
+                              },
+                              {
+                                "const": "linkedin"
+                              },
+                              {
+                                "const": "microsoft"
+                              },
+                              {
+                                "const": "username"
+                              },
+                              {
+                                "const": "x"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "username": {
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
                           },
                           "verification_status": {
                             "anyOf": [
@@ -69450,7 +70716,14 @@
                           "const": "user"
                         },
                         "apple_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "bad_faith_reporter_at": {
                           "anyOf": [
@@ -69463,7 +70736,14 @@
                           ]
                         },
                         "bluesky_account": {
-                          "$ref": "#/components/schemas/BlueskyAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "cards_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -69497,13 +70777,27 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "email_address": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "engagement_emails_enabled": {
                           "type": "boolean"
                         },
                         "facebook_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "fediverse_federation_enabled": {
                           "type": "boolean"
@@ -69515,10 +70809,24 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "github_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "google_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hn_discussions": {
                           "type": "boolean"
@@ -69527,7 +70835,14 @@
                           "type": "string"
                         },
                         "individual_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "is_agent": {
                           "type": "boolean"
@@ -69546,7 +70861,14 @@
                           ]
                         },
                         "linkedin_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "markdown": {
                           "anyOf": [
@@ -69572,7 +70894,14 @@
                           ]
                         },
                         "microsoft_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "moderation_email_cadence": {
                           "enum": ["daily", "selected_days", "weekly"],
@@ -69615,7 +70944,14 @@
                           ]
                         },
                         "phone_number": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "processing_restricted_at": {
                           "anyOf": [
@@ -69723,20 +71059,45 @@
                           ]
                         },
                         "use_display_name_from": {
-                          "enum": [
-                            "apple",
-                            "facebook",
-                            "github",
-                            "google",
-                            "linkedin",
-                            "microsoft",
-                            "username",
-                            "x"
-                          ],
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "username": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "verification_completed_at": {
                           "anyOf": [
@@ -69837,7 +71198,14 @@
                           ]
                         },
                         "x_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -69916,7 +71284,14 @@
                           "const": "user"
                         },
                         "apple_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "bad_faith_reporter_at": {
                           "anyOf": [
@@ -69929,7 +71304,14 @@
                           ]
                         },
                         "bluesky_account": {
-                          "$ref": "#/components/schemas/BlueskyAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/BlueskyAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "cards_visibility": {
                           "$ref": "#/components/schemas/UserPrivacyAudience"
@@ -69963,13 +71345,27 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "email_address": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "engagement_emails_enabled": {
                           "type": "boolean"
                         },
                         "facebook_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "fediverse_federation_enabled": {
                           "type": "boolean"
@@ -69981,10 +71377,24 @@
                           "$ref": "#/components/schemas/UserPrivacyAudience"
                         },
                         "github_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "google_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "hn_discussions": {
                           "type": "boolean"
@@ -69993,7 +71403,14 @@
                           "type": "string"
                         },
                         "individual_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "is_agent": {
                           "type": "boolean"
@@ -70012,7 +71429,14 @@
                           ]
                         },
                         "linkedin_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "markdown": {
                           "anyOf": [
@@ -70038,7 +71462,14 @@
                           ]
                         },
                         "microsoft_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "moderation_email_cadence": {
                           "enum": ["daily", "selected_days", "weekly"],
@@ -70081,7 +71512,14 @@
                           ]
                         },
                         "phone_number": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "processing_restricted_at": {
                           "anyOf": [
@@ -70189,20 +71627,45 @@
                           ]
                         },
                         "use_display_name_from": {
-                          "enum": [
-                            "apple",
-                            "facebook",
-                            "github",
-                            "google",
-                            "linkedin",
-                            "microsoft",
-                            "username",
-                            "x"
-                          ],
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "username": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "verification_completed_at": {
                           "anyOf": [
@@ -70303,7 +71766,14 @@
                           ]
                         },
                         "x_account": {
-                          "$ref": "#/components/schemas/OAuthAccountInfo"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/OAuthAccountInfo"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
