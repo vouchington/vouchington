@@ -54,7 +54,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         // heap happens to accumulate here first. See backend-contract-program's own comment.
         'backend/test-helpers/api-fixtures/backend-program.test.mts',
         'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts',
-        'backend/test-helpers/api-fixtures/query-contract-registry.hardening.test.mts',
+        'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
       testTimeout: 15_000,
@@ -79,7 +79,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       include: [
         'backend/test-helpers/api-fixtures/backend-program.test.mts',
         'backend/test-helpers/api-fixtures/openapi/write-openapi.test.mts',
-        'backend/test-helpers/api-fixtures/query-contract-registry.hardening.test.mts',
+        'backend/test-helpers/api-fixtures/backend-contract-catalog.hardening.test.mts',
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],

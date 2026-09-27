@@ -11,7 +11,7 @@ import {
 } from 'vouchington-tooling/compiler-build'
 
 import { settleBackendProgramBuild } from './backend-program-settlement.mts'
-import { formatDiagnostics, normalizePath } from './response-contract-registration.mts'
+import { formatDiagnostics, normalizePath } from './program-paths.mts'
 import { backendApiRouteRootFileNames } from './route-file-roots.mts'
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url))

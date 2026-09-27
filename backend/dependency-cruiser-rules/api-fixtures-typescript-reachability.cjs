@@ -30,31 +30,10 @@
 // ratchet as its own reviewed change (not a silent allowlist addition) if reuse genuinely isn't
 // possible.
 //
-// 'response-contract-registry.test' and 'backend-program.probes.test' (note the literal
-// `.test` segment baked into the entry itself, escaped by RegExp.escape below along with the
-// rest of the string) were added after fixing a doNotFollow gap in backend/.dependency-cruiser.cjs
-// that previously hid every *.test.mts file in api-fixtures/ from this rule entirely. Both
-// test files import `typescript` directly and were flagged the moment that gap was fixed;
-// both were individually verified (grep for `ts\.(create|Program|LanguageService|BuilderProgram|
-// SolutionBuilder)`, zero hits in either) to use it only for type/enum values (ts.CompilerOptions,
-// ts.ModuleKind, ts.isCallExpression, etc.), the same as their production siblings below.
-const LEGITIMATE_TYPE_GUARD_CONSUMERS = [
-  'response-contract-status',
-  'response-contract-route-analysis',
-  'response-contract-registry',
-  'response-contract-registry.test',
-  'response-contract-registration',
-  'response-contract-media',
-  'response-contract-implicit',
-  'response-contract-error-branch',
-  'request-contract-route-analysis',
-  'request-contract-registry',
-  'request-contract-implicit',
-  'registered-route-catalog',
-  'query-contract-registry',
-  'query-contract-extraction',
-  'backend-program.probes.test',
-]
+// 'backend-program.probes.test' and 'program-paths' import `typescript` for compiler-option
+// enums and diagnostic formatting. They do not construct a program. The discovery engine that
+// used to import `typescript` here now lives in vouchington-tooling/api-contract-discovery.
+const LEGITIMATE_TYPE_GUARD_CONSUMERS = ['program-paths', 'backend-program.probes.test']
 
 // Entries above are interpolated into a RegExp string below; escape regex metacharacters so a
 // future ratchet-list addition can never silently change the pattern's matching semantics (e.g. a

@@ -8,7 +8,7 @@ import { apiFixtureCases } from './cases.mts'
 import {
   loadBackendResponseContracts,
   type BackendResponseContract,
-} from './response-contract-registry.mts'
+} from './backend-contract-catalog.mts'
 
 export type ApiFixtureSchemaLock = FixtureSchemaLock
 

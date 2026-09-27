@@ -16,7 +16,7 @@ export type {
 } from './contract-schema-types.mts'
 export { validateResponseContract }
 
-const vouchaExtractOptions = {
+export const vouchaExtractOptions = {
   formatAliases: { ApiUuidContract: 'uuid' },
   boundedArrayAlias: 'ApiArrayContract',
 } as const

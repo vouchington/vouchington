@@ -1,4 +1,4 @@
-import { normalizePath } from './response-contract-registration.mts'
+import { normalizePath } from './program-paths.mts'
 
 export function backendApiRouteRootFileNames(fileNames: readonly string[]): string[] {
   return fileNames.filter(fileName => {

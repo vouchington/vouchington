@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import { loadBackendQueryContracts } from './query-contract-registry.mts'
+import { loadBackendQueryContracts } from './backend-contract-catalog.mts'
 import { COLD_BACKEND_PROGRAM_TIMEOUT_MS } from './cold-build-budget.mts'
 import { getBackendProgramBuildCount, getBackendProgramEntryCount } from './backend-program.mts'
 

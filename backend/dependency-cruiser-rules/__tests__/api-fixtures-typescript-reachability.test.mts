@@ -39,7 +39,7 @@ describe('no-api-fixtures-typescript-reachability', () => {
     ).toBe(false)
     expect(
       exemptions.some(pattern =>
-        pattern.test('backend/test-helpers/api-fixtures/response-contract-registry.mts'),
+        pattern.test('backend/test-helpers/api-fixtures/program-paths.mts'),
       ),
     ).toBe(true)
   })

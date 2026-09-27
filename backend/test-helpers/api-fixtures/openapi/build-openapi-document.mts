@@ -6,15 +6,18 @@ import {
   type ResponseContract,
   type OpenApiDocument,
 } from 'vouchington-tooling/openapi-document'
-import { loadBackendRequestContracts } from '../request-contract-registry.mts'
-import type { BackendRequestContract } from '../request-contract-types.mts'
-import { loadBackendQueryContracts } from '../query-contract-registry.mts'
-import type { BackendQueryContractRegistry } from '../query-contract-types.mts'
-import { loadBackendHeaderContracts } from '../header-contract-registry.mts'
+import {
+  loadBackendHeaderContracts,
+  loadBackendQueryContracts,
+  loadBackendRequestContracts,
+  loadBackendResponseContracts,
+  loadRegisteredRouteCatalog,
+  type BackendRequestContract,
+  type BackendResponseContract,
+  type RegisteredRoute,
+} from '../backend-contract-catalog.mts'
 import type { HeaderContractRegistry } from '../header-contract-types.mts'
-import { loadBackendResponseContracts } from '../response-contract-registry.mts'
-import type { BackendResponseContract } from '../response-contract-types.mts'
-import { loadRegisteredRouteCatalog, type RegisteredRoute } from '../registered-route-catalog.mts'
+import type { BackendQueryContractRegistry } from '../query-contract-types.mts'
 import { applyMoneyContracts } from './openapi-money-contract.mts'
 
 export function buildOpenApiDocument(
