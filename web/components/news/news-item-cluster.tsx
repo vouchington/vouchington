@@ -24,6 +24,10 @@ interface NewsItemClusterProps {
   primaryElection?: RssFeedItemElection | null
   primaryElectionVote?: ElectionVote | null
   storyItems: RssFeedItem[]
+  hasMoreStoryItems?: boolean
+  loadingStoryItems?: boolean
+  storyLoadError?: boolean
+  onLoadStoryMore?: () => void | Promise<void>
   story?: Story
   storyPost?: Post
   view: FeedStyle
@@ -50,6 +54,10 @@ export function NewsItemCluster({
   primaryElection,
   primaryElectionVote,
   storyItems,
+  hasMoreStoryItems = false,
+  loadingStoryItems = false,
+  storyLoadError = false,
+  onLoadStoryMore,
   story,
   storyPost,
   view,
@@ -143,7 +151,7 @@ export function NewsItemCluster({
     : null
 
   const hasStoryHeader = !!(story?.title || story?.published_at || story?.cluster_reason)
-  if (storyItems.length === 0 && !hasStoryHeader) {
+  if (storyItems.length === 0 && !hasStoryHeader && !hasMoreStoryItems) {
     return (
       <NewsItemCard
         item={primary}
@@ -171,6 +179,10 @@ export function NewsItemCluster({
       sharedByUser={sharedByUser}
       story={story}
       storyItems={storyItems}
+      hasMoreStoryItems={hasMoreStoryItems}
+      loadingStoryItems={loadingStoryItems}
+      storyLoadError={storyLoadError}
+      onLoadStoryMore={onLoadStoryMore}
       storyItemsId={storyItemsId}
       storyPostHref={storyPostHref}
       view={view}
@@ -179,7 +191,6 @@ export function NewsItemCluster({
     />
   )
 }
-
 function getRelatedUrls(items: RssFeedItem[], urlIds: string[]): NewsCommunityDiscussionUrl[] {
   const urlsById = new Map(items.map(item => [item.url.id, item.url.url]))
   return urlIds.flatMap(id => {

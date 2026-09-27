@@ -20,6 +20,7 @@ import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mt
 import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
+import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
 
 async function main() {
   prepareOutputDir()
@@ -28,6 +29,7 @@ async function main() {
     await runFeedAndMetricScenarios()
     await runHeavyFollowScenarios()
     await runPostFeedShareScenarios()
+    await runStoryMemberPageScenarios()
     await runSearchAndFacetScenarios()
     await runOAuthClientVerificationScenarios()
     await runEntityAndCommunityScenarios()

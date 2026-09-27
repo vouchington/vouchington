@@ -173,7 +173,7 @@ describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
     expect(response.body.rss_feed_item_elections[rssFeedItem.id]).toHaveProperty('votes_score_net')
   })
 
-  it('should include non-primary story members in rss_feed_items and story_member_ids sidecars', async () => {
+  it('should include non-primary story members in rss_feed_items and story_member_pages sidecars', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic()
     const feedId = await createTestRssFeedWithTiming(topic.id)
@@ -181,7 +181,7 @@ describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
 
     // The route's story-member expansion adds items sharing a story that were NOT independently
     // delivered by the feed query. Put the second item on a feed the user never follows, so it
-    // cannot appear in `results` on its own — only via `story_member_ids`/`rss_feed_items`. There
+    // cannot appear in `results` on its own — only via `story_member_pages`/`rss_feed_items`. There
     // is no `similar_rss_feed_item_ids` field on results; asserting through it (the prior version
     // of this test) always passed trivially, since every primary result ID satisfies the check
     // regardless of whether story-member expansion ran at all.
@@ -202,9 +202,7 @@ describe('GET /api/v1/feeds/rss_feed_items/:feed_type', () => {
     expect(resultIds).toContain(primaryItemId)
     expect(resultIds).not.toContain(memberItemId)
 
-    expect(response.body.story_member_ids[story.id]).toEqual(
-      expect.arrayContaining([primaryItemId, memberItemId]),
-    )
+    expect(response.body.story_member_pages[story.id].item_ids).toEqual([memberItemId])
     expect(response.body.rss_feed_items[memberItemId]).toBeDefined()
   })
 

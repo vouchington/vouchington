@@ -18,7 +18,7 @@ import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import {
   getStoriesByIdBatch,
-  getItemIdsByStoryIds,
+  getStoryPreviews,
   getVisiblePostStoryIdsByStoryIds,
 } from '@services/stories'
 import { createPaginationParser } from '@modules/pagination'
@@ -86,20 +86,20 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
   const storyIds = [
     ...new Set(result.results.flatMap(r => (r.story_id !== null ? [r.story_id] : []))),
   ]
-  const [storiesArr, storyMemberIds, storyPostIds] = await Promise.all([
+  const [storiesArr, storyMemberPages, storyPostIds] = await Promise.all([
     getStoriesByIdBatch(storyIds),
-    getItemIdsByStoryIds(storyIds),
+    getStoryPreviews(currentUser, result.results),
     getVisiblePostStoryIdsByStoryIds(currentUser, storyIds),
   ])
 
   const primaryIdSet = new Set(rssFeedItemIds)
-  const memberItemIds = [
-    ...new Set(
-      Object.values(storyMemberIds)
-        .flat()
-        .filter(id => !primaryIdSet.has(id)),
-    ),
-  ]
+  const memberItemIdsSet = new Set<string>()
+  for (const page of Object.values(storyMemberPages)) {
+    for (const id of page.item_ids) {
+      if (!primaryIdSet.has(id)) memberItemIdsSet.add(id)
+    }
+  }
+  const memberItemIds = [...memberItemIdsSet]
   const allItemIds = [...rssFeedItemIds, ...memberItemIds]
   const itemsPromise = getRssFeedItemByIdCachedBatch(allItemIds)
   const usersPromise =
@@ -125,7 +125,7 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
     results: result.results,
     page_info: result.page_info,
     stories,
-    story_member_ids: storyMemberIds,
+    story_member_pages: storyMemberPages,
     story_post_ids: storyPostIds,
     rss_feed_items: itemsPromise.then(items =>
       indexById(items.map(item => (item == null ? item : proxyRssFeedItemCoverArt(item)))),

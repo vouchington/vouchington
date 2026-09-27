@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NewsItemCard } from '@/components/feed/news-item-card'
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import type { FeedStyle } from '@/lib/preferences/shared'
 import type { ElectionVote, Post } from '@/types/posts'
 import type { RssFeedItem, RssFeedItemElection } from '@/types/rss-feed-items'
@@ -32,6 +33,10 @@ interface NewsItemClusterRelatedItemsProps {
   setExpanded: (expanded: boolean) => void
   storyItemActionContexts: Record<string, NewsItemActionContext>
   storyItems: RssFeedItem[]
+  hasMoreStoryItems?: boolean
+  loadingStoryItems?: boolean
+  storyLoadError?: boolean
+  onLoadStoryMore?: () => void | Promise<void>
   storyItemsId: string
   view: FeedStyle
   thumbnailUrls?: Record<string, string>
@@ -45,12 +50,17 @@ export function NewsItemClusterRelatedItems({
   setExpanded,
   storyItemActionContexts,
   storyItems,
+  hasMoreStoryItems = false,
+  loadingStoryItems = false,
+  storyLoadError = false,
+  onLoadStoryMore,
   storyItemsId,
   view,
   thumbnailUrls,
   embeds,
 }: NewsItemClusterRelatedItemsProps) {
   const isHydrated = useDidHydrate()
+  const t = useTranslations()
 
   return (
     <div className='border-t border-border/50'>
@@ -71,14 +81,18 @@ export function NewsItemClusterRelatedItems({
           ) : (
             <ChevronDown className='mr-1 h-3 w-3' />
           )}
-          {isExpanded
-            ? 'Hide articles'
-            : `${storyItems.length} related article${storyItems.length !== 1 ? 's' : ''}`}
+          {t(
+            hasMoreStoryItems
+              ? 'extracted.news.newsItemClusterRelatedItems.relatedArticlesMore'
+              : 'extracted.news.newsItemClusterRelatedItems.relatedArticles',
+            { count: storyItems.length },
+          )}
         </Button>
       </div>
       <div
         id={storyItemsId}
         hidden={!isExpanded}
+        data-pw='news-item-cluster-related-panel'
       >
         {storyItems.map(item => {
           const context = storyItemActionContexts[item.id]
@@ -108,6 +122,32 @@ export function NewsItemClusterRelatedItems({
             </div>
           )
         })}
+        {hasMoreStoryItems && onLoadStoryMore && (
+          <div className='border-t border-border/50 px-4 py-2'>
+            {storyLoadError && (
+              <p
+                role='alert'
+                className='text-xs text-destructive'
+              >
+                {t('extracted.news.newsItemClusterRelatedItems.loadError')}
+              </p>
+            )}
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              disabled={loadingStoryItems}
+              onClick={onLoadStoryMore}
+              data-pw='news-item-cluster-related-load-more'
+            >
+              {loadingStoryItems
+                ? t('extracted.news.newsItemClusterRelatedItems.loading')
+                : storyLoadError
+                  ? t('extracted.news.newsItemClusterRelatedItems.retry')
+                  : t('extracted.news.newsItemClusterRelatedItems.loadMore')}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

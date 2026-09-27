@@ -2,7 +2,10 @@ import { rssFeedItem } from './data.mts'
 
 export const storyId = 'story-1'
 export const storyPeerItemId = 'item-peer'
-export const storyMemberIds = { [storyId]: [rssFeedItem.id, storyPeerItemId] }
+const exhaustedPageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
+export const storyMemberPages = {
+  [storyId]: { item_ids: [storyPeerItemId], page_info: exhaustedPageInfo },
+}
 export const storyPostIds = {}
 
 export const webStoryClusterRssFeedItems = {
@@ -24,7 +27,7 @@ export const webStoryClusterRssFeedItems = {
 }
 
 export const swiftStoryClusterSidecars = <T extends { id: string }>(item: T) => ({
-  story_member_ids: { [storyId]: [item.id, storyPeerItemId] },
+  story_member_pages: storyMemberPages,
   story_post_ids: storyPostIds,
   rss_feed_items: {
     [item.id]: item,

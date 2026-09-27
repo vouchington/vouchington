@@ -190,14 +190,14 @@ describe('RSS Feed Items Routes', () => {
       expect(beyondPage.body.page_info.has_next_page).toBe(false)
     })
 
-    it('should include all story members in rss_feed_items and story_member_ids sidecars', async () => {
+    it('should include related story members in rss_feed_items and story_member_pages sidecars', async () => {
       const user = await createTestUser()
       const topic = await createTestTopic({ user: user })
       const feedId = await createTestRssFeedWithTiming(topic.id)
 
       // Two items sharing a story_id is the real "similar items" grouping mechanism: the search
       // query dedupes same-story items down to one canonical result (see the story_rn partition
-      // in searchRssFeedItems), and the route resolves the rest via story_member_ids. There is no
+      // in searchRssFeedItems), and the route resolves the rest via story_member_pages. There is no
       // `similar_rss_feed_item_ids` field on results — asserting through embeddings alone (the
       // prior version of this test) never actually exercised dedup or the sidecar.
       const { id: firstItemId } = await createTestRssFeedItemWithUrl(feedId)
@@ -218,8 +218,8 @@ describe('RSS Feed Items Routes', () => {
       expect(response.body.results[0].story_id).toBe(story.id)
 
       // Both story members (not just the canonical result) are resolvable via the sidecars.
-      expect(response.body.story_member_ids[story.id]).toEqual(
-        expect.arrayContaining([firstItemId, secondItemId]),
+      expect(response.body.story_member_pages[story.id].item_ids).toEqual(
+        [firstItemId, secondItemId].filter(id => id !== response.body.results[0].id),
       )
       expect(response.body.rss_feed_items[firstItemId]).toBeDefined()
       expect(response.body.rss_feed_items[secondItemId]).toBeDefined()

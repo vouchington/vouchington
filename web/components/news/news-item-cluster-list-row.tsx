@@ -23,6 +23,7 @@ interface NewsItemClusterListRowProps {
   expandedStoryIds: Set<string>
   feedStyle: FeedStyle
   onExpandedStoryIdsChange: React.Dispatch<React.SetStateAction<Set<string>>>
+  onLoadStoryMore: (storyId: string) => Promise<void>
 }
 
 export function NewsItemClusterListRow({
@@ -41,6 +42,7 @@ export function NewsItemClusterListRow({
   expandedStoryIds,
   feedStyle,
   onExpandedStoryIdsChange,
+  onLoadStoryMore,
 }: NewsItemClusterListRowProps) {
   const clusterUrlIds = [cluster.primary.url.id, ...cluster.storyItems.map(item => item.url.id)]
   const storyRelatedUrlIds = [...new Set(clusterUrlIds)]
@@ -71,6 +73,10 @@ export function NewsItemClusterListRow({
       primaryElection={allElections[cluster.primary.id]}
       primaryElectionVote={allElectionVotes[cluster.primary.id]}
       storyItems={cluster.storyItems}
+      hasMoreStoryItems={cluster.hasMoreStoryItems}
+      loadingStoryItems={cluster.loadingStoryItems}
+      storyLoadError={cluster.storyLoadError}
+      onLoadStoryMore={cluster.storyId ? () => onLoadStoryMore(cluster.storyId!) : undefined}
       story={story}
       storyPost={storyPost}
       view={feedStyle}

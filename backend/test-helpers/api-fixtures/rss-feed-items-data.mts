@@ -2,7 +2,7 @@ import { pageInfo, rssFeedItem } from './data.mts'
 import { electionVotes, rssFeedItemElection } from './election-data.mts'
 import {
   storyId,
-  storyMemberIds,
+  storyMemberPages,
   storyPostIds,
   webStoryClusterRssFeedItems,
 } from './story-cluster-data.mts'
@@ -53,7 +53,7 @@ export const rssFeedItemsFeedBody = {
     },
   ],
   page_info: pageInfo,
-  story_member_ids: storyMemberIds,
+  story_member_pages: storyMemberPages,
   story_post_ids: storyPostIds,
   rss_feed_items: webStoryClusterRssFeedItems,
   rss_feed_item_elections: { [rssFeedItem.id]: rssFeedItemElection },

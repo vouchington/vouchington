@@ -235,8 +235,15 @@
       }
     }
   },
-  "story_member_ids": {
-    "story-1": ["item-1", "item-peer"]
+  "story_member_pages": {
+    "story-1": {
+      "item_ids": ["item-peer"],
+      "page_info": {
+        "end_cursor": null,
+        "has_next_page": false,
+        "start_cursor": null
+      }
+    }
   },
   "story_post_ids": {}
 }

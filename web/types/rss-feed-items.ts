@@ -3,8 +3,8 @@
  * Mirrors backend/services/rss-feed-items/types.mts
  */
 
-import type { PaginatedResponse } from './api-responses/pagination-and-entities'
-import type { Post, PostMetrics } from './posts'
+import type { PageInfo, PaginatedResponse } from './api-responses/pagination-and-entities'
+import type { ElectionVote, Post, PostMetrics } from './posts'
 import type { PublicUser } from './user'
 import type { PaginatedResult } from '@voucha/types/pagination'
 import type { PodcastShow } from './rss-feeds'
@@ -81,7 +81,7 @@ export interface RssFeedItem {
   __entity_type: 'rss_feed_item'
   id: string
   published_at: string
-  lingua_rs_detected_language: string | null
+  lingua_rs_detected_language?: string | null
   data: RssFeedItemData
   url: RssFeedItemUrl
   rss_feed: RssFeedItemRssFeed
@@ -108,6 +108,27 @@ export interface Story {
   official_rss_feed_item_id: string | null
 }
 
+export interface StoryMemberPage {
+  item_ids: string[]
+  page_info: PageInfo
+}
+
+export interface StoryPageResponse extends StoryMemberPage {
+  story: Story
+  rss_feed_items: Record<string, RssFeedItem>
+  rss_feed_item_elections: Record<string, RssFeedItemElection>
+  rss_feed_item_embeds: Record<string, UrlEmbed>
+  rss_feed_item_thumbnail_url: Record<string, string>
+  rss_feed_item_content_html: Record<string, string>
+  related_posts_by_url_id: Record<string, string[]>
+  story_post_ids: Record<string, string>
+  posts: Record<string, Post>
+  posts_metrics: Record<string, PostMetrics>
+  bookmarks: Record<string, Record<string, boolean>>
+  election_votes: Record<string, ElectionVote>
+  rss_feed_bookmarks: Record<string, Record<string, boolean>>
+}
+
 type RssFeedItemSearchResult = PaginatedResult<'rss_feed_item'> & {
   published_at: string
   story_id: string | null
@@ -131,7 +152,7 @@ export type RssFeedItemsFeedResponseBody = PaginatedResponse<RssFeedItemSearchRe
   rss_feed_item_embeds?: Record<string, UrlEmbed>
 
   stories?: Record<string, Story>
-  story_member_ids?: Record<string, string[]>
+  story_member_pages?: Record<string, StoryMemberPage>
   story_post_ids?: Record<string, string>
   related_posts_by_url_id?: Record<string, string[]>
   posts?: Record<string, Post>

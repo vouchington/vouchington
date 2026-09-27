@@ -30,7 +30,7 @@ import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import { clampAnonLimit } from '@modules/search-utils'
 import {
   getStoriesByIdBatch,
-  getItemIdsByStoryIds,
+  getStoryPreviews,
   getVisiblePostStoryIdsByStoryIds,
 } from '@services/stories'
 import { sendHashtagTopicSearchErrorResponse } from '../hashtag-search-error-response.mts'
@@ -57,6 +57,9 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
 
     const output: Record<string, unknown> = {
       results: [],
+      stories: {},
+      story_member_pages: {},
+      story_post_ids: {},
       page_info: {
         has_next_page: false,
         end_cursor: null,
@@ -85,14 +88,14 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   const storyIds = [
     ...new Set(searchResult.results.flatMap(r => (r.story_id ? [r.story_id as string] : []))),
   ]
-  const [storyMemberIdsMap, storyPostIdsMap] =
+  const [storyMemberPagesMap, storyPostIdsMap] =
     storyIds.length > 0
       ? await Promise.all([
-          getItemIdsByStoryIds(storyIds),
+          getStoryPreviews(currentUser, searchResult.results),
           getVisiblePostStoryIdsByStoryIds(currentUser, storyIds),
         ])
       : [{}, {}]
-  const storyMemberItemIds = Object.values(storyMemberIdsMap).flat()
+  const storyMemberItemIds = Object.values(storyMemberPagesMap).flatMap(page => page.item_ids)
   const allItemIds = [...new Set([...itemIds, ...storyMemberItemIds])]
 
   if (!currentUser) {
@@ -126,7 +129,7 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       ),
     ),
     stories: storyIds.length > 0 ? getStoriesByIdBatch(storyIds).then(indexById) : {},
-    story_member_ids: storyMemberIdsMap,
+    story_member_pages: storyMemberPagesMap,
     story_post_ids: storyPostIdsMap,
   }
 

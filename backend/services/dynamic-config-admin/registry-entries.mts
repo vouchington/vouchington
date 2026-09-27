@@ -16,6 +16,7 @@ const REGISTRY_ORDER = [
   'turnstile-config',
   'post-content-limits-config',
   'post-related-url-display-config',
+  'story-related-items-config',
   'rate-limit-thresholds',
   'route-rate-limit-config',
   'contribution-rate-limits',

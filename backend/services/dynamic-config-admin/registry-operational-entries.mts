@@ -17,6 +17,7 @@ import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
 import { scoreField } from './registry-entry-utils.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
+import { storyRelatedItemsRegistryEntry } from './registry-story-related-items-entry.mts'
 import {
   validateRssFeedCrawlConfig,
   validateRssFeedDiscoverabilityConfig,
@@ -25,6 +26,7 @@ import {
 
 export const operationalDynamicConfigRegistryEntries = [
   ...postRelatedUrlDisplayRegistryEntries,
+  storyRelatedItemsRegistryEntry,
   membershipBillingRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'activitypub-inbox',

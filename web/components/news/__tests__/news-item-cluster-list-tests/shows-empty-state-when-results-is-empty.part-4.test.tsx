@@ -3,6 +3,7 @@ import { act, fireEvent, screen } from '@testing-library/react'
 import {
   makeClusterItem,
   makeClusterResult,
+  makeClusterStoryPage,
   renderClusterList,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
@@ -29,7 +30,7 @@ describe('NewsItemClusterList', () => {
           official_rss_feed_item_id: null,
         },
       },
-      story_member_ids: { 'story-1': ['item-1', 'item-2'] },
+      story_member_pages: { 'story-1': makeClusterStoryPage(['item-2']) },
       rss_feed_item_elections: {},
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     }
@@ -69,7 +70,7 @@ describe('NewsItemClusterList', () => {
           official_rss_feed_item_id: null,
         },
       },
-      story_member_ids: { 'story-1': ['item-1', 'item-2'] },
+      story_member_pages: { 'story-1': makeClusterStoryPage(['item-2']) },
       rss_feed_item_elections: {},
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     }

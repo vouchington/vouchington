@@ -46,6 +46,22 @@ See also:
 - <a id="table-b--domain-surfaces"></a>[Table B — Domain Surfaces](reference-client-parity-matrix-table-b-domain-surfaces.md)
 - <a id="table-c--active-gaps-and-synchronization-rule"></a>[Table C — Active Gaps and Synchronization rule](reference-client-parity-matrix-table-c-active-gaps.md)
 
+## Bounded story article handoff
+
+Vouchington stages `story_member_pages` in feed, search, and community responses and the
+`native.stories.get.default` / `native.stories.get.after` shared fixtures before the linked
+`vouchington/vouchington-clients` PR consumes them. A preview contains related members only. Web,
+Swift, and .NET keep the first direct primary and its opaque cursor when a story repeats on a later
+feed page; shared deliveries stay standalone. Expansion renders the prefetched articles without a
+request, and explicit continuation appends up to 25 articles with the original primary excluded.
+Loaded rows, media, and actions stay present during loading or retry. The linked native
+[draft PR #183](https://github.com/vouchington/vouchington-clients/pull/183)
+remains draft until this producer contract reaches `main`, then its staged fixture and localization
+checks pass. Existing producer/client localization cleanup tracked by Vouchington
+#854 and
+[vouchington-clients#166](https://github.com/vouchington/vouchington-clients/issues/166) currently
+blocks the native exporter independently of these story fixtures.
+
 ## Push generation handoff
 
 Vouchington owns the API fixture and generated web client contract for push subscription generations.

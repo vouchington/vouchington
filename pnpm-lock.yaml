@@ -5438,6 +5438,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../stories
       '@services/tag-limits':
         specifier: workspace:^
         version: link:../tag-limits
@@ -9060,6 +9063,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -9069,6 +9075,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -9084,15 +9093,24 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
+      '@services/bookmarks':
+        specifier: workspace:^
+        version: link:../bookmarks
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/entity-fetch':
+        specifier: workspace:^
+        version: link:../entity-fetch
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/feeds':
+        specifier: workspace:^
+        version: link:../feeds
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication

@@ -5,7 +5,6 @@ import {
   getStoryWithItemCount,
   getStoryItemIds,
   getStoriesByIdBatch,
-  getItemIdsByStoryIds,
   getStoryItemSummaries,
 } from './get.mts'
 import { getPostStoryIdsByStoryIds, getVisiblePostStoryIdsByStoryIds } from './get-post-stories.mts'
@@ -127,16 +126,6 @@ describe('get', () => {
   it('getStoriesByIdBatch returns empty array for empty input', async () => {
     const results = await getStoriesByIdBatch([])
     expect(results).toEqual([])
-  })
-
-  it('getItemIdsByStoryIds returns empty for unknown ids', async () => {
-    const result = await getItemIdsByStoryIds([randomUUID()])
-    expect(result).toEqual({})
-  })
-
-  it('getItemIdsByStoryIds returns empty for empty input', async () => {
-    const result = await getItemIdsByStoryIds([])
-    expect(result).toEqual({})
   })
 })
 

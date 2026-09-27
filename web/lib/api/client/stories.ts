@@ -3,7 +3,21 @@
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import type { Post } from '@/types/posts'
-import type { Story } from '@/types/rss-feed-items'
+import type { Story, StoryPageResponse } from '@/types/rss-feed-items'
+
+export function getStoryMemberPage(
+  storyId: string,
+  options: { after?: string; excludeItemId: string; limit?: number; signal?: AbortSignal },
+): Promise<StoryPageResponse> {
+  return clientApi.get<StoryPageResponse>(`/api/v1/stories/${encodeURIComponent(storyId)}`, {
+    searchParams: {
+      limit: options.limit ?? 25,
+      ...(options.after ? { after: options.after } : {}),
+      exclude_item_id: options.excludeItemId,
+    },
+    ...(options.signal ? { signal: options.signal } : {}),
+  })
+}
 
 interface StoryPostResult {
   post: Post

@@ -40,6 +40,7 @@
     "@services/request-client-info": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/stories": "workspace:^",
     "@services/tag-limits": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/user-rate-limits": "workspace:^",

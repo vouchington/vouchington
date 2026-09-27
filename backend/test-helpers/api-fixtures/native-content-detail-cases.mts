@@ -1,5 +1,11 @@
 import { responseBody } from './static-response-bodies.mts'
 import { rssFeedItemDetailBody, rssFeedItemDetailId } from './rss-feed-items-data.mts'
+import {
+  nativeStoryFinalPage,
+  nativeStoryFirstPage,
+  nativeStoryId,
+  nativeStoryPrimaryId,
+} from './native-story-page-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const shared: Pick<ApiFixtureCase, 'auth' | 'consumers'> = {
@@ -8,6 +14,32 @@ const shared: Pick<ApiFixtureCase, 'auth' | 'consumers'> = {
 }
 
 export const nativeContentDetailApiFixtureCases: ApiFixtureCase[] = [
+  {
+    ...shared,
+    id: 'native.stories.get.default',
+    method: 'GET',
+    path: `/api/v1/stories/${nativeStoryId}`,
+    query: { limit: '1', exclude_item_id: nativeStoryPrimaryId },
+    route: { routeTemplate: '/api/v1/stories/:id', pathParams: { id: nativeStoryId } },
+    status: 200,
+    body: nativeStoryFirstPage,
+    migratedFrom: ['backend/api/v1/stories/story.mts'],
+  },
+  {
+    ...shared,
+    id: 'native.stories.get.after',
+    method: 'GET',
+    path: `/api/v1/stories/${nativeStoryId}`,
+    query: {
+      limit: '25',
+      exclude_item_id: nativeStoryPrimaryId,
+      after: nativeStoryFirstPage.page_info.end_cursor!,
+    },
+    route: { routeTemplate: '/api/v1/stories/:id', pathParams: { id: nativeStoryId } },
+    status: 200,
+    body: nativeStoryFinalPage,
+    migratedFrom: ['backend/api/v1/stories/story.mts'],
+  },
   {
     ...shared,
     id: 'native.rss-feed-item.detail.default',

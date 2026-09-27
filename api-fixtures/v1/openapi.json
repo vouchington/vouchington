@@ -14889,6 +14889,16 @@
         "properties": {},
         "type": "object"
       },
+      "Record_string_Array_string": {
+        "additionalProperties": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "properties": {},
+        "type": "object"
+      },
       "Record_string_ElectionVote": {
         "additionalProperties": {
           "$ref": "#/components/schemas/ElectionVote"
@@ -15380,6 +15390,20 @@
       "Record_string_ViewHostnameElection": {
         "additionalProperties": {
           "$ref": "#/components/schemas/ViewHostnameElection"
+        },
+        "properties": {},
+        "type": "object"
+      },
+      "Record_string_ViewRssFeedItem": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ViewRssFeedItem"
+        },
+        "properties": {},
+        "type": "object"
+      },
+      "Record_string_ViewRssFeedItemElection": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ViewRssFeedItemElection"
         },
         "properties": {},
         "type": "object"
@@ -17437,6 +17461,174 @@
           "updated_at"
         ],
         "type": "object"
+      },
+      "StoryMemberPage": {
+        "additionalProperties": false,
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "page_info": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": ["item_ids", "page_info"],
+        "type": "object"
+      },
+      "StoryPageResponse": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "bookmarks": {
+                "additionalProperties": false,
+                "properties": {},
+                "type": "object"
+              },
+              "election_votes": {
+                "additionalProperties": false,
+                "properties": {},
+                "type": "object"
+              },
+              "item_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "page_info": {
+                "$ref": "#/components/schemas/PageInfo"
+              },
+              "posts": {
+                "$ref": "#/components/schemas/Record_string_Post"
+              },
+              "posts_metrics": {
+                "$ref": "#/components/schemas/Record_string_PostMetrics"
+              },
+              "related_posts_by_url_id": {
+                "$ref": "#/components/schemas/Record_string_Array_string"
+              },
+              "rss_feed_bookmarks": {
+                "additionalProperties": false,
+                "properties": {},
+                "type": "object"
+              },
+              "rss_feed_item_content_html": {
+                "$ref": "#/components/schemas/Record_string_string"
+              },
+              "rss_feed_item_elections": {
+                "$ref": "#/components/schemas/Record_string_ViewRssFeedItemElection"
+              },
+              "rss_feed_item_embeds": {
+                "$ref": "#/components/schemas/Record_string_UrlEmbed"
+              },
+              "rss_feed_item_thumbnail_url": {
+                "$ref": "#/components/schemas/Record_string_string"
+              },
+              "rss_feed_items": {
+                "$ref": "#/components/schemas/Record_string_ViewRssFeedItem"
+              },
+              "story": {
+                "$ref": "#/components/schemas/Story"
+              },
+              "story_post_ids": {
+                "$ref": "#/components/schemas/Record_string_string"
+              }
+            },
+            "required": [
+              "bookmarks",
+              "election_votes",
+              "item_ids",
+              "page_info",
+              "posts",
+              "posts_metrics",
+              "related_posts_by_url_id",
+              "rss_feed_bookmarks",
+              "rss_feed_item_content_html",
+              "rss_feed_item_elections",
+              "rss_feed_item_embeds",
+              "rss_feed_item_thumbnail_url",
+              "rss_feed_items",
+              "story",
+              "story_post_ids"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "bookmarks": {
+                "$ref": "#/components/schemas/Record_string_Record_string_boolean"
+              },
+              "election_votes": {
+                "$ref": "#/components/schemas/Record_string_ElectionVote"
+              },
+              "item_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "page_info": {
+                "$ref": "#/components/schemas/PageInfo"
+              },
+              "posts": {
+                "$ref": "#/components/schemas/Record_string_Post"
+              },
+              "posts_metrics": {
+                "$ref": "#/components/schemas/Record_string_PostMetrics"
+              },
+              "related_posts_by_url_id": {
+                "$ref": "#/components/schemas/Record_string_Array_string"
+              },
+              "rss_feed_bookmarks": {
+                "$ref": "#/components/schemas/Record_string_Record_string_boolean"
+              },
+              "rss_feed_item_content_html": {
+                "$ref": "#/components/schemas/Record_string_string"
+              },
+              "rss_feed_item_elections": {
+                "$ref": "#/components/schemas/Record_string_ViewRssFeedItemElection"
+              },
+              "rss_feed_item_embeds": {
+                "$ref": "#/components/schemas/Record_string_UrlEmbed"
+              },
+              "rss_feed_item_thumbnail_url": {
+                "$ref": "#/components/schemas/Record_string_string"
+              },
+              "rss_feed_items": {
+                "$ref": "#/components/schemas/Record_string_ViewRssFeedItem"
+              },
+              "story": {
+                "$ref": "#/components/schemas/Story"
+              },
+              "story_post_ids": {
+                "$ref": "#/components/schemas/Record_string_string"
+              }
+            },
+            "required": [
+              "bookmarks",
+              "election_votes",
+              "item_ids",
+              "page_info",
+              "posts",
+              "posts_metrics",
+              "related_posts_by_url_id",
+              "rss_feed_bookmarks",
+              "rss_feed_item_content_html",
+              "rss_feed_item_elections",
+              "rss_feed_item_embeds",
+              "rss_feed_item_thumbnail_url",
+              "rss_feed_items",
+              "story",
+              "story_post_ids"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "StoryPostResult": {
         "additionalProperties": false,
@@ -21147,6 +21339,34 @@
           "published_at",
           "rss_feed",
           "url"
+        ],
+        "type": "object"
+      },
+      "ViewRssFeedItemElection": {
+        "additionalProperties": false,
+        "properties": {
+          "__entity_type": {
+            "const": "rss_feed_item_election"
+          },
+          "id": {
+            "type": "string"
+          },
+          "votes_count_down": {
+            "type": "number"
+          },
+          "votes_count_up": {
+            "type": "number"
+          },
+          "votes_score_net": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "__entity_type",
+          "id",
+          "votes_count_down",
+          "votes_count_up",
+          "votes_score_net"
         ],
         "type": "object"
       },
@@ -59003,6 +59223,34 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "exclude_item_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 25,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -59010,7 +59258,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Record_string_unknown"
+                  "$ref": "#/components/schemas/StoryPageResponse"
                 }
               }
             },

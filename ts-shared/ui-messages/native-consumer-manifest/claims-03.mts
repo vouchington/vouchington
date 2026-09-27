@@ -131,6 +131,8 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_03 = [
   { key: 'native.auth.verifyCode', consumers: ['swift'] },
   { key: 'native.common.done', consumers: ['swift'] },
   { key: 'native.common.ok', consumers: ['swift'] },
+  { key: 'native.common.relatedArticles', consumers: ['dotnet', 'swift'] },
+  { key: 'native.common.relatedArticlesMore', consumers: ['dotnet', 'swift'] },
   { key: 'native.common.retry', consumers: ['dotnet', 'swift'] },
   { key: 'native.common.somethingWentWrong', consumers: ['swift'] },
   { key: 'native.dotnet.auth.appleSignIn', consumers: ['dotnet'] },

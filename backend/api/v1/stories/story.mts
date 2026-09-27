@@ -1,49 +1,51 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
-import { getStoryItemIds, getStoryWithItemCount } from '@services/stories'
-import {
-  getRssFeedItemByIdCachedBatch,
-  getRssFeedItemElectionByIdCachedBatch,
-} from '@services/entity-fetch'
-import { indexById, isUUID } from '@modules/utils'
-import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
-import { getRssFeedItemEmbedsByItems } from '@services/rss-feed-items/get-rss-feed-item-embeds'
+import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { createPaginationParser, defineQueryContract, queryUuid } from '@modules/pagination'
+import { isUUID } from '@modules/utils'
+import { getStoryById, getStoryMemberPagesBatch } from '@services/stories'
+import { hydrateStoryMemberPage } from '@services/stories/story-page-hydration'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { isAdminUser } from '@services/users'
+import type { Story } from '@services/stories/types'
+import type { StoryMemberPage } from '@services/stories/story-member-pages'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
-/**
- * GET /api/v1/stories/:id — Returns story with hydrated RSS feed items and elections.
- */
+const storyMembersParser = createPaginationParser({
+  cursor: { type: 'simple' },
+  limit: { min: 1, default: 25, max: 25 },
+})
+const storyMembersQuery = defineQueryContract({ exclude_item_id: queryUuid() })
+type StoryPageResponse = { story: Story } & StoryMemberPage &
+  Awaited<ReturnType<typeof hydrateStoryMemberPage>>
+
 app.route('/api/v1/stories/:id').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/stories/:id', storyMembersParser, storyMembersQuery)
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/stories/:id')
-
   const storyId = ctx.params.id!
   ctx.assert(isUUID(storyId), 400, 'Invalid story ID')
-
-  const story = await getStoryWithItemCount(storyId)
-  ctx.assert(story, 404, 'Story not found')
-
-  if (!currentUser) {
-    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-  }
-
-  const itemIds = await getStoryItemIds(storyId)
-  const electionsPromise = getRssFeedItemElectionByIdCachedBatch(itemIds).then(indexById)
-  const rssFeedItemsPromise = getRssFeedItemByIdCachedBatch(itemIds).then(items =>
-    items.flatMap(item => (item == null ? [] : [proxyRssFeedItemCoverArt(item)])),
+  const { limit, after } = storyMembersParser.parse(ctx.query)
+  const exclude_item_id = ctx.query.exclude_item_id as string | undefined
+  ctx.assert(
+    exclude_item_id === undefined || isUUID(exclude_item_id),
+    400,
+    'Invalid excluded item ID',
   )
-
-  const output: Record<string, unknown> = {
-    story,
-    rss_feed_items: rssFeedItemsPromise.then(indexById),
-    rss_feed_item_embeds: rssFeedItemsPromise.then(items =>
-      getRssFeedItemEmbedsByItems(items, {}, isAdminUser(currentUser) ? 'administrator' : 'public'),
-    ),
-    rss_feed_item_elections: electionsPromise,
-    item_ids: itemIds,
-  }
-
+  const query = prepareQueryForValidation(ctx.query, {
+    ...storyMembersParser.queryContract,
+    ...storyMembersQuery.queryContract,
+  })
+  validateRequestContract(ctx, 'GET:/api/v1/stories/:id', { query })
+  const story = await getStoryById(storyId)
+  ctx.assert(story, 404, 'Story not found')
+  const page = (
+    await getStoryMemberPagesBatch(currentUser, [{ story_id: story.id, exclude_item_id, after }], {
+      limit,
+    })
+  )[story.id]!
+  const hydrated = await hydrateStoryMemberPage(currentUser, story.id, page.item_ids)
+  const output: StoryPageResponse = { story, ...page, ...hydrated }
+  if (!currentUser) ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   ctx.setType('json')
-  await ctx.pipeline(streamJsonObject(output))
+  await ctx.pipeline(streamJsonObject(apiResponse('GET:/api/v1/stories/:id', output)))
 })

@@ -125,7 +125,7 @@ export async function runAndCapture(
   label: string,
   fn: () => Promise<unknown>,
   nameSuffix?: string,
-  captureQueryName?: string,
+  captureQueryName?: string | readonly string[],
 ): Promise<void> {
   console.log(`Running: ${label}`)
   clearCapturedQueries()
@@ -138,8 +138,9 @@ export async function runAndCapture(
   }
 
   const allCaptured = getCapturedQueries()
-  const captured = captureQueryName
-    ? allCaptured.filter(query => extractQueryName(query.text) === captureQueryName)
+  const selectedNames = typeof captureQueryName === 'string' ? [captureQueryName] : captureQueryName
+  const captured = selectedNames
+    ? allCaptured.filter(query => selectedNames.includes(extractQueryName(query.text) ?? ''))
     : allCaptured
   console.log(
     `  Captured ${captured.length}${captureQueryName ? `/${allCaptured.length} ${captureQueryName} queries` : ' queries'}`,

@@ -4,6 +4,7 @@ import {
   makeClusterElection,
   makeClusterItem,
   makeClusterResult,
+  makeClusterStoryPage,
   renderClusterList,
 } from '@/test-helpers/components/news/news-item-cluster-list.mock-support'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
@@ -77,7 +78,7 @@ describe('NewsItemClusterList', () => {
           official_rss_feed_item_id: null,
         },
       },
-      story_member_ids: { 'story-1': ['item-1', 'item-2'] },
+      story_member_pages: { 'story-1': makeClusterStoryPage(['item-2']) },
       rss_feed_item_elections: {
         'item-1': makeClusterElection('item-1'),
         'item-2': makeClusterElection('item-2'),
