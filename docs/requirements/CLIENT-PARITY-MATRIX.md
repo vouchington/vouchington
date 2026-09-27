@@ -54,6 +54,12 @@ logout, and treat a worker binding mismatch as disabled. Native clients do not o
 state and continue using the supported no-body logout request. Deploy the server migration and
 generated contract before releasing a client that adopts the optional logout binding.
 
+## Copyright claimant attribution handoff
+
+Vouchington stages the required nullable claimant public-profile contract in the web API fixtures.
+Web consumes it now. Swift and .NET consumption remains deferred to #853 and #854; native clients
+must not infer a legal identity from the nullable profile.
+
 ### Media placement contract handoff
 
 `api-fixtures/v1` now stages immutable image placement tuples for every persisted public image

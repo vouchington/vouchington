@@ -1,7 +1,11 @@
 export interface WebFixtureServerEndpointContext {
   readonly copyrightNotices: Pick<
     typeof import('@/lib/api/server/copyright-notices'),
-    'getCopyrightEmailIntakeReviewQueue' | 'getCopyrightNotices' | 'getCopyrightReviewQueue'
+    | 'getCopyrightEmailIntakeReviewQueue'
+    | 'getCopyrightNotices'
+    | 'getCopyrightNoticeServer'
+    | 'getCopyrightParticipantNoticeServer'
+    | 'getCopyrightReviewQueue'
   >
   readonly adminOAuthClients: Pick<
     typeof import('@/lib/api/server/admin-oauth-clients'),

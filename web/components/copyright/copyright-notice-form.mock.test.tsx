@@ -5,6 +5,18 @@ import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
 import { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
 import { CopyrightNoticeForm } from './copyright-notice-form'
 
+vi.mock(import('@/lib/auth/context'), () => ({
+  useAuth: () => ({
+    currentUser: {
+      id: 'claimant-user',
+      username: 'current-claimant',
+      roles: [],
+      isOfficialAccount: false,
+    },
+    isAuthenticated: true,
+  }),
+}))
+
 vi.mock(import('next/navigation'), () => navMockModule)
 
 vi.mock(import('@/hooks/use-turnstile-token'), () => ({
@@ -35,6 +47,19 @@ describe('CopyrightNoticeForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockNav.reset()
+  })
+
+  it('discloses the current public profile before submission', () => {
+    render(<CopyrightNoticeForm />)
+
+    expect(screen.getByRole('link', { name: 'profile' })).toHaveAttribute(
+      'href',
+      '/user/current-claimant',
+    )
+    expect(screen.getByText(/public profile to signed-in members/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/legal name, contact details, and signature stay private/i),
+    ).toBeInTheDocument()
   })
 
   it('resolves a hosted-use URL and submits only selected images without exposing raw IDs', async () => {

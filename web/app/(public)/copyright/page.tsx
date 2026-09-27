@@ -19,8 +19,9 @@ export default function CopyrightPage() {
         registration and contact details are published.
       </p>
       <p>
-        Signed-in members can see accepted case records. Public case views do not show names,
-        contact details, raw email, evidence, or agent analysis.
+        Signed-in members can see accepted case records and a claimant&apos;s current public
+        profile. They do not show legal names, contact details, raw email, evidence, or agent
+        analysis.
       </p>
       <div className='space-y-2'>
         <Link

@@ -1,6 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import { copyrightStaffQueueCursorScope } from '../../../services/copyright-notices/read-models-staff.mts'
+import { copyrightAcceptedNoticeCursorScope } from '../../../services/copyright-notices/read-models.mts'
 import sql from 'sql-template-strings'
 
 export async function readCopyrightNoticeTargetId(noticeId: string): Promise<string> {
@@ -9,6 +10,24 @@ export async function readCopyrightNoticeTargetId(noticeId: string): Promise<str
     ORDER BY id LIMIT 1`)
   if (!rows[0]) throw new Error(`Copyright notice has no target: ${noticeId}`)
   return rows[0].id
+}
+
+export async function readCopyrightAcceptedNoticeCursorBefore(noticeId: string): Promise<string> {
+  const { rows } = await read<{ id: string; cursor_accepted_at: string }>(
+    sql`/* readCopyrightAcceptedNoticeCursorBefore */
+      SELECT notice.id, to_char(
+        (notice.accepted_at + interval '1 microsecond') AT TIME ZONE 'UTC',
+        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+      ) AS cursor_accepted_at
+      FROM copyright_notices notice
+      WHERE notice.id = ${noticeId} AND notice.accepted_at IS NOT NULL`,
+  )
+  if (!rows[0]) throw new Error(`Accepted copyright notice not found: ${noticeId}`)
+  return encodeScopedPreciseTimestampCursor(
+    rows[0].cursor_accepted_at,
+    rows[0].id,
+    copyrightAcceptedNoticeCursorScope,
+  )
 }
 
 /**

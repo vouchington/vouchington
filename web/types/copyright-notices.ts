@@ -5,6 +5,7 @@ export type CopyrightNoticeSummary = {
   accepted_at: string
   provisional_withholding_at: string | null
   target_count: number
+  claimant: { user_id: string; display_name: string } | null
 }
 
 export type CopyrightNoticesPage = {

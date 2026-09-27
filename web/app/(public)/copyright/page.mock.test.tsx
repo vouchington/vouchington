@@ -108,6 +108,7 @@ describe('copyright pages', () => {
           accepted_at: '2026-07-01T00:00:00.000Z',
           provisional_withholding_at: null,
           target_count: 1,
+          claimant: null,
         },
       ],
       page_info: { has_next_page: true, start_cursor: 'a', end_cursor: 'b' },

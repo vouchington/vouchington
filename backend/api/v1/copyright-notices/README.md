@@ -21,9 +21,10 @@ replies use `POST /api/v1/copyright-email-intakes/:id/correspondence` for staff 
 remains attached and no agent, restriction, or outbound message runs automatically.
 
 Accepted-case records are available to every signed-in member through `GET /api/v1/copyright-notices`.
-The public projection excludes participant details. It uses the canonical opaque `after` cursor and
-bounded `limit` (1–100; default 100), returning `page_info` so the member-visible index can continue
-beyond its first page.
+The public projection includes a required nullable claimant profile with only the current public ID
+and display label. It excludes legal identity, contact details, signatures, and participant details.
+It uses the canonical opaque `after` cursor and bounded `limit` (1–100; default 100), returning
+`page_info` so the member-visible index can continue beyond its first page.
 
 The staff review queue uses the same bounded `after` and `limit` contract. Its cursor is scoped to
 the actionable queue and orders by immutable `(received_at, id)`, so every actionable case,

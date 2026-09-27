@@ -13,6 +13,7 @@ describe('CopyrightNoticeDetailView', () => {
           accepted_at: '2026-01-02T00:00:00.000Z',
           provisional_withholding_at: null,
           target_count: 1,
+          claimant: { user_id: 'claimant-123', display_name: 'Current claimant' },
           targets: [
             {
               id: 'target-123',
@@ -34,6 +35,10 @@ describe('CopyrightNoticeDetailView', () => {
 
     expect(screen.getByText('Case case-123')).toBeInTheDocument()
     expect(screen.getByText('notice accepted', { exact: false })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Current claimant' })).toHaveAttribute(
+      'href',
+      '/user/claimant-123',
+    )
     expect(screen.queryByText(/claimant@example/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/agent recommendation/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Appeal' })).not.toBeInTheDocument()
@@ -50,6 +55,7 @@ describe('CopyrightNoticeDetailView', () => {
           accepted_at: '2026-01-02T00:00:00.000Z',
           provisional_withholding_at: null,
           target_count: 1,
+          claimant: null,
           targets: [],
           timeline: [],
         }}
@@ -65,5 +71,6 @@ describe('CopyrightNoticeDetailView', () => {
       'href',
       '/copyright/notices/case-123/counter-notice',
     )
+    expect(screen.queryByText('Claimant:')).not.toBeInTheDocument()
   })
 })

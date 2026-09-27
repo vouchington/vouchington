@@ -45,6 +45,21 @@ export async function connectTestOAuthAccount(
   }
 }
 
+export async function setTestOAuthAccountData(
+  provider: OAuthProvider,
+  providerUserId: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const config = providerTableConfigs[provider]
+  const { rowCount } = await write(
+    `UPDATE ${config.table} SET ${config.dataColumn} = $1 WHERE ${config.providerUserIdColumn} = $2`,
+    [JSON.stringify(data), providerUserId],
+  )
+  if (!rowCount) {
+    throw new Error(`setTestOAuthAccountData: no ${provider} account found for ${providerUserId}`)
+  }
+}
+
 export async function setTestOAuthAccountTokens(
   provider: OAuthProvider,
   providerUserId: string,

@@ -10725,7 +10725,7 @@
     },
     "GET:/api/v1/copyright-notices": {
       "bodyKind": "content",
-      "hash": "25d75957fe0a0c16be24b3ef14e4b5c9bd66dc4eaca857802ce29ed8c286fa1f",
+      "hash": "6e222b9e45b15b7bf87f49d04a0fa0d037bfab278aeae8c8da3632ea48666176",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -10745,6 +10745,35 @@
                       "required": true,
                       "schema": {
                         "type": "string"
+                      }
+                    },
+                    "claimant": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "display_name": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "user_id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "id": {
@@ -10833,6 +10862,477 @@
                   }
                 },
                 "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/index.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/copyright-notices/:id": {
+      "bodyKind": "content",
+      "hash": "588a69c994513fea3ffd3f9d0b2942a0e6864c00794838a4bbbacd5c3ea720cc",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id",
+      "schema": {
+        "definitions": {
+          "CopyrightPublicNotice": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "claimant": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "display_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "user_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "jurisdiction": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "us_dmca"
+                }
+              },
+              "provisional_withholding_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "received_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "target_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_notice": {
+              "required": true,
+              "schema": {
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "targets": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "hosted_use_url": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "restriction_status": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "active"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "lifted"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "pending"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "timeline": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "created_at": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "event_type": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "CopyrightPublicNotice",
+                    "type": "ref"
+                  }
+                ]
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/copyright-notices/index.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/copyright-notices/:id/participant": {
+      "bodyKind": "content",
+      "hash": "0af7d2ab4683e0f42402b6e1d7416a96971e9e5470eb57557e9d949a86008235",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/copyright-notices/:id/participant",
+      "schema": {
+        "definitions": {
+          "CopyrightPublicNotice": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "claimant": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "display_name": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "user_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "jurisdiction": {
+                "required": true,
+                "schema": {
+                  "type": "literal",
+                  "value": "us_dmca"
+                }
+              },
+              "provisional_withholding_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "received_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "target_count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "copyright_notice": {
+              "required": true,
+              "schema": {
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "respondable_target_ids": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "submissions": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "kind": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "received_at": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "source_kind": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "viewer_role": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "literal",
+                              "value": "claimant"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "poster"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "staff"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "targets": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "hosted_use_url": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "null"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              },
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "restriction_status": {
+                                "required": true,
+                                "schema": {
+                                  "type": "union",
+                                  "variants": [
+                                    {
+                                      "type": "literal",
+                                      "value": "active"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "lifted"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "pending"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "timeline": {
+                        "required": true,
+                        "schema": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "created_at": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "event_type": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "CopyrightPublicNotice",
+                    "type": "ref"
+                  }
+                ]
               }
             }
           },
@@ -76057,11 +76557,148 @@
       ],
       "path": "/api/v1/copyright-notices",
       "responseSchema": {
-        "hash": "074daf1f3dc0959dbfa83af5cbbcb598805640e6c6f0a9e1c93bcea2ae4345c5",
+        "hash": "4e0fd1b2f8f9b72f1799eb8eeaaf5bc6fd7af4a47ded4ea6914273276d9bb993",
         "key": "web.copyright.notices.default"
       },
       "route": {
         "routeTemplate": "/api/v1/copyright-notices"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices",
+      "bodyFile": "responses/web.copyright.notices.null-claimant.json",
+      "consumers": ["web"],
+      "id": "web.copyright.notices.null-claimant",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "web/lib/api/client/copyright-notices.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices",
+      "responseSchema": {
+        "hash": "a161aba958731980d58b3bebde4e1a1df873744498236fbc6ee922782b8ae9db",
+        "key": "web.copyright.notices.null-claimant"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/copyright-notices"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id",
+      "bodyFile": "responses/web.copyright.notice.detail.populated.json",
+      "consumers": ["web"],
+      "id": "web.copyright.notice.detail.populated",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "web/lib/api/client/copyright-notices.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804",
+      "responseSchema": {
+        "hash": "7dde673db6a929374f915ca97fe1380ce6618e01742d57249f20935a7ba75d69",
+        "key": "web.copyright.notice.detail.populated"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000804"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id",
+      "bodyFile": "responses/web.copyright.notice.detail.null-claimant.json",
+      "consumers": ["web"],
+      "id": "web.copyright.notice.detail.null-claimant",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "web/lib/api/client/copyright-notices.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804",
+      "responseSchema": {
+        "hash": "9e46cdf92384461bf15c0e41ee2cb3607f3bc16c63538397838b029722f47b5e",
+        "key": "web.copyright.notice.detail.null-claimant"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000804"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/participant",
+      "bodyFile": "responses/web.copyright.notice.participant.populated.json",
+      "consumers": ["web"],
+      "id": "web.copyright.notice.participant.populated",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "web/lib/api/client/copyright-notices.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
+      "responseSchema": {
+        "hash": "531c0ad893619477bcabc808a6fc99f510bcf4c40e7b2aad97701d4625cb0127",
+        "key": "web.copyright.notice.participant.populated"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000804"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/participant"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/copyright-notices/:id/participant",
+      "bodyFile": "responses/web.copyright.notice.participant.null-claimant.json",
+      "consumers": ["web"],
+      "id": "web.copyright.notice.participant.null-claimant",
+      "method": "GET",
+      "migratedFrom": [
+        "backend/api/v1/copyright-notices/index.mts",
+        "web/lib/api/client/copyright-notices.ts",
+        "web/lib/api/server/copyright-notices.ts"
+      ],
+      "path": "/api/v1/copyright-notices/00000000-0000-7000-8000-000000000804/participant",
+      "responseSchema": {
+        "hash": "b931233288238ab122ac15480c8a89657fe6c158cbf54f8b80102870a1d31ddb",
+        "key": "web.copyright.notice.participant.null-claimant"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000804"
+        },
+        "routeTemplate": "/api/v1/copyright-notices/:id/participant"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-copyright-cases.mts"
