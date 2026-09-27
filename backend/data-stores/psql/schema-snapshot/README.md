@@ -13,9 +13,11 @@ every DDL-affecting change must regenerate and commit the snapshot alongside it.
 - Push the migration, config-driven SQL, or view change to an open same-repository PR. Its head
   must contain the current base branch tip, including for a stacked PR.
 - Request generation by commenting `/postgresql-snapshot-update` on the PR, running
-  `pnpm run db:snapshot:update` from its pushed head, or manually dispatching
-  `postgresql-snapshot-update.yml` from `main` with `pr_number`. The command only dispatches CI;
-  it does not read or change the worktree database.
+  `pnpm run db:snapshot:update` from its pushed head, running
+  `pnpm run db:snapshot:update -- --pr <number>` for an explicit PR, or manually dispatching
+  `postgresql-snapshot-update.yml` from `main` with `pr_number`. With no number, the command infers
+  the current branch's open pull request in the repository `gh repo view` resolves. The command only
+  dispatches CI; it does not read or change the worktree database.
 - The workflow migrates a fresh PostgreSQL 18 service from the exact PR head and commits only
   `schema.json` and generated `markdown/` files to that head. An unchanged snapshot creates no
   commit. Fetch the publisher commit before further local work or rebasing.
