@@ -90,6 +90,19 @@ describe('post classifier application schema', () => {
     expect(await fixture.read()).toBeUndefined()
   })
 
+  it('cascades a receipt when its pre-reserved C3 batch is deleted', async () => {
+    const classifier = await createClassifierFixture()
+    const batch = await classifier.createTopicBatch()
+    const fixture = await createFixture({
+      postId: classifier.postId,
+      decisionBatchId: batch.batchId,
+    })
+
+    await classifier.deleteBatch(batch.batchId)
+
+    expect(await fixture.read()).toBeUndefined()
+  })
+
   it('bounds durable provider failure metadata without counting effect-only retries', async () => {
     const classifier = await createClassifierFixture()
     const batch = await classifier.createTopicBatch()

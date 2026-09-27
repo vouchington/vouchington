@@ -95,7 +95,7 @@ DO $$ BEGIN
       ADD CONSTRAINT fk_post_classifier_applications__batch_post
       FOREIGN KEY (decision_batch_id, post_id)
       REFERENCES classifier_decision_batches (id, post_id)
-      ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED NOT VALID;
+      ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED NOT VALID;
   END IF;
 END $$;
 ALTER TABLE post_classifier_applications
