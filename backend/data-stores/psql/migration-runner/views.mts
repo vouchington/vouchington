@@ -3,7 +3,11 @@ import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
 import { splitSqlStatements } from './sql-statements.mts'
-import { buildDropViewsStatement, extractViewNames } from './view-sql.mts'
+import {
+  buildDropViewsStatement,
+  extractViewDeclarations,
+  type ManagedViewDeclaration,
+} from './view-sql.mts'
 
 const isTest = process.env.NODE_ENV === 'test'
 
@@ -13,7 +17,13 @@ const silentLogger: ViewLogger = { error: () => {}, log: () => {} }
 
 type PendingViewStatement = { sql: string; view: string }
 type AttemptedView = { pendingView: PendingViewStatement; success: boolean }
-export { buildDropViewsStatement, extractViewNames } from './view-sql.mts'
+export {
+  buildDropViewStatement,
+  buildDropViewsStatement,
+  extractViewDeclarations,
+  extractViewNames,
+  type ManagedViewDeclaration,
+} from './view-sql.mts'
 
 export interface RunViewsOptions {
   forced?: boolean
@@ -35,18 +45,14 @@ export async function runViews(rootDir: string, options: RunViewsOptions = {}) {
   )
 
   if (options.forced) {
-    const uniqueViewNames = [
-      ...new Set(viewStatements.flatMap(viewStatement => extractViewNames(viewStatement.sql))),
-    ]
-    const dropStatement = buildDropViewsStatement(uniqueViewNames)
-
+    const declarations = uniqueViewDeclarations(
+      viewStatements.flatMap(viewStatement => extractViewDeclarations(viewStatement.sql)),
+    )
+    const dropStatement = buildDropViewsStatement(declarations)
     if (dropStatement) {
       await writer(`/* runViews */ ${dropStatement}`)
       if (!isTest) {
-        logger.log(
-          'Forced view rebuild: dropped %d views before recreation',
-          uniqueViewNames.length,
-        )
+        logger.log('Forced view rebuild: dropped %d views before recreation', declarations.length)
       }
     }
   }
@@ -125,4 +131,14 @@ function throwBlockedViewsError(
     throw new Error(lastError.message, { cause: lastError })
   }
   throw new Error(`View recreation made no progress for: ${blockedViews}`)
+}
+
+function uniqueViewDeclarations(declarations: ManagedViewDeclaration[]): ManagedViewDeclaration[] {
+  const seenDeclarations = new Set<string>()
+  return declarations.filter(declaration => {
+    const key = `${declaration.type}:${declaration.name}`
+    if (seenDeclarations.has(key)) return false
+    seenDeclarations.add(key)
+    return true
+  })
 }

@@ -7,7 +7,13 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import type { QueryExecutor, QueryInput } from '../types.mts'
 import { loadSqlParserModule } from './sql-statements.mts'
-import { buildDropViewsStatement, extractViewNames, runViews } from './views.mts'
+import {
+  buildDropViewStatement,
+  buildDropViewsStatement,
+  extractViewDeclarations,
+  extractViewNames,
+  runViews,
+} from './views.mts'
 
 describe('migration runner views', () => {
   beforeAll(() => loadSqlParserModule())
@@ -43,22 +49,49 @@ describe('migration runner views', () => {
     ])
   })
 
+  it('extracts typed materialized view declarations without selecting tables', () => {
+    expect(
+      extractViewDeclarations(`
+        CREATE MATERIALIZED VIEW "quoted schema"."quoted.matview" AS SELECT 1;
+        CREATE TABLE ordinary_table AS SELECT 1;
+        CREATE VIEW ordinary_view AS SELECT 1;
+      `),
+    ).toEqual([
+      { name: '"quoted schema"."quoted.matview"', type: 'materialized view' },
+      { name: 'ordinary_view', type: 'view' },
+    ])
+  })
+
   it('returns empty array for SQL that cannot be parsed', () => {
     // Exercises the try-catch around parseSync in extractViewNames
     expect(extractViewNames('CREATE TABLE (')).toEqual([])
   })
 
-  it('builds stable drop statements for unique view names', () => {
-    expect(buildDropViewsStatement([])).toBeNull()
-    expect(buildDropViewsStatement(['view_a', 'view_b', 'view_a'])).toBe(
-      'DROP VIEW IF EXISTS view_a, view_b;',
+  it('builds restricted typed drop statements', () => {
+    expect(buildDropViewStatement({ name: 'view_a', type: 'view' })).toBe(
+      'DROP VIEW IF EXISTS view_a;',
     )
+    expect(buildDropViewStatement({ name: 'matview_b', type: 'materialized view' })).toBe(
+      'DROP MATERIALIZED VIEW IF EXISTS matview_b;',
+    )
+  })
+
+  it('builds one escaped server-side teardown command', () => {
+    const statement = buildDropViewsStatement([
+      { name: '"quoted\'\\$tag$"', type: 'view' },
+      { name: 'matview', type: 'materialized view' },
+    ])
+
+    expect(statement).toContain('DO ')
+    expect(statement).toContain('dependent_objects_still_exist')
+    expect(statement).toContain('DROP VIEW IF EXISTS "quoted')
+    expect(statement).toContain('DROP MATERIALIZED VIEW IF EXISTS matview;')
   })
 
   it('drops forced views before recreating SQL files', async () => {
     const viewsDir = await makeViewsDir()
     await writeFile(join(viewsDir, '0010-a.sql'), 'CREATE OR REPLACE VIEW view_a AS SELECT 1;')
-    await writeFile(join(viewsDir, '0020-b.sql'), 'CREATE OR REPLACE VIEW view_b AS SELECT 2;')
+    await writeFile(join(viewsDir, '0020-b.sql'), 'CREATE MATERIALIZED VIEW view_b AS SELECT 2;')
     const writes: string[] = []
 
     await runViews('/unused-root', {
@@ -67,11 +100,44 @@ describe('migration runner views', () => {
       writer: makeWriter(writes),
     })
 
-    expect(writes).toEqual([
-      '/* runViews */ DROP VIEW IF EXISTS view_a, view_b;',
+    expect(writes[0]).toContain('DROP VIEW IF EXISTS view_a;')
+    expect(writes[0]).toContain('DROP MATERIALIZED VIEW IF EXISTS view_b;')
+    expect(writes.slice(1)).toEqual([
       '/* runViews */ CREATE OR REPLACE VIEW view_a AS SELECT 1',
-      '/* runViews */ CREATE OR REPLACE VIEW view_b AS SELECT 2',
+      '/* runViews */ CREATE MATERIALIZED VIEW view_b AS SELECT 2',
     ])
+  })
+
+  it('drops a repeated managed declaration once before recreating each statement', async () => {
+    const viewsDir = await makeViewsDir()
+    await writeFile(
+      join(viewsDir, '0010-a.sql'),
+      'CREATE VIEW view_a AS SELECT 1; CREATE OR REPLACE VIEW view_a AS SELECT 2;',
+    )
+    const writes: string[] = []
+
+    await runViews('/unused-root', { folder: viewsDir, forced: true, writer: makeWriter(writes) })
+
+    expect(writes.filter(sql => sql.includes('DROP VIEW IF EXISTS view_a;'))).toHaveLength(1)
+    expect(writes.slice(1)).toEqual([
+      '/* runViews */ CREATE VIEW view_a AS SELECT 1',
+      '/* runViews */ CREATE OR REPLACE VIEW view_a AS SELECT 2',
+    ])
+  })
+
+  it('propagates non-dependency drop errors immediately', async () => {
+    const viewsDir = await makeViewsDir()
+    await writeFile(join(viewsDir, '0010-a.sql'), 'CREATE VIEW view_a AS SELECT 1;')
+
+    await expect(
+      runViews('/unused-root', {
+        folder: viewsDir,
+        forced: true,
+        writer: makeWriter([], () => {
+          throw new Error('permission denied')
+        }),
+      }),
+    ).rejects.toThrow('permission denied')
   })
 
   it('executes each statement in a multi-view file separately', async () => {
