@@ -24,7 +24,8 @@ export function openPlans(json: string): number[] {
     if (
       typeof issue.number !== 'number' ||
       !Number.isSafeInteger(issue.number) ||
-      issue.state !== 'open' ||
+      typeof issue.state !== 'string' ||
+      !['open', 'closed'].includes(issue.state) ||
       typeof issue.title !== 'string'
     ) {
       throw new Error('Open issues response is missing number, state, or title')

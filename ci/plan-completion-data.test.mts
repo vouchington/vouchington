@@ -25,6 +25,19 @@ describe('plan completion API parsing', () => {
     },
   )
 
+  it('ignores a closed issue returned by the open-issues pagination snapshot', () => {
+    expect(
+      openPlans(
+        JSON.stringify([
+          [
+            { number: 726, state: 'open', title: 'Plan: active' },
+            { number: 1022, state: 'closed', title: 'Plan: recently closed' },
+          ],
+        ]),
+      ),
+    ).toEqual([726])
+  })
+
   it('fails closed on invalid current Plan and PR fields while retaining a null PR body', () => {
     expect(() =>
       isCurrentOpenPlan(JSON.stringify({ number: 1, state: 'other', title: 'Plan: x' }), 1),
