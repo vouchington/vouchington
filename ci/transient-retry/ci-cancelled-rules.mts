@@ -19,6 +19,7 @@ const idempotentWorkflowNames = new Set([
   'Main CI (lambdas)',
   'Main CI (storybook)',
   'Main CI (web)',
+  'Plan completion advisory',
   'Portability Tests',
   'Static Code Analysis',
 ])
