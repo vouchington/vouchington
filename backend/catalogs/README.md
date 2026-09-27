@@ -229,6 +229,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/passkeys/README.md`](../services/passkeys/README.md)
 - [`../services/platform-stats/README.md`](../services/platform-stats/README.md)
 - [`../services/podcast-playback-positions/README.md`](../services/podcast-playback-positions/README.md)
+- [`../services/post-classifier/README.md`](../services/post-classifier/README.md)
 - [`../services/post-content-limits/README.md`](../services/post-content-limits/README.md)
 - [`../services/post-mentions/README.md`](../services/post-mentions/README.md)
 - [`../services/post-revisions/README.md`](../services/post-revisions/README.md)

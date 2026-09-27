@@ -1,6 +1,10 @@
 import type { BasicUser } from '@voucha/types/entities/user'
 import { getEntityRelationMetadataOrThrow, type EntityRelationMetadata } from './metadata.mts'
 import { enqueueNotificationReconcileForRelations } from './notification-reconcile.mts'
+import {
+  prepareUpsertEntityRelationOptions,
+  type UpsertEntityRelationOptions,
+} from './upsert-options.mts'
 import { buildInsertQuery } from './build-insert-query.mts'
 import {
   handleElectionVotes,
@@ -12,22 +16,16 @@ import {
   toPublicEntityRelations,
 } from './upsert-helpers.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import {
-  assertPublisherTypeObjectsAreValid,
-  assertPublisherTypeObjectsAreValidInTransaction,
-} from './assert-publisher-type-relation.mts'
-import { assertUserTagObjectsAreValid } from './assert-user-tag-relation.mts'
-import { assertTopicParentRelationsAreValid } from './assert-topic-parent-relation.mts'
+import { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
+import { assertPublisherTypeObjectsAreValidInTransaction } from './assert-publisher-type-relation.mts'
 import { enqueueBulkFollowNotification } from '@queues/notifications/enqueues'
 import { enqueueBulkDistributeActivity } from '@queues/activitypub-delivery/enqueues'
 import { enqueueBulkReconcileBlueskyFollow } from '@queues/bluesky-follow-propagation/enqueues'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-discoverability/enqueues'
-import { assertPostRelatedUrlsAllowed } from './assert-post-related-urls-allowed.mts'
 import { maintainBookmarkBloomForRelations } from './bookmark-bloom-maintenance.mts'
 import { enqueueRssFeedDiscoverabilityForPublisherTypeRelations } from './enqueue-rss-discoverability-for-publisher-relations.mts'
 import { handleBidirectionalElectionVotes } from './handle-bidirectional-election-votes.mts'
-import { assertUrlObjectsAreValid } from './assert-url-objects-are-valid.mts'
 import { runRelationPublicationMutation } from './publication-mutation.mts'
 import { insertBidirectionalRelationRows } from './insert-bidirectional-rows.mts'
 import { runRelationTransaction } from './run-relation-transaction.mts'
@@ -35,38 +33,27 @@ import { lockBidirectionalRelationMutation } from './bidirectional-pair-lock.mts
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 
 export type { UpsertEntityTypes, EntityIdentifier, EntityRelation, UpsertEntityRelationsOptions }
-export async function assertEntityRelationUpsertAllowed(
-  creator: BasicUser | null,
-  relation: EntityRelationMetadata,
-  subject: UpsertEntityTypes | EntityIdentifier,
-  objects: Array<UpsertEntityTypes | EntityIdentifier>,
-  options?: UpsertEntityRelationsOptions,
-): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- guards intentionally run in their established order
-  await assertTopicParentRelationsAreValid(relation, subject, objects)
-  await assertUrlObjectsAreValid(relation, objects, creator?.id ?? null, options)
-  await assertPublisherTypeObjectsAreValid(relation, subject, objects)
-  await assertUserTagObjectsAreValid(relation, objects)
-  await assertPostRelatedUrlsAllowed(creator, relation, subject, objects)
-}
+export type { UpsertEntityRelationOptions } from './upsert-options.mts'
+export { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
 export const upsertEntityRelation = async (
   creator: BasicUser | null,
   relation: EntityRelationMetadata,
   subject: UpsertEntityTypes | EntityIdentifier,
   objects: Array<UpsertEntityTypes | EntityIdentifier>,
-  options?: UpsertEntityRelationsOptions,
+  options?: UpsertEntityRelationOptions,
 ): Promise<EntityRelation[]> => {
   if (objects.length === 0) return []
-  await assertEntityRelationUpsertAllowed(creator, relation, subject, objects, options)
+  const { deferredNotification, relationOptions } = prepareUpsertEntityRelationOptions(options)
+  await assertEntityRelationUpsertAllowed(creator, relation, subject, objects, relationOptions)
   const query = buildInsertQuery(
     relation,
     creator,
     objects.map(object => ({ subject, object })),
-    options,
+    relationOptions,
   )
   if (!relation.bidirectional || relation.subject_type !== relation.object_type) {
     const internalRelations = await runRelationPublicationMutation(
-      options,
+      relationOptions,
       relation.table_name,
       [subject.id],
       objects.map(object => object.id),
@@ -84,11 +71,12 @@ export const upsertEntityRelation = async (
     )
     const relations = toPublicEntityRelations(internalRelations)
     await maintainBookmarkBloomForRelations(relation, relations)
-    await handleElectionVotes(creator, relation, relations, options)
+    await handleElectionVotes(creator, relation, relations, relationOptions)
     // Remote-origin writes must not re-trigger outbound-destined enqueues and delivery loops.
-    if (options?.origin !== 'remote') {
+    if (relationOptions?.origin !== 'remote') {
       await enqueueRssFeedDiscoverabilityForPublisherTypeRelations(relation, relations)
-      void enqueueNotificationReconcileForRelations(relation, relations)
+      if (deferredNotification) deferredNotification.set(relation, relations)
+      else void enqueueNotificationReconcileForRelations(relation, relations)
       if (
         relation.subject_type === 'user' &&
         relation.predicate === 'follow' &&
@@ -147,7 +135,7 @@ export const upsertEntityRelation = async (
     reverseRelation,
     creator,
     objects.map(object => ({ subject: object, object: subject })),
-    options,
+    relationOptions,
   )
   const run = async (
     transactionQuery: TransactionQuery,
@@ -162,9 +150,12 @@ export const upsertEntityRelation = async (
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id, ...objects.map(object => object.id)] : [],
     )
-    if (options?.postMutationGuard?.postIds.length)
-      await lockPostPublicationPostScopes(transactionQuery, options.postMutationGuard.postIds)
-    await options?.postMutationGuard?.assertAllowed(transactionQuery)
+    if (relationOptions?.postMutationGuard?.postIds.length)
+      await lockPostPublicationPostScopes(
+        transactionQuery,
+        relationOptions.postMutationGuard.postIds,
+      )
+    await relationOptions?.postMutationGuard?.assertAllowed(transactionQuery)
     return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(
       transactionQuery,
       query,
@@ -172,7 +163,7 @@ export const upsertEntityRelation = async (
     )
   }
   const { relations: internalRelations, reverseRelations: internalReverseRelations } =
-    await runRelationTransaction(options, run)
+    await runRelationTransaction(relationOptions, run)
   const relations = toPublicEntityRelations(internalRelations)
   const reverseRelations = toPublicEntityRelations(internalReverseRelations)
   // Post-commit failures cannot roll back this committed transaction.
@@ -186,11 +177,12 @@ export const upsertEntityRelation = async (
     relations,
     reverseRelation,
     reverseRelations,
-    options,
+    relationOptions,
   )
   /* c8 ignore next -- bidirectional relations cannot be remote-actor-sourced. */
-  if (options?.origin !== 'remote') {
-    void enqueueNotificationReconcileForRelations(relation, relations)
+  if (relationOptions?.origin !== 'remote') {
+    if (deferredNotification) deferredNotification.set(relation, relations)
+    else void enqueueNotificationReconcileForRelations(relation, relations)
     if (relation.object_type === 'url' && relations.length > 0) {
       void enqueueBulkCrawlUrls(relations.map(r => ({ urlId: r.object_id })))
     }

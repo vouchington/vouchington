@@ -46,6 +46,7 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `crawls`                                                | RANGE         | `id`                                   | monthly            | cleanupPartitions | retention-window   |
 | `entity_relation_votes`                                 | LIST -> RANGE | `relation_table -> entity_relation_id` | list-default-range | none              | intentional-fanout |
 | `hostname_votes`                                        | RANGE         | `hostname_id`                          | default            | none              | target-scoped      |
+| `post_classifier_applications`                          | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `notifications`                                         | RANGE         | `user_id`                              | default            | none              | target-scoped      |
 | `post_autotagger_results`                               | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_clearance_changes`                                | RANGE         | `id`                                   | default            | none              | target-scoped      |

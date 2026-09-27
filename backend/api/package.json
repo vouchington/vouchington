@@ -200,6 +200,7 @@
     "@services/passkeys": "workspace:^",
     "@services/platform-stats": "workspace:^",
     "@services/podcast-playback-positions": "workspace:^",
+    "@services/post-classifier": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",

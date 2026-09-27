@@ -1548,6 +1548,12 @@ rules:
       sqlInclude:
         - backend/data-stores/psql/migrations/**/*.sql
       allowedMigrations:
+        # C5 receipt migration was applied locally before recovery gained supersession.
+        - path: backend/data-stores/psql/migrations/0736-00-02-post-classifier-application-supersession.sql
+          table: post_classifier_applications
+          column: superseded_at
+          type: TIMESTAMPTZ
+          nullable: true
         - path: backend/data-stores/psql/migrations/0732-00-01-post-publication-concrete-retained-identities.sql
           table: post_publication_dirty_work_keys
           column: impact_post_identity_id

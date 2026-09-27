@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import {
   classifierDecisionCandidateKind,
   classifierDecisionResultKey,
@@ -28,19 +28,40 @@ import {
 
 export async function persistClassifierDecision(
   input: PersistClassifierDecisionInput,
+  options: { query?: OwnedTransaction } = {},
 ): Promise<PersistClassifierDecisionResult> {
   const normalizedInput = normalizeClassifierDecisionInput(input)
   const candidateKind = classifierDecisionCandidateKind(normalizedInput)
+  if (options.query) {
+    return persistClassifierDecisionWithQuery(options.query, normalizedInput, candidateKind)
+  }
   await using transaction = await beginTransaction()
-  const inserted = await insertClassifierDecisionBatch(transaction, normalizedInput)
+  const result = await persistClassifierDecisionWithQuery(
+    transaction,
+    normalizedInput,
+    candidateKind,
+  )
+  await transaction.commit()
+  return result
+}
+
+async function persistClassifierDecisionWithQuery(
+  query: OwnedTransaction,
+  normalizedInput: ReturnType<typeof normalizeClassifierDecisionInput>,
+  candidateKind: ReturnType<typeof classifierDecisionCandidateKind>,
+): Promise<PersistClassifierDecisionResult> {
+  const inserted = await insertClassifierDecisionBatch(query, normalizedInput)
   if (!inserted) {
-    const decision = await readCompleteClassifierDecision(transaction, input.batchId, candidateKind)
+    const decision = await readCompleteClassifierDecision(
+      query,
+      normalizedInput.batchId,
+      candidateKind,
+    )
     assertExistingDecisionMatchesInput(decision, normalizedInput)
-    await transaction.commit()
     return { decision, replayed: true }
   }
 
-  const configuration = await loadClassifierDecisionPromptThresholds(transaction, normalizedInput)
+  const configuration = await loadClassifierDecisionPromptThresholds(query, normalizedInput)
   if (configuration.candidateKind !== candidateKind) {
     throw new Error('Classifier candidate kind does not match its decision subject and results')
   }
@@ -48,20 +69,23 @@ export async function persistClassifierDecision(
     throw new Error('Classifier candidate kind does not match its decision subject')
   }
   const [snapshots, calls] = await Promise.all([
-    captureClassifierDecisionStoredCandidateSnapshots(transaction, normalizedInput),
-    insertClassifierDecisionCalls(transaction, normalizedInput),
+    captureClassifierDecisionStoredCandidateSnapshots(query, normalizedInput),
+    insertClassifierDecisionCalls(query, normalizedInput),
   ])
   const resultCount = await insertClassifierDecisionResults(
-    transaction,
+    query,
     normalizedInput,
     calls,
     snapshots,
     configuration.thresholds,
   )
   assertCompletePersistence(normalizedInput, calls.length, snapshots.size, resultCount)
-  const decision = await readCompleteClassifierDecision(transaction, input.batchId, candidateKind)
+  const decision = await readCompleteClassifierDecision(
+    query,
+    normalizedInput.batchId,
+    candidateKind,
+  )
   assertExistingDecisionMatchesInput(decision, normalizedInput)
-  await transaction.commit()
   return { decision, replayed: false }
 }
 

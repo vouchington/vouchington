@@ -1268,6 +1268,9 @@ importers:
       '@services/podcast-playback-positions':
         specifier: workspace:^
         version: link:../services/podcast-playback-positions
+      '@services/post-classifier':
+        specifier: workspace:^
+        version: link:../services/post-classifier
       '@services/post-clearance':
         specifier: workspace:^
         version: link:../services/post-clearance
@@ -1721,6 +1724,9 @@ importers:
       '@services/localization':
         specifier: workspace:^
         version: link:../../services/localization
+      '@services/post-classifier':
+        specifier: workspace:^
+        version: link:../../services/post-classifier
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../../services/queue-monitoring
@@ -7765,6 +7771,43 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/services/post-classifier:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@services/classifiers':
+        specifier: workspace:^
+        version: link:../classifiers
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
+      '@services/moderation':
+        specifier: workspace:^
+        version: link:../moderation
+      '@services/post-publication':
+        specifier: workspace:^
+        version: link:../post-publication
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+    devDependencies:
+      '@queues/notifications':
+        specifier: workspace:^
+        version: link:../../queues/notifications
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

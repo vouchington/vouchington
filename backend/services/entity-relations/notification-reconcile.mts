@@ -1,3 +1,5 @@
+import { registerPostCommitAction, type OwnedTransaction } from '@data-stores/psql'
+import type { EnqueueReturnType } from '@voucha/types'
 import type { EntityRelationMetadata } from './metadata.mts'
 import type { EntityRelation, EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import {
@@ -9,10 +11,31 @@ export function enqueueNotificationReconcileForRelations(
   relation: EntityRelationMetadata,
   relations: EntityRelation[],
 ) {
+  return getNotificationReconcileEnqueue(relation, relations)?.()
+}
+
+export function deferNotificationReconcileForRelations(query: OwnedTransaction): {
+  set: (relation: EntityRelationMetadata, relations: EntityRelation[]) => void
+} {
+  let enqueue: (() => EnqueueReturnType) | undefined
+  registerPostCommitAction(query, async () => {
+    await enqueue?.()
+  })
+  return {
+    set(relation, relations) {
+      enqueue = getNotificationReconcileEnqueue(relation, relations)
+    },
+  }
+}
+
+function getNotificationReconcileEnqueue(
+  relation: EntityRelationMetadata,
+  relations: EntityRelation[],
+): (() => EnqueueReturnType) | undefined {
   const plan = getNotificationReconcilePlan(relation, relations)
-  if (plan?.type === 'post') return enqueueBulkReconcilePostNotifications(plan.subjectIds)
-  if (plan?.type === 'rss_feed_item')
-    return enqueueBulkReconcileRssFeedItemNotifications(plan.subjectIds)
+  if (!plan) return
+  if (plan.type === 'post') return () => enqueueBulkReconcilePostNotifications(plan.subjectIds)
+  return () => enqueueBulkReconcileRssFeedItemNotifications(plan.subjectIds)
 }
 
 export function getNotificationReconcilePlan(
