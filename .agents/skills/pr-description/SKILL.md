@@ -17,9 +17,11 @@ local validator enforces `## Related issues`, `Workspace setup:`, and tool-injec
 `Device:`, and `Worktree:` provenance lines. It also requires a Mermaid diagram when it clarifies
 the change and performs issue-supersession, milestone-completion, and project-completion audits.
 
-For Vouchington descriptions, retain the portable checklist's **Summary**, root cause, rollout / follow-ups,
-deploy-safety, linked-issue context, and Mermaid guidance. Local PR mechanics, Shepherd Journal
-preservation, validation, and merge authority live in [git-and-prs.md](../agent-workflow/git-and-prs.md).
+For Vouchington descriptions, retain the portable checklist's **Summary**, root cause, follow-ups,
+linked-issue context, and Mermaid guidance. Voucha is not live, so omit a rollout plan and a
+compatibility or expand/contract narrative. Mention operational safety only for an existing
+external protocol, exact replay envelope, or security key rotation. Local PR mechanics, Shepherd
+Journal preservation, validation, and merge authority live in [git-and-prs.md](../agent-workflow/git-and-prs.md).
 For a multi-PR `Plan:`, keep the Plan as the sibling ledger; non-completing PRs carry only their
 ordinal and a `Refs #Plan` explanation, while the completing PR uses `Closes #Plan`. The main-push
 completion advisory is not an automatic Plan closure.

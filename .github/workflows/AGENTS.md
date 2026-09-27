@@ -53,9 +53,9 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
   api+workers (one unit), image-resize Lambda, Cloudflare Worker, and web — validates and dispatches
   independently without waiting on another deployable or on the private receiver. The private
   infrastructure receiver owns deployment ordering. The app is unlaunched, so workflow changes
-  must not introduce migration-deploy stages or old/new application contract readers for historical
-  versions. Current independent artifact interfaces still need safe deployment ordering, and
-  external protocol and key-rotation support remains intact. The only sanctioned coupling is
+  must not introduce migration-deploy stages, old/new application contract readers, or a rollout
+  plan for historical versions. Current independent artifact interfaces still need safe deployment
+  ordering, and external protocol and key-rotation support remains intact. The only sanctioned coupling is
   api↔workers, which share DB schema and code and deploy as one unit. See
   [deploy decoupling](../../docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
 

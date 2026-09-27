@@ -2,7 +2,7 @@
 
 Always work from this worktree root — not the main checkout. Always work in a non-main worktree unless the user explicitly instructs otherwise, or you are inside a GitHub Actions Codex workflow whose checkout is the workspace.
 
-Voucha has not launched. Do not assume live users, production data, mixed-version workers, or a rollout window. Follow the pre-launch migration policy for schema changes; any compatibility exception requires explicit human direction.
+Voucha has not launched. Follow **One current contract** and **Ephemeral worktree databases** below.
 
 ## Principles
 
@@ -13,7 +13,8 @@ Voucha has not launched. Do not assume live users, production data, mixed-versio
 - **Don't be lazy** — finish the whole in-scope task: read whole files, trace real code paths, and don't stop at the first plausible answer, hand back partial work, or punt in-scope work to follow-ups.
 - **No stubs or placeholders** — ship complete, working code: no fake data, no stubbed returns posing as logic, and no `TODO`-as-final. Test doubles are not placeholders; fill test-first `/* TODO */` stubs before completion (see [implementation.md](.agents/skills/agent-workflow/implementation.md)).
 - **Synthetic test Git refs** — tests never embed real Git commit SHAs; assert ref shape or semantics, or generate synthetic SHA-shaped fixtures. Keep production pins, lockfiles, checksums, and intentional historical references exact.
-- **Prelaunch means one current contract** — the app has not launched. Rewrite canonical schema and current producers/consumers together; rebuild disposable environments when necessary. Do not add migration deployments, backfills, dual readers/writers, or compatibility shims for historical app versions. Preserve external protocol support, exact replay, security key rotation, and fresh-bootstrap safety. See [schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage) and [deploy decoupling](docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
+- **One current contract** — the app has not launched. Rewrite the canonical schema and the current producers and consumers together, and delete the path this change replaces. Do not add a compatibility shim, dual reader or writer, backfill, upgrade-only migration, activation flag, or rollout plan. Keep an existing external protocol, exact replay envelope, security key rotation, and fresh-bootstrap ledger. See [schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage) and [deploy decoupling](docs/overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
+- **Ephemeral worktree databases** — a non-main worktree's PostgreSQL database and Valkey hold disposable local state. Drop and recreate them when schema or local data is stale (`./dev/reset`, or `source .env && pnpm run db:clean && pnpm run db:migrate`). Do not ask. Leave the main worktree's shared `voucha` database behind its main-reset guard. See [dev/AGENTS.md](dev/AGENTS.md).
 - **Relations are relational** — application-owned facts use typed columns and child tables; internal entity references use concrete foreign keys, including audit and recovery references to per-entity retained identities. JSON, UUID arrays, generic type/id or attribute/value pairs, and encoded keys cannot stand in for a relationship. See [schema policy](docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
 - **Keep things simple** — prefer the smallest change that fully solves the problem.
 - **Keep docs current** — `docs/**` is the durable codebase map: read it before exploring; update it for behavior changes and discoveries; cross-link instead of duplicating.

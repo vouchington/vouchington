@@ -28,7 +28,8 @@ proposed PR body must include:
 - `## Validation` — record the measured source evidence and name the next verification point: the
   before/after comparison or exact post-implementation check still required.
 - `## Rollout / deploy safety` — explain how the implementation preserves complete primary errors, artifacts, summaries,
-  resource/exit evidence, transient-retry fingerprints, and non-zero failure behavior during
-  rollout.
+  resource/exit evidence, transient-retry fingerprints, and non-zero failure behavior. This heading
+  records CI evidence preservation. It is not a product rollout plan, and it does not add compatibility
+  code. The app is not live.
 
 Publish the bounded patch as the draft PR with the required title, body, and commit message. If no independently mergeable patch is confidently ready, stop and report that outcome. An issue-only or findings-only fallback is forbidden.
