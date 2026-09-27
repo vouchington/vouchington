@@ -237,6 +237,28 @@ The [workspace sandbox guard](../../dev/agent-workspace-sandbox-config.test.mts)
 [sandbox-audit.md](../../.agents/skills/retrospective/sandbox-audit.md#decision-criteria) for the
 full decision criteria on when an escalation is a genuine bypass candidate worth adding.
 
+## Checkout of sandbox-protected paths
+
+Claude's sandbox denies writes to the files it loads configuration from, inside an otherwise
+writable worktree. Cursor denies `.claude/*.json`, `.cursor/*.json`, and a few other paths the
+same way, and sets `CURSOR_SANDBOX` on sandboxed children. `allowWrite` cannot lift those paths.
+A sandboxed `git rebase`, `git reset --hard`, or `git checkout` replaces ordinary files, then
+dies with `unable to unlink old '.claude/settings.json'`, leaving HEAD unchanged and the worktree
+dirty. `git *` in `excludedCommands` does not cover a command shape Claude keeps sandboxed
+(`cd`, a substitution, a redirection, or a chain that is not entirely excluded).
+
+The path list git must be able to replace is [`dev/protected-checkout-paths.txt`](../../dev/protected-checkout-paths.txt).
+It is not the hook Edit/Write list in
+[`dev/codex-hooks/policy/protected-hook-paths.mts`](../../dev/codex-hooks/policy/protected-hook-paths.mts):
+`dev/codex-hooks/**`, `.codex/**`, and `.grok/**` are writable by checkout. The PreToolUse hook
+refuses a cooperative tree update when one of the pathspec paths differs, including `git fetch`
+chained with that update in one command. `./dev/rebase-onto-main` fetches, repeats the check, and
+runs `git rebase origin/main` only when `SANDBOX_RUNTIME` and `CURSOR_SANDBOX` are unset. Claude
+lists that script in `sandbox.excludedCommands`. Codex allows the same prefix, which removes its
+OS sandbox for that command. `./dev/reset-worktree` uses the same check before `git reset --hard`.
+Grok and Cursor writable roots are unchanged. `git rebase --abort` stays allowed so a dirty rebase
+can still be left.
+
 ## See also
 
 - [Sandbox & Permission Audit](../../.agents/skills/retrospective/sandbox-audit.md) — the

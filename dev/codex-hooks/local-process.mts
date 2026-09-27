@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const GIT_WORKTREE_OVERRIDE_ENV = new Set([
@@ -92,6 +92,37 @@ export function gitConfiguredRemoteDefaults(cwd: string): string | undefined {
     })
   } catch (error) {
     return (error as { status?: number | null }).status === 1 ? '' : undefined
+  }
+}
+
+// Names of tracked paths that differ between the worktree and `target`. Undefined when git
+// cannot answer (missing ref, timeout). `pathspecFile` is dev/protected-checkout-paths.txt.
+// Passed as diff arguments: this git build rejects --pathspec-from-file on git diff.
+export function gitWorktreeDiffNames(
+  cwd: string,
+  target: string,
+  pathspecFile: string,
+): readonly string[] | undefined {
+  if (target.startsWith('-')) return undefined
+  const pathspecs = readFileSync(pathspecFile, 'utf8')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line !== '')
+  try {
+    const text = execFileSync(
+      'git',
+      ['diff', '--name-only', '--diff-filter=ACDMRTUXB', target, '--', ...pathspecs],
+      {
+        cwd,
+        encoding: 'utf8',
+        env: gitEnvForCwd(),
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 5_000,
+      },
+    )
+    return text.split('\n').filter(line => line !== '')
+  } catch {
+    return undefined
   }
 }
 

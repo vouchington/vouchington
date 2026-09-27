@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+# shellcheck source=lib/protected-checkout.sh
+source "$REPO_ROOT/dev/lib/protected-checkout.sh"
+
+STACK=false
+UPSTACK=false
+
+usage() {
+  cat <<'EOF'
+Usage: ./dev/rebase-onto-main [--stack] [--upstack]
+
+Fetches origin/main, then rebases onto it. With --stack, runs gh stack rebase
+instead (add --upstack to rewrite upper stack layers). Exits before git or gh
+when SANDBOX_RUNTIME or CURSOR_SANDBOX is set and a sandbox-protected path
+differs, so a sandboxed checkout cannot leave the worktree half-updated.
+EOF
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --stack)
+      STACK=true
+      ;;
+    --upstack)
+      UPSTACK=true
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Error: unknown option: $arg" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if $UPSTACK && ! $STACK; then
+  echo "Error: --upstack requires --stack" >&2
+  usage >&2
+  exit 2
+fi
+
+git -C "$REPO_ROOT" fetch origin main
+if ! protected_checkout_allow "$REPO_ROOT" origin/main; then
+  exit 2
+fi
+
+if $STACK; then
+  if $UPSTACK; then
+    gh stack rebase --upstack
+  else
+    gh stack rebase
+  fi
+else
+  git -C "$REPO_ROOT" rebase origin/main
+fi

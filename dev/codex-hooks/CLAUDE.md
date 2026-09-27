@@ -33,3 +33,6 @@ Before adding or changing a Vitest test, fixture, or mock for these hooks, load 
   Journal checkpoints (`dev/journal-checkpoint`) may write to agent-blackboard from a hook because
   they fail open and never affect an allow or block.
 - Do not duplicate enforcement another owner has (oxlint `max-lines`, no-mistakes doc size, CI).
+- Checkout refusal for sandbox-protected paths uses `dev/protected-checkout-paths.txt`. That list
+  is the OS deny (`SANDBOX_RUNTIME`, `CURSOR_SANDBOX`), not `PROTECTED_HOOK_*` in
+  `policy/protected-hook-paths.mts`.

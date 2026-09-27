@@ -4,9 +4,9 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 
+export { makeFakeBin } from './reset-worktree-fake-bin.mts'
 export {
   cleanupResetWorktreeTestDirs,
-  makeFakeBin,
   makeRepo,
   registerTestDir,
 } from './reset-worktree-fixtures.mts'

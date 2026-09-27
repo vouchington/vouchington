@@ -168,14 +168,16 @@ flowchart TD
   D -->|New task, while planning| E[Read and plan from origin/main]
   E --> F[After plan acceptance: unforced reset-worktree]
   D -->|Resumed work| G[Preserve branch and plan for upstream changes]
-  G --> H[After plan acceptance: rebase onto origin/main]
+  G --> H[After plan acceptance: ./dev/rebase-onto-main]
   D -->|Dirty, unknown, or ambiguous| I[Ask before changing branch state]
 ```
 
 Plan Mode is read-only with respect to branch history: inspect `origin/main` with `git diff` and
 `git show` instead of resetting or rebasing during planning. Once the plan is accepted, use
-unforced `./dev/reset-worktree` for a new task that was planned from `origin/main`, or preserve and
-rebase the branch for resumed work. Never infer permission to discard changes or add `--force`.
+unforced `./dev/reset-worktree` for a new task that was planned from `origin/main`, or preserve the
+branch and run `./dev/rebase-onto-main` for resumed work. Both refuse while `SANDBOX_RUNTIME` or
+`CURSOR_SANDBOX` is set and a sandbox-protected path differs. Never infer permission to discard
+changes or add `--force`.
 The agent-specific procedure lives in [Start Of Work](../../.agents/skills/agent-workflow/start-of-work.md);
 the hook interface is documented in the [`dev/` command catalog](../../dev/README.md#agent-session-hooks).
 
