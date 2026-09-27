@@ -13,6 +13,27 @@ use the fixed `019e0000-` prefix for easy identification.
 pnpm run explain:seed
 ```
 
+The 100,000-post seed writes `output/seed-posts.jsonl` incrementally. Each batch and its INSERT,
+clearance update, and final COMMIT have begin/end records with elapsed time. Transaction acquisition
+is measured first; a begin record without an end record identifies the operation interrupted by the
+[CI seed-step limit](../../../.github/workflows/explain-analyze.yml). The seed transaction's
+PostgreSQL backend PID and effective settings are recorded after acquisition. A separate, bounded
+observer connection periodically samples its `pg_stat_activity` wait, blockers, query age, and transaction age,
+then records start/end `pg_stat_wal` and `pg_stat_checkpointer` counters with numeric deltas.
+Observer errors appear in the same file and do not change the seed result. CI also saves
+`output/seed-resources.txt`, with labeled host CPU, memory, and workspace disk samples and
+PostgreSQL container stats and tmpfs usage. Both files are retained by the existing EXPLAIN results
+artifact even when seeding fails.
+
+On a freshly migrated database, the first post batch can leave the planner with empty-table
+statistics while the [`fn_ensure_retained_post_identity` trigger](../../data-stores/psql/migrations/0000-00-01-retained-entity-identities.sql)
+looks up each inserted identity. An exact-schema local reproduction found repeated sequential scans
+of the growing retained-identity partition in that trigger. After the first completed batch, the
+seed runs one timed `ANALYZE retained_post_identities, posts` inside its existing transaction. Plain
+`ANALYZE` also refreshes their partitions; later batches can then plan against populated statistics.
+This addresses the reproduced stale-plan path. The hosted clearance slowdown still needs its own
+diagnostic evidence before assigning it the same cause.
+
 ### 2. Run EXPLAIN ANALYZE
 
 Calls each service function, captures the SQL queries, and replays them with

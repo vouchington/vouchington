@@ -6,6 +6,11 @@ Mermaid diagrams (Always run, Pull requests, and Main) are linked from the
 an exact workflow-only graph with `pnpm run ci:topology --format mermaid`. For local commands see
 [tests.md](tests.md).
 
+The [EXPLAIN ANALYZE seed guide](../../backend/scripts/explain-analyze/README.md#1-seed-test-data)
+describes the incremental post-seed timing, PostgreSQL observer, and host/container resource files
+retained by the failed-run artifact. Use those records to locate a seed-step timeout before
+changing the seed workload or its bound.
+
 AST-grep scans honor the severity declared in each rule: errors block CI and warnings report staged
 cleanup work. Entrypoints must not use a bare `--error`, which would promote warning rollouts.
 
