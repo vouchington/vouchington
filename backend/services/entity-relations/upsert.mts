@@ -11,7 +11,6 @@ import {
   type EntityIdentifier,
   type EntityRelation,
   type InternalEntityRelationMutationResult,
-  type UpsertEntityRelationsOptions,
   type UpsertEntityTypes,
   toPublicEntityRelations,
 } from './upsert-helpers.mts'
@@ -32,7 +31,7 @@ import { runRelationTransaction } from './run-relation-transaction.mts'
 import { lockBidirectionalRelationMutation } from './bidirectional-pair-lock.mts'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 
-export type { UpsertEntityTypes, EntityIdentifier, EntityRelation, UpsertEntityRelationsOptions }
+export type { UpsertEntityTypes, EntityIdentifier, EntityRelation }
 export type { UpsertEntityRelationOptions } from './upsert-options.mts'
 export { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
 export const upsertEntityRelation = async (

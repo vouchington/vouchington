@@ -23,7 +23,7 @@ type IncompleteApplicationRow = {
   superseded_at: Date | null
 }
 
-/** Streams every recoverable receipt from Postgres; terminal remote failures are deliberate stops. */
+/** @public Recovery stream consumed by the dependent runtime in #982; excludes terminal failures. */
 export async function* streamIncompletePostClassifierApplicationBatches(): AsyncGenerator<
   IncompletePostClassifierApplication[],
   void,
