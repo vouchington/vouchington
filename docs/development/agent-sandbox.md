@@ -253,9 +253,12 @@ It is not the hook Edit/Write list in
 `dev/codex-hooks/**`, `.codex/**`, and `.grok/**` are writable by checkout. The PreToolUse hook
 refuses a cooperative tree update when one of the pathspec paths differs, including `git fetch`
 chained with that update in one command. `git pull`, `git cherry-pick` other than
-`--continue`/`--abort`/`--skip`/`--quit`, `git stash pop`, `git stash apply`, and `git restore`
-of `.` or a protected path are refused before a diff: the fetched tree is not what the check can
-see. `gh stack rebase` and `gh stack sync` stay on the stack allowlist. The hook does not guess
+`--continue`/`--abort`/`--skip`/`--quit`, `git stash pop`, `git stash apply`, `git stash branch`, and `git restore` of `.`, a directory such as
+`.claude`, or a protected path are refused before a diff: the fetched tree is not what the check
+can see. `git checkout -f` is checked against `HEAD`. `git reset --merge` and `git reset --keep`
+are checked like `--hard`. A quoted ref is classified with the quotes removed by the shell
+tokenizer, and `git rebase <upstream> <branch>` is refused because that checkout is not the
+upstream diff. `git rebase --continue` stays allowed so a conflict can be finished. `gh stack rebase` and `gh stack sync` stay on the stack allowlist. The hook does not guess
 their parent. `./dev/rebase-onto-main --stack` refuses while `SANDBOX_RUNTIME` or `CURSOR_SANDBOX`
 is set, then runs `gh stack rebase` only with both unset. `./dev/rebase-onto-main` fetches,
 repeats the check, and runs `git rebase origin/main` only when those markers are unset. Claude

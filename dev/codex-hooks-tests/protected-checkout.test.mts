@@ -121,6 +121,93 @@ describe('protected checkout hook', () => {
     ).toContain(REBASE_ONTO_MAIN)
   })
 
+  it('blocks a directory pathspec before git expands it', () => {
+    for (const command of ['git checkout -- .', 'git checkout -- .claude', 'git restore .claude']) {
+      expect(
+        findPreToolUseBlock({ tool_input: { command } }, { protectedCheckoutDiff: emptyDiff })
+          ?.reason,
+      ).toContain(REBASE_ONTO_MAIN)
+    }
+  })
+
+  it('checks git checkout -f against HEAD', () => {
+    const seen: string[] = []
+    findPreToolUseBlock(
+      { tool_input: { command: 'git checkout -f' } },
+      {
+        protectedCheckoutDiff: (_cwd, target) => {
+          seen.push(target)
+          return target === 'HEAD' ? ['.claude/settings.json'] : []
+        },
+      },
+    )
+    expect(seen).toEqual(['HEAD'])
+  })
+
+  it('checks reset --merge and --keep against the commit', () => {
+    for (const command of ['git reset --merge origin/main', 'git reset --keep origin/main']) {
+      const seen: string[] = []
+      findPreToolUseBlock(
+        { tool_input: { command } },
+        {
+          protectedCheckoutDiff: (_cwd, target) => {
+            seen.push(target)
+            return []
+          },
+        },
+      )
+      expect(seen).toEqual(['origin/main'])
+    }
+  })
+
+  it('blocks git stash branch before the stash is applied', () => {
+    expect(
+      findPreToolUseBlock(
+        { tool_input: { command: 'git stash branch recovered' } },
+        { protectedCheckoutDiff: emptyDiff },
+      )?.reason,
+    ).toContain(REBASE_ONTO_MAIN)
+  })
+
+  it('classifies a quoted ref instead of falling back to HEAD', () => {
+    for (const command of ['git checkout "origin/main"', 'git reset --hard "origin/main"']) {
+      const seen: string[] = []
+      findPreToolUseBlock(
+        { tool_input: { command } },
+        {
+          protectedCheckoutDiff: (_cwd, target) => {
+            seen.push(target)
+            return []
+          },
+        },
+      )
+      expect(seen).toEqual(['origin/main'])
+    }
+  })
+
+  it('blocks a rebase that checks out another branch first', () => {
+    expect(
+      findPreToolUseBlock(
+        { tool_input: { command: 'git rebase origin/main feature' } },
+        { protectedCheckoutDiff: emptyDiff },
+      )?.reason,
+    ).toContain(REBASE_ONTO_MAIN)
+  })
+
+  it('checks the start point after a branch-creation option', () => {
+    const seen: string[] = []
+    findPreToolUseBlock(
+      { tool_input: { command: 'git checkout -b topic --no-track origin/foo' } },
+      {
+        protectedCheckoutDiff: (_cwd, target) => {
+          seen.push(target)
+          return []
+        },
+      },
+    )
+    expect(seen).toEqual(['origin/foo'])
+  })
+
   it('leaves gh stack rebase and sync on the stack allowlist', () => {
     for (const command of ['gh stack rebase', 'gh stack sync']) {
       expect(

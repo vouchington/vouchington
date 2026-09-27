@@ -5,7 +5,7 @@ import {
   protectedCheckoutReason,
   staleFetchCheckoutReason,
 } from './protected-checkout-paths.mts'
-import { commandsToInspectForGitPolicy } from './shell-commands.mts'
+import { commandsToInspectPreservingQuotes } from './shell-commands.mts'
 
 export type ProtectedCheckoutDiff = (cwd: string, target: string) => readonly string[] | undefined
 
@@ -14,7 +14,7 @@ export function findProtectedCheckoutBlock(
   cwd: string,
   readDiff: ProtectedCheckoutDiff | undefined,
 ): BlockDecision | null {
-  for (const inspected of commandsToInspectForGitPolicy(command)) {
+  for (const inspected of commandsToInspectPreservingQuotes(command)) {
     const block = blockForInspectedCommand(inspected, cwd, readDiff)
     if (block !== null) return block
   }
@@ -60,8 +60,48 @@ function blockTreeUpdate(
 }
 
 function shellSegments(command: string): string[] {
-  return command
-    .split(/&&|\|\||[;|\n]/)
-    .map(segment => segment.trim())
-    .filter(segment => segment !== '')
+  const segments: string[] = []
+  let current = ''
+  let quote: "'" | '"' | null = null
+  let escaping = false
+  const push = (): void => {
+    const trimmed = current.trim()
+    if (trimmed !== '') segments.push(trimmed)
+    current = ''
+  }
+  for (let index = 0; index < command.length; index += 1) {
+    const char = command[index] ?? ''
+    if (escaping) {
+      current += char
+      escaping = false
+      continue
+    }
+    if (char === '\\' && quote !== "'") {
+      escaping = true
+      current += char
+      continue
+    }
+    if (quote !== null) {
+      if (char === quote) quote = null
+      current += char
+      continue
+    }
+    if (char === "'" || char === '"') {
+      quote = char
+      current += char
+      continue
+    }
+    if (char === '&' && command[index + 1] === '&') {
+      push()
+      index += 1
+      continue
+    }
+    if (char === '\n' || char === ';' || char === '|') {
+      push()
+      continue
+    }
+    current += char
+  }
+  push()
+  return segments
 }

@@ -10,8 +10,15 @@ export function protectedCheckoutPathspecFile(): string {
 }
 
 export function isProtectedCheckoutPath(relativePath: string): boolean {
-  const path = relativePath.replace(/^\.?\//, '').replaceAll('\\', '/')
-  return pathspecPatterns().some(pattern => pattern.test(path))
+  const path = normalizeCheckoutPath(relativePath)
+  return pathspecSource().patterns.some(pattern => pattern.test(path))
+}
+
+/** A checkout pathspec git may expand onto a protected file, such as `.` or `.claude`. */
+export function checkoutPathspecIsBroad(relativePath: string): boolean {
+  const path = normalizeCheckoutPath(relativePath).replace(/\/+$/, '')
+  if (path === '' || path === '.' || /[*?[]/.test(path)) return true
+  return pathspecSource().globs.some(glob => globCoversDirectory(glob, path))
 }
 
 export function protectedCheckoutReason(paths: readonly string[]): string {
@@ -33,19 +40,35 @@ export function staleFetchCheckoutReason(): string {
   )
 }
 
-let compiledPatterns: RegExp[] | undefined
+let cachedSource: { globs: string[]; patterns: RegExp[] } | undefined
 
-function pathspecPatterns(): RegExp[] {
-  compiledPatterns ??= readFileSync(PATHSPEC_FILE, 'utf8')
+function pathspecSource(): { globs: string[]; patterns: RegExp[] } {
+  if (cachedSource !== undefined) return cachedSource
+  const globs = readFileSync(PATHSPEC_FILE, 'utf8')
     .split('\n')
     .map(line => line.trim())
     .filter(line => line !== '' && !line.startsWith('#'))
-    .map(pathspecToRegExp)
-  return compiledPatterns
+    .map(line => (line.startsWith(':(glob)') ? line.slice(':(glob)'.length) : line))
+  cachedSource = { globs, patterns: globs.map(glob => pathspecToRegExp(glob)) }
+  return cachedSource
 }
 
-function pathspecToRegExp(pathspec: string): RegExp {
-  const glob = pathspec.startsWith(':(glob)') ? pathspec.slice(':(glob)'.length) : pathspec
+function normalizeCheckoutPath(relativePath: string): string {
+  return relativePath.replace(/^\.?\//, '').replaceAll('\\', '/')
+}
+
+function globCoversDirectory(glob: string, path: string): boolean {
+  const magicAt = glob.search(/[*?[]/)
+  const literal = (magicAt < 0 ? glob : glob.slice(0, magicAt)).replace(/\/+$/, '')
+  if (literal !== '' && literal.startsWith(`${path}/`)) return true
+  if (magicAt >= 0 && literal !== '' && (path === literal || path.startsWith(`${literal}/`))) {
+    return true
+  }
+  const last = path.slice(path.lastIndexOf('/') + 1)
+  return magicAt === 0 && glob.startsWith('**') && !last.includes('.')
+}
+
+function pathspecToRegExp(glob: string): RegExp {
   const expression = glob
     .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
     .replaceAll('**', '§')
