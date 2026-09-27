@@ -1,4 +1,4 @@
-import type { QueryExecutor } from '@data-stores/psql'
+import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   classifierDecisionCandidateKind,
@@ -21,7 +21,7 @@ type PersistedInputRow = {
 }
 
 export async function insertClassifierDecisionResults(
-  query: QueryExecutor,
+  query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,
   calls: readonly PersistedClassifierDecisionCall[],
   snapshots: ReadonlyMap<string, ClassifierDecisionSnapshot>,
@@ -66,7 +66,7 @@ function toPersistedInputRow(
 }
 
 async function insertTopicResults(
-  query: QueryExecutor,
+  query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,
   rows: readonly PersistedInputRow[],
 ): Promise<number> {
@@ -75,7 +75,7 @@ async function insertTopicResults(
 }
 
 async function insertStoryResults(
-  query: QueryExecutor,
+  query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,
   rows: readonly PersistedInputRow[],
 ): Promise<number> {

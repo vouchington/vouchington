@@ -53,7 +53,7 @@ describe('post classifier application supersession', () => {
     )
     expect(current).toMatchObject({
       superseded_at: null,
-      reserved_batch_id: original?.reserved_batch_id,
+      decision_batch_id: original?.decision_batch_id,
       provider_attempts_started: 1,
       terminal_remote_failed_at: original?.terminal_remote_failed_at,
     })

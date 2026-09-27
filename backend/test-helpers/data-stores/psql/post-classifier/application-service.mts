@@ -5,8 +5,7 @@ export type PostClassifierApplicationFacts = {
   id: string
   input_sha256: Buffer
   configuration_sha256: Buffer
-  reserved_batch_id: string | null
-  committed_batch_id: string | null
+  decision_batch_id: string | null
   provider_attempts_started: number
   terminal_remote_failed_at: Date | null
   superseded_at: Date | null
@@ -45,7 +44,7 @@ export async function getPostClassifierApplicationFacts(
 ): Promise<PostClassifierApplicationFacts[]> {
   const { rows } = await query<PostClassifierApplicationFacts>(sql`
     /* getPostClassifierApplicationFacts */
-    SELECT id, input_sha256, configuration_sha256, reserved_batch_id, committed_batch_id,
+    SELECT id, input_sha256, configuration_sha256, decision_batch_id,
     provider_attempts_started, terminal_remote_failed_at, superseded_at, lease_token,
       outcomes_persisted_at, votes_applied_at, tags_applied_at, completed_at, local_flagged
     FROM post_classifier_applications WHERE post_id = ${postId} ORDER BY id

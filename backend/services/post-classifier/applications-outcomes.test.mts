@@ -61,7 +61,7 @@ async function fixture(remote: boolean, local = true) {
   const question = resolved.configuration.remote?.questions[0]
   const remoteDecision = question
     ? {
-        batchId: claim.reservedBatchId!,
+        batchId: claim.decisionBatchId!,
         classifierId: resolved.configuration.remote!.classifierId,
         promptVersionId: resolved.configuration.remote!.promptVersionId,
         scope: { scopeCategory: 'global' as const, scopeCommunityId: null },
@@ -121,7 +121,7 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
     expect(recovered?.localOutcome).toEqual(setup.localOutcome)
     expect(recovered?.remoteDecision).toBeNull()
     expect(await getPostClassifierApplicationFacts(setup.post.id)).toMatchObject([
-      { committed_batch_id: null, provider_attempts_started: 0, local_flagged: true },
+      { decision_batch_id: null, provider_attempts_started: 0, local_flagged: true },
     ])
     expect(await applyPostClassifierVotes(setup.claim)).toEqual({ appliedTopicIds: [] })
     expect(
@@ -142,7 +142,7 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
     ).toBe('persisted')
     expect(await readPostClassifierOutcomes(setup.claim)).toMatchObject({
       localOutcome: null,
-      remoteDecision: { batchId: setup.claim.reservedBatchId },
+      remoteDecision: { batchId: setup.claim.decisionBatchId },
     })
     expect(await applyPostClassifierVotes(setup.claim)).toEqual({
       appliedTopicIds: [setup.question!.topicId],
@@ -174,7 +174,7 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
     })
     expect(
       await getClassifierBorrowedVoteFacts(
-        setup.claim.reservedBatchId!,
+        setup.claim.decisionBatchId!,
         setup.resolved.configuration.actorId,
         setup.question!.topicId,
       ),
@@ -206,7 +206,7 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
         localOutcome: setup.localOutcome!,
       }),
     ).rejects.toThrow('lineage')
-    expect((await getClassifierBorrowedDecisionFacts(setup.claim.reservedBatchId!)).batches).toBe(0)
+    expect((await getClassifierBorrowedDecisionFacts(setup.claim.decisionBatchId!)).batches).toBe(1)
   })
   it('rejects a persisted threshold that differs from the immutable receipt snapshot', async () => {
     const setup = await fixture(true)
@@ -234,7 +234,7 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
         localOutcome: setup.localOutcome!,
       }),
     ).rejects.toThrow('lineage')
-    expect((await getClassifierBorrowedDecisionFacts(setup.claim.reservedBatchId!)).batches).toBe(0)
+    expect((await getClassifierBorrowedDecisionFacts(setup.claim.decisionBatchId!)).batches).toBe(1)
   })
   it('keeps C3, the receipt, C4 votes, and phase inside one borrowed transaction', async () => {
     const setup = await fixture(true)
@@ -251,14 +251,14 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
         throw new Error('later borrowed effect failed')
       }),
     ).rejects.toThrow('later borrowed effect failed')
-    expect(await getClassifierBorrowedDecisionFacts(setup.claim.reservedBatchId!)).toMatchObject({
-      batches: 0,
+    expect(await getClassifierBorrowedDecisionFacts(setup.claim.decisionBatchId!)).toMatchObject({
+      batches: 1,
       calls: 0,
-      snapshots: 0,
+      snapshots: 1,
       topicResults: 0,
     })
     expect((await getPostClassifierApplicationFacts(setup.post.id))[0]).toMatchObject({
-      committed_batch_id: null,
+      decision_batch_id: setup.claim.decisionBatchId,
       outcomes_persisted_at: null,
       votes_applied_at: null,
     })
@@ -274,7 +274,7 @@ describe('post classifier outcome and vote receipts (real PG)', () => {
       { commit: true },
     )
     expect((await getPostClassifierApplicationFacts(setup.post.id))[0]).toMatchObject({
-      committed_batch_id: setup.claim.reservedBatchId,
+      decision_batch_id: setup.claim.decisionBatchId,
       votes_applied_at: expect.any(Date),
     })
   })

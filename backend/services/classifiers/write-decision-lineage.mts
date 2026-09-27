@@ -1,11 +1,16 @@
-import type { QueryExecutor } from '@data-stores/psql'
+import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  classifierDecisionCandidateKind,
-  flattenClassifierDecisionResults,
+  assertClassifierDecisionBatchIdentity,
+  assertClassifierDecisionStoredCandidateIds,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
-import type { PersistedClassifierDecisionCall } from './types.mts'
+import { assertCandidateKindMatchesSubject } from './classifier-decision-persistence-validation.mts'
+import type {
+  ClassifierDecisionReservationInput,
+  PersistClassifierDecisionInput,
+  PersistedClassifierDecisionCall,
+} from './types.mts'
 
 type PromptThresholdRow = {
   candidate_kind: 'topic' | 'story'
@@ -28,8 +33,11 @@ type SnapshotRow = {
 type CallRow = { id: string; shard_ordinal: number }
 
 export async function insertClassifierDecisionBatch(
-  query: QueryExecutor,
-  input: NormalizedClassifierDecisionInput,
+  query: OwnedTransaction,
+  input: Pick<
+    PersistClassifierDecisionInput,
+    'batchId' | 'classifierId' | 'promptVersionId' | 'scope' | 'subject'
+  >,
 ): Promise<boolean> {
   const { rowCount } = await query(sql`
     /* insertClassifierDecisionBatch */
@@ -44,9 +52,29 @@ export async function insertClassifierDecisionBatch(
   return rowCount === 1
 }
 
+export async function reserveClassifierDecisionBatch(
+  query: OwnedTransaction,
+  input: ClassifierDecisionReservationInput,
+): Promise<boolean> {
+  assertClassifierDecisionBatchIdentity(input)
+  assertClassifierDecisionStoredCandidateIds(input.storedCandidateIds)
+  const configuration = await loadClassifierDecisionPromptThresholds(query, input)
+  assertCandidateKindMatchesSubject(configuration.candidateKind, input.candidateKind, input.subject)
+  const inserted = await insertClassifierDecisionBatch(query, input)
+  if (!inserted) return false
+  await captureClassifierDecisionStoredCandidateSnapshots(query, {
+    batchId: input.batchId,
+    classifierId: input.classifierId,
+    promptVersionId: input.promptVersionId,
+    candidateKind: input.candidateKind,
+    storedCandidateIds: input.storedCandidateIds,
+  })
+  return true
+}
+
 export async function loadClassifierDecisionPromptThresholds(
-  query: QueryExecutor,
-  input: NormalizedClassifierDecisionInput,
+  query: OwnedTransaction,
+  input: Pick<PersistClassifierDecisionInput, 'classifierId' | 'promptVersionId'>,
 ): Promise<ClassifierDecisionConfiguration> {
   const { rows } = await query<PromptThresholdRow>(sql`
     /* loadClassifierDecisionPromptThresholds */
@@ -72,13 +100,40 @@ export async function loadClassifierDecisionPromptThresholds(
   }
 }
 
+/** Reads the immutable prompt revision captured by an already-reserved batch. */
+export async function loadReservedClassifierDecisionPromptThresholds(
+  query: OwnedTransaction,
+  input: Pick<PersistClassifierDecisionInput, 'classifierId' | 'promptVersionId'>,
+): Promise<ClassifierDecisionConfiguration> {
+  const { rows } = await query<PromptThresholdRow>(sql`
+    /* loadReservedClassifierDecisionPromptThresholds */
+    SELECT classifier.candidate_kind,
+      prompt.default_lower_threshold::float8 AS default_lower_threshold,
+      prompt.default_upper_threshold::float8 AS default_upper_threshold
+    FROM classifier_prompt_versions prompt
+    JOIN classifiers classifier ON classifier.id = prompt.classifier_id
+    WHERE prompt.id = ${input.promptVersionId} AND prompt.classifier_id = ${input.classifierId}
+    FOR SHARE OF classifier, prompt
+  `)
+  const row = rows[0]
+  if (!row) throw new Error('Reserved classifier decision prompt version disappeared')
+  return {
+    candidateKind: row.candidate_kind,
+    thresholds: { lower: row.default_lower_threshold, upper: row.default_upper_threshold },
+  }
+}
+
 export async function captureClassifierDecisionStoredCandidateSnapshots(
-  query: QueryExecutor,
-  input: NormalizedClassifierDecisionInput,
+  query: OwnedTransaction,
+  input: {
+    batchId: string
+    classifierId: string
+    promptVersionId: string
+    candidateKind: 'topic' | 'story'
+    storedCandidateIds: readonly string[]
+  },
 ): Promise<ReadonlyMap<string, SnapshotRow>> {
-  const storedCandidateIds = flattenClassifierDecisionResults(input).flatMap(result =>
-    result.storedCandidateId ? [result.storedCandidateId] : [],
-  )
+  const storedCandidateIds = [...input.storedCandidateIds]
   if (storedCandidateIds.length === 0) return new Map()
   const { rows } = await query<SnapshotRow>(sql`
     /* captureClassifierDecisionStoredCandidateSnapshots */
@@ -102,7 +157,7 @@ export async function captureClassifierDecisionStoredCandidateSnapshots(
       AND threshold.prompt_version_id = ${input.promptVersionId}
       AND threshold.deactivated_at IS NULL
     WHERE candidate.classifier_id = ${input.classifierId}
-      AND candidate.candidate_kind = ${classifierDecisionCandidateKind(input)}
+      AND candidate.candidate_kind = ${input.candidateKind}
       AND candidate.deleted_at IS NULL
     RETURNING candidate_id, threshold_id,
       effective_lower_threshold::float8 AS effective_lower_threshold,
@@ -117,7 +172,7 @@ export async function captureClassifierDecisionStoredCandidateSnapshots(
 }
 
 export async function insertClassifierDecisionCalls(
-  query: QueryExecutor,
+  query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,
 ): Promise<readonly PersistedClassifierDecisionCall[]> {
   const ordinals = input.calls.map(call => call.shardOrdinal)

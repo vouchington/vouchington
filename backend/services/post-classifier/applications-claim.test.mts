@@ -69,7 +69,7 @@ describe('post classifier application claim and attempt (real PG)', () => {
     if (claimed.kind !== 'claimed') throw new Error('Expected one claimant')
     const facts = await getPostClassifierApplicationFacts(setup.post.id)
     expect(facts).toHaveLength(1)
-    expect(facts[0]).toMatchObject({ id: claimed.applicationId, reserved_batch_id: null })
+    expect(facts[0]).toMatchObject({ id: claimed.applicationId, decision_batch_id: null })
   })
 
   it('waits for actor deletion before taking its actor row share lock', async () => {

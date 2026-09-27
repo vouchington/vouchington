@@ -49,8 +49,7 @@ export async function persistPostClassifierOutcomesWithQuery(
   if (row.outcomes_persisted_at) return 'replay'
   assertLocalOutcome(lease, input.localOutcome)
 
-  let committedBatchId: string | null = null
-  if (lease.reservedBatchId === null) {
+  if (lease.decisionBatchId === null) {
     if (input.remoteDecision)
       throw new Error('Local-only classifier application cannot persist remote output')
   } else {
@@ -60,13 +59,11 @@ export async function persistPostClassifierOutcomesWithQuery(
     assertRemoteInputCandidates(lease, input.remoteDecision)
     const persisted = await persistClassifierDecision(input.remoteDecision, { query })
     assertPersistedDecisionMatchesConfiguration(lease, persisted.decision)
-    committedBatchId = persisted.decision.batchId
   }
 
   await query(sql`/* persistPostClassifierApplicationOutcomes */
     UPDATE post_classifier_applications
-    SET committed_batch_id = ${committedBatchId},
-      local_flagged = ${input.localOutcome?.flagged ?? null},
+    SET local_flagged = ${input.localOutcome?.flagged ?? null},
       local_reason = ${input.localOutcome?.reason ?? null},
       local_confidence_score = ${input.localOutcome?.confidenceScore ?? null},
       local_confidence_threshold = ${input.localOutcome?.confidenceThreshold ?? null},
@@ -84,11 +81,11 @@ export function assertPersistedDecisionMatchesConfiguration(
   decision: PersistedClassifierDecision,
 ): void {
   const remote = lease.resolved.configuration.remote
-  if (!remote || lease.reservedBatchId === null) {
+  if (!remote || lease.decisionBatchId === null) {
     throw new Error('Local-only classifier application cannot have a persisted remote decision')
   }
   if (
-    decision.batchId !== lease.reservedBatchId ||
+    decision.batchId !== lease.decisionBatchId ||
     decision.classifierId !== remote.classifierId ||
     decision.promptVersionId !== remote.promptVersionId ||
     decision.subject.postId !== lease.postId ||
@@ -163,7 +160,7 @@ function assertRemoteInputIdentity(
   const remote = lease.resolved.configuration.remote
   if (
     !remote ||
-    decision.batchId !== lease.reservedBatchId ||
+    decision.batchId !== lease.decisionBatchId ||
     decision.classifierId !== remote.classifierId ||
     decision.promptVersionId !== remote.promptVersionId ||
     decision.subject.postId !== lease.postId ||

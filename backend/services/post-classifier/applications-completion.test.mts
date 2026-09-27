@@ -112,14 +112,14 @@ describe('post classifier completion and approval admission (real PG)', () => {
     const fixture = await createPostClassifierExecutionFixture(true, false)
     const remote = fixture.lease.resolved.configuration.remote
     const question = remote?.questions[0]
-    if (!remote || !question || !fixture.lease.reservedBatchId) {
+    if (!remote || !question || !fixture.lease.decisionBatchId) {
       throw new Error('Expected remote post classifier configuration')
     }
     await expect(
       persistPostClassifierOutcomes({
         lease: fixture.lease,
         remoteDecision: {
-          batchId: fixture.lease.reservedBatchId,
+          batchId: fixture.lease.decisionBatchId,
           classifierId: remote.classifierId,
           promptVersionId: remote.promptVersionId,
           scope: { scopeCategory: 'global', scopeCommunityId: null },

@@ -1,5 +1,7 @@
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
+import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
 import { lockPostPublication } from '@services/post-publication'
+import { reserveClassifierDecisionBatch } from '@services/classifiers/write-decision-lineage'
 import sql from 'sql-template-strings'
 import { resolvePostClassifierConfiguration } from './configuration.mts'
 
@@ -9,6 +11,7 @@ export type ReservedPostClassifierApplication = {
   inputSha256: Buffer
   configurationSha256: Buffer
   detectorPackageVersion: string
+  decisionBatchId: string | null
 }
 
 type LockedPostClassifierPost = {
@@ -59,33 +62,70 @@ export async function reserveLockedPostClassifierApplication(
   postId: string,
   post: LockedPostClassifierPost,
   detectorPackageVersion: string,
+  lease?: { token: string; seconds: number },
 ): Promise<ReservedPostClassifierApplication | null> {
   const resolved = await resolvePostClassifierConfiguration(post.community_id, {
     detectorPackageVersion,
     query,
   })
   if (!resolved) return null
-  const { rows: inserted } = await query<{ id: string }>(sql`
+  if (post.community_id) {
+    await retainPublicationIdentityBridges(query, 'community', [post.community_id])
+  }
+  const proposedDecisionBatchId = resolved.configuration.remote
+    ? await createPostClassifierDecisionBatchId(query)
+    : null
+  const { rows: inserted } = await query<{ id: string; decision_batch_id: string | null }>(sql`
     /* reservePostClassifierApplication.insert */
     INSERT INTO post_classifier_applications (
       post_id, input_sha256, configuration_json, configuration_sha256, shared_actor_id,
-      reserved_batch_id
+      community_identity_id, detector_package_version, local_topic_id, decision_batch_id,
+      lease_token, leased_at, lease_expires_at
     ) VALUES (
-      ${postId}, ${post.input_sha256}, ${resolved.configurationJson},
+      ${postId}, ${post.input_sha256}, ${resolved.configurationJson}::json,
       ${resolved.configurationSha256}, ${resolved.configuration.actorId},
-      CASE WHEN ${resolved.configuration.remote !== null} THEN uuidv7() ELSE NULL END
+      ${post.community_id}, ${detectorPackageVersion}, ${resolved.configuration.local?.topicId ?? null},
+      ${proposedDecisionBatchId}, ${lease?.token ?? null}::uuid,
+      CASE WHEN ${lease?.token ?? null}::uuid IS NULL THEN NULL ELSE clock_timestamp() END,
+      CASE WHEN ${lease?.token ?? null}::uuid IS NULL THEN NULL
+        ELSE clock_timestamp() + ${lease?.seconds ?? 0}::integer * INTERVAL '1 second' END
     ) ON CONFLICT (post_id, input_sha256, configuration_sha256)
     DO UPDATE SET post_id = EXCLUDED.post_id, superseded_at = NULL
-    RETURNING id
+    RETURNING id, decision_batch_id
   `)
-  const applicationId = inserted[0]?.id
-  if (!applicationId)
+  const application = inserted[0]
+  if (!application)
     throw new Error('post classifier application reservation did not return a receipt')
+  if (application.decision_batch_id === proposedDecisionBatchId && proposedDecisionBatchId) {
+    const remote = resolved.configuration.remote
+    if (!remote) throw new Error('Local-only classifier application reserved a decision batch')
+    const reserved = await reserveClassifierDecisionBatch(query, {
+      batchId: proposedDecisionBatchId,
+      classifierId: remote.classifierId,
+      promptVersionId: remote.promptVersionId,
+      subject: { postId, rssFeedItemId: null },
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      candidateKind: 'topic',
+      storedCandidateIds: remote.questions.map(question => question.candidateId),
+    })
+    if (!reserved) throw new Error('post classifier decision batch reservation was not inserted')
+  }
   return {
-    applicationId,
+    applicationId: application.id,
     postId,
     inputSha256: post.input_sha256,
     configurationSha256: resolved.configurationSha256,
     detectorPackageVersion,
+    decisionBatchId: application.decision_batch_id,
   }
+}
+
+async function createPostClassifierDecisionBatchId(query: OwnedTransaction): Promise<string> {
+  const { rows } = await query<{ id: string }>(sql`
+    /* createPostClassifierDecisionBatchId */
+    SELECT uuidv7() AS id
+  `)
+  const id = rows[0]?.id
+  if (!id) throw new Error('post classifier decision batch ID was not generated')
+  return id
 }

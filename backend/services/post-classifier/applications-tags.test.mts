@@ -72,9 +72,9 @@ function localOutcome(flagged: boolean, confidenceThreshold: number) {
 
 function remoteDecision(setup: Awaited<ReturnType<typeof fixture>>, positive: boolean) {
   const remote = setup.claim.resolved.configuration.remote
-  if (!remote || !setup.claim.reservedBatchId) return null
+  if (!remote || !setup.claim.decisionBatchId) return null
   return {
-    batchId: setup.claim.reservedBatchId,
+    batchId: setup.claim.decisionBatchId,
     classifierId: remote.classifierId,
     promptVersionId: remote.promptVersionId,
     scope: { scopeCategory: 'global' as const, scopeCommunityId: null },

@@ -435,6 +435,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batches (
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
   scope_category TEXT NOT NULL,
   scope_community_id UUID,
+  completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_classifier_decision_batches__one_subject CHECK (num_nonnulls(post_id, rss_feed_item_id) = 1),
@@ -446,6 +447,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batches (
     FOREIGN KEY (prompt_version_id, classifier_id)
     REFERENCES classifier_prompt_versions (id, classifier_id) ON DELETE RESTRICT,
   CONSTRAINT uq_classifier_decision_batches__id__classifier UNIQUE (id, classifier_id),
+  CONSTRAINT uq_classifier_decision_batches__id__post UNIQUE (id, post_id),
   CONSTRAINT uq_classifier_decision_batches__id__prompt UNIQUE (id, prompt_version_id),
   CONSTRAINT uq_classifier_decision_batches__id__scope UNIQUE (id, scope_category, scope_community_id)
 );
@@ -467,9 +469,33 @@ BEGIN
   RAISE EXCEPTION '% is append-only', TG_TABLE_NAME USING ERRCODE = '23514';
 END $$;
 
-CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_append_only
+CREATE OR REPLACE FUNCTION fn_require_classifier_decision_batch_completion()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF OLD.completed_at IS NOT NULL
+    OR NEW.completed_at IS NULL
+    OR NEW.id IS DISTINCT FROM OLD.id
+    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id
+    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id
+    OR NEW.post_id IS DISTINCT FROM OLD.post_id
+    OR NEW.rss_feed_item_id IS DISTINCT FROM OLD.rss_feed_item_id
+    OR NEW.scope_category IS DISTINCT FROM OLD.scope_category
+    OR NEW.scope_community_id IS DISTINCT FROM OLD.scope_community_id
+    OR NEW.created_at IS DISTINCT FROM OLD.created_at
+    OR NEW.updated_at IS DISTINCT FROM OLD.updated_at
+    OR NEW.completed_at < OLD.created_at THEN
+    RAISE EXCEPTION 'classifier decision batches are immutable except for completion' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_completion
   BEFORE UPDATE ON classifier_decision_batches
-  FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update();
+  FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_decision_batch_completion();
+
+CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_updated_at
+  BEFORE UPDATE ON classifier_decision_batches
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
   batch_id UUID NOT NULL,
@@ -916,6 +942,7 @@ COMMENT ON COLUMN classifier_decision_batches.post_id IS 'Classified post subjec
 COMMENT ON COLUMN classifier_decision_batches.rss_feed_item_id IS 'Classified RSS item subject; mutually exclusive with post_id.';
 COMMENT ON COLUMN classifier_decision_batches.scope_category IS 'Decision scope: global or community_ai.';
 COMMENT ON COLUMN classifier_decision_batches.scope_community_id IS 'Immutable community provenance for community_ai scope; no FK so history survives community deletion.';
+COMMENT ON COLUMN classifier_decision_batches.completed_at IS 'Completion marker set only after every call and result for this batch is durable.';
 
 COMMENT ON COLUMN classifier_decision_calls.batch_id IS 'Logical decision batch containing this provider call.';
 COMMENT ON COLUMN classifier_decision_calls.shard_ordinal IS 'Zero-based order of this context-window shard within its batch.';

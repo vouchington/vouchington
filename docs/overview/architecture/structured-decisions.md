@@ -50,7 +50,10 @@ enable/disable cycles retain their history while communities reuse a global clas
 rather than creating one.
 
 A decision batch records one classified post or RSS item, prompt version, and global/community
-scope. Every stored candidate included in a batch has an explicit threshold revision for the batch's
+scope. A caller may reserve its UUIDv7 batch and stored-candidate snapshots before the provider
+call; an empty reservation is not a readable decision. The persistence transaction locks that
+reservation, writes every call and result, and stamps completion before readers can use it. Every
+stored candidate included in a batch has an explicit threshold revision for the batch's
 prompt version; null override fields inherit that prompt's defaults. In the same transaction, stored
 candidates capture the exact threshold revision and effective bounds selected for that batch; results
 must reference that immutable snapshot, so a concurrent threshold replacement cannot rewrite or

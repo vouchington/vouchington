@@ -40,7 +40,7 @@ export async function startPostClassifierProviderAttempt(
   const row = await lockPostClassifierApplication(query, input)
   if (!applicationLeaseMatches(row, input)) return 'stale'
   if (row.outcomes_persisted_at) return 'replay'
-  if (row.reserved_batch_id === null) return 'no_remote'
+  if (row.decision_batch_id === null) return 'no_remote'
   if (row.provider_attempts_started >= input.maxAttempts) {
     await query(sql`/* startPostClassifierProviderAttempt.exhausted */
       UPDATE post_classifier_applications

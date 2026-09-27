@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
+  lockPostClassifierPost,
+  reserveLockedPostClassifierApplication,
+} from './application-reservation.mts'
+import {
   lockCurrentPostClassifierApplicationInput,
   lockPostClassifierApplication,
   type PostClassifierApplicationIdentity,
@@ -29,34 +33,30 @@ export async function claimPostClassifierApplication(
     return { kind: 'stale' }
   }
   const leaseToken = randomUUID()
-  const { rows: inserted } = await query<{ id: string; reserved_batch_id: string | null }>(sql`
-    /* claimPostClassifierApplication.insert */
-    INSERT INTO post_classifier_applications (
-      post_id, input_sha256, configuration_json, configuration_sha256, shared_actor_id,
-      reserved_batch_id, lease_token, leased_at, lease_expires_at
-    ) VALUES (
-      ${input.postId}, ${input.inputSha256}, ${input.resolved.configurationJson},
-      ${input.resolved.configurationSha256}, ${input.resolved.configuration.actorId},
-      CASE WHEN ${input.resolved.configuration.remote !== null} THEN uuidv7() ELSE NULL END,
-      ${leaseToken}, clock_timestamp(),
-      clock_timestamp() + ${input.leaseSeconds} * INTERVAL '1 second'
-    ) ON CONFLICT (post_id, input_sha256, configuration_sha256) DO NOTHING
-    RETURNING id, reserved_batch_id
-  `)
-  const created = inserted[0]
-  if (created) {
+  const post = await lockPostClassifierPost(query, input.postId)
+  if (!post) return { kind: 'stale' }
+  const reserved = await reserveLockedPostClassifierApplication(
+    query,
+    input.postId,
+    post,
+    input.detectorPackageVersion,
+    { token: leaseToken, seconds: input.leaseSeconds },
+  )
+  if (!reserved) return { kind: 'stale' }
+  const created = await lockPostClassifierApplication(query, input)
+  if (!created) throw new Error('post classifier application disappeared during claim')
+  if (created.lease_token === leaseToken) {
     if (input.applicationId && created.id !== input.applicationId) return { kind: 'stale' }
     await query.commit()
     return {
       kind: 'claimed',
       ...input,
       applicationId: created.id,
-      reservedBatchId: created.reserved_batch_id,
+      decisionBatchId: created.decision_batch_id,
       leaseToken,
     }
   }
-  const existing = await lockPostClassifierApplication(query, input)
-  if (!existing) throw new Error('post classifier application disappeared during claim')
+  const existing = created
   if (input.applicationId && existing.id !== input.applicationId) return { kind: 'stale' }
   if (existing.superseded_at) return { kind: 'stale' }
   if (existing.completed_at) return { kind: 'completed' }
@@ -75,7 +75,7 @@ export async function claimPostClassifierApplication(
     kind: existing.outcomes_persisted_at ? 'outcomes_ready' : 'claimed',
     ...input,
     applicationId: existing.id,
-    reservedBatchId: existing.reserved_batch_id,
+    decisionBatchId: existing.decision_batch_id,
     leaseToken,
   }
 }

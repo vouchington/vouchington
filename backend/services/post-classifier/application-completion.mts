@@ -69,9 +69,9 @@ async function hasCompletedPostClassifierApplication(
     WHERE post_id = ${lease.postId} AND id = ${lease.applicationId}
       AND input_sha256 = ${lease.inputSha256}
       AND configuration_sha256 = ${lease.resolved.configurationSha256}
-      AND configuration_json = ${lease.resolved.configurationJson}
+      AND configuration_json::text = ${lease.resolved.configurationJson}
       AND shared_actor_id = ${lease.resolved.configuration.actorId}
-      AND reserved_batch_id IS NOT DISTINCT FROM ${lease.reservedBatchId}
+      AND decision_batch_id IS NOT DISTINCT FROM ${lease.decisionBatchId}
   `)
   return rows[0]?.completed === true
 }

@@ -1,14 +1,16 @@
 # Classifier persistence service
 
 `@services/classifiers` owns primary configuration reads and durable classifier-decision lineage.
-The agent-owned caller supplies a stable UUIDv7 batch identity only after every provider shard has
-completed and candidate coverage has been validated. The service then writes the batch, active
-stored-candidate threshold snapshots, ordered calls, and one concrete topic or story result row per
-candidate in one transaction.
+The agent-owned caller supplies a stable UUIDv7 batch identity. It may reserve that identity and its
+active stored-candidate threshold snapshots before provider execution; otherwise, after every shard
+has completed and candidate coverage has been validated, the service creates it while persisting.
+Completion locks a reserved empty batch, writes its calls and concrete topic or story result rows,
+then marks the batch complete in the same transaction.
 
-Reusing a batch ID returns the existing decision only when its subject, scope, shards, candidate
-identity, probabilities, and native responses match exactly. Runtime-prefiltered candidates retain
-the prompt defaults without creating a stored candidate or threshold snapshot.
+Reusing a completed batch ID returns the existing decision only when its subject, scope, shards,
+candidate identity, probabilities, and native responses match exactly. A reserved empty batch is
+not readable as a decision and can only be completed from its captured snapshots. Runtime-prefiltered
+candidates retain the prompt defaults without creating a stored candidate or threshold snapshot.
 
 `applyTopicClassifierDecisionVotes` is the topic-only side-effect boundary. Its owning classifier
 supplies one explicit shared system actor and the original expected topic bindings. It re-reads C3's

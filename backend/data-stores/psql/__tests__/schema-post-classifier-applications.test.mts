@@ -38,52 +38,49 @@ describe('post classifier application schema', () => {
 
   it('partitions by post and fences content, configuration, actor and provenance', async () => {
     const fixture = await createFixture({ community: true })
-    expect((await fixture.read())?.community_id).toBe(fixture.communityId)
+    expect((await fixture.read())?.community_identity_id).toBe(fixture.communityId)
     await expect(fixture.duplicate()).rejects.toMatchObject({ code: '23505' })
-    await expect(fixture.invalidConfigurationJson()).rejects.toMatchObject({ code: '23514' })
+    await expect(fixture.invalidConfigurationJson()).rejects.toMatchObject({ code: '22P02' })
     await expect(fixture.wrongHash()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.mutateInputHash()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.mutateActor()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.mutateCommunity()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.setInvalidAttempts()).rejects.toMatchObject({ code: '23514' })
+    await expect(fixture.invalidDetectorPackageVersion()).rejects.toMatchObject({ code: '23514' })
+    await expect(fixture.invalidEmptyClassifierIdentity()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.deleteActor()).rejects.toMatchObject({ code: '23001' })
   })
 
-  it('reserves a remote batch identity and accepts only its same-post C3 result', async () => {
+  it('references only its same-post pre-reserved C3 batch', async () => {
     const matching = await createClassifierFixture()
     const matchingBatch = await matching.createTopicBatch()
     const fixture = await createFixture({
       postId: matching.postId,
-      reservedBatchId: matchingBatch.batchId,
+      decisionBatchId: matchingBatch.batchId,
     })
-    await expect(fixture.setInvalidCommittedBatch()).rejects.toMatchObject({ code: '23514' })
-    await fixture.commitBatch(matchingBatch.batchId)
-    expect((await fixture.read())?.committed_batch_id).toBe(matchingBatch.batchId)
+    await expect(fixture.setInvalidDecisionBatch()).rejects.toMatchObject({ code: '23514' })
+    expect((await fixture.read())?.decision_batch_id).toBe(matchingBatch.batchId)
     await fixture.persistRemoteOutcomes()
     await expect(fixture.injectLocalOutcome()).rejects.toMatchObject({ code: '23514' })
 
-    const otherPost = await createFixture({
-      remote: true,
-      reservedBatchId: matchingBatch.batchId,
-    })
-    await expect(otherPost.commitBatch(matchingBatch.batchId)).rejects.toMatchObject({
+    await expect(createFixture({ decisionBatchId: matchingBatch.batchId })).rejects.toMatchObject({
       code: '23503',
     })
 
     const localOnly = await createFixture({
       postId: matching.postId,
     })
-    await expect(localOnly.commitBatch(matchingBatch.batchId)).rejects.toMatchObject({
+    await expect(localOnly.setInvalidDecisionBatch()).rejects.toMatchObject({
       code: '23514',
     })
     await expect(
       createFixture({
         postId: matching.postId,
-        reservedBatchId: matchingBatch.batchId,
+        decisionBatchId: matchingBatch.batchId,
       }),
     ).rejects.toMatchObject({ code: '23505' })
     await expect(createFixture({ postId: matching.postId })).resolves.toMatchObject({
-      reservedBatchId: null,
+      decisionBatchId: null,
     })
 
     await fixture.markVotes()
@@ -94,7 +91,12 @@ describe('post classifier application schema', () => {
   })
 
   it('bounds durable provider failure metadata without counting effect-only retries', async () => {
-    const fixture = await createFixture({ remote: true })
+    const classifier = await createClassifierFixture()
+    const batch = await classifier.createTopicBatch()
+    const fixture = await createFixture({
+      postId: classifier.postId,
+      decisionBatchId: batch.batchId,
+    })
     await expect(fixture.markTerminalFailure('unknown')).rejects.toMatchObject({ code: '23514' })
     await fixture.startProviderAttempt()
     expect((await fixture.read())?.provider_attempts_started).toBe(1)
@@ -108,10 +110,9 @@ describe('post classifier application schema', () => {
     const batch = await classifier.createTopicBatch()
     const fixture = await createFixture({
       postId: classifier.postId,
-      reservedBatchId: batch.batchId,
+      decisionBatchId: batch.batchId,
     })
     await fixture.markTerminalFailure('attempts-exhausted')
-    await expect(fixture.commitBatch(batch.batchId)).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.persistRemoteOutcomes()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.markVotes()).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.complete()).rejects.toMatchObject({ code: '23514' })
@@ -122,9 +123,8 @@ describe('post classifier application schema', () => {
     const batch = await classifier.createTopicBatch()
     const fixture = await createFixture({
       postId: classifier.postId,
-      reservedBatchId: batch.batchId,
+      decisionBatchId: batch.batchId,
     })
-    await fixture.commitBatch(batch.batchId)
     await fixture.persistRemoteOutcomes()
     await expect(fixture.markTerminalFailure('attempts-exhausted')).rejects.toMatchObject({
       code: '23514',

@@ -1,29 +1,21 @@
 -- Post-only fixed-classifier application identity and monotone effect receipt.
--- C3 batches retain remote results; C4 retains votes. The reserved batch ID is
--- allocated before a provider call, while the concrete FK is set only on commit.
-
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'uq_classifier_decision_batches__id_post'
-  ) THEN
-    ALTER TABLE classifier_decision_batches
-      ADD CONSTRAINT uq_classifier_decision_batches__id_post UNIQUE (id, post_id);
-  END IF;
-END $$;
+-- C3 batches retain remote results; C4 retains votes. Remote work reserves its real C3 batch and
+-- exact candidate snapshots before provider execution.
 
 CREATE TABLE IF NOT EXISTS post_classifier_applications (
   post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
   input_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(input_sha256) = 32),
-  configuration_json TEXT NOT NULL CHECK (configuration_json IS JSON OBJECT),
+  configuration_json JSON NOT NULL CHECK (json_typeof(configuration_json) = 'object'),
   configuration_sha256 BYTEA NOT NULL CHECK (
     OCTET_LENGTH(configuration_sha256) = 32
-    AND configuration_sha256 = digest(configuration_json, 'sha256')
+    AND configuration_sha256 = digest(configuration_json::text, 'sha256')
   ),
   shared_actor_id UUID NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
-  community_id UUID,
-  reserved_batch_id UUID,
-  committed_batch_id UUID,
+  community_identity_id UUID REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT,
+  detector_package_version TEXT NOT NULL CHECK (btrim(detector_package_version) <> ''),
+  local_topic_id UUID REFERENCES topics (id) ON DELETE RESTRICT,
+  decision_batch_id UUID,
   provider_attempts_started INTEGER NOT NULL DEFAULT 0 CHECK (provider_attempts_started >= 0),
   terminal_remote_failure_kind TEXT CHECK (
     terminal_remote_failure_kind IN (
@@ -45,22 +37,22 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications (
   votes_applied_at TIMESTAMPTZ,
   tags_applied_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
+  superseded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_post_classifier_applications PRIMARY KEY (post_id, id),
   CONSTRAINT uq_post_classifier_applications__input_config
     UNIQUE (post_id, input_sha256, configuration_sha256),
-  CONSTRAINT uq_post_classifier_applications__reserved_batch
-    UNIQUE (post_id, reserved_batch_id),
-  CONSTRAINT chk_post_classifier_applications__batch_identity
-    CHECK (committed_batch_id IS NULL OR
-      (reserved_batch_id IS NOT NULL AND committed_batch_id = reserved_batch_id)),
+  CONSTRAINT uq_post_classifier_applications__decision_batch
+    UNIQUE (post_id, decision_batch_id),
+  CONSTRAINT chk_post_classifier_applications__configured_work CHECK (
+    local_topic_id IS NOT NULL OR decision_batch_id IS NOT NULL
+  ),
   CONSTRAINT chk_post_classifier_applications__remote_failure
     CHECK (
       (terminal_remote_failure_kind IS NULL) = (terminal_remote_failed_at IS NULL)
       AND (terminal_remote_failed_at IS NULL OR (
-        reserved_batch_id IS NOT NULL
-        AND committed_batch_id IS NULL
+        decision_batch_id IS NOT NULL
         AND outcomes_persisted_at IS NULL
       ))
     ),
@@ -79,6 +71,8 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications (
       AND (leased_at IS NULL OR lease_expires_at > leased_at)
       AND (completed_at IS NULL OR lease_token IS NULL)
     ),
+  CONSTRAINT chk_post_classifier_applications__superseded_lease
+    CHECK (superseded_at IS NULL OR lease_token IS NULL),
   CONSTRAINT chk_post_classifier_applications__phases
     CHECK (
       (votes_applied_at IS NULL OR
@@ -88,9 +82,7 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications (
       AND (completed_at IS NULL OR
         (tags_applied_at IS NOT NULL AND tags_applied_at <= completed_at))
       AND (outcomes_persisted_at IS NULL OR
-        (reserved_batch_id IS NULL OR committed_batch_id IS NOT NULL))
-      AND (outcomes_persisted_at IS NULL OR
-        (reserved_batch_id IS NOT NULL OR local_flagged IS NOT NULL))
+        (decision_batch_id IS NOT NULL OR local_flagged IS NOT NULL))
     )
 ) PARTITION BY RANGE (post_id);
 
@@ -101,8 +93,9 @@ DO $$ BEGIN
   ) THEN
     ALTER TABLE post_classifier_applications
       ADD CONSTRAINT fk_post_classifier_applications__batch_post
-      FOREIGN KEY (committed_batch_id, post_id)
-      REFERENCES classifier_decision_batches (id, post_id) ON DELETE CASCADE NOT VALID;
+      FOREIGN KEY (decision_batch_id, post_id)
+      REFERENCES classifier_decision_batches (id, post_id)
+      ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED NOT VALID;
   END IF;
 END $$;
 ALTER TABLE post_classifier_applications
@@ -110,15 +103,24 @@ ALTER TABLE post_classifier_applications
 
 CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__shared_actor
   ON post_classifier_applications (shared_actor_id);
-CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__committed_batch
-  ON post_classifier_applications (committed_batch_id, post_id)
-  WHERE committed_batch_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__community_identity
+  ON post_classifier_applications (community_identity_id, post_id)
+  WHERE community_identity_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__decision_batch
+  ON post_classifier_applications (decision_batch_id, post_id)
+  WHERE decision_batch_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__local_topic
+  ON post_classifier_applications (local_topic_id, post_id)
+  WHERE local_topic_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__lease
   ON post_classifier_applications (lease_expires_at, post_id, id)
   WHERE lease_token IS NOT NULL AND completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__incomplete
   ON post_classifier_applications (post_id, id)
   WHERE completed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_post_classifier_applications__recoverable
+  ON post_classifier_applications (post_id, id)
+  WHERE completed_at IS NULL AND superseded_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS post_classifier_applications__default
   PARTITION OF post_classifier_applications DEFAULT;
@@ -126,12 +128,16 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications__default
 COMMENT ON TABLE post_classifier_applications IS
   'One post/content/configuration fixed-classifier application; C3 and C4 retain remote results and votes.';
 COMMENT ON COLUMN post_classifier_applications.configuration_json IS
-  'Exact canonical ordered execution configuration payload, retained for historical audit.';
-COMMENT ON COLUMN post_classifier_applications.community_id IS
-  'Immutable original post community provenance, without a community FK so history survives community deletion.';
-COMMENT ON COLUMN post_classifier_applications.reserved_batch_id IS
-  'Stable remote batch UUID reserved before provider execution; NULL for local-only work.';
-COMMENT ON COLUMN post_classifier_applications.committed_batch_id IS
-  'Concrete same-post C3 batch reference once the complete remote result commits.';
+  'Exact canonical ordered replay envelope; relational facts are materialized in sibling typed columns.';
+COMMENT ON COLUMN post_classifier_applications.community_identity_id IS
+  'Concrete retained community provenance identity; its live community link may be cleared on deletion.';
+COMMENT ON COLUMN post_classifier_applications.detector_package_version IS
+  'Installed local detector package version pinned for exact replay.';
+COMMENT ON COLUMN post_classifier_applications.local_topic_id IS
+  'Concrete local detector topic relationship when the local classifier is configured.';
+COMMENT ON COLUMN post_classifier_applications.decision_batch_id IS
+  'Concrete same-post C3 batch reserved before provider execution; NULL for local-only work.';
 COMMENT ON COLUMN post_classifier_applications.provider_attempts_started IS
   'Physical provider calls started under lease; effect-only retries and committed-result replay do not increment it.';
+COMMENT ON COLUMN post_classifier_applications.superseded_at IS
+  'Current obsolete-receipt marker; cleared when the exact approved content/configuration identity becomes current again. Outcomes and attempt budget remain immutable.';

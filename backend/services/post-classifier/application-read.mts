@@ -16,8 +16,7 @@ type OutcomeRow = {
   configuration_json: string
   configuration_sha256: Buffer
   shared_actor_id: string
-  reserved_batch_id: string | null
-  committed_batch_id: string | null
+  decision_batch_id: string | null
   outcomes_persisted_at: Date | null
   local_flagged: boolean | null
   local_reason: string | null
@@ -39,8 +38,8 @@ export async function readPostClassifierOutcomes(
 ): Promise<PostClassifierRecoveredOutcomes | null> {
   const query = options.query ?? write
   const { rows } = await query<OutcomeRow>(sql`/* readPostClassifierApplicationOutcomes */
-    SELECT input_sha256, configuration_json, configuration_sha256, shared_actor_id,
-      reserved_batch_id, committed_batch_id, outcomes_persisted_at,
+    SELECT input_sha256, configuration_json::text AS configuration_json, configuration_sha256, shared_actor_id,
+      decision_batch_id, outcomes_persisted_at,
       local_flagged, local_reason, local_confidence_score, local_confidence_threshold,
       local_classification, local_detector, local_detector_model_version
     FROM post_classifier_applications
@@ -52,17 +51,12 @@ export async function readPostClassifierOutcomes(
   if ((lease.resolved.configuration.local === null) !== (localOutcome === null)) {
     throw new Error('post classifier receipt local outcome does not match its configuration')
   }
-  if (row.reserved_batch_id === null) {
-    if (row.committed_batch_id !== null)
-      throw new Error('Local-only classifier receipt has a remote batch')
+  if (row.decision_batch_id === null) {
     return { localOutcome, remoteDecision: null }
   }
-  if (row.committed_batch_id !== row.reserved_batch_id) {
-    throw new Error('post classifier receipt batch linkage is incomplete')
-  }
   const remoteDecision = options.query
-    ? await readCompleteClassifierDecision(options.query, row.committed_batch_id, 'topic')
-    : await readCompleteClassifierDecisionIfExistsFromPrimary(row.committed_batch_id, 'topic')
+    ? await readCompleteClassifierDecision(options.query, row.decision_batch_id, 'topic')
+    : await readCompleteClassifierDecisionIfExistsFromPrimary(row.decision_batch_id, 'topic')
   if (!remoteDecision) throw new Error('post classifier receipt lost its committed remote decision')
   assertPersistedDecisionMatchesConfiguration(lease, remoteDecision)
   return { localOutcome, remoteDecision }
@@ -74,7 +68,7 @@ function matchesLeaseIdentity(row: OutcomeRow, lease: PostClassifierApplicationL
     row.configuration_sha256.equals(lease.resolved.configurationSha256) &&
     row.configuration_json === lease.resolved.configurationJson &&
     row.shared_actor_id === lease.resolved.configuration.actorId &&
-    row.reserved_batch_id === lease.reservedBatchId
+    row.decision_batch_id === lease.decisionBatchId
   )
 }
 

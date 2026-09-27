@@ -32,8 +32,7 @@ export async function* streamIncompletePostClassifierApplicationBatches(): Async
   yield* streamIncompletePostClassifierApplicationBatchesFromRows(
     createAsyncGeneratorFromCursor<IncompleteApplicationRow>(
       sql`/* streamIncompletePostClassifierApplicationBatches */
-        SELECT id, post_id, input_sha256, configuration_sha256,
-          configuration_json::jsonb ->> 'detectorPackageVersion' AS detector_package_version,
+        SELECT id, post_id, input_sha256, configuration_sha256, detector_package_version,
           completed_at, terminal_remote_failed_at, outcomes_persisted_at, superseded_at
         FROM post_classifier_applications
         WHERE completed_at IS NULL

@@ -17,7 +17,7 @@ export type PostClassifierApplicationIdentity = {
 export type PostClassifierApplicationLease = PostClassifierApplicationIdentity & {
   applicationId: string
   leaseToken: string
-  reservedBatchId: string | null
+  decisionBatchId: string | null
 }
 
 export type PostClassifierApplicationRow = {
@@ -26,8 +26,9 @@ export type PostClassifierApplicationRow = {
   configuration_json: string
   configuration_sha256: Buffer
   shared_actor_id: string
-  reserved_batch_id: string | null
-  committed_batch_id: string | null
+  detector_package_version: string
+  local_topic_id: string | null
+  decision_batch_id: string | null
   provider_attempts_started: number
   terminal_remote_failed_at: Date | null
   superseded_at: Date | null
@@ -81,8 +82,9 @@ export async function lockPostClassifierApplication(
 ): Promise<PostClassifierApplicationRow | null> {
   const { rows } = await query<PostClassifierApplicationRow>(sql`
     /* lockPostClassifierApplication */
-    SELECT id, input_sha256, configuration_json, configuration_sha256, shared_actor_id,
-      reserved_batch_id, committed_batch_id, provider_attempts_started,
+    SELECT id, input_sha256, configuration_json::text AS configuration_json, configuration_sha256, shared_actor_id,
+      detector_package_version, local_topic_id,
+      decision_batch_id, provider_attempts_started,
       terminal_remote_failed_at, superseded_at, lease_token, outcomes_persisted_at, votes_applied_at,
       tags_applied_at, completed_at,
       (lease_token IS NOT NULL AND lease_expires_at > clock_timestamp()) AS lease_is_live,
@@ -101,7 +103,9 @@ export async function lockPostClassifierApplication(
     !row.input_sha256.equals(identity.inputSha256) ||
     !row.configuration_sha256.equals(identity.resolved.configurationSha256) ||
     row.shared_actor_id !== identity.resolved.configuration.actorId ||
-    (row.reserved_batch_id === null) !== (identity.resolved.configuration.remote === null)
+    row.detector_package_version !== identity.detectorPackageVersion ||
+    row.local_topic_id !== (identity.resolved.configuration.local?.topicId ?? null) ||
+    (row.decision_batch_id === null) !== (identity.resolved.configuration.remote === null)
   ) {
     throw new Error('post classifier application identity does not match its snapshot')
   }
@@ -117,7 +121,7 @@ export function applicationLeaseMatches(
     row.id === lease.applicationId &&
     row.lease_token === lease.leaseToken &&
     row.lease_is_live &&
-    row.reserved_batch_id === lease.reservedBatchId &&
+    row.decision_batch_id === lease.decisionBatchId &&
     row.completed_at === null &&
     row.terminal_remote_failed_at === null
   )
