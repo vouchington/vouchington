@@ -31,5 +31,5 @@ Content moderation pipeline, policy, reports, appeals, bans, warnings, and audit
 
 When moderation policy, report entity types, reason codes, or pipeline steps change, keep these
 files in sync: `MODERATION-POLICY-MATRIX.md`, `REPORTING.md`, `MODERATION-FLOWS.md`,
-`../navigation/ACTIONS.md`, and `REPORT-JUDGEMENTS.md`. See `CLAUDE.md` in this directory for
+`../navigation/ACTIONS.md`, and `REPORT-JUDGEMENTS.md`. See `AGENTS.md` in this directory for
 the guard-pinned invariant.

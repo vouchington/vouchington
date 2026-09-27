@@ -26,6 +26,6 @@ Processes topic alias updates — propagates alias changes to related entities s
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - RSS feed item categories system: [../rss-feed-item-categories/README.md](../rss-feed-item-categories/README.md)
 - Topics service: [../../services/topics/README.md](../../services/topics/README.md)

@@ -11,5 +11,5 @@
 7. Add the workspace to `pnpm-workspace.yaml` and `backend/package.json` workspaces; `pnpm run no-mistakes` validates the exact nested workspace entries
 8. Register in [`backend/agents/chat/stream.mts`](chat/stream.mts) — add to `buildAgentTools()`
 9. Add delegation rule to [`backend/agents/chat/build-system-prompt.mts`](chat/build-system-prompt.mts)
-10. Update [`backend/agents/CLAUDE.md`](CLAUDE.md) — add to Related section
+10. Update [`backend/agents/AGENTS.md`](AGENTS.md) — add to Related section
 11. Update [`backend/agents/_shared/README.md`](_shared/README.md) — add to "Used by"

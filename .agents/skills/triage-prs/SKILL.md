@@ -110,7 +110,7 @@ gh pr checks <N> --json name,state,link        # CI check list
   retry rule is invalid and the fix is the root cause. **Anti-fork:** never hardcode a
   concrete resource address (an ARN, an event-bus name, a batch ID) into a fingerprint —
   broaden the existing (consumer × root-cause) rule instead of forking a new one per
-  action/status/URL, per `ci/transient-retry/CLAUDE.md`; a rule that hardcodes one
+  action/status/URL, per `ci/transient-retry/AGENTS.md`; a rule that hardcodes one
   resource re-fails the moment a different resource hits the same underlying race.
 - **The hard cases:** when you cannot classify a failure (no rerun-success evidence
   either way), the correct disposition is a narrow `maxAttempts: 1` interim rule scoped

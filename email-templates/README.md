@@ -113,5 +113,5 @@ Output: minified `dist/index.mjs` — imported by `@email-templates/core` consum
 
 ## Agent rules
 
-Read [CLAUDE.md](CLAUDE.md) before implementation for runtime dependency, inventory, recommendation,
+Read [AGENTS.md](AGENTS.md) before implementation for runtime dependency, inventory, recommendation,
 and brand-copy invariants.

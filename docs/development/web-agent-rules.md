@@ -1,6 +1,6 @@
 # Web Agent Rules
 
-These rules expand the concise pointers in [`web/CLAUDE.md`](../../web/CLAUDE.md). Product requirements remain under [`docs/requirements/`](../requirements/README.md).
+These rules expand the concise pointers in [`web/AGENTS.md`](../../web/AGENTS.md). Product requirements remain under [`docs/requirements/`](../requirements/README.md).
 
 ## Rendering And Routing
 

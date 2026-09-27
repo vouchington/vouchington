@@ -67,7 +67,7 @@ describe('agent workflow batching documentation', () => {
     expect(packageLegalityStart).not.toBe(-1)
     expect(packageLegalityEnd).not.toBe(-1)
     const packageLegality = impactRecipes.slice(packageLegalityStart, packageLegalityEnd)
-    const web = normalizedMarkdown('web/CLAUDE.md')
+    const web = normalizedMarkdown('web/AGENTS.md')
     const tests = normalizedMarkdown('docs/development/tests.md')
     const e2eAndVisual = normalizedMarkdown('docs/development/reference-tests-e2e-and-visual.md')
     const commit = normalizedMarkdown('docs/checklists/commit.md')

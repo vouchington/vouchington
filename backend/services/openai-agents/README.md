@@ -11,6 +11,6 @@ OpenAI Responses API tool-call handling — parses function calls from API outpu
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - OpenAI utils module: [../../modules/openai-utils/README.md](../../modules/openai-utils/README.md)
 - AI agents system: [../../queues/ai-agents/README.md](../../queues/ai-agents/README.md)

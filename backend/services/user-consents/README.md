@@ -12,6 +12,6 @@ Manages user consent records (e.g., privacy policy, terms of service) — creati
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Privacy requirements: [../../../docs/requirements/users/PRIVACY.md](../../../docs/requirements/users/PRIVACY.md)
 - Users service: [../users/README.md](../users/README.md)

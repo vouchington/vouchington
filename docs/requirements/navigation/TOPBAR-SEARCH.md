@@ -52,8 +52,8 @@ For authenticated users, results within each group are sorted so followed or sav
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/overview/architecture/search.md](../../overview/architecture/search.md)
 - [docs/requirements/navigation/ACCESSIBILITY.md](./ACCESSIBILITY.md)

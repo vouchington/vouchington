@@ -31,4 +31,4 @@ Requires `currentUserCanCreateStoryPost` authorization.
 ## Related
 
 - Service: [../../../services/stories/](../../../services/stories/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

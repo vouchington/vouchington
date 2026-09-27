@@ -110,5 +110,5 @@ RSS feed items are grouped into stories — first-class entities representing a 
 - [backend/services/entity-relations/README.md](../../../backend/services/entity-relations/README.md) -- follow/mute/block relationships that drive feed filtering
 - [backend/api/v1/feeds/README.md](../../../backend/api/v1/feeds/README.md) -- API route handlers
 - [docs/requirements/community/community-lists.md](../../requirements/community/community-lists.md) -- community list feed scopes
-- [Backend rules](../../../backend/CLAUDE.md) -- pagination, transaction, and service conventions
-- [Web rules](../../../web/CLAUDE.md) -- feed list components and infinite-scroll patterns
+- [Backend rules](../../../backend/AGENTS.md) -- pagination, transaction, and service conventions
+- [Web rules](../../../web/AGENTS.md) -- feed list components and infinite-scroll patterns

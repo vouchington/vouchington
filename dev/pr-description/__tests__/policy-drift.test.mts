@@ -100,7 +100,7 @@ const ROOT_CAUSE_LIFECYCLE_FIXTURES: RootCauseFixture[] = [
 describe('PR lifecycle policy drift', () => {
   it('keeps lifecycle details canonical and the root discoverable', () => {
     const canonical = readFileSync('.agents/skills/agent-workflow/git-and-prs.md', 'utf8')
-    const root = readFileSync('CLAUDE.md', 'utf8')
+    const root = readFileSync('AGENTS.md', 'utf8')
     for (const text of [
       'related-issues-validation: allow #N',
       'issue-audit: keep-open',
@@ -116,14 +116,14 @@ describe('PR lifecycle policy drift', () => {
 
   it('keeps the scratch-file TMPDIR rule on start-of-work', () => {
     const start = readFileSync('.agents/skills/agent-workflow/start-of-work.md', 'utf8')
-    const root = readFileSync('CLAUDE.md', 'utf8')
+    const root = readFileSync('AGENTS.md', 'utf8')
     expect(start).toContain('${TMPDIR:-/tmp}')
     expect(root).not.toContain('${TMPDIR:-/tmp}')
   })
 
   it('keeps the agent-created worktree TMPDIR location rule', () => {
     const start = readFileSync('.agents/skills/agent-workflow/start-of-work.md', 'utf8')
-    const root = readFileSync('CLAUDE.md', 'utf8')
+    const root = readFileSync('AGENTS.md', 'utf8')
     const gettingStarted = readFileSync('docs/development/README.md', 'utf8')
     const backendSetup = readFileSync('docs/development/BACKEND-SETUP.md', 'utf8')
     const humanStarting = readFileSync('dev/reference-starting-services.md', 'utf8')

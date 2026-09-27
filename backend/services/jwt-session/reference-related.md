@@ -2,7 +2,7 @@
 
 [Back to JWT Session Service](README.md#related)
 
-- Agent security invariants: [CLAUDE.md](CLAUDE.md)
+- Agent security invariants: [AGENTS.md](AGENTS.md)
 - [Auth Overview](../../../docs/overview/architecture/auth-overview.md)
 - [Analytics Pipeline](../../../docs/overview/architecture/analytics-pipeline.md)
 - [Sessions Authentication API](../../api/v1/sessions-authentication/README.md)

@@ -6,7 +6,7 @@ export const ALLOWED_POLYMORPHIC_TARGET_TABLES = new Set<string>()
 // Pre-launch checked-in debt: these files still carry the retired
 // `-- edited-in-place: pre-launch, never deployed to production` marker wording instead of the
 // current `-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)` wording
-// mandated by backend/data-stores/psql/CLAUDE.md#migration-rules. edited-in-place-marker-guard.mts
+// mandated by backend/data-stores/psql/AGENTS.md#migration-rules. edited-in-place-marker-guard.mts
 // rejects that retired wording in any file NOT listed here, so this set can only shrink -- new files must use
 // the current wording, and an entry becomes stale (CI-rejected) the moment its file's wording is
 // updated or the file stops existing. Emptying this set only means every file has moved onto the

@@ -9,7 +9,7 @@ const MAX_ERROR_LENGTH = 1000
 /**
  * Unfurl-intent state mutations on `user_referral_program_links`, kept here rather than in
  * `@services/referral-link-unfurl` because writes to this table stay within its owning
- * service (see services/CLAUDE.md § Scoped invariants). Called from
+ * service (see services/AGENTS.md § Scoped invariants). Called from
  * `requestReferralLinkUnfurl` (request side) and `runReferralLinkUnfurl` (processor side).
  */
 

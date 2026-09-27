@@ -44,4 +44,4 @@ Every `queue.add()`, `queue.addBulk()`, and `queue.upsertJobScheduler()` must in
   Security-critical ActivityPub inbox retention cleanup is priority `1`, ahead of ordinary
   delivery work, so expired capacity cannot be starved by a saturated inbox.
 
-See [CLAUDE.md](CLAUDE.md) for enforcement rules and deduplication mode details.
+See [AGENTS.md](AGENTS.md) for enforcement rules and deduplication mode details.

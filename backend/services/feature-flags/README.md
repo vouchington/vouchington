@@ -25,7 +25,7 @@ exports.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Shared cookie primitives: [../../../ts-shared/feature-flags/index.mts](../../../ts-shared/feature-flags/index.mts)
 - [backend/api/v1/feature-flags/README.md](../../api/v1/feature-flags/README.md)
 - [backend/api/v1/dynamic-config/README.md](../../api/v1/dynamic-config/README.md)

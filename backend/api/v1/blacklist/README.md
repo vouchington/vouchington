@@ -58,4 +58,4 @@ Returns 415 if `Content-Type` is not `application/json`.
 ## Related
 
 - Service: [../../services/urls-domains-blacklist/](../../../services/urls-domains-blacklist/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

@@ -10,7 +10,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 
 // The shared staff report queue is dirty and parallel: other tests leave pending reports behind
-// and never clean up (see backend/test-helpers/CLAUDE.md). This traversal only asserts properties
+// and never clean up (see backend/test-helpers/AGENTS.md). This traversal only asserts properties
 // scoped to the two reports it owns, tolerating that foreign noise instead of requiring a quiet
 // table.
 const SEEK_LIMIT = 100

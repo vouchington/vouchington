@@ -35,7 +35,7 @@ type TraversalResponse = {
 }
 
 // The shared staff report queue is dirty and parallel: other tests leave pending reports behind
-// and never clean up (see backend/test-helpers/CLAUDE.md). These traversals only assert
+// and never clean up (see backend/test-helpers/AGENTS.md). These traversals only assert
 // properties scoped to the reports this file owns, so they tolerate that foreign noise instead
 // of requiring a quiet table. Mutable sorts (`severity`, `most_reported`) 422 when a cursor
 // row's report count or judgement rank changes, so this file starts from an owned-report cursor

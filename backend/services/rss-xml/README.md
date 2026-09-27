@@ -11,5 +11,5 @@ Generates RSS/Atom XML feed documents for posts and news, with XML building util
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - RSS feeds service: [../rss-feeds/README.md](../rss-feeds/README.md)

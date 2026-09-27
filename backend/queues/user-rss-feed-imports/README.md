@@ -18,4 +18,4 @@ the row and records the terminal per-row outcome.
 ## Related
 
 - Service: [../../services/user-import-export/README.md](../../services/user-import-export/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

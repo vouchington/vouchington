@@ -18,6 +18,6 @@ cannot delete or complete the winning attempt. Recovery is scheduled and admin-t
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Account deletion requirements: [../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - Data retention service: [../../services/data-retention/README.md](../../services/data-retention/README.md)

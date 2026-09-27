@@ -35,7 +35,7 @@ of this API.
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 - [Comments service](../../../backend/services/comments/README.md)
 - [Communities requirements](./COMMUNITIES.md)

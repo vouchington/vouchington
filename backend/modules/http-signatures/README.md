@@ -62,7 +62,7 @@ const result = verifySignature(
 
 ## Related
 
-- Backend rules: [../../CLAUDE.md](../../CLAUDE.md)
+- Backend rules: [../../AGENTS.md](../../AGENTS.md)
 - ActivityPub URI builders: [../activitypub-uris/README.md](../activitypub-uris/README.md)
 - Fediverse federation roadmap: [../../../docs/overview/architecture/fediverse-federation.md](../../../docs/overview/architecture/fediverse-federation.md)
 - Token secrets (private key encryption): [../token-secrets/README.md](../token-secrets/README.md)

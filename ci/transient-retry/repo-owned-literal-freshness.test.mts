@@ -29,7 +29,7 @@ import { playwrightNavigateToHelperPath } from './playwright-rules.mts'
 const repoRoot = resolve(import.meta.dirname, '../..')
 
 // Tracked, not merely present on disk — an ignored or untracked file must neither satisfy nor fail a
-// guard (see static-code-analysis/CLAUDE.md's "validate tracked repository state" invariant and its
+// guard (see static-code-analysis/AGENTS.md's "validate tracked repository state" invariant and its
 // git-ls-files precedent in repo-file-policy/agent-blackboard-mcp-config.test.mts).
 function trackedPaths(paths: readonly string[]): Set<string> {
   return new Set(

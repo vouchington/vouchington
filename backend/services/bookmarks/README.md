@@ -22,5 +22,5 @@ development runtime enforcement and query telemetry identify the complete statem
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Entity cache: [../entity-cache/README.md](../entity-cache/README.md)

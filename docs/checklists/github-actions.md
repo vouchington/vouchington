@@ -42,6 +42,6 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 ## See Also
 
 - [github-actions-checklist skill](../../.agents/skills/github-actions-checklist/SKILL.md) — skill entry point
-- [.github/workflows/CLAUDE.md](../../.github/workflows/CLAUDE.md) — scoped workflow invariants and canonical-doc routing
+- [.github/workflows/AGENTS.md](../../.github/workflows/AGENTS.md) — scoped workflow invariants and canonical-doc routing
 - [.github/workflows/AUTHORING.md](../../.github/workflows/AUTHORING.md) — step timeouts, sharding, PR splitting
 - [docs/development/dependency-updates.md#pinning-style-for-github-actions](../development/dependency-updates.md#pinning-style-for-github-actions) — pinning style

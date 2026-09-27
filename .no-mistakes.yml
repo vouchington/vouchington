@@ -357,7 +357,7 @@ rules:
     include:
       - '**/*.md'
     exclude:
-      - '**/CLAUDE.md'
+      - '**/AGENTS.md'
       - articles/**
       - '**/fixtures/**/*.md'
       - '**/__fixtures__/**/*.md'
@@ -369,7 +369,7 @@ rules:
       - '**/testcases/**/*.md'
       - '**/__testcases__/**/*.md'
     options:
-      rootFilenames: [CLAUDE.md]
+      rootFilenames: [AGENTS.md]
       indexFilenames: [README.md]
       maxDepth: 2
 
@@ -473,7 +473,7 @@ rules:
     include:
       - '**/*.md'
     exclude:
-      - '**/CLAUDE.md'
+      - '**/AGENTS.md'
       - articles/**
       - '**/fixtures/**/*.md'
       - '**/__fixtures__/**/*.md'
@@ -662,7 +662,7 @@ rules:
         - glob: 'web/app/**/[[]topicType[]]/**'
           message: >-
             [topicType] dynamic segments are banned; use explicit routes per topic type.
-            See web/CLAUDE.md routing rules.
+            See web/AGENTS.md routing rules.
         - glob: '**/*.[pP][aA][tT][cC][hH]'
           message: >-
             patch and diff files are not allowed; fix the underlying problem upstream

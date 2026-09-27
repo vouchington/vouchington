@@ -24,7 +24,7 @@ Manages the paid identity-verification lifecycle via Stripe Identity Verificatio
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Stripe service: [../stripe/README.md](../stripe/README.md)
 - Users service: [../users/README.md](../users/README.md)
 - Migration: [../../data-stores/psql/migrations/0310-00-00-identity-verification.sql](../../data-stores/psql/migrations/0310-00-00-identity-verification.sql)

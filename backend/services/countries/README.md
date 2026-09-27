@@ -19,4 +19,4 @@ edge instead (see the route README).
 ## Related
 
 - Route: [../../api/v1/countries/README.md](../../api/v1/countries/README.md)
-- Backend services: [../CLAUDE.md](../CLAUDE.md)
+- Backend services: [../AGENTS.md](../AGENTS.md)

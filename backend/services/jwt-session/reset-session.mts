@@ -14,7 +14,7 @@ export async function resetSessionState(options: {
   // Only revoke uid-bearing sessions when dt and st are a valid matching pair.
   // Without a valid dt, st alone must not drive revocation — an attacker holding only a
   // victim's st could otherwise DoS them by forcing logout. See
-  // docs/requirements/security/SECURITY.md and jwt-session/CLAUDE.md "No st-only fallback".
+  // docs/requirements/security/SECURITY.md and jwt-session/AGENTS.md "No st-only fallback".
   if (deviceState.token && options.sessionToken) {
     const verified = await verifyDeviceAndSessionTokens({
       deviceToken: deviceState.token,

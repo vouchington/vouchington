@@ -67,4 +67,4 @@ Implementation source: `web/components/shared/entity-action-icons.ts`.
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md)
 - [Entity × Lifecycle Flow Matrix](../ENTITY-LIFECYCLE-MATRIX.md)
 - [Signed-out Actions](./SIGNED_OUT_ACTIONS.md)
-- [Web rules](../../../web/CLAUDE.md)
+- [Web rules](../../../web/AGENTS.md)

@@ -57,7 +57,7 @@ async function getItemCategoryTopicIds(itemId: string): Promise<string[]> {
 // doc comment); the view column backing getItemCategoryTopicIds is gated on that recompute having
 // landed, so every call site here must wait for it before reading category/vote-gated data back.
 // Poll the observable read instead of listening on the worker's job-completion event --
-// backend/services/* must never depend on backend/workers/* (workers/CLAUDE.md: workers depend on
+// backend/services/* must never depend on backend/workers/* (workers/AGENTS.md: workers depend on
 // services, never the reverse; mirrors the precedent in
 // backend/services/users/__tests__/create.test.mts). Waiting for every written relation's
 // object_id to appear (rather than e.g. a total-length match) stays correct even when the item

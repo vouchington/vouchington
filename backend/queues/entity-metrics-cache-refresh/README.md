@@ -18,5 +18,5 @@ deduplication.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Entity cache service: [../../services/entity-cache/README.md](../../services/entity-cache/README.md)

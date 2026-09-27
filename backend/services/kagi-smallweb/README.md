@@ -9,6 +9,6 @@ Syncs RSS feeds from Kagi Small Web feed lists — fetches multiple sources in p
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Kagi Small Web system: [../../queues/kagi-smallweb/README.md](../../queues/kagi-smallweb/README.md)
 - RSS feeds service: [../rss-feeds/README.md](../rss-feeds/README.md)

@@ -10,5 +10,5 @@ local.
 Related conventions:
 
 - [Services README](../README.md)
-- [Services agent rules](../CLAUDE.md)
+- [Services agent rules](../AGENTS.md)
 - [API performance requirements](../../../docs/requirements/platform/api-performance.md)

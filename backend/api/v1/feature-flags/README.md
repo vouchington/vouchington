@@ -35,4 +35,4 @@ Global feature flag writes use the Dynamic Config API namespace `feature-flags`:
 
 - Service: [../../services/feature-flags/](../../../services/feature-flags/README.md)
 - Dynamic Config API: [../dynamic-config/README.md](../dynamic-config/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

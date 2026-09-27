@@ -45,5 +45,5 @@ Each `crawl_referral_link` job:
 - Service: `@services/crawler-referral-links`
 - Browser-crawl system: `@queues/crawl-browser`
 - Backend browser-crawl service: `@services/browser-crawl`
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [docs/requirements/users/REFERRAL-LINKS.md](../../../docs/requirements/users/REFERRAL-LINKS.md)

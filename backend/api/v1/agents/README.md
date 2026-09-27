@@ -29,4 +29,4 @@ Response includes `results` and `page_info`.
 ## Related
 
 - Service: [../../services/agents/](../../../services/agents/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

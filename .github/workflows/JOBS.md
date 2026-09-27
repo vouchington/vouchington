@@ -9,7 +9,7 @@ node ci/render-workflow-runner-inventory.mts
 ```
 
 For curated, workflow-level purpose summaries see [WORKFLOWS.md](WORKFLOWS.md); for
-runner-label selection rules see [CLAUDE.md](CLAUDE.md).
+runner-label selection rules see [AGENTS.md](AGENTS.md).
 This table is the precise, per-job complement to both: the exact `runs-on` and
 `timeout-minutes` no-mistakes resolved for every job, including jobs whose runner is
 inherited from a reusable-workflow call (shown as `→ callee.yml`, omitting any `@ref` pin) and matrix jobs

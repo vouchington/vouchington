@@ -1,7 +1,7 @@
 /**
  * Test-only fixtures shared across this package's dispatch/record test files: a cached
  * remote_actors row (via the real getOrFetchRemoteActorByKeyId with an injected fetch mock —
- * dependency injection, not a module mock, per backend/CLAUDE.md's non-web mocking policy), a
+ * dependency injection, not a module mock, per backend/AGENTS.md's non-web mocking policy), a
  * federation-opted-in user, and the deliverActivity queue-polling helpers used to assert an
  * Accept job was enqueued. Kept local to this package rather than @voucha/test-helpers: every
  * backend service devDeps test-helpers for its own tests, so a test-helpers -> @services/remote-actors

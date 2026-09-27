@@ -71,8 +71,8 @@ relations such as follow, mute, and block remain bookmark API concerns.
 
 ## Related Services
 
-- [Backend rules](../../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../../web/CLAUDE.md) — UI and routing conventions
+- [Backend rules](../../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
 - [backend/services/entity-relations/README.md](../../../backend/services/entity-relations/README.md) -- config, upsert, delete, query logic
 - [backend/services/bookmarks/README.md](../../../backend/services/bookmarks/README.md) -- bookmark operations built on entity relations

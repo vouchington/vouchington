@@ -1,7 +1,7 @@
 id: transient-retry-no-repo-owned-spec-pinning
 language: Tsx
 severity: error
-message: 'Do not fingerprint a repo-owned Playwright spec path in a transient-retry rule — a test failure that matches your own diff is a real bug, not infrastructure noise (see ci/transient-retry/CLAUDE.md). File an issue and fix the spec instead. Exceptions: playwright/credentialed/** (credentialed external-dependency probes) and playwright/helpers/** (shared helpers) are infrastructure by construction and are not caught by this rule.'
+message: 'Do not fingerprint a repo-owned Playwright spec path in a transient-retry rule — a test failure that matches your own diff is a real bug, not infrastructure noise (see ci/transient-retry/AGENTS.md). File an issue and fix the spec instead. Exceptions: playwright/credentialed/** (credentialed external-dependency probes) and playwright/helpers/** (shared helpers) are infrastructure by construction and are not caught by this rule.'
 files:
   - 'ci/transient-retry/**/*.mts'
 ignores:

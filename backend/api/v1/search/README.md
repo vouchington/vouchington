@@ -51,4 +51,4 @@ when non-null, clients render it with the nullable declared/detected content-lan
 
 - Service: [../../../services/search/](../../../services/search/omnisearch.mts)
 - Command search dialog: [../../../../web/components/command-search.tsx](../../../../web/components/command-search.tsx)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

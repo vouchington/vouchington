@@ -36,7 +36,7 @@ describe('ShareLandingPageBanner', () => {
     expect(screen.getByRole('link', { name: /edit/i })).toBeInTheDocument()
   })
 
-  it('exposes the banner as a region landmark with a label (CLAUDE.md ARIA banner rule)', () => {
+  it('exposes the banner as a region landmark with a label (AGENTS.md ARIA banner rule)', () => {
     render(<ShareLandingPageBanner username='testuser' />)
 
     expect(screen.getByRole('region', { name: /share your landing page/i })).toBeInTheDocument()

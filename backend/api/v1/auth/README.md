@@ -170,4 +170,4 @@ The route also accepts `otp` as an alias for `token`.
 - Sessions: [../sessions-authentication/README.md](../sessions-authentication/README.md)
 - Bluesky client metadata: [../../bluesky/README.md](../../bluesky/README.md)
 - Error handling (callback reporting): [Error Handling](../../../../docs/overview/architecture/error-handling.md#propagation-chain)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

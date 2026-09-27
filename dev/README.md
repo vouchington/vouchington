@@ -1,6 +1,6 @@
 # Dev Environment Reference
 
-Local worktree tooling, services, ports, and troubleshooting. See [CLAUDE.md](CLAUDE.md) for
+Local worktree tooling, services, ports, and troubleshooting. See [AGENTS.md](AGENTS.md) for
 agent-specific rules and the [local-site-testing skill](../.agents/skills/local-site-testing/SKILL.md)
 for agent-run full-site startup and browser validation.
 

@@ -196,8 +196,8 @@ All RSS feed `<description>` content is wrapped in CDATA by the `feed` library, 
 - [Auth Overview](./auth-overview.md)
 - [HTML And Markdown Rendering Passes](./html-markdown-rendering-passes.md)
 - [Markdown service](../../../backend/services/markdown/README.md) — Rust-backed markdown rendering pipeline
-- [Backend rules](../../../backend/CLAUDE.md) — Rust NAPI usage, banned packages
-- [Web rules](../../../web/CLAUDE.md) — content rendering components
+- [Backend rules](../../../backend/AGENTS.md) — Rust NAPI usage, banned packages
+- [Web rules](../../../web/AGENTS.md) — content rendering components
 
 ## Post-authored text boundaries
 

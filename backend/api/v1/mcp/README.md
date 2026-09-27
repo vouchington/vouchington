@@ -55,4 +55,4 @@ claude mcp add --scope local voucha-user-mcp --transport http \
 - Service: [MCP Tools service](../../../services/mcp-tools/)
 - API Keys: [api-keys service](../../../services/api-keys/)
 - OAuth: [authorization-server service](../../../services/oauth-authorization-server/)
-- Parent: [API CLAUDE](../../CLAUDE.md)
+- Parent: [API CLAUDE](../../AGENTS.md)

@@ -61,7 +61,7 @@ function isToolingPath(filePath: string): boolean {
 
   return (
     filePath === 'commitlint.config.mts' ||
-    basename === 'CLAUDE.md' ||
+    basename === 'AGENTS.md' ||
     basename === 'package.json' ||
     basename === 'README.md' ||
     basename === 'tsconfig.json' ||
@@ -106,7 +106,7 @@ export function classifyFile(filePath: string): {
     return { category, service: 'email-templates' }
   }
   if (normalized.startsWith('ts-shared/')) return { category, service: 'ts-shared' }
-  if (normalized.startsWith('docs/') || normalized === 'README.md' || normalized === 'CLAUDE.md') {
+  if (normalized.startsWith('docs/') || normalized === 'README.md' || normalized === 'AGENTS.md') {
     return { category, service: 'docs' }
   }
   if (normalized.startsWith('monitors/')) {

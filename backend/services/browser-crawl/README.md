@@ -54,5 +54,5 @@ connected to Lightpanda's cloud CDP endpoint. No local browser binary — see
 ## Related
 
 - Caller/queue: [`@queues/crawl-browser`](../../queues/crawl-browser/README.md)
-- Parent: [`../CLAUDE.md`](../CLAUDE.md)
+- Parent: [`../AGENTS.md`](../AGENTS.md)
 - SSRF primitives: [`ssrf-guard`](https://www.npmjs.com/package/ssrf-guard)

@@ -12,6 +12,6 @@ Jobs use 24-hour debounce deduplication: if a recalculation job is already queue
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Topics service: [../../services/topics/README.md](../../services/topics/README.md)
 - Elections system: [../elections/README.md](../elections/README.md)

@@ -141,8 +141,8 @@ See [Feed And List Filters](../../requirements/navigation/FEED-LIST-FILTERS.md#h
 
 ## Related
 
-- [Backend rules](../../../backend/CLAUDE.md) — service and data conventions
-- [Web rules](../../../web/CLAUDE.md) — UI and routing conventions
+- [Backend rules](../../../backend/AGENTS.md) — service and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
 - [docs/requirements/navigation/TOPBAR-SEARCH.md](../../requirements/navigation/TOPBAR-SEARCH.md)
 - [docs/overview/architecture/ai-agents.md](./ai-agents.md)

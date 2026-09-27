@@ -3,7 +3,7 @@ Review Playwright tests. Pick exactly one concrete, bounded improvement that is 
 - Run the relevant local Playwright test more than once when investigating reliability.
 - Find any failures and make them more reliable.
 - Find opportunities to make tests faster or leaner.
-- Review CLAUDE.md and README.md files for any incongruence between tests and requirements.
+- Review AGENTS.md and README.md files for any incongruence between tests and requirements.
 - Avoid increasing timeouts and retries.
 - If retrying is justified, retry the smallest navigation-plus-assertion operation that can recover;
   do not restart an unrelated setup or an entire test flow.

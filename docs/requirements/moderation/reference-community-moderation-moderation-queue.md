@@ -31,8 +31,8 @@ This happens asynchronously (fire-and-forget) after the membership removal.
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 - [Moderation Flows](./MODERATION-FLOWS.md) — full end-to-end moderation pipeline including global clearance and site-wide LLM agents
 
 - Service: [backend/services/community-agent-prompts/README.md](../../../backend/services/community-agent-prompts/README.md)

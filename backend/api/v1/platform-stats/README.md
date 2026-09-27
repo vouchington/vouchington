@@ -23,4 +23,4 @@ Response is streamed via `streamJsonObject`.
 ## Related
 
 - Service: [../../../services/platform-stats/](../../../services/platform-stats/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

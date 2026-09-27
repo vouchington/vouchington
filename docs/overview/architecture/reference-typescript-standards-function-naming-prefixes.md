@@ -21,4 +21,4 @@ Backend data-accessing functions must use these prefixes consistently:
 | `is*`         | Check a condition, return boolean |
 | `has*`        | Check a condition, return boolean |
 
-Applies across `backend/services/**` and `backend/api/**`. See [backend/CLAUDE.md](../../../backend/CLAUDE.md).
+Applies across `backend/services/**` and `backend/api/**`. See [backend/AGENTS.md](../../../backend/AGENTS.md).

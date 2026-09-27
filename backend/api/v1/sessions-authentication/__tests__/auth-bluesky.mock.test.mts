@@ -18,7 +18,7 @@ const revokeBlueskySessionMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 // at construction time. That validation requires a real https origin (see
 // backend/modules/bluesky-oauth/client-metadata.mts) — local/CI worktrees resolve to a localhost
 // origin, which the SDK correctly rejects. This is the @modules/bluesky-oauth SDK boundary (see
-// backend/CLAUDE.md § Provider-wide SDK boundaries), so it's mocked here rather than exercised for
+// backend/AGENTS.md § Provider-wide SDK boundaries), so it's mocked here rather than exercised for
 // real, mirroring backend/services/bluesky-accounts/link.mock.test.mts and disconnect.mock.test.mts.
 const createBlueskyOAuthClientMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('@modules/bluesky-oauth')>(

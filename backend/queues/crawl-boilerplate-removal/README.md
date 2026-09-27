@@ -18,6 +18,6 @@ Nightly system that identifies and removes boilerplate HTML (headers, footers, n
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [Boilerplate Removals Service](../../services/boilerplate-removals/README.md)
 - [Crawlers Service](../../services/crawlers/README.md)

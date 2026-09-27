@@ -10,5 +10,5 @@ Email address validation and sanitization, including domain-level DNS/MX checks 
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Users service: [../users/README.md](../users/README.md)

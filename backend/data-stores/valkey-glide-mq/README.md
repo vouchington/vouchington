@@ -20,4 +20,4 @@ workers, flows) declare this package instead of reaching into the `@data-stores/
 
 - Worker Queue client group, shutdown sequencing, and enqueue retry semantics:
   [../valkey/README.md](../valkey/README.md)
-- Backend context: [../../CLAUDE.md](../../CLAUDE.md)
+- Backend context: [../../AGENTS.md](../../AGENTS.md)

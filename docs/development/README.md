@@ -2,7 +2,7 @@
 
 How to run all services locally and load the site in a browser.
 
-Agent-specific workflow policy lives in [CLAUDE.md](../../CLAUDE.md). The
+Agent-specific workflow policy lives in [AGENTS.md](../../AGENTS.md). The
 [local-site-testing skill](../../.agents/skills/local-site-testing/SKILL.md) is the concise agent
 guide for full-site startup, HTTPS Worker access, and local browser validation. This page focuses on
 local setup and development commands.
@@ -150,8 +150,8 @@ Agent-created temporary or subagent worktrees are not this path; they go under t
 
 Run `./dev/tmux` from outside tmux. It creates one session per canonical worktree with windows in this order: `nextjs`, `backend`, `worker`, `cloudflare`, `lambdas`. The `worker` window runs every queue in the worker policy.
 
-See [../../dev/CLAUDE.md](../../dev/CLAUDE.md) for full worktree documentation.
-Agents should also follow [CLAUDE.md](../../CLAUDE.md) for initialization, validation, git, and PR completion rules.
+See [../../dev/AGENTS.md](../../dev/AGENTS.md) for full worktree documentation.
+Agents should also follow [AGENTS.md](../../AGENTS.md) for initialization, validation, git, and PR completion rules.
 
 ### Fresh-base planning
 

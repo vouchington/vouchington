@@ -14,4 +14,4 @@ Backend platform requirements: API performance, job replayability, data points s
 ## Sync Rule
 
 When API performance conventions, job idempotency requirements, or data point schemas change,
-update the relevant doc here and cross-link from `backend/CLAUDE.md` and relevant service docs.
+update the relevant doc here and cross-link from `backend/AGENTS.md` and relevant service docs.

@@ -71,4 +71,4 @@ Administrators can view analytics for any user's landing pages. Other staff role
 - [Memberships](../users/memberships.md) — tier-based feature gating
 - [Referral Links](../users/REFERRAL-LINKS.md) — referral link analytics (separate from landing page analytics)
 - [Landing page analytics service](../../../backend/services/landing-page-analytics/README.md) — event collection and analytics pipeline
-- [Web rules](../../../web/CLAUDE.md) — landing page UI components
+- [Web rules](../../../web/AGENTS.md) — landing page UI components

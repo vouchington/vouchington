@@ -1,6 +1,6 @@
 # Test Helpers
 
-Testing utility library for the Voucha backend. See [CLAUDE.md](CLAUDE.md) for agent conventions and rules.
+Testing utility library for the Voucha backend. See [AGENTS.md](AGENTS.md) for agent conventions and rules.
 
 ## `onceEntityListenerCompleted`
 
@@ -375,7 +375,7 @@ from calls that create or retire provider mappings.
 
 - GlideMQ testing examples: [examples.glide-mq-testing.md](examples.glide-mq-testing.md)
 - [Backend Vitest test authoring skill](../../.agents/skills/backend-vitest-test-authoring/SKILL.md)
-- Agent conventions: [CLAUDE.md](CLAUDE.md)
-- Backend context and test conventions: [../CLAUDE.md](../CLAUDE.md)
-- Mocking policy: [../services/CLAUDE.md](../services/CLAUDE.md)
+- Agent conventions: [AGENTS.md](AGENTS.md)
+- Backend context and test conventions: [../AGENTS.md](../AGENTS.md)
+- Mocking policy: [../services/AGENTS.md](../services/AGENTS.md)
 - PostgreSQL (entity helpers align with schema): [../data-stores/psql/README.md](../data-stores/psql/README.md)

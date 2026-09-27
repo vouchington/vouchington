@@ -9,5 +9,5 @@ Retrieves aggregate platform-wide statistics for display on public stats pages.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [backend/api/v1/platform-stats/README.md](../../api/v1/platform-stats/README.md)

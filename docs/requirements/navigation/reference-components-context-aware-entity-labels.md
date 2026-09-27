@@ -6,7 +6,7 @@
 
 Topic chips and user bylines must link to the content-kind tab that matches the surrounding surface rather than always landing on the entity root.
 
-**URL helpers** — `web/lib/links/entity-href.ts` (see [`web/lib/links/CLAUDE.md`](../../../web/lib/links/CLAUDE.md)):
+**URL helpers** — `web/lib/links/entity-href.ts` (see [`web/lib/links/AGENTS.md`](../../../web/lib/links/AGENTS.md)):
 
 - `topicHref(topic, tab?)` — builds `/{topicTypeSlug}/{idOrSlug}[/{tab}]`
 - `userHref(user, tab?)` — builds `/user/{usernameOrId}[/{tab}]`
@@ -29,7 +29,7 @@ Topic chips and user bylines must link to the content-kind tab that matches the 
 
 Use `topicTabForPostType(post.post_type)` on `PostCard` and `PostDetail` — the `post_type` field drives the tab without prop drilling. Pass `tab='news'` explicitly on news item components. Leave `tab` undefined on generic listing/search surfaces.
 
-See [`web/CLAUDE.md`](../../../web/CLAUDE.md) for the enforced UI rule.
+See [`web/AGENTS.md`](../../../web/AGENTS.md) for the enforced UI rule.
 
 ### Image Lightbox
 
@@ -72,4 +72,4 @@ const PostImageLightbox = dynamic(() =>
 />
 ```
 
-**Related:** [Post Images](../content/POSTS.md#post-images), `web/CLAUDE.md` (carousel arrow placement rule)
+**Related:** [Post Images](../content/POSTS.md#post-images), `web/AGENTS.md` (carousel arrow placement rule)

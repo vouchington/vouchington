@@ -60,4 +60,4 @@ stream also includes a `users` map for shared-by attribution.
 ## Related
 
 - Service: [../../services/feeds/](../../../services/feeds/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

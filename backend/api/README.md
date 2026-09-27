@@ -7,7 +7,7 @@ HTTP API route reference for Voucha. Routes are thin controllers over `@services
 | File        | Purpose                                                                                    |
 | ----------- | ------------------------------------------------------------------------------------------ |
 | `README.md` | Route map, required headings, shared response/caching/typing patterns, and extracted links |
-| `CLAUDE.md` | Agent-only modification rules and review checklist                                         |
+| `AGENTS.md` | Agent-only modification rules and review checklist                                         |
 
 Keep route-local `README.md` headings. When a heading links a `reference-*.md` leaf, update that
 leaf for endpoint-specific details; otherwise the README's inline section is canonical.
@@ -71,7 +71,7 @@ Use `response-helpers.mts` for standard route preambles:
   registry's redacted message. Read [Request validation](reference-request-validation.md) for the
   required ordering, pure query projection, meaningful-schema, and compiler/HTTP coverage rules.
 
-Route modification invariants live in [CLAUDE.md](CLAUDE.md).
+Route modification invariants live in [AGENTS.md](AGENTS.md).
 
 ## Response Patterns
 
@@ -137,8 +137,8 @@ performance requirements.
 
 ## Related
 
-- Agent modification rules: [CLAUDE.md](./CLAUDE.md)
-- Backend context: [../CLAUDE.md](../CLAUDE.md)
-- Services: [../services/CLAUDE.md](../services/CLAUDE.md)
+- Agent modification rules: [AGENTS.md](./AGENTS.md)
+- Backend context: [../AGENTS.md](../AGENTS.md)
+- Services: [../services/AGENTS.md](../services/AGENTS.md)
 - Web requirements: [../../docs/requirements/README.md](../../docs/requirements/README.md)
 - Security architecture: [API Server Runtime Controls](../../docs/requirements/security/reference-backend-defence-in-depth.md#api-server-runtime-controls)

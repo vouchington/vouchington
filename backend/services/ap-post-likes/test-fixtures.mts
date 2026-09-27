@@ -1,7 +1,7 @@
 /**
  * Test-only fixture: a cached remote_actors row, created via the real
  * getOrFetchRemoteActorByKeyId with an injected fetch mock (dependency injection, not a module
- * mock — see backend/CLAUDE.md's non-web mocking policy). Duplicated from
+ * mock — see backend/AGENTS.md's non-web mocking policy). Duplicated from
  * @services/ap-inbox-activities's dispatch-activity.test.mts rather than shared through
  * @voucha/test-helpers: every backend service devDeps test-helpers for its own tests, so a
  * test-helpers -> @services/remote-actors edge would be a workspace cycle.

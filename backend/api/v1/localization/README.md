@@ -30,4 +30,4 @@ generated exact chrome selector and exact current-route selector in one batch.
 ## Related
 
 - Service: [../../../services/localization/README.md](../../../services/localization/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

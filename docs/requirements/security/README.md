@@ -16,4 +16,4 @@ Authentication UI, security requirements, and CVE tracking.
 ## Sync Rule
 
 When security policies, authentication flows, or CVE mitigations change, update the relevant doc
-here and cross-link from `docs/overview/architecture/auth-overview.md` and `backend/CLAUDE.md`.
+here and cross-link from `docs/overview/architecture/auth-overview.md` and `backend/AGENTS.md`.

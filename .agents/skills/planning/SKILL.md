@@ -15,11 +15,11 @@ The runtime chooses its available agents; if an independent reviewer cannot run,
 
 Before choosing a design, record the applicable local constraints and their concrete consequences
 in the Plan's implementation steps. In particular, establish launch/deployment state from
-[`CLAUDE.md`](../../../CLAUDE.md), not from the presence of deployment infrastructure. A conditional
+[`AGENTS.md`](../../../AGENTS.md), not from the presence of deployment infrastructure. A conditional
 live-deployment exception is not evidence that it applies; do not invent compatibility readers,
 activation switches, nullable transition fields, or backfills without an established requirement.
 
-For database work, read [`backend/data-stores/psql/CLAUDE.md`](../../../backend/data-stores/psql/CLAUDE.md)
+For database work, read [`backend/data-stores/psql/AGENTS.md`](../../../backend/data-stores/psql/AGENTS.md)
 before selecting column shapes. Trace each identifier's readers and joins; record what it denotes,
 its concrete relationship, foreign-key coverage, constraint, and deletion behavior. Check generic `kind`/type plus ID designs against the owning
 schema rules even when they resemble existing code or have TypeScript unions and SQL `CHECK`s.

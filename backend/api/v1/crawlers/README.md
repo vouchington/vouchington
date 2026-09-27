@@ -50,4 +50,4 @@ Updates the crawler configuration.
 
 - Service: [../../services/crawlers/](../../../services/crawlers/README.md)
 - Hostnames: [../hostnames/README.md](../hostnames/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

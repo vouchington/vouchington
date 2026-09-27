@@ -56,5 +56,5 @@ typical preview inputs (< 32 KB, few mentions), total latency is under 10 ms.
 ## Related
 
 - Service: [backend/services/markdown/README.md](../../../services/markdown/README.md)
-- API routes: [backend/api/CLAUDE.md](../../CLAUDE.md)
-- Backend conventions: [backend/CLAUDE.md](../../../../backend/CLAUDE.md)
+- API routes: [backend/api/AGENTS.md](../../AGENTS.md)
+- Backend conventions: [backend/AGENTS.md](../../../../backend/AGENTS.md)

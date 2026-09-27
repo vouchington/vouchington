@@ -58,6 +58,6 @@ await connectOAuthAccountToUser(provider, currentUserId, providerUserId)
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - OAuth orchestration: [../oauth/README.md](../oauth/README.md)
 - Token encryption: [../../modules/token-secrets/README.md](../../modules/token-secrets/README.md)

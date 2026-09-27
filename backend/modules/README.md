@@ -15,5 +15,5 @@ and process orchestration. Do not re-queue those facades as extract-the-module w
 - Error handling: [on-error/README.md](on-error/README.md)
 - OpenRouter retained-agent transport: [openrouter-utils/README.md](openrouter-utils/README.md)
 - API and OAuth scope grammar: [scopes/README.md](scopes/README.md)
-- Backend context: [../CLAUDE.md](../CLAUDE.md)
-- Services (use modules; use data-stores): [../services/CLAUDE.md](../services/CLAUDE.md)
+- Backend context: [../AGENTS.md](../AGENTS.md)
+- Services (use modules; use data-stores): [../services/AGENTS.md](../services/AGENTS.md)

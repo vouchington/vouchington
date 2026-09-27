@@ -18,7 +18,7 @@ const defaultDeps: ReconcileBackgroundResponsesDeps = {
 // One retrieve()/cancel() call to OpenAI per expired lease. Bounded so a large recovery backlog (e.g.
 // after an ECS rolling deploy kills many in-flight workers at once, up to
 // BACKGROUND_RESPONSE_RECONCILE_BATCH_SIZE = 100 rows per tick) can't fan out into a burst against
-// OpenAI's rate limit -- the exact hazard #8836 exists to avoid. See backend/CLAUDE.md's "avoid
+// OpenAI's rate limit -- the exact hazard #8836 exists to avoid. See backend/AGENTS.md's "avoid
 // calling external APIs in a loop or unbounded Promise.all()" rule.
 const RECONCILE_CONCURRENCY = 5
 

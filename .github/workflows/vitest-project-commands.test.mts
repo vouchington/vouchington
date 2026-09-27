@@ -31,7 +31,7 @@ describe('durable Vitest workflow commands', () => {
   it('keeps workflow touch-set validation in the canonical checklist', () => {
     const command = 'pnpm exec vitest run --project github-actions'
     const checklist = readFileSync('docs/checklists/github-actions.md', 'utf8')
-    const scopedRules = readFileSync('.github/workflows/CLAUDE.md', 'utf8')
+    const scopedRules = readFileSync('.github/workflows/AGENTS.md', 'utf8')
 
     expect(checklist).toContain(`\`${command}\``)
     expect(scopedRules).toContain('../../docs/checklists/github-actions.md#checklist')

@@ -47,7 +47,7 @@ export async function populateEmbeddingBloomFilterFromDatabase(): Promise<void> 
  *
  * Zero-downtime: builds under a separate key then atomically renames to live key.
  * Streams embeddings from DB to avoid loading entire dataset into memory.
- * Rebuilds at 2× current row count per CLAUDE.md to reduce immediate expansion chaining.
+ * Rebuilds at 2× current row count per AGENTS.md to reduce immediate expansion chaining.
  */
 export async function rebuildEmbeddingBloomFilter(): Promise<void> {
   const { rows } = await read(

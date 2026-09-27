@@ -46,7 +46,7 @@ policy; this skill is the checklist, not a restatement.
    [`docs/development/tests.md`](../../../docs/development/tests.md) for project selection and
    validation commands.
 7. Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) value gate; keep one mutation-sensitive test at the lowest realistic boundary for each observable contract.
-8. Do not assert exact prose wording read from `docs/prompts/**`, `.agents/skills/**`, `**/CLAUDE.md`,
+8. Do not assert exact prose wording read from `docs/prompts/**`, `.agents/skills/**`, `**/AGENTS.md`,
    or other reference-leaf markdown — a reworded sentence breaks the test without changing behavior
    (root cause of #10813/#11019). This applies per assertion, not per file: keep everything else in a
    test that also has one prose assertion. A `not.toContain`/`not.toMatch` whose needle is a sentence

@@ -12,7 +12,7 @@ Claude Code and Codex load `vouchington-testing:playwright-authoring`; Grok, Cur
 
 ## Vouchington additions
 
-Read [`playwright/CLAUDE.md`](../../../playwright/CLAUDE.md) for scope, then use
+Read [`playwright/AGENTS.md`](../../../playwright/AGENTS.md) for scope, then use
 [`playwright/README.md`](../../../playwright/README.md) for authentication, locator, waiting,
 fixture, viewport, hydration, and debugging examples.
 

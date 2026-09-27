@@ -105,7 +105,7 @@ The `posts.ai_summary_markdown` column holds AI-generated summary content, separ
 
 ## Related
 
-- Agent invariants: [CLAUDE.md](CLAUDE.md)
+- Agent invariants: [AGENTS.md](AGENTS.md)
 - Search details: [search/README.md](./search/README.md)
 - API routes: [../../api/v1/posts/README.md](../../api/v1/posts/README.md)
 - Entity listeners: [../../queues/entity-listeners/README.md](../../queues/entity-listeners/README.md)

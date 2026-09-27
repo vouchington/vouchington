@@ -10,13 +10,13 @@ store; infrastructure continues to own deployment and topology.
 
 | Path                               | Purpose                                                                                                            |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [`image-resize/`](image-resize/)   | On-demand image resize / format conversion in front of S3. See [`image-resize/CLAUDE.md`](image-resize/CLAUDE.md). |
+| [`image-resize/`](image-resize/)   | On-demand image resize / format conversion in front of S3. See [`image-resize/AGENTS.md`](image-resize/AGENTS.md). |
 | [`shared/`](shared/)               | Cross-lambda helpers (Sentry init, etc.).                                                                          |
 | [`dev-server.mts`](dev-server.mts) | Local HTTP harness that hosts each lambda's handler for development.                                               |
 
 ## Related
 
-- Backend rules: [`../backend/CLAUDE.md`](../backend/CLAUDE.md)
+- Backend rules: [`../backend/AGENTS.md`](../backend/AGENTS.md)
 - Infrastructure overview: [`../docs/overview/infrastructure/infrastructure.md`](../docs/overview/infrastructure/infrastructure.md)
 - Deployment and infrastructure: `vouchington/vouchington-infra`
-- Root entrypoint: [`../CLAUDE.md`](../CLAUDE.md)
+- Root entrypoint: [`../AGENTS.md`](../AGENTS.md)

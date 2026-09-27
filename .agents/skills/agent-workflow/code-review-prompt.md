@@ -5,7 +5,7 @@ Scope to read before reviewing the diff:
 - Every GitHub issue and PR linked from the PR body, transitively. Source issues typically predate the Plan issue (label: `plan`), which predates this PR. Build one explicit requirement list from all of them — accepted plan requirements and plain source-issue requirements alike — and verify each entry is satisfied here or explicitly deferred with a linked follow-up.
 - The PR's own title and body. Read it as a set of claims to verify, not a summary to trust: every stated behaviour, checklist item, root-cause explanation, and `## Follow-ups` deferral is something the diff must actually support.
 - All comments on the PR, the Plan issue, and the source issue(s).
-- The root `CLAUDE.md`, every workspace `CLAUDE.md` whose directory the diff touches, and any `docs/**` files those CLAUDE.md files link to that are relevant to the change.
+- The root `AGENTS.md`, every workspace `AGENTS.md` whose directory the diff touches, and any `docs/**` files those AGENTS.md files link to that are relevant to the change.
 
 Review dimensions (call out concrete file:line in inline comments):
 

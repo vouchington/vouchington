@@ -24,7 +24,7 @@ through its `conflict-resolve` command; see the
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - API: [../../api/v1/localization/README.md](../../api/v1/localization/README.md)
 - Runtime: [`@vouchington/localization`](https://www.npmjs.com/package/@vouchington/localization)
 - Compiler: [`@vouchington/localization-compiler`](https://www.npmjs.com/package/@vouchington/localization-compiler)

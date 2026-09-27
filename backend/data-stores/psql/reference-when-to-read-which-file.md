@@ -2,7 +2,7 @@
 
 [Back to PostgreSQL Data Store](README.md#when-to-read-which-file)
 
-- Read [CLAUDE.md](CLAUDE.md) for agent rules when changing migrations, queries, and schema
+- Read [AGENTS.md](AGENTS.md) for agent rules when changing migrations, queries, and schema
   callsites
 - Read [README.md](README.md) for package structure, runtime behavior, and schema conventions
 - Read [reference-transactions.md](reference-transactions.md) for explicit transaction resources,

@@ -1,6 +1,6 @@
 # Agent workflow catalog
 
-This focused index is directly linked from its owning `CLAUDE.md`; select the document that matches the work at hand.
+This focused index is directly linked from its owning `AGENTS.md`; select the document that matches the work at hand.
 
 The approved shared workflow, testing, and database adapters load the matching Vouchington plugin
 skill first. Install the upstream Claude or Codex plugins using the [required agent plugin

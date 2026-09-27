@@ -56,6 +56,6 @@ clearance status, and review queues so official/system accounts do not influence
 ## Related
 
 - System: [../../queues/ai-agents/](../../queues/ai-agents/) - AI agents job queue
-- Posts Service: [../../services/posts/CLAUDE.md](../../services/posts/CLAUDE.md)
+- Posts Service: [../../services/posts/AGENTS.md](../../services/posts/AGENTS.md)
 - OpenAI Moderation: [../../services/openai-moderation/README.md](../../services/openai-moderation/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

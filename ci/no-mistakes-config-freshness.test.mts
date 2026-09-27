@@ -168,6 +168,6 @@ describe('no-mistakes config freshness', () => {
     expect(storyCoverage?.options).not.toHaveProperty('excludePrefixes')
     expect(noMistakes).not.toContain('web/node_modules/**')
     expect(webVitestConfig).not.toContain("'web/node_modules/**'")
-    expect(noMistakes).not.toContain('.github/workflows/CLAUDE.md')
+    expect(noMistakes).not.toContain('.github/workflows/AGENTS.md')
   })
 })

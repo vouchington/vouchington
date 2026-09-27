@@ -30,8 +30,8 @@ describe('backend focused-command docs stay pinned to supported filtering forms'
     )
   })
 
-  it('backend/agents/CLAUDE.md routes commands to the README without duplicating them', () => {
-    const claudeMd = repoFile('backend/agents/CLAUDE.md')
+  it('backend/agents/AGENTS.md routes commands to the README without duplicating them', () => {
+    const claudeMd = repoFile('backend/agents/AGENTS.md')
 
     expect(claudeMd).toContain('[README.md](README.md)')
     expect(claudeMd).not.toContain('```bash')

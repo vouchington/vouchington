@@ -26,4 +26,4 @@ and DynamicConfig `turnstile-config.always_approve` is boolean `true`. Productio
 
 - Service: [../../../services/captcha/README.md](../../../services/captcha/README.md)
 - Operations: [../../../../docs/operations/staging-turnstile-always-approve.md](../../../../docs/operations/staging-turnstile-always-approve.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

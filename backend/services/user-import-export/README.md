@@ -45,7 +45,7 @@ ignore responses for another batch and responses whose progress counters regress
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - RSS feeds service: [../rss-feeds/README.md](../rss-feeds/README.md)
 - User RSS feed import queue: [../../queues/user-rss-feed-imports/README.md](../../queues/user-rss-feed-imports/README.md)
 - Topics service: [../topics/README.md](../topics/README.md)

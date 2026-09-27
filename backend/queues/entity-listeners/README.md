@@ -114,8 +114,8 @@ Triggered by `enqueueOnPostDeleted(postId)`.
 ## Related
 
 - Full post creation pipeline: [docs/overview/architecture/post-lifecycle.md](../../../docs/overview/architecture/post-lifecycle.md)
-- Systems conventions: [`../CLAUDE.md`](../CLAUDE.md)
-- Services: [`../../services/CLAUDE.md`](../../services/CLAUDE.md)
+- Systems conventions: [`../AGENTS.md`](../AGENTS.md)
+- Services: [`../../services/AGENTS.md`](../../services/AGENTS.md)
 - Reconciliation service: [`../../services/entity-listener-reconciliation/README.md`](../../services/entity-listener-reconciliation/README.md)
 - Triggered systems:
   - [`../bedrock-embeddings/README.md`](../bedrock-embeddings/README.md)

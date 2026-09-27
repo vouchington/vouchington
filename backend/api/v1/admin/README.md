@@ -74,4 +74,4 @@ codex mcp add voucha-admin-mcp \
 - Crawlers service: [../../services/crawlers/](../../../services/crawlers/README.md)
 - Stories service: [../../services/stories/](../../../services/stories/README.md)
 - Imports: [imports/README.md](./imports/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

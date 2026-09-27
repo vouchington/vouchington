@@ -28,5 +28,5 @@ deletion fence across the provider request or the full friend graph.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - OAuth services: [../../services/oauth-facebook/README.md](../../services/oauth-facebook/README.md), [../../services/oauth-x/README.md](../../services/oauth-x/README.md), [../../services/oauth-github/README.md](../../services/oauth-github/README.md)

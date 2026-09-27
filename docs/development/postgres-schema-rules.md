@@ -1,7 +1,7 @@
 # PostgreSQL Schema Quality Rules
 
 Defect classes surfaced by SQL review that are easy to reintroduce. These are authoritative agent
-rules; the terse pointer lives in [backend/data-stores/psql/CLAUDE.md](../../backend/data-stores/psql/CLAUDE.md).
+rules; the terse pointer lives in [backend/data-stores/psql/AGENTS.md](../../backend/data-stores/psql/AGENTS.md).
 Each rule links the tracking issue for its static-analysis guard / fix.
 
 ## Prelaunch relational storage
@@ -94,7 +94,7 @@ change-detector is permanently "changed" → every recompute rewrites the row an
 refresh, defeating the debounced/no-op path. Pick one type (`DOUBLE PRECISION` for weighted sums) and
 use it for the column, the compute, and the comparison.
 
-This generalizes the existing vote-score rule in [psql CLAUDE.md](../../backend/data-stores/psql/CLAUDE.md#querying-rules).
+This generalizes the existing vote-score rule in [psql AGENTS.md](../../backend/data-stores/psql/AGENTS.md#querying-rules).
 Tracked by #7354.
 
 ## Large aggregation recomputes read the replica and absorb lag asynchronously
@@ -154,7 +154,7 @@ closes this gap by comparing the committed schema snapshot at `git merge-base(<b
 HEAD: a retired index name whose _shape_ — the `pg_get_indexdef` text minus the name — reappears
 under a new name on the same table is flagged as an unacknowledged rename unless this branch also
 adds a migration with `DROP INDEX [CONCURRENTLY] IF EXISTS <old name>` (the same remediation
-`backend/data-stores/psql/CLAUDE.md` already sanctions for deployed indexes), or the retired name is
+`backend/data-stores/psql/AGENTS.md` already sanctions for deployed indexes), or the retired name is
 added to `retired-index-allowlist.mts` for a genuine false positive (e.g. a PRIMARY KEY/UNIQUE
 constraint reshuffle rendering as a rename with no drop of its own). See
 [schema-snapshot/README.md § Cross-Revision Index-Rename Detection](../../backend/data-stores/psql/schema-snapshot/README.md#cross-revision-index-rename-detection)
@@ -165,6 +165,6 @@ Tracked by #8697.
 
 ## Related
 
-- [backend/data-stores/psql/CLAUDE.md](../../backend/data-stores/psql/CLAUDE.md) — authoritative schema rules
+- [backend/data-stores/psql/AGENTS.md](../../backend/data-stores/psql/AGENTS.md) — authoritative schema rules
 - [Partitioning strategy](../overview/architecture/partitioning-strategy.md)
 - [Schema Checks](reference-tests-schema-checks.md) — CI enforcement for the schema snapshot and index-rename checks

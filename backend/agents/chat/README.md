@@ -148,7 +148,7 @@ for provider-retention references and the cross-system contract.
 ## Related
 
 - API route: [../../api/v1/conversations/README.md](../../api/v1/conversations/README.md)
-- Tools: [../../tools/CLAUDE.md](../../tools/CLAUDE.md)
+- Tools: [../../tools/AGENTS.md](../../tools/AGENTS.md)
 - Conversations service: [../../services/conversations-messages/](../../services/conversations-messages/)
-- Agents CLAUDE.md: [../CLAUDE.md](../CLAUDE.md)
+- Agents AGENTS.md: [../AGENTS.md](../AGENTS.md)
 - AI agent architecture: [../../../docs/overview/architecture/ai-agents.md](../../../docs/overview/architecture/ai-agents.md)

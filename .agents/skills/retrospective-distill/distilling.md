@@ -54,7 +54,7 @@ actionable theme is skipped here — it must remain available for that re-evalua
 `git fetch origin` first, then inspect against `origin/main` (not local `main`) for each actionable
 theme:
 
-- **Process/tooling gaps:** grep the relevant `CLAUDE.md`, `.husky/` hook, CI check,
+- **Process/tooling gaps:** grep the relevant `AGENTS.md`, `.husky/` hook, CI check,
   skill doc, or config that the proposed fix would touch — confirm the rule or check is not already
   there.
 - **Code bugs:** run `git show origin/main:<path>` and `git log origin/main -- <path>` — confirm the

@@ -82,6 +82,6 @@ The `firehose` backend buffers in process (≤500 records / 1 s / 4 MB) and send
 - [Graceful shutdown](graceful-shutdown.md) — process shutdown pattern and callback registration
 - [Environment variables](../infrastructure/environment-variables.md) — full env var reference by category
 - [Infrastructure](../infrastructure/infrastructure.md) — AWS resources, data stores, observability overview
-- [Backend rules](../../../backend/CLAUDE.md) — workspace service and data conventions
-- Data store agent conventions: [backend/data-stores/analytics/CLAUDE.md](../../../backend/data-stores/analytics/CLAUDE.md)
-- Emit wrapper conventions: [backend/services/analytics/CLAUDE.md](../../../backend/services/analytics/CLAUDE.md)
+- [Backend rules](../../../backend/AGENTS.md) — workspace service and data conventions
+- Data store agent conventions: [backend/data-stores/analytics/AGENTS.md](../../../backend/data-stores/analytics/AGENTS.md)
+- Emit wrapper conventions: [backend/services/analytics/AGENTS.md](../../../backend/services/analytics/AGENTS.md)

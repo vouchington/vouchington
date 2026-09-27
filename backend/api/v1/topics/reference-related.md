@@ -6,4 +6,4 @@
 - Systems:
   - [../../queues/bedrock-embeddings/README.md](../../../queues/bedrock-embeddings/README.md)
   - [../../queues/topic-aliases/](../../../queues/topic-aliases/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

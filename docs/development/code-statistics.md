@@ -55,7 +55,7 @@ The service is determined by the leading path segment:
 | `lambdas/`                                  | `lambdas`           |
 | `email-templates/`                          | `email-templates`   |
 | `ts-shared/`                                | `ts-shared`         |
-| `docs/`, root `README.md`, root `CLAUDE.md` | `docs`              |
+| `docs/`, root `README.md`, root `AGENTS.md` | `docs`              |
 | `monitors/`                                 | `infra`             |
 | everything else                             | `tooling`           |
 
@@ -90,7 +90,7 @@ of:
 - Contains `/test-helpers/` (shared helpers used across test suites — not counted
   as tests themselves)
 - Starts with `backend/scripts/` or `web/scripts/`
-- Basename is `CLAUDE.md`, `README.md`, `package.json`, or `tsconfig.json`
+- Basename is `AGENTS.md`, `README.md`, `package.json`, or `tsconfig.json`
   (applies at any depth)
 - Basename starts with `.` and ends with `.json` (dot-config JSON such as
   `.oxlintrc.json`)

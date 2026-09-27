@@ -12,7 +12,7 @@ Claude Code and Codex load `vouchington-database:postgres-partitioning-uuid-v7`;
 
 ## Vouchington additions
 
-Read [`backend/data-stores/psql/CLAUDE.md`](../../../backend/data-stores/psql/CLAUDE.md), the
+Read [`backend/data-stores/psql/AGENTS.md`](../../../backend/data-stores/psql/AGENTS.md), the
 applicable migration history, and the project
 [partition-pruning hints](../../../docs/overview/architecture/partition-pruning-hints.md).
 

@@ -29,4 +29,4 @@ Worker concurrency is hardcoded at `1` — scale horizontally by increasing `des
 
 - Service: `@services/browser-crawl`
 - Caller: `@queues/crawl-referral-links`
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

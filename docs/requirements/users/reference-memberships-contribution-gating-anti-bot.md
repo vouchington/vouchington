@@ -82,8 +82,8 @@ authenticated user is eligible to create that post type there.
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - Service: [backend/services/memberships/README.md](../../../backend/services/memberships/README.md)
 - Job queue: [backend/queues/memberships/README.md](../../../backend/queues/memberships/README.md)

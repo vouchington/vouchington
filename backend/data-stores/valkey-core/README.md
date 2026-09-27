@@ -22,5 +22,5 @@ concern package depends on another, so the workspace graph stays cycle-free.
 ## Related
 
 - Valkey layering, shutdown sequencing, and package map: [../valkey/README.md](../valkey/README.md)
-- Agent conventions: [../valkey/CLAUDE.md](../valkey/CLAUDE.md)
-- Backend context: [../../CLAUDE.md](../../CLAUDE.md)
+- Agent conventions: [../valkey/AGENTS.md](../valkey/AGENTS.md)
+- Backend context: [../../AGENTS.md](../../AGENTS.md)

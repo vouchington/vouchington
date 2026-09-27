@@ -87,7 +87,7 @@ Reference implementations:
 - Topic navigation: `web/components/topics/topic-detail-tabs.tsx` — uses `isActiveSegment(pathname, tab.name)` as the escape hatch.
 - User navigation: `web/components/users/user-detail-tab-builders.ts` — uses `activeRouteSuffix !== routeSuffix` as the escape hatch.
 
-See also [web/CLAUDE.md](../../../web/CLAUDE.md) for the authoritative rule.
+See also [web/AGENTS.md](../../../web/AGENTS.md) for the authoritative rule.
 
 ### Form Keyboard Behavior
 

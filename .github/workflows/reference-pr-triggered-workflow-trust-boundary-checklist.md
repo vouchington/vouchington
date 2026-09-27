@@ -2,7 +2,7 @@
 
 [Back to Workflow Authoring Reference](AUTHORING.md#pr-triggered-workflow-trust-boundary-checklist)
 
-Apply this checklist before the first push of any PR-triggered workflow or composite action change. Each item is a judgment question; where a mechanical enforcer exists it is named so you can run it locally (commits are free, pushes are expensive — see [CLAUDE.md](CLAUDE.md)).
+Apply this checklist before the first push of any PR-triggered workflow or composite action change. Each item is a judgment question; where a mechanical enforcer exists it is named so you can run it locally (commits are free, pushes are expensive — see [AGENTS.md](AGENTS.md)).
 
 - **Untrusted PR code execution** — does any job check out PR-head code and then _execute_ it (build/test/run scripts) in a context that holds secrets or a write token? If so, gate the job behind the trusted-secret-context flag (`trusted-secret-context` as a `ci.yml` output; `trusted_secret_context` as a `workflow_call` input) or treat the PR as untrusted and skip the sensitive steps. Wiring: `__tests__/secret-context.*` (automated).
 - **Privileged dependency repair** — keep the immutable base checkout as the only executable tree. PR manifests and locks may be fetched by SHA and parsed as data, but never run through SwiftPM, package plugins, MSBuild, shell helpers, or repository scripts. A publisher may check out an already-validated PR head solely to apply a fixed regular-file artifact and create a non-force commit; it must revalidate identity, base, head, changed-file allowlist, provenance, and hashes immediately before the push.

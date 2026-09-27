@@ -20,4 +20,4 @@ shutdown.
 
 - Pub/Sub lifecycle, subscriber cleanup, and reconnect semantics:
   [../valkey/README.md § Pub/Sub Lifecycle](../valkey/README.md#pubsub-lifecycle)
-- Backend context: [../../CLAUDE.md](../../CLAUDE.md)
+- Backend context: [../../AGENTS.md](../../AGENTS.md)

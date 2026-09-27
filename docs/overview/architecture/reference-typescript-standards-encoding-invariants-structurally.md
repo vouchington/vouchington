@@ -40,8 +40,8 @@ oscillation into a red CI.
 
 ## Related
 
-- Backend rules: [../../../backend/CLAUDE.md](../../../backend/CLAUDE.md)
-- Web rules: [../../../web/CLAUDE.md](../../../web/CLAUDE.md)
+- Backend rules: [../../../backend/AGENTS.md](../../../backend/AGENTS.md)
+- Web rules: [../../../web/AGENTS.md](../../../web/AGENTS.md)
 - Shared types: [../../../backend/types/README.md](../../../backend/types/README.md)
-- API types: [../../../backend/api/CLAUDE.md](../../../backend/api/CLAUDE.md)
-- ts-shared rules: [../../../ts-shared/CLAUDE.md](../../../ts-shared/CLAUDE.md)
+- API types: [../../../backend/api/AGENTS.md](../../../backend/api/AGENTS.md)
+- ts-shared rules: [../../../ts-shared/AGENTS.md](../../../ts-shared/AGENTS.md)

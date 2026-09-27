@@ -64,7 +64,7 @@ candidates. The candidate batch therefore moved from nine ambient declarations t
 - `typescript/no-redundant-type-constituents: "warn"` — catches `string | never` (→ `string`) or `any | string` (→ `any`)
 - JSX prop allocation rules (`react-perf/jsx-no-new-{array,object,function}-as-prop`) are
   intentionally `"off"` because React Compiler memoises inside every component automatically.
-  See `web/CLAUDE.md` for the full policy and the narrow exceptions (context Provider values,
+  See `web/AGENTS.md` for the full policy and the narrow exceptions (context Provider values,
   callback refs).
 - Native React Compiler rules (`react/purity`, `react/refs`, and the other per-category compiler
   rules) and web-only React Doctor rules are enabled by `web/.oxlintrc.json`; shared React hook

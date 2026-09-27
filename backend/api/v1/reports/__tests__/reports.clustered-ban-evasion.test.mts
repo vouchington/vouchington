@@ -11,7 +11,7 @@ import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pag
 import type { PrivateUser } from '@services/users/types'
 
 // The shared staff report queue is dirty and parallel: other tests leave pending reports behind
-// and never clean up (see backend/test-helpers/CLAUDE.md). A single `limit=100` fetch assuming
+// and never clean up (see backend/test-helpers/AGENTS.md). A single `limit=100` fetch assuming
 // this test's own cluster lands within the first page is a top-of-sort race with no bound on how
 // much ambient noise can crowd it out. Seek forward instead, bounded by MAX_SEEK_PAGES rather than
 // an assumed page count.

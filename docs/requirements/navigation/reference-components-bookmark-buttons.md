@@ -44,7 +44,7 @@ For Storybook a11y suppression patterns and `@storybook/addon-a11y` exception re
 
 `TopicAutocomplete` / `EntityAutocomplete` are async autocompletes for selecting topics by id. A topic-reference field's allowed types come from `web/components/topics/settings/topic-edit-model.ts` → `topicReferenceFieldTypes` — the autocomplete `topicTypes` prop is a UX affordance, not a backend contract. See the field → type table in [TOPICS.md § Reference fields](../content/reference-topics-topic-types.md#reference-fields).
 
-When swapping a plain text input for an async autocomplete (remount-after-mutation, clearing dependent fields, stale-response guards, deriving `topicTypes`), follow the checklist in [web/components/shared/CLAUDE.md § Swapping a text input → async autocomplete](../../../web/components/shared/CLAUDE.md).
+When swapping a plain text input for an async autocomplete (remount-after-mutation, clearing dependent fields, stale-response guards, deriving `topicTypes`), follow the checklist in [web/components/shared/AGENTS.md § Swapping a text input → async autocomplete](../../../web/components/shared/AGENTS.md).
 
 ## Related
 

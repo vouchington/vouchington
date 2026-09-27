@@ -119,4 +119,4 @@ If you trigger batch embeddings during testing, enqueue the request and cancel i
   - [../../queues/bedrock-embeddings/README.md](../../queues/bedrock-embeddings/README.md) — Real-time single embedding queue
   - [../../queues/bedrock-embeddings-batch/README.md](../../queues/bedrock-embeddings-batch/README.md) — Batch embedding queue
 - Docs overview: [../../../docs/overview/architecture/bedrock-embeddings.md](../../../docs/overview/architecture/bedrock-embeddings.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

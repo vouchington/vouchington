@@ -40,5 +40,5 @@ passive link health check.
 - Service: `@services/referral-link-unfurl`
 - Worker: `@workers/unfurl-referral-links`
 - Browser-crawl system: `@services/browser-crawl`
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [docs/requirements/users/REFERRAL-LINKS.md](../../../docs/requirements/users/REFERRAL-LINKS.md)

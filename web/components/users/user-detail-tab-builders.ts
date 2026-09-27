@@ -1,5 +1,5 @@
 // Tab visibility rule: hide when count is 0 unless the user is currently on
-// that tab's URL. See web/CLAUDE.md "Entity-detail tab visibility".
+// that tab's URL. See web/AGENTS.md "Entity-detail tab visibility".
 
 import type { MessageKey } from '@ts-shared/ui-messages'
 import type { useTranslations } from '@/lib/i18n/use-translations'

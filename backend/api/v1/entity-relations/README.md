@@ -99,4 +99,4 @@ Response includes `results` and `page_info`.
 ## Related
 
 - Service: [../../services/entity-relations/](../../../services/entity-relations/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

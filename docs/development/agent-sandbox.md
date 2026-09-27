@@ -52,7 +52,7 @@ together with a merge blocks, quoted or not; the
 [decision flow](reference-merge-authority-decision-flow.md) names its accepted overmatches and the
 forms it never reads. The one allow is a single plain merge in an attended Claude session (see
 [Merge Authority](merge-authority.md)). Rules for changing the hooks live in
-[dev/codex-hooks/CLAUDE.md](../../dev/codex-hooks/CLAUDE.md).
+[dev/codex-hooks/AGENTS.md](../../dev/codex-hooks/AGENTS.md).
 
 ## Claude and Codex sandbox semantics are different, not parallel
 

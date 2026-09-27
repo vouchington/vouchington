@@ -12,7 +12,7 @@ const revokeBlueskySessionMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 // validates its client-metadata shape (client_id/redirect_uris) against the resolved site origin
 // at construction time. That validation requires a real https origin (see client-metadata.mts) —
 // local/CI worktrees resolve to a localhost origin, which the SDK correctly rejects. This is the
-// @modules/bluesky-oauth SDK boundary (see backend/CLAUDE.md § Provider-wide SDK boundaries), so
+// @modules/bluesky-oauth SDK boundary (see backend/AGENTS.md § Provider-wide SDK boundaries), so
 // it's mocked here rather than exercised for real; the OAuth I/O it would perform is separately
 // mocked below via revokeBlueskySession.
 const createBlueskyOAuthClientMock = vi.hoisted(() => vi.fn<VitestLooseMock>())

@@ -1,10 +1,10 @@
 # Backend package catalogs
 
-See also: [../CLAUDE.md](../CLAUDE.md).
+See also: [../AGENTS.md](../AGENTS.md).
 
 ## Agents
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../agents/_shared/README.md`](../agents/_shared/README.md)
 - [`../agents/appeal-resolution/README.md`](../agents/appeal-resolution/README.md)
@@ -25,7 +25,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 ## Data Stores
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../data-stores/graceful-shutdown/README.md`](../data-stores/graceful-shutdown/README.md)
 - [`../data-stores/valkey-core/README.md`](../data-stores/valkey-core/README.md)
@@ -35,7 +35,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 ## Modules
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../modules/activitypub-uris/README.md`](../modules/activitypub-uris/README.md)
 - [`../modules/api-egress-proxy/README.md`](../modules/api-egress-proxy/README.md)
@@ -66,7 +66,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 ## Queues
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../queues/account-data-requests/README.md`](../queues/account-data-requests/README.md)
 - [`../queues/activitypub-delivery/README.md`](../queues/activitypub-delivery/README.md)
@@ -114,7 +114,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 ## Services
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../services/account-data-requests/README.md`](../services/account-data-requests/README.md)
 - [`../services/activitypub-delivery/README.md`](../services/activitypub-delivery/README.md)
@@ -285,7 +285,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 
 ## Workers
 
-This catalog keeps package documentation directly discoverable from the owning `CLAUDE.md`. Choose a linked document for the domain you are changing.
+This catalog keeps package documentation directly discoverable from the owning `AGENTS.md`. Choose a linked document for the domain you are changing.
 
 - [`../worker-runtime/README.md`](../worker-runtime/README.md)
 - [`../workers/account-data-requests/README.md`](../workers/account-data-requests/README.md)

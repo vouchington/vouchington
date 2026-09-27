@@ -96,4 +96,4 @@ resource preflights occur before detailed request validation; see [Route Helpers
 - Service: [../../../services/prioritized-referral-links/](../../../services/prioritized-referral-links/README.md)
 - Service: [../../../services/attribution/](../../../services/attribution/README.md)
 - Service: [../../../services/referral-link-unfurl/](../../../services/referral-link-unfurl/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)

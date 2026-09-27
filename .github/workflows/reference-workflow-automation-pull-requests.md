@@ -12,14 +12,14 @@ is skipped. [`nightly.yml`](nightly.yml) calls every area workflow for a full ru
 [Always run](reference-workflow-automation-always-run.md)).
 
 `ci.yml` still runs in parallel; its `tests` and `build` fan-ins are report-only until the workflow
-is deleted. The [Main ruleset's required gates](CLAUDE.md#scoped-invariants) include the per-area
+is deleted. The [Main ruleset's required gates](AGENTS.md#scoped-invariants) include the per-area
 jobs.
 Every gated job needs `detect-changes`, and `static-code-analysis` gates all of them plus
 both Docker validation builds (`backend-smoke` through `static-backend`), so those edges are drawn
 once to the group. Docs-only changes skip the gated jobs. No test or Docker build waits on another
 test: each starts once its static gates pass or intentionally skip, and both Playwright suites wait
 on all four area static checks.
-See the semantic CI DAG in [CLAUDE.md](CLAUDE.md) and [CI](../../docs/development/ci.md). For the
+See the semantic CI DAG in [AGENTS.md](AGENTS.md) and [CI](../../docs/development/ci.md). For the
 exact job graph, run `pnpm run ci:topology --format mermaid --workflow .github/workflows/ci.yml`.
 
 ```mermaid

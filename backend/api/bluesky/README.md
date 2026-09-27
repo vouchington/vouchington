@@ -27,4 +27,4 @@ requires to exist at a fixed, well-known path.
 
 - Account linking: [../v1/auth/README.md](../v1/auth/README.md)
 - `@modules/bluesky-oauth`: [../../modules/bluesky-oauth/README.md](../../modules/bluesky-oauth/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)

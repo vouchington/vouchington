@@ -41,4 +41,4 @@ await recordCommunityAgentPromptChange(userId, communityId, promptId, 'updated',
 
 - Migration: `backend/data-stores/psql/migrations/0410-00-00-community-agent-prompt-changes.sql`
 - Community agent prompts service: `backend/services/community-agent-prompts/`
-- Services guide: [../CLAUDE.md](../CLAUDE.md)
+- Services guide: [../AGENTS.md](../AGENTS.md)

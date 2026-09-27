@@ -36,7 +36,7 @@ references, rather than copied here.
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Pagination and query metadata: [../../modules/pagination/README.md](../../modules/pagination/README.md)
 - API fixture and OpenAPI generation: [../../test-helpers/api-fixtures/README.md](../../test-helpers/api-fixtures/README.md)
 - Search utils module: [../../modules/search-utils/README.md](../../modules/search-utils/README.md)

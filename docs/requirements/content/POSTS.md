@@ -221,7 +221,7 @@ News/RSS discussion has two native/web-equivalent actions:
 - **Per-item Discuss**: `POST /api/v1/rss-feed-items/:id/discussions` creates a normal `link` post for the item's stored URL. No LLM or story discoverability gate is involved.
 - **Cluster Discuss the full story**: `POST /api/v1/stories/:storyId/discussions` creates a `post_type='story'` post via the `@story-teller` system user. Aggregated, AI-summarized, skips most regular post moderation, and is gated by the source feed's `is_discoverable` flag.
 
-The story route returns `403` with code `FEED_NOT_DISCOVERABLE` when the story's source feed is not discoverable; web falls back to a normal link post for the primary item. See [`backend/services/stories/CLAUDE.md`](../../../backend/services/stories/CLAUDE.md) and [`web/components/news/CLAUDE.md`](../../../web/components/news/CLAUDE.md).
+The story route returns `403` with code `FEED_NOT_DISCOVERABLE` when the story's source feed is not discoverable; web falls back to a normal link post for the primary item. See [`backend/services/stories/AGENTS.md`](../../../backend/services/stories/AGENTS.md) and [`web/components/news/AGENTS.md`](../../../web/components/news/AGENTS.md).
 
 ## Moderation
 
@@ -231,8 +231,8 @@ Post moderation (delete, unpublish from community, archive, clearance, pin, and 
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
 - [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../users/ACCOUNT-DELETION-DATA-REQUEST.md)
-- [Web rules](../../../web/CLAUDE.md) — post components and UI conventions
-- [News component rules](../../../web/components/news/CLAUDE.md) — Discuss button bifurcation
-- [Stories service rules](../../../backend/services/stories/CLAUDE.md) — discoverability gate and story-post pipeline
+- [Web rules](../../../web/AGENTS.md) — post components and UI conventions
+- [News component rules](../../../web/components/news/AGENTS.md) — Discuss button bifurcation
+- [Stories service rules](../../../backend/services/stories/AGENTS.md) — discoverability gate and story-post pipeline
 - [Posts service](../../../backend/services/posts/README.md) — business logic and lifecycle
-- [Posts service rules](../../../backend/services/posts/CLAUDE.md) — service-specific coding rules
+- [Posts service rules](../../../backend/services/posts/AGENTS.md) — service-specific coding rules

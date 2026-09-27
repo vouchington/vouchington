@@ -43,6 +43,6 @@ The worker-only code (the `Worker` class and the `sharp`-calling processor) live
 ## Related
 
 - Worker-only processor/worker: [../../workers/images/README.md](../../workers/images/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Images service: [../../services/images/README.md](../../services/images/README.md)
 - AWS module (S3): [../../modules/aws/README.md](../../modules/aws/README.md)

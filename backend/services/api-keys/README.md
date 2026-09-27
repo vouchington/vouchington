@@ -62,8 +62,8 @@ The bloom filter stores hex-encoded SHA-256 hashes of active keys. It is:
 
 ## Related
 
-- Agent security invariants: [CLAUDE.md](CLAUDE.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Agent security invariants: [AGENTS.md](AGENTS.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Auth: [../jwt-session/README.md](../jwt-session/README.md)
 - Requirements: [../../../docs/requirements/users/api-keys.md](../../../docs/requirements/users/api-keys.md)
 - Bloom filters system: [../../queues/bloom-filters/README.md](../../queues/bloom-filters/README.md)

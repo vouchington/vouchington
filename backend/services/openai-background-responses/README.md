@@ -10,7 +10,7 @@ accepted gap is recorded with the usage-ledger coverage notes in the private
 `vouchington/vouchington-docs` repository.
 This package owns the durable side of the background-mode guarantee; it never calls
 `openai.responses.create()` itself (that stays in `backend/agents/*`, per
-[`backend/agents/CLAUDE.md`](../../agents/CLAUDE.md)) — only `retrieveOpenAIResponse` /
+[`backend/agents/AGENTS.md`](../../agents/AGENTS.md)) — only `retrieveOpenAIResponse` /
 `cancelOpenAIResponse`.
 
 ## Data Model
@@ -58,7 +58,7 @@ table's partition key. The map is therefore the durable, cross-partition account
   `SCHEDULED_JOBS_REGISTRY` (`backend/api/v1/mq/scheduled-jobs-registry.mts`), derived from the
   queue's scheduled-job manifest. Each row is reconciled with bounded concurrency
   (`RECONCILE_CONCURRENCY = 5`) so a large orphan backlog can't fan out into an OpenAI rate-limit
-  burst — see `backend/CLAUDE.md`'s "avoid calling external APIs in a loop or unbounded
+  burst — see `backend/AGENTS.md`'s "avoid calling external APIs in a loop or unbounded
   `Promise.all()`" rule.
 
 ## Row lifecycle

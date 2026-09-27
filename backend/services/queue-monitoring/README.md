@@ -58,5 +58,5 @@ const totals = await getAggregatedQueueStats(['email-queue', 'moderation-queue']
 ## Related
 
 - [Queue Monitoring API](../../api/v1/mq/README.md)
-- [Services CLAUDE.md](../CLAUDE.md)
+- [Services AGENTS.md](../AGENTS.md)
 - [Infrastructure Overview](../../../docs/overview/infrastructure/infrastructure.md)

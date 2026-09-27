@@ -150,7 +150,7 @@ services) can use the shared waiter.
 
 ## Related
 
-- Agent rules for this directory: [CLAUDE.md](CLAUDE.md)
+- Agent rules for this directory: [AGENTS.md](AGENTS.md)
 - [Elections System](../../queues/elections/README.md) — scheduled vote tally refresh and cache invalidation
 - [Vote Integrity Service](../vote-integrity/README.md) — vote manipulation detection
 - [Vote Weight Service](../vote-weight/README.md) — vote weight calculation

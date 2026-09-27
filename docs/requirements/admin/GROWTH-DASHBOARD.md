@@ -138,8 +138,8 @@ See [backend/api/v1/admin/growth-metrics/README.md](../../../backend/api/v1/admi
 
 ## Related
 
-- [Web rules](../../../web/CLAUDE.md) — UI, routing, and client conventions
-- [Backend rules](../../../backend/CLAUDE.md) — service, API, and data conventions
+- [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
+- [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [Backend service](../../../backend/services/growth-metrics/README.md) — SQL and analytics approach
 - [API endpoint](../../../backend/api/v1/admin/growth-metrics/README.md) — Auth, params, response shape

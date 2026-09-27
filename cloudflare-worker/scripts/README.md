@@ -24,4 +24,4 @@ injection can exercise burst-vs-reset behavior without waiting a full minute per
 
 ## Related
 
-- Worker rules: [`../CLAUDE.md`](../CLAUDE.md)
+- Worker rules: [`../AGENTS.md`](../AGENTS.md)

@@ -36,10 +36,10 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 
 ## Related
 
-- Workspace instructions: [backend/CLAUDE.md](../../../backend/CLAUDE.md)
+- Workspace instructions: [backend/AGENTS.md](../../../backend/AGENTS.md)
 - Worker entry point: [backend/workers/crawler/workers.mts](../../../backend/workers/crawler/workers.mts)
 - [backend/services/crawls/README.md](../../../backend/services/crawls/README.md) — error recording, embeddings workflow
-- [backend/CLAUDE.md](../../../backend/CLAUDE.md) — backend workspace conventions
+- [backend/AGENTS.md](../../../backend/AGENTS.md) — backend workspace conventions
 - [backend/services/crawler-html/index.mts](../../../backend/services/crawler-html/index.mts) — secure HTML fetch policy, upstream extraction, crawler error classification, and metrics
 - [backend/services/crawler-html/README.md](../../../backend/services/crawler-html/README.md) — crawler HTML service ownership and contracts
 - [backend/services/urls-domains-robots/README.md](../../../backend/services/urls-domains-robots/README.md) — bloom filter fast path, RFC 9309

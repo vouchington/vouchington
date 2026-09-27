@@ -20,7 +20,7 @@ The types `person`, `public_figure`, `organization`, and `brand` were removed (1
 
 ### When to add a type or extension table
 
-A `topic_type` value or topic extension table must justify itself with functional behavior — a distinct 1:1 extension table, type-specific validation/assertions, or type-specific routing/SEO/UI. A type or extension table that would differ only by URL slug or sitemap membership must NOT exist; use the default `topic` type. Apply the same bar before adding any new topic type or extension table. [Backend rules](../../../backend/CLAUDE.md#topic-lifecycle-states) point here instead of duplicating this rule; the 11 → 7 consolidation was prompted by removed types that differed only by slug/sitemap.
+A `topic_type` value or topic extension table must justify itself with functional behavior — a distinct 1:1 extension table, type-specific validation/assertions, or type-specific routing/SEO/UI. A type or extension table that would differ only by URL slug or sitemap membership must NOT exist; use the default `topic` type. Apply the same bar before adding any new topic type or extension table. [Backend rules](../../../backend/AGENTS.md#topic-lifecycle-states) point here instead of duplicating this rule; the 11 → 7 consolidation was prompted by removed types that differed only by slug/sitemap.
 
 When adding, removing, or renaming a `topic_type`, follow the [Finite Enum Ripple Checklist](../../development/finite-enum-ripple-checklist.md) before first push so migrations, web unions, explicit route directories, helper maps, generated tests, seed data, sitemaps, and docs stay aligned.
 

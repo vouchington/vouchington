@@ -190,4 +190,4 @@ Response: `201 { outcome: 'completed', refund: { id: string }, cancellation_stat
 
 - Service: [../../../services/memberships/](../../../services/memberships/README.md)
 - Stripe: [../../../services/stripe/](../../../services/stripe/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

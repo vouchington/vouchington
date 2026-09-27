@@ -30,9 +30,9 @@ const CLASSIFIER_FIXTURES: ReadonlyArray<{
   { path: '.jscpd.json', category: 'tooling', service: 'tooling' },
   // Runtime/data JSON → source (not a config-JSON basename)
   { path: 'api-fixtures/v1/client-intents.json', category: 'source', service: 'tooling' },
-  // Nested docs → tooling (README.md / CLAUDE.md at any depth)
+  // Nested docs → tooling (README.md / AGENTS.md at any depth)
   { path: 'backend/api/README.md', category: 'tooling', service: 'backend' },
-  { path: 'web/CLAUDE.md', category: 'tooling', service: 'web' },
+  { path: 'web/AGENTS.md', category: 'tooling', service: 'web' },
   { path: 'docs/development/tests.md', category: 'tooling', service: 'docs' },
   // Nested manifests/configs → tooling
   { path: 'backend/agents/chat/package.json', category: 'tooling', service: 'backend' },

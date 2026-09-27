@@ -27,5 +27,5 @@ No open gaps — the last tracked gap (formerly filed as jonathanong/filaments#3
 - [community-lists.md](./community/community-lists.md) — proxy follow/mute on curated lists
 - [Entity Relations](../overview/architecture/entity-relations.md) — predicate vocabulary and relation tables
 - [Bookmarks](../overview/architecture/bookmarks.md) — bookmark system implementation
-- [Backend rules](../../backend/CLAUDE.md) — vote and permission API conventions
-- [Web rules](../../web/CLAUDE.md) — UI, routing, and client conventions
+- [Backend rules](../../backend/AGENTS.md) — vote and permission API conventions
+- [Web rules](../../web/AGENTS.md) — UI, routing, and client conventions

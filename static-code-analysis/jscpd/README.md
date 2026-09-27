@@ -52,7 +52,7 @@ an ignore list that swallows the whole tree. jscpd respects `.gitignore`.
 jscpd scans the working tree, not `git ls-files`. CI checks out a clean tree, so it scans exactly
 the tracked files. Locally, an untracked file that `.gitignore` does not cover is scanned too. This
 is the sole exception recorded beside the tracked-state invariant in
-[`static-code-analysis/CLAUDE.md`](../CLAUDE.md). An untracked file can only add clones, never hide
+[`static-code-analysis/AGENTS.md`](../AGENTS.md). An untracked file can only add clones, never hide
 one, so it can fail a local run but never make a bad tree pass. Delete or ignore the stray file if
 it reports a clone.
 

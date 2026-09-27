@@ -23,6 +23,6 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [Notifications Service](../../services/notifications/README.md)
 - [SES Bounce Events Service](../../services/ses-bounce-events/README.md)

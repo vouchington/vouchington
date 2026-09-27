@@ -14,5 +14,5 @@ Parses article Markdown with `gray-matter` frontmatter extraction from the asset
 ## Related
 
 - Article source: [../../../articles/README.md](../../../articles/README.md)
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Posts service: [../posts/README.md](../posts/README.md)

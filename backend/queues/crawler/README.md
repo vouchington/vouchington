@@ -30,7 +30,7 @@ Business logic extracted from this system lives in:
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Crawling overview: [../../../docs/overview/architecture/crawling.md](../../../docs/overview/architecture/crawling.md)
 - [Crawlers Service](../../services/crawlers/README.md) — crawler management and scheduling
 - Hostname dispatch: `@queues/crawl-hostnames`

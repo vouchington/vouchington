@@ -17,5 +17,5 @@ For connections to close cleanly:
 ## Related
 
 - PostgreSQL: [psql/README.md](psql/README.md)
-- Valkey: [valkey/CLAUDE.md](valkey/CLAUDE.md)
-- Backend context: [../CLAUDE.md](../CLAUDE.md)
+- Valkey: [valkey/AGENTS.md](valkey/AGENTS.md)
+- Backend context: [../AGENTS.md](../AGENTS.md)

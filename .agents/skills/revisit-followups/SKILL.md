@@ -15,7 +15,7 @@ Claude Code and Codex load `vouchington-workflow:revisit-followups`; Grok, Curso
 
 Accept a duration (`1w`, `2d`, `1m`) or ISO date. If absent, ask the user, proposing a one-week
 default, then compute a date-only cutoff and fetch `origin`. Collect only explicit deferred-action
-signals from merged PR Shepherd Journals, tracked `CLAUDE.md` files, and closed issue bodies; PR and
+signals from merged PR Shepherd Journals, tracked `AGENTS.md` files, and closed issue bodies; PR and
 issue comments are opt-in (`--include-pr-comments`, `--include-issue-comments`). Settled rejections,
 closure decisions, standing policy, and incidental TODO-like text are not follow-ups. Zero candidates
 is a correct outcome.
@@ -54,11 +54,11 @@ created, skipped, already-done, already-filed, and truncated-window counts.
 
 Every proposed issue is self-contained and contains exactly these sections: `## Problem`,
 `## Proposed fixes` (specific checkboxes), `## Files`, and `## Context`. Context preserves the
-source PR/Shepherd Journal, `CLAUDE.md` path, or closed issue text; its current-state check on
+source PR/Shepherd Journal, `AGENTS.md` path, or closed issue text; its current-state check on
 `origin/main`; and its covering issue/PR search. Do not put blackboard session IDs, retrospective
 filenames, or other session-private identifiers in an issue body.
 
 Use the local [GitHub issue workflow](../github-issue/SKILL.md) for duplicate detection,
-classification, and creation. Treat Vouchington `docs/**`, `CLAUDE.md`, and closed-issue comments as
+classification, and creation. Treat Vouchington `docs/**`, `AGENTS.md`, and closed-issue comments as
 local evidence sources; preserve the source PR and journal references in any created issue. Do not
 reopen resolved work or infer authorization to implement a discovered follow-up.

@@ -8,7 +8,7 @@ Processes `@username`, `#topic`, and `!post` mentions in post content, creating 
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - Post mentions system: [../../queues/post-mentions/README.md](../../queues/post-mentions/README.md)
 - Entity relations service: [../entity-relations/README.md](../entity-relations/README.md)
 - Posts service: [../posts/README.md](../posts/README.md)

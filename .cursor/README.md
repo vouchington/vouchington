@@ -3,7 +3,7 @@
 Cursor (including the Grok model in Cursor CLI) is a first-class local assistant
 in this repository. It does **not** get copied skills or `AGENTS.md` files.
 
-- Read checked-in `CLAUDE.md` files. Do not add tracked `AGENTS.md` copies.
+- Read checked-in `AGENTS.md` files. Do not add `CLAUDE.md`; it is gitignored and would take precedence in Claude Code.
 - Skills load from [`.agents/skills/`](../.agents/skills) (Cursor also discovers
   `.claude/skills/`).
 - Hooks load through Cursor's Claude-compat from [`.claude/settings.json`](../.claude/settings.json);

@@ -44,6 +44,6 @@ Full route catalogue (with auth/permission rules and metadata expectations):
 
 ## Related
 
-- Web rules: [`../CLAUDE.md`](../CLAUDE.md)
+- Web rules: [`../AGENTS.md`](../AGENTS.md)
 - Component requirements: [`../../docs/requirements/navigation/COMPONENTS.md`](../../docs/requirements/navigation/COMPONENTS.md)
 - Aside inventory: [`../../docs/requirements/navigation/ASIDES.md`](../../docs/requirements/navigation/ASIDES.md)

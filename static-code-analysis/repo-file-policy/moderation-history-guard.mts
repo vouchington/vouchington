@@ -15,7 +15,7 @@ import { extractCreateTableMetadata, lineOfUtf8ByteOffset } from './sql-ast.mts'
 //                 user-facing toggle to be lifted.
 //
 // Limitation: a novel verb not in this list will slip through. Add new verbs
-// here as they appear; the CLAUDE.md convention covers the rest. See #5154.
+// here as they appear; the AGENTS.md convention covers the rest. See #5154.
 const MODERATION_VERBS = [
   'suspended',
   'banned',

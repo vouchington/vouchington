@@ -24,7 +24,7 @@ See [Crawling Architecture](../../../docs/overview/architecture/crawling.md) for
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - [Crawler System](../crawler/README.md)
 - [Crawls Service](../../services/crawls/README.md)
 - [Crawling Overview](../../../docs/overview/architecture/crawling.md)

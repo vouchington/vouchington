@@ -9,7 +9,7 @@ Google OAuth provider — verifies Google credential JWTs and upserts OAuth acco
 
 ## Related
 
-- Parent: [../CLAUDE.md](../CLAUDE.md)
+- Parent: [../AGENTS.md](../AGENTS.md)
 - OAuth service: [../oauth/README.md](../oauth/README.md)
 - Auth overview: [../../../docs/overview/architecture/auth-overview.md](../../../docs/overview/architecture/auth-overview.md)
 - Auth requirements: [../../../docs/requirements/security/AUTH.md](../../../docs/requirements/security/AUTH.md)

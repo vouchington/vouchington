@@ -1,6 +1,6 @@
 # Storybook — Reference
 
-CI-failure diagnosis and key files for `web/storybook/`. For imperative story-authoring rules, see [CLAUDE.md](CLAUDE.md).
+CI-failure diagnosis and key files for `web/storybook/`. For imperative story-authoring rules, see [AGENTS.md](AGENTS.md).
 
 ## Diagnosing CI failures
 
@@ -34,4 +34,4 @@ CI-failure diagnosis and key files for `web/storybook/`. For imperative story-au
 
 - [Storybook authoring skill](../../.agents/skills/storybook-authoring/SKILL.md) — implementation checklist
 - [CI transient-failure classification](../../docs/development/reference-ci-classifying-transient-infrastructure-failures.md) — workflow-level retry fingerprints
-- Story-authoring rules: [CLAUDE.md](CLAUDE.md)
+- Story-authoring rules: [AGENTS.md](AGENTS.md)

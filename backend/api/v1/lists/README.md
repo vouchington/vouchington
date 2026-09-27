@@ -39,4 +39,4 @@ owner can still view their lists.
 ## Related
 
 - Service: [../../../services/lists/README.md](../../../services/lists/README.md)
-- Parent: [../../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../../AGENTS.md](../../AGENTS.md)

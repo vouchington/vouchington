@@ -52,5 +52,5 @@ values so misconfiguration fails loudly at boot.
 ## Related
 
 - Worker process: [../../entrypoints/worker-io/README.md](../../entrypoints/worker-io/README.md)
-- System file structure: [../../queues/CLAUDE.md](../../queues/CLAUDE.md)
+- System file structure: [../../queues/AGENTS.md](../../queues/AGENTS.md)
 - Performance tuning: [../../../docs/development/worker-performance.md](../../../docs/development/worker-performance.md)

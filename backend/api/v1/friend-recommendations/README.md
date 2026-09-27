@@ -53,4 +53,4 @@ Requires authentication. Returns 401 if not logged in.
 ## Related
 
 - Service: [../../services/friend-recommendations/](../../../services/friend-recommendations/README.md)
-- Parent: [../CLAUDE.md](../../CLAUDE.md)
+- Parent: [../AGENTS.md](../../AGENTS.md)
