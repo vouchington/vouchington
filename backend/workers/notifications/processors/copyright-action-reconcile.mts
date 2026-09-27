@@ -61,43 +61,57 @@ export async function processReconcileCopyrightActionIntents(
   const deps = { ...defaultDeps, ...dependencyOverrides }
   const evaluatedAt = deps.now()
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
-  await runCopyrightSweepStage(tally, () =>
-    walkCopyrightSweep(
-      page => deps.searchFormReviews(page),
-      ids => settleCopyrightSweepSequentially(ids, id => deps.recoverFormReview(id)),
-    ),
-  )
-  await runCopyrightSweepStage(tally, async () => {
-    await deps.createMissingEnforcementRequests()
-    return []
-  })
-  await runCopyrightSweepStage(tally, () =>
-    walkCopyrightSweep(
-      page => deps.searchEnforcementRequests(page),
-      ids => settleCopyrightSweepSequentially(ids, id => deps.processEnforcementRequest(id)),
-    ),
-  )
-  await runCopyrightSweepStage(tally, () =>
-    walkCopyrightSweep(
-      page => deps.searchBlockedHoldRestorations(page),
-      ids =>
-        settleCopyrightSweepSequentially(ids, id =>
-          deps.recoverBlockedHoldRestorations(id, evaluatedAt),
+  const stages = [
+    () =>
+      runCopyrightSweepStage(tally, () =>
+        walkCopyrightSweep(
+          page => deps.searchFormReviews(page),
+          ids => settleCopyrightSweepSequentially(ids, id => deps.recoverFormReview(id)),
         ),
-    ),
-  )
-  await runCopyrightSweepStage(tally, () =>
-    walkCopyrightSweep(
-      page => deps.searchDueRestorations({ now: evaluatedAt, ...page }),
-      ids =>
-        settleCopyrightSweepSequentially(ids, id => deps.createDueRestoreIntents(id, evaluatedAt)),
-    ),
-  )
-  await enqueueEveryCopyrightSweepPage(
-    tally,
-    page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
-    id => deps.enqueueApplyCopyrightAction(id),
-  )
+      ),
+    () =>
+      runCopyrightSweepStage(tally, async () => {
+        await deps.createMissingEnforcementRequests()
+        return []
+      }),
+    () =>
+      runCopyrightSweepStage(tally, () =>
+        walkCopyrightSweep(
+          page => deps.searchEnforcementRequests(page),
+          ids => settleCopyrightSweepSequentially(ids, id => deps.processEnforcementRequest(id)),
+        ),
+      ),
+    () =>
+      runCopyrightSweepStage(tally, () =>
+        walkCopyrightSweep(
+          page => deps.searchBlockedHoldRestorations(page),
+          ids =>
+            settleCopyrightSweepSequentially(ids, id =>
+              deps.recoverBlockedHoldRestorations(id, evaluatedAt),
+            ),
+        ),
+      ),
+    () =>
+      runCopyrightSweepStage(tally, () =>
+        walkCopyrightSweep(
+          page => deps.searchDueRestorations({ now: evaluatedAt, ...page }),
+          ids =>
+            settleCopyrightSweepSequentially(ids, id =>
+              deps.createDueRestoreIntents(id, evaluatedAt),
+            ),
+        ),
+      ),
+    () =>
+      enqueueEveryCopyrightSweepPage(
+        tally,
+        page => deps.searchActionIntents({ now: evaluatedAt, ...page }),
+        id => deps.enqueueApplyCopyrightAction(id),
+      ),
+  ]
+  for (const stage of stages) {
+    // oxlint-disable-next-line no-await-in-loop -- each sweep consumes durable work produced by preceding stages.
+    await stage()
+  }
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright action reconciliation failed')
   }

@@ -134,6 +134,33 @@ describe('processReconcileCopyrightActionIntents', () => {
     ])
   })
 
+  it('waits for blocked hold recovery before creating and enqueueing restores', async () => {
+    const { deps } = reconcileDeps({
+      blockedHoldRestorations: [page(['notice'], null)],
+      dueRestorations: [page(['deadline'], null)],
+      actionIntents: [page(['intent'], null)],
+    })
+    const entered = Promise.withResolvers<void>()
+    const released = Promise.withResolvers<number>()
+    deps.recoverBlockedHoldRestorations.mockImplementationOnce(() => {
+      entered.resolve()
+      return released.promise
+    })
+    const reconciliation = processReconcileCopyrightActionIntents(deps)
+    try {
+      await entered.promise
+      expect(deps.searchDueRestorations).not.toHaveBeenCalled()
+      expect(deps.createDueRestoreIntents).not.toHaveBeenCalled()
+      expect(deps.searchActionIntents).not.toHaveBeenCalled()
+      expect(deps.enqueueApplyCopyrightAction).not.toHaveBeenCalled()
+    } finally {
+      released.resolve(1)
+      await reconciliation
+    }
+    expect(deps.createDueRestoreIntents).toHaveBeenCalledWith('deadline', NOW)
+    expect(deps.enqueueApplyCopyrightAction).toHaveBeenCalledWith('intent')
+  })
+
   it('keeps reconciling past failed items and stages, then fails with every error', async () => {
     const { deps } = reconcileDeps({
       formReviews: [page(['failing-review', 'same-page-review'], null)],
