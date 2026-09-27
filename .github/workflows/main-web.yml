@@ -96,7 +96,7 @@ jobs:
       - run: ':'
 
   # Builds the deployable web image and publishes it to GHCR via publish-web-images.yml, which
-  # reuses build-web-images/action.yml -- the same composite action ci.yml's build-web job uses to
+  # reuses build-web-images/action.yml -- the same composite action web.yml's build-web job uses to
   # build and validate the same image without publishing it.
   #
   # Gated on detect-web-deploy's path detection in addition to static-checks, unlike

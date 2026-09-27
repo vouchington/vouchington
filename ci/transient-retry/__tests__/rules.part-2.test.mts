@@ -5,7 +5,7 @@ import { decide } from '../decide.mts'
 import { RULES, type WorkflowRunContext } from '../rules.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],
@@ -17,7 +17,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 describe('RULES catalogue', () => {
   describe('workflow-cancelled-without-failure-signal', () => {
     it.each([
-      ['CI', 1],
+      ['Web', 1],
       ['Main CI (checks)', 2],
       ['Main CI (web)', 2],
       ['Portability Tests', 1],

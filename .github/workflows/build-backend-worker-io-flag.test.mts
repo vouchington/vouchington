@@ -5,6 +5,7 @@ import { join } from 'node:path'
 
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { runtimePathFilters } from '../test-helpers/path-filter-test-fixtures.mts'
 
 type Step = {
   env?: Record<string, string>
@@ -35,14 +36,13 @@ describe('worker-io backend automation flag', () => {
       string,
       string[]
     >
-    const runtimeFilters = load(
-      readFileSync('.github/ci-runtime-path-filters.yml', 'utf8'),
-    ) as Record<string, string[]>
 
     expect(mainBackend).toContain(`- '${flagPath}'`)
     expect(primaryFilters['build-backend']).toContain(flagPath)
     expect(primaryFilters['build-backend-infra']).toContain(flagPath)
-    expect(runtimeFilters['build-backend']?.some(pattern => pattern.includes(flagPath))).toBe(true)
+    expect(runtimePathFilters['build-backend']?.some(pattern => pattern.includes(flagPath))).toBe(
+      true,
+    )
   })
 
   it('derives active images from the checked-in boolean flag', () => {

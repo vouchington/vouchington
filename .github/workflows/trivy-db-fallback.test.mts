@@ -4,6 +4,11 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
+import {
+  primaryPathFilters,
+  runtimePathFilters,
+} from '../test-helpers/path-filter-test-fixtures.mts'
+
 type WorkflowStep = {
   'continue-on-error'?: boolean
   env?: Record<string, string>
@@ -79,11 +84,15 @@ describe('Trivy database fallback workflow contract', () => {
   })
 
   it('routes helper changes through both PR and main image builds', () => {
-    const ciPathFilters = readFileSync('.github/ci-path-filters.yml', 'utf8')
     const mainWebWorkflow = readFileSync('.github/workflows/main-web.yml', 'utf8')
     const mainBackendWorkflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
 
-    expect(ciPathFilters.match(/ci\/prepare-trivy-db\.sh/g)).toHaveLength(4)
+    for (const name of ['build-web', 'build-backend', 'build-web-infra', 'build-backend-infra']) {
+      expect(primaryPathFilters[name]).toContain('ci/prepare-trivy-db.sh')
+    }
+    for (const name of ['build-web', 'build-backend']) {
+      expect(runtimePathFilters[name]?.[0]).toContain('ci/prepare-trivy-db.sh')
+    }
     expect(mainWebWorkflow).toContain("- 'ci/prepare-trivy-db.sh'")
     expect(mainBackendWorkflow).toContain("- 'ci/prepare-trivy-db.sh'")
   })

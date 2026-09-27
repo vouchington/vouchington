@@ -1,17 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { RETRY_NAME_SUFFIX } from '../../ci/vitest-blob-candidate-names.mts'
+import { ciOutputFile, ciReporters } from '../../test-helpers/vitest-ci-reporters.mts'
 
 const workflowDir = '.github/workflows'
 const workflowFiles = readdirSync(workflowDir).filter(file => /\.(ya?ml)$/.test(file))
-const blobWorkflowFiles = workflowFiles.filter(file =>
-  readFileSync(join(workflowDir, file), 'utf8').includes(
-    'uses: ./.github/actions/upload-vitest-blob',
-  ),
-)
 
 type WorkflowStep = {
   env?: Record<string, unknown>
@@ -21,13 +16,9 @@ type Workflow = {
   jobs?: Record<string, { steps?: WorkflowStep[] }>
 }
 
-function vitestBlobStepBlocks(source: string): string[] {
-  return source
-    .split(/\n {6}- /)
-    .filter(step => step.includes('uses: ./.github/actions/upload-vitest-blob'))
-}
-
 describe('Vitest CI reporters', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('uses configured CI reporters for every workflow Vitest command', () => {
     const commands = workflowFiles.flatMap(file => {
       const path = join(workflowDir, file)
@@ -38,19 +29,15 @@ describe('Vitest CI reporters', () => {
             .split('\n')
             .filter(
               line =>
-                (line.includes('vitest run') ||
-                  line.includes('ci/tooling-test-runner.mts') ||
-                  line.includes('run-storybook-browser-tests.mts') ||
-                  /pnpm run test:[^\s]+/.test(line)) &&
-                !line.includes('--merge-reports='),
+                line.includes('vitest run') ||
+                line.includes('ci/tooling-test-runner.mts') ||
+                line.includes('run-storybook-browser-tests.mts') ||
+                /pnpm run test:[^\s]+/.test(line),
             )
             .map(line => ({ command: `${path}: ${line.trim()}`, env: step.env ?? {} })),
         ),
       )
     })
-    const workflowText = workflowFiles
-      .map(file => readFileSync(join(workflowDir, file), 'utf8'))
-      .join('\n')
 
     expect(commands.length).toBeGreaterThan(0)
 
@@ -65,10 +52,7 @@ describe('Vitest CI reporters', () => {
     const isolatedRouteBounds = commands.filter(({ command }) =>
       command.includes('--project i18n-route-bounds'),
     )
-    // Route bounds is intentionally isolated from the regular tooling coverage/blob producer:
-    // both jobs are called by the same test-tooling workflow, whose fan-in owns one tooling
-    // report. A second producer here would require a separate top-level expectation and would
-    // make the existing tooling artifact ambiguous.
+    // Route bounds stays separate from the regular tooling coverage producer.
     expect(isolatedRouteBounds.map(({ env }) => env)).toEqual([{}])
 
     for (const { command, env } of commands.filter(
@@ -76,162 +60,71 @@ describe('Vitest CI reporters', () => {
     )) {
       expect(command).not.toContain('--reporter=')
       expect(command).not.toContain('--outputFile=')
-      expect(command).not.toContain('--reporter=dot')
       expect(env.VITEST_CI_REPORTERS).toBe('run')
       expect(env.VITEST_JUNIT_OUTPUT_FILE).toMatch(/\S+\.junit\.xml/)
-      expect(env.VITEST_BLOB_OUTPUT_FILE).toMatch(/^\.vitest-reports\//)
-    }
-
-    // The vitest blob upload is a leaf composite action call (upload-vitest-blob), made
-    // twice per suite (attempt 1 + attempt 2 retry). Attempt 1's step name is the only one
-    // ending in the bare "(fallback)" suffix — the retry's name ends "(fallback attempt 2)"
-    // — so this counts exactly one first-attempt call per Vitest command.
-    expect(
-      workflowText.match(/name: Upload .+ vitest blob to GitHub \(fallback\)$/gm)?.length,
-    ).toBe(
-      commands.filter(({ command }) => !command.includes('--project i18n-route-bounds')).length,
-    )
-
-    // The upload's path/include-hidden-files pair now lives once in the shared leaf
-    // composite action rather than once per call site, so it is checked there directly
-    // instead of multiplied by commands.length.
-    const uploadVitestBlobAction = readFileSync(
-      '.github/actions/upload-vitest-blob/action.yml',
-      'utf8',
-    )
-    expect(uploadVitestBlobAction).toContain(
-      'run: pnpm exec vouchington vitest-blob-manifest "$SUITE"',
-    )
-    expect(uploadVitestBlobAction).toContain(`path: |
-          .vitest-reports/vitest-blob-manifest.json
-          .vitest-reports/\${{ inputs.suite }}.json`)
-    expect(uploadVitestBlobAction).toContain('if-no-files-found: error')
-  })
-
-  it('configures Vitest reporters and fan-in blob merging centrally', () => {
-    const vitestConfig = readFileSync('vitest.config.mts', 'utf8')
-    const reporterHelpers = readFileSync('test-helpers/vitest-ci-reporters.mts', 'utf8')
-    const testsProcessingWorkflow = readFileSync(
-      join(workflowDir, 'ci-tests-processing.yml'),
-      'utf8',
-    )
-    const mergeVitestReportsScript = readFileSync('ci/merge-vitest-reports.sh', 'utf8')
-
-    expect(vitestConfig).not.toContain("reporters: ['dot']")
-    expect(vitestConfig).toContain("from './test-helpers/vitest-ci-reporters.mts'")
-    expect(reporterHelpers).toContain('hanging-process')
-    expect(reporterHelpers).toContain('createVitestWorkerExitDiagnosticsReporter()')
-    expect(reporterHelpers).toContain("return ['minimal']")
-    expect(reporterHelpers).toContain('enabled: false')
-    expect(reporterHelpers).toContain('repository: process.env.GITHUB_REPOSITORY')
-    expect(reporterHelpers).toContain('commitHash: process.env.GITHUB_SHA')
-    expect(reporterHelpers).toContain('workspacePath: process.env.GITHUB_WORKSPACE')
-    expect(reporterHelpers).toContain('onWritePath: normalizeGithubActionsPath')
-    expect(reporterHelpers).toContain('Accepted values: run, merge.')
-    expect(reporterHelpers).toContain('createVitestWorkerExitDiagnosticsReporter')
-
-    // Issue #365: the fallback download now derives exact candidate artifact names from the
-    // resolved expectations context (ci/vitest-blob-candidate-names.mts) instead of downloading
-    // every vitest-blob-* artifact across every attempt with one wildcard pattern.
-    expect(testsProcessingWorkflow).not.toContain("--pattern 'vitest-blob-*'")
-    expect(testsProcessingWorkflow).toContain('download-optional-run-artifacts.sh')
-    expect(testsProcessingWorkflow).toContain('node ci/vitest-blob-candidate-names.mts')
-    expect(testsProcessingWorkflow).toContain(
-      'VITEST_REPORT_EXPECTATIONS: ${{ steps.merge-vitest-report-expectations.outputs.context }}',
-    )
-    expect(testsProcessingWorkflow).toContain('set -euo pipefail')
-    expect(testsProcessingWorkflow).toContain("--dir './vitest-blob-fallback'")
-    expect(testsProcessingWorkflow).toContain('args+=(--name "$name")')
-    expect(testsProcessingWorkflow).toContain(
-      'no Vitest blob candidates expected; skipping download',
-    )
-    expect(testsProcessingWorkflow).toContain(`name: Merge Vitest reports
-        id: merge-vitest-reports
-        if: "!cancelled() && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.ref == 'refs/heads/main')"
-        env:`)
-    expect(testsProcessingWorkflow).not.toContain('merge-multiple: true')
-    expect(testsProcessingWorkflow).toContain('VITEST_REPORT_EXPECTATIONS: ${{')
-    expect(testsProcessingWorkflow).toContain('VITEST_CI_REPORTERS: merge')
-    expect(testsProcessingWorkflow).toContain('run: ./ci/merge-vitest-reports.sh')
-    expect(mergeVitestReportsScript).toContain('pnpm exec vouchington prepare-vitest-reports')
-    expect(mergeVitestReportsScript).not.toContain('-maxdepth')
-    expect(mergeVitestReportsScript).not.toContain("-name '*.json' -print0")
-    expect(mergeVitestReportsScript).not.toContain('VITEST_JOBS_EXPECTED')
-    expect(mergeVitestReportsScript).toContain(
-      'pnpm exec vitest run --merge-reports="$merge_dir" --passWithNoTests',
-    )
-    expect(testsProcessingWorkflow).not.toContain('VITEST_MERGE_OUTCOME')
-    expect(testsProcessingWorkflow).not.toContain('Vitest report merge failed')
-  })
-
-  it('keeps the Vitest blob artifact name template exact and every name-suffix in the known set', () => {
-    // ci/vitest-blob-candidate-names.mts (issue #365) derives exact fallback download names by
-    // reconstructing this literal template and appending RETRY_NAME_SUFFIX. A drift in either the
-    // template or the set of name-suffix values producers pass would silently break derivation.
-    const uploadVitestBlobAction = readFileSync(
-      '.github/actions/upload-vitest-blob/action.yml',
-      'utf8',
-    )
-    expect(uploadVitestBlobAction).toContain(
-      'name: vitest-blob-${{ inputs.suite }}-attempt-${{ github.run_attempt }}${{ inputs.name-suffix }}',
-    )
-
-    const nameSuffixValues = blobWorkflowFiles.flatMap(file => {
-      const source = readFileSync(join(workflowDir, file), 'utf8')
-      return vitestBlobStepBlocks(source).map(step => step.match(/name-suffix:\s*(\S+)/)?.[1])
-    })
-    expect(nameSuffixValues.length).toBeGreaterThan(0)
-    expect(nameSuffixValues).toContain(RETRY_NAME_SUFFIX)
-    for (const value of nameSuffixValues) {
-      expect(value === undefined || value === RETRY_NAME_SUFFIX).toBe(true)
+      expect(env).not.toHaveProperty('VITEST_BLOB_OUTPUT_FILE')
     }
   })
 
-  it('keeps every Vitest blob fallback behind an explicit input and CI opt-in', () => {
-    for (const file of blobWorkflowFiles) {
-      const path = join(workflowDir, file)
-      const source = readFileSync(path, 'utf8')
-      const workflow = load(source) as {
-        on?: {
-          workflow_call?: {
-            inputs?: Record<string, { default?: boolean; type?: string }>
-          }
-          workflow_dispatch?: {
-            inputs?: Record<string, { default?: boolean; type?: string }>
-          }
-        }
-      }
+  it('keeps annotated JUnit and diagnostic reporting without a blob collector', () => {
+    vi.stubEnv('VITEST_CI_REPORTERS', 'run')
+    vi.stubEnv('VITEST_STORYBOOK_BROWSER', undefined)
+    vi.stubEnv('GITHUB_REPOSITORY', 'example/repository')
+    vi.stubEnv('GITHUB_SHA', 'a'.repeat(40))
+    vi.stubEnv('GITHUB_WORKSPACE', '/workspace')
+    const reporters = ciReporters()
 
-      expect(workflow.on?.workflow_call?.inputs?.upload_vitest_blob_artifact).toMatchObject({
-        type: 'boolean',
-        default: false,
-      })
-      expect(workflow.on?.workflow_dispatch?.inputs?.upload_vitest_blob_artifact).toMatchObject({
-        type: 'boolean',
-        default: false,
-      })
-
-      // Two composite-action calls per suite: attempt 1 and the attempt-2 retry.
-      const expectedUploadStepCount =
-        source.match(/uses: \.\/\.github\/actions\/upload-vitest-blob/g)?.length ?? 0
-      expect(expectedUploadStepCount).toBeGreaterThan(0)
-      expect(expectedUploadStepCount % 2).toBe(0)
-      expect(
-        vitestBlobStepBlocks(source).filter(
-          step =>
-            step.includes('!cancelled()') && step.includes('inputs.upload_vitest_blob_artifact'),
-        ),
-      ).toHaveLength(expectedUploadStepCount)
-    }
-
-    const ciWorkflow = readFileSync(join(workflowDir, 'ci.yml'), 'utf8')
-    expect(ciWorkflow.match(/upload_vitest_blob_artifact: true/g)?.length).toBe(
-      blobWorkflowFiles.length,
+    expect(reporters).toEqual(expect.arrayContaining(['minimal', 'junit', 'hanging-process']))
+    expect(reporters).not.toContain('blob')
+    expect(reporters).toEqual(
+      expect.arrayContaining([
+        [
+          'github-actions',
+          expect.objectContaining({
+            onWritePath: expect.any(Function),
+            jobSummary: {
+              enabled: false,
+              fileLinks: {
+                repository: 'example/repository',
+                commitHash: 'a'.repeat(40),
+                workspacePath: '/workspace',
+              },
+            },
+          }),
+        ],
+      ]),
     )
+    expect(reporters).toHaveLength(5)
+  })
 
-    for (const file of workflowFiles.filter(file => /^main-.*\.ya?ml$/.test(file))) {
-      const source = readFileSync(join(workflowDir, file), 'utf8')
-      expect(source).not.toContain('upload_vitest_blob_artifact:')
-    }
+  it('adds browser progress diagnostics for Storybook runs', () => {
+    vi.stubEnv('VITEST_CI_REPORTERS', 'run')
+    vi.stubEnv('VITEST_STORYBOOK_BROWSER', '1')
+
+    expect(ciReporters()).toHaveLength(6)
+  })
+
+  it.each([undefined, ''])('leaves local reporter selection alone for %s', configured => {
+    vi.stubEnv('VITEST_CI_REPORTERS', configured)
+
+    expect(ciReporters()).toBeUndefined()
+  })
+
+  it.each(['merge', 'unknown'])('rejects unsupported reporter mode %s', configured => {
+    vi.stubEnv('VITEST_CI_REPORTERS', configured)
+
+    expect(() => ciReporters()).toThrow('Accepted value: run.')
+  })
+
+  it('routes the configured JUnit output to its reporter', () => {
+    vi.stubEnv('VITEST_JUNIT_OUTPUT_FILE', 'suite.junit.xml')
+
+    expect(ciOutputFile()).toEqual({ junit: 'suite.junit.xml' })
+  })
+
+  it('leaves output routing unset without a JUnit path', () => {
+    vi.stubEnv('VITEST_JUNIT_OUTPUT_FILE', undefined)
+
+    expect(ciOutputFile()).toBeUndefined()
   })
 })

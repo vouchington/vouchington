@@ -108,12 +108,6 @@ describe('Vitest project ownership <-> workflow --project commands', () => {
     },
   )
 
-  it('uses producer outputs, rather than shard policy defaults, in coverage aggregation', () => {
-    const coverageWorkflow = workflowFile('ci-test-coverage.yml')
-    expect(coverageWorkflow).toContain('running sharded producer has no exact shard total')
-    expect(coverageWorkflow).not.toContain('defaultShards')
-  })
-
   it('has exactly one job per invocation form covered above, plus the literal jobs', () => {
     const nonLiteralForms = new Set(
       VITEST_OWNERSHIP.filter(job => job.invocation !== 'literal').map(job => job.invocation),

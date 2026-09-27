@@ -62,15 +62,10 @@ describe('main-web-playwright-worker-navigation-timeout', () => {
     expect(result.matchedRule).toBe('main-web-playwright-worker-navigation-timeout')
   })
 
-  it('reruns when aggregate fan-ins and downstream OTel storage also failed', async () => {
+  it('reruns when downstream OTel storage also failed', async () => {
     const result = await decide(
       makeCtx({
-        failedJobNames: [
-          mainWebPlaywrightShardOneJobName,
-          'tests',
-          'build',
-          storePlaywrightOtelJobName,
-        ],
+        failedJobNames: [mainWebPlaywrightShardOneJobName, storePlaywrightOtelJobName],
         jobConclusions: new Map([
           [mainWebPlaywrightShardOneJobName, 'failure'],
           [storePlaywrightOtelJobName, 'failure'],

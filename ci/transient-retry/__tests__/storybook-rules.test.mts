@@ -72,8 +72,8 @@ describe('Storybook transient retry rules', () => {
     })
     it('matches the PR CI Storybook project-annotations failure with aggregate gates', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
-        failedJobNames: [ciStorybookJobName, 'Patch Coverage', 'tests', 'build'],
+        workflowName: 'Web',
+        failedJobNames: [ciStorybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, addonSetupLog]])),
       })
       const result = await decide(ctx, RULES)
@@ -157,8 +157,6 @@ describe('Storybook transient retry rules', () => {
       'RUN /home/runner/actions-runner/2/_work/filaments/filaments\n' +
       '[vite] (client) [optimizer] scanning dependencies...\n' +
       "##[error]The action 'Run Storybook browser tests' has timed out after 10 minutes.\n" +
-      'No files were found with the provided path: .vitest-reports/*.json\n' +
-      'No files were found with the provided path: coverage/lcov.info\n' +
       'Terminate orphan process: pid (1118963) (chrome-headless-shell)'
 
     it('matches a Main CI Storybook browser timeout during Vite optimizer startup', async () => {
@@ -174,8 +172,8 @@ describe('Storybook transient retry rules', () => {
 
     it('matches a PR CI Storybook browser timeout with aggregate gates', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
-        failedJobNames: [ciStorybookJobName, 'Patch Coverage', 'tests', 'build'],
+        workflowName: 'Web',
+        failedJobNames: [ciStorybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
       })
       const result = await decide(ctx, RULES)
@@ -250,8 +248,7 @@ describe('Storybook transient retry rules', () => {
                 storybookJobName,
                 'VITEST_STORYBOOK_BROWSER: 1\n[vite] server warmup started\n' +
                   "##[error]The action 'Run Storybook browser tests' has timed out after 12 minutes.\n" +
-                  'No files were found with the provided path: .vitest-reports/*.json\n' +
-                  'No files were found with the provided path: coverage/lcov.info',
+                  'Terminate orphan process: pid (123) (chrome-headless-shell)',
               ],
             ]),
           ),
@@ -263,8 +260,8 @@ describe('Storybook transient retry rules', () => {
 
     it('does not match when another PR CI job also needs investigation', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
-        failedJobNames: [ciStorybookJobName, 'test-web / web-tests (1)', 'Patch Coverage', 'tests'],
+        workflowName: 'Web',
+        failedJobNames: [ciStorybookJobName, 'test-web / web-tests (1)', 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
       })
       const result = await decide(ctx, RULES)

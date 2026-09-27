@@ -207,7 +207,7 @@ covered by the two documented identities above.
 The `EXPLAIN ANALYZE` GitHub Actions workflow
 ([`.github/workflows/explain-analyze.yml`](../../../.github/workflows/explain-analyze.yml)) is
 called by the `test-explain-analyze` job in
-[`ci.yml`](../../../.github/workflows/ci.yml), gated by the `explain-analyze:` path filter in
+[`backend.yml`](../../../.github/workflows/backend.yml), gated by the `explain-analyze:` path filter in
 [`ci-path-filters.yml`](../../../.github/ci-path-filters.yml). Each CI run uses its own PostgreSQL
 instance, so there is no interference with other tests. Results are uploaded as workflow
 artifacts — see the upload step in `explain-analyze.yml` for the current retention.

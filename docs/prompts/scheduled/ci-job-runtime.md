@@ -5,7 +5,7 @@ Create or update exactly one concrete, bounded CI job runtime issue; do not chan
 Run `node ci/ci-job-runtime-audit.mts` (Vouchington wrapper over
 `vouchington-tooling/gha-runtime-audit`) and parse its JSON output. The audit measures execution
 time only, excluding queue time. For each selected workflow, it checks the 10 most recent completed
-in-scope runs: `CI` pull requests targeting `main` and `Main CI (*)` pushes on `main`. Within that deterministic recent-run horizon, it retains at most
+in-scope runs: area-workflow pull requests targeting `main` and `Main CI (*)` pushes on `main`. Within that deterministic recent-run horizon, it retains at most
 the latest five successful executions per exact workflow/job name. Do not describe the results as
 exhaustive history beyond that horizon.
 

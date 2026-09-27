@@ -11,7 +11,7 @@ PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vi
 `export READ_DATABASE_URL="$DATABASE_URL"; pnpm --dir backend run db:clean && pnpm run db:migrate`.
 
 `backend-postgres-schema` runs in its own CI job (`tests-postgres-schema.yml`), invoked without
-`--coverage` and outside `ci.yml`'s `test-coverage` producer set. Real tests in this project pass
+`--coverage` and outside the backend area's coverage producer set. Real tests in this project pass
 and genuinely exercise their target function against a live database, but they never contribute
 LCOV to the backend patch-coverage gate ([Coverage](../../.github/workflows/COVERAGE.md)). Source
 whose only non-mocked call site is a `backend-postgres-schema` test (for example

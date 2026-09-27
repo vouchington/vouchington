@@ -22,7 +22,7 @@ const matchingOpenAILog = buildBackendCredentialedFailureLog([
 ])
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],

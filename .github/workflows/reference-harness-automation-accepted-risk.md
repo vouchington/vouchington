@@ -121,7 +121,7 @@ environment-scoped and restructure the secret-consuming job boundary, or move to
 short-lived credential unreviewed workflows cannot request — and is **accepted as residual risk**
 rather than mitigated: the credential only grants Auto Harness dispatch actions
 scoped to this repository's own automation principal, same-repo PR authorship already carries a
-comparable trust bar to other repo secrets forwarded via `secrets: inherit` in `ci.yml`, and
+comparable trust bar to other repo secrets forwarded via `secrets: inherit` in area workflows, and
 rotation or a broker credential remain available if this repository's trust model changes. If the
 repository becomes public, re-open this decision — the same-repo-authorship trust assumption
 breaks the same way for every same-repo-only mitigation above.

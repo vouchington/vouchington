@@ -20,7 +20,7 @@ const matchingLog = buildBackendCredentialedFailureLog([
 ])
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],
@@ -50,7 +50,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Stripe variant)', 
 
   it('matches the Stripe balance retrieval timeout on attempt 1', async () => {
     const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () => Promise.resolve(new Map([[backendCredentialedJobName, matchingLog]])),
     })
     const result = await decide(ctx, RULES)
@@ -60,7 +60,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Stripe variant)', 
 
   it('does not match unrelated backend credentialed failures', async () => {
     const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () =>
         Promise.resolve(
           new Map([
@@ -90,8 +90,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Stripe variant)', 
       failedJobNames: [
         backendCredentialedJobName,
         'test-backend-unit / backend-tests (1)',
-        'tests',
-        'build',
+        'backend',
       ],
       failedJobLogs: () => Promise.resolve(new Map([[backendCredentialedJobName, matchingLog]])),
     })
@@ -104,7 +103,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Stripe variant)', 
     const ctx = makeCtx({
       runAttempt: 3,
       ruleAttempts: new Map([['backend-credentialed-provider-smoke-test-transient', 3]]),
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () => Promise.resolve(new Map([[backendCredentialedJobName, matchingLog]])),
     })
     const result = await decide(ctx, RULES)

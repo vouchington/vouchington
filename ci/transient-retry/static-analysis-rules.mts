@@ -2,11 +2,10 @@ import {
   hasCloudflareWorkerTscRuntimeCrash,
   hasOxlintTsgolintRuntimeFault,
 } from './static-analysis-log-fingerprints.mts'
-import { CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES } from './ci-aggregate-jobs.mts'
+import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
-const staticAnalysisNoMistakesJobName = 'static-code-analysis / no-mistakes'
 
 // checks-static.yml job `static-cloudflare` runs the Cloudflare Worker tsc step.
 // GitHub names a reusable-workflow job `<caller> / <called>`.
@@ -14,18 +13,18 @@ export const ciCloudflareWorkerStaticJobName = 'static-cloudflare-worker / stati
 export const mainCloudflareWorkerStaticJobName = 'static-checks / static-cloudflare'
 
 const cloudflareWorkerStaticJobByWorkflow = new Map<string, string>([
-  ['CI', ciCloudflareWorkerStaticJobName],
+  ['Cloudflare Worker', ciCloudflareWorkerStaticJobName],
   ['Main CI (cloudflare-worker)', mainCloudflareWorkerStaticJobName],
 ])
 
 function isStaticAnalysisCheckRun(name: string): boolean {
-  return name === staticAnalysisJobName || name === staticAnalysisNoMistakesJobName
+  return name === staticAnalysisJobName
 }
 
 function hasOnlyStaticAnalysisAndAggregateFailures(ctx: WorkflowRunContext): boolean {
   if (!ctx.failedJobNames.some(isStaticAnalysisCheckRun)) return false
   return ctx.failedJobNames.every(name => {
-    if (isStaticAnalysisCheckRun(name) || CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name)) {
+    if (isStaticAnalysisCheckRun(name) || isAreaGateJob(ctx.workflowName, name)) {
       return true
     }
     return ctx.jobConclusions?.get(name) === 'cancelled'
@@ -35,7 +34,7 @@ function hasOnlyStaticAnalysisAndAggregateFailures(ctx: WorkflowRunContext): boo
 function hasOnlyNamedJobAndAggregateFailures(ctx: WorkflowRunContext, jobName: string): boolean {
   if (!ctx.failedJobNames.includes(jobName)) return false
   return ctx.failedJobNames.every(name => {
-    if (name === jobName || CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name)) return true
+    if (name === jobName || isAreaGateJob(ctx.workflowName, name)) return true
     return ctx.jobConclusions?.get(name) === 'cancelled'
   })
 }
@@ -78,7 +77,7 @@ export const staticAnalysisOxlintTsgolintRuntimeFaultRule: TransientRetryRule = 
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
-    if (ctx.workflowName !== 'CI' || ctx.conclusion !== 'failure') return false
+    if (ctx.workflowName !== 'Static' || ctx.conclusion !== 'failure') return false
     if (!hasOnlyStaticAnalysisAndAggregateFailures(ctx)) return false
 
     const logs = await ctx.failedJobLogs()

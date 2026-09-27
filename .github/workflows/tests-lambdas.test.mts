@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { parse as load } from 'yaml'
 
 const workflow = readFileSync('.github/workflows/tests-lambdas.yml', 'utf8')
-const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+const pathFilters = readFileSync('.github/ci-path-filters.yml', 'utf8')
 const mainWorkflow = readFileSync('.github/workflows/main-lambdas.yml', 'utf8')
 
 type Step = {
@@ -58,7 +58,7 @@ describe('Lambda Tests workflow', () => {
     expect(workflow).not.toContain('ses-inbound-arm64-artifact:')
     expect(workflow).not.toContain('ses-inbound-artifact:')
     expect(workflow).not.toContain('pnpm --filter @lambdas/ses-inbound run build')
-    expect(ciWorkflow).not.toContain("- 'ts-shared/ses-inbound-contract/**'")
+    expect(pathFilters).not.toContain("- 'ts-shared/ses-inbound-contract/**'")
   })
 
   it('uses the shared full install without another direct install', () => {

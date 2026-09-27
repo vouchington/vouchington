@@ -122,7 +122,7 @@ The per-configuration matrix lives in
 [Vitest 5 Pool and Isolate Matrix](reference-tests-vitest-5-pool-matrix.md).
 
 Tooling setup files apply their environment to `process.env` in place with `replaceEnvInPlace`
-([`ci/coverage-suite-env.mts`](../../ci/coverage-suite-env.mts)). Never reassign `process.env` in a
+([`ci/tooling-test-env.mts`](../../ci/tooling-test-env.mts)). Never reassign `process.env` in a
 setup file: `vi.stubEnv` and `vi.unstubAllEnvs` unset variables with `delete` on the original
 object, so a replacement object silently leaks stubbed variables between tests.
 

@@ -24,16 +24,14 @@ const assertionFailureLog = matchingLog
   .replace('##[error]The operation was canceled.', '##[error]Process completed with exit code 1.')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [
     webIntegrationJobName,
     playwrightShardOneJobName,
     playwrightShardTwoJobName,
-    'Patch Coverage',
-    'tests',
-    'build',
+    'web',
   ],
   failedJobLogs: () =>
     Promise.resolve(
@@ -55,13 +53,7 @@ describe('runnerShutdownLeafRerunMatch (CI web-integration + playwright)', () =>
   it('does not match when the web integration failure has a test assertion', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeCtx({
-        failedJobNames: [
-          webIntegrationJobName,
-          playwrightShardOneJobName,
-          'Patch Coverage',
-          'tests',
-          'build',
-        ],
+        failedJobNames: [webIntegrationJobName, playwrightShardOneJobName, 'web'],
         failedJobLogs: () =>
           Promise.resolve(
             new Map([
@@ -81,8 +73,7 @@ describe('runnerShutdownLeafRerunMatch (CI web-integration + playwright)', () =>
           webIntegrationJobName,
           playwrightShardOneJobName,
           'test-cloudflare-worker / cloudflare-worker-tests',
-          'tests',
-          'build',
+          'web',
         ],
         failedJobLogs: () =>
           Promise.resolve(

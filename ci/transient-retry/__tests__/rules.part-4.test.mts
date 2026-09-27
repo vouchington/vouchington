@@ -5,7 +5,7 @@ import { decide } from '../decide.mts'
 import { RULES, type WorkflowRunContext } from '../rules.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],
@@ -22,8 +22,6 @@ describe('RULES catalogue', () => {
       'RUN /home/runner/actions-runner/2/_work/filaments/filaments',
       '\u001B[36m\u001B[1m[vite]\u001B[22m\u001B[39m \u001B[90m\u001B[2m(client)\u001B[22m\u001B[39m [optimizer] scanning dependencies...',
       "##[error]The action 'Run Storybook browser tests' has timed out after 10 minutes.",
-      'No files were found with the provided path: .vitest-reports/*.json',
-      'No files were found with the provided path: coverage/lcov.info',
     ].join('\n')
 
     it('matches GitHub logs with ANSI-styled Vite optimizer output', async () => {
@@ -65,8 +63,8 @@ describe('RULES catalogue', () => {
 
     it('matches the PR CI Storybook watchdog hang with aggregate gates', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
-        failedJobNames: [ciStorybookJobName, 'Patch Coverage', 'tests', 'build'],
+        workflowName: 'Web',
+        failedJobNames: [ciStorybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
       })
       const result = await decide(ctx, RULES)
@@ -107,17 +105,11 @@ describe('RULES catalogue', () => {
   })
 
   describe('workflow-cancelled-without-failure-signal (detect-changes variant)', () => {
-    const cancelledWithoutProducerFailureJobNames = [
-      'detect-changes',
-      'Presign S3 Transport URLs',
-      'Patch Coverage',
-      'tests',
-      'build',
-    ]
+    const cancelledWithoutProducerFailureJobNames = ['detect-changes', 'web']
 
     it('ignores a cancelled CI retry with only detect-changes and fan-in jobs cancelled', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
+        workflowName: 'Web',
         conclusion: 'cancelled',
         runAttempt: 2,
         jobNames: [
@@ -138,7 +130,7 @@ describe('RULES catalogue', () => {
 
     it('does not ignore a cancelled CI retry when a listed job failed', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
+        workflowName: 'Web',
         conclusion: 'cancelled',
         runAttempt: 2,
         jobNames: cancelledWithoutProducerFailureJobNames,
@@ -157,7 +149,7 @@ describe('RULES catalogue', () => {
 
     it('does not ignore a cancelled CI retry when a producer job also failed', async () => {
       const ctx = makeCtx({
-        workflowName: 'CI',
+        workflowName: 'Web',
         conclusion: 'cancelled',
         runAttempt: 2,
         jobNames: ['detect-changes', 'test-web / web-tests (1)'],
@@ -177,14 +169,12 @@ describe('RULES catalogue', () => {
 describe('workflow-cancelled-without-failure-signal (static-analysis variant)', () => {
   const cancelledWithoutProducerFailureJobNames = [
     'static-code-analysis / static-code-analysis',
-    'Patch Coverage',
-    'tests',
-    'build',
+    'web',
   ]
 
   it('ignores a cancelled CI retry with only static analysis setup and fan-in jobs cancelled', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
+      workflowName: 'Web',
       conclusion: 'cancelled',
       runAttempt: 2,
       jobNames: [
@@ -208,7 +198,7 @@ describe('workflow-cancelled-without-failure-signal (static-analysis variant)', 
 
   it('does not ignore a cancelled CI retry when static analysis failed after setup', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
+      workflowName: 'Web',
       conclusion: 'cancelled',
       runAttempt: 2,
       jobNames: cancelledWithoutProducerFailureJobNames,
@@ -227,7 +217,7 @@ describe('workflow-cancelled-without-failure-signal (static-analysis variant)', 
 
   it('does not ignore a cancelled CI retry when a producer job also failed', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
+      workflowName: 'Web',
       conclusion: 'cancelled',
       runAttempt: 2,
       jobNames: ['static-code-analysis / static-code-analysis', 'test-web / web-tests (1)'],
@@ -250,8 +240,8 @@ describe('workflow-cancelled-without-failure-signal (producer jobs started)', ()
       'test-tooling / tooling',
       'test-web-integration / web-integration-tests (1)',
       'test-backend-unit / backend-tests (1)',
-      'Patch Coverage',
-      'tests',
+      'coverage / Patch Coverage',
+      'web',
     ]
     const ctx = makeCtx({
       conclusion: 'cancelled',

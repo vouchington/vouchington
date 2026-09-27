@@ -72,10 +72,10 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       backend-credentialed: ${{ steps.filter.outputs.backend-credentialed }}
-      web: ${{ steps.refine-runtime-web.outputs.web }}
-      storybook: ${{ steps.refine-runtime-web.outputs.storybook }}
-      playwright: ${{ steps.refine-runtime-web.outputs.playwright }}
-      web-integration: ${{ steps.refine-runtime-web.outputs.web-integration }}
+      web: ${{ steps.refine-runtime-web.outputs.runtime-web }}
+      storybook: ${{ steps.refine-runtime-web.outputs.runtime-storybook }}
+      playwright: ${{ steps.refine-runtime-web.outputs.runtime-playwright }}
+      web-integration: ${{ steps.refine-runtime-web.outputs.runtime-web-integration }}
       postgres-schema: ${{ steps.filter.outputs.postgres-schema }}
       ts-shared: ${{ steps.filter.outputs.ts-shared }}
       workflow-action-changes: ${{ steps.filter.outputs.workflow-action-changes }}
@@ -83,9 +83,9 @@ jobs:
       cloudflare-worker: ${{ steps.filter.outputs.cloudflare-worker }}
       lambdas: ${{ steps.filter.outputs.lambdas }}
       explain-analyze: ${{ steps.filter.outputs.explain-analyze }}
-      build-backend: ${{ steps.refine-runtime-web.outputs.build-backend }}
+      build-backend: ${{ steps.refine-runtime-web.outputs.runtime-build-backend }}
       build-backend-infra: ${{ steps.filter.outputs.build-backend-infra }}
-      build-web: ${{ steps.refine-runtime-web.outputs.build-web }}
+      build-web: ${{ steps.refine-runtime-web.outputs.runtime-build-web }}
       build-web-infra: ${{ steps.filter.outputs.build-web-infra }}
       shell-scripts: ${{ steps.filter.outputs.shell-scripts }}
       portability: ${{ steps.filter.outputs.portability }}
@@ -170,7 +170,7 @@ jobs:
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
         with:
           predicate-quantifier: every
-          filters: .github/ci-runtime-path-filters.yml
+          filters: .github/ci-path-filters.yml
       # One boolean per area workflow: the union of its suites' filters. A touched area runs its
       # whole suite; docs-only changes select nothing; workflow/action changes select everything.
       - name: Resolve area selection
@@ -194,8 +194,8 @@ jobs:
           FULL: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
           DOCS_ONLY: ${{ steps.docs-check.outputs.docs-only }}
           WORKFLOW_ACTION_CHANGES: ${{ steps.filter.outputs.workflow-action-changes }}
-          BACKEND: ${{ steps.filter.outputs.backend == 'true' || steps.filter.outputs.backend-credentialed == 'true' || steps.filter.outputs.postgres-schema == 'true' || steps.filter.outputs.explain-analyze == 'true' || steps.refine-runtime-web.outputs.build-backend == 'true' || steps.filter.outputs.build-backend-infra == 'true' }}
-          WEB: ${{ steps.refine-runtime-web.outputs.web == 'true' || steps.refine-runtime-web.outputs.storybook == 'true' || steps.refine-runtime-web.outputs.playwright == 'true' || steps.refine-runtime-web.outputs.web-integration == 'true' || steps.filter.outputs.playwright-credentialed == 'true' || steps.refine-runtime-web.outputs.build-web == 'true' || steps.filter.outputs.build-web-infra == 'true' }}
+          BACKEND: ${{ steps.filter.outputs.backend == 'true' || steps.filter.outputs.backend-credentialed == 'true' || steps.filter.outputs.postgres-schema == 'true' || steps.filter.outputs.explain-analyze == 'true' || steps.refine-runtime-web.outputs.runtime-build-backend == 'true' || steps.filter.outputs.build-backend-infra == 'true' }}
+          WEB: ${{ steps.refine-runtime-web.outputs.runtime-web == 'true' || steps.refine-runtime-web.outputs.runtime-storybook == 'true' || steps.refine-runtime-web.outputs.runtime-playwright == 'true' || steps.refine-runtime-web.outputs.runtime-web-integration == 'true' || steps.filter.outputs.playwright-credentialed == 'true' || steps.refine-runtime-web.outputs.runtime-build-web == 'true' || steps.filter.outputs.build-web-infra == 'true' }}
           CLOUDFLARE_WORKER: ${{ steps.filter.outputs.cloudflare-worker }}
           LAMBDAS: ${{ steps.filter.outputs.lambdas }}
           TOOLING: ${{ steps.filter.outputs.ts-shared == 'true' || steps.filter.outputs.tooling == 'true' || steps.filter.outputs.portability == 'true' || steps.filter.outputs.shell-scripts == 'true' }}

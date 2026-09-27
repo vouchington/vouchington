@@ -10,7 +10,7 @@ describe('workflow run context', () => {
       return {
         stdout: JSON.stringify({
           conclusion: 'failure',
-          name: 'CI',
+          name: 'Web',
           run_attempt: 2,
         }),
         stderr: '',
@@ -26,7 +26,7 @@ describe('workflow run context', () => {
     ).resolves.toEqual({
       conclusion: 'failure',
       runAttempt: 2,
-      workflowName: 'CI',
+      workflowName: 'Web',
     })
     expect(calls).toEqual([['api', 'repos/vouchington/vouchington/actions/runs/123']])
   })
@@ -84,7 +84,7 @@ describe('workflow run context', () => {
       repository: 'vouchington/vouchington',
       runAttempt: 2,
       runId: '123',
-      workflowName: 'CI',
+      workflowName: 'Web',
       execFile,
     })
 
@@ -133,7 +133,7 @@ describe('workflow run context', () => {
       repository: 'vouchington/vouchington',
       runAttempt: 2,
       runId: '123',
-      workflowName: 'CI',
+      workflowName: 'Web',
       execFile,
       rules: [
         {

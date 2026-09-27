@@ -8,7 +8,7 @@ import { RULES } from './rules.mts'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],
@@ -255,7 +255,7 @@ describe('decide()', () => {
     const backendUnitJobName = 'test-backend-unit / backend-tests (1)'
     const result = await decide(
       makeCtx({
-        failedJobNames: [backendUnitJobName, 'Patch Coverage', 'tests', 'build'],
+        failedJobNames: [backendUnitJobName, 'web'],
         failedJobLogs: () =>
           Promise.resolve(new Map([[backendUnitJobName, workerExitAfterPassLog]])),
       }),

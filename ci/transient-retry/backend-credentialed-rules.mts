@@ -2,21 +2,22 @@ import {
   hasBackendCredentialedProviderSmokeTestEnvelope,
   hasBackendCredentialedProviderTransientFailure,
 } from './backend-credentialed-log-fingerprints.mts'
-import type { TransientRetryRule } from './types.mts'
+import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const backendProviderTestJobName = 'test-backend-credentialed / backend-credentialed-tests'
 
-import { CI_AGGREGATE_FAN_IN_JOB_NAMES } from './ci-aggregate-jobs.mts'
+import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 
-function hasOnlyBackendCredentialedLeafFailure(failedJobNames: string[]): boolean {
+function hasOnlyBackendCredentialedLeafFailure(ctx: WorkflowRunContext): boolean {
+  const { failedJobNames } = ctx
   if (!failedJobNames.includes(backendProviderTestJobName)) return false
   return failedJobNames.every(
-    name => name === backendProviderTestJobName || CI_AGGREGATE_FAN_IN_JOB_NAMES.has(name),
+    name => name === backendProviderTestJobName || isAreaGateJob(ctx.workflowName, name),
   )
 }
 
 function isBackendCredentialedWorkflow(workflowName: string): boolean {
-  return workflowName === 'CI' || workflowName === 'Main CI (backend)'
+  return workflowName === 'Backend' || workflowName === 'Main CI (backend)'
 }
 
 /**
@@ -36,7 +37,7 @@ export const backendCredentialedProviderSmokeTestTransientRule: TransientRetryRu
   description:
     'Backend credentialed job fails only in a probe owned by a credentialed Vitest project (backend-aws, backend-bedrock, backend-openai, backend-openrouter, backend-stripe) and the failure carries a known provider-transport marker (timeout, an AWS-SDK request abort/timeout, a Bedrock 500, an OpenAI 429/500, or an OpenRouter 429/5xx).',
   rationale:
-    "The failure is a timeout, an AWS-SDK request abort/timeout, or a provider-side 500/429 constrained to known failure blocks, not a local assertion; coverage, tests, and build fail only because the credentialed producer exits early. Any test file added under a credentialed project's own `include` glob is covered automatically, so new probes cannot ship silently uncovered.",
+    "The failure is a timeout, an AWS-SDK request abort/timeout, or a provider-side 500/429 constrained to known failure blocks, not a local assertion; the Backend area gate fails because the credentialed producer exits early, while independent coverage failures remain blocking. Any test file added under a credentialed project's own `include` glob is covered automatically, so new probes cannot ship silently uncovered.",
   exampleRunIds: [
     '29965903981',
     '29354792259',
@@ -53,7 +54,7 @@ export const backendCredentialedProviderSmokeTestTransientRule: TransientRetryRu
   match: async ctx => {
     if (!isBackendCredentialedWorkflow(ctx.workflowName) || ctx.conclusion !== 'failure')
       return false
-    if (!hasOnlyBackendCredentialedLeafFailure(ctx.failedJobNames)) return false
+    if (!hasOnlyBackendCredentialedLeafFailure(ctx)) return false
 
     const logs = await ctx.failedJobLogs()
     const log = logs.get(backendProviderTestJobName) ?? ''

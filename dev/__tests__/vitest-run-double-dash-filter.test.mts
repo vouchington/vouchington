@@ -49,8 +49,6 @@ describe('backend focused-command docs stay pinned to supported filtering forms'
             command.includes('vitest') || command.includes('run-vitest-project-group.mts'),
         )
         .map(([name, command]) => [`package.json#${name}`, command] as const),
-      ['ci/coverage-local-affected.mts', repoFile('ci/coverage-local-affected.mts')] as const,
-      ['ci/local-patch-coverage.mts', repoFile('ci/local-patch-coverage.mts')] as const,
     ]
 
     for (const [source, command] of durableCommands) {

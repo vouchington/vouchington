@@ -1,5 +1,10 @@
 import type { TransientRetryRule } from './types.mts'
-import { hasExplicitOomEvidence } from './runner-shutdown-fingerprints.mts'
+import {
+  hasExplicitOomEvidence,
+  hasGenericFailureSignal,
+  hasPlaywrightFailureSignal,
+  hasVitestTestFailureSignal,
+} from './runner-shutdown-fingerprints.mts'
 import { hasStorybookBrowserSessionConnectionTimeout } from './storybook-browser-session-rules.mts'
 import {
   failedStorybookJobName,
@@ -10,6 +15,12 @@ import {
   storybookLogJobName,
   stripAnsi,
 } from './storybook-shared.mts'
+
+// `Test Files` is intentionally broad: bootstrap timeouts must precede any test output.
+const hasStorybookBrowserTestOutput = (plainLog: string): boolean =>
+  plainLog.includes('|web-storybook-browser') || plainLog.includes('Test Files ')
+
+export const storybookBrowserTestStepName = 'Run Storybook browser tests'
 
 const hasStorybookViteServerFetchFailure = (log: string): boolean => {
   const plainLog = stripAnsi(log)
@@ -22,12 +33,22 @@ const hasStorybookViteServerFetchFailure = (log: string): boolean => {
 
 const hasStorybookBrowserTestTimeoutDuringViteOptimizerScan = (log: string): boolean => {
   const plainLog = stripAnsi(log)
+  const browserStart = plainLog.lastIndexOf('VITEST_STORYBOOK_BROWSER: 1')
+  if (browserStart === -1) return false
+  const browserLog = plainLog.slice(browserStart)
+  const attemptStart = browserLog.lastIndexOf(storybookBrowserAttemptMarker)
+  const terminalAttempt = browserLog.slice(attemptStart === -1 ? 0 : attemptStart)
   return (
-    plainLog.includes('VITEST_STORYBOOK_BROWSER: 1') &&
-    plainLog.includes('[vite] (client) [optimizer] scanning dependencies') &&
-    plainLog.includes("The action 'Run Storybook browser tests' has timed out after") &&
-    plainLog.includes('No files were found with the provided path: .vitest-reports/*.json') &&
-    plainLog.includes('No files were found with the provided path: coverage/lcov.info')
+    terminalAttempt.includes('[vite] (client) [optimizer] scanning dependencies') &&
+    terminalAttempt.includes(`The action '${storybookBrowserTestStepName}' has timed out after`) &&
+    !hasStorybookBrowserTestOutput(terminalAttempt) &&
+    !hasPlaywrightFailureSignal(terminalAttempt) &&
+    !hasVitestTestFailureSignal(terminalAttempt) &&
+    !/\b(?:Error|TypeError|ReferenceError|SyntaxError):/.test(terminalAttempt) &&
+    !terminalAttempt.includes('Failed to import test file') &&
+    !hasGenericFailureSignal(terminalAttempt) &&
+    !hasExplicitOomEvidence(terminalAttempt) &&
+    !hasStorybookViteOptimizerNewDepsReload(terminalAttempt)
   )
 }
 
@@ -46,10 +67,6 @@ const hasStorybookBrowserAddonVitestSetupRunnerMissing = (log: string): boolean 
     !terminalAttempt.includes('|web-storybook-browser')
   )
 }
-
-// `Test Files` is intentionally broad; callers pass only the terminal browser attempt.
-const hasStorybookBrowserTestOutput = (plainLog: string): boolean =>
-  plainLog.includes('|web-storybook-browser') || plainLog.includes('Test Files ')
 
 const storybookBrowserAnyProcessExitCodeRe = /Process completed with exit code \d+\./
 const storybookBrowserProcessExitCodeRe = /Process completed with exit code (\d+)\./g

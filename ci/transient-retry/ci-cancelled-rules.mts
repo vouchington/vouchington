@@ -12,7 +12,12 @@ function hasOnlyCancelledJobs(ctx: WorkflowRunContext): boolean {
 }
 
 const idempotentWorkflowNames = new Set([
-  'CI',
+  'Static',
+  'Backend',
+  'Web',
+  'Cloudflare Worker',
+  'Lambdas',
+  'Tooling',
   'Main CI (backend)',
   'Main CI (checks)',
   'Main CI (cloudflare-worker)',

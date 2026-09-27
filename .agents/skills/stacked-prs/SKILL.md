@@ -29,11 +29,11 @@ If `gh stack` exits 9 (not enabled on the repository), do not bundle the source 
 Open one PR targeting `main` for the bottom issue, wait for it to merge, then open the next. Say that
 stacks are unavailable.
 
-[`ci.yml`](../../../.github/workflows/ci.yml) must not set `pull_request.branches` or
+The [area workflows](../../../.github/workflows/reference-workflow-automation-pull-requests.md) must not set `pull_request.branches` or
 `branches-ignore`. GitHub docs evaluate `branches: [main]` against `stack.base.ref`, but
 `gh stack submit` opens mid-stack PRs before the stack object exists
 ([github/gh-stack#425](https://github.com/github/gh-stack/issues/425)), so that filter skips those
-PRs permanently. After a `ci.yml` trigger change lands on `main`, rebase existing stacks
+PRs permanently. After an area-workflow trigger change lands on `main`, rebase existing stacks
 (`gh stack rebase` or `gh stack sync`) so parent branches include the new file.
 
 ### Agent commands

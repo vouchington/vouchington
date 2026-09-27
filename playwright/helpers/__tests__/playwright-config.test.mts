@@ -108,6 +108,8 @@ describe('Playwright shared config', () => {
       delete process.env.WEB_PORT
       delete process.env.NEXT_PORT
       delete process.env.IMAGE_LAMBDA_PORT
+      delete process.env.S3_BUCKET_IMAGES
+      delete process.env.S3_BUCKET_RENDERS
       Object.assign(process.env, envOverrides)
       const { CHROMIUM_USE, createPlaywrightConfig } = await loadPlaywrightConfig()
 

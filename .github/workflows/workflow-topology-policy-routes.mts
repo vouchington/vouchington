@@ -4,74 +4,21 @@ import { exactCallerJobs } from './workflow-topology-policy-callers.mts'
 import { requiredArtifactEdges } from './workflow-topology-policy-artifacts.mts'
 import { reviewFanIns } from './workflow-topology-policy-review.mts'
 const edge = (from: string, to: string): readonly [string, string] => [from, to]
-const ciJob = (job: string): string => `.github/workflows/ci.yml#${job}`
 const mainBackendJob = (job: string): string => `.github/workflows/main-backend.yml#${job}`
 const mainWebJob = (job: string): string => `.github/workflows/main-web.yml#${job}`
-const unrelatedPrTests = ['test-tooling', 'test-portability', 'storybook'] as const
-const applicationPrTests = [
-  'test-ts-shared',
-  'test-backend-modules',
-  'test-backend-unit',
-  'backend-smoke',
-  'test-backend-credentialed',
-  'test-postgres-schema',
-  'test-web',
-  'test-web-api',
-  'test-web-integration',
-  'test-lambdas',
-  'test-cloudflare-worker',
-  'test-playwright',
-  'test-playwright-credentialed',
-] as const
-// Every PR test and Docker validation build is gated only by static analysis; none waits on another.
-const staticGatedPrJobs = [
-  ...unrelatedPrTests,
-  ...applicationPrTests,
-  'test-explain-analyze',
-  'build-backend',
-  'build-web',
-] as const
 export const routePolicy = {
   requiredArtifactEdges,
   requiredJobs: [
-    '.github/workflows/ci.yml#test-coverage',
-    '.github/workflows/ci.yml#tests',
-    '.github/workflows/ci.yml#build',
-  ],
+    'static',
+    'backend',
+    'web',
+    'cloudflare-worker',
+    'lambdas',
+    'tooling',
+    'gitleaks',
+  ].map(area => `.github/workflows/${area}.yml#${area}`),
   forbiddenJobs: [],
   requiredDirectEdges: [
-    edge('.github/workflows/ci.yml#tests', '.github/workflows/ci.yml#build'),
-    ...[
-      'static-backend',
-      'static-web',
-      'static-lambdas',
-      'static-cloudflare-worker',
-      'build-backend',
-      'build-web',
-    ].map(job => edge(ciJob('static-code-analysis'), ciJob(job))),
-    ...[
-      'test-backend-modules',
-      'test-backend-unit',
-      'backend-smoke',
-      'test-backend-credentialed',
-      'test-postgres-schema',
-      'test-explain-analyze',
-      'build-backend',
-    ].map(job => edge(ciJob('static-backend'), ciJob(job))),
-    ...[
-      'test-web',
-      'test-web-api',
-      'test-web-integration',
-      'test-playwright',
-      'test-playwright-credentialed',
-      'build-web',
-    ].map(job => edge(ciJob('static-web'), ciJob(job))),
-    ...['test-lambdas', 'test-playwright', 'test-playwright-credentialed'].map(job =>
-      edge(ciJob('static-lambdas'), ciJob(job)),
-    ),
-    ...['test-cloudflare-worker', 'test-playwright', 'test-playwright-credentialed'].map(job =>
-      edge(ciJob('static-cloudflare-worker'), ciJob(job)),
-    ),
     ...[
       'test-backend-modules',
       'test-backend-unit',
@@ -100,36 +47,13 @@ export const routePolicy = {
       '.github/workflows/main-storybook.yml#publish-storybook',
     ),
   ],
-  forbiddenDirectEdges: [
-    edge('.github/workflows/ci.yml#detect-changes', '.github/workflows/ci.yml#build'),
-    ...unrelatedPrTests.flatMap(job => [
-      edge(ciJob(job), ciJob('test-playwright')),
-      edge(ciJob(job), ciJob('test-playwright-credentialed')),
-    ]),
-    ...['build-backend', 'build-web'].map(job => edge(ciJob('tests'), ciJob(job))),
-    ...staticGatedPrJobs.flatMap(from =>
-      staticGatedPrJobs.flatMap(to => (to === from ? [] : [edge(ciJob(from), ciJob(to))])),
-    ),
-  ],
+  forbiddenDirectEdges: [],
   requiredTransitiveEdges: [],
-  forbiddenTransitiveEdges: unrelatedPrTests.flatMap(unrelated =>
-    applicationPrTests.map(application => edge(ciJob(unrelated), ciJob(application))),
-  ),
+  forbiddenTransitiveEdges: [],
   exactFanIns: {
     ...reviewFanIns,
     '.github/workflows/main-storybook.yml#publish-storybook': splitIds(
       '.github/workflows/main-storybook.yml#storybook-build',
-    ),
-    '.github/workflows/ci.yml#detect-changes': [],
-    '.github/workflows/ci.yml#test-coverage': splitIds(
-      '.github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-backend-credentialed .github/workflows/ci.yml#test-backend-modules .github/workflows/ci.yml#test-backend-unit .github/workflows/ci.yml#test-cloudflare-worker .github/workflows/ci.yml#test-lambdas .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-tooling .github/workflows/ci.yml#test-ts-shared .github/workflows/ci.yml#test-web .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',
-    ),
-    '.github/workflows/ci.yml#tests': splitIds('.github/workflows/ci.yml#tests-processing'),
-    '.github/workflows/ci.yml#tests-processing': splitIds(
-      '.github/workflows/ci.yml#backend-smoke .github/workflows/ci.yml#detect-changes .github/workflows/ci.yml#initialize-smoke-test .github/workflows/ci.yml#static-backend .github/workflows/ci.yml#static-cloudflare-worker .github/workflows/ci.yml#static-code-analysis .github/workflows/ci.yml#static-lambdas .github/workflows/ci.yml#static-web .github/workflows/ci.yml#storybook .github/workflows/ci.yml#test-coverage .github/workflows/ci.yml#test-explain-analyze .github/workflows/ci.yml#test-playwright .github/workflows/ci.yml#test-playwright-credentialed .github/workflows/ci.yml#test-portability .github/workflows/ci.yml#test-postgres-schema .github/workflows/ci.yml#test-web-api .github/workflows/ci.yml#test-web-integration',
-    ),
-    '.github/workflows/ci.yml#build': splitIds(
-      '.github/workflows/ci.yml#build-backend .github/workflows/ci.yml#build-web .github/workflows/ci.yml#tests',
     ),
   },
   exactCallerJobs,

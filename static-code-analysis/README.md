@@ -348,10 +348,11 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
-Coverage fan-in consumers must use the bounded `ci/download-optional-run-artifacts.sh` probes and
-leave terminal preparation/merge failures unsuppressed. Generic missing/over-cap job timeouts and
-step-exceeds-job checks live in `github-actions-job-timeouts`. Workflow tests must not restate
-`timeout-minutes` literals; that is `github-actions-test-timeout-literals`.
+Each selected area coverage job consumes only its own full-LCOV artifacts and runs
+`ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional
+fan-in probe. Generic missing/over-cap job timeouts and step-exceeds-job checks live in
+`github-actions-job-timeouts`. Workflow tests must not restate `timeout-minutes` literals; that is
+`github-actions-test-timeout-literals`.
 
 Repo-owned checks must skip gitignored and untracked files; see [AGENTS.md](AGENTS.md) for authoring rules. Generic filesystem rules such as backend alias mapping, config path references, local docs, shellcheck, extension policy, git identity mutation, lockfiles, package registry-only policy, workspace package.json coverage, queue/worker layout, Rust line-count, Rust no-inline-tests, AGENTS.md size checks, and the binding-aware Vitest and Playwright call boundaries for real timers, fixed sleeps, and integration-test mocks are rules in `no-mistakes check` (configured via [`.no-mistakes.yml`](../.no-mistakes.yml)) and enforced in CI. Tracked `.patch` and `.diff` artifacts are banned by `banned-paths` in [`.no-mistakes.yml`](../.no-mistakes.yml) (case-insensitive globs). Pnpm `patchedDependencies` and `allowUnusedPatches` remain covered by `no-mistakes`. Fix the underlying problem upstream or file and link a Vouchington issue labeled `dependencies` instead of carrying a local patch. Offline Markdown local-link validation runs in static-analysis CI so deleting or renaming tracked files cannot leave stale docs links until the standalone online link workflow runs.
 

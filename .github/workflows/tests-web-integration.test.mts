@@ -24,9 +24,7 @@ describe('web integration workflow', () => {
     )
     expect(workflow).not.toContain('--coverage')
     expect(workflow).toContain('web-integration-shard-${{ matrix.shard }}')
-    expect(workflow).toContain(
-      'CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}',
-    )
+    expect(workflow).toContain('suite: web-integration-shard-${{ matrix.shard }}')
   })
 
   it('builds once before standalone fan-out and rebuilds in a shard on cache miss', () => {
@@ -36,8 +34,8 @@ describe('web integration workflow', () => {
     expect(prep).toContain("!inputs.shared_build_available && steps.shards.outputs.total != '1'")
     expect(prep).toContain('shared-build-cache-mode: producer')
     expect(tests).toContain('shared-build-cache-mode: consumer')
-    expect(readFileSync('.github/workflows/ci.yml', 'utf8')).toContain(
-      "shared_build_available: ${{ needs.static-web.result == 'success' }}",
+    expect(readFileSync('.github/workflows/web.yml', 'utf8')).toContain(
+      'shared_build_available: true',
     )
   })
 })

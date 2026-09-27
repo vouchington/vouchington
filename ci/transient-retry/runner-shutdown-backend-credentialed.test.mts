@@ -72,28 +72,23 @@ describe('runnerShutdownLeafRerunMatch — backend-credentialed consumer', () =>
     expect(await runnerShutdownLeafRerunMatch(makeBackendCredentialedCtx())).toBe(true)
   })
 
-  it('treats Patch Coverage as downstream when backend credentialed tests are cleanly shutdown', async () => {
+  it('reruns Backend with its downstream area gate', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
-        failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+        workflowName: 'Backend',
+        failedJobNames: [backendCredentialedJobName, 'backend'],
       }),
     )
     expect(matched).toBe(true)
   })
 
-  it('treats the reusable Patch Coverage aggregate as downstream', async () => {
+  it('does not hide an independent coverage-check failure', async () => {
     const matched = await runnerShutdownLeafRerunMatch(
       makeBackendCredentialedCtx({
-        failedJobNames: [
-          backendCredentialedJobName,
-          'Patch Coverage / Patch Coverage',
-          'tests-processing / tests-processing',
-          'tests',
-          'build',
-        ],
+        failedJobNames: [backendCredentialedJobName, 'coverage / Patch Coverage'],
       }),
     )
-    expect(matched).toBe(true)
+    expect(matched).toBe(false)
   })
 
   it('does NOT rerun when backend credentialed Vitest reports a real failure', async () => {

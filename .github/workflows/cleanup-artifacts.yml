@@ -3,14 +3,13 @@ name: Cleanup Artifacts
 # Deletes intermediate CI artifacts once they are no longer needed so the
 # account stays under its billed Actions storage cap. Producer workflows call
 # this workflow from their terminal success fan-in, which keeps immediate
-# deletion ordered inside the attempt that created the artifacts. `ci.yml`'s
-# "tests" job also deletes its own vitest-blob-*/coverage-* artifacts as soon
-# as their consumers finish; this workflow catches everything that job cannot
-# reach:
+# deletion ordered inside the attempt that created the artifacts. Area workflows
+# leave full LCOV available for patch coverage and independent Codecov uploads.
+# The scheduled sweep also catches:
 #
 #   - cancelled delete-classified artifacts (rapid-push concurrency cancellation), which never run
 #     the in-job cleanup step and become sweep-eligible once their `created_at` is over 6 hours old
-#   - non-blob intermediates such as playwright-otel output
+#   - intermediates such as playwright-otel output
 #     that no in-job step deletes
 #
 # See ci/cleanup-artifacts-patterns.json for the shared classification policy,

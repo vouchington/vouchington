@@ -11,23 +11,7 @@ on:
         required: false
         type: boolean
         default: false
-      publish_coverage_pair:
-        description: 'Whether to also publish the sparse coverage pair for the ci.yml Patch Coverage consumer'
-        required: false
-        type: boolean
-        default: false
-      upload_vitest_blob_artifact:
-        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
-        required: false
-        type: boolean
-        default: false
   workflow_dispatch:
-    inputs:
-      upload_vitest_blob_artifact:
-        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -100,8 +84,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
-      - uses: ./.github/actions/fetch-base-ref
-        if: ${{ inputs.publish_coverage_pair }}
       - name: Set service ports
         timeout-minutes: 1
         run: |
@@ -120,7 +102,6 @@ jobs:
           VITEST_CI_REPORTERS: run
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: web-api-shard-${{ matrix.shard }}.junit.xml
-          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-api-shard-${{ matrix.shard }}.json
         run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-api --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
@@ -134,95 +115,6 @@ jobs:
             mkdir -p coverage-full
             cp coverage/lcov.info coverage-full/lcov.info
           fi
-      - name: Stamp web-api-shard-${{ matrix.shard }} coverage provenance
-        id: coverage-stamp-1
-        timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
-        run: node ci/coverage-manifest.mts patch "web-api-shard-${{ matrix.shard }}" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
-      - name: Upload web-api-shard-${{ matrix.shard }} vitest blob to GitHub (fallback)
-        id: vitest-blob-fallback-1
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: web-api-shard-${{ matrix.shard }}
-      - name: Upload web-api-shard-${{ matrix.shard }} vitest blob to GitHub (fallback attempt 2)
-        id: vitest-blob-fallback-1-retry
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
-        timeout-minutes: 3
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: web-api-shard-${{ matrix.shard }}
-          name-suffix: -retry
-      - name: Require a persisted web-api-shard-${{ matrix.shard }} vitest blob
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-blob
-          SUITE: web-api-shard-${{ matrix.shard }}
-          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Persist web-api-shard-${{ matrix.shard }} Vitest report attempt (attempt 1)
-        id: vitest-report-attempt-1
-        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-report-attempt
-        with:
-          suite: web-api-shard-${{ matrix.shard }}
-      - name: Persist web-api-shard-${{ matrix.shard }} Vitest report attempt (attempt 2)
-        id: vitest-report-attempt-1-retry
-        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-report-attempt
-        with:
-          suite: web-api-shard-${{ matrix.shard }}
-          name-suffix: -retry
-      - name: Assert web-api-shard-${{ matrix.shard }} Vitest report attempt persisted
-        id: vitest-report-attempt-1-outcome
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-report-attempt
-          SUITE: web-api-shard-${{ matrix.shard }}
-          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-1-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload web-api-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 1)
-        id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-coverage-pair
-        with:
-          suite: web-api-shard-${{ matrix.shard }}
-      - name: Upload web-api-shard-${{ matrix.shard }} coverage pair to GitHub (fallback attempt 2)
-        id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-coverage-pair
-        with:
-          suite: web-api-shard-${{ matrix.shard }}
-          name-suffix: -retry
-      - name: Require a persisted web-api-shard-${{ matrix.shard }} coverage pair
-        id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
-        timeout-minutes: 1
-        env:
-          FAMILY: coverage-pair
-          SUITE: web-api-shard-${{ matrix.shard }}
-          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload full web-api-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)
         id: full-lcov-1
         if: ${{ inputs.publish_coverage }}

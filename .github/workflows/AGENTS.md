@@ -8,12 +8,6 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
 
 ## Scoped invariants
 
-- **CI orchestrator boundary:** `.github/workflows/ci.yml` owns only trigger, concurrency,
-  dependency/condition, permission, input/output, named-secret, reusable-workflow dispatch, and
-  exact-required-check action-gate wiring. Direct shell steps, `actions/github-script` source,
-  and inline dorny filter documents are forbidden by `ci-orchestrator-only.test.mts`. Put
-  executable control logic in a narrowly permissioned `ci-*.yml` reusable workflow, local
-  composite action, or `.github/ci-*-filters.yml` file.
 - **Runner-label selection rule:** pick labels by what the job requires, not as host-carving
   selectors. Arch/OS-independent jobs use `ubuntu-latest` (or `ubuntu-slim` where a smaller image
   suffices); jobs needing Linux+ARM64 use `ubuntu-24.04-arm` (see
@@ -29,16 +23,7 @@ for workflow structure, and [.github/workflows/VITEST.md](VITEST.md) for Vitest 
 - Preserve the `Main` ruleset gates: exactly `static`, `backend`, `web`,
   `cloudflare-worker`, `lambdas`, `tooling`, and `gitleaks` are required before merge. Keep every
   area gate job named after its area, always running (`!cancelled()`), and passing when its area is
-  skipped. `ci.yml`'s `tests` and `build` fan-ins remain report-only until that workflow is deleted.
-  Other scans remain report-only unless they feed one of the required gates.
-- **Semantic CI DAG:** in PR and merge-group CI, `static-code-analysis` gates the area-static
-  checks, and those gate every test, both Playwright suites, and both Docker validation builds. No
-  test or build waits on another test or build, so they all run in parallel once their static gates
-  succeed or intentionally skip. Only the `test-coverage`, `tests`, and `build` fan-ins wait on
-  tests, and report-only `tests` and `build` fan-ins still report every failure. The shared
-  `static-web` runtime build precedes its integration and Playwright consumers. Grouped-main
-  workflows keep their independent fan-out and `cancel-in-progress: false` policy.
-  `.github/workflows/ci-semantic-dag.test.mts` and the topology policy enforce the DAG rules.
+  skipped. Other scans remain report-only unless they feed one of the required gates.
 - **Area workflow DAG:** each area workflow runs `changes` → `static-<area>` (when the area has
   one) → its suites in parallel → `coverage`, `codecov`, and the area gate. `static.yml` has no
   `changes` job, so no-mistakes' `tsconfig-gate-coverage` rule can prove its typechecks run. A

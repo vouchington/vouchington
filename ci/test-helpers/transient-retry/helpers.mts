@@ -1,7 +1,7 @@
 import type { WorkflowRunContext } from '../../transient-retry/rules.mts'
 
 export const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],

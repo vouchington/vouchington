@@ -12,7 +12,7 @@ type Artifact = {
 function artifact(overrides: Partial<Artifact> = {}): Artifact {
   return {
     id: 1,
-    name: 'coverage-web',
+    name: 'lcov-full-web-shard-1',
     expired: false,
     size_in_bytes: 100,
     ...overrides,
@@ -40,10 +40,10 @@ function githubStub(artifacts: Artifact[]) {
 describe('cleanupRunArtifacts', () => {
   it('deletes only non-expired artifacts classified for deletion', async () => {
     const stub = githubStub([
-      artifact({ id: 1, name: 'coverage-web' }),
+      artifact({ id: 1, name: 'lcov-full-web-shard-1' }),
       artifact({ id: 2, name: 'next-static-web' }),
       artifact({ id: 3, name: 'unknown-debug-output' }),
-      artifact({ id: 4, name: 'vitest-blob-web', expired: true }),
+      artifact({ id: 4, name: 'lcov-full-web-shard-2', expired: true }),
       artifact({ id: 5, name: 'web-build-timings-web' }),
       artifact({ id: 6, name: 'browser-debug-log-storybook' }),
     ])

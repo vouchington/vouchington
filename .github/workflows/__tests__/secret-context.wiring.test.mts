@@ -73,19 +73,22 @@ describe('secret-backed workflow context gates (wiring and routing)', () => {
   })
 
   it('skips orchestrated secret-backed jobs on untrusted bot or fork PRs', () => {
-    const workflow = read('.github/workflows/ci.yml')
-    const guardedJobs = ['build-backend', 'build-web', 'test-playwright-credentialed']
+    const guardedJobs = [
+      ['backend', 'build-backend'],
+      ['backend', 'test-backend-credentialed'],
+      ['web', 'build-web'],
+      ['web', 'test-playwright-credentialed'],
+    ]
 
-    for (const job of guardedJobs) {
+    for (const [area, job] of guardedJobs) {
+      const workflow = read(`.github/workflows/${area}.yml`)
       expect(jobSection(workflow, job)).toContain(
-        "needs.detect-changes.outputs.trusted-secret-context == 'true'",
+        "needs.changes.outputs.trusted-secret-context == 'true'",
+      )
+      expect(jobSection(workflow, job)).toContain(
+        "trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}",
       )
     }
-    expect(
-      workflow.match(
-        /trusted_secret_context: \$\{\{ needs\.detect-changes\.outputs\.trusted-secret-context == 'true' \}\}/g,
-      ),
-    ).toHaveLength(4)
   })
 
   it('documents every Vitest project exactly once in VITEST.md', () => {

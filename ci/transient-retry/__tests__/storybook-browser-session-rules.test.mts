@@ -31,8 +31,8 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('matches the PR CI Storybook browser-session timeout with aggregate gates', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
-      failedJobNames: [ciStorybookJobName, 'Patch Coverage', 'tests', 'build'],
+      workflowName: 'Web',
+      failedJobNames: [ciStorybookJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
     const result = await decide(ctx, RULES)
@@ -53,8 +53,8 @@ describe('storybook-browser-session-connection-timeout', () => {
 
   it('does not match when another PR CI job also needs investigation', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
-      failedJobNames: [ciStorybookJobName, 'test-web / web-tests (1)', 'Patch Coverage', 'tests'],
+      workflowName: 'Web',
+      failedJobNames: [ciStorybookJobName, 'test-web / web-tests (1)', 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
     const result = await decide(ctx, RULES)

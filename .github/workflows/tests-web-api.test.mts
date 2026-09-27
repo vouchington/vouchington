@@ -19,18 +19,19 @@ describe('web API workflow', () => {
     expect(workflow).not.toContain('max-parallel')
   })
 
-  it('keeps report uploads when coverage is disabled', () => {
+  it('keeps JUnit reporting independent of coverage collection', () => {
     expect(workflow).toContain(
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
     expect(workflow).not.toContain('--coverage')
     expect(workflow).toContain('web-api-shard-${{ matrix.shard }}')
-    expect(workflow).toContain('inputs.upload_vitest_blob_artifact')
+    expect(workflow).toContain(
+      'VITEST_JUNIT_OUTPUT_FILE: web-api-shard-${{ matrix.shard }}.junit.xml',
+    )
   })
 
-  it('stamps coverage with the concrete matrix partition', () => {
-    expect(workflow).toContain(
-      'CI_SHARD: ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}',
-    )
+  it('publishes full LCOV for the concrete matrix partition', () => {
+    expect(workflow).toContain('uses: ./.github/actions/upload-full-lcov')
+    expect(workflow).toContain('suite: web-api-shard-${{ matrix.shard }}')
   })
 })

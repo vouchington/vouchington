@@ -49,7 +49,6 @@ describe('tracked-only ShellCheck consumer', () => {
       'ci/lint-links.sh',
       'ci/check-needs-results.sh',
       'ci/coverage-artifacts.sh',
-      'ci/merge-vitest-reports.sh',
       'ci/with-node-test-options',
     ])
   })

@@ -97,7 +97,7 @@ export const SECRET_INVENTORY = {
     notes:
       'Dedicated test-only staging S3 bucket used by credentialed image upload tests (repo secret). ' +
       'Provision it from the vouchington-infra image_uploads_test_bucket output before the rollout. ' +
-      'Marked provisioned because ci.yml forwards it from a stepless reusable-workflow job, ' +
+      'Marked provisioned because web.yml forwards it from a stepless reusable-workflow job, ' +
       'which cannot host a readiness step; the called workflow performs the explicit preflight.',
   },
   SENTRY_AUTH_TOKEN: {

@@ -30,20 +30,17 @@ Where:
 
 A job's `timeout-minutes` clock starts when GitHub assigns the runner, before hosted-VM provisioning
 finishes and before `Set up job` begins. That wait is normally seconds but has exceeded a minute, so
-it counts against the job but never against a step. A job whose real work takes seconds, such as
-the report-only `tests` and `build` fan-ins in `ci.yml`, bounds the work with a step-level
-`timeout-minutes` and keeps provisioning headroom in the job timeout.
-`ci-aggregate-gates.test.mts` enforces that headroom for the two gates; a job clock sized to the
-step alone lets a slow boot cancel a passing fan-in and create a report-only false failure.
+it counts against the job but never against a step. A job whose real work takes seconds should
+still keep provisioning headroom between its step and job timeout. A job clock sized to the step
+alone can turn slow runner boot into a false failure.
 
 Exact additive budgets remain valid only for explicitly catalogued structural chains, such as the
 Docker image jobs below, where each bounded fallback is expected to run serially after the prior
 one fails.
 
-Coverage and Vitest-blob producers upload directly to GitHub artifacts and consumers download from
-GitHub artifacts; there is no separate S3 transport chain with its own per-payload budget formula.
-Job timeout ceilings for these jobs are enforced generically by the `github-actions-job-timeouts`
-`no-mistakes` rule rather than a dedicated structural guard.
+Area coverage producers upload full LCOV directly to GitHub artifacts and their owning area gate
+downloads it in the same run. Job timeout ceilings are enforced generically by the
+`github-actions-job-timeouts` `no-mistakes` rule rather than a dedicated structural guard.
 
 For the Docker image jobs, workflow tests should assert the exact job and critical-step ceilings
 and that the job timeout remains below the sum of declared step timeouts. Other jobs retain their

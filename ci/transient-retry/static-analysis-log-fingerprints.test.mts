@@ -22,10 +22,10 @@ const cloudflareWorkerCrashLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Cloudflare Worker',
   conclusion: 'failure',
   runAttempt: 1,
-  failedJobNames: [ciCloudflareWorkerStaticJobName, 'tests-processing / tests-processing', 'tests'],
+  failedJobNames: [ciCloudflareWorkerStaticJobName, 'cloudflare-worker'],
   failedJobLogs: () =>
     Promise.resolve(new Map([[ciCloudflareWorkerStaticJobName, cloudflareWorkerCrashLog]])),
   failedJobAnnotations: () => Promise.resolve([]),
@@ -58,9 +58,8 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
       makeCtx({
         failedJobNames: [
           ciCloudflareWorkerStaticJobName,
-          'Patch Coverage / Patch Coverage',
-          'tests-processing / tests-processing',
-          'tests',
+          'coverage / Patch Coverage',
+          'cloudflare-worker',
         ],
       }),
       RULES,
@@ -133,7 +132,7 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
   it('does not match the same crash when it is only on static-code-analysis / static-code-analysis', async () => {
     const result = await decide(
       makeCtx({
-        failedJobNames: [staticAnalysisJobName, 'tests-processing / tests-processing', 'tests'],
+        failedJobNames: [staticAnalysisJobName, 'cloudflare-worker'],
         failedJobLogs: () =>
           Promise.resolve(new Map([[staticAnalysisJobName, cloudflareWorkerCrashLog]])),
       }),

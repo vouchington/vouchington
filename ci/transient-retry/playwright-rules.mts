@@ -1,12 +1,9 @@
 import { hasPlaywrightSetupAptLockFailure } from './playwright-log-fingerprints.mts'
-import {
-  CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES,
-  CI_PATCH_COVERAGE_JOB_NAMES,
-} from './ci-aggregate-jobs.mts'
+import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 export const storePlaywrightOtelJobName = 'store-playwright-otel'
-const setupPlaywrightWorkflowNames = new Set(['CI', 'Main CI (web)', 'Main CI (storybook)'])
+const setupPlaywrightWorkflowNames = new Set(['Web', 'Main CI (web)', 'Main CI (storybook)'])
 const storybookSetupJobNames = new Set(['storybook / storybook', 'storybook-build / storybook'])
 export const isPlaywrightShardSetupJob = (name: string): boolean =>
   name.startsWith('test-playwright / playwright-tests (') ||
@@ -16,16 +13,17 @@ export const isPlaywrightSetupJob = (name: string): boolean =>
 const isSetupPlaywrightJob = (name: string) =>
   isPlaywrightSetupJob(name) || storybookSetupJobNames.has(name)
 
-export function getFailedPlaywrightShardNames(failedJobNames: string[]): string[] | null {
+export function getFailedPlaywrightShardNames(
+  failedJobNames: string[],
+  workflowName: string,
+): string[] | null {
   const hasFailedPlaywrightShardSetupJob = failedJobNames.some(isPlaywrightShardSetupJob)
-  const hasFailedStorybookSetupJob = failedJobNames.some(name => storybookSetupJobNames.has(name))
   if (
     failedJobNames.some(
       name =>
         !isSetupPlaywrightJob(name) &&
-        !CI_ALWAYS_AGGREGATE_FAN_IN_JOB_NAMES.has(name) &&
-        !(name === storePlaywrightOtelJobName && hasFailedPlaywrightShardSetupJob) &&
-        !(CI_PATCH_COVERAGE_JOB_NAMES.has(name) && hasFailedStorybookSetupJob),
+        !isAreaGateJob(workflowName, name) &&
+        !(name === storePlaywrightOtelJobName && hasFailedPlaywrightShardSetupJob),
     )
   ) {
     return null
@@ -89,7 +87,10 @@ export const mainWebPlaywrightSetupAptLockRule: TransientRetryRule = {
     if (!setupPlaywrightWorkflowNames.has(ctx.workflowName) || ctx.conclusion !== 'failure')
       return false
 
-    const failedPlaywrightShardNames = getFailedPlaywrightShardNames(ctx.failedJobNames)
+    const failedPlaywrightShardNames = getFailedPlaywrightShardNames(
+      ctx.failedJobNames,
+      ctx.workflowName,
+    )
     if (!failedPlaywrightShardNames) return false
 
     const logs = await ctx.failedJobLogs()
@@ -140,7 +141,10 @@ export const mainWebPlaywrightWorkerNavigationTimeoutRule: TransientRetryRule = 
   match: async ctx => {
     if (ctx.workflowName !== 'Main CI (web)' || ctx.conclusion !== 'failure') return false
 
-    const failedPlaywrightShardNames = getFailedPlaywrightShardNames(ctx.failedJobNames)
+    const failedPlaywrightShardNames = getFailedPlaywrightShardNames(
+      ctx.failedJobNames,
+      ctx.workflowName,
+    )
     if (!failedPlaywrightShardNames) return false
 
     const logs = await ctx.failedJobLogs()

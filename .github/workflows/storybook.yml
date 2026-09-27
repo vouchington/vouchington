@@ -31,16 +31,6 @@ on:
         required: false
         type: boolean
         default: false
-      publish_coverage_pair:
-        description: 'Whether to also publish the sparse coverage pair for the ci.yml Patch Coverage consumer'
-        required: false
-        type: boolean
-        default: false
-      upload_vitest_blob_artifact:
-        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
-        required: false
-        type: boolean
-        default: false
   workflow_dispatch:
     inputs:
       publish_prefix:
@@ -66,11 +56,6 @@ on:
         required: false
         type: string
         default: ''
-      upload_vitest_blob_artifact:
-        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.cancel_in_progress && (inputs.concurrency_key || inputs.publish_prefix) || inputs.checkout_ref || github.sha }}-${{ inputs.cancel_in_progress && 'cancel' || 'queue' }}
@@ -103,7 +88,6 @@ jobs:
         env:
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: storybook-test-report.junit.xml
-          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-storybook.json
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-storybook --project web-storybook-component-coverage
         timeout-minutes: 3
@@ -115,95 +99,6 @@ jobs:
             mkdir -p coverage-full
             cp coverage/lcov.info coverage-full/lcov.info
           fi
-      - name: Stamp web-storybook coverage provenance
-        id: coverage-stamp-1
-        timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node ci/coverage-manifest.mts patch "web-storybook" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
-      - name: Upload web-storybook vitest blob to GitHub (fallback)
-        id: vitest-blob-fallback-1
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: web-storybook
-      - name: Upload web-storybook vitest blob to GitHub (fallback attempt 2)
-        id: vitest-blob-fallback-1-retry
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
-        timeout-minutes: 3
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: web-storybook
-          name-suffix: -retry
-      - name: Require a persisted web-storybook vitest blob
-        id: vitest-blob-outcome-1
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-blob
-          SUITE: web-storybook
-          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Persist web-storybook Vitest report attempt (attempt 1)
-        id: vitest-report-attempt-1
-        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-report-attempt
-        with:
-          suite: web-storybook
-      - name: Persist web-storybook Vitest report attempt (attempt 2)
-        id: vitest-report-attempt-1-retry
-        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-1.outcome == 'failure' }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-report-attempt
-        with:
-          suite: web-storybook
-          name-suffix: -retry
-      - name: Assert web-storybook Vitest report attempt persisted
-        id: vitest-report-attempt-1-outcome
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-report-attempt
-          SUITE: web-storybook
-          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-1-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload web-storybook coverage pair to GitHub (fallback attempt 1)
-        id: coverage-fallback-1-1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-coverage-pair
-        with:
-          suite: web-storybook
-      - name: Upload web-storybook coverage pair to GitHub (fallback attempt 2)
-        id: coverage-fallback-2-1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' && steps.coverage-fallback-1-1.outcome == 'failure' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-coverage-pair
-        with:
-          suite: web-storybook
-          name-suffix: -retry
-      - name: Require a persisted web-storybook coverage pair
-        id: coverage-outcome-1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-1.outcome == 'success' }}
-        timeout-minutes: 1
-        env:
-          FAMILY: coverage-pair
-          SUITE: web-storybook
-          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-1.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload full web-storybook LCOV to GitHub (attempt 1)
         id: full-lcov-1
         if: ${{ inputs.publish_coverage }}
@@ -235,12 +130,11 @@ jobs:
         uses: ./.github/actions/setup-playwright
         timeout-minutes: 5
       - name: Clear stale coverage before browser run
-        run: rm -f coverage/lcov.info .vitest-reports/*.json
+        run: rm -f coverage/lcov.info
       - name: Run Storybook browser tests
         env:
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: storybook-browser-test-report.junit.xml
-          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/web-storybook-browser.json
           VITEST_STORYBOOK_BROWSER: '1'
           VITEST_STORYBOOK_BROWSER_MAX_WORKERS: '1'
           STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}
@@ -272,95 +166,6 @@ jobs:
             mkdir -p coverage-full
             cp coverage/lcov.info coverage-full/lcov.info
           fi
-      - name: Stamp web-storybook-browser coverage provenance
-        id: coverage-stamp-2
-        timeout-minutes: 1
-        if: ${{ !cancelled() && inputs.publish_coverage_pair }}
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node ci/coverage-manifest.mts patch "web-storybook-browser" "$(node -p "JSON.parse(require('node:fs').readFileSync('node_modules/vitest/package.json','utf8')).version")"
-      - name: Upload web-storybook-browser vitest blob to GitHub (fallback)
-        id: vitest-blob-fallback-2
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: web-storybook-browser
-      - name: Upload web-storybook-browser vitest blob to GitHub (fallback attempt 2)
-        id: vitest-blob-fallback-2-retry
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-2.outcome == 'failure' }}
-        timeout-minutes: 3
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: web-storybook-browser
-          name-suffix: -retry
-      - name: Require a persisted web-storybook-browser vitest blob
-        id: vitest-blob-outcome-2
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-blob
-          SUITE: web-storybook-browser
-          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-2.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-2-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Persist web-storybook-browser Vitest report attempt (attempt 1)
-        id: vitest-report-attempt-2
-        if: ${{ always() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-report-attempt
-        with:
-          suite: web-storybook-browser
-      - name: Persist web-storybook-browser Vitest report attempt (attempt 2)
-        id: vitest-report-attempt-2-retry
-        if: ${{ always() && inputs.upload_vitest_blob_artifact && steps.vitest-report-attempt-2.outcome == 'failure' }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-report-attempt
-        with:
-          suite: web-storybook-browser
-          name-suffix: -retry
-      - name: Assert web-storybook-browser Vitest report attempt persisted
-        id: vitest-report-attempt-2-outcome
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-report-attempt
-          SUITE: web-storybook-browser
-          FIRST_OUTCOME: ${{ steps.vitest-report-attempt-2.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-report-attempt-2-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
-      - name: Upload web-storybook-browser coverage pair to GitHub (fallback attempt 1)
-        id: coverage-fallback-1-2
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-coverage-pair
-        with:
-          suite: web-storybook-browser
-      - name: Upload web-storybook-browser coverage pair to GitHub (fallback attempt 2)
-        id: coverage-fallback-2-2
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' && steps.coverage-fallback-1-2.outcome == 'failure' }}
-        continue-on-error: true
-        timeout-minutes: 3
-        uses: ./.github/actions/upload-coverage-pair
-        with:
-          suite: web-storybook-browser
-          name-suffix: -retry
-      - name: Require a persisted web-storybook-browser coverage pair
-        id: coverage-outcome-2
-        if: ${{ !cancelled() && inputs.publish_coverage_pair && steps.coverage-stamp-2.outcome == 'success' }}
-        timeout-minutes: 1
-        env:
-          FAMILY: coverage-pair
-          SUITE: web-storybook-browser
-          FIRST_OUTCOME: ${{ steps.coverage-fallback-1-2.outcome }}
-          RETRY_OUTCOME: ${{ steps.coverage-fallback-2-2.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload full web-storybook-browser LCOV to GitHub (attempt 1)
         id: full-lcov-2
         if: ${{ inputs.publish_coverage }}

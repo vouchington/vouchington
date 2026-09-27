@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { runtimeCoverageConfigForScope } from './coverage-config.mts'
 import { vitestCoverageScope } from './coverage-scope.mts'
-export { coverageConfigForScope } from './coverage-config.mts'
 if (!existsSync('.initialized') && !process.env.CI) {
   process.stderr.write(
     '\x1b[31mError: worktree not initialized.\x1b[0m .initialized was not found. Run ./dev/initialize monorepo (lint/unit tests) or ./dev/initialize web (full stack).\n',
@@ -47,7 +46,6 @@ const isToolingCoverage = coverageScope === 'tooling'
 const isWebStorybookBrowserCoverage = coverageScope === 'web-storybook-browser'
 const isWebStorybookCoverage = coverageScope === 'web-storybook'
 const isWebLibApiCoverage = coverageScope === 'web-lib-api'
-const isChangedCoverage = coverageScope === 'changed'
 export const coverageFlags = {
   isScopedCoverage:
     isToolingCoverage ||
@@ -55,13 +53,11 @@ export const coverageFlags = {
     coverageScope === 'web' ||
     isWebStorybookCoverage ||
     isWebStorybookBrowserCoverage ||
-    isWebLibApiCoverage ||
-    isChangedCoverage,
+    isWebLibApiCoverage,
   isToolingCoverage,
   isWebLibApiCoverage,
   isWebStorybookBrowserCoverage,
   isWebStorybookCoverage,
-  isChangedCoverage,
 }
 if (coverageScope && !coverageFlags.isScopedCoverage) {
   process.stderr.write(

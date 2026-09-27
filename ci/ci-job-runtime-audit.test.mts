@@ -54,18 +54,31 @@ function makeExecutor(
     if (endpoint.includes('/actions/workflows?')) {
       return {
         workflows: [
-          { id: 1, name: 'CI', state: 'active' },
-          { id: 2, name: 'Main CI (web)', state: 'active' },
-          { id: 3, name: 'Other', state: 'active' },
+          ...['Static', 'Backend', 'Web', 'Cloudflare Worker', 'Lambdas', 'Tooling'].map(
+            (name, index) => ({ id: index + 1, name, state: 'active' }),
+          ),
+          { id: 7, name: 'Main CI (web)', state: 'active' },
+          { id: 8, name: 'Other', state: 'active' },
         ],
       }
     }
-    if (endpoint.includes('/actions/workflows/1/runs?')) {
-      return { workflow_runs: runs.filter(run => (run as { name?: string }).name === 'CI') }
-    }
-    if (endpoint.includes('/actions/workflows/2/runs?')) {
+    const workflowId = endpoint.match(/\/actions\/workflows\/(\d+)\/runs\?/)
+    if (workflowId) {
+      const workflowName =
+        workflowId[1] === '7'
+          ? 'Main CI (web)'
+          : workflowId[1] === '8'
+            ? 'Other'
+            : ['Static', 'Backend', 'Web', 'Cloudflare Worker', 'Lambdas', 'Tooling'][
+                Number(workflowId[1]) - 1
+              ]
+      const event = new URLSearchParams(endpoint.split('?')[1]).get('event')
       return {
-        workflow_runs: runs.filter(run => (run as { name?: string }).name === 'Main CI (web)'),
+        workflow_runs: runs.filter(
+          run =>
+            (run as { name?: string; event?: string }).name === workflowName &&
+            (run as { event?: string }).event === event,
+        ),
       }
     }
     const match = endpoint.match(/\/actions\/runs\/(\d+)\/jobs/)
@@ -75,33 +88,41 @@ function makeExecutor(
 }
 
 describe('CI job runtime audit wrapper', () => {
-  it('keeps Vouchington CI pull_request and Main CI push filters', () => {
+  it('keeps area pull_request plus Main CI push filters', () => {
     expect(vouchingtonRuntimeAuditOptions).toEqual({
       branch: 'main',
       workflows: [
-        { name: 'CI', event: 'pull_request' },
+        { name: 'Static', event: 'pull_request' },
+        { name: 'Backend', event: 'pull_request' },
+        { name: 'Web', event: 'pull_request' },
+        { name: 'Cloudflare Worker', event: 'pull_request' },
+        { name: 'Lambdas', event: 'pull_request' },
+        { name: 'Tooling', event: 'pull_request' },
         { name: /^Main CI \(.+\)$/, event: 'push' },
       ],
       medianThresholdSeconds: 480,
     })
   })
 
-  it('scopes successful PR and main runs and excludes other workflows', async () => {
+  it('scopes area pull-request runs plus main, excluding other workflows', async () => {
     const runs = [
-      ...[7, 6, 5, 4, 3, 2].map(id => makeRun(id, 'CI', 'pull_request')),
-      makeRun(8, 'CI', 'pull_request', 'release'),
-      makeRun(9, 'Main CI (web)', 'push'),
-      makeRun(10, 'Main CI (web)', 'push', 'release'),
-      makeRun(11, 'Other', 'push'),
+      ...[16, 15, 14, 13, 12, 11].map(id => makeRun(id, 'Backend', 'pull_request')),
+      makeRun(17, 'Backend', 'pull_request', 'release'),
+      makeRun(2, 'Main CI (web)', 'push'),
+      makeRun(18, 'Main CI (web)', 'push', 'release'),
+      makeRun(19, 'Other', 'push'),
     ]
     const jobs = Object.fromEntries(
-      [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(id => [id, [makeJob(id, 'test', 300 + id, 12)]]),
+      runs.map(run => {
+        const id = (run as { id: number }).id
+        return [id, [makeJob(id, 'test', 300 + id, 12)]]
+      }),
     )
 
     const result = await auditCiJobRuntime(makeExecutor(runs, jobs), 'owner/repo')
 
-    expect(result.jobs.map(job => job.key)).toEqual(['CI / test', 'Main CI (web) / test'])
-    expect(result.jobs[0]?.samples.map(sample => sample.runId)).toEqual([7, 6, 5, 4, 3])
-    expect(result.jobs[0]?.samples[0]?.durationSeconds).toBe(307)
+    expect(result.jobs.map(job => job.key)).toEqual(['Backend / test', 'Main CI (web) / test'])
+    expect(result.jobs[0]?.samples.map(sample => sample.runId)).toEqual([16, 15, 14, 13, 12])
+    expect(result.jobs[0]?.samples[0]?.durationSeconds).toBe(316)
   })
 })

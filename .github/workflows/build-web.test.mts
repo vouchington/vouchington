@@ -51,7 +51,7 @@ describe('build-web workflow', () => {
       '.github/actions/build-web-images/action.yml',
       'utf8',
     )
-    const ciSource = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const ciSource = readFileSync('.github/workflows/web.yml', 'utf8')
     const publishSource = readFileSync('.github/workflows/publish-web-images.yml', 'utf8')
     const mainWebSource = readFileSync('.github/workflows/main-web.yml', 'utf8')
 

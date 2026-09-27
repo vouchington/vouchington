@@ -6,7 +6,7 @@ import type { TransientRetryRule } from './types.mts'
 const baseOptions = {
   repository: 'vouchington/vouchington',
   runId: '123',
-  workflowName: 'CI',
+  workflowName: 'Web',
 }
 
 describe('deriveRuleAttempts accounting', () => {

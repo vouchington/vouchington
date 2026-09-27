@@ -3,11 +3,6 @@ import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
 } from './ci-cancelled-rules.mts'
-import {
-  coverageArtifactDownloadTimeoutRule,
-  coverageArtifactStaleRerunMissingRule,
-  coverageTransportExhaustedRule,
-} from './coverage-artifact-rules.mts'
 import { detectChangesPathsFilterGithub5xxRule } from './detect-changes-rules.mts'
 import { gitleaksInstallReleasesDownloadFlakeRule } from './gitleaks-rules.mts'
 import {
@@ -47,9 +42,6 @@ export const RULES: TransientRetryRule[] = [
   mainWebPlaywrightSetupAptLockRule,
   mainWebPlaywrightWorkerNavigationTimeoutRule,
   webIntegrationWranglerSocketClosedRule,
-  coverageTransportExhaustedRule,
-  coverageArtifactDownloadTimeoutRule,
-  coverageArtifactStaleRerunMissingRule,
   runnerShutdownLeafRerunRule,
   mainWebStaticBuildSilentExitRule,
   mainWebVitestWorkerStartTimeoutAfterPassRule,

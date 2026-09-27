@@ -132,10 +132,10 @@ describe('workflow runner policy (real workflows)', () => {
     assertNoWorkflowViolations(violations, 'workflow runs-on policy violations')
   })
 
-  it('pins the two required Main merge-gate aggregators to ubuntu-latest', () => {
-    const jobs = readWorkflow('ci.yml').jobs
-    expect(jobs?.['tests']?.['runs-on']).toBe('ubuntu-latest')
-    expect(jobs?.['build']?.['runs-on']).toBe('ubuntu-latest')
+  it('pins the required area merge-gate aggregators to ubuntu-latest', () => {
+    for (const area of ['static', 'backend', 'web', 'cloudflare-worker', 'lambdas', 'tooling']) {
+      expect(readWorkflow(`${area}.yml`).jobs?.[area]?.['runs-on']).toBe('ubuntu-latest')
+    }
   })
 
   it('restricts ubuntu-24.04-arm to the native ARM64 image builds', () => {

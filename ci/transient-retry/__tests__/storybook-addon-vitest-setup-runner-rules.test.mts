@@ -29,7 +29,7 @@ ${runnerMissingAttempt}
 
   it('reruns a failed Storybook leaf when the overall workflow was cancelled', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
+      workflowName: 'Web',
       conclusion: 'cancelled',
       failedJobNames: [ciStorybookJobName, 'unrelated cancelled job'],
       jobConclusions: new Map([
@@ -46,7 +46,7 @@ ${runnerMissingAttempt}
 
   it('does not match when the Storybook leaf itself was cancelled', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
+      workflowName: 'Web',
       conclusion: 'cancelled',
       failedJobNames: [ciStorybookJobName],
       jobConclusions: new Map([[ciStorybookJobName, 'cancelled']]),
@@ -57,8 +57,8 @@ ${runnerMissingAttempt}
 
   it('matches the PR CI Storybook add-on setup failure with aggregate gates', async () => {
     const ctx = makeCtx({
-      workflowName: 'CI',
-      failedJobNames: [ciStorybookJobName, 'Patch Coverage', 'tests', 'build'],
+      workflowName: 'Web',
+      failedJobNames: [ciStorybookJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
     const result = await decide(ctx, RULES)

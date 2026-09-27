@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  nightlyAreaWorkflowNames,
   parsedDependabot as parsed,
   promptText,
 } from '../test-helpers/fix-dependabot.test-helpers.mts'
@@ -72,7 +73,7 @@ describe('fix-dependabot workflow', () => {
       workflow_run?: { workflows?: string[]; types?: string[] }
     }
 
-    expect(on.workflow_run?.workflows).toEqual(['CI'])
+    expect(on.workflow_run?.workflows).toEqual(nightlyAreaWorkflowNames)
     expect(on.workflow_run?.types).toEqual(['completed'])
   })
 
@@ -119,7 +120,7 @@ describe('fix-dependabot workflow', () => {
     const triageJob = parsed.jobs?.['triage-and-rerun']
 
     // A collaborator pushing a dependabot/* branch must not trigger the privileged Harness
-    // dispatch.  The actor check mirrors the trusted-context logic in ci.yml.
+    // dispatch. The source actor must be checked in this privileged workflow.
     expect(triageJob?.if).toContain("github.event.workflow_run.actor.login == 'dependabot[bot]'")
   })
 

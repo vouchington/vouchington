@@ -35,8 +35,8 @@ describe('tests-playwright.yml', () => {
   })
 
   it('keeps PR calls dynamic and preserves the shard execution contract', () => {
-    const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
-    const prCall = workflowJobSection(ciWorkflow, 'test-playwright')
+    const webWorkflow = readFileSync('.github/workflows/web.yml', 'utf8')
+    const prCall = workflowJobSection(webWorkflow, 'test-playwright')
     const shardJob = workflowJobSection(workflow, 'playwright-tests')
 
     expect(prCall).toContain('uses: ./.github/workflows/tests-playwright.yml')

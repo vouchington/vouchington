@@ -12,7 +12,7 @@ import {
   hasVitestTestFailureSignal,
   hasWebStackBuildFailureSignal,
 } from './runner-shutdown-fingerprints.mts'
-import { storybookJobName } from './storybook-shared.mts'
+import { ciStorybookJobName, storybookJobName } from './storybook-shared.mts'
 
 // Marks the start of the shared build-web-targets composite action's log region. Not host-lock- or
 // runner-shutdown-specific; several consumers below and web-build-rules.mts key off it to find
@@ -23,7 +23,9 @@ export const backendUnitShardPattern = /^test-backend-unit \/ backend-tests \(\d
 export const backendSmokeJobName = 'backend-smoke / smoke'
 export const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
 export const mainChecksToolingJobName = 'tooling-tests / tooling'
+export const areaToolingJobName = 'test-tooling / tooling'
 export const staticWebJobName = 'static-checks / static-web'
+export const areaStaticWebJobName = 'static-web / static-web'
 export const webTestsShardPattern = /^test-web \/ web-tests \(\d+\)$/
 export const webApiShardPattern = /^test-web-api \/ web-api-tests \([1-9]\d*\)$/
 export const webIntegrationShardPattern = /^test-web-integration \/ web-integration-tests \(\d+\)$/
@@ -57,15 +59,15 @@ const consumers: ConsumerEntry[] = [
       !hasBackendCredentialedVitestStarted(log) || hasBackendCredentialedVitestFailure(log),
   },
   {
-    matches: name => name === mainChecksToolingJobName,
+    matches: name => name === mainChecksToolingJobName || name === areaToolingJobName,
     isConsumerFailure: log => !hasToolingVitestStarted(log) || hasVitestTestFailureSignal(log),
   },
   {
-    matches: name => name === storybookJobName,
+    matches: name => name === storybookJobName || name === ciStorybookJobName,
     isConsumerFailure: log => !hasStorybookVitestStarted(log) || hasVitestTestFailureSignal(log),
   },
   {
-    matches: name => name === staticWebJobName,
+    matches: name => name === staticWebJobName || name === areaStaticWebJobName,
     isConsumerFailure: log =>
       !log.includes(buildWebTargetsStepMarker) ||
       hasWebStackBuildFailureSignal(log) ||
@@ -101,15 +103,4 @@ const consumers: ConsumerEntry[] = [
 
 export function findRunnerShutdownConsumer(jobName: string): ConsumerEntry | undefined {
   return consumers.find(consumer => consumer.matches(jobName))
-}
-
-export function isCoverageProducerJob(jobName: string): boolean {
-  return (
-    backendUnitShardPattern.test(jobName) ||
-    jobName === backendCredentialedJobName ||
-    jobName === mainChecksToolingJobName ||
-    webTestsShardPattern.test(jobName) ||
-    isWebApiShardJob(jobName) ||
-    isWebIntegrationShardJob(jobName)
-  )
 }

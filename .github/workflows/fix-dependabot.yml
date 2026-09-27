@@ -2,7 +2,13 @@ name: Automation Fix Dependabot
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows:
+      - Static
+      - Backend
+      - Web
+      - Cloudflare Worker
+      - Lambdas
+      - Tooling
     types: [completed]
 
 concurrency:

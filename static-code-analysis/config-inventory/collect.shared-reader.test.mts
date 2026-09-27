@@ -1,7 +1,9 @@
 import { rm } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { buildSharedContext } from 'vouchington-tooling/shared-context'
 
 import { collectConfigInventory } from './collect.mts'
+import { checkWorkflowEnvReferences } from './workflow-env-policy.mts'
 import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.mts'
 
 describe('collectConfigInventory shared reader', () => {
@@ -46,5 +48,18 @@ describe('collectConfigInventory shared reader', () => {
         files: ['pnpm-workspace.yaml'],
       },
     ])
+  })
+
+  it('retains the documented AWS test-role contract for workflow consumers', async () => {
+    const ctx = await buildSharedContext(process.cwd())
+    const inventory = await collectConfigInventory(ctx)
+    const role = inventory.envVars.find(row => row.name === 'AWS_TEST_ROLE_ARN')
+
+    expect(role?.workflows).toEqual(expect.arrayContaining(['.github/workflows/build-backend.yml']))
+    expect(
+      checkWorkflowEnvReferences(ctx, inventory).filter(error =>
+        error.includes('AWS_TEST_ROLE_ARN'),
+      ),
+    ).toEqual([])
   })
 })

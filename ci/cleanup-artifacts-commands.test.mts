@@ -8,7 +8,7 @@ const TOKEN = 'test-token'
 function artifact(overrides: Partial<GithubArtifact> = {}): GithubArtifact {
   return {
     id: 1,
-    name: 'coverage-web',
+    name: 'lcov-full-web-shard-1',
     size_in_bytes: 100,
     expired: false,
     created_at: '2026-01-01T00:00:00Z',
@@ -32,8 +32,8 @@ describe('runCleanup', () => {
       listRunArtifacts: vi
         .fn<CleanupDeps['listRunArtifacts']>()
         .mockResolvedValue([
-          artifact({ id: 1, name: 'coverage-web', size_in_bytes: 10 }),
-          artifact({ id: 2, name: 'vitest-blob-web', expired: true }),
+          artifact({ id: 1, name: 'lcov-full-web-shard-1', size_in_bytes: 10 }),
+          artifact({ id: 2, name: 'lcov-full-web-shard-2', expired: true }),
         ]),
     })
 

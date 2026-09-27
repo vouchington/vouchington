@@ -16,7 +16,7 @@ import {
   hasWebVitestWorkerStartTimeoutAfterPassingSummary,
 } from './web-vitest-log-fingerprints.mts'
 
-import { CI_AGGREGATE_FAN_IN_JOB_NAMES } from './ci-aggregate-jobs.mts'
+import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 const storePlaywrightOtelJobName = 'store-playwright-otel'
 
 function singleFailedWebShard(failedJobNames: string[]): string | undefined {
@@ -45,12 +45,12 @@ export const webVitestSigsegvRule: TransientRetryRule = {
   maxAttempts: 1,
   needsLogs: true,
   match: async ctx => {
-    if (ctx.workflowName !== 'CI' || ctx.conclusion !== 'failure') return false
+    if (ctx.workflowName !== 'Web' || ctx.conclusion !== 'failure') return false
     const webTestsJobName = singleFailedWebShard(ctx.failedJobNames)
     if (!webTestsJobName) return false
     if (
       ctx.failedJobNames.some(
-        name => name !== webTestsJobName && !CI_AGGREGATE_FAN_IN_JOB_NAMES.has(name),
+        name => name !== webTestsJobName && !isAreaGateJob(ctx.workflowName, name),
       )
     ) {
       return false
@@ -81,7 +81,6 @@ export const mainWebVitestWorkerStartTimeoutAfterPassRule: TransientRetryRule = 
     const hasFailedPlaywrightShard = ctx.failedJobNames.some(isPlaywrightShardSetupJob)
     const leafJobNames = ctx.failedJobNames.filter(
       name =>
-        !CI_AGGREGATE_FAN_IN_JOB_NAMES.has(name) &&
         !(
           name === storePlaywrightOtelJobName &&
           isStorePlaywrightOtelDownstream(ctx, hasFailedPlaywrightShard, logs)

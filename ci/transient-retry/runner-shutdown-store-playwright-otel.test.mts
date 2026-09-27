@@ -51,17 +51,13 @@ const makeCtx = (
   storeLog = '',
   logFetchFailures = new Set<string>(),
 ): WorkflowRunContext => {
-  const jobConclusions = new Map([
-    [playwrightShardJobName, 'failure'],
-    ['tests', 'failure'],
-    ['build', 'failure'],
-  ])
+  const jobConclusions = new Map([[playwrightShardJobName, 'failure']])
   if (storeConclusion !== undefined) jobConclusions.set(storePlaywrightOtelJobName, storeConclusion)
   return {
-    workflowName: 'CI',
+    workflowName: 'Main CI (web)',
     conclusion: 'failure',
     runAttempt: 1,
-    failedJobNames: [playwrightShardJobName, storePlaywrightOtelJobName, 'tests', 'build'],
+    failedJobNames: [playwrightShardJobName, storePlaywrightOtelJobName],
     jobConclusions,
     failedJobLogs: () =>
       Promise.resolve(

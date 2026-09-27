@@ -15,7 +15,7 @@ function workflowJobSection(body: string, jobName: string): string {
 
 describe('tests-playwright.yml OTel collector', () => {
   it('supports main-only OTel observability without expanding PR behavior', () => {
-    const ciWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8')
+    const webWorkflow = readFileSync('.github/workflows/web.yml', 'utf8')
     const pathFilters = readFileSync('.github/ci-path-filters.yml', 'utf8')
     const mainWebWorkflow = readFileSync('.github/workflows/main-web.yml', 'utf8')
     const allocatePorts = workflow.indexOf('- name: Allocate ports')
@@ -52,10 +52,8 @@ describe('tests-playwright.yml OTel collector', () => {
     )
     expect(workflow).not.toContain('aws-actions/configure-aws-credentials')
     expect(workflow).not.toContain('id-token: write')
-    // ci.yml (PR-only) still passes the otel flag for main-push detection in PRs
-    expect(ciWorkflow).toContain(
-      "otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.trusted-secret-context == 'true' }}",
-    )
+    // Area CI leaves the opt-in off; only main publication enables OTel observability.
+    expect(workflowJobSection(webWorkflow, 'test-playwright')).not.toContain('otel_enabled:')
     expect(mainWebWorkflow).toContain("otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' }}")
     // store-playwright-otel moved to main-web.yml (main-only push workflow)
     expect(mainWebWorkflow).toContain('store-playwright-otel:')
@@ -82,12 +80,10 @@ describe('tests-playwright.yml OTel collector', () => {
     )
     expect(playwrightOtelStoreJob).not.toContain('role-to-assume: ${{ secrets.AWS_TEST_ROLE_ARN }}')
     expect(mainWebWorkflow).toContain('OTEL_STORE_URI: ${{ secrets.AWS_OTEL_STORE_URI }}')
-    expect(ciWorkflow).not.toContain('test-playwright-otel:')
+    expect(webWorkflow).not.toContain('test-playwright-otel:')
     expect(pathFilters).toContain("'playwright/config/**'")
     expect(pathFilters).toContain('playwright/config/**')
     expect(pathFilters).toContain('ts-shared/utils/**')
-    expect(ciWorkflow).toContain("github.event_name == 'push'")
-    expect(ciWorkflow).toContain("github.ref == 'refs/heads/main'")
-    expect(ciWorkflow).not.toContain('uses: ./.github/workflows/tests-playwright-otel.yml')
+    expect(webWorkflow).not.toContain('uses: ./.github/workflows/tests-playwright-otel.yml')
   })
 })

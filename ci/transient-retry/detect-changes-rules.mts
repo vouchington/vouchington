@@ -1,12 +1,20 @@
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
+import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 
-const detectChangesJobNames = new Set(['detect-changes', 'detect-changes / detect-changes'])
+const detectChangesWorkflowNames = new Set([
+  'Backend',
+  'Web',
+  'Cloudflare Worker',
+  'Lambdas',
+  'Tooling',
+])
+const detectChangesJobNames = new Set(['changes / detect-changes'])
 const githubServerErrorDoctypeMarker = '<!DOCTYPE html>'
 const githubServerErrorUnicornTitleMarker = '<title>Unicorn! &middot; GitHub</title>'
 
 function soleGenuinelyFailedDetectChangesJob(ctx: WorkflowRunContext): string | null {
   const genuinelyFailed = ctx.failedJobNames.filter(
-    name => ctx.jobConclusions?.get(name) !== 'cancelled',
+    name => !isAreaGateJob(ctx.workflowName, name) && ctx.jobConclusions?.get(name) !== 'cancelled',
   )
   if (genuinelyFailed.length !== 1) return null
   const [jobName] = genuinelyFailed
@@ -36,7 +44,8 @@ export const detectChangesPathsFilterGithub5xxRule: TransientRetryRule = {
   maxAttempts: 1,
   needsAnnotations: true,
   match: async ctx => {
-    if (ctx.workflowName !== 'CI' || ctx.conclusion !== 'failure') return false
+    if (!detectChangesWorkflowNames.has(ctx.workflowName) || ctx.conclusion !== 'failure')
+      return false
     const jobName = soleGenuinelyFailedDetectChangesJob(ctx)
     if (jobName === null) return false
 

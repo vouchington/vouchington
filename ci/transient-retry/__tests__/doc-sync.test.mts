@@ -41,18 +41,18 @@ describe('transient-retry rule docs sync', () => {
     expect(staleIds).toEqual([])
   })
 
-  it('documents current coverage transport and optional-artifact fingerprints', () => {
+  it('does not document retired sparse coverage retry fingerprints', () => {
     const transientReference = readFileSync(
       'docs/development/reference-ci-classifying-transient-infrastructure-failures.md',
       'utf8',
     )
 
-    expect(transientReference).toContain('`coverage-transport-exhausted`')
-    expect(transientReference).toContain('Require a persisted <suite> coverage pair')
-    expect(transientReference).toContain(
+    expect(transientReference).not.toContain('`coverage-transport-exhausted`')
+    expect(transientReference).not.toContain('Require a persisted <suite> coverage pair')
+    expect(transientReference).not.toContain(
       'Optional same-run artifact unavailable; continuing with validated fallback',
     )
-    expect(transientReference).toContain(
+    expect(transientReference).not.toContain(
       '[optional-run-artifacts] selected artifact=coverage-<suite>',
     )
     expect(transientReference).not.toContain('fallback-only control marker')

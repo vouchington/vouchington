@@ -25,8 +25,7 @@ const KEEP_NAMES = [
 
 const DELETE_NAMES = [
   'code-review-payload-abc123',
-  'vitest-blob-web',
-  'coverage-web',
+  'lcov-full-web-shard-1',
   'playwright-otel-output-shard-2',
   'browser-debug-log-storybook',
   'web-integration-artifacts',

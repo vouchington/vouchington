@@ -166,10 +166,7 @@ describe('tests-tooling.yml setup timing', () => {
     expect(routeBoundsRun.run).toContain('--project i18n-route-bounds')
     expect(routeBoundsRun['timeout-minutes']).toBeGreaterThanOrEqual(5)
     expect(
-      routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-coverage-pair'),
-    ).toBe(false)
-    expect(
-      routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-vitest-blob'),
+      routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-full-lcov'),
     ).toBe(false)
   })
 })

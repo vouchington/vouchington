@@ -72,9 +72,11 @@ describe('attempt-scoped artifact cleanup fan-ins', () => {
   )
 
   it('keeps pull-request CI outside the writable immediate cleanup path', () => {
-    const workflow = readWorkflow('.github/workflows/ci.yml')
-
-    expect(workflow.jobs).not.toHaveProperty('cleanup-artifacts')
+    for (const area of ['static', 'backend', 'web', 'cloudflare-worker', 'lambdas', 'tooling']) {
+      expect(readWorkflow(`.github/workflows/${area}.yml`).jobs).not.toHaveProperty(
+        'cleanup-artifacts',
+      )
+    }
   })
 
   it('keeps immediate cleanup callable in-run and the stale sweep standalone', () => {

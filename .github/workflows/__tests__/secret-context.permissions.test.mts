@@ -99,24 +99,20 @@ describe('secret-backed workflow context gates (permissions and security)', () =
   })
 
   it('isolates Codecov OIDC from PR-controlled coverage code', () => {
-    const workflow = read('.github/workflows/ci.yml')
-    const coverageWorkflow = read('.github/workflows/ci-test-coverage.yml')
+    const workflow = read('.github/workflows/backend.yml')
     const areaCoverageWorkflow = read('.github/workflows/ci-area-coverage.yml')
     const codecovWorkflow = read('.github/workflows/ci-upload-codecov.yml')
-    const coverageJob = jobSection(coverageWorkflow, 'test-coverage')
+    const coverageJob = jobSection(areaCoverageWorkflow, 'coverage')
     const codecovJob = jobSection(codecovWorkflow, 'upload-codecov')
     const codecovCaller = jobSection(read('.github/workflows/backend.yml'), 'codecov')
 
     expect(coverageJob).toContain('name: Patch Coverage')
-    for (const job of [coverageJob, jobSection(areaCoverageWorkflow, 'coverage')]) {
-      expect(job).not.toContain('id-token: write')
-      expect(job).not.toContain('AWS_TEST_ROLE_ARN')
-    }
+    expect(coverageJob).not.toContain('id-token: write')
+    expect(coverageJob).not.toContain('AWS_TEST_ROLE_ARN')
     expect(codecovJob).toContain('id-token: write')
     expect(codecovCaller).toContain('id-token: write')
     expect(codecovJob).not.toContain('run:')
     expect(codecovWorkflow).not.toContain('./.github/actions/')
-    expect(coverageWorkflow).not.toContain('CODECOV_TOKEN')
     expect(areaCoverageWorkflow).not.toContain('CODECOV_TOKEN')
     expect(codecovWorkflow).not.toContain('CODECOV_TOKEN')
     expect(workflow).not.toContain(`${['coverage', 'store'].join('-')}:`)
@@ -135,37 +131,35 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     expect(credentialedJob).toContain('trusted_secret_context: true')
   })
 
-  it('runs Storybook tests through the CI orchestrator after static analysis', () => {
-    const workflow = read('.github/workflows/ci.yml')
+  it('runs Storybook tests through the web area after static analysis', () => {
+    const workflow = read('.github/workflows/web.yml')
     const detectChanges = read('.github/workflows/ci-detect-changes.yml')
-    const runtimeFilters = read('.github/ci-runtime-path-filters.yml')
+    const runtimeFilters = read('.github/ci-path-filters.yml')
     const storybookJob = jobSection(workflow, 'storybook')
-    const coverageJob = jobSection(workflow, 'test-coverage')
-    const testsJob = jobSection(read('.github/workflows/ci.yml'), 'tests-processing')
+    const coverageJob = jobSection(workflow, 'coverage')
+    const testsJob = jobSection(workflow, 'web')
     const storybookWorkflow = read('.github/workflows/storybook.yml')
 
-    expect(detectChanges).toContain('storybook: ${{ steps.refine-runtime-web.outputs.storybook }}')
-    expect(runtimeFilters).toContain('storybook:')
-    const storybookRuntimeFilter = pathFilterSection(runtimeFilters, 'storybook')
+    expect(detectChanges).toContain(
+      'storybook: ${{ steps.refine-runtime-web.outputs.runtime-storybook }}',
+    )
+    const storybookRuntimeFilter = pathFilterSection(runtimeFilters, 'runtime-storybook')
     expect(storybookRuntimeFilter).not.toContain('.github/workflows/')
     expect(storybookRuntimeFilter).not.toContain('.github/actions/**')
     expect(runtimeFilters).toContain('web/**')
     expect(runtimeFilters).toContain('vitest.config.mts')
     expect(runtimeFilters).toContain('package.json')
     expect(runtimeFilters).toContain('pnpm-lock.yaml')
-    expect(storybookJob).toContain('needs: [detect-changes, static-code-analysis]')
-    expect(storybookJob).toContain("needs.detect-changes.outputs.storybook == 'true'")
-    expect(storybookJob).toContain(
-      "needs.detect-changes.outputs.trusted-secret-context == 'true' || needs.detect-changes.outputs.dependency-bot-test-context == 'true'",
-    )
-    expect(storybookJob).toContain("needs.static-code-analysis.result == 'success'")
+    expect(storybookJob).toContain('needs: [changes, static-web]')
+    expect(storybookJob).toContain("needs.changes.outputs.trusted-secret-context == 'true' ||")
+    expect(storybookJob).toContain("needs.changes.outputs.dependency-bot-test-context == 'true'")
     expect(storybookJob).toContain('uses: ./.github/workflows/storybook.yml')
     expect(storybookJob).toContain('contents: read')
     expect(storybookJob).not.toContain('id-token: write')
     expect(storybookJob).not.toContain('deployments: write')
     expect(storybookJob).not.toContain('publish_static_artifact')
     expect(storybookJob).not.toContain('presign_manifest:')
-    expect(storybookJob).toContain("publish_coverage: ${{ github.event_name == 'pull_request' }}")
+    expect(storybookJob).toContain('publish_coverage: true')
     expect(storybookJob).toContain("cancel_in_progress: ${{ github.event_name == 'pull_request' }}")
     expect(storybookJob).not.toContain('publish_prefix:')
     expect(storybookJob).toContain('checkout_ref: ${{ github.sha }}')
@@ -175,8 +169,8 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       "concurrency_key: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}",
     )
     expect(storybookJob).not.toContain('secrets: inherit')
-    expect(coverageJob).toContain('storybook-result: ${{ needs.storybook.result }}')
-    expect(testsJob).toContain('test-coverage')
+    expect(coverageJob).toContain('storybook]')
+    expect(testsJob).toContain('coverage,')
     expect(storybookWorkflow).toContain('workflow_call:')
     expect(storybookWorkflow).toContain('runs-on: ubuntu-latest')
     expect(storybookWorkflow).toContain(
@@ -261,9 +255,9 @@ describe('secret-backed workflow context gates (permissions and security)', () =
   })
 
   it('keeps Storybook changes in their own path filter', () => {
-    const runtimeFilters = read('.github/ci-runtime-path-filters.yml')
-    const storybookFilter = pathFilterSection(runtimeFilters, 'storybook')
-    const playwrightFilter = pathFilterSection(runtimeFilters, 'playwright')
+    const runtimeFilters = read('.github/ci-path-filters.yml')
+    const storybookFilter = pathFilterSection(runtimeFilters, 'runtime-storybook')
+    const playwrightFilter = pathFilterSection(runtimeFilters, 'runtime-playwright')
 
     expect(storybookFilter).not.toContain('.github/workflows/')
     expect(storybookFilter).toContain('web/**')

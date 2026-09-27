@@ -2,23 +2,7 @@ name: PostgreSQL Schema Tests
 
 on:
   workflow_call:
-    outputs:
-      vitest-report-attempt:
-        description: 'Run attempt that produced this invocation'
-        value: ${{ jobs.postgres-schema-tests.outputs.vitest-report-attempt }}
-    inputs:
-      upload_vitest_blob_artifact:
-        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
-        required: false
-        type: boolean
-        default: false
   workflow_dispatch:
-    inputs:
-      upload_vitest_blob_artifact:
-        description: 'Whether to upload Vitest blob artifacts to GitHub as a fallback'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -31,9 +15,6 @@ jobs:
   postgres-schema-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      vitest-report-attempt: ${{ github.run_attempt }}
-
     services:
       postgres:
         image: pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
@@ -65,7 +46,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/fetch-base-ref
       - name: Set service connections
         timeout-minutes: 1
         run: |
@@ -87,7 +67,6 @@ jobs:
         env:
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: postgres-schema-test-report.junit.xml
-          VITEST_BLOB_OUTPUT_FILE: .vitest-reports/postgres-schema.json
         run: |
           VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity
         timeout-minutes: 3
@@ -96,30 +75,3 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/schema-snapshot/generate.mts --check
         timeout-minutes: 2
-      - name: Upload postgres-schema vitest blob to GitHub (fallback)
-        id: vitest-blob-fallback-1
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: postgres-schema
-      - name: Upload postgres-schema vitest blob to GitHub (fallback attempt 2)
-        id: vitest-blob-fallback-1-retry
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact && steps.vitest-blob-fallback-1.outcome == 'failure' }}
-        timeout-minutes: 3
-        continue-on-error: true
-        uses: ./.github/actions/upload-vitest-blob
-        with:
-          suite: postgres-schema
-          name-suffix: -retry
-      - name: Require a persisted postgres-schema vitest blob
-        id: vitest-blob-outcome-1
-        if: ${{ !cancelled() && inputs.upload_vitest_blob_artifact }}
-        timeout-minutes: 1
-        env:
-          FAMILY: vitest-blob
-          SUITE: postgres-schema
-          FIRST_OUTCOME: ${{ steps.vitest-blob-fallback-1.outcome }}
-          RETRY_OUTCOME: ${{ steps.vitest-blob-fallback-1-retry.outcome }}
-        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"

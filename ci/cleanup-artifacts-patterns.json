@@ -15,10 +15,7 @@
   ],
   "delete": [
     "code-review-payload-*",
-    "vitest-blob-*",
-    "vitest-report-attempt-*",
     "vitest-fork-diagnostics-*",
-    "coverage-*",
     "lcov-full-*",
     "playwright-otel-output-shard-*",
     "browser-debug-log-storybook",

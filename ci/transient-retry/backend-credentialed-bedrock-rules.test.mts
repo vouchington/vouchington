@@ -50,7 +50,7 @@ const realPr10800AbortTimeoutLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'CI',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [],
@@ -74,7 +74,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Bedrock variants)'
 
   it('matches the Bedrock Nova embedding timeout on attempt 1', async () => {
     const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingBedrockTimeoutLog]])),
     })
@@ -89,7 +89,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Bedrock variants)'
 
   it('matches the real PR #10800 log via decide()', async () => {
     const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, realPr10800AbortTimeoutLog]])),
     })
@@ -143,7 +143,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Bedrock variants)'
 
   it('does not match unrelated Bedrock assertion failures', async () => {
     const ctx = makeCtx({
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () =>
         Promise.resolve(
           new Map([
@@ -177,7 +177,7 @@ describe('backend-credentialed-provider-smoke-test-transient (Bedrock variants)'
     const ctx = makeCtx({
       runAttempt: 3,
       ruleAttempts: new Map([['backend-credentialed-provider-smoke-test-transient', 3]]),
-      failedJobNames: [backendCredentialedJobName, 'Patch Coverage', 'tests', 'build'],
+      failedJobNames: [backendCredentialedJobName, 'backend'],
       failedJobLogs: () =>
         Promise.resolve(new Map([[backendCredentialedJobName, matchingBedrockTimeoutLog]])),
     })

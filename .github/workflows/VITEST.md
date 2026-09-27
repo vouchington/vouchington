@@ -4,21 +4,28 @@
 
 Every Vitest project defined in [`../../vitest.config.mts`](../../vitest.config.mts) must be listed here and owned by exactly one CI workflow. An owning workflow may run the project in multiple platform jobs or shards.
 
-`ci.yml` starts each owning workflow when its area path filter matches (and every Vitest job on a merge group), and the workflow runs its projects' full suites; CI never selects individual test files. [`ci/vitest/project-ownership-registry.mts`](../../ci/vitest/project-ownership-registry.mts) derives the project → job map and shard policies from `VITEST_OWNERSHIP`. See [area test suites](../../docs/development/ci.md#area-test-suites).
+Each area workflow starts its owning projects when its area path filter matches, and every area runs
+its full suites for a merge group; CI never selects individual test files.
+[`ci/vitest/project-ownership-registry.mts`](../../ci/vitest/project-ownership-registry.mts) derives
+the project → job map and shard policies from `VITEST_OWNERSHIP`. See [area test suites](../../docs/development/ci.md#area-test-suites).
 
 Credentialed projects must use workflow, job, or step `if:` gates so untrusted PRs from forks, Dependabot, or Renovate do not receive API keys, repository secrets, or OIDC-assumed cloud roles. Test suites must skip when their required env vars are absent.
 
-The CI orchestrator path filters in [`ci.yml`](ci.yml) must also trigger the owning workflow when a project’s source files, test files, or explicit repo fixture files change. Fixture docs that tests read directly, such as this file and `docs/prompts/automation/` plus `docs/prompts/scheduled/` templates, are intentionally not treated as docs-only.
+Each area's path filters must trigger the owning workflow when a project’s source files, test
+files, or explicit repo fixture files change. Fixture docs that tests read directly, such as this
+file and `docs/prompts/automation/` plus `docs/prompts/scheduled/` templates, are intentionally
+not treated as docs-only.
 
 Reporter policy:
 
 - Local Vitest commands should not force a reporter. Let Vitest use its default reporter behavior, including its automatic `minimal` reporter when it detects an AI coding agent.
-- CI Vitest commands set `VITEST_CI_REPORTERS: run`, `VITEST_JUNIT_OUTPUT_FILE`, and `VITEST_BLOB_OUTPUT_FILE`; do not pass reporter or output-file CLI flags.
-- `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`, `blob`, `hanging-process`, and the CI-only worker-exit diagnostics reporter. The diagnostics reporter prints bounded worker-exit context, including recent modules, stderr tail, process resources, and serialized unhandled errors.
+- CI Vitest commands set `VITEST_CI_REPORTERS: run` and `VITEST_JUNIT_OUTPUT_FILE`; do not pass
+  reporter or output-file CLI flags.
+- `vitest.config.mts` owns the CI reporter list: `minimal`, configured `github-actions`, `junit`,
+  `hanging-process`, and the CI-only worker-exit diagnostics reporter. The diagnostics reporter
+  prints bounded worker-exit context, including recent modules, stderr tail, process resources,
+  and serialized unhandled errors.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
-- Every CI job that actually invokes Vitest stamps exactly one `${suite}.json` report with a strict `vitest-blob-manifest:v1` sidecar, then transports only those two regular files through the `vitest-blob-*` GitHub fallback artifact. The manifest binds suite, repository, revision, workflow run and attempt, byte length, and SHA-256. The `i18n-route-bounds` job is the sole exception: it is a non-coverage isolation job inside `tests-tooling.yml`, while that workflow's regular `tooling` job remains its one blob and coverage producer.
-- The `tests` fan-in downloads into a single root and validates it as a whole. A known malformed-root failure rejects the entire root with a stable warning, so none of its partial reports participate. Within a valid root, the fan-in rejects foreign, future-attempt, unexpected-current-attempt, missing, or conflicting reports and ignores only a valid unexpected suite from an earlier attempt of the same run and revision. For each expected suite it selects the greatest available attempt; same-attempt copies are accepted only when manifest and report bytes are identical. It atomically writes the canonical merge directory before running `VITEST_CI_REPORTERS=merge pnpm exec vitest run --merge-reports=... --passWithNoTests`.
-- Exact attempt expectations come from producer results, per-suite attempt markers, dynamic backend, web, web-API, and web-integration shard totals, the macOS portability toggle, and PostgreSQL's `vitest-ran` output. Failed or cancelled producers that ran remain expected so their diagnostic blobs can participate; only producers that did not run are excluded.
 
 <!-- BEGIN GENERATED: vitest-ownership -->
 

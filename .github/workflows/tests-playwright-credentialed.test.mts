@@ -1,6 +1,6 @@
-// Consistency test: every ci.yml job that is gated on `trusted-secret-context` must also
-// reference a `needs.detect-changes.outputs.<filter>` whose filter exists in the
-// `detect-changes` `filter` step. This is the exact bug class fixed in PR #4358 commit 6:
+// Consistency test: every Web/Backend area job gated on `trusted-secret-context` must only
+// reference `needs.changes.outputs.<filter>` names present in the shared path filters.
+// This is the exact bug class fixed in PR #4358 commit 6:
 // the filter name was added to the job's if-condition but not to the detect-changes step,
 // so the job never ran on path-matched PRs.
 import { readFileSync } from 'node:fs'
@@ -20,20 +20,20 @@ type CiWorkflow = {
   >
 }
 
-const ciText = readFileSync('.github/workflows/ci.yml', 'utf8')
-const ci = load(ciText) as CiWorkflow
+const ciText = readFileSync('.github/workflows/web.yml', 'utf8')
 const primaryPathFilters = load(readFileSync('.github/ci-path-filters.yml', 'utf8')) as Record<
   string,
   string[]
 >
-const refinedRuntimeWebPathFilters = load(
-  readFileSync('.github/ci-runtime-path-filters.yml', 'utf8'),
-) as Record<string, string[]>
 const filterNames = new Set(Object.keys(primaryPathFilters))
 
-// Find all ci.yml jobs whose `if:` condition gates on trusted-secret-context.
-const trustedJobEntries = Object.entries(ci.jobs ?? {}).filter(
-  ([, job]) => typeof job.if === 'string' && job.if.includes('trusted-secret-context'),
+// Find all credentialed area jobs whose condition gates on trusted-secret-context.
+const trustedJobEntries = ['web', 'backend'].flatMap(area =>
+  Object.entries(
+    (load(readFileSync(`.github/workflows/${area}.yml`, 'utf8')) as CiWorkflow).jobs ?? {},
+  )
+    .filter(([, job]) => typeof job.if === 'string' && job.if.includes('trusted-secret-context'))
+    .map(([jobName, job]) => [`${area}/${jobName}`, job] as const),
 )
 const credentialedWorkflowText = readFileSync(
   '.github/workflows/tests-playwright-credentialed.yml',
@@ -47,7 +47,7 @@ const knownOutputs = new Set(['trusted-secret-context', 'dependency-bot-test-con
 
 function extractFilterOutputs(ifCondition: string): string[] {
   const names: string[] = []
-  for (const m of ifCondition.matchAll(/needs\.detect-changes\.outputs\.([a-z][a-z0-9-]*)/g)) {
+  for (const m of ifCondition.matchAll(/needs\.changes\.outputs\.([a-z][a-z0-9-]*)/g)) {
     const name = m[1]!
     if (!knownOutputs.has(name)) names.push(name)
   }
@@ -99,7 +99,7 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     )
     expect(credentialedWorkflowText).toContain('if [ -z "${S3_BUCKET_IMAGE_UPLOADS:-}" ]; then')
     expect(ciText).toContain(
-      "S3_BUCKET_IMAGE_UPLOADS: ${{ needs.detect-changes.outputs.trusted-secret-context == 'true' && secrets.S3_BUCKET_IMAGE_UPLOADS || '' }}",
+      "S3_BUCKET_IMAGE_UPLOADS: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.S3_BUCKET_IMAGE_UPLOADS || '' }}",
     )
   })
 
@@ -152,12 +152,13 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
       paths.includes(allocatorPath),
     )
     expect(allocatorOwningFilters).not.toHaveLength(0)
-    expect(refinedRuntimeWebPathFilters['playwright']?.[0]).toContain('ts-shared/utils/**')
-    expect(refinedRuntimeWebPathFilters['web-integration']?.[0]).toContain('ts-shared/**')
+    expect(primaryPathFilters['runtime-playwright']?.[0]).toContain('ts-shared/utils/**')
+    expect(primaryPathFilters['runtime-web-integration']?.[0]).toContain('ts-shared/**')
   })
 
   it('detect-changes filter step exposes filters for all credentialed job outputs', () => {
     expect(filterNames.size).toBeGreaterThan(0)
+    expect(trustedJobEntries.length).toBeGreaterThan(0)
   })
 
   it('compiles the localization catalog before credentialed Playwright starts the API', () => {
@@ -177,9 +178,9 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
       for (const filterName of referencedFilters) {
         assertWorkflowInvariant(
           filterNames.has(filterName),
-          `Job "${jobName}" references needs.detect-changes.outputs.${filterName} in its if-condition, ` +
+          `Job "${jobName}" references needs.changes.outputs.${filterName} in its if-condition, ` +
             `but "${filterName}" is not defined as a filter in the detect-changes step.\n` +
-            `Add a "${filterName}:" filter block to the dorny/paths-filter step in ci.yml.`,
+            `Add a "${filterName}:" filter block to .github/ci-path-filters.yml.`,
         )
       }
     },

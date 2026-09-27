@@ -19,23 +19,7 @@ Coverage sameness is necessary but not sufficient. Before deleting a weak test t
 
 ## Evidence for a reduction
 
-Record exact base and head evidence. For changed production behavior, run the owning focused tests and the applicable patch-coverage preview. For historical Istanbul totals, compare a base and head `coverage-summary.json` with:
-
-```bash
-pnpm --dir ci exec coverage-check compare-summary \
-  --base-summary <base-coverage-summary.json> \
-  --head-summary <head-coverage-summary.json> \
-  --base-root <base-checkout-root> \
-  --head-root <head-checkout-root> \
-  --json <comparison.json>
-```
-
-Generate base and head artifacts with matching coverage producer, suite selection, configuration,
-toolchain, environment, and their respective exact checkout roots; otherwise the comparison is not
-evidence of coverage preservation. `coverage-check` owns the comparator's argument validation,
-source normalization, regression semantics, and output contract. See [CI Tooling: Historical
-coverage baseline comparison](../../ci/README.md#historical-coverage-baseline-comparison) for
-Vouchington's reproducible artifact-generation conditions; run `pnpm --dir ci exec coverage-check
-compare-summary --help` for the package CLI.
-
-This is a historical baseline guard, not patch coverage. It does not determine whether the edited lines execute or whether a test is valuable. Use [Local Patch Coverage Preview](reference-tests-local-patch-coverage-preview.md) for the changed-line gate.
+Record exact base and head evidence. For changed production behavior, run the owning focused tests.
+Area patch coverage runs only from full LCOV produced by CI; locally, use
+`./ci/coverage-artifacts.sh area-check` after collecting the owning area's artifacts. Coverage
+comparison alone does not prove that a test protects a valuable contract.

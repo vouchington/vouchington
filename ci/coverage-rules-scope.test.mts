@@ -48,7 +48,7 @@ describe('.coverage-rules.yml scope', () => {
   })
 
   it('reports an untested file under the real ts-shared 100%-threshold rule as missing coverage', () => {
-    // Guards the regression coverage:changed exists to prevent: an untested file inside a
+    // Guards the regression the area coverage gate prevents: an untested file inside a
     // 100%-threshold area (ts-shared/**) must surface as "no coverage data", never pass silently
     // because it has zero changed-line hits. Loads the real .coverage-rules.yml rules/scope (not
     // fabricated ones) so this fails if that file's ts-shared rule or scope block ever drifts.
