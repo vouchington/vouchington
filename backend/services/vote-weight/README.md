@@ -19,7 +19,7 @@ A user's vote weight starts at `1.0` and is multiplied by factors based on the c
 - `recalculateUserVoteWeight(userId, opts?)` — gathers factors, computes weight, writes result; respects admin overrides unless `forceRecalculate: true`
 - `adminSetVoteWeight(userId, weight)` — sets weight and stamps `vote_weight_admin_set_at`
 - `adminClearVoteWeight(userId)` — clears the admin override; caller should enqueue recalculation
-- `enqueueElectionUpdatesForUser(userId)` — fire-and-forget; re-enqueues election stats jobs for all entities the user has voted on
+- `enqueueElectionUpdatesForUser(userId)` — re-enqueues election stats jobs for all entities the user has voted on and returns the IDs of jobs actually submitted
 - `findUsersNeedingVoteWeightRecalculation(afterId, limit)` — cursor-based scan for users whose weight is stale relative to age thresholds or current membership authority
 
 ## Access Control
