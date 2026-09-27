@@ -142,9 +142,16 @@ export function validateScopeSet(
 ): ScopeSetValidationResult {
   const result = vouchaScopeGraph(SCOPE_DEFINITIONS).validateScopeSet(input, options)
   if (!result.valid) {
-    return result.requiredScope === undefined
-      ? result
-      : { ...result, requiredScope: result.requiredScope as ApiScope }
+    const requiredScope =
+      result.requiredScope !== undefined && isApiScope(result.requiredScope)
+        ? result.requiredScope
+        : undefined
+    return {
+      valid: false,
+      code: result.code,
+      ...(result.scope === undefined ? {} : { scope: result.scope }),
+      ...(requiredScope === undefined ? {} : { requiredScope }),
+    }
   }
   return {
     valid: true,
