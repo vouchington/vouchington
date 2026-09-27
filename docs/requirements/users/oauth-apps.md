@@ -25,6 +25,13 @@ Revoking an app stops its access tokens, refresh tokens and authorization codes 
 removes its grants from every user's connected apps. Other users' apps return 404, and suspended
 users cannot change apps.
 
+The register and edit forms use the same redirect-URI rule engine as the service. They reject an
+empty or oversized list, malformed or oversized URLs, wildcards, user information, fragments,
+non-HTTPS URLs other than HTTP loopback addresses, and duplicates after URL serialization before
+submitting. The service keeps its OAuth protocol descriptions for programmatic callers; settings
+map the stable `invalid_redirect_uri` code to localized field and error copy rather than displaying
+the raw protocol description.
+
 ## Connected apps
 
 Agents that connect through OAuth rather than a pasted key appear on the user's connected-apps list,
@@ -36,9 +43,10 @@ so AI-agent access stays visible to the user.
 | `DELETE` | `/api/v1/my/oauth-grants/:id` | Revoke an app's access to your data |
 
 Each grant shows the client name, whether staff verified that name, the protected resource, the
-granted scopes, when consent was given and when the app last used its access. Revoking a grant stops
-its access and refresh tokens on their next use; consenting again creates a new grant. Suspended
-users cannot revoke grants, matching API-key management.
+granted scopes, when consent was given and when the app last used its access. A grant with no code
+or refresh exchange and no successful bearer use shows “Not used yet”; consent alone is not use.
+Revoking a grant stops its access and refresh tokens on their next use; consenting again creates a
+new grant. Suspended users cannot revoke grants, matching API-key management.
 
 ## Settings
 
@@ -55,6 +63,11 @@ only), and revoking asks for confirmation.
 Settings > Connected apps (`/my/connected-apps`) lists the grants on the account, with a verified or
 unverified badge, the granted scopes and the consent and last-used dates, and revokes one after
 confirmation.
+
+Management responses also reconcile concurrent changes. A 404 from app update, secret rotation,
+app revocation or grant revocation removes the already-missing row and closes its row-owned form or
+confirmation state. An administrator verification 409 retains the conflict feedback and refreshes
+the server-rendered row with the current name and redirect URIs for a fresh review.
 
 ## Related
 

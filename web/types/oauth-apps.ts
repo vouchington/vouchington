@@ -48,7 +48,7 @@ export interface OAuthGrant {
   resource: string
   scopes: string[]
   consented_at: string
-  last_used_at: string
+  last_used_at: string | null
 }
 
 /** A dynamically registered client as administrators review it for verification. */

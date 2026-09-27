@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ScopeCatalogEntry } from '@/types/scopes'
 import type { ScopeResourceRow } from './scope-selection'
+import { scopeDescriptionMessageKey } from './scope-description'
 
 const OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE = 'post-relations.owned-private:write'
 
@@ -41,9 +42,9 @@ export function ScopePicker({ idPrefix, rows, selected, onToggle }: ScopePickerP
                 >
                   {row.resource}
                 </code>
-                {row.umbrella && (
+                {row.descriptionKey && (
                   <span className='text-xs text-muted-foreground'>
-                    {t('extracted.apiKeysManager.scopePicker.fullMcpAccess_34c92c70')}
+                    {t(scopeDescriptionMessageKey(row.descriptionKey))}
                   </span>
                 )}
               </span>

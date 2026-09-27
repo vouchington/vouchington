@@ -10,6 +10,7 @@ interface OAuthAppDetailsFieldsProps {
   idPrefix: string
   name: string
   redirectUris: string
+  redirectUriError?: string
   setName: (name: string) => void
   setRedirectUris: (redirectUris: string) => void
 }
@@ -18,6 +19,7 @@ export function OAuthAppDetailsFields({
   idPrefix,
   name,
   redirectUris,
+  redirectUriError,
   setName,
   setRedirectUris,
 }: OAuthAppDetailsFieldsProps) {
@@ -44,7 +46,8 @@ export function OAuthAppDetailsFields({
           id={`${idPrefix}-redirect-uris`}
           value={redirectUris}
           rows={3}
-          aria-describedby={`${idPrefix}-redirect-uris-hint`}
+          aria-describedby={`${idPrefix}-redirect-uris-hint${redirectUriError ? ` ${idPrefix}-redirect-uris-error` : ''}`}
+          aria-invalid={redirectUriError ? true : undefined}
           className='font-mono text-sm'
           onChange={event => setRedirectUris(event.target.value)}
           data-pw='oauth-app-redirect-uris-input'
@@ -55,6 +58,15 @@ export function OAuthAppDetailsFields({
         >
           {t('extracted.oauthAppsManager.oauthAppDetailsFields.onePerLineUpTo10_0bfc1c47')}
         </p>
+        {redirectUriError && (
+          <p
+            id={`${idPrefix}-redirect-uris-error`}
+            className='text-xs text-destructive'
+            role='alert'
+          >
+            {redirectUriError}
+          </p>
+        )}
       </div>
     </>
   )

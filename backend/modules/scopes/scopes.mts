@@ -3,6 +3,7 @@ import { userResourceDefinitions } from './user-resource-definitions.mts'
 export type ScopeAudience = 'admin' | 'api' | 'user'
 export type ScopeCredentialSurface = 'api-key' | 'oauth'
 export type ScopeAction = 'read' | 'write'
+export type ScopeDescriptionKey = 'mcp_admin_full_access' | 'mcp_user_full_access'
 
 export type ApiScope =
   | 'cards:read'
@@ -35,6 +36,7 @@ export type ApiScope =
 export type ScopeDefinition = {
   action: ScopeAction
   audience: ScopeAudience
+  descriptionKey?: ScopeDescriptionKey
   resource: string
   surfaces: readonly ScopeCredentialSurface[]
   requires?: string
@@ -44,12 +46,14 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
   'mcp.admin:read': {
     action: 'read',
     audience: 'admin',
+    descriptionKey: 'mcp_admin_full_access',
     resource: 'mcp.admin',
     surfaces: ['api-key', 'oauth'],
   },
   'mcp.admin:write': {
     action: 'write',
     audience: 'admin',
+    descriptionKey: 'mcp_admin_full_access',
     requires: 'mcp.admin:read',
     resource: 'mcp.admin',
     surfaces: ['api-key', 'oauth'],
@@ -57,12 +61,14 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
   'mcp.user:read': {
     action: 'read',
     audience: 'user',
+    descriptionKey: 'mcp_user_full_access',
     resource: 'mcp.user',
     surfaces: ['api-key', 'oauth'],
   },
   'mcp.user:write': {
     action: 'write',
     audience: 'user',
+    descriptionKey: 'mcp_user_full_access',
     requires: 'mcp.user:read',
     resource: 'mcp.user',
     surfaces: ['api-key', 'oauth'],

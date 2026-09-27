@@ -5,6 +5,7 @@ import {
   scopeResourceRows,
   toggleScope,
 } from '../api-keys-manager/scope-selection'
+import { scopeDescriptionMessageKey } from '../api-keys-manager/scope-description'
 import scopeCatalogFixture from '../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
 const catalog = (scopeCatalogFixture as ScopeCatalogResponse).scopes
@@ -15,6 +16,7 @@ function entry(overrides: Partial<ScopeCatalogEntry> & Pick<ScopeCatalogEntry, '
     resource,
     action,
     audience: 'user',
+    description_key: null,
     requires: null,
     surfaces: ['api-key', 'oauth'],
     ...overrides,
@@ -105,5 +107,22 @@ describe('oauthScopeAudiences', () => {
   it('offers admin scopes only to administrators', () => {
     expect(oauthScopeAudiences(false)).toEqual(['user'])
     expect(oauthScopeAudiences(true)).toEqual(['user', 'admin'])
+  })
+})
+
+describe('scopeDescriptionMessageKey', () => {
+  it('maps every stable catalogue description key to web-localized copy', () => {
+    expect(scopeDescriptionMessageKey('mcp_user_full_access')).toBe(
+      'scopeDescription.mcpUserFullAccess',
+    )
+    expect(scopeDescriptionMessageKey('mcp_admin_full_access')).toBe(
+      'scopeDescription.mcpAdminFullAccess',
+    )
+  })
+
+  it('fails closed when an unrecognized description key reaches the client', () => {
+    expect(() => scopeDescriptionMessageKey('unrecognized' as never)).toThrow(
+      'Unknown scope description key',
+    )
   })
 })

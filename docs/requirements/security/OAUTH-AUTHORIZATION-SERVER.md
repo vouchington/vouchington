@@ -65,7 +65,9 @@ Administrators verify dynamically registered clients through `/api/v1/admin/oaut
 ([Admin API](../../../backend/api/v1/admin/README.md)). Verification records `verified_at` and
 `verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
 redirect URIs the administrator reviewed, so an owner's rename or re-pointing between review and
-approval returns 409 instead of verifying what staff never saw.
+approval returns 409 instead of verifying what staff never saw. The staff UI refreshes that
+conflicted row from the server before another review, so a retry cannot approve stale name or
+redirect-URI data.
 Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
 sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
 verification. Staff review the queue at `/admin/oauth-clients`, which defaults to unverified
@@ -77,7 +79,9 @@ Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
 ([connected apps](../users/oauth-apps.md#connected-apps)). A revoked grant fails the bearer, refresh
 and code paths on their next use because each requires an unrevoked grant. The listed `verified`
 flag reflects the client's `verified_at`, and `last_used_at` is the later of the grant's own
-timestamp and its newest access-token use.
+token-exchange timestamp and its newest access-token use. Consent and re-consent update
+`consented_at` without counting as use: a grant stays unused until a code or refresh-token exchange
+or successful bearer validation, and later consent preserves its prior real-use timestamp.
 
 ## Persistence and retention
 

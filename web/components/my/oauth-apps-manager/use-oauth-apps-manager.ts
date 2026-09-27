@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { ApiError } from '@/lib/api/error'
 import {
   createOAuthApp,
   getOAuthApps,
@@ -56,6 +57,17 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
     ])
   }
 
+  function reconcileMissingApp(id: string) {
+    setRevokedIds(prev => new Set(prev).add(id))
+    setIssuedSecrets(prev => withoutSecretFor(prev, id))
+  }
+
+  function redirectUriErrorMessages() {
+    return {
+      invalid_redirect_uri: t('my.oauthAppsManager.redirectUriErrors.invalidUri'),
+    }
+  }
+
   async function handleRegister(input: CreateOAuthAppInput): Promise<boolean> {
     try {
       const issued = await createOAuthApp(input)
@@ -66,6 +78,7 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
     } catch (error) {
       onError(error, {
         fallback: t('extracted.my.oauthAppsManager.failedToRegisterTheOauthApp_8bcb0aaa'),
+        displayMessageByCode: redirectUriErrorMessages(),
       })
       return false
     }
@@ -78,8 +91,13 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
       onSuccess(t('extracted.my.oauthAppsManager.oauthAppSaved_4f633bda'))
       return true
     } catch (error) {
+      if (isMissingOAuthAppError(error)) {
+        reconcileMissingApp(id)
+        return false
+      }
       onError(error, {
         fallback: t('extracted.my.oauthAppsManager.failedToSaveTheOauthApp_85e1ca50'),
+        displayMessageByCode: redirectUriErrorMessages(),
       })
       return false
     }
@@ -89,6 +107,10 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
     try {
       acceptIssued(await rotateOAuthAppSecret(id))
     } catch (error) {
+      if (isMissingOAuthAppError(error)) {
+        reconcileMissingApp(id)
+        return
+      }
       onError(error, {
         fallback: t('extracted.my.oauthAppsManager.failedToRotateTheClientSecret_eb505b3a'),
       })
@@ -102,6 +124,10 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
       setIssuedSecrets(prev => withoutSecretFor(prev, id))
       onSuccess(t('extracted.my.oauthAppsManager.oauthAppRevoked_3b7394c5'))
     } catch (error) {
+      if (isMissingOAuthAppError(error)) {
+        reconcileMissingApp(id)
+        return
+      }
       onError(error, {
         fallback: t('extracted.my.oauthAppsManager.failedToRevokeTheOauthApp_73da1074'),
       })
@@ -124,4 +150,8 @@ export function useOAuthAppsManager(initialData: ListResponse<OAuthApp>) {
 
 function withoutSecretFor(secrets: readonly IssuedClientSecret[], appId: string) {
   return secrets.filter(secret => secret.appId !== appId)
+}
+
+function isMissingOAuthAppError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404
 }

@@ -27152,7 +27152,7 @@
     },
     "GET:/api/v1/my/oauth-grants": {
       "bodyKind": "content",
-      "hash": "7cf36211537e0ca3b3ef9816cf8794d744bad1d36944896030ac9c0f0565592b",
+      "hash": "65f5c5fc731af5716dee9dc01ea4f8c345ebc03ca3d0c47a7d3d5f98994ce8f6",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -27214,7 +27214,15 @@
               "last_used_at": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "resource": {
@@ -37089,7 +37097,7 @@
     },
     "GET:/api/v1/scopes": {
       "bodyKind": "content",
-      "hash": "724e3ca8c762bc413c108c4df41e5256be0c1faab2862992a980f01d58487917",
+      "hash": "69c8663d082a689ed73bf12361dd28d8427290d3efc4d35dde806668d834793a",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -37141,6 +37149,25 @@
                 "schema": {
                   "name": "ScopeAudience",
                   "type": "ref"
+                }
+              },
+              "description_key": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "mcp_admin_full_access"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "mcp_user_full_access"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "requires": {
@@ -67303,7 +67330,7 @@
       "migratedFrom": ["backend/api/v1/scopes/scopes.test.mts"],
       "path": "/api/v1/scopes",
       "responseSchema": {
-        "hash": "76b746c906a967497e3d77be854caf5990f6569cef818033215dfadfdee0a5e6",
+        "hash": "415fa07d9272d9bba087300d80ce19e0da917d699cded5cc2f2b4ea37dadcd19",
         "key": "shared.scopes.catalog"
       },
       "route": {
@@ -67354,7 +67381,7 @@
         "limit": "1"
       },
       "responseSchema": {
-        "hash": "f61b2931e7a25a33e30b15b4c973904a279886d9319673d1e329cab7fe888839",
+        "hash": "a4ea4509efefa13c29393ddf66000bcc91825bc8f330a1854bd3e6ab94c0f369",
         "key": "native.my.oauth-grants.paginated"
       },
       "route": {

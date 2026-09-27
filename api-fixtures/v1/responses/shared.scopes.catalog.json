@@ -3,6 +3,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "cards",
       "scope": "cards:read",
@@ -11,6 +12,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "cards:read",
       "resource": "cards",
       "scope": "cards:write",
@@ -19,6 +21,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "data-points",
       "scope": "data-points:read",
@@ -27,6 +30,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "domain-ratings",
       "scope": "domain-ratings:read",
@@ -35,6 +39,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "entity-relations",
       "scope": "entity-relations:read",
@@ -43,6 +48,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "entity-relations:read",
       "resource": "entity-relations",
       "scope": "entity-relations:write",
@@ -51,6 +57,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "financial-profile",
       "scope": "financial-profile:read",
@@ -59,6 +66,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "financial-profile:read",
       "resource": "financial-profile",
       "scope": "financial-profile:write",
@@ -67,6 +75,7 @@
     {
       "action": "read",
       "audience": "admin",
+      "description_key": "mcp_admin_full_access",
       "requires": null,
       "resource": "mcp.admin",
       "scope": "mcp.admin:read",
@@ -75,6 +84,7 @@
     {
       "action": "write",
       "audience": "admin",
+      "description_key": "mcp_admin_full_access",
       "requires": "mcp.admin:read",
       "resource": "mcp.admin",
       "scope": "mcp.admin:write",
@@ -83,6 +93,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": "mcp_user_full_access",
       "requires": null,
       "resource": "mcp.user",
       "scope": "mcp.user:read",
@@ -91,6 +102,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": "mcp_user_full_access",
       "requires": "mcp.user:read",
       "resource": "mcp.user",
       "scope": "mcp.user:write",
@@ -99,6 +111,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "point-valuations",
       "scope": "point-valuations:read",
@@ -107,6 +120,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "point-valuations:read",
       "resource": "point-valuations",
       "scope": "point-valuations:write",
@@ -115,6 +129,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "entity-relations:write",
       "resource": "post-relations.owned-private",
       "scope": "post-relations.owned-private:write",
@@ -123,6 +138,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "posts",
       "scope": "posts:read",
@@ -131,6 +147,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "profile",
       "scope": "profile:read",
@@ -139,6 +156,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "recommendations",
       "scope": "recommendations:read",
@@ -147,6 +165,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "referral-links",
       "scope": "referral-links:read",
@@ -155,6 +174,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "rewards-statuses",
       "scope": "rewards-statuses:read",
@@ -163,6 +183,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "rewards-statuses:read",
       "resource": "rewards-statuses",
       "scope": "rewards-statuses:write",
@@ -171,6 +192,7 @@
     {
       "action": "read",
       "audience": "api",
+      "description_key": null,
       "requires": null,
       "resource": "rss",
       "scope": "rss:read",
@@ -179,6 +201,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "spending",
       "scope": "spending:read",
@@ -187,6 +210,7 @@
     {
       "action": "write",
       "audience": "user",
+      "description_key": null,
       "requires": "spending:read",
       "resource": "spending",
       "scope": "spending:write",
@@ -195,6 +219,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "topics",
       "scope": "topics:read",
@@ -203,6 +228,7 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": null,
       "requires": null,
       "resource": "wikipedia",
       "scope": "wikipedia:read",

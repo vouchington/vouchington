@@ -35,6 +35,21 @@ describe('onError', () => {
     expect(mockedCapture).not.toHaveBeenCalled()
   })
 
+  it('uses a localized override for a matching API error code without changing expected-error handling', () => {
+    const err = new ApiError('redirect_uris contains an invalid URI', 422, {
+      code: 'invalid_redirect_uri',
+    })
+
+    expect(
+      onError(err, {
+        fallback: 'Failed to save',
+        displayMessageByCode: { invalid_redirect_uri: 'Enter a valid redirect URI.' },
+      }),
+    ).toBe('Enter a valid redirect URI.')
+    expect(mockedToast.error).toHaveBeenCalledWith('Enter a valid redirect URI.')
+    expect(mockedCapture).not.toHaveBeenCalled()
+  })
+
   it('toasts and captures to Sentry for 5xx ApiError', () => {
     const err = new ApiError('Boom', 500)
     onError(err, { fallback: 'Failed', tags: { form: 'post' }, extra: { id: '1' } })

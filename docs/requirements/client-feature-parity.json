@@ -2437,6 +2437,55 @@
       }
     },
     {
+      "id": "credential-management",
+      "title": "API-key and connected-app management",
+      "domain": "Account",
+      "intents": [],
+      "requirements": [
+        "docs/requirements/users/api-keys.md",
+        "docs/requirements/users/oauth-apps.md"
+      ],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "settings"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/app/(my)/my/api-keys/page.tsx",
+            "web/app/(my)/my/connected-apps/page.tsx",
+            "web/components/my/api-keys-manager.tsx",
+            "web/components/my/connected-apps-manager.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/my/__tests__/api-keys-manager-scopes.mock.test.tsx",
+            "web/components/my/__tests__/connected-apps-manager.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "partial",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/Settings/SettingsSurface+Management.swift"
+          ],
+          "apiEvidence": ["swift-clients/core/Sources/VouchaAPI/Endpoint+SettingsManagement.swift"],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "partial",
+          "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/SettingsPage.xaml"],
+          "apiEvidence": ["dotnet-clients/src/Voucha.Client.Core/Settings/ApiSettingsService.cs"],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native main can create and revoke API keys only from fixed legacy permissions and has no connected OAuth-grant settings surface. Vouchington stages the catalogue, nullable-use and grant fixtures before the linked native consumer.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/177"
+      }
+    },
+    {
       "id": "settings-core",
       "title": "Core account settings",
       "domain": "Account",

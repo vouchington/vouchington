@@ -10305,7 +10305,14 @@
           "type": "string"
         },
         "last_used_at": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "resource": {
           "type": "string"
@@ -16629,6 +16636,19 @@
         "audience": {
           "$ref": "#/components/schemas/ScopeAudience"
         },
+        "description_key": {
+          "anyOf": [
+            {
+              "const": "mcp_admin_full_access"
+            },
+            {
+              "const": "mcp_user_full_access"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "requires": {
           "anyOf": [
             {
@@ -16652,7 +16672,15 @@
           "type": "array"
         }
       },
-      "required": ["action", "audience", "requires", "resource", "scope", "surfaces"],
+      "required": [
+        "action",
+        "audience",
+        "description_key",
+        "requires",
+        "resource",
+        "scope",
+        "surfaces"
+      ],
       "type": "object"
     },
     "ScopeCredentialSurface": {

@@ -13,7 +13,12 @@ import {
   toggleScope,
 } from '../api-keys-manager/scope-selection'
 import { OAuthAppDetailsFields } from './oauth-app-details-fields'
-import { hasValidOAuthAppDetails, parseRedirectUris } from './oauth-app-fields'
+import {
+  hasValidOAuthAppDetails,
+  parseRedirectUris,
+  redirectUriValidationMessage,
+  validateOAuthRedirectUris,
+} from './oauth-app-fields'
 
 interface RegisterOAuthAppFormProps {
   isAdmin: boolean
@@ -45,6 +50,7 @@ export function RegisterOAuthAppForm({
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const [submitting, setSubmitting] = useState(false)
   const uris = parseRedirectUris(draft.redirectUris)
+  const redirectUriValidation = validateOAuthRedirectUris(uris)
   const canRegister = hasValidOAuthAppDetails(draft.name, uris) && draft.scopes.length > 0
 
   function updateDraft(changes: Partial<RegisterOAuthAppDraft>) {
@@ -79,6 +85,11 @@ export function RegisterOAuthAppForm({
         idPrefix='oauth-app-register'
         name={draft.name}
         redirectUris={draft.redirectUris}
+        redirectUriError={
+          redirectUriValidation.valid
+            ? undefined
+            : redirectUriValidationMessage(t, redirectUriValidation.code)
+        }
         setName={name => updateDraft({ name })}
         setRedirectUris={redirectUris => updateDraft({ redirectUris })}
       />

@@ -26452,7 +26452,6 @@
 {"alias":"extracted.apiKeysManager.keyCreatedAlert.newApiKey_e520a082","consumer":"web","pattern":"/my/api-keys"},
 {"alias":"extracted.apiKeysManager.keyCreatedAlert.saveYourApiKeyItWill_76958c67","consumer":"web","pattern":"/my/api-keys"},
 {"alias":"extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0","consumer":"web","pattern":"/my/api-keys"},
-{"alias":"extracted.apiKeysManager.scopePicker.fullMcpAccess_34c92c70","consumer":"web","pattern":"/my/api-keys"},
 {"alias":"extracted.apiKeysManager.scopePicker.read_9b9a8d05","consumer":"web","pattern":"/my/api-keys"},
 {"alias":"extracted.apiKeysManager.scopePicker.scopes_0d5644ff","consumer":"web","pattern":"/my/api-keys"},
 {"alias":"extracted.apiKeysManager.scopePicker.write_3f00927a","consumer":"web","pattern":"/my/api-keys"},

@@ -4,7 +4,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
-import type { ScopeCatalogResponse } from '@/types/scopes'
+import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
 import { ApiKeysManager } from '../api-keys-manager'
 import scopeCatalogFixture from '../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
@@ -35,7 +35,17 @@ import { createApiKey, getApiKeys } from '@/lib/api/client/api-keys'
 
 const mockCreate = vi.mocked(createApiKey)
 const mockGet = vi.mocked(getApiKeys)
-const scopeCatalog = (scopeCatalogFixture as ScopeCatalogResponse).scopes
+const scopeCatalog: ScopeCatalogEntry[] = (scopeCatalogFixture as ScopeCatalogResponse).scopes.map(
+  entry => ({
+    ...entry,
+    description_key:
+      entry.resource === 'mcp.admin'
+        ? 'mcp_admin_full_access'
+        : entry.resource === 'mcp.user'
+          ? 'mcp_user_full_access'
+          : null,
+  }),
+)
 
 function asAdmin(children: ReactNode) {
   return (
@@ -179,5 +189,22 @@ describe('ApiKeysManager scope selection', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Your account' }))
 
     expect(checkbox('mcp.user Read')).not.toBeChecked()
+  })
+
+  it('renders audience-specific catalogue descriptions through localized copy', async () => {
+    await openMcpForm(asAdmin(<ApiKeysManager scopeCatalog={scopeCatalog} />))
+    expect(screen.getByText('Full user MCP access')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'Administrator' }))
+    expect(screen.getByText('Full administrator MCP access')).toBeInTheDocument()
+  })
+
+  it('uses an API-key-type-specific label example', async () => {
+    render(<ApiKeysManager scopeCatalog={scopeCatalog} />)
+    await waitFor(() => expect(mockGet).toHaveBeenCalled())
+    fireEvent.click(await screen.findByRole('button', { name: /Create API Key/i }))
+
+    expect(screen.getByPlaceholderText('e.g. My RSS reader')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('radio', { name: 'MCP server' }))
+    expect(screen.getByPlaceholderText('e.g. Claude Code')).toBeInTheDocument()
   })
 })

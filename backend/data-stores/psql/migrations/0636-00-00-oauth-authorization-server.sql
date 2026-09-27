@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS oauth_grants (
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   scopes TEXT[] NOT NULL CHECK (cardinality(scopes) > 0),
   consented_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_used_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_used_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

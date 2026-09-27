@@ -6,7 +6,20 @@ function scope(
   requires: string | null = null,
 ): ScopeCatalogEntry {
   const [resource, action] = name.split(':') as [string, ScopeCatalogEntry['action']]
-  return { scope: name, resource, action, audience, requires, surfaces: ['api-key', 'oauth'] }
+  return {
+    scope: name,
+    resource,
+    action,
+    audience,
+    description_key:
+      resource === 'mcp.admin'
+        ? 'mcp_admin_full_access'
+        : resource === 'mcp.user'
+          ? 'mcp_user_full_access'
+          : null,
+    requires,
+    surfaces: ['api-key', 'oauth'],
+  }
 }
 
 /** A small slice of the public scope catalogue, enough to show umbrella, paired, and admin rows. */

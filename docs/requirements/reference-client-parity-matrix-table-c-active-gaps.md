@@ -18,6 +18,7 @@ each phase.
 | 2   | YouTube/Vimeo embed-only video playback        | embed-only-media       | Swift + .NET | None on main: supported embeds display unavailable. A narrow provider-only WebView exception is approved; Open source remains separate.                                                                                                                                                                                            | 2     | [clients#57]           |
 | 3   | Notification settings route and focus behavior | notification-settings  | Swift + .NET | Partial: web and Swift prove all eight mutations and canonical inbox routing; Swift's app-shell XCUITest covers route activation, heading presentation, and exactly-once accessibility activation. .NET proves the equivalent Core and realized-control behavior, but its non-skipping Mac Catalyst app-shell run remains [#8625]. | 1     | [#8600]                |
 | 4   | Authored contribution admission                | contribution-admission | Swift + .NET | Plumb staged in Vouchington: all authored create surfaces use a UUID `Idempotency-Key`, replay preserves the original result, and 409/429 responses retain drafts without quota or Safety details. Native localized and accessible UI evidence is owned by the dependent clients draft.                                            | 1     | [#10619], [clients#92] |
+| 5   | API-key and connected-app management           | credential-management  | Swift + .NET | Partial: web is full. Native main still constructs legacy fixed API-key permissions and has no connected-grant settings surface; Vouchington stages the catalogue, nullable-use and grant fixtures before the linked consumer PR.                                                                                                  | 3     | [clients#177]          |
 
 ## Synchronization rule
 
@@ -31,3 +32,4 @@ any mapped capability differs from web.
 
 [clients#57]: https://github.com/vouchington/vouchington-clients/issues/57
 [clients#92]: https://github.com/vouchington/vouchington-clients/issues/92
+[clients#177]: https://github.com/vouchington/vouchington-clients/issues/177

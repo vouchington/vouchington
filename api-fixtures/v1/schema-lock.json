@@ -516,7 +516,7 @@
     },
     "GET:/api/v1/my/oauth-grants": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
-      "hash": "7cf36211537e0ca3b3ef9816cf8794d744bad1d36944896030ac9c0f0565592b"
+      "hash": "65f5c5fc731af5716dee9dc01ea4f8c345ebc03ca3d0c47a7d3d5f98994ce8f6"
     },
     "GET:/api/v1/my/profile": {
       "fixtureIds": ["swift.my.profile.default"],
@@ -674,7 +674,7 @@
     },
     "GET:/api/v1/scopes": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "724e3ca8c762bc413c108c4df41e5256be0c1faab2862992a980f01d58487917"
+      "hash": "69c8663d082a689ed73bf12361dd28d8427290d3efc4d35dde806668d834793a"
     },
     "GET:/api/v1/topic-recommendations/:id": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
@@ -2008,7 +2008,7 @@
     },
     "native.my.oauth-grants.paginated": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
-      "hash": "f61b2931e7a25a33e30b15b4c973904a279886d9319673d1e329cab7fe888839"
+      "hash": "a4ea4509efefa13c29393ddf66000bcc91825bc8f330a1854bd3e6ab94c0f369"
     },
     "native.my.oauth-grants.revoke": {
       "fixtureIds": ["native.my.oauth-grants.revoke"],
@@ -2284,7 +2284,7 @@
     },
     "shared.scopes.catalog": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "76b746c906a967497e3d77be854caf5990f6569cef818033215dfadfdee0a5e6"
+      "hash": "415fa07d9272d9bba087300d80ce19e0da917d699cded5cc2f2b4ea37dadcd19"
     },
     "swift.integration.rss-feed-items.audio": {
       "fixtureIds": ["swift.integration.rss-feed-items.audio"],

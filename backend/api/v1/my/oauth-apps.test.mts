@@ -105,6 +105,7 @@ describe('POST /api/v1/my/oauth-apps', () => {
       .send(appBody({ redirect_uris: ['http://example.com/callback'] }))
       .expect(422)
     expect(response.body.message).toMatch(/redirect/i)
+    expect(response.body.code).toBe('invalid_redirect_uri')
     await request
       .post('/api/v1/my/oauth-apps')
       .send(appBody({ scopes: ['mcp.user:unknown'] }))

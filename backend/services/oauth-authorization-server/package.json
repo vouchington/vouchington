@@ -25,6 +25,7 @@
     "@modules/scopes": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "uuid": "^14.0.2"
   },
   "devDependencies": {

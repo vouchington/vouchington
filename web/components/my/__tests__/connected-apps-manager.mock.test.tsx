@@ -4,6 +4,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UiLocaleContext } from '@/lib/i18n/ui-locale-context'
+import { ApiError } from '@/lib/api/error'
 import type { ListResponse } from '@/types/api-responses'
 import type { OAuthGrant } from '@/types/oauth-apps'
 import { ConnectedAppsManager } from '../connected-apps-manager'
@@ -39,6 +40,7 @@ const mockRevoke = vi.mocked(revokeOAuthGrant)
 const fixturePage = grantsFixture as ListResponse<OAuthGrant>
 const fixtureGrant = fixturePage.results[0]!
 const lastPage = { has_next_page: false, end_cursor: null, start_cursor: null }
+const usedAt = '2026-09-03T12:00:00.000Z'
 
 function renderGrant(overrides: Partial<OAuthGrant> = {}) {
   render(
@@ -66,7 +68,7 @@ describe('ConnectedAppsManager', () => {
   })
 
   it('shows each authorized app with its resource, scopes, and dates', () => {
-    const row = renderGrant()
+    const row = renderGrant({ last_used_at: usedAt })
 
     expect(within(row).getByText('Verified')).toBeInTheDocument()
     expect(within(row).getByText('https://voucha.ai/api/v1/mcp')).toBeInTheDocument()
@@ -77,12 +79,17 @@ describe('ConnectedAppsManager', () => {
   it('formats the dates in the selected UI locale', () => {
     render(
       <UiLocaleContext.Provider value='fr'>
-        <ConnectedAppsManager initialData={{ results: [fixtureGrant], page_info: lastPage }} />
+        <ConnectedAppsManager
+          initialData={{
+            results: [{ ...fixtureGrant, last_used_at: usedAt }],
+            page_info: lastPage,
+          }}
+        />
       </UiLocaleContext.Provider>,
     )
 
     const consentedAt = formatUtcDate(fixtureGrant.consented_at, 'fr')
-    const lastUsedAt = formatUtcDate(fixtureGrant.last_used_at, 'fr')
+    const lastUsedAt = formatUtcDate(usedAt, 'fr')
     expect(consentedAt).not.toBe(formatUtcDate(fixtureGrant.consented_at))
     expect(
       screen.getByText(`Authorized ${consentedAt} · Last used ${lastUsedAt}`),
@@ -128,6 +135,21 @@ describe('ConnectedAppsManager', () => {
 
     expect(toast.error).toHaveBeenCalledWith('Failed to revoke access')
     expect(within(row).getByRole('button', { name: 'Revoke access' })).toBeInTheDocument()
+  })
+
+  it('removes a grant that another session already revoked', async () => {
+    mockRevoke.mockRejectedValueOnce(new ApiError('OAuth grant not found', 404))
+    const row = renderGrant()
+    await click(row, 'Revoke access')
+    await click(row, 'Confirm')
+
+    expect(screen.getByText('No apps have access to your account.')).toBeInTheDocument()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('shows a truthful not-used-yet state for a grant without use', () => {
+    const row = renderGrant({ last_used_at: null })
+    expect(within(row).getByText(/^Authorized .+ · Not used yet$/)).toBeInTheDocument()
   })
 
   it('loads the next page of authorized apps', async () => {

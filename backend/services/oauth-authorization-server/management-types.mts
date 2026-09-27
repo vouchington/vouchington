@@ -39,7 +39,7 @@ export type OAuthGrantView = {
   resource: string
   scopes: string[]
   consented_at: Date
-  last_used_at: Date
+  last_used_at: Date | null
 }
 
 export type OAuthClientVerificationFilter = 'all' | 'unverified' | 'verified'

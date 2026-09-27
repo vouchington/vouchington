@@ -65,11 +65,13 @@ image in that state. The linked `vouchington/vouchington-clients` change must co
 fixtures and update its DTOs and renderers before native release; it must not treat `image_id` as a
 browser-delivery capability.
 
-### MCP relation and consent disposition
+### API-key and connected-app contract handoff
 
-The MCP-only relation/tag tool and hosted own-private consent wording do not change a native REST
-DTO. Native API-key creation sends label and type rather than a scope-picker selection; native
-fixture loaders do not consume `mcp.json` or the scope catalogue; and native OAuth coordinators
-open the hosted browser flow rather than render consent copy. The generated producer diff must stay
-within those boundaries. A discovered native DTO or consumer change requires the normal linked
-client validation PR.
+Vouchington stages the scope-catalogue, API-key creation and OAuth-grant fixtures before native
+consumers adopt them. The catalogue is authoritative for credential surface, audience,
+prerequisite and description-key behavior. Swift and .NET filter it rather than copying scopes,
+preserve explicit selection for exact-grant permissions, and resolve description keys through
+their localization catalogues. Their connected-app surfaces paginate active grants, distinguish
+consent from nullable last use, and retain truthful state when revocation fails. Developer-owned
+OAuth app management and administrator verification remain web-only. Native delivery is tracked by
+[vouchington-clients#177](https://github.com/vouchington/vouchington-clients/issues/177).
