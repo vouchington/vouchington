@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import detectorPackage from '@jongleberry/vurst-ai/package.json' with { type: 'json' }
 import { Response } from 'undici'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import type { Job } from 'glide-mq'
 import { closeAndUnregisterGlideMQInstance, createWorker } from '@data-stores/valkey-glide-mq'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS } from '@queues/ai-agents/config'
@@ -9,7 +10,12 @@ import { enqueuePostClassifier } from '@queues/ai-agents/enqueues/post-classifie
 import { ai_agents } from '@queues/ai-agents/queues'
 import { notifications } from '@queues/notifications/queues'
 import type { PostClassifierJobData } from '@queues/ai-agents/types'
-import { reservePostClassifierApplication } from '@services/post-classifier'
+import {
+  claimPostClassifierApplication,
+  reservePostClassifierApplication,
+  resolvePostClassifierConfiguration,
+} from '@services/post-classifier'
+import { startPostClassifierProviderAttempt } from '@services/post-classifier/application-attempt'
 import { openAiSpendCapConfig } from '@services/ai-usage'
 import { createPostModerationContent } from '@services/posts/content'
 import {
@@ -22,6 +28,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { initializePostClassifierExecutionTests } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import {
   getPostClassifierApplicationFacts,
+  expirePostClassifierLeaseForTest,
   setPostClassifierPostHashForTest,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
@@ -40,9 +47,72 @@ describe('post classifier processor (real GlideMQ)', () => {
   beforeAll(async () => {
     release = await initializePostClassifierExecutionTests()
   })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetAllMocks()
+  })
   afterAll(async () => {
     await release?.()
     vi.unstubAllEnvs()
+  })
+
+  it('does not reach the provider transport after the durable attempt budget is exhausted', async () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
+    const request = vi.mocked(fetchStructuredDecisionProvider)
+    request.mockRejectedValue(new Error('Unexpected provider request'))
+    const user = await createTestUser()
+    const community = await insertTestCommunity({ createdById: user.id })
+    await setPostClassifierToggleForTest(community.id, 'self-promotion', true)
+    await setPostClassifierToggleForTest(community.id, 'ai-generated', false)
+    const post = await createTestPost({ user, community_id: community.id })
+    const inputSha256 = createPostModerationContent(post).content_sha256
+    await setPostClassifierPostHashForTest(post.id, inputSha256)
+    const detectorPackageVersion = detectorPackage.version
+    const resolved = await resolvePostClassifierConfiguration(community.id, {
+      detectorPackageVersion,
+    })
+    if (!resolved) throw new Error('Expected remote configuration')
+    const first = await claimPostClassifierApplication({
+      postId: post.id,
+      inputSha256,
+      resolved,
+      detectorPackageVersion,
+      leaseSeconds: 60,
+    })
+    if (first.kind !== 'claimed') throw new Error('Expected first claim')
+    let claim = first
+    for (let attempt = 0; attempt < AI_AGENTS_DEFAULTS.attempts; attempt++) {
+      await expect(
+        startPostClassifierProviderAttempt({ ...claim, maxAttempts: AI_AGENTS_DEFAULTS.attempts }),
+      ).resolves.toBe('started')
+      await expirePostClassifierLeaseForTest(post.id, claim.applicationId)
+      if (attempt + 1 < AI_AGENTS_DEFAULTS.attempts) {
+        const reclaimed = await claimPostClassifierApplication({ ...claim, leaseSeconds: 60 })
+        if (reclaimed.kind !== 'claimed') throw new Error('Expected reclaimed lease')
+        claim = reclaimed
+      }
+    }
+    const data: PostClassifierJobData = {
+      applicationId: first.applicationId,
+      postId: post.id,
+      inputSha256: inputSha256.toString('hex'),
+      configurationSha256: resolved.configurationSha256.toString('hex'),
+      detectorPackageVersion,
+    }
+    await expect(
+      processPostClassifier({
+        id: randomUUID(),
+        name: 'post-classifier',
+        data,
+      } as Job<PostClassifierJobData>),
+    ).resolves.toEqual({ kind: 'terminal' })
+    expect(request).not.toHaveBeenCalled()
+    await expect(getPostClassifierApplicationFacts(post.id)).resolves.toMatchObject([
+      {
+        provider_attempts_started: AI_AGENTS_DEFAULTS.attempts,
+        terminal_remote_failed_at: expect.any(Date),
+      },
+    ])
   })
 
   it('releases an exhausted queue identity and executes all remote topics exactly once on recovery', async () => {

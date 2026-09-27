@@ -15,6 +15,7 @@ import {
   setPostClassifierPostHashForTest,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/application-service'
 import { setPostClassifierToggleForTest } from '@voucha/test-helpers/entities/post-classifier-toggles'
+import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
 import {
   claimPostClassifierApplication,
   resolvePostClassifierConfiguration,
@@ -22,17 +23,14 @@ import {
 } from '@services/post-classifier'
 import { startPostClassifierProviderAttempt } from '@services/post-classifier/application-attempt'
 import { createPostModerationContent } from '@services/posts/content'
-import { AI_AGENTS_DEFAULTS } from '@queues/ai-agents/config'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type {
   PostClassifierDispatcherJobData,
   PostClassifierJobData,
+  AIAgentJobData,
 } from '@queues/ai-agents/types'
-import { processReconcilePostClassifierApplications } from './process-reconcile-post-classifier-applications.mts'
-import {
-  processPostClassifier,
-  processPostClassifierDispatcher,
-} from './process-post-classifier.mts'
+import { processAIAgent } from '../processors.mts'
+import { processPostClassifier } from './process-post-classifier.mts'
 
 const detectorPackageVersion = detectorPackage.version
 
@@ -63,7 +61,7 @@ async function createApprovedClassifierPost(remote: boolean) {
 }
 
 async function dispatch(postId: string): Promise<PostClassifierJobData> {
-  await expect(processPostClassifierDispatcher(dispatcherJob(postId))).resolves.toEqual({
+  await expect(processAIAgent(dispatcherJob(postId))).resolves.toEqual({
     kind: 'enqueued',
   })
   const jobs = await readAllQueueJobs(ai_agents)
@@ -115,7 +113,7 @@ describe('post classifier worker', () => {
     const { post } = await createApprovedClassifierPost(false)
     const child = await dispatch(post.id)
 
-    await expect(processPostClassifier(classifierJob(child))).resolves.toMatchObject({
+    await expect(processAIAgent(classifierJob(child))).resolves.toMatchObject({
       kind: 'completed',
     })
     await expect(processPostClassifier(classifierJob(child))).resolves.toEqual({ kind: 'replay' })
@@ -141,6 +139,28 @@ describe('post classifier worker', () => {
         outcomes_persisted_at: null,
         completed_at: null,
       }),
+    ])
+  })
+
+  it('rejects an obsolete detector job and a post whose approval was withdrawn', async () => {
+    const { post } = await createApprovedClassifierPost(false)
+    const child = await dispatch(post.id)
+    await expect(
+      processPostClassifier(
+        classifierJob({
+          ...child,
+          detectorPackageVersion: 'obsolete-detector-package',
+        }),
+      ),
+    ).resolves.toEqual({ kind: 'stale' })
+    await setTestPostClearanceStatus(post.id, 'pending')
+    await expect(processPostClassifier(classifierJob(child))).resolves.toEqual({ kind: 'stale' })
+    await expect(getPostClassifierApplicationFacts(post.id)).resolves.toMatchObject([
+      {
+        provider_attempts_started: 0,
+        outcomes_persisted_at: null,
+        completed_at: null,
+      },
     ])
   })
 
@@ -174,61 +194,6 @@ describe('post classifier worker', () => {
         expect.objectContaining({ id: staleChild.applicationId, superseded_at: expect.any(Date) }),
       ]),
     )
-  })
-
-  it('does not run a provider after its attempt budget is exhausted', async () => {
-    vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
-    const fetch = vi
-      .spyOn(globalThis, 'fetch')
-      .mockRejectedValue(new Error('Unexpected provider request'))
-    const { community, inputSha256, post } = await createApprovedClassifierPost(true)
-    const reservation = await reservePostClassifierApplication(post.id, detectorPackageVersion)
-    if (!reservation) throw new Error('Expected classifier reservation')
-    const resolved = await resolvePostClassifierConfiguration(community.id, {
-      detectorPackageVersion,
-    })
-    if (!resolved) throw new Error('Expected classifier configuration')
-    const firstClaim = await claimPostClassifierApplication({
-      applicationId: reservation.applicationId,
-      postId: post.id,
-      inputSha256,
-      resolved,
-      detectorPackageVersion,
-      leaseSeconds: 60,
-    })
-    if (firstClaim.kind !== 'claimed') throw new Error(`Unexpected first claim: ${firstClaim.kind}`)
-    let claim = firstClaim
-    for (let attempt = 0; attempt < AI_AGENTS_DEFAULTS.attempts; attempt++) {
-      await expect(
-        startPostClassifierProviderAttempt({ ...claim, maxAttempts: AI_AGENTS_DEFAULTS.attempts }),
-      ).resolves.toBe('started')
-      await expirePostClassifierLeaseForTest(post.id, reservation.applicationId)
-      if (attempt + 1 < AI_AGENTS_DEFAULTS.attempts) {
-        const reclaimed = await claimPostClassifierApplication({ ...claim, leaseSeconds: 60 })
-        if (reclaimed.kind !== 'claimed') throw new Error(`Unexpected reclaim: ${reclaimed.kind}`)
-        claim = reclaimed
-      }
-    }
-
-    await expect(
-      processPostClassifier(
-        classifierJob({
-          applicationId: reservation.applicationId,
-          postId: post.id,
-          inputSha256: inputSha256.toString('hex'),
-          configurationSha256: resolved.configurationSha256.toString('hex'),
-          detectorPackageVersion,
-        }),
-      ),
-    ).resolves.toEqual({ kind: 'terminal' })
-    expect(fetch).not.toHaveBeenCalled()
-    expect(await getPostClassifierApplicationFacts(post.id)).toEqual([
-      expect.objectContaining({
-        id: reservation.applicationId,
-        provider_attempts_started: AI_AGENTS_DEFAULTS.attempts,
-        terminal_remote_failed_at: expect.any(Date),
-      }),
-    ])
   })
 
   it('reconciles an incomplete receipt but excludes an exhausted remote receipt', async () => {
@@ -270,7 +235,13 @@ describe('post classifier worker', () => {
       startPostClassifierProviderAttempt({ ...reclaimed, maxAttempts: 1 }),
     ).resolves.toBe('terminal')
 
-    await expect(processReconcilePostClassifierApplications()).resolves.toMatchObject({
+    await expect(
+      processAIAgent({
+        id: randomUUID(),
+        name: 'reconcile-post-classifier-applications',
+        data: {},
+      } as Job<AIAgentJobData>),
+    ).resolves.toMatchObject({
       enqueued: expect.any(Number),
     })
     const jobs = await readAllQueueJobs(ai_agents)

@@ -3,9 +3,34 @@ import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { ai_agents } from '../queues.mts'
 import type { PostClassifierJobData } from '../types.mts'
-import { enqueueBulkPostClassifiers, enqueuePostClassifier } from './post-classifier.mts'
+import {
+  enqueueBulkPostClassifiers,
+  enqueuePostClassifier,
+  enqueuePostClassifierDispatcher,
+} from './post-classifier.mts'
+import { enqueueReconcilePostClassifierApplications } from './reconcile-post-classifier-applications.mts'
 
 describe('post classifier enqueue', () => {
+  it('enqueues post dispatch and receipt reconciliation with their worker job names', async () => {
+    const postId = randomUUID()
+    await enqueuePostClassifierDispatcher(postId)
+    const reconciliation = await enqueueReconcilePostClassifierApplications()
+    if (!reconciliation) throw new Error('Expected a reconciliation job')
+    const jobs = await readAllQueueJobs(ai_agents)
+    expect(jobs).toContainEqual(
+      expect.objectContaining({
+        name: 'post-classifier-dispatcher',
+        data: { postId },
+      }),
+    )
+    expect(jobs).toContainEqual(
+      expect.objectContaining({
+        id: reconciliation.id,
+        name: 'reconcile-post-classifier-applications',
+        data: {},
+      }),
+    )
+  })
   it('keeps a durable receipt job retryable after queue attempt exhaustion', async () => {
     const applicationId = randomUUID()
 
