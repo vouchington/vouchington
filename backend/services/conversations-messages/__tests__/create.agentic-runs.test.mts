@@ -22,7 +22,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     const agenticRun = await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -44,7 +47,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     const agenticRun = await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -63,7 +69,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     const agenticRun = await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -89,7 +98,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     const agenticRun = await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -124,7 +136,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     const run1 = await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -150,7 +165,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     const completedRun = await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -185,7 +203,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,
@@ -210,7 +231,10 @@ describe('conversations-messages service (agentic runs)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     await createConversationMessageAgenticRun({
       conversationId: conversation.id,
       conversationMessageId: message.id,

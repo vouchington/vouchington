@@ -9,9 +9,9 @@ Notifications are per-user inbox events stored in the `notifications` table, RAN
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `entity_type`                     | Event kind, including community application decision, role change, ownership transfer, and weekly activity digest |
 | `event_key`                       | Stable per-recipient idempotency key; remains unique after dismissal                                              |
-| `community_id`                    | Optional community context for lifecycle events                                                                   |
-| `target_entity` / `target_intent` | Preferred structured navigation target                                                                            |
-| `target_path`                     | Nullable legacy path fallback                                                                                     |
+| `community_id`                    | Concrete community relationship for lifecycle events                                                              |
+| `target_entity` / `target_intent` | Response navigation. `target_entity` is derived from `community_id`; `target_intent` is stored                    |
+| `target_path`                     | Nullable path still written by producers that navigate by path                                                    |
 | `read_at` / `deleted_at`          | Read and dismissed state                                                                                          |
 
 Lifecycle notifications target the community entity. The combined activity digest and reporter

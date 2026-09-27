@@ -40,14 +40,6 @@ export const POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'post_publication_identity_cleanup_progress.cursor_snapshot_id',
     'Sweep checkpoint tombstone intentionally survives deletion of reclaimed snapshot headers.',
   ],
-  [
-    'notifications.publication_post_id',
-    'Stable reconciliation target intentionally survives hard deletion of the referenced post.',
-  ],
-  [
-    'notifications.publication_rss_feed_item_id',
-    'Stable reconciliation target intentionally survives hard deletion of the referenced RSS item.',
-  ],
   ['post_publication_dirty_work.cursor_post_id', 'Cursor tombstone is not a durable relation.'],
   ['post_publication_dirty_work.cursor_topic_id', 'Cursor tombstone is not a durable relation.'],
   ['post_publication_dirty_work.cursor_key_id', 'Cursor tombstone is not a durable relation.'],

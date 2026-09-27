@@ -26,17 +26,17 @@ export async function getNextRecipientBatch(
   query: TransactionQuery,
 ): Promise<string[]> {
   if (distribution.audience === 'selected_followers') {
-    const selected = distribution.selected_recipient_user_ids ?? []
     const { rows } = await query(sql`/* getNextRecipientBatch:selected */
-      SELECT users.id
-      FROM unnest(${selected}::uuid[]) AS selected_recipients(id)
-      JOIN users ON users.id = selected_recipients.id
-      WHERE users.deleted_at IS NULL
+      SELECT recipients.recipient_user_id AS id
+      FROM follower_distribution_selected_recipients recipients
+      JOIN users ON users.id = recipients.recipient_user_id
+      WHERE recipients.distribution_id = ${distribution.id}
+        AND users.deleted_at IS NULL
         AND (
           ${distribution.last_processed_recipient_user_id}::uuid IS NULL
-          OR users.id > ${distribution.last_processed_recipient_user_id}
+          OR recipients.recipient_user_id > ${distribution.last_processed_recipient_user_id}
         )
-      ORDER BY users.id
+      ORDER BY recipients.recipient_user_id
       LIMIT ${chunkSize}
     `)
     return rows.map(row => row.id as string)

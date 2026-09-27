@@ -3,7 +3,7 @@ import type { Conversation } from '@voucha/types/entities/conversation'
 
 export type { Conversation }
 
-/** Stored shape of conversation_messages.content (JSON). */
+/** Public chat envelope assembled from typed chat_role, chat_text, and chat_error columns. */
 export type ConversationMessageContent =
   | { role: 'user'; content: string }
   | { role: 'assistant'; content: string | null; error?: string }
@@ -17,7 +17,7 @@ export type ConversationMessage = {
   updated_by_id: string | null
   deleted_at: Date | null
   deleted_by_id: string | null
-  content: unknown
+  content: ConversationMessageContent | null
 }
 
 export type ConversationMessageAgenticRun = {

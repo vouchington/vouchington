@@ -4,6 +4,7 @@
 -- edited-in-place: added direct_message and modmail notification entity types and conversation_id FK
 -- edited-in-place: added moderation_appeal_id and community_ban_id columns (FK wired in 0450-00-00)
 -- edited-in-place: added critical_moderation_alert entity type
+-- edited-in-place: community navigation is community_id; target_entity is derived, not stored
 -- Merged from: 0180-00-00-notifications-and-recommendations.sql
 
 -- ==========================================================================
@@ -207,21 +208,29 @@ CREATE TABLE IF NOT EXISTS notifications (
   body TEXT NOT NULL DEFAULT '' CHECK (length(body) <= 1000),
   actor_label TEXT CHECK (actor_label IS NULL OR length(actor_label) <= 100),
   target_path TEXT CHECK (target_path IS NULL OR length(target_path) > 0),
-  target_entity JSONB,
   target_intent TEXT,
   CONSTRAINT chk_notifications__target
     CHECK (
-      num_nonnulls(target_path, target_entity, target_intent) = 1
+      (
+        entity_type IN (
+          'community_application_decision',
+          'community_role_change',
+          'community_ownership_transfer'
+        )
+        AND target_path IS NULL
+        AND target_intent IS NULL
+      )
+      OR (
+        entity_type NOT IN (
+          'community_application_decision',
+          'community_role_change',
+          'community_ownership_transfer'
+        )
+        AND num_nonnulls(target_path, target_intent) = 1
+      )
     ),
   CONSTRAINT chk_notifications__structured_target
-    CHECK (
-      (target_entity IS NULL OR (
-        jsonb_typeof(target_entity) = 'object'
-        AND target_entity ? '__entity_type'
-        AND target_entity ? 'id'
-      ))
-      AND (target_intent IS NULL OR target_intent = 'notifications_inbox')
-    ),
+    CHECK (target_intent IS NULL OR target_intent = 'notifications_inbox'),
   CONSTRAINT chk_notifications__community_event_shape
     CHECK (
       entity_type NOT IN (
@@ -241,13 +250,11 @@ CREATE TABLE IF NOT EXISTS notifications (
               'community_ownership_transfer'
             )
             AND community_id IS NOT NULL
-            AND target_entity = jsonb_build_object('__entity_type', 'community', 'id', community_id)
             AND target_intent IS NULL
           )
           OR (
             entity_type = 'community_activity_digest'
             AND community_id IS NULL
-            AND target_entity IS NULL
             AND target_intent = 'notifications_inbox'
           )
         )
@@ -415,9 +422,28 @@ COMMENT ON COLUMN notifications.sent_by_user_id IS 'The user who manually sent t
 COMMENT ON COLUMN notifications.title IS 'Notification title text.';
 COMMENT ON COLUMN notifications.body IS 'Notification body text.';
 COMMENT ON COLUMN notifications.actor_label IS 'Optional display label for the actor who triggered the notification.';
-COMMENT ON COLUMN notifications.target_path IS 'URL path the notification links to.';
-COMMENT ON COLUMN notifications.target_entity IS 'Structured entity navigation target; preferred over the legacy target_path.';
-COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigation intent; preferred over the legacy target_path.';
+COMMENT ON COLUMN notifications.target_path IS 'URL path the notification links to. Producers that navigate by path still write this column.';
+COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigation intent. Community entity targets are derived from community_id instead of a stored document.';
+
+CREATE OR REPLACE FUNCTION fn_notification_target_entity(
+  notification_entity_type notification_entity_types,
+  notification_community_id UUID
+) RETURNS JSONB
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT CASE
+    WHEN notification_entity_type IN (
+      'community_application_decision',
+      'community_role_change',
+      'community_ownership_transfer'
+    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)
+    ELSE NULL
+  END
+$$;
+
+COMMENT ON FUNCTION fn_notification_target_entity(notification_entity_types, uuid) IS
+  'Derives the public community target_entity envelope from the concrete community relationship. It does not authorize access to that community.';
 COMMENT ON COLUMN notifications.event_key IS 'Stable producer-defined idempotency key, unique per recipient even after dismissal.';
 COMMENT ON COLUMN notifications.read_at IS 'When the user read this notification.';
 COMMENT ON COLUMN notifications.pushed_at IS 'When a push notification was sent for this notification.';

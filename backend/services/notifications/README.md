@@ -17,7 +17,7 @@ Service for storing, listing, mutating, and reconciling per-user notifications i
   - Preserves read rows via `read_at`
   - Community lifecycle and weekly digest rows use a stable `event_key`; uniqueness includes dismissed rows
   - Reporter review rows persist `target_intent='notifications_inbox'` so clients do not treat them as content links
-  - New rows navigate through `target_entity` or `target_intent`; `target_path` is a nullable legacy fallback
+  - Responses derive `target_entity` from `community_id` for lifecycle events. `target_intent` is stored, and producers that navigate by path still write `target_path`
 - `web_push_subscriptions`
   - Range-partitioned by the owner's UUIDv7 `user_id`, initially with one default child
   - Stores browser push endpoints and keys

@@ -31,6 +31,7 @@ const ROOT_FAMILIES = {
     references: [
       ['posts', 'id'],
       ['post_publication_post_identities', 'id'],
+      ['notifications', 'publication_post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
@@ -39,6 +40,7 @@ const ROOT_FAMILIES = {
     references: [
       ['rss_feed_items', 'id'],
       ['post_publication_rss_feed_item_identities', 'id'],
+      ['notifications', 'publication_rss_feed_item_id'],
       ...retainedRelationReferences('rss_feed_item'),
     ],
   },

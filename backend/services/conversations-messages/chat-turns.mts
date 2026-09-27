@@ -1,5 +1,6 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { appendConversationMessageReturning } from './chat-content.mts'
 import type { ConversationMessage } from './types.mts'
 
 export class ChatTurnConflictError extends Error {
@@ -31,9 +32,9 @@ export async function lockConversationAndAssertNoActiveChatTurn(
     FROM conversation_messages cm
     WHERE cm.conversation_id = ${conversationId}
       AND cm.deleted_at IS NULL
-      AND cm.content->>'role' = 'assistant'
-      AND cm.content->>'content' IS NULL
-      AND cm.content->>'error' IS NULL
+      AND cm.chat_role = 'assistant'
+      AND cm.chat_text IS NULL
+      AND cm.chat_error IS NULL
       AND NOT EXISTS (
         SELECT 1
         FROM conversation_message_agentic_runs cmar
@@ -57,17 +58,24 @@ export async function createHostedChatTurn(params: {
   await using query = await beginTransaction()
   await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
 
-  const userMessageResult = await query<ConversationMessage>(sql`/* createHostedChatTurnUser */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
-    RETURNING *
-  `)
-  const assistantMessageResult =
-    await query<ConversationMessage>(sql`/* createHostedChatTurnAssistant */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'assistant', content: null })})
-    RETURNING *
-  `)
+  const userInsert = sql`/* createHostedChatTurnUser */
+    INSERT INTO conversation_messages (
+      conversation_id, created_by_id, chat_role, chat_text, chat_error
+    )
+    VALUES (${conversationId}, ${createdById}, 'user', ${message}, NULL)
+    RETURNING
+  `
+  appendConversationMessageReturning(userInsert)
+  const userMessageResult = await query<ConversationMessage>(userInsert)
+  const assistantInsert = sql`/* createHostedChatTurnAssistant */
+    INSERT INTO conversation_messages (
+      conversation_id, created_by_id, chat_role, chat_text, chat_error
+    )
+    VALUES (${conversationId}, ${createdById}, 'assistant', NULL, NULL)
+    RETURNING
+  `
+  appendConversationMessageReturning(assistantInsert)
+  const assistantMessageResult = await query<ConversationMessage>(assistantInsert)
 
   const result = {
     userMessage: userMessageResult.rows[0]!,

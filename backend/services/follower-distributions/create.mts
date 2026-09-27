@@ -74,21 +74,31 @@ async function createDistribution(
       action,
       audience,
       post_id,
-      rss_feed_item_id,
-      selected_recipient_user_ids
+      rss_feed_item_id
     )
     VALUES (
       ${currentUser.id},
       ${input.action},
       ${options.audience},
       ${target.kind === 'post' ? target.id : null},
-      ${target.kind === 'rss_feed_item' ? target.id : null},
-      ${selectedRecipientIds}::uuid[]
+      ${target.kind === 'rss_feed_item' ? target.id : null}
     )
     RETURNING id
   `)
+  const distributionId = rows[0]!.id as string
+  if (selectedRecipientIds) {
+    await query(sql`/* createDistribution:selectedRecipients */
+      INSERT INTO follower_distribution_selected_recipients (
+        distribution_id,
+        recipient_user_id
+      )
+      SELECT ${distributionId}, selected.recipient_user_id
+      FROM unnest(${selectedRecipientIds}::uuid[]) AS selected(recipient_user_id)
+      ORDER BY selected.recipient_user_id
+    `)
+  }
 
-  const result = { status: 'accepted', distribution_id: rows[0]!.id as string }
+  const result = { status: 'accepted', distribution_id: distributionId }
   await query.commit()
   return result as FollowerDistributionAccepted
 }
