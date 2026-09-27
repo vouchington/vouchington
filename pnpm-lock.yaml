@@ -803,9 +803,6 @@ importers:
       '@agents/moderation':
         specifier: workspace:^
         version: link:../agents/moderation
-      '@data-stores/analytics':
-        specifier: workspace:^
-        version: link:../data-stores/analytics
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../data-stores/valkey
@@ -3339,9 +3336,6 @@ importers:
         specifier: workspace:^
         version: link:../api
     devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers

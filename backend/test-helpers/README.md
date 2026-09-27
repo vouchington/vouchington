@@ -13,6 +13,10 @@ and explicit projection type inside a focused helper. Its owning PSQL test impor
 relative path, following other PSQL tests without adding a `@data-stores/psql` →
 `@voucha/test-helpers` package dependency cycle; the test only asserts the returned parser values.
 
+Route suites that jscpd reports together call one registrar from a literal `describe` in each
+test file. The registrars live next to this README: vote lists, scoped credential pagination,
+community claim and escalation routes, RSS feeds, landing-page analytics, and similarity search.
+
 ## `onceEntityListenerCompleted`
 
 Use this to wait for a specific entity-listener job to complete after a fire-and-forget `enqueueOn*` call in a service. Entity listener side effects (auto-subscribe, auto-vote, notifications, cache invalidation) are asynchronous — tests that assert on them must wait.
