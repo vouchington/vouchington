@@ -17,6 +17,12 @@ describe('validateOAuthRedirectUris', () => {
       validateOAuthRedirectUris(Array.from({ length: 11 }, () => 'https://example.com/callback')),
     ).toMatchObject({ code: 'invalid_count' })
     expect(validateOAuthRedirectUris(['not a URL'])).toMatchObject({ code: 'invalid_uri' })
+    expect(
+      validateOAuthRedirectUris(['https://example.com/callback\u0000'], { serialize: false }),
+    ).toMatchObject({ code: 'invalid_uri' })
+    expect(validateOAuthRedirectUris(['https://example.com/call back'])).toMatchObject({
+      code: 'invalid_uri',
+    })
     expect(validateOAuthRedirectUris([`https://example.com/${'a'.repeat(2048)}`])).toMatchObject({
       code: 'invalid_uri',
     })
@@ -44,5 +50,14 @@ describe('validateOAuthRedirectUris', () => {
         'https://example.com:443/callback',
       ]),
     ).toMatchObject({ code: 'duplicate' })
+  })
+
+  it('preserves redirect URI strings when serialization is disabled', () => {
+    const redirectUris = ['https://EXAMPLE.com:443/callback', 'https://example.com/callback']
+
+    expect(validateOAuthRedirectUris(redirectUris, { serialize: false })).toEqual({
+      valid: true,
+      redirectUris,
+    })
   })
 })

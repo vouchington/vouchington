@@ -6,6 +6,12 @@ import {
 } from '@services/oauth-authorization-server'
 
 describe('OAuth discovery documents', () => {
+  it('advertises Client ID Metadata Document support', () => {
+    expect(buildOAuthAuthorizationServerMetadata()).toMatchObject({
+      client_id_metadata_document_supported: true,
+    })
+  })
+
   it.each([
     ['/.well-known/oauth-authorization-server', buildOAuthAuthorizationServerMetadata()],
     [

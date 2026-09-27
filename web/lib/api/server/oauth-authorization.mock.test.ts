@@ -19,6 +19,7 @@ describe('OAuth authorization server helper', () => {
       authorization_request: {
         id: 'request-1',
         client_name: 'Example app',
+        client_hostname: null,
         resource: 'https://voucha.ai/api/v1/mcp',
         scopes: ['mcp.user:read'],
         expires_at: '2026-09-20T12:00:00.000Z',

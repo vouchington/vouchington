@@ -7,7 +7,7 @@ import {
 } from '../response-helpers.mts'
 import {
   authenticateOAuthClient,
-  beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   getOAuthAuthorizationErrorRedirect,
@@ -48,19 +48,17 @@ app.route('/authorize').get(async (ctx: Context) => {
       scope: ctx.query.scope,
       state: ctx.query.state,
     }
-    await validateOAuthAuthorizationRequest(parameters)
+    const validated = await validateOAuthAuthorizationRequest(parameters)
     if (!currentUser) {
       redirect(ctx, `/login?next=${encodeURIComponent(ctx.req.url ?? '/authorize')}`)
       return
     }
     assertNotSuspended(currentUser)
     const session = await ctx.getSessionTokenData()
-    const result = await beginOAuthAuthorizationRequest({
-      deviceId: session.did,
-      sessionId: session.sid,
-      userId: currentUser.id,
-      ...parameters,
-    })
+    const result = await beginValidatedOAuthAuthorizationRequest(
+      { deviceId: session.did, sessionId: session.sid, userId: currentUser.id },
+      validated,
+    )
     redirect(ctx, `/oauth/consent?request_id=${encodeURIComponent(result.request_id)}`)
   } catch (error) {
     if (!(error instanceof OAuthProtocolError)) throw error

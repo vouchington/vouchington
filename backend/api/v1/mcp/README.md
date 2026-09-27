@@ -18,6 +18,11 @@ The bearer credential is an OAuth access token bound to this resource, or an API
 
 MCP clients that support OAuth need only the endpoint URL. A request without a credential gets `401` with a `WWW-Authenticate` challenge that names the [protected-resource metadata](../../oauth/README.md#routes), and a single `tools/call` that lacks a scope gets `403` with `error="insufficient_scope"` and the scopes to re-authorize with. See [MCP challenges](../../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md#mcp-challenges).
 
+OAuth clients may use either open RFC 7591 registration or an HTTPS Client ID Metadata Document
+URL as `client_id`. Authorization-server discovery advertises CIMD support. URL clients are public
+clients, require S256 PKCE, and must publish the exact client identifier, redirect URI strings, and
+supported scopes in the document. See [Client ID Metadata Documents](../../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md#client-id-metadata-documents).
+
 For clients without OAuth, create an MCP API key at `POST /api/v1/my/api-keys` with `type: "mcp"`. API-key scope failures stay in-band JSON-RPC errors.
 
 Codex:

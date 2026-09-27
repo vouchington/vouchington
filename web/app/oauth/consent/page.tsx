@@ -45,6 +45,9 @@ export default async function OAuthConsentPage({
             {t('shared.oauth.consent.title', { clientName: request.client_name })}
           </CardTitle>
           <CardDescription>{t('shared.oauth.consent.description')}</CardDescription>
+          {request.client_hostname && (
+            <p className='break-all text-sm text-muted-foreground'>{request.client_hostname}</p>
+          )}
         </CardHeader>
         <CardContent className='space-y-5'>
           <section aria-labelledby='oauth-resource-heading'>

@@ -9,6 +9,8 @@ and account linking.
 - Authorization code with mandatory S256 PKCE and rotating refresh-token support.
 - Rotating refresh tokens with family-wide revocation when a token is reused.
 - Public RFC 7591 client registration and confidential clients using HTTP Basic authentication.
+- HTTPS Client ID Metadata Documents for public clients, with exact identifier and redirect-string
+  matching, mandatory S256 PKCE, and discovery advertisement.
 - Exact redirect URI, resource, and canonical scope binding, with RFC 8707 `resource` checks at
   the token endpoint and the RFC 9207 `iss` parameter on every authorization response.
 - Two protected resources, the user and admin MCP servers (`resources.mts`), with RFC 8414 and
@@ -35,11 +37,25 @@ row locks and transactions instead.
 
 ## Persistence
 
-`oauth_clients` owns validated dynamic client metadata. Pending browser requests, durable grants,
+`oauth_clients` owns validated dynamic and Client ID Metadata Document client metadata. Pending browser requests, durable grants,
 append-only consent-decision evidence, single-use authorization codes, opaque access tokens, and
 rotating refresh-token families live in their own typed tables. Consent evidence intentionally has
 no identity foreign keys so retention, account deletion, and client deletion cannot erase it. Codes
 and token strings are returned once and never persisted in plaintext.
+
+For a URL client identifier, `client-id-metadata-document.mts` requires an HTTPS URL with a path,
+rejects userinfo, fragments, dot segments, private and special-use addresses, and every redirect.
+DNS resolution and response headers have a 5-second budget, body reads have a separate 5-second
+budget, and documents are limited to 5 KiB. The fetched `client_id` and redirect URI strings are
+compared exactly. Shared-secret authentication, shared secrets, and private JWK material are
+rejected.
+
+Valid metadata is stored in the same relational client row used by grants, tokens, and provenance.
+`metadata_expires_at` follows response cache headers with a 5-minute default and 1-hour ceiling;
+response age is subtracted, and `no-cache` or `no-store` makes the row immediately stale for new
+authorizations. Failed and invalid responses never replace stored metadata. Concurrent refreshes
+receive database-ordered generations and record their fetch-start times, so an older refresh that
+finishes later cannot overwrite newer validated metadata.
 
 Code exchange locks the code row before validating and atomically writes its token family. Refresh
 rotation locks the family and presented token before consuming it and creating one successor. Reuse
@@ -79,6 +95,5 @@ speculative indexes.
 ## Boundaries
 
 This package exports bearer validation, resource definitions, and discovery metadata. The MCP
-routes build `WWW-Authenticate` challenges in `@services/mcp-tools`. Client ID Metadata Documents
-and client and grant management UX are follow-up work. See the
+routes build `WWW-Authenticate` challenges in `@services/mcp-tools`. See the
 [OAuth requirements](../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md).

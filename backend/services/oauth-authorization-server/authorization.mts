@@ -1,10 +1,13 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
-import { assertClientAuthorizationRequest, getOAuthClient } from './clients.mts'
+import {
+  assertClientAuthorizationRequest,
+  getOAuthClient,
+  getOAuthClientForAuthorization,
+} from './clients.mts'
 import { lockOAuthParticipantUsers } from './active-users.mts'
 import { OAuthProtocolError, invalidRequest } from './errors.mts'
-import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
 import {
   assertScopesMatchResource,
@@ -12,8 +15,13 @@ import {
   validatePkceChallenge,
   validateResource,
 } from './validation.mts'
-import type { ApiScope } from '@modules/scopes'
-import type { OAuthAuthorizationRequestView, OAuthClient } from './types.mts'
+import type {
+  OAuthAuthorizationRequestView,
+  OAuthClient,
+  ValidatedOAuthAuthorizationRequest,
+} from './types.mts'
+import { getOAuthClientDisplayName } from './known-clients.mts'
+import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 
 type OAuthAuthorizationRequestParameters = {
   clientId: string
@@ -26,14 +34,6 @@ type OAuthAuthorizationRequestParameters = {
   state: unknown
 }
 
-type ValidatedOAuthAuthorizationRequest = {
-  client: OAuthClient
-  codeChallenge: string
-  resource: string
-  scopes: ApiScope[]
-  state: string
-}
-
 type AuthorizationRequestRow = {
   id: string
   client_id: string
@@ -41,12 +41,13 @@ type AuthorizationRequestRow = {
   redirect_uri: string
   state: string
   resource: string
-  scopes: ApiScope[]
+  scopes: OAuthClient['scopes']
   code_challenge: string
   expires_at: Date
   approved_at: Date | null
   denied_at: Date | null
   client_name: string
+  metadata_url: string | null
 }
 
 export async function beginOAuthAuthorizationRequest(
@@ -55,15 +56,23 @@ export async function beginOAuthAuthorizationRequest(
     sessionId: string
     userId: string
   } & OAuthAuthorizationRequestParameters,
+  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<{ request_id: string }> {
-  const validated = await validateOAuthAuthorizationRequest(input)
+  const validated = await validateOAuthAuthorizationRequest(input, clientIdMetadataDependencies)
+  return beginValidatedOAuthAuthorizationRequest(input, validated)
+}
+
+export async function beginValidatedOAuthAuthorizationRequest(
+  input: { deviceId: string; sessionId: string; userId: string },
+  validated: ValidatedOAuthAuthorizationRequest,
+): Promise<{ request_id: string }> {
   const { client, codeChallenge, resource, scopes, state } = validated
   await using query = await beginTransaction()
   const activeParticipantIds = await lockOAuthParticipantUsers(
     [input.userId, client.owner_user_id],
     query,
   )
-  const lockedClient = await getOAuthClient(input.clientId, query)
+  const lockedClient = await getOAuthClient(client.client_id, query)
   if (
     !lockedClient ||
     !activeParticipantIds.has(input.userId) ||
@@ -71,7 +80,7 @@ export async function beginOAuthAuthorizationRequest(
   ) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
-  assertClientAuthorizationRequest(lockedClient, input.redirectUri, scopes)
+  assertClientAuthorizationRequest(lockedClient, validated.redirectUri, scopes)
   if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
@@ -99,7 +108,7 @@ export async function beginOAuthAuthorizationRequest(
       lockedClient.id,
       input.userId,
       browserBindingHash,
-      input.redirectUri,
+      validated.redirectUri,
       state,
       resource,
       scopes,
@@ -116,6 +125,7 @@ export async function beginOAuthAuthorizationRequest(
 
 export async function validateOAuthAuthorizationRequest(
   input: OAuthAuthorizationRequestParameters,
+  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<ValidatedOAuthAuthorizationRequest> {
   if (input.responseType !== 'code') {
     throw new OAuthProtocolError('unsupported_response_type', 'response_type must be code')
@@ -127,10 +137,17 @@ export async function validateOAuthAuthorizationRequest(
   const resource = validateResource(input.resource)
   assertScopesMatchResource(scopes, resource)
   const codeChallenge = validatePkceChallenge(input.codeChallenge, input.codeChallengeMethod)
-  const client = await getOAuthClient(input.clientId)
+  const client = await getOAuthClientForAuthorization(input.clientId, clientIdMetadataDependencies)
   if (!client) throw new OAuthProtocolError('unauthorized_client', 'client is not registered')
   assertClientAuthorizationRequest(client, input.redirectUri, scopes)
-  return { client, codeChallenge, resource: resource.url, scopes, state: input.state }
+  return {
+    client,
+    codeChallenge,
+    redirectUri: input.redirectUri,
+    resource: resource.url,
+    scopes,
+    state: input.state,
+  } as ValidatedOAuthAuthorizationRequest
 }
 
 export async function getOAuthAuthorizationRequestForUser(
@@ -144,7 +161,8 @@ export async function getOAuthAuthorizationRequestForUser(
        request.resource,
        request.scopes,
        request.expires_at,
-       client.client_name
+       client.client_name,
+       client.metadata_url
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1
@@ -169,26 +187,10 @@ export async function getOAuthAuthorizationRequestForUser(
   if (!row) return null
   return {
     id: row.id,
-    client_name: row.client_name,
+    client_name: row.metadata_url ? getOAuthClientDisplayName(row.metadata_url) : row.client_name,
+    client_hostname: row.metadata_url ? new URL(row.metadata_url).hostname : null,
     resource: row.resource,
     scopes: row.scopes,
     expires_at: row.expires_at,
   }
-}
-
-export async function getOAuthAuthorizationErrorRedirect(input: {
-  clientId: string
-  redirectUri: string
-  state: unknown
-  error: OAuthProtocolError
-}): Promise<string | null> {
-  const client = await getOAuthClient(input.clientId)
-  if (!client?.redirect_uris.includes(input.redirectUri)) return null
-  return buildOAuthAuthorizationResponseUrl(input.redirectUri, {
-    error: input.error.code,
-    error_description: input.error.message,
-    ...(typeof input.state === 'string' && input.state.length <= 1024
-      ? { state: input.state }
-      : {}),
-  })
 }

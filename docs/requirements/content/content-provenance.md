@@ -72,8 +72,9 @@ what the label needs:
 | `verified_at`    | When staff verified a dynamically registered client's `client_name`                          |
 | `verified_by_id` | FK → `users.id`, `ON DELETE SET NULL`; set only when `verified_at` is set                    |
 
-`metadata_url` stays `NULL` until Client ID Metadata Documents ship. Administrators set and clear
-`verified_at` and `verified_by_id` through the
+Client ID Metadata Document clients store their exact Client Identifier URL in `metadata_url`;
+dynamically registered clients keep it `NULL`. Administrators set and clear `verified_at` and
+`verified_by_id` for dynamically registered clients through the
 [OAuth client verification routes](../../../backend/api/v1/admin/README.md), and renaming a client
 or replacing its redirect URIs clears them. Labels stay generic until the exposure stage below.
 

@@ -53,6 +53,7 @@ const authorizationRequest: OAuthAuthorizationRequestResponse = {
   authorization_request: {
     id: 'request-1',
     client_name: 'Example app',
+    client_hostname: null,
     resource: 'https://api.voucha.ai/api/v1/mcp',
     scopes: ['news:read', 'topics:read'],
     expires_at: '2026-09-20T21:00:00.000Z',
@@ -112,5 +113,23 @@ describe('OAuthConsentPage', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.getByTestId('consent-actions')).toHaveTextContent('request-1')
+  })
+
+  it('shows the Client ID Metadata Document hostname with the reviewed client name', async () => {
+    mockGetAuthorizationRequest.mockResolvedValue({
+      authorization_request: {
+        ...authorizationRequest.authorization_request,
+        client_name: 'Reviewed app',
+        client_hostname: 'client.example',
+      },
+    })
+    render(
+      await OAuthConsentPage({
+        searchParams: Promise.resolve({ request_id: 'request-1' }),
+      }),
+    )
+
+    expect(screen.getByText('Reviewed app wants access to Voucha')).toBeInTheDocument()
+    expect(screen.getByText('client.example')).toBeInTheDocument()
   })
 })

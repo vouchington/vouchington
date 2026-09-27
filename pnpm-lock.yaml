@@ -7383,6 +7383,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/scopes':
         specifier: workspace:^
         version: link:../../modules/scopes
@@ -7395,6 +7398,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
+      ssrf-guard:
+        specifier: ^1.0.0
+        version: 1.0.0
       uuid:
         specifier: ^14.0.2
         version: 14.0.2

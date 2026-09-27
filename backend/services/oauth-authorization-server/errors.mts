@@ -16,8 +16,8 @@ export class OAuthProtocolError extends Error {
   readonly code: OAuthErrorCode
   readonly status: number
 
-  constructor(code: OAuthErrorCode, description: string, status = 400) {
-    super(description)
+  constructor(code: OAuthErrorCode, description: string, status = 400, options?: ErrorOptions) {
+    super(description, options)
     this.name = 'OAuthProtocolError'
     this.code = code
     this.status = status

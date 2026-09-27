@@ -94,15 +94,22 @@ export type OAuthClientLabelColumns = {
 export async function insertContentProvenanceOAuthClient(
   columns: OAuthClientLabelColumns = {},
 ): Promise<string> {
+  const metadataUrl = columns.metadataUrl ?? null
+  const clientId = metadataUrl ?? `voucha_${randomBytes(24).toString('base64url')}`
+  const refreshedAt = metadataUrl ? new Date() : null
+  const refreshGeneration = metadataUrl ? 1 : null
+  const expiresAt = refreshedAt ? new Date(refreshedAt.getTime() + 5 * 60_000) : null
   const { rows } = await write<{ id: string }>(sql`/* insertContentProvenanceOAuthClient */
     INSERT INTO oauth_clients (
       client_id, client_name, client_type, token_endpoint_auth_method, redirect_uris, grant_types,
-      response_types, scopes, metadata_url, verified_at, verified_by_id
+      response_types, scopes, metadata_url, metadata_refresh_generation, metadata_refreshed_at,
+      metadata_expires_at, verified_at, verified_by_id
     )
     VALUES (
-      ${`voucha_${randomBytes(24).toString('base64url')}`}, 'Content provenance test client', 'public', 'none',
+      ${clientId}, 'Content provenance test client', 'public', 'none',
       ARRAY['https://agent.example/callback'], ARRAY['authorization_code', 'refresh_token'], ARRAY['code'], ARRAY['mcp:read'],
-      ${columns.metadataUrl ?? null}, ${columns.verifiedAt ?? null}, ${columns.verifiedById ?? null}
+      ${metadataUrl}, ${refreshGeneration}, ${refreshedAt}, ${expiresAt},
+      ${columns.verifiedAt ?? null}, ${columns.verifiedById ?? null}
     )
     RETURNING id`)
   return rows[0]!.id

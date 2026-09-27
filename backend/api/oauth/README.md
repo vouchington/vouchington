@@ -9,7 +9,7 @@ pending request to another user.
 
 | Method | Path                                                     | Purpose                                              |
 | ------ | -------------------------------------------------------- | ---------------------------------------------------- |
-| GET    | `/authorize`                                             | Begin an authenticated S256 PKCE flow                |
+| GET    | `/authorize`                                             | Begin S256 PKCE for registered or URL-based clients  |
 | POST   | `/register`                                              | Dynamically register a public or confidential client |
 | POST   | `/token`                                                 | Exchange a code or rotate a refresh token            |
 | POST   | `/revoke`                                                | Revoke an access token or refresh-token family       |
@@ -27,7 +27,9 @@ rejects a `resource` that does not name the grant's bound resource as `invalid_t
 `/register`, `/token`, and `/revoke` are public machine-to-machine ingress and do not use browser
 session credentials. Edge routing and staging-auth policy are owned by the browser/edge integration
 layer above this service. `/authorize` is intentionally a browser route and retains the ordinary
-session boundary.
+session boundary. It accepts exact HTTPS Client Identifier Metadata Document URLs, validates their
+public-client registration metadata, and returns the URL hostname with the pending consent view so
+users can identify an unreviewed URL-based client.
 
 ## Performance
 
@@ -35,7 +37,9 @@ Each protocol mutation performs bounded indexed lookups and writes. Code exchang
 rotation, consent decisions, and revocation use explicit transactions where atomic lifecycle
 changes are required. Every protocol and consent route is `no-store` and bypasses edge caching.
 The discovery documents are built from configuration without I/O and are anonymous and publicly
-cacheable.
+cacheable. An uncached or stale URL-based client adds one SSRF-guarded metadata request bounded to
+five seconds for response headers, five seconds for a 5 KiB body, and no redirects; validated
+metadata is cached for at most one hour according to response cache headers.
 
 ## Related
 

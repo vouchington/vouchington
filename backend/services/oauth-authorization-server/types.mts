@@ -6,6 +6,10 @@ export type OAuthClientAuthMethod = 'client_secret_basic' | 'none'
 export type OAuthClient = {
   id: string
   client_id: string
+  metadata_url: string | null
+  metadata_refresh_generation: string | null
+  metadata_refreshed_at: Date | null
+  metadata_expires_at: Date | null
   owner_user_id: string | null
   client_name: string
   client_type: OAuthClientType
@@ -27,6 +31,14 @@ export type RegisterOAuthClientInput = {
   grant_types?: string[]
   response_types?: string[]
   scope: string
+}
+
+export type ClientIdMetadataDocument = RegisterOAuthClientInput & {
+  client_id: string
+  client_secret?: unknown
+  client_secret_expires_at?: unknown
+  jwks?: unknown
+  jwks_uri?: unknown
 }
 
 export type RegisteredOAuthClient = {
@@ -61,7 +73,20 @@ export type OAuthAccessPrincipal = {
 export type OAuthAuthorizationRequestView = {
   id: string
   client_name: string
+  client_hostname: string | null
   resource: string
   scopes: ApiScope[]
   expires_at: Date
+}
+
+declare const validatedOAuthAuthorizationRequest: unique symbol
+
+export type ValidatedOAuthAuthorizationRequest = {
+  readonly [validatedOAuthAuthorizationRequest]: never
+  client: OAuthClient
+  codeChallenge: string
+  redirectUri: string
+  resource: string
+  scopes: ApiScope[]
+  state: string
 }

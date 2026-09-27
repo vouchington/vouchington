@@ -1,5 +1,8 @@
 import { read, write } from '@data-stores/psql'
 import type { OAuthGrantView, OAuthManagementPage } from './management-types.mts'
+import { getOAuthClientDisplayName } from './known-clients.mts'
+
+type OAuthGrantRow = OAuthGrantView & { client_metadata_url: string | null }
 
 /**
  * Lists the apps a user has authorized. Consent does not count as use. Code and refresh exchange
@@ -10,7 +13,7 @@ export async function listUserOAuthGrants(
   currentUserId: string,
   options: { limit: number; afterId?: string },
 ): Promise<OAuthManagementPage<OAuthGrantView>> {
-  const { rows } = await read<OAuthGrantView>(
+  const { rows } = await read<OAuthGrantRow>(
     `/* listUserOAuthGrants */ SELECT
        oauth_grant.id,
        json_build_object(
@@ -19,6 +22,7 @@ export async function listUserOAuthGrants(
          'client_name', client.client_name,
          'verified', client.verified_at IS NOT NULL
        ) AS client,
+       client.metadata_url AS client_metadata_url,
        oauth_grant.resource,
        oauth_grant.scopes,
        oauth_grant.consented_at,
@@ -43,7 +47,17 @@ export async function listUserOAuthGrants(
      LIMIT $3`,
     [currentUserId, options.afterId ?? null, options.limit + 1],
   )
-  return { results: rows.slice(0, options.limit), hasNextPage: rows.length > options.limit }
+  const results = rows
+    .slice(0, options.limit)
+    .map(({ client_metadata_url: metadataUrl, ...grant }) =>
+      metadataUrl
+        ? {
+            ...grant,
+            client: { ...grant.client, client_name: getOAuthClientDisplayName(metadataUrl) },
+          }
+        : grant,
+    )
+  return { results, hasNextPage: rows.length > options.limit }
 }
 
 /**
