@@ -47,10 +47,13 @@ describe('searchRssFeedItems has_related_posts', () => {
       urlId,
     })
 
-    const trueResult = await searchRssFeedItems({ has_related_posts: true })
+    const trueResult = await searchRssFeedItems({ rss_feed_ids: [feedId], has_related_posts: true })
     expect(trueResult.results.map(r => r.id)).toContain(itemId)
 
-    const falseResult = await searchRssFeedItems({ has_related_posts: false })
+    const falseResult = await searchRssFeedItems({
+      rss_feed_ids: [feedId],
+      has_related_posts: false,
+    })
     expect(falseResult.results.map(r => r.id)).not.toContain(itemId)
   })
 
@@ -78,12 +81,35 @@ describe('searchRssFeedItems has_related_posts', () => {
       guid: `hrp2-guid-${random}`,
       itemData: { title: `HRP2 Item ${random}` },
       contentSha256,
+      createdAt: new Date(Date.now() - 60_000),
     })
 
-    const trueResult = await searchRssFeedItems({ has_related_posts: true })
+    const unrelatedTopicId = await insertTestTopic({
+      name: `HRP2 Unrelated Topic ${random}`,
+      slug: `hrp2-unrelated-topic-${random}`,
+      createdById: user!.id,
+    })
+    const unrelatedFeedId = await insertTestRssFeed({
+      topicId: unrelatedTopicId,
+      title: `HRP2 Unrelated Feed ${random}`,
+    })
+    for (let index = 0; index < 11; index++) {
+      await insertTestRssFeedItem({
+        rssFeedId: unrelatedFeedId,
+        urlId: await createTestUrlWithHostname(),
+        guid: `hrp2-unrelated-${random}-${index}`,
+        itemData: { title: `HRP2 Unrelated Item ${random}-${index}` },
+        contentSha256: createHash('sha256').update(`hrp2-unrelated-${random}-${index}`).digest(),
+      })
+    }
+
+    const trueResult = await searchRssFeedItems({ rss_feed_ids: [feedId], has_related_posts: true })
     expect(trueResult.results.map(r => r.id)).not.toContain(itemId)
 
-    const falseResult = await searchRssFeedItems({ has_related_posts: false })
-    expect(falseResult.results.map(r => r.id)).toContain(itemId)
+    const falseResult = await searchRssFeedItems({
+      rss_feed_ids: [feedId],
+      has_related_posts: false,
+    })
+    expect(falseResult.results.map(r => r.id)).toEqual([itemId])
   })
 })
