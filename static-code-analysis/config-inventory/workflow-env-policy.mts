@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import { matchWorkflowEnvMapNames } from './env-expression-readers.mts'
 import { isWorkflowEnvAllowlisted } from './workflow-env-allowlists.mts'
 import type { ConfigInventory, EnvVarInventoryRow } from './types.mts'
 
@@ -10,24 +9,21 @@ export function checkWorkflowEnvReferences(
   ctx: SharedContext,
   inventory: ConfigInventory,
 ): string[] {
-  const rows = new Map(inventory.envVars.map(row => [row.name, row]))
   const errors: string[] = []
 
-  for (const file of ctx.trackedFiles) {
-    if (!isWorkflowYaml(file)) continue
-    const fullPath = join(ctx.repoRoot, file)
-    if (!existsSync(fullPath)) continue
+  for (const row of inventory.envVars) {
+    for (const file of row.workflows) {
+      if (!isWorkflowYaml(file)) continue
+      const fullPath = join(ctx.repoRoot, file)
+      if (!existsSync(fullPath)) continue
 
-    const fileContents = readFileSync(fullPath, 'utf8')
-    if (typeof fileContents !== 'string') continue
-    const source = fileContents
-    for (const name of matchWorkflowEnvMapNames(source)) {
-      if (isWorkflowEnvReferenced(name, source)) continue
-      if (hasNonWorkflowReference(rows.get(name))) continue
-      if (isWorkflowEnvAllowlisted(file, name)) continue
+      const source = readFileSync(fullPath, 'utf8')
+      if (isWorkflowEnvReferenced(row.name, source)) continue
+      if (hasNonWorkflowReference(row)) continue
+      if (isWorkflowEnvAllowlisted(file, row.name)) continue
 
       errors.push(
-        `workflow env ${name} in ${file} is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
+        `workflow env ${row.name} in ${file} is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
       )
     }
   }
