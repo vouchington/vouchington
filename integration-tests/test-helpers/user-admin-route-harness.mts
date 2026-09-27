@@ -112,7 +112,7 @@ export function installUserAdminRouteHarness(
     await createTestConversationMessage({
       conversationId: conversation.id,
       createdById: agent.system_user_id,
-      content: { role: 'assistant', text: 'Hello from the test agent' },
+      content: { role: 'assistant', content: 'Hello from the test agent' },
     })
     const hostname = `web-api-ua-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({

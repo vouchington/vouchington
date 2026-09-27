@@ -69,6 +69,10 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
   ],
   ['totp_recovery_codes', 'Recovery code lifecycle is represented by used_at.'],
   ['user_followers', 'Pure user-follow join table.'],
+  [
+    'follower_distribution_selected_recipients',
+    'Immutable selected-recipient membership; distribution timestamps own the lifecycle.',
+  ],
   ['user_topic_follows', 'Pure user-topic follow join table.'],
   ['user_topic_mutes', 'Pure user-topic mute join table.'],
 ])

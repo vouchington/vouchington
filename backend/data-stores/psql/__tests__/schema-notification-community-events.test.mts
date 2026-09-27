@@ -52,16 +52,16 @@ describe('community notification schema invariants', () => {
     await expect(insertLifecycleNotificationWithIntent(user.id, communityId)).rejects.toThrow(
       'chk_notifications__community_event_shape',
     )
-    await expect(insertLifecycleNotificationWithoutCommunity(user.id, communityId)).rejects.toThrow(
+    await expect(insertLifecycleNotificationWithoutCommunity(user.id)).rejects.toThrow(
       'chk_notifications__community_event_shape',
     )
-    await expect(
-      insertLifecycleNotificationWithWrongCommunity(user.id, communityId),
-    ).rejects.toThrow('chk_notifications__community_event_shape')
+    await expect(insertLifecycleNotificationWithWrongCommunity(user.id)).rejects.toThrow(
+      'fk_notifications__community_id',
+    )
     await expect(insertDigestNotificationWithCommunity(user.id, communityId)).rejects.toThrow(
       'chk_notifications__community_event_shape',
     )
-    await expect(insertDigestNotificationWithEntity(user.id, communityId)).rejects.toThrow(
+    await expect(insertDigestNotificationWithEntity(user.id)).rejects.toThrow(
       'chk_notifications__community_event_shape',
     )
   })

@@ -9,7 +9,7 @@ their configured endpoint, then persist completed turns through the transcript A
 | Table                                      | Partitioning                                                            | Description                                                       |
 | ------------------------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `conversations`                            | Not partitioned                                                         | Chat sessions with title, creator, optional post/RSS item context |
-| `conversation_messages`                    | RANGE by UUIDv7 `conversation_id`                                       | User and assistant messages with JSON content                     |
+| `conversation_messages`                    | RANGE by UUIDv7 `conversation_id`                                       | User and assistant messages with typed role, text, and error      |
 | `conversation_message_agentic_runs`        | RANGE by `id` (monthly partition drop)                                  | LLM execution runs tracking model, lifecycle timestamps, I/O      |
 | `conversation_message_agentic_runs_events` | RANGE by `conversation_message_agentic_run_id` (monthly partition drop) | Individual tool calls and model responses within a run            |
 

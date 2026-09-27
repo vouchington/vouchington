@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentModelProvider } from '@voucha/types/entities/agent-model'
+import { appendConversationMessageReturning } from './chat-content.mts'
 import { lockConversationAndAssertNoActiveChatTurn } from './chat-turns.mts'
 import type { ConversationMessage, ConversationMessageAgenticRun } from './types.mts'
 
@@ -26,23 +27,26 @@ export async function createClientGeneratedChatTurn(params: {
 
   await using query = await beginTransaction()
   await lockConversationAndAssertNoActiveChatTurn(query, conversationId)
-  const userMessageResult =
-    await query<ConversationMessage>(sql`/* createClientGeneratedChatTurnUser */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({ role: 'user', content: message })})
-    RETURNING *
-  `)
+  const userInsert = sql`/* createClientGeneratedChatTurnUser */
+    INSERT INTO conversation_messages (
+      conversation_id, created_by_id, chat_role, chat_text, chat_error
+    )
+    VALUES (${conversationId}, ${createdById}, 'user', ${message}, NULL)
+    RETURNING
+  `
+  appendConversationMessageReturning(userInsert)
+  const userMessageResult = await query<ConversationMessage>(userInsert)
   const userMessage = userMessageResult.rows[0]!
 
-  const assistantMessageResult =
-    await query<ConversationMessage>(sql`/* createClientGeneratedChatTurnAssistant */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify({
-      role: 'assistant',
-      content: assistantContent,
-    })})
-    RETURNING *
-  `)
+  const assistantInsert = sql`/* createClientGeneratedChatTurnAssistant */
+    INSERT INTO conversation_messages (
+      conversation_id, created_by_id, chat_role, chat_text, chat_error
+    )
+    VALUES (${conversationId}, ${createdById}, 'assistant', ${assistantContent}, NULL)
+    RETURNING
+  `
+  appendConversationMessageReturning(assistantInsert)
+  const assistantMessageResult = await query<ConversationMessage>(assistantInsert)
   const assistantMessage = assistantMessageResult.rows[0]!
 
   await query(sql`/* clearClientGeneratedChatLastResponseId */
