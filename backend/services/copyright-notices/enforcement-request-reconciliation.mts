@@ -17,6 +17,7 @@ export function searchReconcilableCopyrightEnforcementRequestIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright enforcement request cursor',
+    'searchReconcilableCopyrightEnforcementRequestIds',
     'enforcementAssessment',
     sql`/* searchReconcilableCopyrightEnforcementRequestIds */
       SELECT copyright_notice_submission_assessment_id AS id

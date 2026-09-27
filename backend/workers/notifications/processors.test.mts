@@ -15,7 +15,7 @@ import type {
   enqueueContinueNotificationPushIntentReconciliation,
   enqueueDeliverNotificationPushIntent,
 } from '@queues/notifications/enqueues'
-import type { listAvailableNotificationPushIntents } from '@services/notifications-push'
+import { listAvailableNotificationPushIntents } from '@services/notifications-push'
 import {
   createTestUser,
   createTestUserDirect,
@@ -183,9 +183,22 @@ describe('notification push intent processors', () => {
   it('reports a nonempty durable-intent reconciliation batch', async () => {
     const recipient = await createTestUserDirect()
     const follower = await createTestUserDirect()
-    await createFollowNotification(recipient.id, follower.id, follower.username)
-    const result = await processReconcileNotificationPushIntents()
-    expect(result.enqueued).toBeGreaterThan(0)
+    const [notification] = await createFollowNotification(
+      recipient.id,
+      follower.id,
+      follower.username,
+    )
+    const result = await processReconcileNotificationPushIntents(
+      {},
+      {
+        listAvailableNotificationPushIntents: (limit, page) =>
+          listAvailableNotificationPushIntents(limit, {
+            ...page,
+            notificationIds: [notification!.id],
+          }),
+      },
+    )
+    expect(result.enqueued).toBe(1)
   })
 })
 

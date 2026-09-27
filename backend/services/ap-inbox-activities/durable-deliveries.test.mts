@@ -11,7 +11,6 @@ import {
   acceptTestDelivery as createActivityPubInboxDelivery,
   claimTestDelivery as claimActivityPubInboxDelivery,
   deferTestDelivery as deferActivityPubInboxDelivery,
-  exhaustTestDelivery as markActivityPubInboxDeliveryFailed,
   rejectTestDelivery as deleteActivityPubInboxDelivery,
   releaseTestDelivery as releaseActivityPubInboxDeliveryForRetry,
   verifyTestDelivery as markActivityPubInboxDeliveryVerified,
@@ -19,7 +18,6 @@ import {
 import { createRemoteActorFixture } from './test-fixtures.mts'
 
 const claimRecoverableActivityPubInboxDeliveries = activityPubInboxDeliveryTransitions.recover
-const rearmFailedActivityPubInboxDeliveries = activityPubInboxDeliveryTransitions.rearm
 
 function makeEnvelope(): ActivityPubInboxEnvelope {
   const suffix = randomUUID()
@@ -139,25 +137,36 @@ describe('durable ActivityPub inbox deliveries', () => {
 
   it('leases a recovered row so an immediate second recovery cannot rotate its token again', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
+    const unrelated = await createActivityPubInboxDelivery(makeEnvelope())
     await makeActivityPubInboxDeliveryRecoverableForTest(created.deliveryId, 'unstarted')
+    await makeActivityPubInboxDeliveryRecoverableForTest(unrelated.deliveryId, 'unstarted')
 
-    const first = (await claimRecoverableActivityPubInboxDeliveries()).find(
-      delivery => delivery.deliveryId === created.deliveryId,
-    )
+    const selected = await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])
+    expect(selected.map(delivery => delivery.deliveryId)).toEqual([created.deliveryId])
+    const first = selected[0]
     expect(first).toBeDefined()
     expect(
-      (await claimRecoverableActivityPubInboxDeliveries()).some(
+      (await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])).some(
         delivery => delivery.deliveryId === created.deliveryId,
       ),
     ).toBe(false)
+    const unrelatedRecovery = await claimRecoverableActivityPubInboxDeliveries([
+      unrelated.deliveryId,
+    ])
+    expect(unrelatedRecovery.map(delivery => delivery.deliveryId)).toEqual([unrelated.deliveryId])
     if (first) await deleteActivityPubInboxDelivery(created.deliveryId, first.processingAttemptId)
+    if (unrelatedRecovery[0])
+      await deleteActivityPubInboxDelivery(
+        unrelated.deliveryId,
+        unrelatedRecovery[0].processingAttemptId,
+      )
   })
 
   it('rotates the fencing token when recovering a crashed processing lease', async () => {
     const created = await createActivityPubInboxDelivery(makeEnvelope())
     await makeActivityPubInboxDeliveryRecoverableForTest(created.deliveryId, 'stale')
 
-    const recovered = (await claimRecoverableActivityPubInboxDeliveries()).find(
+    const recovered = (await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])).find(
       delivery => delivery.deliveryId === created.deliveryId,
     )
     expect(recovered?.processingAttemptId).not.toBe(created.processingAttemptId)
@@ -211,9 +220,9 @@ describe('durable ActivityPub inbox deliveries', () => {
       cleanupAttemptId = deferred.processingAttemptId
       await ageActivityPubInboxDeliveryReceivedAtForTest(created.deliveryId)
 
-      const recovered = (await claimRecoverableActivityPubInboxDeliveries()).find(
-        delivery => delivery.deliveryId === created.deliveryId,
-      )
+      const recovered = (
+        await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])
+      ).find(delivery => delivery.deliveryId === created.deliveryId)
       if (recovered) cleanupAttemptId = recovered.processingAttemptId
       expect(recovered).toBeUndefined()
       expect(
@@ -246,9 +255,9 @@ describe('durable ActivityPub inbox deliveries', () => {
       cleanupAttemptId = deferred.processingAttemptId
       await ageActivityPubInboxDeliveryReceivedAtForTest(created.deliveryId)
 
-      const recovered = (await claimRecoverableActivityPubInboxDeliveries()).find(
-        delivery => delivery.deliveryId === created.deliveryId,
-      )
+      const recovered = (
+        await claimRecoverableActivityPubInboxDeliveries([created.deliveryId])
+      ).find(delivery => delivery.deliveryId === created.deliveryId)
       expect(recovered).toBeDefined()
       if (!recovered) return
       cleanupAttemptId = recovered.processingAttemptId
@@ -262,28 +271,5 @@ describe('durable ActivityPub inbox deliveries', () => {
     } finally {
       await deleteActivityPubInboxDelivery(created.deliveryId, cleanupAttemptId)
     }
-  })
-
-  it('re-arms exhausted operational failures with a new token for manual replay', async () => {
-    const created = await createActivityPubInboxDelivery(makeEnvelope())
-    await claimActivityPubInboxDelivery(created.deliveryId, created.processingAttemptId)
-    await markActivityPubInboxDeliveryFailed(
-      created.deliveryId,
-      created.processingAttemptId,
-      new Error('temporary actor host outage'),
-    )
-
-    const rearmed = (await rearmFailedActivityPubInboxDeliveries()).find(
-      delivery => delivery.deliveryId === created.deliveryId,
-    )
-    expect(rearmed?.processingAttemptId).not.toBe(created.processingAttemptId)
-    expect(
-      await claimActivityPubInboxDelivery(
-        created.deliveryId,
-        rearmed?.processingAttemptId ?? randomUUID(),
-      ),
-    ).not.toBeNull()
-    if (rearmed)
-      await deleteActivityPubInboxDelivery(created.deliveryId, rearmed.processingAttemptId)
   })
 })

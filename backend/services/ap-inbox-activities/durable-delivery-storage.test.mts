@@ -118,7 +118,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
     )
     const failed = await getActivityPubInboxRetentionStateForTest(delivery.deliveryId)
 
-    const rearmed = (await activityPubInboxDeliveryTransitions.rearm()).find(
+    const rearmed = (await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])).find(
       candidate => candidate.deliveryId === delivery.deliveryId,
     )
     expect(rearmed?.deliveryId).toBe(delivery.deliveryId)
@@ -137,14 +137,14 @@ describe('ActivityPub inbox durable storage bounds', () => {
         delivery.processingAttemptId,
       ),
     ).toEqual({ outcome: 'stale' })
-    expect(await activityPubInboxDeliveryTransitions.recover()).not.toContainEqual(
-      expect.objectContaining({ deliveryId: delivery.deliveryId }),
-    )
+    expect(
+      await activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),
+    ).not.toContainEqual(expect.objectContaining({ deliveryId: delivery.deliveryId }))
 
     await makeActivityPubInboxFailureExpiredForTest(delivery.deliveryId)
-    expect(await activityPubInboxDeliveryTransitions.rearm()).not.toContainEqual(
-      expect.objectContaining({ deliveryId: delivery.deliveryId }),
-    )
+    expect(
+      await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId]),
+    ).not.toContainEqual(expect.objectContaining({ deliveryId: delivery.deliveryId }))
   })
 
   it('deletes expired rows in deterministic lease-aware locked batches', async () => {

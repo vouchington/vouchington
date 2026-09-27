@@ -6,18 +6,57 @@ import {
   getTestMediaDeliveryRecordSnapshot,
   insertTestImage,
   markImageModerationFlagged,
+  markTestMediaDeliveryRecordFailed,
   scheduleTestMediaDeliveryRetry,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
 import {
   getImagePlacementDeliveryKey,
+  getMediaDeliveryRegistryScanBefore,
   getLegacyImageDeliveryKey,
+  stageAllCurrentImagePlacementDeliveryRecords,
   stageCurrentImagePlacementDeliveryRecordsForImageIds,
   stageImagePlacementDeliveryRecord,
   stageLegacyImageDeliveryRecord,
+  listRecoverableMediaDeliveryRegistryKeys,
+  replayFailedMediaDeliveryRegistryRecords,
 } from './index.mts'
 
 describe('scoped media delivery reconciliation', () => {
+  it('lists and replays only owned eligible registry records', async () => {
+    const [selected, unrelated] = await Promise.all([
+      createCurrentProfilePlacement(),
+      createCurrentProfilePlacement(),
+    ])
+    await Promise.all(
+      [selected, unrelated].map(placement =>
+        stageImagePlacementDeliveryRecord({ ...placement, state: 'allow' }),
+      ),
+    )
+    expect(
+      (
+        await listRecoverableMediaDeliveryRegistryKeys({
+          limit: 100,
+          scanBefore: await getMediaDeliveryRegistryScanBefore(),
+          deliveryKeys: [selected.deliveryKey],
+        })
+      ).results,
+    ).toEqual([selected.deliveryKey])
+    await Promise.all(
+      [selected, unrelated].map(placement =>
+        markTestMediaDeliveryRecordFailed(placement.deliveryKey),
+      ),
+    )
+    const unrelatedBefore = await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)
+    expect(
+      await replayFailedMediaDeliveryRegistryRecords({ deliveryKeys: [selected.deliveryKey] }),
+    ).toBe(1)
+    expect(await getTestMediaDeliveryRecord(selected.deliveryKey)).toMatchObject({
+      state: 'pending',
+    })
+    expect(await getTestMediaDeliveryRecordSnapshot(unrelated.deliveryKey)).toEqual(unrelatedBefore)
+  })
+
   it('stages current placement and legacy records only for selected images', async () => {
     const [selected, unrelated] = await Promise.all([
       createCurrentProfilePlacement(),
@@ -122,6 +161,7 @@ describe('scoped media delivery reconciliation', () => {
       getTestMediaDeliveryRecordSnapshot(getLegacyImageDeliveryKey(selected.imageId)),
     ])
     expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([])).toBe(0)
+    expect(await stageAllCurrentImagePlacementDeliveryRecords([])).toBe(0)
     expect(
       await Promise.all([
         getTestMediaDeliveryRecordSnapshot(selected.deliveryKey),

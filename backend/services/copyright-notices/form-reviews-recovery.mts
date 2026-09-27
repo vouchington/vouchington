@@ -18,6 +18,7 @@ export function searchRecoverableCopyrightFormReviewIntakeIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright form review recovery cursor',
+    'searchRecoverableCopyrightFormReviewIntakeIds',
     'formReviewIntake',
     sql`/* searchRecoverableCopyrightFormReviewIntakeIds */
     SELECT review.copyright_notice_form_intake_id AS id

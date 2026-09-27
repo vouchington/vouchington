@@ -2,6 +2,11 @@ import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagina
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+  type SharedDbScopeOperation,
+} from '@data-stores/psql/shared-db-scope-observer'
 
 /** One UUID-keyset page of the immutable IDs a copyright reconcile sweep acts on. */
 export type CopyrightSweepIdPage = {
@@ -40,11 +45,13 @@ type SweepIdQuery = (statement: SQLStatement) => Promise<{ rows: Array<{ id: str
 export async function queryCopyrightSweepIdPage(
   options: CopyrightSweepPageOptions,
   cursorMessage: string,
+  operation: SharedDbScopeOperation,
   column: CopyrightSweepIdColumn,
   selectWhere: SQLStatement,
   query: SweepIdQuery,
 ): Promise<CopyrightSweepIdPage> {
   const parsed = parseCopyrightSweepPageOptions(options, cursorMessage)
+  observeSharedDbScope(operation, sharedDbCursorScope(parsed.afterId))
   appendCopyrightSweepKeyset(selectWhere, column, parsed.afterId, parsed.limit)
   const { rows } = await query(selectWhere)
   return toCopyrightSweepIdPage(rows, parsed.limit)

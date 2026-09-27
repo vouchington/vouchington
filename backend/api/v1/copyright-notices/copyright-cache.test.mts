@@ -4,7 +4,11 @@ import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { createCopyrightEmailIntake } from '@services/copyright-notices'
+import {
+  copyrightStaffEmailIntakeQueueCursorScope,
+  createCopyrightEmailIntake,
+} from '@services/copyright-notices'
+import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 
 describe('copyright API cache policy', () => {
   beforeEach(() => {
@@ -26,10 +30,17 @@ describe('copyright API cache policy', () => {
 
     const moderator = createRequest()
     await moderator.authenticateAs(await createTestUser({ extraRoles: ['moderator'] }))
+    const after = encodeScopedPreciseTimestampCursor(
+      new Date(Date.now() + 1000 * 365 * 24 * 60 * 60 * 1000).toISOString().replace(/Z$/, '000Z'),
+      crypto.randomUUID(),
+      copyrightStaffEmailIntakeQueueCursorScope,
+    )
     expect(
-      (await moderator.get('/api/v1/copyright-email-intakes/review-queue').expect(200)).headers[
-        'cache-control'
-      ],
+      (
+        await moderator
+          .get(`/api/v1/copyright-email-intakes/review-queue?after=${encodeURIComponent(after)}`)
+          .expect(200)
+      ).headers['cache-control'],
     ).toBe('private, no-store')
 
     const bytes = Buffer.from('From: claimant@example.test\r\n\r\nCopyright notice')

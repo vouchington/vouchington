@@ -107,6 +107,7 @@ export function searchRecoverableCopyrightEmailIntakeResponseIds(
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright email intake response cursor',
+    'searchRecoverableCopyrightEmailIntakeResponseIds',
     'rowId',
     sql`/* searchRecoverableCopyrightEmailIntakeResponseIds */
       SELECT id

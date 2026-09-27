@@ -3,6 +3,10 @@ import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagina
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 
 export type CopyrightAgentDispatch =
   | { kind: 'email'; intakeId: string }
@@ -38,6 +42,7 @@ export async function getPendingCopyrightAgentDispatches(
   const cursor = options.after
     ? decodeUuidCursor(options.after, isSimpleCursor, 'Invalid copyright agent dispatch cursor')
     : null
+  observeSharedDbScope('getPendingCopyrightAgentDispatches', sharedDbCursorScope(cursor?.id))
   const query = buildPendingCopyrightAgentDispatchesQuery()
   if (cursor) query.append(sql`\n    WHERE id > ${cursor.id}`)
   query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)

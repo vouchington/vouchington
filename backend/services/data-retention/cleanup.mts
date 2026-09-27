@@ -62,7 +62,7 @@ type DataRetentionCleanupOptions = {
   softDeletedUsers?: CleanupOptions
   oldReferralAttributions?: CleanupOptions
   orphanedOAuthAccounts?: CleanupOptions
-  expiredOAuthAuthorizations?: ExpiryCleanupOptions
+  expiredOAuthAuthorizations?: ExpiryCleanupOptions & { authorizationIds?: readonly string[] }
   expiredOAuthServerArtifacts?: ExpiryCleanupOptions
   expiredBlueskyLinkCompletions?: Omit<CleanupOptions, 'retentionDays'>
   abandonedBlueskyLinkSessions?: Omit<CleanupOptions, 'retentionDays'>

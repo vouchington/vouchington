@@ -148,7 +148,7 @@ describe('ActivityPub inbox processor', () => {
 
     const failure = processDelivery(delivery, { isFinalAttempt: true })
     await expect(failure).rejects.not.toBeInstanceOf(UnrecoverableError)
-    const rearmed = (await rearmFailedActivityPubInboxDeliveries()).find(
+    const rearmed = (await rearmFailedActivityPubInboxDeliveries([delivery.deliveryId])).find(
       candidate => candidate.deliveryId === delivery.deliveryId,
     )
     expect(rearmed?.processingAttemptId).not.toBe(delivery.processingAttemptId)

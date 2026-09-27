@@ -77,8 +77,17 @@ describe('backend Vitest project config', () => {
 
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
     expect(dataStores?.runner).toBe(runner)
-    expect(capacity?.runner).toBeUndefined()
+    expect(capacity?.runner).toBe('./test-helpers/vitest.runner.shared-db-scope-guard.mts')
     expect(realGlideProject()?.runner).toBeUndefined()
+  })
+
+  it('keeps the self-isolating global media replay case in backend-data-stores', () => {
+    const path = 'backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'
+    const owners = backendProjects()
+      .filter(project => projectOwnsPath(project, path))
+      .map(project => project.test?.name)
+
+    expect(owners).toEqual(['backend-data-stores'])
   })
 
   it('raises the Valkey request budget before DB-backed setup creates clients', () => {

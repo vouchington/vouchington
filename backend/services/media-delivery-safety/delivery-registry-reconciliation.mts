@@ -1,5 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import { imageDeliveryAuthorityProof, imageDeliveryIsAuthorized } from './delivery-authority.mts'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import {
@@ -13,6 +14,11 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   deliveryKeys?: readonly string[]
 }): Promise<number> {
   if (input?.deliveryKeys?.length === 0) return 0
+  observeSharedDbScope(
+    'replayFailedMediaDeliveryRegistryRecords',
+    sharedDbIdsScope(input?.deliveryKeys),
+  )
+  const deliveryKeys = input?.deliveryKeys ? [...input.deliveryKeys] : null
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ delivery_key: string; placement_id: string | null }>(sql`
     /* replayFailedMediaDeliveryRegistryRecords */
@@ -20,7 +26,7 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL, completed_at = NULL,
       next_attempt_at = NULL, failure_message = 'Reopened by media delivery reconciliation.'
     WHERE state = 'failed'
-      AND (${input?.deliveryKeys ?? null}::text[] IS NULL OR delivery_key = ANY(${input?.deliveryKeys ?? null}::text[]))
+      AND (${deliveryKeys}::text[] IS NULL OR delivery_key = ANY(${deliveryKeys}::text[]))
     RETURNING delivery_key, placement_id
   `)
   if (input?.actorUserId) {
@@ -51,6 +57,8 @@ export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(
 export async function stageAllCurrentImagePlacementDeliveryRecords(
   imageIds?: readonly string[],
 ): Promise<number> {
+  if (imageIds?.length === 0) return 0
+  observeSharedDbScope('stageAllCurrentImagePlacementDeliveryRecords', sharedDbIdsScope(imageIds))
   const imageIdScope = imageIds ? [...imageIds] : null
   const statement = sql`/* stageAllCurrentImagePlacementDeliveryRecords */
     WITH candidates AS (

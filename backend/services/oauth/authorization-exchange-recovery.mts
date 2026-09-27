@@ -1,11 +1,18 @@
 import { write } from '@data-stores/psql'
+import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 import {
   MAX_EXCHANGE_ATTEMPTS,
   STALE_EXCHANGE_CLAIM_SECONDS,
   X_MAX_QUEUE_DELAY_SECONDS,
 } from './authorization-exchange-state.mts'
 
-export async function getRecoverableOAuthAuthorizationIds(limit = 500): Promise<string[]> {
+export async function getRecoverableOAuthAuthorizationIds(
+  limit = 500,
+  authorizationIds?: readonly string[],
+): Promise<string[]> {
+  if (authorizationIds?.length === 0) return []
+  observeSharedDbScope('getRecoverableOAuthAuthorizationIds', sharedDbIdsScope(authorizationIds))
+  const idScope = authorizationIds ? [...authorizationIds] : null
   const { rows } = await write(
     `/* getRecoverableOAuthAuthorizationIds */
      WITH terminal_candidates AS (
@@ -23,6 +30,7 @@ export async function getRecoverableOAuthAuthorizationIds(limit = 500): Promise<
          END AS callback_error
        FROM oauth_authorizations
        WHERE expires_at > CURRENT_TIMESTAMP
+         AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
          AND (
            (
              exchange_attempts >= $3
@@ -67,6 +75,7 @@ export async function getRecoverableOAuthAuthorizationIds(limit = 500): Promise<
      SELECT id
      FROM oauth_authorizations
      WHERE expires_at > CURRENT_TIMESTAMP
+       AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
        AND exchange_attempts < $3
        AND (
          provider <> 'x'
@@ -82,15 +91,27 @@ export async function getRecoverableOAuthAuthorizationIds(limit = 500): Promise<
        )
      ORDER BY id ASC
      LIMIT $1`,
-    [limit, STALE_EXCHANGE_CLAIM_SECONDS, MAX_EXCHANGE_ATTEMPTS, X_MAX_QUEUE_DELAY_SECONDS],
+    [
+      limit,
+      STALE_EXCHANGE_CLAIM_SECONDS,
+      MAX_EXCHANGE_ATTEMPTS,
+      X_MAX_QUEUE_DELAY_SECONDS,
+      idScope,
+    ],
   )
   return rows.map(row => String(row.id))
 }
 
 export async function deleteExpiredOAuthAuthorizationBatch(
   limit: number,
-  options: { lowerBoundDate?: Date; now?: Date } = {},
+  options: { lowerBoundDate?: Date; now?: Date; authorizationIds?: readonly string[] } = {},
 ): Promise<number> {
+  if (options.authorizationIds?.length === 0) return 0
+  observeSharedDbScope(
+    'deleteExpiredOAuthAuthorizationBatch',
+    sharedDbIdsScope(options.authorizationIds),
+  )
+  const idScope = options.authorizationIds ? [...options.authorizationIds] : null
   const { rowCount } = await write(
     `/* deleteExpiredOAuthAuthorizationBatch */ DELETE FROM oauth_authorizations
      WHERE id IN (
@@ -98,10 +119,11 @@ export async function deleteExpiredOAuthAuthorizationBatch(
        FROM oauth_authorizations
        WHERE expires_at <= COALESCE($3::timestamptz, CURRENT_TIMESTAMP)
          AND ($2::timestamptz IS NULL OR expires_at >= $2)
+         AND ($4::uuid[] IS NULL OR id = ANY($4::uuid[]))
        ORDER BY expires_at ASC, id ASC
        LIMIT $1
      )`,
-    [limit, options.lowerBoundDate ?? null, options.now ?? null],
+    [limit, options.lowerBoundDate ?? null, options.now ?? null, idScope],
   )
   return rowCount ?? 0
 }

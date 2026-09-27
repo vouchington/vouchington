@@ -189,6 +189,26 @@ settles.
 
 The DB accumulates rows from every test run and is never cleaned. These patterns prevent flaky tests.
 
+### Runtime guard for catalogued shared-DB scans
+
+DB-backed Vitest projects install `vitest.setup.shared-db-scope-guard.mts` and the shared-DB
+runner. The finite catalog in `backend/data-stores/psql/shared-db-scope-observer.mts` names
+staff heads and selected recovery/sweep service calls. When a test executes one of those calls,
+it must pass owned IDs/keys or a complete, actually bound keyset cursor. A date window,
+`scanBefore`, or `LIMIT` alone does not isolate rows. An explicit empty ID array is a no-query
+no-op. Production callers may still request a global scan: the observer is inert without the
+test setup.
+
+The guard records a violation even if the service error is caught. The file runner reports it
+after `afterAll`, including setup/import failures, and retains per-file reported counts across
+`isolate: false` files and `vi.resetModules()`. The backend-data-stores runner also checks for
+leaked GlideMQ workers. The catalog is intentionally finite, not a SQL-wide interception rule;
+new global-head or sweep services require an explicit catalog and bound-scope review. See the
+[parallel-safety reference](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#catalogued-shared-db-scan-guard).
+The intentionally global copyright media-replay HTTP case runs in a fresh local database via
+`test-helpers/vitest-isolated-global-media-replay.mts`; it retains its real route/audit assertions
+without scanning or mutating another test's registry records.
+
 ### Exact global AI-usage aggregates
 
 Randomized IDs isolate fixture ownership, but they cannot isolate a query that sums every

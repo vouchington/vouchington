@@ -163,6 +163,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: true,
       name: 'backend/analytics-integration',
+      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [
         'backend/services/jwt-session/create.test.mts',
         'backend/services/jwt-session/flows.test.mts',
@@ -173,6 +174,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       exclude: ['**/node_modules/**', '**/.git/**', '**/*.mock.test.mts'],
       globalSetup: './test-helpers/vitest.setup.data-stores.mts',
       setupFiles: [
+        './test-helpers/vitest.setup.shared-db-scope-guard.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',

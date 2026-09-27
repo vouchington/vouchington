@@ -21,7 +21,7 @@ describe('reconcileStaleChatRuntimeGenerations', () => {
     const user = await createTestUser()
     const conversation = await createConversation(user.id, 'Stale chat batch')
     const messages = await Promise.all(
-      ['first', 'second', 'fresh'].map(content =>
+      ['first', 'second', 'fresh', 'unrelated stale'].map(content =>
         createConversationMessage(conversation.id, user.id, { role: 'assistant', content }),
       ),
     )
@@ -39,9 +39,13 @@ describe('reconcileStaleChatRuntimeGenerations', () => {
     await Promise.all([
       setChatAgenticRunStartedAt(runs[0]!.id, new Date('1900-01-01T00:00:00Z')),
       setChatAgenticRunStartedAt(runs[1]!.id, new Date('1900-01-01T00:00:01Z')),
+      setChatAgenticRunStartedAt(runs[3]!.id, new Date('1900-01-01T00:00:02Z')),
     ])
 
-    const batch = await getStaleChatRuntimeGenerationJobs({ batchSize: 1 })
+    const batch = await getStaleChatRuntimeGenerationJobs({
+      batchSize: 1,
+      runIds: runs.slice(0, 3).map(run => run.id),
+    })
 
     expect(batch.candidates).toEqual([
       {
@@ -50,6 +54,10 @@ describe('reconcileStaleChatRuntimeGenerations', () => {
         startedAt: new Date('1900-01-01T00:00:00Z'),
       },
     ])
+    expect(batch.candidates.map(candidate => candidate.id)).not.toContain(runs[3]!.id)
+    expect(
+      await getConversationMessageAgenticRunsByConversationMessageId(messages[3]!.id),
+    ).toMatchObject([{ status: 'running' }])
   })
 
   it('signals only selected stale rows and atomically terminalizes their run and assistant message', async () => {

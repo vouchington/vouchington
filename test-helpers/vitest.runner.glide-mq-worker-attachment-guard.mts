@@ -1,9 +1,10 @@
 import type { TestWorker } from 'glide-mq/testing'
-import { TestRunner } from 'vitest'
+import type { TestRunner } from 'vitest'
 import {
   captureAttachedTestWorkers,
   getUnexpectedAttachedTestWorkerQueueNames,
 } from './glide-mq-vitest-internals.mts'
+import SharedDbScopeGuardRunner from './vitest.runner.shared-db-scope-guard.mts'
 
 function createWorkerAttachmentLeakError(queueNames: string[]): Error {
   return new Error(
@@ -16,7 +17,7 @@ function createWorkerAttachmentLeakError(queueNames: string[]): Error {
   )
 }
 
-export default class GlideMqWorkerAttachmentGuardRunner extends TestRunner {
+export default class GlideMqWorkerAttachmentGuardRunner extends SharedDbScopeGuardRunner {
   #baselines = new Map<string, ReadonlySet<TestWorker>>()
 
   override async importFile(

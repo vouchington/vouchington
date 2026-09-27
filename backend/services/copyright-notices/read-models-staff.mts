@@ -1,5 +1,9 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -24,6 +28,7 @@ export async function listCopyrightStaffQueue(
   if (!currentUserCanReviewCopyrightNotices(currentUser)) {
     return { cases: [], endCursor: null, hasNextPage: false }
   }
+  observeSharedDbScope('listCopyrightStaffQueue', sharedDbCursorScope(options.after?.id))
   await using transaction = await beginTransaction()
   const query = sql`/* listPendingCopyrightStaffCases */
     SELECT notice.id, to_char(

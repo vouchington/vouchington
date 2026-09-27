@@ -1,5 +1,10 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+  sharedDbIdsScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 
 export type NotificationPushIntentRecoveryCursor = {
   updatedAt: string
@@ -19,10 +24,19 @@ export async function listAvailableNotificationPushIntents(
   page: {
     scanBefore?: string
     after?: NotificationPushIntentRecoveryCursor
+    notificationIds?: readonly string[]
   } = {},
 ): Promise<AvailableNotificationPushIntent[]> {
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Push intent limit must be positive')
+  if (page.notificationIds?.length === 0) return []
+  const cursor = page.after
+  const cursorScope =
+    cursor?.updatedAt && cursor.userId && cursor.notificationId
+      ? sharedDbCursorScope(cursor.notificationId)
+      : sharedDbIdsScope(page.notificationIds)
+  observeSharedDbScope('listAvailableNotificationPushIntents', cursorScope)
+  const idScope = page.notificationIds ? [...page.notificationIds] : null
   const scanBefore = page.scanBefore ?? null
   const afterUpdatedAt = page.after?.updatedAt ?? null
   const afterUserId = page.after?.userId ?? null
@@ -37,6 +51,7 @@ export async function listAvailableNotificationPushIntents(
     FROM notification_push_intents intent
     CROSS JOIN scan
     WHERE intent.status = 'pending'
+      AND (${idScope}::uuid[] IS NULL OR intent.notification_id = ANY(${idScope}::uuid[]))
       AND (intent.lease_expires_at IS NULL OR intent.lease_expires_at <= CURRENT_TIMESTAMP)
       AND intent.updated_at <= scan.scan_before
       AND (
