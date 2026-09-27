@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { conditionEntails } from './workflow-condition-entailment.mts'
+import { conditionEntails } from 'vouchington-tooling/workflow-policy'
 
 describe('conditionEntails', () => {
   it('treats an empty condition as entailed by anything, since it always runs', () => {

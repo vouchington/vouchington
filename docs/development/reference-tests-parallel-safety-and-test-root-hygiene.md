@@ -435,9 +435,11 @@ generations: identities stay stable within a generation, the physical build coun
 on warm calls, and a simulated input change advances the generation and invalidates all four
 products atomically. A second real-program test marks one compiler capture stale and proves the
 production composition discards it before publishing a later attempt. The bounded attempt loop
-lives in `backend-program-settlement.mts`; its exhaustive retry, configuration handoff, terminal
-error, and unexpected-error branches use in-memory tests instead of repeatedly building the full
-backend program. Filesystem-probe freshness remains covered in `backend-program-freshness.test.mts`.
+calls `settleBuild` from `vouchington-tooling/compiler-build`. `backend-program-settlement.mts`
+keeps the three-attempt bound and the backend terminal error; its exhaustive retry, configuration
+handoff, terminal error, and unexpected-error branches use in-memory tests instead of repeatedly
+building the full backend program. Filesystem-probe freshness uses `trackCompilerHost` and
+`compilerHostProbesAreFresh` from the same package, covered in `backend-program-freshness.test.mts`.
 Use a small, structural filesystem host for a stable replay baseline or an individual tracked
 operation: its `fileExists`, `readFile`, directory, and realpath answers are owned by the test
 rather than ambient filesystem state that TypeScript can probe while it builds a program. Keep real
@@ -468,10 +470,10 @@ compiler-host, program, and language-service factories owned by only `backend-pr
 the public compiler-host family (`createCompilerHost`, `createIncrementalCompilerHost`,
 `createWatchCompilerHost`, `createSolutionBuilderHost`, and
 `createSolutionBuilderWithWatchHost`) plus the program, incremental, builder, watch,
-solution-builder, and language-service factory surface. `backend-program-freshness.mts` is a
-TypeScript-independent structural filesystem-host decorator; the backend-program owner constructs
-the host and passes it into that tracker. Directory listings keep the host's original path array
-and order for TypeScript, while freshness compares a normalized, sorted, unique signature.
+solution-builder, and language-service factory surface. `vouchington-tooling/compiler-build`
+tracks the structural filesystem host; the backend-program owner constructs the host and passes it
+into that tracker. Directory listings keep the host's original path array and order for TypeScript,
+while freshness compares a normalized, sorted, unique signature.
 The rule follows protected factory provenance through direct calls and constructors, tagged
 templates, decorators, standard `call`/`apply`/`bind` and `Reflect.apply`/`Reflect.construct`
 invocation (including `Reflect.construct.call` and `Reflect.construct.apply`), and callable wrappers created by bound functions, subclasses, or an unshadowed global
