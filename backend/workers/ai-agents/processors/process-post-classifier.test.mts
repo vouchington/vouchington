@@ -100,7 +100,7 @@ describe('post classifier worker', () => {
     expect(await getPostClassifierApplicationFacts(post.id)).toEqual([
       expect.objectContaining({
         id: child.applicationId,
-        reserved_batch_id: expect.any(String),
+        decision_batch_id: expect.any(String),
         completed_at: null,
       }),
     ])

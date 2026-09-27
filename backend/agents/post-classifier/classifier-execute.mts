@@ -66,8 +66,8 @@ export async function executePostClassifierOutcomes(
   input.signal.throwIfAborted()
   let remoteDecision: PersistClassifierDecisionInput | undefined
   if (classifierInput) {
-    if (!input.lease.reservedBatchId)
-      throw new Error('Remote post classifier requires a reserved batch')
+    if (!input.lease.decisionBatchId)
+      throw new Error('Remote post classifier requires a pre-reserved decision batch')
     const phase = { reserved: false, returned: false }
     const baseClient = dependencies.createClient({
       beforeAttempt: async () => {
@@ -84,7 +84,7 @@ export async function executePostClassifierOutcomes(
     try {
       remoteDecision = await prepareSingleCallClassifierDecision({
         ...classifierInput,
-        batchId: input.lease.reservedBatchId,
+        batchId: input.lease.decisionBatchId,
         client: {
           decide: async (request, signal) => {
             const response = await baseClient.decide(request, signal)

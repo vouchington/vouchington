@@ -81,7 +81,7 @@ describe('post classifier execution with real receipts', () => {
     ])
     expect(await readPostClassifierOutcomes(input.lease)).toMatchObject({
       localOutcome: { flagged: true },
-      remoteDecision: { batchId: input.lease.reservedBatchId },
+      remoteDecision: { batchId: input.lease.decisionBatchId },
     })
     expect((await getPostClassifierApplicationFacts(input.post.id))[0]).toMatchObject({
       provider_attempts_started: 1,
@@ -135,7 +135,7 @@ describe('post classifier execution with real receipts', () => {
     })
     expect(await executePostClassifierOutcomes(input, dependencies)).toBe('stale')
     expect(await readPostClassifierOutcomes(input.lease)).toBeNull()
-    expect((await getClassifierBorrowedDecisionFacts(input.lease.reservedBatchId!)).batches).toBe(0)
+    await expectReservedRemoteBatch(input)
   })
   it.each(['missing', 'provider', 'timeout'] as const)(
     'releases %s failures without partial outcomes',
@@ -166,9 +166,7 @@ describe('post classifier execution with real receipts', () => {
         provider_attempts_started: 1,
         terminal_remote_failed_at: null,
       })
-      expect((await getClassifierBorrowedDecisionFacts(input.lease.reservedBatchId!)).batches).toBe(
-        0,
-      )
+      await expectReservedRemoteBatch(input)
     },
   )
   it('stops at the attempt budget before another request', async () => {
@@ -252,9 +250,23 @@ describe('post classifier execution with real receipts', () => {
       expect(row.lease_token).toBe(kind === 'credentials' ? input.lease.leaseToken : null)
       expect(row.terminal_remote_failed_at !== null).toBe(kind === 'terminal')
       expect(row.outcomes_persisted_at).toBeNull()
-      expect((await getClassifierBorrowedDecisionFacts(input.lease.reservedBatchId!)).batches).toBe(
-        0,
-      )
+      await expectReservedRemoteBatch(input)
     },
   )
 })
+
+async function expectReservedRemoteBatch(
+  input: Awaited<ReturnType<typeof createPostClassifierExecutionFixture>>,
+): Promise<void> {
+  const remote = input.lease.resolved.configuration.remote
+  if (!remote || !input.lease.decisionBatchId) {
+    throw new Error('Expected remote post-classifier execution fixture')
+  }
+  await expect(getClassifierBorrowedDecisionFacts(input.lease.decisionBatchId)).resolves.toEqual({
+    batches: 1,
+    calls: 0,
+    snapshots: remote.questions.length,
+    topicResults: 0,
+    storyResults: 0,
+  })
+}
