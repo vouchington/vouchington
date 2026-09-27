@@ -3,6 +3,8 @@ import { BrowseFeedResults } from '@/components/sources/browse-feed-results'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { StoryFrame } from '@/storybook/story-frame'
 import { rssFeeds } from '@/storybook/entities/fixtures/feeds'
+import type { RssFeedsListResponseBody } from '@/types/api-responses'
+import type { ViewRssFeed } from '@/types/rss-feeds'
 
 const meta = {
   title: 'Sources/BrowseFeedResults',
@@ -11,7 +13,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const emptyFeeds = {
+const emptyFeeds: RssFeedsListResponseBody = {
   results: [],
   page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
   topic_elections: {},
@@ -20,6 +22,8 @@ const emptyFeeds = {
   election_votes: {},
 }
 
+const channelFeeds = [rssFeeds[0], rssFeeds[2]].filter((feed): feed is ViewRssFeed => feed != null)
+
 function Results({
   q,
   searchError,
@@ -27,7 +31,7 @@ function Results({
 }: {
   q?: string
   searchError: string | null
-  feeds: typeof emptyFeeds | null
+  feeds: RssFeedsListResponseBody | null
 }) {
   const t = useTranslations()
   return (
@@ -75,7 +79,7 @@ export const Channels: Story = {
         searchError={null}
         feeds={{
           ...emptyFeeds,
-          results: [rssFeeds[0], rssFeeds[2]],
+          results: channelFeeds,
         }}
       />
     </StoryFrame>
