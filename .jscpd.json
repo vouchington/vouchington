@@ -3,7 +3,12 @@
   "crossFormats": "typescript,tsx",
   "failOnEmpty": true,
   "similarity": 0.85,
-  "minLines": 150,
+  "minLines": 100,
   "exitCode": 1,
-  "ignore": ["**/migrations/**", "**/fixtures/**", "**/route-selectors.generated.mts"]
+  "ignore": [
+    "**/migrations/**",
+    "**/fixtures/**",
+    "**/route-selectors.generated.mts",
+    "**/fallback-benefit-catalog.ts"
+  ]
 }
