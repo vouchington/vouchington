@@ -3,6 +3,12 @@ import { randomBytes } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import {
+  getIsolatedDatabaseCase,
+  getIsolatedDatabaseCaseMode,
+  makeIsolatedDatabaseName,
+  type IsolatedDatabaseCaseId,
+} from './vitest-isolated-database-cases.mts'
 
 const exec = promisify(execFile)
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -10,12 +16,16 @@ const vitestCli = join(
   dirname(fileURLToPath(import.meta.resolve('vitest/package.json'))),
   'vitest.mjs',
 )
-const isolatedConfig = join(root, 'test-helpers/vitest.config.isolated-global-media-replay.mts')
+const isolatedConfig = join(root, 'test-helpers/vitest.config.isolated-database-case.mts')
 
-/** Keeps a deliberately global route assertion away from the shared, dirty test database. */
-export async function runIsolatedGlobalMediaReplayCase(): Promise<void> {
+/** Runs a registered global test against a fresh local database, then drops only that database. */
+export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): Promise<void> {
+  getIsolatedDatabaseCase(caseId)
+  if (getIsolatedDatabaseCaseMode(caseId) !== 'parent') {
+    throw new Error(`Isolated database case ${caseId} cannot launch another child`)
+  }
   const sourceUrl = process.env.DATABASE_URL
-  if (!sourceUrl) throw new Error('Isolated media replay needs DATABASE_URL')
+  if (!sourceUrl) throw new Error(`Isolated database case ${caseId} needs DATABASE_URL`)
   const source = new URL(sourceUrl)
   if (
     !['postgres:', 'postgresql:'].includes(source.protocol) ||
@@ -24,10 +34,10 @@ export async function runIsolatedGlobalMediaReplayCase(): Promise<void> {
     source.searchParams.has('host') ||
     source.searchParams.has('hostaddr')
   )
-    throw new Error('Isolated media replay requires a local PostgreSQL source')
+    throw new Error(`Isolated database case ${caseId} requires a local PostgreSQL source`)
 
   const suffix = randomBytes(12).toString('hex')
-  const databaseName = `voucha_scope_replay_${suffix}`
+  const databaseName = makeIsolatedDatabaseName(suffix)
   const databaseUrl = new URL(source)
   databaseUrl.pathname = `/${databaseName}`
   databaseUrl.searchParams.delete('dbname')
@@ -43,7 +53,8 @@ export async function runIsolatedGlobalMediaReplayCase(): Promise<void> {
     DATABASE_URL: databaseUrl.toString(),
     READ_DATABASE_URL: databaseUrl.toString(),
     VALKEY_WORKER_QUEUE_URL: queueUrl.toString(),
-    VITEST_ISOLATED_GLOBAL_MEDIA_REPLAY_CHILD: databaseName,
+    VITEST_ISOLATED_DATABASE_CASE: caseId,
+    VITEST_ISOLATED_DATABASE_CHILD: databaseName,
     VITEST_CI_REPORTERS: undefined,
     VITEST_JUNIT_OUTPUT_FILE: undefined,
     VITEST_BLOB_OUTPUT_FILE: undefined,
@@ -74,12 +85,15 @@ export async function runIsolatedGlobalMediaReplayCase(): Promise<void> {
   )
   if (existing.trim()) throw new Error(`Refusing existing isolated database ${databaseName}`)
 
+  let created = false
+  let primaryFailure: unknown
   try {
     await command(
       'psql',
       ['-v', 'ON_ERROR_STOP=1', '-qc', `CREATE DATABASE ${databaseName}`],
       adminEnv,
     )
+    created = true
     await command('pnpm', ['--dir', 'backend', 'db:migrate'], childEnv, 60_000)
     await command(
       process.execPath,
@@ -87,13 +101,28 @@ export async function runIsolatedGlobalMediaReplayCase(): Promise<void> {
       childEnv,
       120_000,
     )
-  } finally {
-    await command(
-      'psql',
-      ['-v', 'ON_ERROR_STOP=1', '-qc', `DROP DATABASE IF EXISTS ${databaseName} WITH (FORCE)`],
-      adminEnv,
-    )
+  } catch (error) {
+    primaryFailure = error
   }
+  if (created) {
+    try {
+      await command(
+        'psql',
+        ['-v', 'ON_ERROR_STOP=1', '-qc', `DROP DATABASE IF EXISTS ${databaseName} WITH (FORCE)`],
+        adminEnv,
+      )
+    } catch (cleanupFailure) {
+      if (primaryFailure) {
+        throw new AggregateError(
+          [primaryFailure, cleanupFailure],
+          `Isolated database case ${caseId} failed: ${String(primaryFailure)}; cleanup also failed`,
+          { cause: cleanupFailure },
+        )
+      }
+      throw cleanupFailure
+    }
+  }
+  if (primaryFailure) throw primaryFailure
 }
 
 async function command(
@@ -108,7 +137,7 @@ async function command(
   } catch (error) {
     const failure = error as { stdout?: string; stderr?: string }
     const output = `${failure.stdout ?? ''}\n${failure.stderr ?? ''}`.trim()
-    throw new Error(`Isolated media replay command ${file} failed:\n${output.slice(-8_000)}`, {
+    throw new Error(`Isolated database case command ${file} failed:\n${output.slice(-8_000)}`, {
       cause: error,
     })
   }

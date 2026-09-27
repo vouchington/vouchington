@@ -17,6 +17,8 @@ import {
   type ActivityPubInboxEnvelope,
 } from './index.mts'
 import { createRemoteActorFixture } from './test-fixtures.mts'
+import { runIsolatedDatabaseCase } from '../../../test-helpers/vitest-isolated-database-case.mts'
+import { getIsolatedDatabaseCaseMode } from '../../../test-helpers/vitest-isolated-database-cases.mts'
 
 const ownedActivityIds = new Set<string>()
 
@@ -148,6 +150,10 @@ describe('ActivityPub inbox durable storage bounds', () => {
   })
 
   it('deletes expired rows in deterministic lease-aware locked batches', async () => {
+    if (getIsolatedDatabaseCaseMode('activitypub-expiry') === 'parent') {
+      await runIsolatedDatabaseCase('activitypub-expiry')
+      return
+    }
     const active = await accept(makeEnvelope())
     const stale = await accept(makeEnvelope())
     const idle = await accept(makeEnvelope())
@@ -167,7 +173,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
         idle.deliveryId,
       ]),
     ).toEqual([active.deliveryId])
-  })
+  }, 240_000)
 
   it('rolls the storage counter back with the owned insert', async () => {
     const rawBody = Buffer.from('rollback')

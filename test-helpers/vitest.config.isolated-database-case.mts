@@ -1,16 +1,25 @@
 import { defineConfig } from 'vitest/config'
 import { backendAliases } from './vitest-config/aliases.mts'
+import {
+  getIsolatedDatabaseChildCase,
+  isolatedTestNamePattern,
+  type IsolatedDatabaseCaseId,
+} from './vitest-isolated-database-cases.mts'
+
+const isolatedCase = getIsolatedDatabaseChildCase()
+const caseId = process.env.VITEST_ISOLATED_DATABASE_CASE as IsolatedDatabaseCaseId
 
 export default defineConfig({
   resolve: { alias: backendAliases() },
   test: {
-    name: 'isolated-global-media-replay',
+    name: 'isolated-database-case',
     pool: 'forks',
     isolate: true,
     testTimeout: 30_000,
     hookTimeout: 30_000,
     teardownTimeout: 20_000,
-    include: ['backend/api/v1/copyright-notices/copyright-notices.replay.isolated.test.mts'],
+    include: [isolatedCase.file],
+    testNamePattern: isolatedTestNamePattern(caseId),
     setupFiles: [
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',
