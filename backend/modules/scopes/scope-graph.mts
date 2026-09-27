@@ -6,7 +6,7 @@ import {
 
 import type { ApiScope, ScopeDefinition } from './scopes.mts'
 
-/** Compile the product catalogue into the published scope graph. */
+/** Compile the current definition objects so surface checks see the live catalogue. */
 export function compileVouchaScopeCatalog(
   definitions: Record<ApiScope, ScopeDefinition>,
 ): ScopeCatalog {
@@ -22,15 +22,6 @@ export function compileVouchaScopeCatalog(
     }
   }
   return createScopeCatalog(publicDefinitions)
-}
-
-let cachedCatalog: { definitions: object; catalog: ScopeCatalog } | undefined
-
-export function vouchaScopeGraph(definitions: Record<ApiScope, ScopeDefinition>): ScopeCatalog {
-  if (cachedCatalog?.definitions === definitions) return cachedCatalog.catalog
-  const catalog = compileVouchaScopeCatalog(definitions)
-  cachedCatalog = { definitions, catalog }
-  return catalog
 }
 
 function compatibilityCovers(

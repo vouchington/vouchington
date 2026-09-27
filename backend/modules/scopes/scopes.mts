@@ -1,4 +1,4 @@
-import { vouchaScopeGraph } from './scope-graph.mts'
+import { compileVouchaScopeCatalog } from './scope-graph.mts'
 import { userResourceDefinitions } from './user-resource-definitions.mts'
 
 export type ScopeAudience = 'admin' | 'api' | 'user'
@@ -130,7 +130,7 @@ export function parseApiScope(value: string): ApiScope | null {
 }
 
 export function hasScope(scopes: readonly ApiScope[], requiredScope: ApiScope): boolean {
-  return vouchaScopeGraph(SCOPE_DEFINITIONS).hasScope(scopes, requiredScope)
+  return compileVouchaScopeCatalog(SCOPE_DEFINITIONS).hasScope(scopes, requiredScope)
 }
 
 export function validateScopeSet(
@@ -140,7 +140,7 @@ export function validateScopeSet(
     allowMixedAudiences: boolean
   },
 ): ScopeSetValidationResult {
-  const result = vouchaScopeGraph(SCOPE_DEFINITIONS).validateScopeSet(input, options)
+  const result = compileVouchaScopeCatalog(SCOPE_DEFINITIONS).validateScopeSet(input, options)
   if (!result.valid) {
     const requiredScope =
       result.requiredScope !== undefined && isApiScope(result.requiredScope)
