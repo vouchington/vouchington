@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // Guards the Claude OS-sandbox credential deny list against doc drift.
-// Rationale: docs/development/agent-sandbox.md#sandbox-credential-deny-list
+// Rationale: docs/development/reference-agent-sandbox-credential-deny-list.md
 const repoFile = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 const CREDENTIAL_DENY_MARKER = '<!-- sandbox-credentials-env-vars -->'
@@ -40,18 +40,22 @@ describe('Claude sandbox credential deny list', () => {
 
   it('keeps the documented deny names equal to sandbox.credentials.envVars', () => {
     const configured = claudeSettings.sandbox.credentials.envVars
-    const sandboxDoc = repoFile('docs/development/agent-sandbox.md')
+    const inventoryDoc = repoFile(
+      'docs/development/reference-agent-sandbox-credential-deny-list.md',
+    )
 
-    expect(documentedCredentialNames(sandboxDoc)).toEqual(configured.map(entry => entry.name))
+    expect(documentedCredentialNames(inventoryDoc)).toEqual(configured.map(entry => entry.name))
     expect(configured.length).toBeGreaterThan(0)
     expect(configured.map(entry => entry.mode)).toEqual(configured.map(() => 'deny'))
   })
 
-  it('names the credential deny list in the sandbox doc', () => {
+  it('names the credential deny list from the sandbox doc', () => {
     const sandboxDoc = repoFile('docs/development/agent-sandbox.md')
 
     expect(sandboxDoc).toContain('sandbox.credentials.envVars')
     expect(sandboxDoc).toContain('dev/agent-sandbox-credentials.test.mts')
+    expect(sandboxDoc).toContain('reference-agent-sandbox-credential-deny-list.md')
+    expect(sandboxDoc).not.toContain(CREDENTIAL_DENY_MARKER)
   })
 
   it('points the blackboard stop-work gate at the sandbox credential deny list', () => {
