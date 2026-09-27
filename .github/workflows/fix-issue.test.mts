@@ -190,6 +190,24 @@ describe('fix-issue workflow', () => {
     expect(dispatchJob?.with?.['prompt']).toBe('${{ needs.render-prompt.outputs.prompt }}')
   })
 
+  it('posts the session link on the issue after a successful dispatch', () => {
+    const commentJob = parsedIssue.jobs?.['comment-session']
+    const commentStep = commentJob?.steps?.find(
+      step => step.uses === './.github/actions/comment-harness-session',
+    )
+
+    expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")
+    expect(commentJob?.permissions).toEqual({
+      contents: 'read',
+      issues: 'write',
+      'pull-requests': 'write',
+    })
+    expect(commentStep?.with).toMatchObject({
+      target: '${{ github.event.issue.number }}',
+      'session-url': '${{ needs.dispatch.outputs.session-url }}',
+    })
+  })
+
   it('instructs Codex to fix the issue with PR title ending in (fixes #N)', () => {
     const renderJob = parsedIssue.jobs?.['render-prompt']
     const setupStep = renderJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))

@@ -199,6 +199,30 @@ jobs:
         *Issue title:* ${{ github.event.issue.title }}
       prompt: ${{ needs.render-prompt.outputs.prompt }}
 
+  comment-session:
+    name: Comment session link
+    needs: [gate, dispatch]
+    if: >-
+      needs.gate.outputs.accepted == 'true' &&
+      needs.dispatch.result == 'success' &&
+      needs.dispatch.outputs.session-url != ''
+    runs-on: ubuntu-slim
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/comment-harness-session
+        with:
+          target: ${{ github.event.issue.number }}
+          session-id: ${{ needs.dispatch.outputs.session-id }}
+          session-url: ${{ needs.dispatch.outputs.session-url }}
+
   escalate:
     name: Comment failure on issue
     needs: [gate, render-prompt, dispatch]

@@ -88,11 +88,13 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `docs-publish.yml`                  | `publish`                       | job    | `ubuntu-latest`                       | 10            |
 | `explain-analyze.yml`               | `explain-analyze`               | job    | `ubuntu-latest`                       | 10            |
 | `fix-dependabot.yml`                | `check-duplicates`              | job    | `ubuntu-latest`                       | 5             |
+| `fix-dependabot.yml`                | `comment-session`               | job    | `ubuntu-slim`                         | 2             |
 | `fix-dependabot.yml`                | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `fix-dependabot.yml`                | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `fix-dependabot.yml`                | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
 | `fix-dependabot.yml`                | `revalidate-dispatch`           | job    | `ubuntu-slim`                         | 2             |
 | `fix-dependabot.yml`                | `triage-and-rerun`              | job    | `ubuntu-latest`                       | 10            |
+| `fix-issue.yml`                     | `comment-session`               | job    | `ubuntu-slim`                         | 2             |
 | `fix-issue.yml`                     | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `fix-issue.yml`                     | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `fix-issue.yml`                     | `gate`                          | job    | `ubuntu-slim`                         | 5             |
@@ -148,6 +150,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `main-web.yml`                      | `test-web-api`                  | job    | → `tests-web-api.yml`                 | 360           |
 | `main-web.yml`                      | `test-web-integration`          | job    | → `tests-web-integration.yml`         | 360           |
 | `main-web.yml`                      | `web-deploy-intent`             | job    | `ubuntu-slim`                         | 2             |
+| `merge-queue-ejection.yml`          | `comment-session`               | job    | `ubuntu-slim`                         | 2             |
 | `merge-queue-ejection.yml`          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `merge-queue-ejection.yml`          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `merge-queue-ejection.yml`          | `render-prompt`                 | job    | `ubuntu-latest`                       | 5             |
@@ -158,6 +161,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `nightly.yml`                       | `tooling`                       | job    | → `tooling.yml`                       | 360           |
 | `nightly.yml`                       | `web`                           | job    | → `web.yml`                           | 360           |
 | `plan-completion.yml`               | `audit`                         | job    | `ubuntu-slim`                         | 5             |
+| `plan.yml`                          | `comment-session`               | job    | `ubuntu-slim`                         | 2             |
 | `plan.yml`                          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `plan.yml`                          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
 | `plan.yml`                          | `gate`                          | job    | `ubuntu-slim`                         | 5             |
