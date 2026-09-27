@@ -19,6 +19,7 @@ import { assertNotSuspended } from '@services/users'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { getUserActivePlan } from '@services/memberships'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { searchCommunitiesCached } from '@services/entity-fetch/search-caches'
 import { indexById } from '@modules/utils'
 import { clampAnonLimit } from '@modules/search-utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
@@ -82,8 +83,7 @@ app
     }
     const topicIds = [...new Set([...hashtagTopicIds, ...topicParams])]
 
-    const result = await searchCommunities({
-      currentUser,
+    const communitySearch = {
       search: textSearchQuery,
       limit,
       after,
@@ -97,7 +97,10 @@ app
       topicIds: topicIds.length > 0 ? topicIds : undefined,
       hashtagHasNoMatches,
       eligiblePostType,
-    })
+    }
+    const result = currentUser
+      ? await searchCommunities({ ...communitySearch, currentUser })
+      : await searchCommunitiesCached(communitySearch)
 
     const communities = result.results
 
