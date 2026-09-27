@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { runtimeCoverageConfigForScope } from './coverage-config.mts'
 import { vitestCoverageScope } from './coverage-scope.mts'
-export { coverageConfigForScope } from './coverage-config.mts'
 if (!existsSync('.initialized') && !process.env.CI) {
   process.stderr.write(
     '\x1b[31mError: worktree not initialized.\x1b[0m .initialized was not found. Run ./dev/initialize monorepo (lint/unit tests) or ./dev/initialize web (full stack).\n',
