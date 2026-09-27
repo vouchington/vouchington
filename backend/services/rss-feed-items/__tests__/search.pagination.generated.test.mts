@@ -1,4 +1,5 @@
 import { it, expect, describe } from 'vitest'
+import { encodeCursor } from '@modules/pagination'
 import { searchRssFeedItems } from '../search.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { insertTestStory, setTestItemStoryId, insertTestRssFeedDirect } from '@voucha/test-helpers'
@@ -221,7 +222,7 @@ describe('search.generated (pagination)', () => {
     await expect(searchRssFeedItems({ after: nonJsonBase64 })).rejects.toThrow(Error)
 
     // Valid JSON but wrong cursor shape (not timestamp cursor)
-    const wrongShapeCursor = Buffer.from(JSON.stringify({ id: 'test' })).toString('base64')
+    const wrongShapeCursor = encodeCursor({ id: 'test' })
     await expect(searchRssFeedItems({ after: wrongShapeCursor })).rejects.toThrow(
       /expected timestamp cursor/,
     )

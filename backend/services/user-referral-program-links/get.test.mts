@@ -9,6 +9,7 @@ import {
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
+import { encodeCursor } from '@modules/pagination'
 import { createUserReferralLink } from './create.mts'
 import { getUserReferralLink, getUserReferralLinks } from './get.mts'
 
@@ -149,9 +150,10 @@ describe('get', () => {
       ).rejects.toMatchObject({ status: 400 })
 
       // Wrong cursor type (timestamp cursor instead of simple)
-      const wrongTypeCursor = Buffer.from(
-        JSON.stringify({ timestamp: Date.now(), id: '00000000-0000-0000-0000-000000000000' }),
-      ).toString('base64')
+      const wrongTypeCursor = encodeCursor({
+        timestamp: Date.now(),
+        id: '00000000-0000-0000-0000-000000000000',
+      })
       await expect(
         getUserReferralLinks(regularUser, regularUser!.id, { after: wrongTypeCursor }),
       ).rejects.toMatchObject({ status: 400 })
