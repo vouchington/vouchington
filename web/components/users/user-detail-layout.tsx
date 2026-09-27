@@ -13,7 +13,6 @@ import { UserTagsAside } from './user-tags-aside'
 import { UserVouchElectionAside } from './user-vouch-election-aside'
 import type { UserActionsAside as UserActionsAsideComponent } from './user-actions-aside'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const UserActionsAside = dynamic<Parameters<typeof UserActionsAsideComponent>[0]>(() =>
   import('./user-actions-aside').then(m => ({ default: m.UserActionsAside })),
 )

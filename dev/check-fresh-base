@@ -66,7 +66,7 @@ else
   TREE_STATE="unknown"
 fi
 
-GUIDANCE="For a new task in Plan Mode, do not reset while planning. Treat \`origin/main\` as the source of truth and inspect relevant files from \`origin/main\` with \`git diff\` or \`git show\`; after the plan is accepted, run unforced \`./dev/reset-worktree\` before editing. For resumed work, preserve the current branch and rebase it onto \`origin/main\` after the plan is accepted. If the working tree is dirty or the task intent is ambiguous, ask whether this is new or resumed work. Never infer \`--force\`."
+GUIDANCE="For a new task in Plan Mode, do not reset while planning. Treat \`origin/main\` as the source of truth and inspect relevant files from \`origin/main\` with \`git diff\` or \`git show\`; after the plan is accepted, run unforced \`./dev/reset-worktree\` before editing. For resumed work, preserve the current branch and run \`./dev/rebase-onto-main\` after the plan is accepted. If the working tree is dirty or the task intent is ambiguous, ask whether this is new or resumed work. Never infer \`--force\`."
 
 if ! git rev-parse --verify --quiet refs/remotes/origin/main >/dev/null 2>&1; then
   emit_context "⚠️  Worktree base check: branch \`${BRANCH}\`; working tree is ${TREE_STATE}; \`origin/main\` is unavailable, so freshness is unknown. Retry \`git fetch origin\` before relying on the current checkout. ${GUIDANCE}"

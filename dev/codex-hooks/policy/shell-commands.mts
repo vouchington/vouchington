@@ -25,6 +25,11 @@ export function stripGitGlobalOptionsForPolicy(command: string): string {
  * message).
  */
 export function commandsToInspectForGitPolicy(command: string): string[] {
+  return commandsToInspectPreservingQuotes(command).map(stripQuotedShellText)
+}
+
+/** Same command list as the regex scan, with quoted refs still readable by the tokenizer. */
+export function commandsToInspectPreservingQuotes(command: string): string[] {
   const { bodySubstitutions, shellBodies, textWithoutBodies } = stripNonShellHeredocBodies(
     command.replace(/\\\n/g, ' '),
   )
@@ -36,7 +41,7 @@ export function commandsToInspectForGitPolicy(command: string): string[] {
         ({ command: shellCommand, inheritsEditor }) =>
           `${inheritsEditor ? 'export GIT_EDITOR=true; ' : ''}${stripGitGlobalOptionsForPolicy(shellCommand)}`,
       ),
-    ].map(text => stripQuotedShellText(text))
+    ]
   })
 }
 

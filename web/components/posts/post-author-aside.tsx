@@ -11,7 +11,6 @@ import { userTabForPostType } from '@/lib/links/entity-href'
 import type { getTranslations } from '@/lib/i18n/get-translations'
 import type { FollowButton as FollowButtonComponent } from '@/components/shared/follow-button'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const FollowButton = dynamic<Parameters<typeof FollowButtonComponent>[0]>(() =>
   import('@/components/shared/follow-button').then(mod => mod.FollowButton),
 )

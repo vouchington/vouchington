@@ -20,7 +20,6 @@ import type { TopicRecommendationsTable as TopicRecommendationsTableComponent } 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('New Topic Recommendations')
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const TopicRecommendationsTable = nextDynamic<
   Parameters<typeof TopicRecommendationsTableComponent>[0]
 >(() =>

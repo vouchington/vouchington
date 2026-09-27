@@ -22,7 +22,6 @@ import type AdminModerationButtonComponent from '@/components/admin/admin-modera
 import type { AgentModeration, AgentModerationElection } from '@/types/agents'
 import type { ElectionVote, Post, PostElection } from '@/types/posts'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const AdminModerationButton = dynamic<Parameters<typeof AdminModerationButtonComponent>[0]>(
   () => import('@/components/admin/admin-moderation-button'),
 )

@@ -7,7 +7,6 @@ import { noticeHasUnassessedCourtOrCcbFiling } from './court-hold-assessment-gat
 /** Reopens restore intents that delivery blocked only because a court or CCB filing
  * had no assessment. Targets a qualifying assessment still covers stay blocked. */
 export async function replayRestoresAfterCourtFilingAssessment(noticeId: string): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- the notice lock must cover the unassessed check and the intent selection, and replay starts only after that transaction commits
   await using transaction = await beginTransaction()
   if (await noticeHasUnassessedCourtOrCcbFiling(noticeId, transaction)) return
   const assessedAt = new Date()

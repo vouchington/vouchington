@@ -44,6 +44,11 @@ async function makeRepo({ withEnv = true, withValkeyPort = true } = {}) {
   await copyLib(dir, 'git-worktrees.sh')
   await copyLib(dir, 'worktree-resource-env.sh')
   await copyLib(dir, 'git-index-lock.sh')
+  await copyLib(dir, 'protected-checkout.sh')
+  await writeFile(
+    join(dir, 'dev', 'protected-checkout-paths.txt'),
+    await readFile(join(scriptDir, 'protected-checkout-paths.txt'), 'utf8'),
+  )
 
   await writeFile(
     join(dir, 'dev', 'initialize'),
@@ -88,6 +93,7 @@ case "$*" in
   "fetch origin main") printf 'git fetch origin main\\n' >> "$log" ;;
   "checkout -B "*) printf 'git %s\\n' "$*" >> "$log" ;;
   "reset --hard origin/main") printf 'git reset --hard origin/main\\n' >> "$log" ;;
+  "diff --name-only --diff-filter=ACDMRTUXB "*) printf 'git %s\\n' "$*" >> "$log" ;;
   *) printf 'unexpected git invocation: %s\\n' "$*" >&2; exit 1 ;;
 esac
 `,

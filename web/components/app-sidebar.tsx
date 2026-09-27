@@ -30,7 +30,6 @@ const MessagesSidebarGroup = dynamic<ComponentProps<typeof MessagesSidebarGroupC
   { ssr: false },
 )
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const CommunitiesSidebarGroup = dynamic<ComponentProps<typeof CommunitiesSidebarGroupComponent>>(
   () =>
     import('./communities/communities-sidebar-group').then(m => ({
@@ -38,7 +37,6 @@ const CommunitiesSidebarGroup = dynamic<ComponentProps<typeof CommunitiesSidebar
     })),
 )
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const ListsSidebarGroup = dynamic<ComponentProps<typeof ListsSidebarGroupComponent>>(() =>
   import('./lists/lists-sidebar-group').then(m => ({ default: m.ListsSidebarGroup })),
 )

@@ -15,7 +15,6 @@ import { getTranslations } from '@/lib/i18n/get-translations'
 import { getSupplementaryTransparency } from './supplementary-transparency'
 import type ModerationAnalyticsDashboardComponent from '@/components/admin/moderation-analytics/moderation-analytics-dashboard'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const ModerationAnalyticsDashboard = nextDynamic<
   Parameters<typeof ModerationAnalyticsDashboardComponent>[0]
 >(() => import('@/components/admin/moderation-analytics/moderation-analytics-dashboard'))

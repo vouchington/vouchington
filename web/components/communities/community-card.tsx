@@ -12,7 +12,6 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import { CommunityAboutCopy } from './community-about-copy'
 import type JoinButtonComponent from './join-button'
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const JoinButton = dynamic<Parameters<typeof JoinButtonComponent>[0]>(() => import('./join-button'))
 
 interface CommunityCardProps {

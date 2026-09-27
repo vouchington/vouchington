@@ -15,8 +15,7 @@ const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   },
   {
     pattern: /\bgit\s+pull\b[^|;&\n]*(?:--rebase\b|(?:^|[\s])-[A-Za-z]*r[A-Za-z]*\b)/,
-    reason:
-      'Use "git fetch origin && git rebase origin/main"; git pull --rebase and git pull -r are banned.',
+    reason: 'Use "./dev/rebase-onto-main"; git pull --rebase and git pull -r are banned.',
   },
   {
     pattern:

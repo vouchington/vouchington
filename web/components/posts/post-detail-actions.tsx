@@ -34,7 +34,6 @@ interface PostDetailActionsProps {
   onDiscussionCreated?: (href: string) => void
 }
 
-// ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
 const EntityBookmarkButton = dynamic<Parameters<typeof EntityBookmarkButtonComponent>[0]>(() =>
   import('@/components/shared/entity-bookmark-button').then(mod => mod.EntityBookmarkButton),
 )

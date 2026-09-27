@@ -26,7 +26,6 @@ describe('Codex hook git -C global-option policy', () => {
 
   it.each([
     'git -C /repo push --force-with-lease',
-    'git -C /repo fetch origin && git -C /repo rebase origin/main',
     'GIT_EDITOR=true git -C /repo rebase --continue',
     'git -C /repo status',
   ])('allows sanctioned git -C form: %s', command => {
@@ -35,6 +34,14 @@ describe('Codex hook git -C global-option policy', () => {
         tool_input: { command },
       }),
     ).toBeNull()
+  })
+
+  it('refuses a fetch and rebase chained through git -C', () => {
+    expect(
+      findPreToolUseBlock({
+        tool_input: { command: 'git -C /repo fetch origin && git -C /repo rebase origin/main' },
+      })?.reason,
+    ).toContain('./dev/rebase-onto-main')
   })
 
   it('still blocks hooksPath override when mixed with -C', () => {

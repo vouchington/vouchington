@@ -118,6 +118,7 @@ describe('agent sandbox configuration', () => {
       './dev/tmux-agent-reminder',
       './dev/stop-services',
       './dev/status',
+      './dev/rebase-onto-main',
       './dev/reset',
       './dev/reset-worktree',
       './dev/teardown',
