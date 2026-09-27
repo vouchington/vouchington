@@ -1,31 +1,55 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestImage } from './entities/images-insert.mts'
+import { insertTestPost } from './entities/posts.mts'
+import { insertTestPostImage } from './entities/images.mts'
+import { getTestPostImagePlacement } from './entities/post-images.mts'
 import {
   failExpiredExhaustedMediaDeliveryRegistryRecords,
   getMediaDeliveryRegistryScanBefore,
   listRecoverableMediaDeliveryRegistryKeys,
+  stageImagePlacementDeliveryRecord,
 } from '../services/media-delivery-safety/index.mts'
 
 export async function withTestMediaRecoveryBacklog<T>(
   userId: string,
   count: number,
-  run: (fixture: { deliveryKeys: string[]; scanBefore: string }) => Promise<T>,
+  run: (fixture: {
+    deliveryKeys: string[]
+    scanBefore: string
+    placements: Array<{ placementId: string; revision: number; imageId: string }>
+  }) => Promise<T>,
 ): Promise<T> {
+  const postId = await insertTestPost({
+    title: 'Owned media recovery backlog',
+    slug: crypto.randomUUID(),
+    createdById: userId,
+    markdown: 'Recovery fixture images',
+  })
   const imageIds = await Promise.all(Array.from({ length: count }, () => insertTestImage(userId)))
-  const deliveryKeys = imageIds.map(id => `legacy-image:${id}`).sort()
-  await write(sql`/* createTestMediaRecoveryBacklog */
-    INSERT INTO media_delivery_registry_records (delivery_key, media_kind, route_kind, asset_id, desired_state)
-    SELECT concat('legacy-image:', id), 'image', 'legacy-image', id, 'withheld'
-    FROM UNNEST(${imageIds}::uuid[]) AS images(id)
-  `)
-  try {
-    return await run({ deliveryKeys, scanBefore: await getMediaDeliveryRegistryScanBefore() })
-  } finally {
-    await write(
-      sql`DELETE FROM media_delivery_registry_records WHERE delivery_key = ANY(${deliveryKeys}::text[])`,
-    )
-  }
+  const placements = await Promise.all(
+    imageIds.map(async (imageId, orderIndex) => {
+      await insertTestPostImage({ postId, imageId, orderIndex })
+      const placement = await getTestPostImagePlacement(postId, imageId)
+      if (!placement) throw new Error('Missing owned recovery placement')
+      return {
+        placementId: placement.placement_id,
+        revision: placement.placement_revision,
+        imageId,
+      }
+    }),
+  )
+  const records = await Promise.all(
+    placements.map(placement =>
+      stageImagePlacementDeliveryRecord({ ...placement, state: 'withheld' }),
+    ),
+  )
+  const deliveryKeys = records.map(record => record.deliveryKey).sort()
+  return await run({
+    deliveryKeys,
+    placements,
+    scanBefore: await getMediaDeliveryRegistryScanBefore(),
+  })
 }
 
 export async function setTestMediaRecoveryState(

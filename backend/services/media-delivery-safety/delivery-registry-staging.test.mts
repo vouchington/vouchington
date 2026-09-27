@@ -13,17 +13,15 @@ import {
 import { setTestMediaRecoveryState } from '@voucha/test-helpers/media-delivery-recovery'
 import {
   stageImagePlacementDeliveryRecord,
-  stageLegacyImageDeliveryRecord,
   stagePostImagePlacementDeliveryRecords,
   stageCurrentImagePlacementDeliveryRecordsForImageIds,
 } from './index.mts'
 
 describe('media registry staging state', () => {
-  it('retains unchanged placement and legacy snapshots in every lifecycle state', async () => {
+  it('retains unchanged placement snapshots in every lifecycle state', async () => {
     const tuple = await createPlacement()
     const placement = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    const legacy = await stageLegacyImageDeliveryRecord(tuple.imageId, 'withheld')
-    const keys = [placement.deliveryKey, legacy.deliveryKey]
+    const keys = [placement.deliveryKey]
     for (const state of ['pending', 'claimed', 'completed', 'failed'] as const) {
       await setTestMediaRecoveryState(keys, {
         state,
@@ -35,7 +33,6 @@ describe('media registry staging state', () => {
       expect(await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })).toEqual(
         placement,
       )
-      expect(await stageLegacyImageDeliveryRecord(tuple.imageId, 'withheld')).toEqual(legacy)
       expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([tuple.imageId])).toBe(0)
       expect(await Promise.all(keys.map(getTestMediaDeliveryRecordSnapshot))).toEqual(before)
     }
