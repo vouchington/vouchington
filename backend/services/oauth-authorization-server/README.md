@@ -61,8 +61,9 @@ which checks the secret against the share-locked row, so rotating a secret or re
 serializes with in-flight token requests and the replaced secret stops working once rotation
 returns.
 Account deletion fences consenting users and app owners before OAuth artifact locks are acquired;
-the protocol paths recheck both under sorted lifecycle locks. `deletion.mts` revokes the deleted
-user's owned clients and own grant descendants in bounded transactional pages. The final deletion
+the protocol paths recheck both under sorted shared lifecycle locks, while deletion and owned-app
+mutation take exclusive locks. `deletion.mts` revokes the deleted user's owned clients and own grant
+descendants in bounded transactional pages. The final deletion
 residual check keeps the request open until every active OAuth credential is retired. See the
 [account-deletion security contract](../../../docs/requirements/security/OAUTH-AUTHORIZATION-SERVER.md#account-deletion)
 for error behavior, audit retention, and ownership boundaries.

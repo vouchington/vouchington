@@ -94,10 +94,12 @@ name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents 
 
 ## Account deletion
 
-Code exchange, refresh, revocation, consent, and owned-client registration or management acquire the
-account-deletion locks for their participating users before locking OAuth artifacts. Participants
-are locked in UUID order and rechecked after the locks are acquired. A deleted grant subject cannot
-exchange or refresh credentials; an authenticated client whose owner is deleted fails as
+Bearer validation, code exchange, refresh, revocation, and consent acquire shared account-deletion
+locks for their participating users before locking OAuth artifacts. Independent grants under one
+app owner can proceed concurrently; deletion and owned-client registration or management take
+exclusive locks and serialize with those requests. Participants are locked in UUID order and
+rechecked after the locks are acquired. A deleted grant subject cannot exchange or refresh
+credentials; an authenticated client whose owner is deleted fails as
 `invalid_client` before grant validation, regardless of participant UUID order. A valid client
 receives a successful no-op revocation for a deleted grant subject. Bearer validation rejects both
 deleted subjects and clients with deleted owners. Pending consent cannot be approved or resumed

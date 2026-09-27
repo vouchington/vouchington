@@ -94,7 +94,10 @@ describe('OAuth authority and account-deletion lock races', () => {
         clientUpdate.holderProcessId,
         '/* authenticateLockedOAuthClient */',
       )
-      const oauthProcessId = await getTestPostgresAdvisoryLockHolderProcessId({ key: user.id })
+      const oauthProcessId = await getTestPostgresAdvisoryLockHolderProcessId({
+        key: user.id,
+        mode: 'shared',
+      })
       deletion = startPausedTestUserSoftDeletion(user.id)
       await waitForTestPostgresLockWaiter(
         oauthProcessId,

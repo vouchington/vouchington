@@ -15,7 +15,7 @@ export async function lockOAuthParticipantUsers(
   for (const userId of participantIds) {
     // oxlint-disable-next-line no-await-in-loop -- lifecycle locks must be acquired in UUID order.
     await query(
-      `/* lockOAuthParticipantUsers */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+      `/* lockOAuthParticipantUsers */ SELECT pg_advisory_xact_lock_shared(hashtextextended($1, 0))`,
       [userId],
     )
   }
