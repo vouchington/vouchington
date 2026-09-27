@@ -55,16 +55,13 @@ contract.
 The bans and removed-posts continuations are scoped to the authenticated owner, resource, active
 filters, and exact keyset order, so cursors cannot be replayed between users or list shapes.
 Warnings use the same forward pagination surface: pass `after=page_info.end_cursor` with a bounded
-`limit` to load the next page. Existing `cursor` callers remain accepted as a legacy alias for
-`after`.
+`limit` to load the next page. The retired `cursor` alias is rejected.
 
 `/my/removed-posts` remains community-only by default. Passing `include_platform=true` opts into a
 globally ordered union of community unpublishes and platform clearance rejections. The expanded
 shape uses its own scoped timestamp, removal-kind, and UUID cursor, so neither cursor version can
-be replayed against the other list contract. As an expand/contract exception for independently
-deployed clients, `include_platform=true` accepts a legacy-scoped continuation by pinning that
-traversal to the community-only query and continuing to emit legacy cursors. A fresh request without
-a cursor uses the expanded contract.
+be replayed against the other list contract. Start a new expanded traversal without a community-only
+cursor, then continue with the expanded response's `page_info.end_cursor`.
 
 ### Notifications
 

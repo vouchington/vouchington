@@ -44,6 +44,19 @@ describe('getVoteIntegrityFlags pagination compatibility', () => {
     ).rejects.toMatchObject({ status: 400 })
   }, 60_000)
 
+  it('continues with a server-issued scoped cursor', async () => {
+    await Promise.all([createFlag(), createFlag()])
+
+    const first = await getVoteIntegrityFlags({ limit: 1 })
+    expect(first.results).toHaveLength(1)
+    expect(first.page_info.has_next_page).toBe(true)
+    expect(first.page_info.end_cursor).toEqual(expect.any(String))
+
+    const second = await getVoteIntegrityFlags({ limit: 1, after: first.page_info.end_cursor! })
+    expect(second.results).toHaveLength(1)
+    expect(second.results[0].id).not.toBe(first.results[0].id)
+  }, 60_000)
+
   it('rejects a scoped cursor from another status or resource', async () => {
     const flagId = await createFlag()
     await expect(

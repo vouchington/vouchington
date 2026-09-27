@@ -15,8 +15,6 @@ import '../../urls-hostnames/search.mts'
 import '../../urls-hostnames/social.mts'
 import '../../urls/search.mts'
 import '../../user-referral-program-links/get.mts'
-import '../../vote-integrity/get-flags.mts'
-import '../../vote-integrity/get-penalties.mts'
 import '../../topic-recommendations/search-topic-recommendations.mts'
 
 const ID = '00000000-0000-4000-8000-000000000001'
@@ -149,18 +147,6 @@ const cases: CursorCase[] = [
       ID,
       { after: simple, limit: 1 },
     ),
-  ),
-  cursorCase('getVoteIntegrityFlags', async () =>
-    (await import('../../vote-integrity/get-flags.mts')).getVoteIntegrityFlags({
-      after: simple,
-      limit: 1,
-    }),
-  ),
-  cursorCase('getVoteWeightPenalties', async () =>
-    (await import('../../vote-integrity/get-penalties.mts')).getVoteWeightPenalties({
-      after: simple,
-      limit: 1,
-    }),
   ),
   cursorCase('searchTopicRecommendations', async () =>
     (

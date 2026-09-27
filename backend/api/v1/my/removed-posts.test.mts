@@ -189,8 +189,8 @@ describe('GET /api/v1/my/removed-posts', () => {
     }
   })
 
-  it('continues a legacy cursor safely after the expanded backend contract deploys', async () => {
-    const rolloutUser = await createTestUser()
+  it('rejects a community-only cursor for expanded traversal and paginates expanded results', async () => {
+    const traversalUser = await createTestUser()
     const community = await insertTestCommunity({
       createdById: moderator.id,
       visibility: 'public',
@@ -198,16 +198,16 @@ describe('GET /api/v1/my/removed-posts', () => {
     const communityPostIds = await Promise.all(
       [0, 1, 2].map(async index => {
         const postId = await insertTestPost({
-          title: `Rollout community removal ${index} ${crypto.randomUUID()}`,
-          slug: `rollout-community-removal-${index}-${crypto.randomUUID()}`,
-          createdById: rolloutUser.id,
+          title: `Traversal community removal ${index} ${crypto.randomUUID()}`,
+          slug: `traversal-community-removal-${index}-${crypto.randomUUID()}`,
+          createdById: traversalUser.id,
           markdown: 'Community removed content',
           clearanceStatus: 'approved',
         })
         await insertTestCommunityPostReview({
           communityId: community.id,
           postId,
-          submittedById: rolloutUser.id,
+          submittedById: traversalUser.id,
         })
         await updateTestCommunityPostReviewState({
           communityId: community.id,
@@ -218,36 +218,43 @@ describe('GET /api/v1/my/removed-posts', () => {
       }),
     )
     const platformPostId = await insertTestPost({
-      title: `Rollout platform removal ${crypto.randomUUID()}`,
-      slug: `rollout-platform-removal-${crypto.randomUUID()}`,
-      createdById: rolloutUser.id,
+      title: `Traversal platform removal ${crypto.randomUUID()}`,
+      slug: `traversal-platform-removal-${crypto.randomUUID()}`,
+      createdById: traversalUser.id,
       markdown: 'Platform removed content',
       clearanceStatus: 'rejected',
     })
     await setTestPostRejectedAt(platformPostId, new Date('2026-07-30T11:00:00.000Z'))
 
     const request = createRequest()
-    await request.authenticateAs(rolloutUser)
-    const legacyFirstPage = await request.get('/api/v1/my/removed-posts?limit=1').expect(200)
-    const after = encodeURIComponent(legacyFirstPage.body.page_info.end_cursor)
-    const continued = await request
-      .get(`/api/v1/my/removed-posts?include_platform=true&limit=1&after=${after}`)
-      .expect(200)
+    await request.authenticateAs(traversalUser)
+    const communityFirstPage = await request.get('/api/v1/my/removed-posts?limit=1').expect(200)
+    const communityAfter = encodeURIComponent(communityFirstPage.body.page_info.end_cursor)
+    await request
+      .get(`/api/v1/my/removed-posts?include_platform=true&limit=1&after=${communityAfter}`)
+      .expect(400)
 
-    expect(continued.body.removed_posts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          post_id: communityPostIds[1],
-          post_removal_kind: 'community',
-        }),
-      ]),
-    )
-    expect(continued.body.removed_posts).not.toContainEqual(
-      expect.objectContaining({ post_id: platformPostId }),
-    )
-    expect(decodeCursor(continued.body.page_info.end_cursor)).toEqual(
+    const seenPostIds: string[] = []
+    let after: string | null = null
+    for (let page = 0; page < 4; page += 1) {
+      const response: {
+        body: {
+          removed_posts: Array<{ post_id: string }>
+          page_info: { end_cursor: string | null; has_next_page: boolean }
+        }
+      } = await request
+        .get('/api/v1/my/removed-posts')
+        .query({ include_platform: 'true', limit: '1', ...(after ? { after } : {}) })
+        .expect(200)
+      expect(response.body.removed_posts).toHaveLength(1)
+      seenPostIds.push(response.body.removed_posts[0].post_id)
+      after = response.body.page_info.end_cursor
+      expect(response.body.page_info.has_next_page).toBe(page < 3)
+    }
+    expect(seenPostIds).toEqual([...communityPostIds.toReversed(), platformPostId])
+    expect(decodeCursor(communityFirstPage.body.page_info.start_cursor)).toEqual(
       expect.objectContaining({
-        scope: `user-removed-community-posts:${rolloutUser.id}:unpublished-desc-post-id-desc`,
+        scope: `user-removed-community-posts:${traversalUser.id}:unpublished-desc-post-id-desc`,
       }),
     )
   })

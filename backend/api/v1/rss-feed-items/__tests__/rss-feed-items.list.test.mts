@@ -172,8 +172,10 @@ describe('RSS Feed Items Routes', () => {
       expect(page3.body.results[0].id).not.toBe(page1.body.results[0].id)
       expect(page3.body.results[0].id).not.toBe(page2.body.results[0].id)
 
-      // Beyond the last page. limit=1 makes this page's start cursor the last row.
-      expect(page3.body.page_info.start_cursor).toEqual(expect.any(String))
+      // The terminal page has no end_cursor; its server-issued start_cursor
+      // identifies the last item for a request beyond that page.
+      const beyondCursor = page3.body.page_info.start_cursor
+      expect(beyondCursor).toBeTruthy()
 
       const beyondPage = await request
         .get('/api/v1/rss-feed-items')
