@@ -83,6 +83,63 @@ describe('story post related URL projection EXPLAIN plan', () => {
   })
 })
 
+describe('verified OAuth client listing EXPLAIN plan', () => {
+  it('requires the verified active-client index', () => {
+    const queryText =
+      'SELECT id FROM oauth_clients WHERE metadata_url IS NULL AND revoked_at IS NULL AND verified_at IS NOT NULL ORDER BY id DESC LIMIT $2'
+    const indexed = result('oauth-client-verification-verified-page', queryText, {
+      Plan: {
+        'Node Type': 'Index Scan',
+        'Relation Name': 'oauth_clients',
+        'Index Name': 'idx_oauth_clients__verified_active_id',
+      },
+    })
+    expect(() => assertPaginationPlanShape(indexed)).not.toThrow()
+
+    const wrongIndex = result('oauth-client-verification-verified-page', queryText, {
+      Plan: {
+        'Node Type': 'Index Scan',
+        'Relation Name': 'oauth_clients',
+        'Index Name': 'oauth_clients_pkey',
+      },
+    })
+    expect(() => assertPaginationPlanShape(wrongIndex)).toThrow(
+      'idx_oauth_clients__verified_active_id',
+    )
+  })
+
+  it('rejects verified client sequential scans', () => {
+    const scanned = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients',
+      {
+        Plan: { 'Node Type': 'Seq Scan', 'Relation Name': 'oauth_clients' },
+      },
+    )
+    expect(() => assertPaginationPlanShape(scanned)).toThrow('oauth_clients sequential scan')
+  })
+
+  it('rejects verified client explicit sorts', () => {
+    const sorted = result(
+      'oauth-client-verification-verified-page',
+      'SELECT id FROM oauth_clients',
+      {
+        Plan: {
+          'Node Type': 'Sort',
+          Plans: [
+            {
+              'Node Type': 'Index Scan',
+              'Relation Name': 'oauth_clients',
+              'Index Name': 'idx_oauth_clients__verified_active_id',
+            },
+          ],
+        },
+      },
+    )
+    expect(() => assertPaginationPlanShape(sorted)).toThrow('explicit Sort')
+  })
+})
+
 function presentationSortResult(sourceRows: number, inputRows: number): ExplainResult {
   return result('story-post-related-url-projection-source-page', 'SELECT id FROM rss_feed_items', {
     Plan: {

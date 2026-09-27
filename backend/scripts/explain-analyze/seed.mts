@@ -61,6 +61,7 @@ import {
   seedUsers,
 } from './seed-data/core.mts'
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
+import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
 import {
   seedMembershipRefunds,
   seedMemberships,
@@ -131,6 +132,7 @@ async function main() {
   await seedPrioritizedReferralLink()
   await seedFriendRecommendation()
   await checkpointSeed('final writes')
+  await seedOAuthClientVerification()
   await runAnalyze()
   await printRowCounts()
   console.log('\nSeed complete.')

@@ -33,8 +33,11 @@ async function registerTestClient(owner: TestUser | null = null) {
   return { id: await getTestOAuthClientRowId(registered.client_id), reviewed }
 }
 
-async function listedIds(verification: OAuthClientVerificationFilter): Promise<string[]> {
-  const page = await listOAuthClientsForVerification({ verification, limit: 100 })
+async function listedIds(
+  verification: OAuthClientVerificationFilter,
+  limit = 100,
+): Promise<string[]> {
+  const page = await listOAuthClientsForVerification({ verification, limit })
   return page.results.map(client => client.id)
 }
 
@@ -76,26 +79,50 @@ describe('staff OAuth client verification', () => {
   })
 
   it('refuses revoked and metadata-document clients', async () => {
-    const revoked = await registerTestClient()
-    await revokeTestOAuthClient(revoked.id)
-    const documented = await registerTestClient()
+    const revokedVerified = await registerTestClient()
+    await verifyOAuthClient(admin.id, revokedVerified.id, revokedVerified.reviewed)
+    await revokeTestOAuthClient(revokedVerified.id)
+    const documentedVerified = await registerTestClient()
+    await verifyOAuthClient(admin.id, documentedVerified.id, documentedVerified.reviewed)
     await setTestOAuthClientMetadataUrl(
-      documented.id,
+      documentedVerified.id,
+      `https://example.com/clients/${randomBytes(6).toString('hex')}.json`,
+    )
+    const revokedUnverified = await registerTestClient()
+    await revokeTestOAuthClient(revokedUnverified.id)
+    const documentedUnverified = await registerTestClient()
+    await setTestOAuthClientMetadataUrl(
+      documentedUnverified.id,
       `https://example.com/clients/${randomBytes(6).toString('hex')}.json`,
     )
 
-    await expect(verifyOAuthClient(admin.id, revoked.id, revoked.reviewed)).resolves.toEqual({
+    await expect(
+      verifyOAuthClient(admin.id, revokedVerified.id, revokedVerified.reviewed),
+    ).resolves.toEqual({
       outcome: 'conflict',
     })
-    await expect(verifyOAuthClient(admin.id, documented.id, documented.reviewed)).resolves.toEqual({
-      outcome: 'conflict',
-    })
-    await expect(verifyOAuthClient(admin.id, MISSING_ID, revoked.reviewed)).resolves.toEqual({
+    await expect(
+      verifyOAuthClient(admin.id, documentedVerified.id, documentedVerified.reviewed),
+    ).resolves.toEqual({ outcome: 'conflict' })
+    await expect(
+      verifyOAuthClient(admin.id, MISSING_ID, revokedVerified.reviewed),
+    ).resolves.toEqual({
       outcome: 'not_found',
     })
-    const all = await listedIds('all')
-    expect(all).not.toContain(revoked.id)
-    expect(all).not.toContain(documented.id)
+    const all = await listedIds('all', 10_000)
+    for (const id of [
+      revokedVerified.id,
+      documentedVerified.id,
+      revokedUnverified.id,
+      documentedUnverified.id,
+    ])
+      expect(all).not.toContain(id)
+    const verified = await listedIds('verified', 10_000)
+    for (const id of [revokedVerified.id, documentedVerified.id]) expect(verified).not.toContain(id)
+    const unverified = await listedIds('unverified', 10_000)
+    for (const id of [revokedUnverified.id, documentedUnverified.id]) {
+      expect(unverified).not.toContain(id)
+    }
   })
 
   it('clears verification', async () => {
@@ -119,5 +146,25 @@ describe('staff OAuth client verification', () => {
       afterId: page.results[0]!.id,
     })
     expect(next.results[0]!.id.localeCompare(page.results[0]!.id)).toBeLessThan(0)
+  })
+
+  it('keyset-pages only active verified dynamic clients', async () => {
+    const first = await registerTestClient()
+    const second = await registerTestClient()
+    await verifyOAuthClient(admin.id, first.id, first.reviewed)
+    await verifyOAuthClient(admin.id, second.id, second.reviewed)
+    const [newer, older] = [first, second].sort((left, right) => right.id.localeCompare(left.id))
+    const next = await listOAuthClientsForVerification({
+      verification: 'verified',
+      limit: 1000,
+      afterId: newer!.id,
+    })
+    expect(next.results).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: older!.id })]),
+    )
+    expect(next.results).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: newer!.id })]),
+    )
+    expect(next.results.every(client => client.id.localeCompare(newer!.id) < 0)).toBe(true)
   })
 })

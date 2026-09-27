@@ -40,6 +40,11 @@ pnpm run explain:run
 The topic- and post-metrics scenarios use full batch sizes of 100 and 200 IDs. Their plan gates
 reject correlated metric SubPlans and source work above the normal seed's requested-ID ceilings in
 both CI plan-cache modes.
+The verified OAuth-client scenario interleaves a small active verified subset through a larger
+unverified population and uses a late keyset cursor with exactly 102 verified rows remaining.
+Its pagination gate requires
+`idx_oauth_clients__verified_active_id`, with no `oauth_clients` sequential scan or explicit sort,
+in both plan-cache modes.
 
 ### Isolated topic-metrics benchmark
 
