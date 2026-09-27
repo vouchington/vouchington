@@ -54,15 +54,15 @@ export async function processBatchCreation<T extends BatchEntity>(
   },
   dependencies: BatchCreationDependencies = defaultBatchCreationDependencies,
 ): Promise<CreateBatchResult> {
-  if (params.copyExisting) {
-    await params.copyExisting()
-  }
-
   const limits = await dependencies.getBatchCreationLimits()
 
   if (!limits.allowed) {
     params.reEnqueue()
     return { reEnqueued: true, reason: limits.reason }
+  }
+
+  if (params.copyExisting) {
+    await params.copyExisting()
   }
 
   const fileBuilder = new BatchFileBuilder()
