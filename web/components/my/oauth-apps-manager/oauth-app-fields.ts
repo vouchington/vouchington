@@ -1,5 +1,4 @@
 import {
-  MAX_OAUTH_REDIRECT_URIS,
   validateOAuthRedirectUris,
   type OAuthRedirectUriValidationCode,
 } from '@ts-shared/utils/oauth-redirect-uri-validation'
@@ -7,7 +6,6 @@ import type { Translator } from '@ts-shared/ui-messages'
 
 /** Mirrors the backend limits so the form blocks submissions the API would reject. */
 export const MAX_CLIENT_NAME_LENGTH = 120
-export const MAX_REDIRECT_URIS = MAX_OAUTH_REDIRECT_URIS
 export { validateOAuthRedirectUris }
 
 /** One redirect URI per line. Preserve repeats so the shared validator can reject them. */
