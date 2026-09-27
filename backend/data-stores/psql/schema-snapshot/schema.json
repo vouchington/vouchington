@@ -89548,6 +89548,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_review_successions__author_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_review_successions__author_user_id ON public.review_successions USING btree (author_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "author_user_id",
+              "descending": false,
+              "expression": "author_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_review_successions__successor_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
