@@ -6,7 +6,9 @@ export async function isEmailSuppressed(email: string): Promise<boolean> {
   const { rows } = await read(sql`/* isEmailSuppressed */
     SELECT 1
     FROM ses_bounce_events
-    WHERE recipients @> ${JSON.stringify([normalizedEmail])}::jsonb
+    JOIN ses_bounce_event_recipients recipient
+      ON recipient.ses_bounce_event_id = ses_bounce_events.id
+    WHERE recipient.email = ${normalizedEmail}
       AND (
         (notification_type = 'bounce' AND bounce_type = 'permanent')
         OR notification_type = 'complaint'

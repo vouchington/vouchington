@@ -2,18 +2,12 @@
 // new entries require explicit review against the accepted Plan.
 export const EXISTING_RELATIONAL_STORAGE_DEBT = {
   json: new Set([
-    'admin_import_batches.metadata',
-    'admin_import_rows.input_data',
-    'bedrock_embeddings_batches.data',
-    'boilerplate_removals.results',
     'community_agent_prompt_changes.next_fields',
     'community_agent_prompt_changes.previous_fields',
     'community_application_questions.options',
     'community_applications.answers',
     'conversation_messages.content',
     'copyright_notice_lifecycle_events.metadata',
-    'crawls.embed_metadata',
-    'crawls.links',
     'dynamic_config_change_logs.next_fields',
     'dynamic_config_change_logs.previous_fields',
     'moderation_appeal_lifecycle_changes.metadata',
@@ -28,11 +22,7 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'posts.structured_data',
     'report_integrity_flags.details',
     'review_dispute_lifecycle_changes.metadata',
-    'rss_feed_item_category_snapshot_reconciliations.categories',
-    'rss_feed_item_source_category_snapshots.categories',
-    'ses_bounce_events.recipients',
     'topic_revisions.changes',
-    'urls.search_params',
     'vote_integrity_flags.details',
   ]),
   uuidArray: new Set([

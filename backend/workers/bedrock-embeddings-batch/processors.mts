@@ -1,8 +1,5 @@
 import { processBatch } from '@services/bedrock-embeddings-batch/orchestrator/poll'
-import {
-  getPendingBatches,
-  getBatchInfo,
-} from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
+import { getPendingBatches } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import {
   downloadBatchResults,
   cleanupResultsFile,
@@ -95,18 +92,11 @@ export const processImageEmbeddingBatchCreation = (): Promise<CreateBatchResult>
 export const processBatchPolling = async (
   batchId: string,
 ): Promise<{ success: boolean; processed?: boolean; status?: string }> => {
-  await processBatch(batchId)
+  const batchInfo = await processBatch(batchId)
+  const jobType = batchInfo.jobType as BatchJobType | null
 
-  const batchInfo = await getBatchInfo(batchId)
-  if (!batchInfo) {
-    throw new Error(`Batch not found: ${batchId}`)
-  }
-
-  const batchData = batchInfo.data as { status?: string; outputS3Uri?: string }
-  const jobType = batchInfo.job_type as BatchJobType | null
-
-  if (batchData.status !== 'Completed' && batchData.status !== 'PartiallyCompleted') {
-    return { success: true, status: batchData.status }
+  if (batchInfo.bedrockStatus !== 'Completed' && batchInfo.bedrockStatus !== 'PartiallyCompleted') {
+    return { success: true, status: batchInfo.bedrockStatus }
   }
 
   let resultsFilePath: string | null = null

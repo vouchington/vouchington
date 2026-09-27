@@ -11,8 +11,6 @@ CREATE TABLE IF NOT EXISTS boilerplate_removals (
   parent_path TEXT NOT NULL,
   CHECK (LENGTH(TRIM(parent_path)) > 0 AND LENGTH(parent_path) <= 255),
 
-  results JSONB NOT NULL DEFAULT '{}'::JSONB,
-
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,7 +22,24 @@ CREATE INDEX IF NOT EXISTS idx_boilerplate_removals__hostname_path ON boilerplat
 COMMENT ON TABLE boilerplate_removals IS 'Stores computed boilerplate removal results for a hostname and parent path combination.';
 COMMENT ON COLUMN boilerplate_removals.hostname_id IS 'The hostname these removal rules apply to.';
 COMMENT ON COLUMN boilerplate_removals.parent_path IS 'The URL parent path pattern for scoping removal rules.';
-COMMENT ON COLUMN boilerplate_removals.results IS 'JSONB containing the computed boilerplate removal selectors and rules.';
+
+DO $$ BEGIN
+  CREATE TYPE boilerplate_removal_result_kinds AS ENUM ('css_selector', 'html');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS boilerplate_removal_results (
+  boilerplate_removal_id UUID NOT NULL REFERENCES boilerplate_removals ON DELETE CASCADE,
+  kind boilerplate_removal_result_kinds NOT NULL,
+  ordinal INT NOT NULL CHECK (ordinal >= 0),
+  value TEXT NOT NULL CHECK (char_length(value) BETWEEN 1 AND 4096),
+  PRIMARY KEY (boilerplate_removal_id, kind, ordinal)
+);
+
+COMMENT ON TABLE boilerplate_removal_results IS 'Ordered selector and HTML removal values for one boilerplate removal. Zero rows is an empty result.';
+COMMENT ON COLUMN boilerplate_removal_results.kind IS 'css_selector or html fragment, matching the extractor result lists.';
+COMMENT ON COLUMN boilerplate_removal_results.ordinal IS 'Zero-based order within that result list.';
+COMMENT ON COLUMN boilerplate_removal_results.value IS 'Selector or HTML fragment to remove.';
 
 CREATE TABLE IF NOT EXISTS boilerplate_removal_urls (
   boilerplate_removal_id UUID NOT NULL REFERENCES boilerplate_removals ON DELETE CASCADE,

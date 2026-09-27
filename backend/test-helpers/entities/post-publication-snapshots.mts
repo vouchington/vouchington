@@ -129,9 +129,9 @@ export async function insertTestPublicationFeedFanout(
   if (!url) throw new Error('Expected publication URL')
   const { rows } = await write<{ id: string }>(sql`/* insertTestPublicationFeedFanout */
     WITH source AS (SELECT topic_id, ordinal FROM UNNEST(${topicIds}::uuid[]) WITH ORDINALITY AS input(topic_id, ordinal)), urls_inserted AS (
-      INSERT INTO urls (url, hostname_id, pathname, search_params)
+      INSERT INTO urls (url, hostname_id, pathname)
       SELECT 'https://publication-' || ${postId}::text || '.example.com/feed-' || ordinal,
-        ${url.hostname.id}, '/feed-' || ordinal, '{}'::jsonb FROM source RETURNING id, pathname)
+        ${url.hostname.id}, '/feed-' || ordinal FROM source RETURNING id, pathname)
     INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title)
     SELECT urls_inserted.id, source.topic_id, 'Publication fixture feed' FROM urls_inserted
     JOIN source ON urls_inserted.pathname = '/feed-' || source.ordinal RETURNING id`)

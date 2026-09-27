@@ -6,7 +6,7 @@ describe('crawl oEmbed schema', () => {
     const indexdef = await getCrawlOembedPendingIndexDefinition()
 
     expect(indexdef).toContain('USING btree (id)')
-    expect(indexdef).toContain('embed_metadata IS NOT NULL')
+    expect(indexdef).toContain('embed_kind IS NOT NULL')
     expect(indexdef).toContain('embed_oembed_url IS NOT NULL')
     expect(indexdef).toContain('embed_oembed_resolved_at IS NULL')
   })

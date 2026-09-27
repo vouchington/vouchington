@@ -4,7 +4,7 @@ CREATE OR REPLACE VIEW view_urls AS
     urls.id,
     urls.url,
     urls.pathname,
-    urls.search_params,
+    url_search_params_json(urls.id) AS search_params,
     urls.canonical_url_id,
     ROW_TO_JSON(view_url_hostnames) AS hostname
   FROM urls

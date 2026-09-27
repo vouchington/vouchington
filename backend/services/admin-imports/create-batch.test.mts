@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { write } from '@data-stores/psql'
 import { createImportBatch } from './create-batch.mts'
 import { getImportBatch, getImportRowsByBatchId } from './get-batch.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -90,6 +91,19 @@ describe('create-batch', () => {
       expect(rowIds).toHaveLength(1001)
       expect(rows[0].row_index).toBe(0)
       expect(rows[1000].row_index).toBe(1000)
+    })
+
+    it('rejects topic input on an RSS feed batch', async () => {
+      const suffix = randomSuffix()
+      const { rows } = await createImportBatch(admin, 'rss_feed', [
+        { url: `https://feed-${suffix}.example.com/rss` },
+      ])
+      await expect(
+        write(`INSERT INTO admin_import_topic_rows (admin_import_row_id, slug) VALUES ($1, $2)`, [
+          rows[0]!.id,
+          `wrong-${suffix}`,
+        ]),
+      ).rejects.toMatchObject({ code: '23514' })
     })
   })
 })

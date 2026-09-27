@@ -58,8 +58,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
 
   // RSS feed URLs
   const feedUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
-     VALUES ($1, $2, $3, '{}'::JSONB)
+    `INSERT INTO urls (url, hostname_id, pathname)
+     VALUES ($1, $2, $3)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
      RETURNING id`,
     [`https://${hostname}/podcast.xml`, hostnameId, '/podcast.xml'],
@@ -130,8 +130,8 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   // set for correctness (schema constraints, future direct-column reads).
   const enclosureUrl = `https://${hostname}/episode-1.mp3`
   const episodeUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
-     VALUES ($1, $2, $3, '{}'::JSONB)
+    `INSERT INTO urls (url, hostname_id, pathname)
+     VALUES ($1, $2, $3)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
      RETURNING id`,
     [`https://${hostname}/episode-1`, hostnameId, '/episode-1'],

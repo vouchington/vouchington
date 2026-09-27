@@ -12,9 +12,9 @@ export async function insertTestPostRelatedUrlBatch(options: {
     WITH input AS (
       SELECT * FROM unnest($1::uuid[], $2::uuid[]) AS batch(post_id, url_id)
     ), inserted_urls AS (
-      INSERT INTO urls (id, url, hostname_id, pathname, search_params, created_by_id)
+      INSERT INTO urls (id, url, hostname_id, pathname, created_by_id)
       SELECT url_id, 'https://' || $3 || '/batch-' || url_id::text, $4,
-        '/batch-' || url_id::text, '{}'::jsonb, $5
+        '/batch-' || url_id::text, $5
       FROM input
     )
     INSERT INTO relation__post__related__url

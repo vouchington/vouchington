@@ -50,9 +50,10 @@ Crawling:
 
 - Fetch the previous successful's `etag` and `last_modified_at` headers and set them in the new crawl for caching
 - Currently, we only need to handle HTML responses
-- Crawl stores `lang` from `<html lang="...">`, `title`, `meta_tags`, `links`, `markdown`, and
-  nullable normalized `embed_metadata`, plus the crawl-local `embed_oembed_url` candidate and its
-  optional `embed_oembed_resolved_at` completion timestamp.
+- Crawl stores `lang` from `<html lang="...">`, `title`, raw `meta_tags`, `markdown`, ordered
+  `crawl_links`, typed embed columns (`embed_kind` and its fields), and consumed Open Graph columns,
+  plus the crawl-local `embed_oembed_url` candidate and its optional `embed_oembed_resolved_at`
+  completion timestamp. `crawl_links` partitions drop with `crawl_chunks`, before `crawls`.
 - Embed metadata contains normalized provider, author, thumbnail, and authorized player fields;
   raw oEmbed HTML is not stored. YouTube and Vimeo use explicit endpoints; PeerTube endpoints and
   players are limited to the already-crawled instance and expected paths.

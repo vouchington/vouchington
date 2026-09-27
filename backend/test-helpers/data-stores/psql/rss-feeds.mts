@@ -28,8 +28,8 @@ export async function insertLocalTestRssFeed(): Promise<{ id: string }> {
     RETURNING id
   `)
   const { rows: urlRows } = await write<{ id: string }>(sql`
-    INSERT INTO urls (url, hostname_id, search_params)
-    VALUES (${`https://feed-${random}.example.com/feed.xml`}, ${hostnameRows[0]!.id}, '{}'::jsonb)
+    INSERT INTO urls (url, hostname_id)
+    VALUES (${`https://feed-${random}.example.com/feed.xml`}, ${hostnameRows[0]!.id})
     RETURNING id
   `)
 

@@ -143,7 +143,15 @@ export async function cleanupPartitions(referenceDate: Date = new Date()): Promi
   }
 
   const sql = expiredPartitions
-    .map(partition => `DROP TABLE IF EXISTS ${assertSafeSqlIdentifier(partition.partitionName)};`)
+    .map(partition => {
+      const partitionName = assertSafeSqlIdentifier(partition.partitionName)
+      // Partition DROP does not fire ON DELETE. Clear batch bookkeeping that references
+      // crawls in this partition before the parent partition disappears.
+      if (partition.table === 'crawls') {
+        return `UPDATE bedrock_embeddings_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM ${partitionName});\nDROP TABLE IF EXISTS ${partitionName};`
+      }
+      return `DROP TABLE IF EXISTS ${partitionName};`
+    })
     .join('\n')
   await write(sql)
 }

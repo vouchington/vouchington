@@ -17,7 +17,7 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
         'id', feed_url.id,
         'url', feed_url.url,
         'pathname', feed_url.pathname,
-        'search_params', feed_url.search_params,
+        'search_params', url_search_params_json(feed_url.id),
         'canonical_url_id', feed_url.canonical_url_id,
         -- urls.hostname_id is NOT NULL FK → feed_hostname always present (INNER JOIN below)
         'hostname', json_build_object(

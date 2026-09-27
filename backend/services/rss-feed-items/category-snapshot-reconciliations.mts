@@ -1,6 +1,10 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notifications/enqueues'
 import { upsertRssFeedItemCategories, type RssFeedItemCategoryInput } from './categories.mts'
+import {
+  orderedCategorySnapshots,
+  replaceCategorySnapshotChildren,
+} from './category-snapshot-rows.mts'
 
 export const CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE = 25
 
@@ -15,43 +19,32 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
   snapshots: readonly RssFeedItemCategoryInput[],
 ): Promise<void> {
   if (snapshots.length === 0) return
-  const orderedSnapshots = [
-    ...new Map(snapshots.map(snapshot => [snapshot.rss_feed_item_id, snapshot])),
-  ]
-    .map(([, snapshot]) => snapshot)
-    .sort((left, right) => left.rss_feed_item_id.localeCompare(right.rss_feed_item_id))
+  const orderedSnapshots = orderedCategorySnapshots(snapshots)
+  const itemIds = orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id)
   await query(
     `/* persistRssFeedItemSourceCategorySnapshots */
       INSERT INTO rss_feed_item_source_category_snapshots
-        (rss_feed_id, rss_feed_item_id, categories)
-      SELECT $1, rss_feed_item_id, categories
-      FROM UNNEST($2::uuid[], $3::jsonb[]) AS snapshot(rss_feed_item_id, categories)
+        (rss_feed_id, rss_feed_item_id)
+      SELECT $1, rss_feed_item_id
+      FROM UNNEST($2::uuid[]) AS snapshot(rss_feed_item_id)
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_id, rss_feed_item_id) DO UPDATE
-      SET categories = EXCLUDED.categories,
-          updated_at = CURRENT_TIMESTAMP`,
-    [
-      rssFeedId,
-      orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id),
-      orderedSnapshots.map(snapshot => JSON.stringify(snapshot.categories)),
-    ],
+      SET updated_at = CURRENT_TIMESTAMP`,
+    [rssFeedId, itemIds],
   )
   await query(
     `/* persistRssFeedItemCategorySnapshotReconciliations */
       INSERT INTO rss_feed_item_category_snapshot_reconciliations
-        (rss_feed_item_id, categories)
-      SELECT rss_feed_item_id, categories
-      FROM UNNEST($1::uuid[], $2::jsonb[]) AS snapshot(rss_feed_item_id, categories)
+        (rss_feed_item_id)
+      SELECT rss_feed_item_id
+      FROM UNNEST($1::uuid[]) AS snapshot(rss_feed_item_id)
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
-      SET categories = EXCLUDED.categories,
-          generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
+      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
           updated_at = CURRENT_TIMESTAMP`,
-    [
-      orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id),
-      orderedSnapshots.map(snapshot => JSON.stringify(snapshot.categories)),
-    ],
+    [itemIds],
   )
+  await replaceCategorySnapshotChildren(query, rssFeedId, orderedSnapshots)
 }
 
 export async function markRssFeedItemCategorySnapshotsForReconciliation(
@@ -63,8 +56,8 @@ export async function markRssFeedItemCategorySnapshotsForReconciliation(
   await query(
     `/* markRssFeedItemCategorySnapshotsForReconciliation */
       INSERT INTO rss_feed_item_category_snapshot_reconciliations
-        (rss_feed_item_id, categories)
-      SELECT rss_feed_item_id, '[]'::jsonb
+        (rss_feed_item_id)
+      SELECT rss_feed_item_id
       FROM UNNEST($1::uuid[]) AS snapshot(rss_feed_item_id)
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
@@ -81,8 +74,8 @@ export async function markRssFeedCategorySnapshotsForReconciliation(
   await query(
     `/* markRssFeedCategorySnapshotsForReconciliation */
       INSERT INTO rss_feed_item_category_snapshot_reconciliations
-        (rss_feed_item_id, categories)
-      SELECT rss_feed_item_id, '[]'::jsonb
+        (rss_feed_item_id)
+      SELECT rss_feed_item_id
       FROM rss_feed_item_sources
       WHERE rss_feed_id = $1::uuid
       ORDER BY rss_feed_item_id
@@ -97,8 +90,19 @@ export async function markRssFeedCategorySnapshotsForReconciliation(
 export async function reconcileRssFeedItemCategorySnapshots(): Promise<{ reconciled: number }> {
   const { rows } = await write<RssFeedItemCategorySnapshotReconciliation>(
     `/* reconcileRssFeedItemCategorySnapshots */
-      SELECT rss_feed_item_id, categories, generation
-      FROM rss_feed_item_category_snapshot_reconciliations
+      SELECT
+        parent.rss_feed_item_id,
+        parent.generation,
+        COALESCE(
+          ARRAY(
+            SELECT category.category_text
+            FROM rss_feed_item_category_snapshot_reconciliation_categories category
+            WHERE category.rss_feed_item_id = parent.rss_feed_item_id
+            ORDER BY category.ordinal
+          ),
+          ARRAY[]::text[]
+        ) AS categories
+      FROM rss_feed_item_category_snapshot_reconciliations parent
       ORDER BY updated_at, rss_feed_item_id
       LIMIT $1`,
     [CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE],
@@ -158,8 +162,9 @@ async function getRssFeedItemCategorySnapshot(
             ON source.rss_feed_id = source_snapshot.rss_feed_id
            AND source.rss_feed_item_id = source_snapshot.rss_feed_item_id
           JOIN rss_feeds feed ON feed.id = source.rss_feed_id
-          CROSS JOIN LATERAL jsonb_array_elements_text(source_snapshot.categories)
-            AS source_category(category_text)
+          JOIN rss_feed_item_source_category_snapshot_categories source_category
+            ON source_category.rss_feed_id = source_snapshot.rss_feed_id
+           AND source_category.rss_feed_item_id = source_snapshot.rss_feed_item_id
           WHERE source_snapshot.rss_feed_item_id = $1
             AND feed.deleted_at IS NULL
           ORDER BY source_category.category_text

@@ -54,11 +54,11 @@ export async function getMismatchedAdminImportTargetViolationCodes(
   for (const operation of [
     () =>
       write(
-        sql`INSERT INTO admin_import_rows (batch_id, row_index, input_data, topic_id, completed_at) VALUES (${rssBatchId}, 0, '{}'::jsonb, ${topicRows[0]!.id}, CURRENT_TIMESTAMP)`,
+        sql`INSERT INTO admin_import_rows (batch_id, row_index, topic_id, completed_at) VALUES (${rssBatchId}, 0, ${topicRows[0]!.id}, CURRENT_TIMESTAMP)`,
       ),
     async () => {
       const { rows } = await write<{ id: string }>(
-        sql`INSERT INTO admin_import_rows (batch_id, row_index, input_data, topic_id, completed_at) VALUES (${topicBatchId}, 0, '{}'::jsonb, ${topicRows[0]!.id}, CURRENT_TIMESTAMP) RETURNING id`,
+        sql`INSERT INTO admin_import_rows (batch_id, row_index, topic_id, completed_at) VALUES (${topicBatchId}, 0, ${topicRows[0]!.id}, CURRENT_TIMESTAMP) RETURNING id`,
       )
       await write(
         sql`UPDATE admin_import_rows SET batch_id = ${rssBatchId} WHERE id = ${rows[0]!.id}`,

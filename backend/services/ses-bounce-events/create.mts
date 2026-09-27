@@ -50,47 +50,65 @@ export async function createSesBounceEvent(
   const dedupKey = deriveDedupKey(input, normalizedRecipients)
 
   const { rows } = await write(sql`/* createSesBounceEvent */
-    INSERT INTO ses_bounce_events (
-      notification_type,
-      bounce_type,
-      bounce_sub_type,
-      recipients,
-      ses_message_id,
-      ses_feedback_id,
-      ses_timestamp,
-      raw_message,
-      diagnostic_code,
-      reporting_mta,
-      dedup_key
+    WITH inserted AS (
+      INSERT INTO ses_bounce_events (
+        notification_type,
+        bounce_type,
+        bounce_sub_type,
+        ses_message_id,
+        ses_feedback_id,
+        ses_timestamp,
+        raw_message,
+        diagnostic_code,
+        reporting_mta,
+        dedup_key
+      )
+      VALUES (
+        ${input.notification_type}::ses_notification_types,
+        ${input.bounce_type ?? null}::ses_bounce_types,
+        ${input.bounce_sub_type ?? null},
+        ${input.ses_message_id ?? null},
+        ${input.ses_feedback_id ?? null},
+        ${input.ses_timestamp ?? null},
+        ${JSON.stringify(input.raw_message)}::jsonb,
+        ${input.diagnostic_code ?? null},
+        ${input.reporting_mta ?? null},
+        ${dedupKey}
+      )
+      ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING
+      RETURNING
+        id,
+        notification_type,
+        bounce_type,
+        bounce_sub_type,
+        ses_message_id,
+        ses_feedback_id,
+        ses_timestamp,
+        raw_message,
+        diagnostic_code,
+        reporting_mta,
+        dedup_key,
+        uuid_extract_timestamp(id) AS created_at
+    ),
+    recipient_rows AS (
+      INSERT INTO ses_bounce_event_recipients (ses_bounce_event_id, ordinal, email)
+      SELECT inserted.id, recipient.ordinal::int, recipient.email
+      FROM inserted
+      JOIN UNNEST(${normalizedRecipients}::text[]) WITH ORDINALITY
+        AS recipient(email, ordinal) ON TRUE
+      ORDER BY inserted.id, recipient.ordinal
+      RETURNING ses_bounce_event_id, ordinal, email
     )
-    VALUES (
-      ${input.notification_type}::ses_notification_types,
-      ${input.bounce_type ?? null}::ses_bounce_types,
-      ${input.bounce_sub_type ?? null},
-      ${JSON.stringify(normalizedRecipients)}::jsonb,
-      ${input.ses_message_id ?? null},
-      ${input.ses_feedback_id ?? null},
-      ${input.ses_timestamp ?? null},
-      ${JSON.stringify(input.raw_message)}::jsonb,
-      ${input.diagnostic_code ?? null},
-      ${input.reporting_mta ?? null},
-      ${dedupKey}
-    )
-    ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING
-    RETURNING
-      id,
-      notification_type,
-      bounce_type,
-      bounce_sub_type,
-      recipients,
-      ses_message_id,
-      ses_feedback_id,
-      ses_timestamp,
-      raw_message,
-      diagnostic_code,
-      reporting_mta,
-      dedup_key,
-      uuid_extract_timestamp(id) AS created_at
+    SELECT
+      inserted.*,
+      COALESCE(
+        (
+          SELECT jsonb_agg(email ORDER BY ordinal)
+          FROM recipient_rows
+        ),
+        '[]'::jsonb
+      ) AS recipients
+    FROM inserted
   `)
 
   if (rows.length === 0) {
@@ -98,5 +116,9 @@ export async function createSesBounceEvent(
     return null
   }
   assert(rows.length === 1, 500, 'Failed to create ses_bounce_event')
-  return rows[0] as SesBounceEvent
+  const row = rows[0] as SesBounceEvent & { recipients: string[] | string }
+  return {
+    ...row,
+    recipients: Array.isArray(row.recipients) ? row.recipients : [],
+  }
 }
