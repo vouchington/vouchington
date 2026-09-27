@@ -46,7 +46,9 @@ it issues no probe.
 
 The Vouchington post-commit wrapper does not probe. `withTransactionOptions` opens post-commit-action
 scope only from WeakMaps populated by `beginTransaction` / `beginBoundedTransaction`. The client map
-is cleared before `commit` / `rollback` / `dispose` await upstream settlement, which can
+also recognizes a query wrapper retaining the owned transaction's `client`, so nested post-commit
+actions still belong to that transaction. An unrelated borrowed client remains unowned.
+The client map is cleared before `commit` / `rollback` / `dispose` await upstream settlement, which can
 `release()` a pool-acquired `PoolClient`; the query-owner map stays until after post-commit actions
 run. Join versus `BEGIN` remains the upstream borrowed-path probe:
 
