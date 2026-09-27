@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   CONSTRAINT oauth_clients_metadata_url_check CHECK (
     metadata_url IS NULL OR (
       char_length(metadata_url) <= 2048
-      AND metadata_url ~ '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'
+      AND metadata_url ~* '^https://[^/?#@[:space:][:cntrl:]]+/[^#[:space:][:cntrl:]]*$'
       AND position(chr(92) IN metadata_url) = 0
       AND split_part(metadata_url, '?', 1) !~ '/\.\.?(/|$)'
     )

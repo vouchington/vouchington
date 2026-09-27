@@ -25,7 +25,7 @@ function randomMetadataUrl(): string {
   return `https://client.example/${randomBytes(12).toString('hex')}/metadata.json`
 }
 
-function metadataDocument(clientId: string) {
+function metadataDocument(clientId: string, overrides: Record<string, unknown> = {}) {
   return {
     client_id: clientId,
     client_name: 'Metadata client',
@@ -34,21 +34,23 @@ function metadataDocument(clientId: string) {
     response_types: ['code'],
     scope: 'mcp.user:read',
     token_endpoint_auth_method: 'none',
+    ...overrides,
   }
 }
 
 function responseFor(
   clientId: string,
   headers: Record<string, string> = {},
+  overrides: Record<string, unknown> = {},
 ): Awaited<ReturnType<ClientIdMetadataDependencies['safeFetch']>> {
-  return new Response(JSON.stringify(metadataDocument(clientId)), {
+  return new Response(JSON.stringify(metadataDocument(clientId, overrides)), {
     headers: { 'content-type': 'application/json', ...headers },
   }) as unknown as Awaited<ReturnType<ClientIdMetadataDependencies['safeFetch']>>
 }
 
 describe('Client ID Metadata Document OAuth flow', () => {
   it('persists exact strings and reuses a fresh cache', async () => {
-    const clientId = randomMetadataUrl()
+    const clientId = randomMetadataUrl().replace('https:', 'HTTPS:')
     const safeFetch = vi.fn<ClientIdMetadataDependencies['safeFetch']>(async (_url, options) => {
       expect(options).toMatchObject({ allowedProtocols: ['https:'], maxRedirects: 0 })
       return responseFor(clientId, { 'cache-control': 'max-age=600' })
@@ -100,7 +102,7 @@ describe('Client ID Metadata Document OAuth flow', () => {
         redirectUri,
         resource: getOAuthResourceUrl('user'),
         responseType: 'code',
-        scope: 'mcp.user:read',
+        scope: 'cards:read',
         sessionId,
         state: randomBytes(12).toString('base64url'),
         userId: user.id,
@@ -129,13 +131,55 @@ describe('Client ID Metadata Document OAuth flow', () => {
         codeVerifier: verifier,
         redirectUri,
       }),
-    ).resolves.toMatchObject({ scope: 'mcp.user:read', token_type: 'Bearer' })
+    ).resolves.toMatchObject({ scope: 'cards:read', token_type: 'Bearer' })
     const grants = await listUserOAuthGrants(user.id, { limit: 100 })
     expect(grants.results.find(grant => grant.client.client_id === clientId)?.client).toMatchObject(
       {
         client_name: 'client.example',
       },
     )
+  })
+
+  it('refuses consent after refreshed metadata removes a pending scope', async () => {
+    const user = await createTestUserDirect()
+    const clientId = randomMetadataUrl()
+    const deviceId = uuidv7()
+    const sessionId = uuidv7()
+    const pending = await beginOAuthAuthorizationRequest(
+      {
+        clientId,
+        codeChallenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+        codeChallengeMethod: 'S256',
+        deviceId,
+        redirectUri: 'https://app.example:443/oauth/callback',
+        resource: getOAuthResourceUrl('user'),
+        responseType: 'code',
+        scope: 'mcp.user:read mcp.user:write',
+        sessionId,
+        state: randomBytes(12).toString('base64url'),
+        userId: user.id,
+      },
+      {
+        safeFetch: async () =>
+          responseFor(
+            clientId,
+            { 'cache-control': 'max-age=0' },
+            { scope: 'mcp.user:read mcp.user:write' },
+          ),
+      },
+    )
+    await resolveClientIdMetadataDocument(clientId, {
+      safeFetch: async () => responseFor(clientId, {}, { scope: 'mcp.user:read' }),
+    })
+
+    await expect(
+      decideOAuthAuthorizationRequest(
+        user.id,
+        pending.request_id,
+        'approve',
+        createOAuthBrowserBindingHash(deviceId, sessionId),
+      ),
+    ).rejects.toMatchObject({ code: 'access_denied' })
   })
 
   it('reuses one no-store metadata fetch when beginning an already validated request', async () => {
@@ -206,6 +250,12 @@ describe('Client ID Metadata Document OAuth flow', () => {
         { safeFetch: async () => Promise.reject(new Error('unavailable')) },
       ),
     ).resolves.toBeNull()
+    await expect(
+      getOAuthAuthorizationErrorRedirect(
+        { clientId: randomMetadataUrl(), redirectUri, state, error },
+        { query: async () => Promise.reject(new Error('database unavailable')) },
+      ),
+    ).rejects.toThrow('database unavailable')
   })
 
   it('refreshes stale metadata before deciding whether an error redirect is safe', async () => {

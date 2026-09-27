@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
+import { hasEveryScope, type ApiScope } from '@modules/scopes'
 import { v7 as uuidv7 } from 'uuid'
 import { AUTHORIZATION_CODE_TTL_MS, OAUTH_SECRET_PURPOSES } from './constants.mts'
 import {
@@ -10,7 +11,6 @@ import {
 import { OAuthProtocolError } from './errors.mts'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
-import type { ApiScope } from '@modules/scopes'
 
 type AuthorizationRequestRow = {
   id: string
@@ -20,6 +20,7 @@ type AuthorizationRequestRow = {
   state: string
   resource: string
   scopes: ApiScope[]
+  client_scopes: ApiScope[]
   code_challenge: string
   owner_user_id: string | null
 }
@@ -75,7 +76,6 @@ async function approveAuthorizationRequest(
   const grantId = await recordAuthorizationApproval(request, query)
   return issueAuthorizationCode(request, grantId, query)
 }
-
 async function recordAuthorizationApproval(
   request: AuthorizationRequestRow,
   query: TransactionQuery,
@@ -84,7 +84,6 @@ async function recordAuthorizationApproval(
   await insertConsentDecision(request, 'approve', grantId, query)
   return grantId
 }
-
 async function issueAuthorizationCode(
   request: AuthorizationRequestRow,
   grantId: string,
@@ -153,7 +152,8 @@ async function lockAuthorizationRequest(
   query: TransactionQuery,
 ): Promise<AuthorizationRequestRow | null> {
   const result = await query<AuthorizationRequestRow>(
-    `/* lockAuthorizationRequest */ SELECT request.*, client.owner_user_id
+    `/* lockAuthorizationRequest */ SELECT request.*, client.owner_user_id,
+       client.scopes AS client_scopes
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1
@@ -167,7 +167,8 @@ async function lockAuthorizationRequest(
      FOR UPDATE OF request FOR SHARE OF client`,
     [requestId, userId, browserBindingHash],
   )
-  return result.rows[0] ?? null
+  const request = result.rows[0]
+  return request && hasEveryScope(request.client_scopes, request.scopes) ? request : null
 }
 
 async function upsertGrant(

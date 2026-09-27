@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
-import type { OAuthProtocolError } from './errors.mts'
+import { OAuthProtocolError } from './errors.mts'
 import type { OAuthClient } from './types.mts'
 import {
   resolveClientIdMetadataDocument,
@@ -38,7 +38,8 @@ export async function getOAuthAuthorizationErrorRedirect(
       client =
         (await resolveClientIdMetadataDocument(input.clientId, clientIdMetadataDependencies)) ??
         undefined
-    } catch {
+    } catch (error) {
+      if (!(error instanceof OAuthProtocolError)) throw error
       return null
     }
   }

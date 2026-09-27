@@ -6,7 +6,7 @@ export function parseClientIdMetadataUrl(value: string): string | null {
     value.length > 2048 ||
     pathStart <= authorityStart ||
     (queryStart !== -1 && pathStart > queryStart) ||
-    !value.startsWith('https://') ||
+    !/^https:\/\//iu.test(value) ||
     value.includes('#') ||
     value.includes('\\') ||
     /[\s\p{Cc}\p{Z}]/u.test(value) ||

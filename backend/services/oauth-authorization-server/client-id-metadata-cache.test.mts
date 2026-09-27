@@ -8,8 +8,8 @@ import type { QueryExecutor } from '@data-stores/psql'
 
 describe('Client ID Metadata Document cache', () => {
   it('keeps the exact URL spelling used as the client identifier', () => {
-    expect(parseClientIdMetadataUrl('https://CLIENT.example:443/metadata.json?version=1')).toBe(
-      'https://CLIENT.example:443/metadata.json?version=1',
+    expect(parseClientIdMetadataUrl('HTTPS://CLIENT.example:443/metadata.json?version=1')).toBe(
+      'HTTPS://CLIENT.example:443/metadata.json?version=1',
     )
   })
 
@@ -29,6 +29,11 @@ describe('Client ID Metadata Document cache', () => {
       expires: new Date(now.getTime() - 1_000).toUTCString(),
     })
     expect(getClientIdMetadataExpiry(headers, now)).toEqual(now)
+  })
+
+  it('treats an invalid Expires value as immediately stale', () => {
+    const now = new Date('2026-09-27T12:00:00.000Z')
+    expect(getClientIdMetadataExpiry(new Headers({ expires: 'not-a-date' }), now)).toEqual(now)
   })
 
   it('lets Cache-Control max-age take precedence over Expires', () => {

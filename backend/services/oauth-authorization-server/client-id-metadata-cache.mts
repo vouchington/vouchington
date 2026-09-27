@@ -28,10 +28,13 @@ export function getClientIdMetadataExpiry(headers: Pick<Headers, 'get'>, now: Da
       const rawMaxAge = maxAgeDirective.slice('max-age='.length).replace(/^"|"$/gu, '')
       lifetimeMs = /^\d+$/u.test(rawMaxAge) ? Number(rawMaxAge) * 1000 : 0
     } else {
-      const expiresMs = Date.parse(headers.get('expires') ?? '')
+      const expires = headers.get('expires')
+      const expiresMs = Date.parse(expires ?? '')
       const dateMs = Date.parse(headers.get('date') ?? '')
       if (Number.isFinite(expiresMs)) {
         lifetimeMs = Math.max(0, expiresMs - (Number.isFinite(dateMs) ? dateMs : now.getTime()))
+      } else if (expires !== null) {
+        lifetimeMs = 0
       }
     }
   }
