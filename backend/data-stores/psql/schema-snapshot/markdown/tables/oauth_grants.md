@@ -14,7 +14,7 @@ Not partitioned — growth: unbounded.
 | `resource`     | `text`                     | no       |                              |          |           |           | Protected resource audience covered by the grant.                  |
 | `scopes`       | `text[]`                   | no       |                              |          |           |           | Latest canonical scope set consented for this client and resource. |
 | `consented_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time of the latest affirmative consent decision.                   |
-| `last_used_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time at which the grant most recently issued or refreshed tokens.  |
+| `last_used_at` | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the grant most recently issued or refreshed tokens.  |
 | `revoked_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the complete grant was revoked.                      |
 | `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                    |
 | `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                    |
