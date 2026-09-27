@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
@@ -10,9 +11,12 @@ import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-n
 import onError, { onSuccess } from '@/lib/on-error'
 import { DeclarationCheckbox, LabeledInput, LabeledTextarea } from './copyright-form-fields'
 import { CopyrightNoticeTargetPicker } from './copyright-notice-target-picker'
+import { useAuth } from '@/lib/auth/context'
+import { userHref } from '@/lib/links/entity-href'
 
 export function CopyrightNoticeForm() {
   const router = useRouter()
+  const { currentUser } = useAuth()
   const turnstile = useTurnstileToken()
   const [pending, startTransition] = useTransition()
   const [values, setValues] = useState({
@@ -78,6 +82,18 @@ export function CopyrightNoticeForm() {
         This US copyright process is not active until the designated agent is registered and
         published.
       </p>
+      {currentUser && (
+        <p className='text-sm text-muted-foreground'>
+          Accepted notices show your current public profile to signed-in members. See your{' '}
+          <Link
+            className='underline'
+            href={userHref(currentUser)}
+          >
+            profile
+          </Link>
+          . Your legal name, contact details, and signature stay private.
+        </p>
+      )}
       <LabeledInput
         id='copyright-name'
         label='Full legal name'

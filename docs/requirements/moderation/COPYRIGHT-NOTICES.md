@@ -167,9 +167,11 @@ snapshot. A target reference is returned only when that viewer may otherwise see
 ## Member and staff surfaces
 
 `/copyright/notices` and `/copyright/notices/:id` require authentication. They list only accepted
-US cases and project case identifier, dates, target URL, restriction state, and a metadata-free
-lifecycle timeline. They never expose claimant or poster identity, email, mailing address, signature,
-raw email, evidence artifacts, encrypted fields, moderator rationale, or agent recommendation.
+US cases and project case identifier, dates, target URL, restriction state, a metadata-free
+lifecycle timeline, and the claimant's current public profile when one exists. They never expose
+legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
+encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
+member-visible profile link.
 
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose

@@ -131,6 +131,7 @@ export type CopyrightPublicNotice = {
   accepted_at: Date
   provisional_withholding_at: Date | null
   target_count: number
+  claimant: { user_id: string; display_name: string } | null
 }
 
 export type CopyrightPublicNoticeDetail = CopyrightPublicNotice & {
@@ -152,6 +153,17 @@ export type CopyrightAcceptedNoticeCursorRow = CopyrightPublicNotice & {
   cursor_accepted_at: string
 }
 
+type CopyrightPublicNoticeRow = Omit<CopyrightPublicNotice, 'claimant'> & {
+  claimant_user_id: string | null
+  public_claimant_display_name: string | null
+}
+
+type CopyrightAcceptedNoticeCursorDatabaseRow = CopyrightPublicNoticeRow & {
+  cursor_accepted_at: string
+}
+
+export const copyrightAcceptedNoticeCursorScope = 'copyright-notices:accepted-at-desc-id-desc'
+
 export async function listAcceptedCopyrightNotices(options: {
   limit: number
   after?: { timestamp: string; id: string }
@@ -160,12 +172,16 @@ export async function listAcceptedCopyrightNotices(options: {
   const query = sql`/* listAcceptedCopyrightNotices */
     SELECT notice.id, notice.jurisdiction, notice.received_at, notice.accepted_at,
       notice.provisional_withholding_at, count(target.id)::integer AS target_count,
+      claimant.id AS claimant_user_id,
+      COALESCE(claimant.display_account->>'name', claimant.username, 'Voucha member')
+        AS public_claimant_display_name,
       to_char(
         notice.accepted_at AT TIME ZONE 'UTC',
         'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
       ) AS cursor_accepted_at
     FROM copyright_notices notice
     JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
+    LEFT JOIN view_users_public claimant ON claimant.id = notice.claimant_user_id
     WHERE notice.accepted_at IS NOT NULL
   `
   if (options.after) {
@@ -173,14 +189,14 @@ export async function listAcceptedCopyrightNotices(options: {
       AND (notice.accepted_at, notice.id) < (${options.after.timestamp}::timestamptz, ${options.after.id})`)
   }
   query.append(sql`
-    GROUP BY notice.id
+    GROUP BY notice.id, claimant.id, claimant.display_account, claimant.username
     ORDER BY notice.accepted_at DESC, notice.id DESC
     LIMIT ${options.limit + 1}
   `)
-  const { rows } = await transaction<CopyrightAcceptedNoticeCursorRow>(query)
+  const { rows } = await transaction<CopyrightAcceptedNoticeCursorDatabaseRow>(query)
   await transaction.commit()
   return {
-    notices: rows.slice(0, options.limit),
+    notices: rows.slice(0, options.limit).map(toCopyrightAcceptedNoticeCursorRow),
     hasNextPage: rows.length > options.limit,
   }
 }
@@ -190,19 +206,24 @@ export async function getCopyrightPublicNoticeDetail(
 ): Promise<CopyrightPublicNoticeDetail | null> {
   await using transaction = await beginTransaction()
   const { rows: notices } =
-    await transaction<CopyrightPublicNotice>(sql`/* getCopyrightPublicNotice */
+    await transaction<CopyrightPublicNoticeRow>(sql`/* getCopyrightPublicNotice */
     SELECT notice.id, notice.jurisdiction, notice.received_at, notice.accepted_at,
-      notice.provisional_withholding_at, count(target.id)::integer AS target_count
+      notice.provisional_withholding_at, count(target.id)::integer AS target_count,
+      claimant.id AS claimant_user_id,
+      COALESCE(claimant.display_account->>'name', claimant.username, 'Voucha member')
+        AS public_claimant_display_name
     FROM copyright_notices notice
     JOIN copyright_notice_targets target ON target.copyright_notice_id = notice.id
+    LEFT JOIN view_users_public claimant ON claimant.id = notice.claimant_user_id
     WHERE notice.id = ${noticeId} AND notice.accepted_at IS NOT NULL
-    GROUP BY notice.id
+    GROUP BY notice.id, claimant.id, claimant.display_account, claimant.username
   `)
-  const notice = notices[0]
-  if (!notice) {
+  const noticeRow = notices[0]
+  if (!noticeRow) {
     await transaction.commit()
     return null
   }
+  const notice = toCopyrightPublicNotice(noticeRow)
   const [targets, timeline] = await Promise.all([
     transaction<
       CopyrightPublicNoticeDetail['targets'][number]
@@ -240,6 +261,29 @@ export async function getCopyrightPublicNoticeDetail(
   ])
   await transaction.commit()
   return { ...notice, targets: targets.rows, timeline: timeline.rows }
+}
+
+function toCopyrightAcceptedNoticeCursorRow(
+  row: CopyrightAcceptedNoticeCursorDatabaseRow,
+): CopyrightAcceptedNoticeCursorRow {
+  return { ...toCopyrightPublicNotice(row), cursor_accepted_at: row.cursor_accepted_at }
+}
+
+function toCopyrightPublicNotice(row: CopyrightPublicNoticeRow): CopyrightPublicNotice {
+  return {
+    id: row.id,
+    jurisdiction: row.jurisdiction,
+    received_at: row.received_at,
+    accepted_at: row.accepted_at,
+    provisional_withholding_at: row.provisional_withholding_at,
+    target_count: row.target_count,
+    claimant: row.claimant_user_id
+      ? {
+          user_id: row.claimant_user_id,
+          display_name: row.public_claimant_display_name ?? 'Voucha member',
+        }
+      : null,
+  }
 }
 
 export async function getCopyrightParticipantNoticeDetail(

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { userHref } from '@/lib/links/entity-href'
 import type {
   CopyrightNoticeDetail,
   CopyrightNoticeResponseEligibility,
@@ -20,6 +21,17 @@ export function CopyrightNoticeDetailView({
           Accepted {new Date(notice.accepted_at).toLocaleDateString()}
         </p>
       </div>
+      {notice.claimant && (
+        <p className='text-sm text-muted-foreground'>
+          Claimant:{' '}
+          <Link
+            className='underline'
+            href={userHref({ id: notice.claimant.user_id })}
+          >
+            {notice.claimant.display_name}
+          </Link>
+        </p>
+      )}
       <section>
         <h2 className='text-lg font-semibold'>Affected hosted material</h2>
         <ul className='mt-2 space-y-2'>

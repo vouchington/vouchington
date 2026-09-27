@@ -62,8 +62,10 @@ member projection.
   filing, or after a target-specific qualifying court/CCB filing is received from the original
   claimant. Missing day fourteen escalates but does not prohibit an overdue restoration. The media
   service still performs the authoritative delivery check.
-- Member responses are built from an explicit allowlist and only for accepted complaints. Callers
-  must separately determine whether the viewer may see the target reference.
+- Member responses are built from an explicit allowlist and only for accepted complaints. Claimant
+  attribution is the current `view_users_public` profile, limited to its ID and display label; guest
+  and erased claimants are null. Callers must separately determine whether the viewer may see the
+  target reference.
 - Legal receipts, evidence, assessments, targets, and lifecycle events are immutable. Restriction
   lifts and action-intent completions are one-way transitions.
 - Enforcement requests recheck that their authorizing notice assessment remains compliant and current

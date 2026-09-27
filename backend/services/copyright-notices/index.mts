@@ -30,6 +30,7 @@ export {
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
+  copyrightAcceptedNoticeCursorScope,
 } from './read-models.mts'
 export { copyrightStaffQueueCursorScope, listCopyrightStaffQueue } from './read-models-staff.mts'
 export type { CopyrightStaffCase } from './read-models-staff.mts'

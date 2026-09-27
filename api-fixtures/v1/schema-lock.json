@@ -251,8 +251,22 @@
       "hash": "e863b849eb4237af55a33a64de79c36360687105787cdbb1749cccc2353bc54d"
     },
     "GET:/api/v1/copyright-notices": {
-      "fixtureIds": ["web.copyright.notices.default"],
-      "hash": "25d75957fe0a0c16be24b3ef14e4b5c9bd66dc4eaca857802ce29ed8c286fa1f"
+      "fixtureIds": ["web.copyright.notices.default", "web.copyright.notices.null-claimant"],
+      "hash": "6e222b9e45b15b7bf87f49d04a0fa0d037bfab278aeae8c8da3632ea48666176"
+    },
+    "GET:/api/v1/copyright-notices/:id": {
+      "fixtureIds": [
+        "web.copyright.notice.detail.null-claimant",
+        "web.copyright.notice.detail.populated"
+      ],
+      "hash": "588a69c994513fea3ffd3f9d0b2942a0e6864c00794838a4bbbacd5c3ea720cc"
+    },
+    "GET:/api/v1/copyright-notices/:id/participant": {
+      "fixtureIds": [
+        "web.copyright.notice.participant.null-claimant",
+        "web.copyright.notice.participant.populated"
+      ],
+      "hash": "0af7d2ab4683e0f42402b6e1d7416a96971e9e5470eb57557e9d949a86008235"
     },
     "GET:/api/v1/copyright-notices/:id/targets/:targetId/image-similarity-candidates": {
       "fixtureIds": ["native.moderation.copyright.image-similarity-candidates.default"],
@@ -2582,9 +2596,29 @@
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "8a1b695335a766e2a4b3a708026f9bb34cad58eb05e3fc788bb90cfd8cb2513b"
     },
+    "web.copyright.notice.detail.null-claimant": {
+      "fixtureIds": ["web.copyright.notice.detail.null-claimant"],
+      "hash": "9e46cdf92384461bf15c0e41ee2cb3607f3bc16c63538397838b029722f47b5e"
+    },
+    "web.copyright.notice.detail.populated": {
+      "fixtureIds": ["web.copyright.notice.detail.populated"],
+      "hash": "7dde673db6a929374f915ca97fe1380ce6618e01742d57249f20935a7ba75d69"
+    },
+    "web.copyright.notice.participant.null-claimant": {
+      "fixtureIds": ["web.copyright.notice.participant.null-claimant"],
+      "hash": "b931233288238ab122ac15480c8a89657fe6c158cbf54f8b80102870a1d31ddb"
+    },
+    "web.copyright.notice.participant.populated": {
+      "fixtureIds": ["web.copyright.notice.participant.populated"],
+      "hash": "531c0ad893619477bcabc808a6fc99f510bcf4c40e7b2aad97701d4625cb0127"
+    },
     "web.copyright.notices.default": {
       "fixtureIds": ["web.copyright.notices.default"],
-      "hash": "074daf1f3dc0959dbfa83af5cbbcb598805640e6c6f0a9e1c93bcea2ae4345c5"
+      "hash": "4e0fd1b2f8f9b72f1799eb8eeaaf5bc6fd7af4a47ded4ea6914273276d9bb993"
+    },
+    "web.copyright.notices.null-claimant": {
+      "fixtureIds": ["web.copyright.notices.null-claimant"],
+      "hash": "a161aba958731980d58b3bebde4e1a1df873744498236fbc6ee922782b8ae9db"
     },
     "web.copyright.staff-queue.default": {
       "fixtureIds": ["web.copyright.staff-queue.default"],

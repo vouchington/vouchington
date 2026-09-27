@@ -2884,6 +2884,26 @@
           "accepted_at": {
             "type": "string"
           },
+          "claimant": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "user_id": {
+                    "type": "string"
+                  }
+                },
+                "required": ["display_name", "user_id"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "type": "string"
           },
@@ -2909,6 +2929,7 @@
         },
         "required": [
           "accepted_at",
+          "claimant",
           "id",
           "jurisdiction",
           "provisional_withholding_at",
@@ -35862,6 +35883,26 @@
                           "accepted_at": {
                             "type": "string"
                           },
+                          "claimant": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "display_name": {
+                                    "type": "string"
+                                  },
+                                  "user_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["display_name", "user_id"],
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "id": {
                             "type": "string"
                           },
@@ -35887,6 +35928,7 @@
                         },
                         "required": [
                           "accepted_at",
+                          "claimant",
                           "id",
                           "jurisdiction",
                           "provisional_withholding_at",
@@ -36079,6 +36121,26 @@
                         "accepted_at": {
                           "type": "string"
                         },
+                        "claimant": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "display_name": {
+                                  "type": "string"
+                                },
+                                "user_id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["display_name", "user_id"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -36150,6 +36212,7 @@
                       },
                       "required": [
                         "accepted_at",
+                        "claimant",
                         "id",
                         "jurisdiction",
                         "provisional_withholding_at",
@@ -36456,6 +36519,26 @@
                         "accepted_at": {
                           "type": "string"
                         },
+                        "claimant": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "display_name": {
+                                  "type": "string"
+                                },
+                                "user_id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["display_name", "user_id"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -36559,6 +36642,7 @@
                       },
                       "required": [
                         "accepted_at",
+                        "claimant",
                         "id",
                         "jurisdiction",
                         "provisional_withholding_at",

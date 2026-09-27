@@ -8,6 +8,7 @@ import {
   createCopyrightFormIntake,
   createCopyrightGuestIdentity,
   assertCopyrightIntakeEnabled,
+  copyrightAcceptedNoticeCursorScope,
   getCopyrightParticipantNoticeDetail,
   getCopyrightPublicNoticeDetail,
   listAcceptedCopyrightNotices,
@@ -43,7 +44,6 @@ const acceptedCopyrightNoticesParser = createPaginationParser({
   cursor: { type: 'precise_timestamp' },
   limit: { min: 1, max: 100, default: 100 },
 })
-const acceptedCopyrightNoticesCursorScope = 'copyright-notices:accepted-at-desc-id-desc'
 
 app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/copyright-notices', acceptedCopyrightNoticesParser)
@@ -53,7 +53,7 @@ app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
   const after = options.after
     ? decodeScopedPreciseTimestampCursor(
         options.after,
-        acceptedCopyrightNoticesCursorScope,
+        copyrightAcceptedNoticeCursorScope,
         'Invalid copyright notice cursor',
       )
     : undefined
@@ -65,7 +65,7 @@ app.route('/api/v1/copyright-notices').get(async (ctx: Context) => {
     encodeScopedPreciseTimestampCursor(
       notice.cursor_accepted_at,
       notice.id,
-      acceptedCopyrightNoticesCursorScope,
+      copyrightAcceptedNoticeCursorScope,
     )
   ctx.json(
     apiResponse('GET:/api/v1/copyright-notices', {
