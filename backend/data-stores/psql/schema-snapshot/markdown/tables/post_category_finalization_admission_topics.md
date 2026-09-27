@@ -8,7 +8,7 @@ Not partitioned — growth: bounded.
 
 | Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                 |
 | ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------- |
-| `post_id`    | `uuid`                     | no       |                     |          |           |           |                                                                                         |
+| `post_id`    | `uuid`                     | no       |                     |          |           |           | Finalization whose create-time topic snapshot these rows belong to.                     |
 | `topic_id`   | `uuid`                     | no       |                     |          |           |           | Retained topic identity captured at create time. It does not authorize a deleted topic. |
 | `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                         |
 | `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                         |

@@ -59264,7 +59264,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Finalization row these editors belong to. Deleting the finalization removes the actor set.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -59396,7 +59396,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Finalization whose create-time topic snapshot these rows belong to.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60636,7 +60636,7 @@
       "columns": {
         "account_type": {
           "collation": null,
-          "comment": null,
+          "comment": "Present bank-account type: checking, savings, cd, or money_market. Credit-card facts must be absent.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60647,7 +60647,7 @@
         },
         "account_type_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of account_type. Credit-card facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60658,7 +60658,7 @@
         },
         "application_date": {
           "collation": null,
-          "comment": null,
+          "comment": "Present application calendar date, reconstructed as YYYY-MM-DD.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60669,7 +60669,7 @@
         },
         "application_date_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of application_date.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60680,7 +60680,7 @@
         },
         "application_method": {
           "collation": null,
-          "comment": null,
+          "comment": "Present application channel: online, in_branch, phone, or pre_approved. Credit-card only.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60691,7 +60691,7 @@
         },
         "application_method_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of application_method. Bank-account facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60702,7 +60702,7 @@
         },
         "bonus_amount": {
           "collation": null,
-          "comment": null,
+          "comment": "Present bank-account sign-up bonus amount. Credit-card facts must be absent.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60713,7 +60713,7 @@
         },
         "bonus_amount_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of bonus_amount. Credit-card facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60724,7 +60724,7 @@
         },
         "bonus_currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Currency of bonus_amount. Equals the row currency when present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60735,7 +60735,7 @@
         },
         "bonus_requirements": {
           "collation": null,
-          "comment": null,
+          "comment": "Present bank-account bonus requirement text, at most 500 characters. Credit-card facts must be absent.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60746,7 +60746,7 @@
         },
         "bonus_requirements_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of bonus_requirements. Credit-card facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60757,7 +60757,7 @@
         },
         "cards_opened_24m": {
           "collation": null,
-          "comment": null,
+          "comment": "Present count of cards opened in the prior 24 months. Credit-card only.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60768,7 +60768,7 @@
         },
         "cards_opened_24m_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of cards_opened_24m. Bank-account facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60790,7 +60790,7 @@
         },
         "credit_limit_amount": {
           "collation": null,
-          "comment": null,
+          "comment": "Approved credit limit stored when credit_limit_presence is present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60801,7 +60801,7 @@
         },
         "credit_limit_currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Currency of credit_limit_amount. Equals the row currency when present, otherwise null.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60812,7 +60812,7 @@
         },
         "credit_limit_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of the credit limit. Bank-account facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60823,7 +60823,7 @@
         },
         "credit_score_range": {
           "collation": null,
-          "comment": null,
+          "comment": "Present score band: 300-579, 580-669, 670-739, 740-799, or 800-850. Null unless presence is present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60845,7 +60845,7 @@
         },
         "currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Parent currency code for every present money value on this row: usd, cad, eur, gbp, aud, or jpy.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60856,7 +60856,7 @@
         },
         "direct_deposit_setup": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether direct deposit was set up. Null on credit-card facts and when the API key is omitted.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60867,7 +60867,7 @@
         },
         "existing_relationship": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether the applicant already had an account with this issuer or bank. Null omits the API key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60878,7 +60878,7 @@
         },
         "hard_inquiries_12m": {
           "collation": null,
-          "comment": null,
+          "comment": "Present count of hard inquiries in the last 12 months. Credit-card only.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60889,7 +60889,7 @@
         },
         "hard_inquiries_12m_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of hard_inquiries_12m. Bank-account facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60900,7 +60900,7 @@
         },
         "is_business_application": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether this was a business-card application. Null on bank-account facts and when the API key is omitted.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60911,7 +60911,7 @@
         },
         "minimum_balance_amount": {
           "collation": null,
-          "comment": null,
+          "comment": "Present minimum balance required to avoid fees. API key minimum_balance_requirement. Credit-card facts must be absent.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60922,7 +60922,7 @@
         },
         "minimum_balance_currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Currency of minimum_balance_amount. Equals the row currency when present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60933,7 +60933,7 @@
         },
         "minimum_balance_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of minimum_balance_requirement. Credit-card facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -60944,7 +60944,7 @@
         },
         "post_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Data-point post that owns this single fact row. The row is deleted with the post.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60955,7 +60955,7 @@
         },
         "result": {
           "collation": null,
-          "comment": null,
+          "comment": "Application outcome. Credit-card and bank-account facts use different allowed result sets.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60966,7 +60966,7 @@
         },
         "schema_version": {
           "collation": null,
-          "comment": null,
+          "comment": "Stored fact shape version. Only version 1 is accepted.",
           "defaultExpression": "1",
           "generated": null,
           "generatedExpression": null,
@@ -60977,7 +60977,7 @@
         },
         "stated_income_maximum_amount": {
           "collation": null,
-          "comment": null,
+          "comment": "Upper bound stored when stated_income_maximum_presence is present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60988,7 +60988,7 @@
         },
         "stated_income_maximum_currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Currency of the stated-income maximum. Equals the row currency when that maximum is present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -60999,7 +60999,7 @@
         },
         "stated_income_maximum_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of the stated-income maximum. null is an open upper bound; present stores the maximum. Null when the range is absent or null.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61010,7 +61010,7 @@
         },
         "stated_income_minimum_amount": {
           "collation": null,
-          "comment": null,
+          "comment": "Lower bound stored when the stated-income range is present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61021,7 +61021,7 @@
         },
         "stated_income_minimum_currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Currency of the stated-income minimum. Equals the row currency when the range is present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61032,7 +61032,7 @@
         },
         "stated_income_range_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of the stated-income range. absent or null clears both ends; present requires a minimum.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -61043,7 +61043,7 @@
         },
         "total_credit_limit_amount": {
           "collation": null,
-          "comment": null,
+          "comment": "Total credit limit across cards, stored as the API key total_credit_limit_all_cards.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61054,7 +61054,7 @@
         },
         "total_credit_limit_currency": {
           "collation": null,
-          "comment": null,
+          "comment": "Currency of total_credit_limit_amount. Equals the row currency when present.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61065,7 +61065,7 @@
         },
         "total_credit_limit_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of total_credit_limit_all_cards. Bank-account facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -61098,7 +61098,7 @@
         },
         "years_of_credit_history": {
           "collation": null,
-          "comment": null,
+          "comment": "Present whole years of credit history, from 0 through 100. Credit-card only.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -61109,7 +61109,7 @@
         },
         "years_of_credit_history_presence": {
           "collation": null,
-          "comment": null,
+          "comment": "Presence of years_of_credit_history. Bank-account facts must be absent.",
           "defaultExpression": "'absent'::text",
           "generated": null,
           "generatedExpression": null,
@@ -89272,7 +89272,7 @@
         },
         "review_succession_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Automatic review-succession epoch that owns this immutable topic snapshot.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
