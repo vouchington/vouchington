@@ -81,29 +81,22 @@ export function insertLifecycleNotificationWithIntent(
   )
 }
 
-export function insertLifecycleNotificationWithoutCommunity(
-  userId: string,
-  communityId: string,
-): Promise<unknown> {
+export function insertLifecycleNotificationWithoutCommunity(userId: string): Promise<unknown> {
   return write(
     `/* insertLifecycleNotificationWithoutCommunity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_entity)
-      VALUES ($1, 'community_role_change', 'lifecycle-no-community', 'Role changed',
-        jsonb_build_object('__entity_type', 'community', 'id', $2::text))`,
-    [userId, communityId],
+      (user_id, entity_type, event_key, title)
+      VALUES ($1, 'community_role_change', 'lifecycle-no-community', 'Role changed')`,
+    [userId],
   )
 }
 
-export function insertLifecycleNotificationWithWrongCommunity(
-  userId: string,
-  communityId: string,
-): Promise<unknown> {
+export function insertLifecycleNotificationWithWrongCommunity(userId: string): Promise<unknown> {
   return write(
     `/* insertLifecycleNotificationWithWrongCommunity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, community_id, title, target_entity)
+      (user_id, entity_type, event_key, community_id, title)
       VALUES ($1, 'community_ownership_transfer', 'lifecycle-wrong-community', $2,
-        'Ownership transferred', jsonb_build_object('__entity_type', 'community', 'id', $3::text))`,
-    [userId, communityId, userId],
+        'Ownership transferred')`,
+    [userId, userId],
   )
 }
 
@@ -119,16 +112,12 @@ export function insertDigestNotificationWithCommunity(
   )
 }
 
-export function insertDigestNotificationWithEntity(
-  userId: string,
-  communityId: string,
-): Promise<unknown> {
+export function insertDigestNotificationWithEntity(userId: string): Promise<unknown> {
   return write(
     `/* insertDigestNotificationWithEntity */ INSERT INTO notifications
-      (user_id, entity_type, event_key, title, target_entity)
-      VALUES ($1, 'community_activity_digest', 'digest-entity', 'Digest',
-        jsonb_build_object('__entity_type', 'community', 'id', $2::text))`,
-    [userId, communityId],
+      (user_id, entity_type, event_key, title, target_path)
+      VALUES ($1, 'community_activity_digest', 'digest-entity', 'Digest', '/my/notifications')`,
+    [userId],
   )
 }
 

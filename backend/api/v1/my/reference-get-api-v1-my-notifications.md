@@ -9,5 +9,5 @@ Query parameters:
 
 Responses include notifications plus a minimal `{ id, slug, name }` community sidecar for
 accessible structured community targets. Lifecycle notifications use nullable `target_path` with
-`target_entity`; the combined weekly digest and reporter review notifications use
-`target_intent: "notifications_inbox"`.
+`target_entity` derived from `community_id`; the combined weekly digest and reporter review
+notifications use `target_intent: "notifications_inbox"`.

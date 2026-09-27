@@ -99,7 +99,9 @@ async function getEligibleNotification(
   intent: NotificationPushIntent,
 ): Promise<NotificationPushRow | undefined> {
   const query = sql`/* getEligibleNotificationPushIntent */
-    SELECT n.id, n.entity_type, n.title, n.body, n.target_path, n.target_entity, n.target_intent,
+    SELECT n.id, n.entity_type, n.title, n.body, n.target_path,
+      fn_notification_target_entity(n.entity_type, n.community_id) AS target_entity,
+      n.target_intent,
       (SELECT c.slug FROM communities c WHERE c.id = n.community_id AND c.deleted_at IS NULL
         AND (c.visibility = 'public' OR EXISTS (SELECT 1 FROM community_members cm
           WHERE cm.community_id = c.id AND cm.user_id = n.user_id AND cm.removed_at IS NULL))) AS community_slug

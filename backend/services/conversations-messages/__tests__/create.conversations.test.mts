@@ -73,9 +73,12 @@ describe('conversations-messages service (conversations)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, 'Hello')
+    const message = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
     expect(message.id).toBeDefined()
-    expect(message.content).toBe('Hello')
+    expect(message.content).toEqual({ role: 'user', content: 'Hello' })
     expect(message.conversation_id).toBe(conversation.id)
     expect(message.created_by_id).toBe(user.id)
   })
@@ -84,8 +87,14 @@ describe('conversations-messages service (conversations)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message1 = await createConversationMessage(conversation.id, user.id, 'Hello')
-    const message2 = await createConversationMessage(conversation.id, user.id, 'World')
+    const message1 = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'Hello',
+    })
+    const message2 = await createConversationMessage(conversation.id, user.id, {
+      role: 'user',
+      content: 'World',
+    })
     const retrieved = await getConversationMessagesByConversationId(conversation.id)
 
     expect(retrieved).toHaveLength(2)

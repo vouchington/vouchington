@@ -78,10 +78,13 @@ async function getConstraintDefinition(table: string, constraint: string): Promi
 }
 
 export async function getFollowerDistributionAudienceConstraint(): Promise<string> {
-  return getConstraintDefinition(
-    'follower_distributions',
-    'chk_follower_distributions__audience_selection',
+  const { rows } = await read<{ definition: string }>(
+    `/* getFollowerDistributionRecipientBounds */
+      SELECT pg_get_functiondef('fn_assert_follower_distribution_recipient_bounds()'::regprocedure) AS definition`,
   )
+  const definition = rows[0]?.definition
+  if (!definition) throw new Error('Missing follower distribution recipient bound function')
+  return definition
 }
 
 export async function getModerationTrainingTargetConstraint(): Promise<string> {

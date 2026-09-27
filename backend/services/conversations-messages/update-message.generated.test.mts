@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createSystemUser } from '@voucha/test-helpers'
+import { createHostedChatTurn } from './chat-turns.mts'
 import {
   createConversation,
   createConversationMessage,
@@ -71,5 +72,55 @@ describe('updateConversationMessageContent', () => {
     const second = messages.find(m => m.id === message2.id)
     expect(first?.content).toEqual({ role: 'user', content: 'First' })
     expect(second?.content).toEqual({ role: 'assistant', content: 'Updated second only' })
+  })
+
+  it('moves a pending assistant turn through error and completion', async () => {
+    const random = Math.random().toString(36).slice(2, 10)
+    const user = await createSystemUser(`test-user-${random}`)
+    const conversation = await createConversation(user.id, 'Pending transitions')
+    const pending = await createHostedChatTurn({
+      conversationId: conversation.id,
+      createdById: user.id,
+      message: 'First',
+    })
+    await expect(
+      createHostedChatTurn({
+        conversationId: conversation.id,
+        createdById: user.id,
+        message: 'Blocked',
+      }),
+    ).rejects.toThrow('A message is already being processed')
+
+    await updateConversationMessageContent(conversation.id, pending.assistantMessage.id, {
+      role: 'assistant',
+      content: null,
+      error: 'provider failed',
+    })
+    const afterError = await createHostedChatTurn({
+      conversationId: conversation.id,
+      createdById: user.id,
+      message: 'Retry',
+    })
+    await updateConversationMessageContent(conversation.id, afterError.assistantMessage.id, {
+      role: 'assistant',
+      content: 'Completed',
+    })
+
+    const messages = await getConversationMessagesByConversationId(conversation.id)
+    expect(messages.map(message => message.content)).toEqual([
+      { role: 'user', content: 'First' },
+      { role: 'assistant', content: null, error: 'provider failed' },
+      { role: 'user', content: 'Retry' },
+      { role: 'assistant', content: 'Completed' },
+    ])
+    await expect(
+      createHostedChatTurn({
+        conversationId: conversation.id,
+        createdById: user.id,
+        message: 'Next',
+      }),
+    ).resolves.toMatchObject({
+      assistantMessage: { content: { role: 'assistant', content: null } },
+    })
   })
 })
