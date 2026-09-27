@@ -95,6 +95,23 @@ describe('migration runner views', () => {
     ])
   })
 
+  it('drops a repeated managed declaration once before recreating each statement', async () => {
+    const viewsDir = await makeViewsDir()
+    await writeFile(
+      join(viewsDir, '0010-a.sql'),
+      'CREATE VIEW view_a AS SELECT 1; CREATE OR REPLACE VIEW view_a AS SELECT 2;',
+    )
+    const writes: string[] = []
+
+    await runViews('/unused-root', { folder: viewsDir, forced: true, writer: makeWriter(writes) })
+
+    expect(writes).toEqual([
+      '/* runViews */ DROP VIEW IF EXISTS view_a;',
+      '/* runViews */ CREATE VIEW view_a AS SELECT 1',
+      '/* runViews */ CREATE OR REPLACE VIEW view_a AS SELECT 2',
+    ])
+  })
+
   it('retries only dependency-blocked drops after another drop makes progress', async () => {
     const viewsDir = await makeViewsDir()
     await writeFile(join(viewsDir, '0010-dependent.sql'), 'CREATE VIEW dependent AS SELECT 1;')
