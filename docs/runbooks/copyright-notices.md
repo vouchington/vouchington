@@ -85,7 +85,9 @@ restore before enabling intake.
 3. Only an administrator may restrict or terminate, and only while two operative incidents remain.
    Both actions use the existing account suspension. Termination refuses unsuspend until an
    administrator records reinstatement. Reinstatement does not unsuspend the account. Do that from
-   the user admin panel after the reinstatement row exists.
+   the user admin panel after the reinstatement row exists. The decision, any new suspension,
+   moderator action, and publication invalidation work commit together after the account lifecycle
+   lock; a failed decision leaves the review open for retry.
 4. Account deletion returns 409 while an operative incident remains, or while an unresolved
    qualifying legal hold covers a placement that account owns. An open review alone does not refuse
    deletion.

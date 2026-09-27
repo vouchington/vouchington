@@ -281,7 +281,9 @@ A copyright reviewer may close that review with `warning` or `no_action`, or rec
 and `terminate` require an administrator. Both call the existing account suspension.
 `terminate` makes a later unsuspend refuse until an administrator records `reinstatement`.
 Reinstatement does not itself unsuspend the account. Restrict and terminate also require two
-operative incidents at decision time.
+operative incidents at decision time. The outcome, a newly needed suspension, its moderator action,
+and publication dirty work share one account-lifecycle-serialized transaction, so a failed outcome
+does not partially enforce and the still-open review can be retried.
 
 `deleteUser` returns 409 while the account has an operative incident, or an unresolved qualifying
 legal hold on a placement whose post author is that account. A qualifying hold is an assessment

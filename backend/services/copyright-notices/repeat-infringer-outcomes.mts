@@ -1,9 +1,19 @@
-import { beginTransaction } from '@data-stores/psql'
+import {
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
 import { isAdminUser } from '@services/users/authorization'
-import { suspendUser } from '@services/users/suspension'
+import {
+  accelerateUserSuspensionAfterCommit,
+  ensureUserSuspendedInTransaction,
+} from '@services/users/suspension'
+import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import {
@@ -22,23 +32,61 @@ const suspensionReason: Record<'restrict' | 'terminate', string> = {
   terminate: 'Copyright repeat-infringer review recorded terminate',
 }
 
-export async function recordCopyrightRepeatInfringerReviewOutcome(input: {
-  currentUser: PrivateUser
-  reviewId: string
-  outcome: CopyrightRepeatInfringerReviewDecision
-  rationale: string
-  recordedAt: Date
-}): Promise<{
+export async function recordCopyrightRepeatInfringerReviewOutcome(
+  input: {
+    currentUser: PrivateUser
+    reviewId: string
+    outcome: CopyrightRepeatInfringerReviewDecision
+    rationale: string
+    recordedAt: Date
+  },
+  options?: QueryOptions,
+): Promise<{
   id: string
   account_user_id: string
   outcome: CopyrightRepeatInfringerReviewDecision
 }> {
+  const run = async (transaction: TransactionQuery) => {
+    const result = await recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
+      input,
+      transaction,
+    )
+    if (result.newlySuspended)
+      registerPostCommitAction(transaction, () =>
+        accelerateUserSuspensionAfterCommit(result.accountUserId),
+      )
+    return { id: input.reviewId, account_user_id: result.accountUserId, outcome: input.outcome }
+  }
+  if (options?.query || options?.client) return withTransactionOptions(options, run)
+  await using transaction = await beginTransaction()
+  const result = await run(transaction)
+  await transaction.commit()
+  return result
+}
+
+async function recordCopyrightRepeatInfringerReviewOutcomeInTransaction(
+  input: {
+    currentUser: PrivateUser
+    reviewId: string
+    outcome: CopyrightRepeatInfringerReviewDecision
+    rationale: string
+    recordedAt: Date
+  },
+  transaction: TransactionQuery,
+): Promise<{ accountUserId: string; newlySuspended: boolean }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   const suspendingOutcome =
     input.outcome === 'restrict' || input.outcome === 'terminate' ? input.outcome : null
   if (suspendingOutcome) assert(isAdminUser(input.currentUser), 403, 'Forbidden')
   assertReviewRationale(input.rationale)
-  await using transaction = await beginTransaction()
+  const { rows: identities } = await transaction<{ account_user_id: string }>(sql`
+    /* recordCopyrightRepeatInfringerReviewOutcome:identity */
+    SELECT account_user_id FROM copyright_repeat_infringer_reviews
+    WHERE id = ${input.reviewId}
+  `)
+  const identity = identities[0]
+  assert(identity, 404, 'Copyright repeat-infringer review not found')
+  await lockAuthorPublicationLifecycle(transaction, identity.account_user_id)
   const { rows } = await transaction<{ account_user_id: string }>(sql`
     /* recordCopyrightRepeatInfringerReviewOutcome */
     SELECT account_user_id FROM copyright_repeat_infringer_reviews
@@ -71,15 +119,16 @@ export async function recordCopyrightRepeatInfringerReviewOutcome(input: {
     RETURNING account_user_id
   `)
   assert(updated[0], 409, 'Copyright repeat-infringer review is already decided')
-  await transaction.commit()
+  let newlySuspended = false
   if (suspendingOutcome) {
-    await suspendUnlessAlreadySuspended(
-      input.currentUser,
-      review.account_user_id,
-      suspensionReason[suspendingOutcome],
-    )
+    const suspension = await ensureUserSuspendedInTransaction(transaction, {
+      actorId: input.currentUser.id,
+      userId: review.account_user_id,
+      reason: suspensionReason[suspendingOutcome],
+    })
+    newlySuspended = suspension.newlySuspended
   }
-  return { id: input.reviewId, account_user_id: review.account_user_id, outcome: input.outcome }
+  return { accountUserId: review.account_user_id, newlySuspended }
 }
 
 export async function recordCopyrightRepeatInfringerReinstatement(input: {
@@ -91,10 +140,7 @@ export async function recordCopyrightRepeatInfringerReinstatement(input: {
   assert(isAdminUser(input.currentUser), 403, 'Forbidden')
   assertReviewRationale(input.rationale)
   await using transaction = await beginTransaction()
-  await transaction(sql`
-    /* recordCopyrightRepeatInfringerReinstatement:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${input.accountUserId}, 1))
-  `)
+  await lockAuthorPublicationLifecycle(transaction, input.accountUserId)
   const { rows: blocked } = await transaction<{ id: string }>(sql`
     /* recordCopyrightRepeatInfringerReinstatement */
     SELECT id FROM copyright_repeat_infringer_reviews terminated
@@ -139,20 +185,4 @@ export async function recordStaffCopyrightRepeatInfringerDisposition(input: {
 
 function assertReviewRationale(rationale: string): void {
   assert(rationale.trim() && rationale.length <= 10_000, 422, 'rationale is required')
-}
-
-async function suspendUnlessAlreadySuspended(
-  currentUser: PrivateUser,
-  accountUserId: string,
-  reason: string,
-): Promise<void> {
-  try {
-    await suspendUser(currentUser, accountUserId, reason)
-  } catch (error) {
-    if (!isAlreadySuspended(error)) throw error
-  }
-}
-
-function isAlreadySuspended(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'status' in error && error.status === 409
 }
