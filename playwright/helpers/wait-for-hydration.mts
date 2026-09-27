@@ -69,10 +69,10 @@ async function waitForHydrationSettled(
  * Wait for React hydration of below-fold streaming components.
  *
  * React 19 prioritises above-fold hydration; components scrolled out of
- * view receive lower-priority MessageChannel callbacks. requestIdleCallback
- * fires only after all pending macrotasks — including those callbacks — have
- * been flushed, so it is a reliable proxy for "this component is now
- * interactive even if it was below the fold when the page loaded."
+ * view receive lower-priority MessageChannel callbacks. The idle/animation
+ * probe is a bounded readiness heuristic, not proof that every client handler
+ * is attached. A control that cannot accept an early interaction must expose
+ * its own disabled-until-hydrated state; tests then wait for that state.
  *
  * Use this when navigateTo() alone is insufficient because the element you
  * need to interact with lives inside a below-fold streaming boundary. Prefer

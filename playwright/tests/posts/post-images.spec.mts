@@ -3,6 +3,7 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
+import { removeLocalStorageKeys } from '../../helpers/browser-state.mts'
 import {
   insertTestImage,
   insertTestPostImage,
@@ -161,10 +162,34 @@ test.describe('Post Images', () => {
     // Sort by newest so the freshly seeded post appears at the top of page 1
     // regardless of how many other posts exist in the (dirty) test database.
     await navigateTo(page, '/discussions?sort=new')
+    await removeLocalStorageKeys(page, ['list-style'])
+    await page.reload()
 
-    // Switch to compact view
-    await page.getByTestId('post-view-toggle-trigger').click()
-    await page.getByTestId('post-view-toggle-compact').click()
+    // A first pointer interaction must wait until the hydrated trigger is actionable.
+    const viewToggle = page.getByTestId('post-view-toggle-trigger')
+    await expect(viewToggle).toBeEnabled()
+    await expect(viewToggle).toHaveAttribute('aria-label', 'View: Card')
+    await viewToggle.click()
+    await expect(viewToggle).toHaveAttribute('aria-expanded', 'true')
+    const compactOption = page.getByTestId('post-view-toggle-compact')
+    await expect(compactOption).toBeVisible()
+    await compactOption.click()
+
+    // The compact preference survives a production client refresh.
+    await page.reload()
+    await expect(viewToggle).toBeEnabled()
+    await expect(viewToggle).toHaveAttribute('aria-label', 'View: Compact')
+
+    // Keyboard selection remains available through the same hydrated Radix trigger.
+    await viewToggle.press('Space')
+    const cardOption = page.getByTestId('post-view-toggle-card')
+    await expect(cardOption).toBeVisible()
+    await cardOption.press('Enter')
+    await expect(viewToggle).toHaveAttribute('aria-label', 'View: Card')
+    await viewToggle.press('Space')
+    await expect(compactOption).toBeVisible()
+    await compactOption.press('Enter')
+    await expect(viewToggle).toHaveAttribute('aria-label', 'View: Compact')
 
     // The thumbnail is wrapped in a <Link> to the post, so clicking it navigates directly.
     const thumbnail = page.locator(`img[alt="Compact Thumbnail Test ${suffix}"]`).first()

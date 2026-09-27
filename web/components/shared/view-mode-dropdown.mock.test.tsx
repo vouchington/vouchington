@@ -1,14 +1,22 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { renderToString } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { ViewModeDropdown } from './view-mode-dropdown'
+import { type ViewModeDropdownOption, ViewModeDropdown } from './view-mode-dropdown'
 
 vi.mock(
   import('@/components/ui/dropdown-menu'),
   () =>
     ({
       DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-      DropdownMenuTrigger: ({ children }: { children: ReactNode; asChild?: boolean }) => children,
+      DropdownMenuTrigger: ({
+        children,
+        disabled,
+      }: {
+        children: ReactNode
+        asChild?: boolean
+        disabled?: boolean
+      }) => <fieldset disabled={disabled}>{children}</fieldset>,
       DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
       DropdownMenuLabel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
       DropdownMenuItem: ({
@@ -32,6 +40,39 @@ vi.mock(
 )
 
 describe('ViewModeDropdown', () => {
+  it('keeps its trigger disabled until hydration enables it', async () => {
+    type View = 'card' | 'compact'
+    const props = {
+      value: 'card' as View,
+      onValueChange: vi.fn<(value: View) => void>(),
+      options: [
+        {
+          label: 'Card',
+          value: 'card',
+          icon: 'card',
+          dataPw: 'post-view-toggle-card',
+        },
+        {
+          label: 'Compact',
+          value: 'compact',
+          icon: 'compact',
+          dataPw: 'post-view-toggle-compact',
+        },
+      ] as [ViewModeDropdownOption<View>, ViewModeDropdownOption<View>],
+    }
+    const html = renderToString(<ViewModeDropdown {...props} />)
+
+    const container = document.createElement('div')
+    container.innerHTML = html
+
+    const trigger = () => container.querySelector('[data-pw="post-view-toggle-trigger"]')
+    expect(trigger()).toBeDisabled()
+
+    render(<ViewModeDropdown {...props} />, { container, hydrate: true })
+
+    await waitFor(() => expect(trigger()).not.toBeDisabled())
+  })
+
   it('includes the active view in the trigger accessible name', () => {
     const { container } = render(
       <ViewModeDropdown

@@ -190,21 +190,29 @@ for (const [, viewport] of [
 
 ## Hydration and Interaction
 
-Next.js App Router pages use client-side hydration. Event handlers are not attached until React hydrates the page after the `load` event.
+Next.js App Router pages use client-side hydration. Page load and network-idle states do not prove
+that every client handler is attached.
 
 **Use `navigateTo()` instead of `page.goto()`:**
 
 ```typescript
 import { navigateTo } from '../helpers/navigate-to.mts'
 
-// Good — waits for hydration
+// Good — establishes navigation and bounded readiness; still assert the control is enabled.
 await navigateTo(page, '/some-path')
-await page.getByRole('button').click()
+const button = page.getByTestId('some-button')
+await expect(button).toBeEnabled()
+await button.click()
 
 // Bad — page may not be hydrated yet
 await page.goto('/some-path')
 await page.getByRole('button').click()
 ```
+
+`navigateTo()` and `waitForBelowFoldHydration()` are bounded readiness heuristics, not proof that
+every client handler is attached. A control that must not receive an early interaction owns that
+boundary: render it disabled until its client hydration state is true, then assert it is enabled
+before the first browser interaction. `ViewModeDropdown` is the shared example.
 
 **Use `pressSequentially()` for inputs with React event handlers:**
 

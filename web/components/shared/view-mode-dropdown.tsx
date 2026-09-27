@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { FILTER_CONTROL_HEIGHT } from './filter-control-height'
+import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export interface ViewModeDropdownOption<T extends string> {
@@ -34,13 +35,17 @@ export function ViewModeDropdown<T extends string>({
   onValueChange,
   dataPw = 'post-view-toggle-trigger',
 }: ViewModeDropdownProps<T>) {
+  const didHydrate = useDidHydrate()
   const t = useTranslations()
   const active = options.find(option => option.value === value) ?? options[0]
   const ActiveIcon = active.icon === 'card' ? LayoutGrid : List
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger
+        asChild
+        disabled={!didHydrate}
+      >
         <Button
           type='button'
           variant='outline'

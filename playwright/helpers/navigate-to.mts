@@ -36,9 +36,10 @@ export async function navigateTo(
   await retry(async () => {
     await page.goto(url, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState(waitUntil)
-    // React 19 + React Compiler can attach above-fold click handlers slightly after
-    // networkidle on slower machines. Wait for one idle callback so onClick handlers
-    // are wired up before tests try to interact.
+    // React 19 + React Compiler can attach above-fold handlers after networkidle on
+    // slower machines. This bounded idle probe reduces that race but cannot prove
+    // every handler is wired; a control that rejects early interaction owns a
+    // disabled-until-hydrated boundary, and tests assert that boundary is enabled.
     //
     // A route that redirects on the client can reach `waitUntil` before the
     // redirect fires, so pass it through: if the redirect lands mid-wait, the
