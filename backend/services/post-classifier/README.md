@@ -14,6 +14,10 @@ The local threshold is fingerprinted at the native detector's float32 precision 
 threshold can be checked exactly against the receipt. Topic-tag application imports the election
 vote handler registration directly; it does not rely on worker bootstrap import order.
 
+Configuration fingerprints hash PostgreSQL's canonical `jsonb::text` representation before
+reservation. The JSONB replay envelope retains question array order, and the database verifies
+the hash against those same bytes; JavaScript object-key serialization is not an identity boundary.
+
 ## Recovery transitions
 
 | Failure mode                    | Durable state and recovery                                                                                               | Idempotency evidence                                                            |

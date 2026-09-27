@@ -52,7 +52,8 @@ export async function createPostClassifierApplicationFixture(options?: {
         post_id, input_sha256, configuration_json, configuration_sha256, shared_actor_id,
         community_identity_id, detector_package_version, local_topic_id, decision_batch_id
       ) VALUES (
-        ${post.id}, ${inputHash}, ${configuration}::json, digest(${configuration}, 'sha256'),
+        ${post.id}, ${inputHash}, ${configuration}::jsonb,
+        digest(${configuration}::jsonb::text, 'sha256'),
         ${actor.id}, ${community?.id ?? null}, 'test-fixture-package-0.4.3', ${localTopic.id},
         ${decisionBatchId}
       ) RETURNING id
@@ -82,7 +83,8 @@ export async function createPostClassifierApplicationFixture(options?: {
         post_id, input_sha256, configuration_json, configuration_sha256, shared_actor_id,
         detector_package_version, local_topic_id
       ) VALUES (
-        ${post.id}, ${inputHash}, ${configuration}::json, digest(${configuration}, 'sha256'),
+        ${post.id}, ${inputHash}, ${configuration}::jsonb,
+        digest(${configuration}::jsonb::text, 'sha256'),
         ${actor.id}, 'test-fixture-package-0.4.3', ${localTopic.id}
       )
       `),
@@ -160,8 +162,8 @@ function insertInvalidPostClassifierApplication(input: {
       post_id, input_sha256, configuration_json, configuration_sha256, shared_actor_id,
       detector_package_version, local_topic_id
     ) VALUES (
-      ${input.postId}, ${Buffer.alloc(32, 4)}, ${configuration}::json,
-      digest(${configuration}, 'sha256'), ${input.actorId}, ${input.detectorPackageVersion},
+      ${input.postId}, ${Buffer.alloc(32, 4)}, ${configuration}::jsonb,
+      digest(${configuration}::jsonb::text, 'sha256'), ${input.actorId}, ${input.detectorPackageVersion},
       ${input.localTopicId}
     )
   `)

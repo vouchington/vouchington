@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { applyPostClassifierTags } from './application-tags.mts'
 import { applyPostClassifierVotes } from './application-votes.mts'
@@ -34,8 +34,15 @@ export async function completePostClassifierApplication(
     throw new Error('post classifier outcomes must persist before completion')
   }
 
-  const votes = await applyPostClassifierVotes(lease, { query })
-  const tags = await applyPostClassifierTags(lease, { query })
+  const effects = await applyPostClassifierEffects(query, lease)
+  await commitPostClassifierCompletion(query, lease)
+  return { kind: 'completed', ...effects }
+}
+
+async function commitPostClassifierCompletion(
+  query: OwnedTransaction,
+  lease: PostClassifierApplicationLease,
+) {
   await query(sql`/* completePostClassifierApplication */
     UPDATE post_classifier_applications
     SET completed_at = clock_timestamp(),
@@ -43,8 +50,15 @@ export async function completePostClassifierApplication(
     WHERE post_id = ${lease.postId} AND id = ${lease.applicationId}
   `)
   await query.commit()
+}
+
+async function applyPostClassifierEffects(
+  query: OwnedTransaction,
+  lease: PostClassifierApplicationLease,
+) {
+  const votes = await applyPostClassifierVotes(lease, { query })
+  const tags = await applyPostClassifierTags(lease, { query })
   return {
-    kind: 'completed',
     appliedTopicIds: votes.appliedTopicIds,
     taggedTopicIds: tags.taggedTopicIds,
   }

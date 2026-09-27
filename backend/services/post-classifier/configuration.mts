@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import type { QueryExecutor } from '@data-stores/psql'
+import { write, type QueryExecutor } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import {
   POST_CLASSIFIER_ACTION_POLICY_REVISION,
   POST_CLASSIFIER_LABELS,
@@ -127,7 +128,12 @@ export async function resolvePostClassifierConfiguration(
     local,
     remote,
   }
-  const configurationJson = JSON.stringify(configuration)
+  const query = options.query ?? write
+  const { rows } = await query<{ configuration_json: string }>(sql`
+    /* canonicalizePostClassifierConfiguration */
+    SELECT ${JSON.stringify(configuration)}::jsonb::text AS configuration_json
+  `)
+  const configurationJson = rows[0]!.configuration_json
   const configurationSha256 = createHash('sha256').update(configurationJson).digest()
   return { configuration, configurationJson, configurationSha256 }
 }

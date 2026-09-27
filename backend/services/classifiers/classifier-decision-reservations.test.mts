@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
+import { runClassifierBorrowedTestTransaction } from '../../test-helpers/data-stores/psql/classifier-borrowed-transactions.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
-import { readCompleteClassifierDecisionIfExistsFromPrimary } from './read-complete-decision.mts'
+import {
+  readCompleteClassifierDecision,
+  readCompleteClassifierDecisionIfExistsFromPrimary,
+} from './read-complete-decision.mts'
 import { reserveClassifierDecisionBatch } from './write-decision-lineage.mts'
 
 describe('reserved classifier decisions', () => {
@@ -12,23 +15,30 @@ describe('reserved classifier decisions', () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
     const batchId = uuidv7()
-    await using query = await beginTransaction()
     expect(
-      await reserveClassifierDecisionBatch(query, {
-        batchId,
-        classifierId: fixture.classifierId,
-        promptVersionId: fixture.promptVersionId,
-        subject: { postId: fixture.postId, rssFeedItemId: null },
-        scope: { scopeCategory: 'global', scopeCommunityId: null },
-        candidateKind: 'topic',
-        storedCandidateIds: [fixture.topicCandidateId],
-      }),
+      await runClassifierBorrowedTestTransaction(
+        query =>
+          reserveClassifierDecisionBatch(query, {
+            batchId,
+            classifierId: fixture.classifierId,
+            promptVersionId: fixture.promptVersionId,
+            subject: { postId: fixture.postId, rssFeedItemId: null },
+            scope: { scopeCategory: 'global', scopeCommunityId: null },
+            candidateKind: 'topic',
+            storedCandidateIds: [fixture.topicCandidateId],
+          }),
+        { commit: true },
+      ),
     ).toBe(true)
-    await query.commit()
 
     await expect(
       readCompleteClassifierDecisionIfExistsFromPrimary(batchId, 'topic'),
     ).resolves.toBeNull()
+    await expect(
+      runClassifierBorrowedTestTransaction(query =>
+        readCompleteClassifierDecision(query, batchId, 'topic'),
+      ),
+    ).rejects.toThrow('reserved but not complete')
     const persisted = await persistClassifierDecision({
       batchId,
       classifierId: fixture.classifierId,
@@ -115,17 +125,19 @@ describe('reserved classifier decisions', () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
     const batchId = uuidv7()
-    await using query = await beginTransaction()
-    await reserveClassifierDecisionBatch(query, {
-      batchId,
-      classifierId: fixture.classifierId,
-      promptVersionId: fixture.promptVersionId,
-      subject: { postId: fixture.postId, rssFeedItemId: null },
-      scope: { scopeCategory: 'community_ai', scopeCommunityId: fixture.communityId },
-      candidateKind: 'topic',
-      storedCandidateIds: [fixture.communityCandidateId],
-    })
-    await query.commit()
+    await runClassifierBorrowedTestTransaction(
+      query =>
+        reserveClassifierDecisionBatch(query, {
+          batchId,
+          classifierId: fixture.classifierId,
+          promptVersionId: fixture.promptVersionId,
+          subject: { postId: fixture.postId, rssFeedItemId: null },
+          scope: { scopeCategory: 'community_ai', scopeCommunityId: fixture.communityId },
+          candidateKind: 'topic',
+          storedCandidateIds: [fixture.communityCandidateId],
+        }),
+      { commit: true },
+    )
     await fixture.deactivateCommunityThreshold()
     await fixture.createReplacementCommunityThreshold()
     await fixture.deactivatePrompt()
@@ -169,19 +181,21 @@ async function reserveTopicBatch(
   fixture: Awaited<ReturnType<typeof createClassifierFixture>>,
 ): Promise<string> {
   const batchId = uuidv7()
-  await using query = await beginTransaction()
   expect(
-    await reserveClassifierDecisionBatch(query, {
-      batchId,
-      classifierId: fixture.classifierId,
-      promptVersionId: fixture.promptVersionId,
-      subject: { postId: fixture.postId, rssFeedItemId: null },
-      scope: { scopeCategory: 'global', scopeCommunityId: null },
-      candidateKind: 'topic',
-      storedCandidateIds: [fixture.topicCandidateId],
-    }),
+    await runClassifierBorrowedTestTransaction(
+      query =>
+        reserveClassifierDecisionBatch(query, {
+          batchId,
+          classifierId: fixture.classifierId,
+          promptVersionId: fixture.promptVersionId,
+          subject: { postId: fixture.postId, rssFeedItemId: null },
+          scope: { scopeCategory: 'global', scopeCommunityId: null },
+          candidateKind: 'topic',
+          storedCandidateIds: [fixture.topicCandidateId],
+        }),
+      { commit: true },
+    ),
   ).toBe(true)
-  await query.commit()
   return batchId
 }
 
@@ -221,22 +235,24 @@ async function expectReservationFailure(
     reservation: Parameters<typeof reserveClassifierDecisionBatch>[1],
   ) => Parameters<typeof reserveClassifierDecisionBatch>[1],
 ): Promise<string> {
-  await using query = await beginTransaction()
-  const error = await getReservationError(
-    reserveClassifierDecisionBatch(
-      query,
-      mutate({
-        batchId,
-        classifierId: fixture.classifierId,
-        promptVersionId: fixture.promptVersionId,
-        subject: { postId: fixture.postId, rssFeedItemId: null },
-        scope: { scopeCategory: 'global', scopeCommunityId: null },
-        candidateKind: 'topic',
-        storedCandidateIds: [fixture.topicCandidateId],
-      }),
-    ),
+  const error = await runClassifierBorrowedTestTransaction(
+    query =>
+      getReservationError(
+        reserveClassifierDecisionBatch(
+          query,
+          mutate({
+            batchId,
+            classifierId: fixture.classifierId,
+            promptVersionId: fixture.promptVersionId,
+            subject: { postId: fixture.postId, rssFeedItemId: null },
+            scope: { scopeCategory: 'global', scopeCommunityId: null },
+            candidateKind: 'topic',
+            storedCandidateIds: [fixture.topicCandidateId],
+          }),
+        ),
+      ),
+    { commit: true },
   )
-  await query.commit()
   await expect(fixture.getDecisionPersistenceFacts(batchId)).resolves.toMatchObject({
     batches: 0,
     snapshots: 0,
@@ -248,19 +264,21 @@ async function expectStoryReservationFailure(
   fixture: Awaited<ReturnType<typeof createClassifierFixture>>,
   batchId: string,
 ): Promise<string> {
-  await using query = await beginTransaction()
-  const error = await getReservationError(
-    reserveClassifierDecisionBatch(query, {
-      batchId,
-      classifierId: fixture.storyClassifierId,
-      promptVersionId: fixture.storyPromptVersionId,
-      subject: { postId: fixture.postId, rssFeedItemId: null },
-      scope: { scopeCategory: 'global', scopeCommunityId: null },
-      candidateKind: 'story',
-      storedCandidateIds: [fixture.storyCandidateId],
-    }),
+  const error = await runClassifierBorrowedTestTransaction(
+    query =>
+      getReservationError(
+        reserveClassifierDecisionBatch(query, {
+          batchId,
+          classifierId: fixture.storyClassifierId,
+          promptVersionId: fixture.storyPromptVersionId,
+          subject: { postId: fixture.postId, rssFeedItemId: null },
+          scope: { scopeCategory: 'global', scopeCommunityId: null },
+          candidateKind: 'story',
+          storedCandidateIds: [fixture.storyCandidateId],
+        }),
+      ),
+    { commit: true },
   )
-  await query.commit()
   await expect(fixture.getDecisionPersistenceFacts(batchId)).resolves.toMatchObject({
     batches: 0,
     snapshots: 0,

@@ -82,7 +82,7 @@ export async function reserveLockedPostClassifierApplication(
       community_identity_id, detector_package_version, local_topic_id, decision_batch_id,
       lease_token, leased_at, lease_expires_at
     ) VALUES (
-      ${postId}, ${post.input_sha256}, ${resolved.configurationJson}::json,
+      ${postId}, ${post.input_sha256}, ${resolved.configurationJson}::jsonb,
       ${resolved.configurationSha256}, ${resolved.configuration.actorId},
       ${post.community_id}, ${detectorPackageVersion}, ${resolved.configuration.local?.topicId ?? null},
       ${proposedDecisionBatchId}, ${lease?.token ?? null}::uuid,

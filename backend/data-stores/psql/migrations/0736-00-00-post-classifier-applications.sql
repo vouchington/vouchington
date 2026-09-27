@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications (
   post_id UUID NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
   id UUID NOT NULL DEFAULT uuidv7(),
   input_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(input_sha256) = 32),
-  configuration_json JSON NOT NULL CHECK (json_typeof(configuration_json) = 'object'),
+  configuration_json JSONB NOT NULL CHECK (jsonb_typeof(configuration_json) = 'object'),
   configuration_sha256 BYTEA NOT NULL CHECK (
     OCTET_LENGTH(configuration_sha256) = 32
     AND configuration_sha256 = digest(configuration_json::text, 'sha256')
@@ -128,7 +128,47 @@ CREATE TABLE IF NOT EXISTS post_classifier_applications__default
 COMMENT ON TABLE post_classifier_applications IS
   'One post/content/configuration fixed-classifier application; C3 and C4 retain remote results and votes.';
 COMMENT ON COLUMN post_classifier_applications.configuration_json IS
-  'Exact canonical ordered replay envelope; relational facts are materialized in sibling typed columns.';
+  'PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.';
+COMMENT ON COLUMN post_classifier_applications.post_id IS
+  'Post whose approved content is classified; deleting the post removes its application receipts.';
+COMMENT ON COLUMN post_classifier_applications.input_sha256 IS
+  'Approved post content digest used to fence stale classification effects.';
+COMMENT ON COLUMN post_classifier_applications.configuration_sha256 IS
+  'SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.';
+COMMENT ON COLUMN post_classifier_applications.shared_actor_id IS
+  'Shared classifier system user attributing automatic topic votes and tags.';
+COMMENT ON COLUMN post_classifier_applications.terminal_remote_failure_kind IS
+  'Durable reason remote classification stopped without a complete valid decision.';
+COMMENT ON COLUMN post_classifier_applications.terminal_remote_failed_at IS
+  'Time remote classification became terminal for this content and configuration identity.';
+COMMENT ON COLUMN post_classifier_applications.local_flagged IS
+  'Existing local detector decision retained unchanged for retry-safe topic application.';
+COMMENT ON COLUMN post_classifier_applications.local_reason IS
+  'Explanation returned by the local AI-generated detector.';
+COMMENT ON COLUMN post_classifier_applications.local_confidence_score IS
+  'Local detector confidence, bounded to the inclusive zero-to-one interval.';
+COMMENT ON COLUMN post_classifier_applications.local_confidence_threshold IS
+  'Pinned local detector confidence boundary used for this decision.';
+COMMENT ON COLUMN post_classifier_applications.local_classification IS
+  'Local detector classification of the content as AI-generated or human-written.';
+COMMENT ON COLUMN post_classifier_applications.local_detector IS
+  'Local detector identifier retained with its complete outcome.';
+COMMENT ON COLUMN post_classifier_applications.local_detector_model_version IS
+  'Local detector model version returned with this outcome.';
+COMMENT ON COLUMN post_classifier_applications.lease_token IS
+  'Opaque fencing token for the current exclusive claimant; rotated on transfer and unrelated to any durable entity.';
+COMMENT ON COLUMN post_classifier_applications.leased_at IS
+  'Start of the current exclusive application claim.';
+COMMENT ON COLUMN post_classifier_applications.lease_expires_at IS
+  'Deadline after which another worker may replace the current claim.';
+COMMENT ON COLUMN post_classifier_applications.outcomes_persisted_at IS
+  'Time the complete configured outcomes became durable and eligible for effect application.';
+COMMENT ON COLUMN post_classifier_applications.votes_applied_at IS
+  'Monotone marker that configured classifier topic votes were applied.';
+COMMENT ON COLUMN post_classifier_applications.tags_applied_at IS
+  'Monotone marker that classifier tags were applied after topic votes.';
+COMMENT ON COLUMN post_classifier_applications.completed_at IS
+  'Time all durable effects completed atomically and the exclusive claim was released.';
 COMMENT ON COLUMN post_classifier_applications.community_identity_id IS
   'Concrete retained community provenance identity; its live community link may be cleared on deletion.';
 COMMENT ON COLUMN post_classifier_applications.detector_package_version IS
