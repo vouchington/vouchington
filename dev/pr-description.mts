@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url'
-import { createPullRequest, getDiffAgainstBase, runGh, runGit } from 'vouchington-tooling/gh-cli'
+import { createPullRequest, runGh, runGit } from 'vouchington-tooling/gh-cli'
 import { formatProjectAdvisoryReport } from 'vouchington-tooling/github-projects'
 import { failValidation } from './pr-description/fail-validation.mts'
 import { resolveBody } from './pr-description/body-source.mts'
@@ -10,6 +10,7 @@ import {
   countDiffLineChanges,
   exceedsLargeDiffThreshold,
   formatLargeDiffRefusal,
+  readDiffAgainstBase,
 } from './pr-description/diff-size.mts'
 import { createMilestoneAuditor } from './pr-description/milestone-audit.mts'
 import {
@@ -104,7 +105,7 @@ async function runCreate(argv: string[]): Promise<void> {
   const issueSummary = formatReferencedIssueSummary(result.referencedIssues)
   if (issueSummary) process.stderr.write(issueSummary)
   // Reused for both the size gate below and writeSupersessionHints — one `git diff` call.
-  const diffAgainstMain = getDiffAgainstBase(runGit, 'origin/main')
+  const diffAgainstMain = readDiffAgainstBase('origin/main')
   if (!acknowledgeLargeDiff) {
     const changes = countDiffLineChanges(await diffAgainstMain)
     if (exceedsLargeDiffThreshold(changes)) {

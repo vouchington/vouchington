@@ -1,3 +1,17 @@
+import { processDiffCommand } from 'vouchington-tooling/gh-cli'
+
+/**
+ * Reads `git diff <base>...HEAD` through the published diff stream. Blocks are joined back into
+ * the unified diff text the size gate and supersession search already consume.
+ */
+export async function readDiffAgainstBase(base: string): Promise<string> {
+  const blocks: string[] = []
+  await processDiffCommand({ args: ['diff', `${base}...HEAD`], executable: 'git' }, block => {
+    blocks.push(block)
+  })
+  return blocks.join('')
+}
+
 /**
  * Large additions are the trigger to split a PR rather than ship it whole — see
  * `.agents/skills/agent-workflow/git-and-prs.md`. Dependency, not size, decides whether that

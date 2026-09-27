@@ -18,7 +18,7 @@ import {
 
 /**
  * `writeFakeGit` (test-helpers/fake-cli.mts) does not stub `git diff` at all — every existing CLI
- * test therefore exercises `getDiffAgainstBase` against empty output, which is under the size
+ * test therefore exercises `readDiffAgainstBase` against empty output, which is under the size
  * threshold and never trips the new gate. This local fake extends it with a `diff` branch so the
  * gate itself can be exercised end-to-end.
  */
