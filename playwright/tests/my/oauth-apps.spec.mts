@@ -104,6 +104,33 @@ test.describe('My OAuth Apps', () => {
     await expect(row.getByTestId('oauth-app-rotate-secret-button')).toHaveCount(0)
   })
 
+  test('registers an app with the exact own-private relation permission', async ({ page }) => {
+    await withCleanUser(page)
+    await navigateTo(page, '/my/api-keys')
+    const name = `Playwright private OAuth app ${randomSuffix()}`
+    const form = page.getByTestId('oauth-app-register-form')
+
+    await form.getByTestId('oauth-app-name-input').pressSequentially(name)
+    await form
+      .getByTestId('oauth-app-redirect-uris-input')
+      .pressSequentially(randomTestOAuthRedirectUri())
+    const picker = form.getByTestId('oauth-app-register-scope-picker')
+    const privateWrite = picker.getByTestId('scope-checkbox-post-relations.owned-private:write')
+    await expect(picker.getByTestId('scope-private-post-relations-permission')).toContainText(
+      'Allow this credential to add relations and tags to your own private posts.',
+    )
+    await privateWrite.click()
+    await expect(picker.getByTestId('scope-checkbox-entity-relations:write')).toBeChecked()
+    const registration = waitForOAuthAppRequest(page, 'POST', /^\/api\/v1\/my\/oauth-apps$/)
+    await form.getByTestId('oauth-app-register-button').click()
+    expect((await registration).status()).toBe(201)
+
+    const row = oauthAppRows(page, name)
+    await expect(row).toContainText('entity-relations:read')
+    await expect(row).toContainText('entity-relations:write')
+    await expect(row).toContainText('post-relations.owned-private:write')
+  })
+
   test('keeps the form filled when the API rejects a redirect URI', async ({ page }) => {
     await withCleanUser(page)
     await navigateTo(page, '/my/api-keys')

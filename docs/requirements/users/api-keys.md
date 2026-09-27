@@ -29,14 +29,16 @@ API keys use a permission-based access control system. Each key has a `permissio
 
 ### Available Permissions
 
-| Permission             | Description                                           |
-| ---------------------- | ----------------------------------------------------- |
-| `rss:read`             | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
-| `topics:read`          | Read topic and recommendation MCP tools               |
-| `posts:read`           | Read post MCP tools                                   |
-| `cards:read/write`     | Read or manage cards; write requires read             |
-| `mcp.user:read/write`  | Compatibility grants for existing user MCP keys       |
-| `mcp.admin:read/write` | Compatibility grants for existing admin MCP keys      |
+| Permission                           | Description                                           |
+| ------------------------------------ | ----------------------------------------------------- |
+| `rss:read`                           | Access RSS feed endpoints (`/rss/posts`, `/rss/news`) |
+| `topics:read`                        | Read topic and recommendation MCP tools               |
+| `posts:read`                         | Read post MCP tools                                   |
+| `cards:read/write`                   | Read or manage cards; write requires read             |
+| `entity-relations:read/write`        | Read or add relations; write requires read            |
+| `post-relations.owned-private:write` | Add relations or tags to owned private posts only     |
+| `mcp.user:read/write`                | Compatibility grants for existing user MCP keys       |
+| `mcp.admin:read/write`               | Compatibility grants for existing admin MCP keys      |
 
 Scopes use the strict lowercase `<resource>:<action>` grammar. Dot-delimited resources compose the
 surface and audience, such as `mcp.user` and `mcp.admin`. Unknown, whitespace-padded, case-normalized,
@@ -51,11 +53,15 @@ no OAuth protected resource serves the RSS feeds.
 ### Scope catalogue
 
 `GET /api/v1/scopes` lists every canonical scope with its resource, action, audience, prerequisite
-(`requires`) and the credential surfaces (`api-key`, `oauth`) that accept it. Web and native pickers
-render this list instead of hard-coding scope strings, so a new scope is a data change for every
-client. See the [Scopes API](../../../backend/api/v1/scopes/README.md).
+(`requires`) and the credential surfaces (`api-key`, `oauth`) that accept it. The hosted web picker
+renders this list instead of hard-coding scope strings. Native API-key creation currently has no
+scope picker or catalogue consumer; see the [client parity matrix](../CLIENT-PARITY-MATRIX.md#mcp-relation-and-consent-disposition).
+See the [Scopes API](../../../backend/api/v1/scopes/README.md).
 
 MCP keys must be either user MCP or admin MCP, not both. Admin MCP scopes can only be created by administrators.
+The own-private relation capability is visible as a separate picker permission, not part of Standard
+MCP access. Selecting it also selects its relation write and read prerequisites. The picker explains
+that it lets the credential add relations and tags only to the holder's own private posts.
 
 ## Endpoints
 

@@ -12,6 +12,12 @@ The posts service is the core content creation system. It handles multiple post 
 - `create-story-post.mts` — `insertStoryPostRecord()`: INSERT INTO posts for story posts, called from the stories service; accepts `QueryOptions` to participate in transactions
 - `get.mts` / `get-batch.mts` — Single and batch post lookups
 - `update.mts` — Post updates (title, markdown, broadcast, privacy, images)
+- `add-hashtag.mts` — Authored, additive post hashtag action. It applies the same direct-reader,
+  author, and content-edit admission as post PATCH, then passes an internal tag intent into
+  `updatePost()`. The locked update unions retained categories, checks the final standing cap,
+  and uses the existing category synchronization and post-commit finalization. Delegated
+  own-private restrictions reuse the lower entity-relation post-access guard; the result reads
+  the canonical alias identifier from the primary after commit.
 - `delete.mts` — Soft deletion
 - `types.mts` — `Post`, `PostMetrics`, `PostElection`, `CreatePostInput` types
 - `authorization.mts` — `currentUserCanUpdatePost`, `currentUserCanDeletePost` (creator or admin)

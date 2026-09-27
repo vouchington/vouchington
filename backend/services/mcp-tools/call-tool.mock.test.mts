@@ -1,6 +1,7 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureExceptionMock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
 import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/tools/registry/index'
+import type { ToolInvocationContext } from '@voucha/tools/types'
 import type { PrivateUser } from '@services/users/types'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -14,7 +15,9 @@ import { USER_MCP_SERVER_CONFIG } from './config.mts'
 
 const TOOL_NAME = 'get_trending_topics'
 
-function stubToolFunction(run: () => Promise<unknown>) {
+function stubToolFunction(
+  run: (args: unknown, context?: ToolInvocationContext) => Promise<unknown>,
+) {
   const tool = ALL_TOOLS.find(candidate => candidate.schema.name === TOOL_NAME)
   if (!tool) throw new Error(`Expected ${TOOL_NAME} tool`)
   vi.spyOn(tool, 'function').mockReturnValue(run)
@@ -62,5 +65,17 @@ describe('callMcpTool result errors', () => {
     })
     expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
     expect(sentryCaptureExceptionMock.mock.calls[0]?.[0]).toBe(failure)
+  })
+
+  it('passes only the verified MCP invocation context to the returned callable', async () => {
+    const received: ToolInvocationContext[] = []
+    stubToolFunction(async (_args, invocationContext) => {
+      if (invocationContext) received.push(invocationContext)
+      return {}
+    })
+
+    await callMcpTool(TOOL_NAME, {}, user, ['topics:read'], USER_MCP_SERVER_CONFIG)
+
+    expect(received).toEqual([{ credentialOwnerId: user.id, grantedScopes: ['topics:read'] }])
   })
 })

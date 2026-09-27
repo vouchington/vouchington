@@ -1,29 +1,16 @@
-/* eslint-disable max-lines */
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
-  getEntityRelations,
   getEntityRelationsPage,
   type PublicEntityRelationResult,
 } from '@services/entity-relations/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
-import {
-  parseEntityRelationCreateInput,
-  parseEntityRelationSearchInput,
-} from '@services/entity-relations'
+import { parseEntityRelationSearchInput } from '@services/entity-relations'
 import { getEntityRelationElectionVotesByUser } from '@services/elections-votes/entity-relation'
-import { refreshEntityRelationVoteStatsFromPrimaryWithFallback } from '@services/elections-votes/entity-relation/refresh-stats'
-import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { getEntityRelationElectionByIdCachedBatch } from '@services/entity-fetch/get'
 import { indexById } from '@modules/utils'
-import {
-  assertNotSuspended,
-  entityRelationViewerFor,
-  getPublicUserByIdOrSlug,
-  isAdminUser,
-} from '@services/users'
+import { entityRelationViewerFor, getPublicUserByIdOrSlug } from '@services/users'
 import { requireAuth } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import {
@@ -35,16 +22,9 @@ import {
   queryString,
 } from '@modules/pagination'
 import {
-  getCommunity,
-  getCommunityMember,
-  currentUserCanModerateCommunity,
-} from '@services/communities'
-import { assertUserTagAllowed } from './user-tag-access.mts'
-import { assertCanViewRelatedPosts } from './relation-access.mts'
-import { getUserActivePlan } from '@services/memberships'
-import { getContributionStatus } from '@services/contribution-gating/assert'
-import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
-import { assertWithinTagAddLimit } from '@services/tag-limits'
+  assertCreateEntityRelationActionAdmission,
+  createEntityRelationAction,
+} from '@services/entity-relation-actions'
 import {
   encodeEntityRelationCursor,
   parseEntityRelationCursor,
@@ -190,139 +170,24 @@ app
       ctx,
       'POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',
     )
-    assertNotSuspended(currentUser)
-    ctx.assert(
-      ctx.params.entityType !== 'topic_alias' && ctx.params.objectType !== 'topic_alias',
-      404,
-      'Not found',
-    )
-
-    const body = (await ctx.request.json('1mb')) as { objectId?: string }
-    const parsed = parseEntityRelationCreateInput({
-      entityType: ctx.params.entityType!,
-      entityId: ctx.params.entityId!,
-      predicate: ctx.params.predicate!,
-      objectType: ctx.params.objectType!,
-      objectId: body.objectId,
-    })
-
-    // remote_actor relations (inbound ActivityPub follows) may only be written by the
-    // signature-verified inbox receiver (Phase C2), never by a public API caller — otherwise any
-    // authenticated user could fabricate an arbitrary "remote actor follows local user" relation.
-    if (parsed.metadata.subject_type === 'remote_actor') {
-      ctx.assert(false, 403, 'remote_actor relations cannot be created via this endpoint')
-    }
-    const viewer = entityRelationViewerFor(currentUser)
-    await assertCanViewRelatedPosts(
-      ctx,
-      viewer,
-      parsed.metadata,
-      parsed.subjectId.id,
-      parsed.objectIds.map(object => object.id),
-    )
-
-    let resolvedUserTagTargetId: string | undefined
-    if (parsed.metadata.subject_type === 'user') {
-      resolvedUserTagTargetId = await assertUserTagAllowed(
-        currentUser,
-        parsed.subjectId.id,
-        parsed.objectIds[0]!.id,
-      )
-      if (!isAdminUser(currentUser)) {
-        const membershipPlan = await getUserActivePlan(currentUser.id)
-        const contributionStatus = await getContributionStatus(currentUser, {
-          membershipPlan,
-          skipAccountAgeGate: true,
-        })
-        if (!contributionStatus.allowed) {
-          ctx.assert(false, 403, 'A verified non-disposable email address is required to vote.')
-        }
-        await assertWithinContributionQuota(currentUser.id, false, membershipPlan)
-      }
-    }
-
-    // Community relations require moderation authorization
-    if (parsed.metadata.subject_type === 'community') {
-      const communityId =
-        typeof parsed.subjectId === 'string' ? parsed.subjectId : ctx.params.entityId!
-      const community = await getCommunity(communityId)
-      ctx.assert(community, 404, 'Community not found')
-      const membership = await getCommunityMember(community.id, currentUser.id)
-      ctx.assert(
-        currentUserCanModerateCommunity(currentUser, community, membership ?? undefined),
-        403,
-        'Forbidden',
-      )
-    }
-
-    // Manual tag-add cap (requirement 1 of #8246): a standing per-(subject, relation) cap on tags
-    // a user manually adds through this route. Voting on an existing tag (handled by
-    // upsertEntityRelation below) is unaffected -- assertWithinTagAddLimit only counts rows this
-    // user originated (created_by_id), and voting never creates a new row in relation.table_name.
-    // Deliberately broad: every election, non-bookmark relation on these subject types is capped
-    // (category, related, faq, publisher_type, landing_page, terms_of_service, guide, ...), each
-    // with its own independent budget since assertWithinTagAddLimit counts per relation.table_name.
-    // `user` subject_type is excluded: user->topic->category is the vouch-tagging path gated above
-    // by assertWithinContributionQuota, which counts against resolvedUserTagTargetId rather than
-    // parsed.subjectId.id and must not be double-gated here. No other subject-type branch in this
-    // route remaps subjectId the way the user branch does, so parsed.subjectId.id is safe to use
-    // directly for every subject type reachable below.
-    if (
-      parsed.metadata.election &&
-      !parsed.metadata.is_bookmark &&
-      (parsed.metadata.subject_type === 'post' ||
-        parsed.metadata.subject_type === 'topic' ||
-        parsed.metadata.subject_type === 'rss_feed_item')
-    ) {
-      const membershipPlan = isAdminUser(currentUser)
-        ? null
-        : await getUserActivePlan(currentUser.id)
-      await assertWithinTagAddLimit(
-        currentUser,
-        membershipPlan,
-        parsed.metadata,
-        parsed.subjectId.id,
-        parsed.objectIds.length,
-      )
-    }
-
-    // Upsert the relation (automatically votes for it)
-    const relations = await upsertEntityRelation(
+    assertCreateEntityRelationActionAdmission(
       currentUser,
-      parsed.metadata,
-      resolvedUserTagTargetId ? { id: resolvedUserTagTargetId } : parsed.subjectId,
-      parsed.objectIds,
-      resolvedUserTagTargetId ? { enqueueVoteStats: false } : undefined,
+      ctx.params.entityType!,
+      ctx.params.objectType!,
     )
-
-    ctx.assert(relations.length > 0, 500, 'Failed to create entity relation')
-
-    if (parsed.metadata.subject_type === 'user') {
-      await Promise.all(
-        relations.flatMap(relation =>
-          relation.id
-            ? [
-                refreshEntityRelationVoteStatsFromPrimaryWithFallback(
-                  createEntityRelationElectionTarget(relation.id, parsed.metadata.table_name),
-                ),
-              ]
-            : [],
-        ),
-      )
-    }
-
-    // Read the row back through the viewer-scoped query so the response carries the same
-    // projection and creator masking as GET, never the raw upserted row.
-    const [responseRelation] = await getEntityRelations(
-      parsed.metadata.subject_type,
-      relations[0]!.subject_id,
-      parsed.metadata.predicate,
-      parsed.metadata.object_type,
-      { viewer, readOnly: false, objectIds: [relations[0]!.object_id] },
+    const body = (await ctx.request.json('1mb')) as { objectId?: string }
+    const { relation } = await createEntityRelationAction(
+      currentUser,
+      { kind: 'first_party' },
+      {
+        entityType: ctx.params.entityType!,
+        entityId: ctx.params.entityId!,
+        predicate: ctx.params.predicate!,
+        objectType: ctx.params.objectType!,
+        objectId: body.objectId,
+      },
     )
-    // assertCanViewRelatedPosts applies the read-back's post filters, so a miss is a bug.
-    if (!responseRelation) throw new Error('A created entity relation is hidden from its creator')
 
     ctx.setStatus(201)
-    ctx.json({ relation: withoutEntityRelationCursorMetadata(responseRelation) })
+    ctx.json({ relation: withoutEntityRelationCursorMetadata(relation) })
   })

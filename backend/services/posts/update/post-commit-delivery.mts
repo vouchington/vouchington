@@ -8,6 +8,8 @@ import {
   type PostCategoryFinalization,
 } from '../post-category-finalizations.mts'
 import type { Post, UpdatePostChanges } from '../types.mts'
+import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
+import { normalizeKey } from '@ts-shared/utils/strings'
 
 export type PostCommitDeliveryDependencies = {
   enqueuePostCategoryFinalizationReconciliationBestEffort: typeof enqueuePostCategoryFinalizationReconciliationBestEffort
@@ -48,6 +50,9 @@ export async function finalizePostUpdateAndDeliver(
   dependencies: Partial<PostCommitDeliveryDependencies> = {},
 ): Promise<Post> {
   const resolvedDependencies = { ...defaultPostCommitDeliveryDependencies, ...dependencies }
+  if (changes.slug && updatedPost.slug) {
+    entityCacheBloomFilters.posts.add([normalizeKey(updatedPost.slug)])
+  }
   let finalizedPost = updatedPost
   try {
     if (syncHashtagCategories || changes.structured_data !== undefined) {

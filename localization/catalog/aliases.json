@@ -4780,6 +4780,7 @@
 {"alias":"extracted.apiKeysManager.keyCreatedAlert.generatedApiKey_3e788b36","consumer":"web","copyId":"copy.extracted.apiKeysManager.keyCreatedAlert.generatedApiKey_3e788b36"},
 {"alias":"extracted.apiKeysManager.keyCreatedAlert.newApiKey_e520a082","consumer":"web","copyId":"copy.extracted.apiKeysManager.keyCreatedAlert.newApiKey_e520a082"},
 {"alias":"extracted.apiKeysManager.keyCreatedAlert.saveYourApiKeyItWill_76958c67","consumer":"web","copyId":"copy.extracted.apiKeysManager.keyCreatedAlert.saveYourApiKeyItWill_76958c67"},
+{"alias":"extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0","consumer":"web","copyId":"copy.extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0"},
 {"alias":"extracted.apiKeysManager.scopePicker.fullMcpAccess_34c92c70","consumer":"web","copyId":"copy.extracted.apiKeysManager.scopePicker.fullMcpAccess_34c92c70"},
 {"alias":"extracted.apiKeysManager.scopePicker.read_9b9a8d05","consumer":"web","copyId":"copy.extracted.apiKeysManager.scopePicker.read_9b9a8d05"},
 {"alias":"extracted.apiKeysManager.scopePicker.scopes_0d5644ff","consumer":"web","copyId":"copy.extracted.oauthClients.page.scopes_0d5644ff"},

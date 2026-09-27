@@ -133,4 +133,19 @@ test.describe('My API Keys Page', () => {
     await keyRow.getByTestId('api-key-revoke-confirm').click()
     await expect(page.getByTestId('api-key-revoked-row').filter({ hasText: label })).toBeVisible()
   })
+
+  test('describes the exact own-private relation permission', async ({ page }) => {
+    await page.getByTestId('api-keys-create-button').click()
+    await page.getByTestId('api-keys-create-type-mcp').click()
+    const picker = page.getByTestId('api-key-scope-picker')
+    const privateWrite = picker.getByTestId('scope-checkbox-post-relations.owned-private:write')
+
+    await expect(picker.getByTestId('scope-private-post-relations-permission')).toContainText(
+      'Allow this credential to add relations and tags to your own private posts.',
+    )
+    await privateWrite.click()
+    await expect(privateWrite).toBeChecked()
+    await expect(picker.getByTestId('scope-checkbox-entity-relations:write')).toBeChecked()
+    await expect(picker.getByTestId('scope-checkbox-entity-relations:read')).toBeChecked()
+  })
 })

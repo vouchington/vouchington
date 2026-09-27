@@ -5,6 +5,7 @@ import {
   hasScope,
   parseApiScope,
   validateScopeSet,
+  withScopePrerequisites,
 } from './index.mts'
 
 describe('validateScopeSet', () => {
@@ -88,5 +89,30 @@ describe('validateScopeSet', () => {
       action: 'write',
       requires: 'cards:read',
     })
+  })
+
+  it('requires the complete entity-relation private-delegation chain', () => {
+    const privateWrite = 'post-relations.owned-private:write'
+    expect(
+      validateScopeSet(['entity-relations:read', 'entity-relations:write', privateWrite], {
+        surface: 'api-key',
+        allowMixedAudiences: false,
+      }),
+    ).toEqual({
+      valid: true,
+      scopes: ['entity-relations:read', 'entity-relations:write', privateWrite],
+      audiences: ['user'],
+    })
+    expect(withScopePrerequisites([privateWrite])).toEqual([
+      'entity-relations:read',
+      'entity-relations:write',
+      privateWrite,
+    ])
+  })
+
+  it('does not let broad MCP write imply the exact private-delegation capability', () => {
+    expect(
+      hasScope(['mcp.user:read', 'mcp.user:write'], 'post-relations.owned-private:write'),
+    ).toBe(false)
   })
 })

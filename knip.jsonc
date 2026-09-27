@@ -59,16 +59,15 @@
     },
     "backend/entrypoints/api": {
       "entry": ["**/*.mts"],
-      // @modules/bluesky-oauth, @services/bluesky-accounts, and @services/bluesky-follows are
-      // declared here per the "New backend service" rule in docs/checklists/package-json.md
-      // (add to both backend/api/package.json and backend/entrypoints/api/package.json), but
-      // are only imported by files inside backend/api/** (reached transitively via
-      // @voucha/api) — an edge knip cannot see from this workspace's own entry glob.
+      // These packages are declared here for the API entrypoint's runtime packaging rule, but
+      // are consumed by API routes or registered worker/service paths outside this workspace's
+      // entry glob. The policy test requires each exact out-of-graph edge to have real evidence.
       "ignoreDependencies": [
         "@modules/bluesky-oauth",
         "@services/bluesky-accounts",
         "@services/bluesky-follows",
         "@services/entity-listener-reconciliation",
+        "@services/entity-relation-actions",
       ],
     },
     "backend/config": {

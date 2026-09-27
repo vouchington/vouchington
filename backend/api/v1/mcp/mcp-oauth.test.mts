@@ -6,7 +6,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, suspendTestUser } from '@voucha/test-helpers'
+import { createTestMembership, createTestUser, suspendTestUser } from '@voucha/test-helpers'
 import { createApiKey } from '@services/api-keys'
 import {
   getOAuthResourceMetadataUrl,
@@ -19,8 +19,8 @@ const MCP_LIST_BODY = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} 
 const USER_METADATA = `resource_metadata="${getOAuthResourceMetadataUrl('user')}"`
 const INVALID_TOKEN_CHALLENGE = `Bearer ${USER_METADATA}, error="invalid_token", error_description="The bearer credential is invalid or expired"`
 
-function toolCall(name: string, id = 1) {
-  return { jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: {} } }
+function toolCall(name: string, id = 1, args: Record<string, unknown> = {}) {
+  return { jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } }
 }
 
 function postMcp(token: string | null, body: unknown) {
@@ -101,6 +101,20 @@ describe('POST /api/v1/mcp with OAuth access tokens', () => {
 
     expect(response.headers['www-authenticate']).toBe(
       `Bearer ${USER_METADATA}, error="insufficient_scope", error_description="The access token lacks a scope this tool requires", scope="profile:read topics:read"`,
+    )
+  })
+
+  it('returns an HTTP scope challenge for an under-scoped entity-relation tool call', async () => {
+    const plusUser = await createTestUser()
+    await createTestMembership({ user_id: plusUser.id, plan: 'plus' })
+    const underScoped = await issueTestOAuthTokens(plusUser, { scope: 'topics:read' })
+    const response = await postMcp(
+      underScoped.access_token,
+      toolCall('add_entity_relation', 1, { action: 'add_relation' }),
+    ).expect(403)
+
+    expect(response.headers['www-authenticate']).toBe(
+      `Bearer ${USER_METADATA}, error="insufficient_scope", error_description="The access token lacks a scope this tool requires", scope="entity-relations:read entity-relations:write topics:read"`,
     )
   })
 

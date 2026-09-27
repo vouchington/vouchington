@@ -107,6 +107,28 @@ describe('ApiKeysManager scope selection', () => {
     })
   })
 
+  it('describes and submits the exact own-private relation permission with its prerequisites', async () => {
+    await openMcpForm()
+
+    expect(
+      screen.getByText(
+        'Allow this credential to add relations and tags to your own private posts.',
+      ),
+    ).toBeInTheDocument()
+    fireEvent.click(checkbox('post-relations.owned-private Write'))
+    expect(checkbox('entity-relations Read')).toBeChecked()
+    expect(checkbox('entity-relations Write')).toBeChecked()
+    await createWithLabel('Private relation key')
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith('Private relation key', 'mcp', [
+        'entity-relations:read',
+        'entity-relations:write',
+        'post-relations.owned-private:write',
+      ])
+    })
+  })
+
   it('keeps Create disabled until an MCP key has a scope', async () => {
     await openMcpForm()
     fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'Agent key' } })

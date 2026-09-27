@@ -45,7 +45,8 @@ users cannot revoke grants, matching API-key management.
 Settings > API Keys (`/my/api-keys`) lists the caller's OAuth apps below their keys. Registering an
 app takes a name, one redirect URI per line, a confidential or public client type and
 [catalogue](api-keys.md#scope-catalogue) scopes that accept the `oauth` surface; admin-audience
-scopes are offered only to administrators. A confidential app's client secret appears once, after
+scopes are offered only to administrators. The exact own-private relation permission is displayed
+with its own private-post explanation and selects its relation prerequisites. A confidential app's client secret appears once, after
 registration or rotation, in a dismissible alert with a copy button. Each app row shows its client
 ID, redirect URIs, scopes and verification badge; editing sends only the changed name or redirect
 URIs and warns that saving clears verification, rotating asks for confirmation (confidential apps

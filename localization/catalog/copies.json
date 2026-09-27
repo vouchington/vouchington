@@ -407,6 +407,7 @@
 {"descriptor":null,"id":"copy.extracted.apiKeysManager.keyCreatedAlert.generatedApiKey_3e788b36"},
 {"descriptor":null,"id":"copy.extracted.apiKeysManager.keyCreatedAlert.newApiKey_e520a082"},
 {"descriptor":null,"id":"copy.extracted.apiKeysManager.keyCreatedAlert.saveYourApiKeyItWill_76958c67"},
+{"descriptor":null,"id":"copy.extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0"},
 {"descriptor":null,"id":"copy.extracted.apiKeysManager.scopePicker.fullMcpAccess_34c92c70"},
 {"descriptor":null,"id":"copy.extracted.apiKeysManager.scopePicker.read_9b9a8d05"},
 {"descriptor":null,"id":"copy.extracted.apiKeysManager.scopePicker.write_3f00927a"},

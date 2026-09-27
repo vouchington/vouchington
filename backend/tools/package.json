@@ -27,6 +27,7 @@
     "@services/crawls": "workspace:^",
     "@services/data-points": "workspace:^",
     "@services/entity-fetch": "workspace:^",
+    "@services/entity-relation-actions": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/openai-agents": "workspace:^",

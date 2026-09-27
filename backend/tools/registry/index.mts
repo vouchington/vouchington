@@ -1,4 +1,5 @@
 import addRelatedTopicTool from '../add-related-topic.mts'
+import addEntityRelationTool from '../add-entity-relation.mts'
 import compareTopicsTool from '../compare-topics.mts'
 import getDomainRatingsTool from '../get-domain-ratings.mts'
 import getMyCardsTool from '../get-my-cards.mts'
@@ -34,6 +35,7 @@ import updateMyFinancialProfileTool from '../update-my-financial-profile.mts'
 import type { Tool } from '../types.mts'
 
 export const ALL_TOOLS: readonly Tool[] = [
+  addEntityRelationTool,
   addRelatedTopicTool,
   compareTopicsTool,
   getDomainRatingsTool,

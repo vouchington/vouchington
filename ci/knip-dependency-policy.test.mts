@@ -63,6 +63,11 @@ const ALLOWED_WORKSPACE_IGNORE_DEPENDENCIES = new Map<string, readonly IgnoredDe
           evidenceFiles: ['backend/workers/entity-listeners/processors/reconciliation.mts'],
           evidencePattern: /\bfrom '@services\/entity-listener-reconciliation'/,
         },
+        {
+          dependency: '@services/entity-relation-actions',
+          evidenceFiles: ['backend/api/v1/entity-relations/entity-relations.mts'],
+          evidencePattern: /\bfrom '@services\/entity-relation-actions'/,
+        },
       ],
     ],
     [

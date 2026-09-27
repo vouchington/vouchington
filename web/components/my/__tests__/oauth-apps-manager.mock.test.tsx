@@ -138,6 +138,32 @@ describe('OAuthAppsManager', () => {
     expect(screen.queryByLabelText('Client secret')).not.toBeInTheDocument()
   })
 
+  it('submits the exact own-private relation permission with its prerequisites', async () => {
+    renderManager()
+    fireEvent.change(screen.getByLabelText('App name'), { target: { value: 'Private Agent' } })
+    fireEvent.change(screen.getByLabelText('Redirect URIs'), {
+      target: { value: 'https://agent.example.com/private-callback' },
+    })
+    expect(
+      screen.getByText(
+        'Allow this credential to add relations and tags to your own private posts.',
+      ),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'post-relations.owned-private Write' }))
+    await submitRegisterForm()
+
+    expect(mockCreate).toHaveBeenCalledWith({
+      client_name: 'Private Agent',
+      redirect_uris: ['https://agent.example.com/private-callback'],
+      token_endpoint_auth_method: 'client_secret_basic',
+      scopes: [
+        'entity-relations:read',
+        'entity-relations:write',
+        'post-relations.owned-private:write',
+      ],
+    })
+  })
+
   it('reports a failed clipboard copy', async () => {
     writeText.mockRejectedValueOnce(new Error('denied'))
     renderManager()

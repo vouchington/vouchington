@@ -10,6 +10,8 @@ import { ConsentActions } from './consent-actions'
 
 export const dynamic = 'force-dynamic'
 
+const OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE = 'post-relations.owned-private:write'
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
   return createNoIndexMetadata(t('shared.oauth.consent.metadataTitle'))
@@ -73,6 +75,13 @@ export default async function OAuthConsentPage({
               {request.scopes.map(scope => (
                 <li key={scope}>
                   <code>{scope}</code>
+                  {scope === OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE && (
+                    <p data-pw='oauth-consent-private-post-relations-permission'>
+                      {t(
+                        'extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0',
+                      )}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

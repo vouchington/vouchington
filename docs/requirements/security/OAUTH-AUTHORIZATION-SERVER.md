@@ -110,7 +110,9 @@ name the client. `metadata_url` stays `NULL` until Client ID Metadata Documents 
 - `/token` accepts an optional RFC 8707 `resource`, which must name the bound resource. A mismatch
   is `invalid_target` and leaves the code unconsumed. A refresh may narrow its scopes with `scope`.
 - A client's registered scopes cover a requested scope by the same rule as MCP tool authorization,
-  so a client registered for `mcp.user:write` may request `cards:write`.
+  so a client registered for `mcp.user:write` may request `cards:write`. Exact private delegation
+  grants are the exception: `post-relations.owned-private:write` must be registered and requested
+  literally, with its relation prerequisites.
 
 ## MCP challenges
 

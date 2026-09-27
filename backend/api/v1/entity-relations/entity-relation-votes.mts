@@ -18,7 +18,7 @@ import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import onError from '@modules/on-error'
 import { requireAuth } from '../../response-helpers.mts'
-import { assertUserTagAllowed } from './user-tag-access.mts'
+import { assertUserTagAllowed } from '@services/entity-relation-actions'
 import {
   refreshEntityRelationVoteStatsById,
   refreshEntityRelationVoteStatsFromPrimaryWithFallback,

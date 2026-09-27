@@ -7,6 +7,86 @@
       "tools": [
         {
           "tool": {
+            "name": "add_entity_relation",
+            "title": "Add Entity Relation",
+            "description": "Add a relation between existing entities or add a hashtag to your own post.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "const": "add_relation"
+                    },
+                    "entity_type": {
+                      "type": "string"
+                    },
+                    "entity_id": {
+                      "type": "string"
+                    },
+                    "predicate": {
+                      "type": "string"
+                    },
+                    "object_type": {
+                      "type": "string"
+                    },
+                    "object_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "action",
+                    "entity_type",
+                    "entity_id",
+                    "predicate",
+                    "object_type",
+                    "object_id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "const": "add_tag"
+                    },
+                    "post_id": {
+                      "type": "string"
+                    },
+                    "tag": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["action", "post_id", "tag"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["entity-relations:read", "entity-relations:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/posts/:idOrSlug"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "compare_topics",
             "title": "Compare Topics",
             "description": "Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"",

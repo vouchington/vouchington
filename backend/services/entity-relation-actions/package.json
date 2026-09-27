@@ -1,0 +1,40 @@
+{
+  "name": "@services/entity-relation-actions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared first-party and delegated entity-relation mutation commands",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/scopes": "workspace:^",
+    "@services/communities": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
+    "@services/elections-votes": "workspace:^",
+    "@services/entity-relations": "workspace:^",
+    "@services/memberships": "workspace:^",
+    "@services/tag-limits": "workspace:^",
+    "@services/topics": "workspace:^",
+    "@services/users": "workspace:^",
+    "http-assert": "^1.5.0",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@services/post-publication": "workspace:^",
+    "@types/http-errors": "^2.0.5",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

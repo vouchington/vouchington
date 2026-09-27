@@ -37,9 +37,11 @@ export function listScopesForAudience(
 export function withScopePrerequisites(scopes: readonly ApiScope[]): ApiScope[] {
   const result = new Set<ApiScope>()
   for (const scope of scopes) {
-    result.add(scope)
-    const requiredScope = SCOPE_DEFINITIONS[scope].requires
-    if (requiredScope) result.add(requiredScope as ApiScope)
+    let current: ApiScope | undefined = scope
+    while (current && !result.has(current)) {
+      result.add(current)
+      current = SCOPE_DEFINITIONS[current].requires as ApiScope | undefined
+    }
   }
   return [...result].sort()
 }

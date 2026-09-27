@@ -77,6 +77,17 @@ describe('toggleScope', () => {
     expect(toggleScope(chain, ['a:read', 'b:read', 'c:read'], 'a:read', false)).toEqual([])
   })
 
+  it('selects and removes the complete own-private relation-write prerequisite chain', () => {
+    const privateWrite = 'post-relations.owned-private:write'
+    const selected = toggleScope(catalog, [], privateWrite, true)
+
+    expect(selected).toEqual(['entity-relations:read', 'entity-relations:write', privateWrite])
+    expect(toggleScope(catalog, selected, 'entity-relations:read', false)).toEqual([])
+    expect(toggleScope(catalog, selected, 'entity-relations:write', false)).toEqual([
+      'entity-relations:read',
+    ])
+  })
+
   it('unchecking a prerequisite drops the scopes that require it', () => {
     expect(
       toggleScope(catalog, ['cards:read', 'cards:write', 'posts:read'], 'cards:read', false),

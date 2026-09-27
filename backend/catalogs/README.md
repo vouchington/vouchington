@@ -175,6 +175,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/entity-links/README.md`](../services/entity-links/README.md)
 - [`../services/entity-links/USAGE.md`](../services/entity-links/USAGE.md)
 - [`../services/entity-listener-reconciliation/README.md`](../services/entity-listener-reconciliation/README.md)
+- [`../services/entity-relation-actions/README.md`](../services/entity-relation-actions/README.md)
 - [`../services/entity-relations/README.md`](../services/entity-relations/README.md)
 - [`../services/fediverse-instances/README.md`](../services/fediverse-instances/README.md)
 - [`../services/fediverse-search/README.md`](../services/fediverse-search/README.md)

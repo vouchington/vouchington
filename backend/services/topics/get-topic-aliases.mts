@@ -50,3 +50,12 @@ export async function getTopicAliasRecordByValue(
   )
   return rows[0]
 }
+
+export async function getTopicAliasIdByKey(key: string): Promise<string | undefined> {
+  const { rows } = await read<{ id: string }>(
+    `/* getTopicAliasIdByKey */ SELECT id FROM topic_aliases WHERE alias = $1`,
+    [key],
+    { readOnly: false },
+  )
+  return rows[0]?.id
+}
