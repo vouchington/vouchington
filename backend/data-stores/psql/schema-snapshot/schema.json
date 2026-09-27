@@ -603,6 +603,9 @@
     "fn_create_user_metrics_on_insert": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_metrics (id)\n  VALUES (NEW.id)\n  ON CONFLICT (id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN copyright_notice_form_screening_executions execution\n      ON execution.copyright_notice_form_intake_id = intake.id AND execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.good_faith_belief AND intake.accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_intents receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_intent_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.accepted\n      )\n  );\n$function$\n"
+    },
     "fn_enforce_membership_provider_evidence_immutability": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership provider evidence records are immutable';\n  END IF;\n\n  IF ROW(\n    NEW.id,\n    NEW.provider,\n    NEW.environment,\n    NEW.application_id,\n    NEW.provider_event_id,\n    NEW.evidence_lookup_sha256,\n    NEW.encrypted_evidence,\n    NEW.received_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.provider,\n    OLD.environment,\n    OLD.application_id,\n    OLD.provider_event_id,\n    OLD.evidence_lookup_sha256,\n    OLD.encrypted_evidence,\n    OLD.received_at\n  ) OR (\n    OLD.membership_provider_lineage_id IS NOT NULL\n    AND NEW.membership_provider_lineage_id IS DISTINCT FROM OLD.membership_provider_lineage_id\n  ) THEN\n    RAISE EXCEPTION 'membership provider evidence identity is immutable';\n  END IF;\n\n  IF OLD.rejected_at IS NOT NULL\n    OR num_nonnulls(NEW.verified_at, NEW.rejected_at) <> 1\n    OR (\n      OLD.verified_at IS NOT NULL\n      AND (NEW.verified_at IS NOT NULL OR NEW.rejected_at IS NULL)\n    )\n  THEN\n    RAISE EXCEPTION 'membership provider evidence lifecycle is terminal';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
     },
@@ -637,7 +640,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_assessment_supersession()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.supersedes_assessment_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessments prior\n    WHERE prior.id = NEW.supersedes_assessment_id\n      AND prior.copyright_notice_submission_id = NEW.copyright_notice_submission_id\n  ) THEN\n    RAISE EXCEPTION 'copyright assessment corrections must stay within one submission' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_automated_assessment_screening": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_automated_assessment_screening()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL\n    AND NEW.assessed_by_id IS NULL AND NEW.copyright_notice_form_screening_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.assessed_by_id IS NULL AND NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_form_screenings screening\n    JOIN copyright_notice_form_intakes intake\n      ON intake.id = screening.copyright_notice_form_intake_id\n    JOIN copyright_notice_submissions submission\n      ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice\n      ON notice.id = submission.copyright_notice_id\n    WHERE screening.id = NEW.copyright_notice_form_screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.id = NEW.copyright_notice_submission_id\n      AND submission.kind = 'notice'\n      AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL\n      AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.good_faith_belief\n      AND intake.accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1\n        FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images target_image\n          ON target_image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id\n          AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1\n        FROM copyright_notice_delivery_intents receipt\n        JOIN copyright_notice_delivery_recipients recipient\n          ON recipient.copyright_notice_delivery_intent_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id\n          AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email'\n          AND receipt.delivery_kind = 'claimant_receipt'\n      )\n  ) THEN\n    RAISE EXCEPTION 'automated copyright assessment requires an exact non-spam screen and complete structured US DMCA notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.assessed_by_id IS NOT NULL AND NEW.copyright_notice_form_screening_id IS NOT NULL THEN\n    RAISE EXCEPTION 'human copyright assessment cannot claim an automated form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_automated_assessment_screening()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL\n    AND NEW.assessed_by_id IS NULL AND NEW.copyright_notice_form_screening_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  IF NEW.assessed_by_id IS NULL AND NOT fn_current_copyright_form_screening(\n    NEW.copyright_notice_submission_id, NEW.copyright_notice_form_screening_id\n  ) THEN\n    RAISE EXCEPTION 'automated copyright assessment requires its current completed screen and complete structured US DMCA notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.assessed_by_id IS NOT NULL AND NEW.copyright_notice_form_screening_id IS NOT NULL THEN\n    RAISE EXCEPTION 'human copyright assessment cannot claim an automated form screening'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_correspondence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_correspondence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright correspondence is a retained legal record' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.copyright_notice_submission_id,\n    OLD.direction,\n    OLD.composition_kind,\n    OLD.correspondence_kind,\n    NULL\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.copyright_notice_submission_id,\n    NEW.direction,\n    NEW.composition_kind,\n    NEW.correspondence_kind,\n    NULL\n  ) THEN\n    RAISE EXCEPTION 'copyright correspondence identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.direction = 'inbound' AND OLD.body_ciphertext IS DISTINCT FROM NEW.body_ciphertext THEN\n    RAISE EXCEPTION 'inbound copyright correspondence body is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS NOT NULL AND ROW(\n    OLD.body_ciphertext,\n    OLD.approved_at\n  ) IS DISTINCT FROM ROW(\n    NEW.body_ciphertext,\n    NEW.approved_at\n  ) THEN\n    RAISE EXCEPTION 'approved copyright correspondence is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.sent_at IS NOT NULL AND OLD.body_ciphertext IS DISTINCT FROM NEW.body_ciphertext THEN\n    RAISE EXCEPTION 'sent copyright correspondence body is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS NULL AND NEW.approved_at IS NOT NULL AND NEW.approved_by_id IS NULL THEN\n    RAISE EXCEPTION 'copyright correspondence approval requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.drafted_by_id IS DISTINCT FROM NEW.drafted_by_id AND NEW.drafted_by_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright correspondence drafter cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_by_id IS DISTINCT FROM NEW.approved_by_id\n    AND OLD.approved_by_id IS NOT NULL\n    AND NEW.approved_by_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright correspondence approver cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.sent_at IS NOT NULL AND OLD.sent_at IS DISTINCT FROM NEW.sent_at THEN\n    RAISE EXCEPTION 'copyright correspondence delivery is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -27989,7 +27992,7 @@
         },
         "copyright_notice_form_intake_id": {
           "collation": null,
-          "comment": "Form intake reviewed by a moderator.",
+          "comment": "Guest form intake reviewed by a moderator.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -28065,7 +28068,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Immutable moderator approval or rejection required for guest forms and signed-in forms flagged by anti-spam.",
+      "comment": "Immutable moderator approval or rejection required before a guest form may affect hosted material.",
       "foreignKeys": {
         "copyright_notice_form_intake__copyright_notice_form_intake_fkey": {
           "columns": ["copyright_notice_form_intake_id"],
@@ -28479,13 +28482,185 @@
         }
       }
     },
+    "copyright_notice_form_screening_executions": {
+      "checkConstraints": {
+        "copyright_notice_form_screening_executions_attempt_number_check": "CHECK ((attempt_number > 0))",
+        "copyright_notice_form_screening_executions_check": "CHECK ((((state = 'pending'::text) AND (copyright_notice_form_screening_id IS NULL) AND (completed_at IS NULL)) OR ((state = 'failed'::text) AND (copyright_notice_form_screening_id IS NULL) AND (claimed_at IS NULL) AND (completed_at IS NOT NULL)) OR ((state = 'completed'::text) AND (copyright_notice_form_screening_id IS NOT NULL) AND (claimed_at IS NULL) AND (completed_at IS NOT NULL))))",
+        "copyright_notice_form_screening_executions_check1": "CHECK (((completed_at IS NULL) OR (completed_at >= started_at)))",
+        "copyright_notice_form_screening_executions_check2": "CHECK (((claimed_at IS NULL) OR (claimed_at >= started_at)))",
+        "copyright_notice_form_screening_executions_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'failed'::text, 'completed'::text])))"
+      },
+      "columns": {
+        "attempt_number": {
+          "collation": null,
+          "comment": "Monotonic token advanced on a new screen or failed/expired claim retry.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "integer"
+        },
+        "claimed_at": {
+          "collation": null,
+          "comment": "Current provider execution lease; expired leases rotate the attempt token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": "Terminal success or failure time for the current attempt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "copyright_notice_form_intake_id": {
+          "collation": null,
+          "comment": "Concrete intake whose current screening execution is owned by the form-review fence.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "copyright_notice_form_screening_id": {
+          "collation": null,
+          "comment": "Successful immutable result selected only by completion of the current attempt in the same intake.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "started_at": {
+          "collation": null,
+          "comment": "Time the current attempt first removed automatic authority.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "state": {
+          "collation": null,
+          "comment": "Current pending, failed, or completed screening execution.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Time the current execution row last changed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One current anti-spam execution per structured intake. Its attempt token fences stale completions and its selected immutable result defines current automatic authority.",
+      "foreignKeys": {
+        "copyright_notice_form_screen_copyright_notice_form_intake_fkey1": {
+          "columns": ["copyright_notice_form_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_form_intakes",
+          "validated": true
+        },
+        "copyright_notice_form_screen_copyright_notice_form_intake_fkey2": {
+          "columns": ["copyright_notice_form_intake_id", "copyright_notice_form_screening_id"],
+          "definition": "FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["copyright_notice_form_intake_id", "id"],
+          "referencedTable": "copyright_notice_form_screenings",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_notice_form_screening_executions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_form_screening_executions_pkey ON public.copyright_notice_form_screening_executions USING btree (copyright_notice_form_intake_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_form_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_form_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_screening_executions__result": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_screening_executions__result ON public.copyright_notice_form_screening_executions USING btree (copyright_notice_form_screening_id) WHERE (copyright_notice_form_screening_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_form_screening_id",
+              "descending": false,
+              "expression": "copyright_notice_form_screening_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_form_screening_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_notice_form_intake_id"],
+        "definition": "PRIMARY KEY (copyright_notice_form_intake_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "copyright_notice_form_screenings": {
       "checkConstraints": {
         "copyright_notice_form_screenings_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
         "copyright_notice_form_screenings_model_check": "CHECK (((char_length(model) >= 1) AND (char_length(model) <= 255)))",
         "copyright_notice_form_screenings_prompt_version_check": "CHECK (((char_length(prompt_version) >= 1) AND (char_length(prompt_version) <= 100)))",
         "copyright_notice_form_screenings_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
-        "copyright_notice_form_screenings_recommendation_check": "CHECK ((recommendation = ANY (ARRAY['clear'::text, 'uncertain'::text, 'not_obviously_invalid'::text, 'invalid_or_spam'::text])))"
+        "copyright_notice_form_screenings_recommendation_check": "CHECK ((recommendation = ANY (ARRAY['not_obviously_invalid'::text, 'invalid_or_spam'::text])))"
       },
       "columns": {
         "copyright_notice_form_intake_id": {
@@ -28588,7 +28763,7 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may act on a signed-in intake that is not obviously invalid.",
+      "comment": "Immutable advisory anti-spam recommendations. Only a workflow service, never an agent, may decide whether a clear signed-in intake gets a provisional restriction.",
       "foreignKeys": {
         "copyright_notice_form_screeni_copyright_notice_form_intake_fkey": {
           "columns": ["copyright_notice_form_intake_id"],
@@ -28605,7 +28780,7 @@
         "copyright_notice_form_screeni_copyright_notice_form_intake__key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_form_screeni_copyright_notice_form_intake__key ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, input_sha256, prompt_version)",
+          "definition": "CREATE UNIQUE INDEX copyright_notice_form_screeni_copyright_notice_form_intake__key ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, id)",
           "includedColumns": [],
           "keys": [
             {
@@ -28616,18 +28791,11 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "input_sha256",
+              "column": "id",
               "descending": false,
-              "expression": "input_sha256",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "bytea_ops"
-            },
-            {
-              "column": "prompt_version",
-              "descending": false,
-              "expression": "prompt_version",
-              "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -28655,33 +28823,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "idx_copyright_form_screenings__intake": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_form_screenings__intake ON public.copyright_notice_form_screenings USING btree (copyright_notice_form_intake_id, id DESC)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_form_intake_id",
-              "descending": false,
-              "expression": "copyright_notice_form_intake_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "id",
-              "descending": true,
-              "expression": "id",
-              "nullsFirst": true,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
         }
       },
       "partition": null,
@@ -28696,8 +28837,8 @@
       },
       "uniqueConstraints": {
         "copyright_notice_form_screeni_copyright_notice_form_intake__key": {
-          "columns": ["copyright_notice_form_intake_id", "input_sha256", "prompt_version"],
-          "definition": "UNIQUE (copyright_notice_form_intake_id, input_sha256, prompt_version)"
+          "columns": ["copyright_notice_form_intake_id", "id"],
+          "definition": "UNIQUE (copyright_notice_form_intake_id, id)"
         }
       }
     },

@@ -205,6 +205,15 @@ CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()
  LANGUAGE plpgsql
 ```
 
+## `fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_enforce_membership_provider_evidence_immutability`
 
 ```sql
