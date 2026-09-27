@@ -17,7 +17,7 @@ import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
 
 const rssFeedItemsParser = createPaginationParser({
-  cursor: { type: 'timestamp' as const },
+  cursor: { type: 'precise_timestamp' as const },
   limit: { min: 1, max: 100, default: 10 },
   filters: {
     search: true,

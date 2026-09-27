@@ -10,6 +10,10 @@ export { getPrioritizedReferralLinks } from '@services/prioritized-referral-link
 export { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 export { getRssFeedItemFeedIds } from '@services/feeds/rss-feed-items/get-ids'
 export { searchRssFeedItems } from '@services/rss-feed-items/search'
+export {
+  buildRssFeedItemSearchPageInfo,
+  getRssFeedItemSearchCursorScope,
+} from '@services/rss-feed-items/search-cursor'
 export { getPostIds } from '@services/posts/search/get-ids'
 export { getUnreadNotificationsSummary, listNotifications } from '@services/notifications/list'
 export { aggregateCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest-aggregation'

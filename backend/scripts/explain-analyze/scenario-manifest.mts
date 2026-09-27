@@ -81,6 +81,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-items-search-by-topic',
   'rss-feed-items-search-cursor',
   'rss-feed-items-search-global-cursor',
+  'rss-feed-items-search-global-late-cursor',
   'rss-feed-items-search-semantic-cursor',
   'rss-feed-items-search-media',
   'rss-feed-items-search-text',

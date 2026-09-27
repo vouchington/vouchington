@@ -57,6 +57,13 @@ Its pagination gate requires
 `idx_oauth_clients__verified_active_id`, the late cursor as an index condition, and no
 `oauth_clients` sequential scan or explicit sort in both plan-cache modes.
 
+The `rss-feed-items-search-global-late-cursor` scenario uses the publication time and UUID of
+`seed-item-guid-20000` as an exact scoped boundary in the normal RSS seed. It requires a full page
+with lookahead. Its gate requires the composite cursor in the publication index condition and
+caps physical RSS candidate work at the scenario page size plus lookahead, counting filtered and
+rechecked rows with their loops without summing ancestor result rows. Both prepared plan modes
+must pass; response-page timestamp formatting must preserve this index traversal.
+
 ### Isolated topic-metrics benchmark
 
 Use the heavyweight benchmark only for before/after investigation, not as a CI timing gate:

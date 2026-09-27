@@ -12,6 +12,7 @@ import {
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
 import { runSemanticRssSearchScenario } from './semantic-rss-search.mts'
+import { runPreciseRssRecencyCursorScenario } from './precise-rss-cursor.mts'
 
 const {
   ANONYMOUS_ENTITY_RELATION_VIEWER,
@@ -96,6 +97,7 @@ export async function runSearchAndFacetScenarios() {
     'global-cursor',
   )
   await runSemanticRssSearchScenario()
+  await runPreciseRssRecencyCursorScenario()
 
   // RSS feed search — by topic
   await runAndCapture('rss-feed-search-by-topic', () =>

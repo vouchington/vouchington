@@ -122,6 +122,24 @@ SQL `OFFSET` remains prohibited by the existing `no-sql-offset` AST-grep rule.
   cursor. No-gap guarantees apply within a stable ordering snapshot; refresh semantics reconcile
   rows whose ordering key changes during traversal.
 
+## RSS timestamp precision and scope
+
+RSS feed delivery and recency-search cursors use the existing scoped precise timestamp/UUID
+primitives from `@modules/pagination`. PostgreSQL projects UTC microsecond text only for the bounded
+response page; cursor predicates compare that text directly as `timestamptz`. Public timestamps
+remain dates and cursors remain opaque strings. Numeric timestamp and `share:`-prefixed historical
+payloads are rejected under the current prelaunch contract.
+
+Feed cursors include the direct/share tier and bind the viewer, administrator context, community,
+feed type, time range, score thresholds and effective filters. Recency cursors separately bind their
+resource/order, viewer/access and filters. Both normalize unordered arrays and effective defaults,
+trim text exactly as SQL does, and exclude page size. Feed, recency and semantic cursors cannot be
+replayed across each other's resource/order. Semantic relevance pagination keeps its existing
+precise ranking cursor. Owners:
+[feed](../../../backend/services/feeds/rss-feed-items/cursor.mts),
+[recency](../../../backend/services/rss-feed-items/search-cursor.mts), and
+[semantic](../../../backend/services/rss-feed-items/search-semantic-cursor.mts).
+
 ## Verification
 
 Backend tests cover empty, partial, exact-limit, multi-page, tie-key, malformed-cursor, filter,

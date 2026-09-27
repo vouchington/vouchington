@@ -16,7 +16,7 @@ export const postFeedParser = createPaginationParser({
 })
 
 export const rssFeedItemFeedParser = createPaginationParser({
-  cursor: { type: 'timestamp' as const },
+  cursor: { type: 'precise_timestamp' as const },
   limit: { min: 1, max: 100, default: 25 },
   filters: {
     timeRange: true,
