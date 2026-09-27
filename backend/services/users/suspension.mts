@@ -63,6 +63,7 @@ export async function ensureUserSuspendedInTransaction(
   if (user_gone) throw createHttpError(404, 'User not found')
   if (already_suspended) return { newlySuspended: false }
 
+  // ast-grep-ignore: no-three-sequential-awaits -- suspension, publication invalidation, and moderator audit must commit in order on one transaction client.
   await query(sql`/* ensureUserSuspendedInTransaction:insert */
       INSERT INTO user_suspensions (user_id, suspended_by_id, reason)
       VALUES (${input.userId}, ${input.actorId}, ${input.reason ?? null})
