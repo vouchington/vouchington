@@ -134,6 +134,10 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Public contact address; keep environment-scoped for deployment override.',
   ],
   [
+    'TEST_IMAGE_PLACEMENT_PATH',
+    'Optional image-resize smoke monitor input; operator supplies an existing public canonical placement path for the environment-scoped 200 image response check, not application runtime configuration.',
+  ],
+  [
     'VALKEY_BLOOM_INFLIGHT_REQUESTS_LIMIT',
     'Runtime concurrency tuning for the dedicated bloom client; keep environment-scoped for operator override.',
   ],
