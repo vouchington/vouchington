@@ -116,6 +116,7 @@ export async function runSave(
       date,
       issues,
       prs,
+      repositories: stagedRepositories,
       sessionId: stagedSessionId,
       feedbackMetadata,
     } = parseFrontMatter(markdown)
@@ -157,7 +158,7 @@ export async function runSave(
         sourceEventId,
         timestamp,
         markdown,
-        repositories: parsed.repositories ?? ['vouchington/vouchington'],
+        repositories: stagedRepositories ?? parsed.repositories ?? ['vouchington/vouchington'],
         workOutcome: feedbackMetadata
           ? feedbackMetadata.workOutcome
           : feedbackOutcome(parsed.workOutcome, false),
@@ -170,6 +171,7 @@ export async function runSave(
         prs,
       },
       parsed,
+      stagedRepositories,
     )
     return feedbackResult(
       await writeFeedback({

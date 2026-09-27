@@ -62,6 +62,49 @@ describe('generated retrospective metadata handoff', () => {
     expect(store.records).toHaveLength(1)
   })
 
+  it('normalizes explicit repository flags for a manually staged document without repository metadata', async () => {
+    const { file, directory } = await staged(await composeRetrospective(composition()))
+    const store = feedbackStore()
+    await runSave(
+      [
+        '--file',
+        file,
+        '--mode',
+        'autonomous',
+        ...identity,
+        '--repository',
+        'VOUCHINGTON/VOUCHINGTON-TOOLING',
+        '--repository',
+        'vouchington/vouchington',
+      ],
+      HOSTED_ENV,
+      store.dependencies,
+      directory,
+    )
+    expect(store.records[0]?.data.repositories).toEqual([
+      'vouchington/vouchington',
+      'vouchington/vouchington-tooling',
+    ])
+  })
+
+  it('rejects malformed staged repository attribution before delivery', async () => {
+    const markdown = (await composeRetrospective(composition())).replace(
+      /^---\n/,
+      '---\nrepositories: "vouchington/vouchington"\n',
+    )
+    const { file, directory } = await staged(markdown)
+    const store = feedbackStore()
+    await expect(
+      runSave(
+        ['--file', file, '--mode', 'autonomous', ...identity],
+        HOSTED_ENV,
+        store.dependencies,
+        directory,
+      ),
+    ).rejects.toThrow(/repositories/)
+    expect(store.records).toHaveLength(0)
+  })
+
   it('preserves complete generated coverage from available collectors', async () => {
     const { directory } = await staged('collector workspace')
     const transcript = join(directory, 'transcript.jsonl')

@@ -111,6 +111,64 @@ describe('shared retrospective composition', () => {
     }
   })
 
+  it('preserves canonical multi-repository attribution and rejects conflicting save flags', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'retrospective-composition-'))
+    try {
+      const file = join(directory, 'input.json')
+      const staged = join(directory, 'retrospective.md')
+      await writeFile(
+        file,
+        JSON.stringify({
+          ...input(),
+          repositories: ['Vouchington/Vouchington', 'vouchington/vouchington-tooling'],
+        }),
+      )
+      const markdown = await runCompose(['--input', file], { TMPDIR: directory })
+      expect(markdown).toContain(
+        'repositories: ["vouchington/vouchington","vouchington/vouchington-tooling"]',
+      )
+      await writeFile(staged, markdown)
+      const store = feedbackStore()
+      const saveArgs = [
+        '--mode',
+        'autonomous',
+        '--file',
+        staged,
+        '--session-id',
+        'thread-1',
+        '--agent',
+        'codex',
+      ]
+      await expect(
+        runSave(
+          [...saveArgs, '--repository', 'vouchington/other'],
+          HOSTED_ENV,
+          store.dependencies,
+          directory,
+        ),
+      ).rejects.toThrow(/--repository conflicts/)
+      expect(store.records).toHaveLength(0)
+      await runSave(
+        [
+          ...saveArgs,
+          '--repository',
+          'VOUCHINGTON/VOUCHINGTON-TOOLING',
+          '--repository',
+          'vouchington/vouchington',
+        ],
+        HOSTED_ENV,
+        store.dependencies,
+        directory,
+      )
+      expect(store.records[0]?.data.repositories).toEqual([
+        'vouchington/vouchington',
+        'vouchington/vouchington-tooling',
+      ])
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   it.each([
     { friction: { directory: '/tmp/forged', journalLoader: 'fake' } },
     { journalLoader: 'fake' },
@@ -120,6 +178,8 @@ describe('shared retrospective composition', () => {
     { facts: { ...input().facts, raw: true } },
     { transcript: { ...input().transcript, env: { AGENT_BLACKBOARD_TOKEN: 'fake' } } },
     { transcript: { jsonlPath: '/tmp/forged.jsonl', env: {} } },
+    { transcript: { jsonlPath: '/tmp/foreign.jsonl' } },
+    { transcript: { sessionId: 'thread-1', jsonlPath: '/tmp/foreign.jsonl' } },
   ])('rejects executable or caller-controlled collector options from JSON', async override => {
     const directory = await mkdtemp(join(tmpdir(), 'retrospective-composition-'))
     try {
@@ -154,6 +214,35 @@ describe('shared retrospective composition', () => {
         JSON.stringify({ ...input(), transcript: { sessionId: 'other-session' } }),
       )
       await expect(runCompose(['--input', file])).rejects.toThrow(/sessionId must match/)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('does not read an ambient session transcript for a different composition identity', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'retrospective-composition-'))
+    const ownSession = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    const ambientSession = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    try {
+      const file = join(directory, 'input.json')
+      await writeFile(
+        join(directory, `rollout-2026-09-27-${ambientSession}.jsonl`),
+        `${JSON.stringify({ type: 'event_msg', payload: { type: 'user_message', message: 'FOREIGN_TRANSCRIPT_MARKER' } })}\n`,
+      )
+      await writeFile(
+        file,
+        JSON.stringify({
+          ...input(),
+          sessionId: ownSession,
+          transcript: { codexSessionsDir: directory },
+        }),
+      )
+      const markdown = await runCompose(['--input', file], {
+        TMPDIR: directory,
+        CODEX_THREAD_ID: ambientSession,
+      })
+      expect(markdown).toContain(`no transcript found for session ${ownSession}`)
+      expect(markdown).not.toContain('FOREIGN_TRANSCRIPT_MARKER')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

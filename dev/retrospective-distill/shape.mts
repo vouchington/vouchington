@@ -90,7 +90,11 @@ function isEligible(
   if (shape === 'entry-type-unresolved') return false
   const retroAt = newestRetrospectiveAt(entries)
   const staleRetro = retroAt !== undefined && Date.parse(retroAt) < Date.parse(cutoffs.retroCutoff)
-  const lastActive = session.lastEntryAt ?? session.createdAt
+  const lastActive = entries.reduce(
+    (latest, entry) =>
+      Date.parse(entry.createdAt) > Date.parse(latest) ? entry.createdAt : latest,
+    session.createdAt,
+  )
   const staleSession = Date.parse(lastActive) < Date.parse(cutoffs.sessionCutoff)
   return staleRetro || staleSession
 }

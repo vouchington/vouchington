@@ -70,6 +70,34 @@ describe('classifySession', () => {
     })
   })
 
+  it('ignores a replay timestamp for age but counts a new source event as activity', () => {
+    const session = sessionFixture({ id: 's1', agent: 'codex', version: '1', lastEntryAt: FRESH })
+    const data = createFeedbackEnvelope({
+      schemaVersion: 1,
+      type: 'journal',
+      sourceEventId: 'original-note',
+      timestamp: STALE,
+      markdown: 'one source observation',
+      repositories: ['vouchington/vouchington'],
+      workOutcome: 'in-progress',
+      feedbackCoverage: { status: 'partial', sources: ['journal'], droppedCount: 0 },
+    })
+    const original = entryFixture({ sessionId: 's1', createdAt: STALE, data })
+    const replay = entryFixture({ sessionId: 's1', createdAt: FRESH, data })
+    expect(classifySession(session, [replay, original], CUTOFFS)).toMatchObject({
+      shape: 'journal-only',
+      eligible: true,
+      duplicateEntryCount: 1,
+    })
+    expect(session.lastEntryAt).toBe(FRESH)
+    const newEvent = entryFixture({
+      sessionId: 's1',
+      createdAt: FRESH,
+      data: createFeedbackEnvelope({ ...data, sourceEventId: 'new-note' }),
+    })
+    expect(classifySession(session, [replay, original, newEvent], CUTOFFS).eligible).toBe(false)
+  })
+
   it('classifies a session with a retrospective entry as retrospective', () => {
     const session = sessionFixture({ id: 's1', agent: 'claude', version: '1', lastEntryAt: FRESH })
     const entries = [

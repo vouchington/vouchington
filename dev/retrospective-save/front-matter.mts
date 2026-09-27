@@ -9,6 +9,7 @@ export type FrontMatterFields = {
   date: string
   issues: FeedbackReference[]
   prs: FeedbackReference[]
+  repositories?: unknown
   sessionId?: string
   feedbackMetadata?: { workOutcome: unknown; feedbackCoverage: unknown }
 }
@@ -42,6 +43,7 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     date,
     issues,
     prs,
+    repositories,
     session_id: sessionId,
     work_outcome: workOutcome,
     feedback_coverage: feedbackCoverage,
@@ -80,6 +82,7 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     date,
     issues: references(issues, 'issues'),
     prs: references(prs, 'prs'),
+    ...(repositories === undefined ? {} : { repositories }),
     sessionId: sessionId?.trim(),
     ...(workOutcome === undefined ? {} : { feedbackMetadata: { workOutcome, feedbackCoverage } }),
   }

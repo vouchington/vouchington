@@ -2,6 +2,7 @@ import { isUtf8 } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import {
   composeRetrospective,
+  createFeedbackEnvelope,
   type RetrospectiveCompositionInput,
 } from 'vouchington-tooling/agent-blackboard'
 import type { RetrospectiveFactsOptions } from 'vouchington-tooling/retrospective-facts'
@@ -16,7 +17,7 @@ type Unassessed = { status: 'unavailable' | 'not-assessed'; reason: string }
 type SerializableFacts =
   | Omit<RetrospectiveFactsOptions, 'execute' | 'onWarning' | 'raw'>
   | Unassessed
-type SerializableTranscript = Omit<ResolveOptions, 'env'> | Unassessed
+type SerializableTranscript = Omit<ResolveOptions, 'env' | 'jsonlPath'> | Unassessed
 type SerializableCompositionInput = Omit<
   RetrospectiveCompositionInput,
   'facts' | 'transcript' | 'friction'
@@ -71,7 +72,7 @@ function serializableInput(value: unknown): SerializableCompositionInput {
     'transcript',
     'status' in transcript
       ? ['status', 'reason']
-      : ['sessionId', 'jsonlPath', 'projectsDir', 'codexSessionsDir', 'grokSessionsDir', 'cwd'],
+      : ['sessionId', 'projectsDir', 'codexSessionsDir', 'grokSessionsDir', 'cwd'],
   )
   if (transcript.sessionId !== undefined && transcript.sessionId !== input.sessionId)
     throw new Error('composition transcript sessionId must match composition sessionId')
@@ -93,10 +94,28 @@ export async function runCompose(
   const input = serializableInput(JSON.parse(buffer.toString('utf8')) as unknown)
   const markdown = await composeRetrospective({
     ...input,
+    transcript:
+      'status' in input.transcript
+        ? input.transcript
+        : { ...input.transcript, sessionId: input.sessionId, env },
     friction: frictionReportOptions(env, entriesClient),
   })
-  const validation = validateRetroDoc(markdown)
+  const repositories = createFeedbackEnvelope({
+    schemaVersion: 1,
+    type: 'retrospective',
+    sourceEventId: 'composition-validation',
+    timestamp: `${input.date}T00:00:00.000Z`,
+    repositories: input.repositories,
+    markdown,
+    workOutcome: input.workOutcome,
+    feedbackCoverage: input.feedbackCoverage,
+    date: input.date,
+    issues: input.issues,
+    prs: input.prs,
+  }).repositories
+  const staged = markdown.replace(/^---\n/, `---\nrepositories: ${JSON.stringify(repositories)}\n`)
+  const validation = validateRetroDoc(staged)
   if (!validation.ok)
     throw new Error(`composed retrospective failed validation: ${validation.errors.join('; ')}`)
-  return markdown
+  return staged
 }

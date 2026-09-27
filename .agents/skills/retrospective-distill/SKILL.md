@@ -30,7 +30,7 @@ the tool, stop and report the dependency mismatch rather than falling back to pa
 Never pass `selection.inactiveForHours` to `snapshot_export`: a session with zero entries never
 matches that filter (`lastEntryAt === null`), so filtering server-side would permanently hide the
 feedback gaps in retro-less sessions this workflow exists to sweep up. Always export unfiltered and classify
-age client-side from each record's `createdAt`/`lastEntryAt`.
+effective age from deduplicated entry timestamps, falling back to session `createdAt` when empty.
 Before delegation, the root verifies `manifest.schemaVersion === 1`, `manifest.status === "complete"`,
 that the generated export returned a nonempty `cleanupToken`, and that manifest counts exactly match
 the compact export counts (including the terminal manifest record). It then runs `pnpm exec
@@ -81,7 +81,10 @@ mid-task is a `zero-entry-child` session too, indistinguishable here from one th
 bounded assignment cleanly (see [the `blackboard` skill](../blackboard/SKILL.md)'s child
 `session_ensure` handshake) — do not read `zero-entry-child` as "completed normally". Compute
 `retroAt` as the newest retrospective entry's `createdAt`, and `lastActive` as
-`session.lastEntryAt ?? session.createdAt`. Every shape except entry-type-unresolved is **eligible**
+the newest normalized entry's `createdAt` (falling back to `session.createdAt` when there
+are no entries). An identical replay does not advance effective activity; a new source event does.
+Keep the exported `session.lastEntryAt` unchanged for the archival race check below. Every shape
+except entry-type-unresolved is **eligible**
 when `(has a retrospective AND retroAt < retroCutoff) OR (lastActive < sessionCutoff)` — eligible on
 session age alone covers a checkpoint-only, journal-only, or zero-entry session that has simply gone
 stale, which is the case a retro-only gate used to leave stuck forever. Everything else is **not yet

@@ -123,8 +123,10 @@ archival — for the run. See
 redaction, and archival-carve-out rules. The export always stays unfiltered — `snapshot_export`'s
 `selection.inactiveForHours` never matches
 a zero-entry session, so passing it would hide exactly the aborted sessions this age rule exists to
-sweep up — and age is classified client-side from each record's `createdAt`/`lastEntryAt`. The root
-agent first checks the returned terminal manifest, compact counts, and generated-export cleanup token,
+sweep up — and effective activity is classified client-side from normalized entry `createdAt`
+values, falling back to session `createdAt` when empty. The exported `lastEntryAt` remains the
+archival race guard. The root agent first checks the returned terminal manifest, compact counts,
+and generated-export cleanup token,
 then partitions the returned local JSONL snapshot with `pnpm exec agent-blackboard snapshot partition
 --path <path> --cleanup-token <cleanupToken> --checksum <sha256> --sessions <count> --entries <count>
 --records <count> --bytes <count>` before it delegates read-only
@@ -244,10 +246,9 @@ session already created with the wrong agent stays mismatched until a new sessio
 
 These checkpoints are deliberately **fail-open**: `dev/journal-checkpoint/append.mts` swallows every
 failure (missing credential, network error, sandboxed run, stale session) and never surfaces as hook
-noise, a blocked tool call, or a nonzero exit — the opposite of the
-[Stop-work gate](#stop-work-gate) below and of `dev/blackboard-journal.mts`'s agent-initiated
-`append`, which preserves interactive outage feedback in its bounded outbox and exposes pending
-delivery. A
+noise, a blocked tool call, or a nonzero exit. An agent-initiated
+`dev/blackboard-journal.mts append` instead preserves interactive outage feedback in its bounded
+outbox and exposes pending delivery. A
 silently-skipped checkpoint is not a bug to chase; it means a credential, network, or session
 precondition wasn't met for that one hook invocation. See
 [reference-agent-session-hooks.md](../../dev/reference-agent-session-hooks.md) for the hook wiring
@@ -255,15 +256,15 @@ and [reference-command-catalog.md](../../dev/reference-command-catalog.md) for t
 Automatic checkpoints are a safety net, not a substitute for an agent writing its own thoughtful
 journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md).
 
-## Stop-work gate
+## Advisory availability probe
 
 `dev/check-blackboard.mts` without runner arguments is an advisory SessionStart availability probe.
 It uses bounded `sessions.list({ limit: 1 })`; emitting context cannot mechanically stop an agent.
 A sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
-credential and egress are deliberately withheld. `CHECK_BLACKBOARD_SKIP=1` skips only this advisory
-probe and never bypasses autonomous admission.
-Claude's [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list) explains why
-the token is absent in a sandboxed probe. That diagnostic does not discard interactive pending
+credential and egress are deliberately withheld by Claude's
+[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
+`CHECK_BLACKBOARD_SKIP=1` skips only this advisory probe and never bypasses autonomous admission.
+That diagnostic does not discard interactive pending
 feedback or authorize autonomous work; the trusted controller must still verify delivery.
 
 ## Autonomous admission and terminal feedback
@@ -292,10 +293,14 @@ The shared retrospective composer emits validated `work_outcome` and `feedback_c
 matter. `dev/retrospective-save.mts save --mode interactive|autonomous --file <path>` preserves
 these fields in the stored envelope and rejects contradictory explicit metadata flags. Delivery
 mode remains a required trusted CLI option. See the [save contract](../../.agents/skills/retrospective/saving.md)
-for staging and replay recipes, including files prepared without generated metadata.
+for staging and replay recipes, including manually prepared files. The Vouchington composer
+also stages canonical `repositories`; save preserves the list and rejects conflicting
+`--repository` flags. Manually staged files without repository metadata use explicit flags or
+the current default.
 The `compose --input <json-file>` adapter accepts serializable facts and transcript options, then
 constructs its own friction collector from the same session's local log and hosted journal. Caller
-JSON cannot supply a collector, credential environment, or executable callback.
+JSON cannot supply a collector, credential environment, executable callback, or direct transcript
+path; discovery is bound to the composition session ID.
 
 The supported journal and retrospective writers take explicit `--mode interactive|autonomous`.
 Interactive delivery failures preserve the shared writer's sanitized feedback record in a bounded,
@@ -313,8 +318,8 @@ attribution, transport, and acknowledgment; repository adapters do not duplicate
 
 An availability or delivery diagnostic can mean the hosted connection failed: `AGENT_BLACKBOARD_URL`/
 `AGENT_BLACKBOARD_TOKEN` is missing or stale, or the deployment is unreachable even with valid
-credentials. An append/save hard-fail (see [Stop-work gate](#stop-work-gate) above) can point to
-the same cause, but not always — these commands also hard-fail for invalid UTF-8, retrospective
+credentials. An append/save hard-fail (see [Interactive pending delivery](#interactive-pending-delivery)
+above) can point to the same cause, but not always — these commands also hard-fail for invalid UTF-8, retrospective
 validation errors, missing session metadata, network failures, HTTP 500 responses, and failed
 read-back verification, none of which involve the credential. Read the printed error before
 acting: only when it actually identifies a missing/stale token, an authentication failure, or an
