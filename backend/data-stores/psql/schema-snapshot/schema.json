@@ -13544,26 +13544,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "idx_community_application_questions__community_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_application_questions__community_id ON public.community_application_questions USING btree (community_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
         }
       },
       "partition": null,
@@ -13848,26 +13828,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_community_applications__community_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_applications__community_id ON public.community_applications USING btree (community_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_community_applications__created_via_oauth_client_id": {

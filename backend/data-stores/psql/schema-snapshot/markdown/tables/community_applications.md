@@ -49,7 +49,6 @@ Not partitioned — growth: unbounded.
 - `community_applications_identity_key`: `CREATE UNIQUE INDEX community_applications_identity_key ON public.community_applications USING btree (community_id, id)`
 - `community_applications_pkey`: `CREATE UNIQUE INDEX community_applications_pkey ON public.community_applications USING btree (id)`
 - `idx_comm_apps__pending`: `CREATE UNIQUE INDEX idx_comm_apps__pending ON public.community_applications USING btree (community_id, user_id) WHERE ((approved_at IS NULL) AND (rejected_at IS NULL))`
-- `idx_community_applications__community_id`: `CREATE INDEX idx_community_applications__community_id ON public.community_applications USING btree (community_id)`
 - `idx_community_applications__created_via_oauth_client_id`: `CREATE INDEX idx_community_applications__created_via_oauth_client_id ON public.community_applications USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_community_applications__user_id`: `CREATE INDEX idx_community_applications__user_id ON public.community_applications USING btree (user_id)`
 
