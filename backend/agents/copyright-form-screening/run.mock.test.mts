@@ -16,6 +16,16 @@ vi.mock(import('@modules/openai-utils/create-response'), async importOriginal =>
   createOpenAIResponse: vi.fn<typeof openaiProvider.createOpenAIResponse>(),
 }))
 
+vi.mock(import('@jongleberry/vurst-prompt'), async importOriginal => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    sanitizePromptInjection: vi.fn<typeof actual.sanitizePromptInjection>(
+      actual.sanitizePromptInjection,
+    ),
+  }
+})
+
 describe('copyright form screening output', () => {
   afterEach(() => vi.restoreAllMocks())
   it('accepts the not-obviously-invalid anti-spam recommendation', () => {

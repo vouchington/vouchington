@@ -6,17 +6,31 @@ import {
 } from '../../index.mts'
 import { createCopyrightFormIntake } from '../../../services/copyright-notices/form-intakes.mts'
 import { appendCopyrightFormScreening } from '../../../services/copyright-notices/form-screenings.mts'
+import { listCopyrightStaffQueue } from '../../../services/copyright-notices/read-models-staff.mts'
+
+export async function isTestCopyrightStaffCaseQueued(
+  noticeId: string,
+  currentUser: Parameters<typeof listCopyrightStaffQueue>[0],
+): Promise<boolean> {
+  let after: { timestamp: string; id: string } | undefined
+  for (;;) {
+    const page = await listCopyrightStaffQueue(currentUser, { limit: 100, after })
+    if (page.cases.some(item => item.id === noticeId)) return true
+    if (!page.hasNextPage || !page.endCursor) return false
+    after = page.endCursor
+  }
+}
 
 export async function createClearScreenedForm(targetCount = 1) {
-  const claimant = await createTestUser()
+  const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
   const postId = await insertTestPost({
     title: `copyright screen recovery ${crypto.randomUUID()}`,
     slug: `copyright-screen-recovery-${crypto.randomUUID()}`,
-    createdById: claimant.id,
+    createdById: poster.id,
     markdown: 'image',
   })
   const imageIds = await Promise.all(
-    Array.from({ length: targetCount }, () => insertTestImage(claimant.id)),
+    Array.from({ length: targetCount }, () => insertTestImage(poster.id)),
   )
   await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
   const notice = await createCopyrightFormIntake({

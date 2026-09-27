@@ -12,7 +12,10 @@ import {
   admitTestCopyrightBeforeScreening,
 } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
-import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import {
+  createClearScreenedForm,
+  isTestCopyrightStaffCaseQueued,
+} from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import {
   acceptCopyrightNoticeAndImposeRestriction,
   appendCopyrightSubmissionAssessment,
@@ -30,7 +33,6 @@ import {
 } from './form-screening-executions.mts'
 import { claimCopyrightEnforcementRequest } from './enforcement-request-claim.mts'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
-import { listCopyrightStaffQueue } from './read-models-staff.mts'
 
 describe('current copyright form screening execution', () => {
   it('commits admission ahead of a waiting new screen and retains its action intent', async () => {
@@ -78,8 +80,12 @@ describe('current copyright form screening execution', () => {
       promptVersion: 'copyright-form-screening-v3',
       model: 'test-model',
     })
-    const queue = await listCopyrightStaffQueue({ ...user, roles: ['moderator'] }, { limit: 100 })
-    expect(queue.cases.map(item => item.id)).toContain(notice.intake.copyright_notice_id)
+    await expect(
+      isTestCopyrightStaffCaseQueued(notice.intake.copyright_notice_id, {
+        ...user,
+        roles: ['moderator'],
+      }),
+    ).resolves.toBe(true)
   })
   it('blocks stale clear authority on new pending and failed screening while exposing current state', async () => {
     const { notice, screeningId } = await createClearScreenedForm()
