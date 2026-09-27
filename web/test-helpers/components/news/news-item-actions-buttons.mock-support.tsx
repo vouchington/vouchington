@@ -1,14 +1,12 @@
-import { mockLucideReact } from '@/test-helpers/lucide-icons'
-import { describe, expect, it, vi } from 'vitest'
-
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
-import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
-
-import { render, screen } from '@testing-library/react'
-
+/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
-
+import { vi } from 'vitest'
+import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
+import { mockLucideReact } from '@/test-helpers/lucide-icons'
+import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import type { RssFeedItem } from '@/types/rss-feed-items'
+// Imported after the mock helpers above so the lucide mock factory can reference them.
+import { Button } from '@/components/ui/button'
 
 vi.mock(
   import('next/navigation'),
@@ -27,8 +25,6 @@ vi.mock(
 const mockNav = createNavMock()
 
 mockNav.setPathname('/news')
-
-const leadingAction = <span data-testid='leading'>Show more</span>
 
 interface ToggleMockProps {
   active?: boolean
@@ -57,17 +53,17 @@ vi.mock(import('@/components/news/news-discuss-menu'), () => ({
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
-    <button
+    <Button
       data-testid='hide-button'
       data-active={active ?? initialActive}
       type='button'
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
     >
       {(active ?? initialActive) ? 'Unhide' : 'Hide'}
-    </button>
+    </Button>
   ),
   HideMenuItem: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
-    <button
+    <Button
       type='button'
       aria-label='Toggle hide menu item'
       data-testid='hide-menu-item'
@@ -79,17 +75,17 @@ vi.mock(import('@/components/shared/hide-button'), () => ({
 
 vi.mock(import('@/components/shared/save-button'), () => ({
   SaveButton: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
-    <button
+    <Button
       data-testid='save-button'
       data-active={active ?? initialActive}
       type='button'
       onClick={() => onActiveChange?.(!(active ?? initialActive))}
     >
       {(active ?? initialActive) ? 'Saved' : 'Save'}
-    </button>
+    </Button>
   ),
   SaveMenuItem: ({ active, initialActive, onActiveChange }: ToggleMockProps) => (
-    <button
+    <Button
       type='button'
       aria-label='Toggle save menu item'
       data-testid='save-menu-item'
@@ -135,7 +131,7 @@ vi.mock(import('@/components/shared/follower-share-actions'), () => ({
     className,
   }: FollowerShareActionsMockProps) => (
     <div className={className}>
-      <button
+      <Button
         type='button'
         aria-label='More actions'
         data-pw={dataPw ?? 'follower-share-more-actions-button'}
@@ -161,9 +157,9 @@ vi.mock(
     }) as unknown as typeof import('@/components/feed/manage-categories-menu-item'),
 )
 
-import { NewsItemActions } from '../news-item-actions'
+export { mockAuthState }
 
-const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
+export const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
   id: 'item-1',
   data: { link: 'https://example.com', guid: 'g1', title: 'Article' },
   url: { id: 'url-1', url: 'https://example.com' },
@@ -172,70 +168,4 @@ const MOCK_ITEM: RssFeedItem = makeRssFeedItem({
     title: 'Tech Feed',
     topic: makeRssFeedItemTopic({ id: 'topic-1' }),
   },
-})
-
-describe('NewsItemActions hide/save buttons and leading/trailing actions', () => {
-  it('renders SaveButton when logged in', () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        relatedPosts={[]}
-      />,
-    )
-
-    expect(screen.getByTestId('save-button')).toBeDefined()
-  })
-
-  it('does NOT render SaveButton when not logged in', () => {
-    mockAuthState.isAuthenticated = false
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        relatedPosts={[]}
-      />,
-    )
-
-    expect(screen.queryByTestId('save-button')).toBeNull()
-    mockAuthState.isAuthenticated = true
-  })
-
-  it('passes initialActive=true to SaveButton when viewerBookmarks.save is true', () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        relatedPosts={[]}
-        viewerBookmarks={{ save: true }}
-      />,
-    )
-
-    const saveButton = screen.getByTestId('save-button')
-    expect(saveButton.getAttribute('data-active')).toBe('true')
-  })
-
-  it('passes initialActive=false to SaveButton when viewerBookmarks.save is false', () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        relatedPosts={[]}
-        viewerBookmarks={{ save: false }}
-      />,
-    )
-
-    const saveButton = screen.getByTestId('save-button')
-    expect(saveButton.getAttribute('data-active')).toBe('false')
-  })
-
-  it('renders leadingAction before other actions', () => {
-    render(
-      <NewsItemActions
-        item={MOCK_ITEM}
-        relatedPosts={[]}
-        leadingAction={leadingAction}
-      />,
-    )
-
-    const leading = screen.getByTestId('leading')
-    expect(leading).toBeDefined()
-    expect(leading.textContent).toBe('Show more')
-  })
 })
