@@ -21,7 +21,9 @@ and `## Impact`.
 Prose, lists, and populated tables count; comments, code examples, images, summary labels, and
 collapsed-only content do not. Headings inside `<details>` do not create or terminate visible
 sections, and malformed details containers fail validation. Existing issue-reference and provenance
-rules still apply. Updates preserve the canonical Shepherd Journal exactly.
+rules still apply. Closing and non-closing references and the scheduled/Fix Main exceptions use
+the same Related issues section boundaries; supporting headings cannot truncate any of those paths.
+Updates preserve the canonical Shepherd Journal exactly.
 
 The helper enforces structure, not the truth of impact claims or the usefulness of diagrams.
 Follow the [PR-description skill](../.agents/skills/pr-description/SKILL.md) for before/after,

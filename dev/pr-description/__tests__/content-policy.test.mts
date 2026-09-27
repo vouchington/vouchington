@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { VALID_PR_BODY } from '../../test-helpers/pr-description/valid-pr-body.mts'
+import {
+  VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY,
+  VALID_PR_BODY,
+} from '../../test-helpers/pr-description/valid-pr-body.mts'
+import { extractFixMainInterimClassifierRootCauseRef } from '../scheduled-no-source.mts'
 import { validatePrBody } from '../validate.mts'
 
 function withCore(core: string): string {
@@ -70,6 +74,26 @@ This supplemental heading must not count as another core section.
       '<details>\n<summary>Context</summary>\n\n## Background\n\nDesign context.\n\n</details>\n\nCloses #123',
     )
     expect(validatePrBody(body).ok).toBe(true)
+  })
+
+  it('accepts the scheduled representation after collapsed supporting headings', () => {
+    const body = VALID_PR_BODY.replace(
+      'Closes #123',
+      '<details>\n<summary>Context</summary>\n\n## Background\n\nSupporting context.\n\n</details>\n\nNo source issue; scheduled prompt run.\n<!-- related-issues-validation: no-source-scheduled-prompt -->',
+    ).replace(
+      'Workspace setup: ./dev/initialize monorepo',
+      'Workspace setup: Auto Harness scheduled prompt',
+    )
+    expect(validatePrBody(body).ok).toBe(true)
+  })
+
+  it('accepts and resolves the Fix Main representation after collapsed supporting headings', () => {
+    const body = VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY.replace(
+      'Refs #456',
+      '<details>\n<summary>Context</summary>\n\n## Background\n\nSupporting context.\n\n</details>\n\nRefs #456',
+    )
+    expect(validatePrBody(body).ok).toBe(true)
+    expect(extractFixMainInterimClassifierRootCauseRef(body)?.number).toBe(456)
   })
 
   it('retains case-insensitive Related issues headings', () => {

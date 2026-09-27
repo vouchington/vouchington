@@ -1,17 +1,8 @@
 import { formatReferenceKey } from './closing-refs.mts'
+import { extractRelatedIssuesReferenceText } from './content-policy.mts'
 
 const NON_CLOSING_REF_RE =
   /\b(?:refs?|part\s+of):?[ \t]+(?:(?<ownerRepo>[\w.-]+\/[\w.-]+))?#(?<number>\d+)\b/gi
-const RELATED_ISSUES_RE = /^##\s+Related\s+issues\s*$/im
-
-// Duplicated from validate.mts rather than imported: a shared module for one 3-line helper would
-// trigger require-test-per-subdir for no real reuse, and importing validate.mts here risks reading
-// as a coupling this module doesn't have.
-/** Split body by top-level headings and return the Related issues section content. */
-function extractRelatedIssuesSection(body: string): string {
-  const sections = body.split(/^(?=##\s)/m)
-  return sections.find(s => RELATED_ISSUES_RE.test(s.split('\n')[0])) ?? ''
-}
 
 /**
  * Only a "## Related issues" disposition counts — an incidental `Refs #N` in a fenced example or
@@ -22,7 +13,7 @@ function extractRelatedIssuesSection(body: string): string {
  */
 export function parseNonClosingRefs(body: string): Set<string> {
   const keys = new Set<string>()
-  for (const match of extractRelatedIssuesSection(body).matchAll(NON_CLOSING_REF_RE)) {
+  for (const match of extractRelatedIssuesReferenceText(body).matchAll(NON_CLOSING_REF_RE)) {
     const number = Number(match.groups?.number)
     if (!Number.isSafeInteger(number)) continue
     const ownerRepo = match.groups?.ownerRepo?.toLowerCase()
