@@ -786,6 +786,9 @@
     "fn_protect_moderator_action_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_moderator_action_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.action_type IS DISTINCT FROM NEW.action_type THEN\n    RAISE EXCEPTION 'moderator action type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_protect_post_classifier_application": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_classifier_application()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.id IS DISTINCT FROM NEW.id\n    OR OLD.input_sha256 IS DISTINCT FROM NEW.input_sha256\n    OR OLD.configuration_json::text IS DISTINCT FROM NEW.configuration_json::text\n    OR OLD.configuration_sha256 IS DISTINCT FROM NEW.configuration_sha256\n    OR OLD.shared_actor_id IS DISTINCT FROM NEW.shared_actor_id\n    OR OLD.community_identity_id IS DISTINCT FROM NEW.community_identity_id\n    OR OLD.detector_package_version IS DISTINCT FROM NEW.detector_package_version\n    OR OLD.local_topic_id IS DISTINCT FROM NEW.local_topic_id\n    OR OLD.decision_batch_id IS DISTINCT FROM NEW.decision_batch_id THEN\n    RAISE EXCEPTION 'post classifier application identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF ((OLD.local_flagged IS NOT NULL OR OLD.outcomes_persisted_at IS NOT NULL) AND (\n      ROW(OLD.local_flagged, OLD.local_reason, OLD.local_confidence_score,\n        OLD.local_confidence_threshold, OLD.local_classification, OLD.local_detector,\n        OLD.local_detector_model_version)\n      IS DISTINCT FROM\n      ROW(NEW.local_flagged, NEW.local_reason, NEW.local_confidence_score,\n        NEW.local_confidence_threshold, NEW.local_classification, NEW.local_detector,\n        NEW.local_detector_model_version)\n    ))\n    OR OLD.provider_attempts_started > NEW.provider_attempts_started\n    OR (OLD.terminal_remote_failed_at IS NOT NULL AND (\n      OLD.terminal_remote_failed_at IS DISTINCT FROM NEW.terminal_remote_failed_at\n      OR OLD.terminal_remote_failure_kind IS DISTINCT FROM NEW.terminal_remote_failure_kind\n    ))\n    OR (OLD.superseded_at IS NOT NULL AND NEW.superseded_at IS NOT NULL\n      AND OLD.superseded_at IS DISTINCT FROM NEW.superseded_at) THEN\n    RAISE EXCEPTION 'post classifier application outcome is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF (OLD.outcomes_persisted_at IS NOT NULL\n      AND OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at)\n    OR (OLD.votes_applied_at IS NOT NULL\n      AND OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at)\n    OR (OLD.tags_applied_at IS NOT NULL\n      AND OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at)\n    OR (OLD.completed_at IS NOT NULL\n      AND OLD.completed_at IS DISTINCT FROM NEW.completed_at)\n    OR (OLD.superseded_at IS NOT NULL AND (\n      OLD.outcomes_persisted_at IS DISTINCT FROM NEW.outcomes_persisted_at\n      OR OLD.votes_applied_at IS DISTINCT FROM NEW.votes_applied_at\n      OR OLD.tags_applied_at IS DISTINCT FROM NEW.tags_applied_at\n      OR OLD.completed_at IS DISTINCT FROM NEW.completed_at\n    )) THEN\n    RAISE EXCEPTION 'post classifier application phase is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_protect_post_clearance_change_type": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_protect_post_clearance_change_type()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.change_type IS DISTINCT FROM NEW.change_type THEN\n    RAISE EXCEPTION 'post clearance change type is immutable';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -882,6 +885,9 @@
     "fn_require_classifier_candidate_threshold_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_candidate_threshold_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id\n    OR NEW.lower_threshold_override IS DISTINCT FROM OLD.lower_threshold_override\n    OR NEW.upper_threshold_override IS DISTINCT FROM OLD.upper_threshold_override\n    OR NEW.activated_at IS DISTINCT FROM OLD.activated_at\n    OR (\n      NEW.created_by_id IS DISTINCT FROM OLD.created_by_id\n      AND NOT (\n        NEW.created_by_id IS NULL\n        AND fn_classifier_audit_actor_was_deleted(OLD.created_by_id)\n      )\n    )\n    OR NOT (\n      NEW.deactivated_at IS NOT DISTINCT FROM OLD.deactivated_at\n      OR (OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL)\n    )\n    OR (\n      NEW.deactivated_by_id IS DISTINCT FROM OLD.deactivated_by_id\n      AND NOT (\n        OLD.deactivated_at IS NULL AND NEW.deactivated_at IS NOT NULL\n        OR (\n          NEW.deactivated_by_id IS NULL\n          AND fn_classifier_audit_actor_was_deleted(OLD.deactivated_by_id)\n        )\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate threshold revision is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_require_classifier_decision_batch_completion": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_decision_batch_completion()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.completed_at IS NOT NULL\n    OR NEW.completed_at IS NULL\n    OR NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.classifier_id IS DISTINCT FROM OLD.classifier_id\n    OR NEW.prompt_version_id IS DISTINCT FROM OLD.prompt_version_id\n    OR NEW.post_id IS DISTINCT FROM OLD.post_id\n    OR NEW.rss_feed_item_id IS DISTINCT FROM OLD.rss_feed_item_id\n    OR NEW.scope_category IS DISTINCT FROM OLD.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM OLD.scope_community_id\n    OR NEW.created_at IS DISTINCT FROM OLD.created_at\n    OR NEW.updated_at IS DISTINCT FROM OLD.updated_at\n    OR NEW.completed_at < OLD.created_at THEN\n    RAISE EXCEPTION 'classifier decision batches are immutable except for completion' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_require_classifier_result_batch_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_require_classifier_result_batch_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  batch_candidate classifier_decision_batch_candidates%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates WHERE id = NEW.candidate_id FOR SHARE;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  IF NEW.candidate_id IS NOT NULL THEN\n    SELECT * INTO batch_candidate FROM classifier_decision_batch_candidates\n    WHERE batch_id = NEW.batch_id AND candidate_id = NEW.candidate_id\n    FOR SHARE;\n  END IF;\n  IF NEW.scope_category IS DISTINCT FROM batch.scope_category\n    OR NEW.scope_community_id IS DISTINCT FROM batch.scope_community_id THEN\n    RAISE EXCEPTION 'classifier result scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its owning community' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.candidate_id IS NOT NULL AND batch_candidate.batch_id IS NULL THEN\n    RETURN NEW;\n  END IF;\n  effective_lower := COALESCE(\n    batch_candidate.effective_lower_threshold,\n    prompt.default_lower_threshold\n  );\n  effective_upper := COALESCE(\n    batch_candidate.effective_upper_threshold,\n    prompt.default_upper_threshold\n  );\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier result thresholds must match prompt and candidate configuration' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.threshold_id IS DISTINCT FROM batch_candidate.threshold_id THEN\n    RAISE EXCEPTION 'classifier result threshold revision must match its batch candidate snapshot' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
@@ -932,6 +938,9 @@
     },
     "fn_stamp_moderator_action_transparency_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_moderator_action_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.moderation_transparency_community_id := NEW.community_id;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_stamp_post_classifier_application_scope": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_post_classifier_application_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  SELECT community_id INTO NEW.community_identity_id FROM posts\n  WHERE id = NEW.post_id FOR KEY SHARE;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_sync_ap_post_likes": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_ap_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO ap_posts (post_id, ap_likes_score, ap_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    ap_likes_score = GREATEST(ap_posts.ap_likes_score + v_delta, 0),\n    ap_likes_count = GREATEST(ap_posts.ap_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -9534,6 +9543,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "completed_at": {
+          "collation": null,
+          "comment": "Completion marker set only after every call and result for this batch is durable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -9542,7 +9562,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -9619,7 +9639,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         }
       },
@@ -9839,6 +9859,33 @@
           "unique": true,
           "valid": true
         },
+        "uq_classifier_decision_batches__id__post": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batches__id__post ON public.classifier_decision_batches USING btree (id, post_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "uq_classifier_decision_batches__id__prompt": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -9909,12 +9956,17 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_classifier_decision_batches_append_only": "CREATE TRIGGER trigger_classifier_decision_batches_append_only BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_append_only_update()"
+        "trigger_classifier_decision_batches_completion": "CREATE TRIGGER trigger_classifier_decision_batches_completion BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_require_classifier_decision_batch_completion()",
+        "trigger_classifier_decision_batches_updated_at": "CREATE TRIGGER trigger_classifier_decision_batches_updated_at BEFORE UPDATE ON public.classifier_decision_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
         "uq_classifier_decision_batches__id__classifier": {
           "columns": ["id", "classifier_id"],
           "definition": "UNIQUE (id, classifier_id)"
+        },
+        "uq_classifier_decision_batches__id__post": {
+          "columns": ["id", "post_id"],
+          "definition": "UNIQUE (id, post_id)"
         },
         "uq_classifier_decision_batches__id__prompt": {
           "columns": ["id", "prompt_version_id"],
@@ -59349,6 +59401,714 @@
         "post_category_finalizations_repair_admission_response_on_delete": "CREATE TRIGGER post_category_finalizations_repair_admission_response_on_delete BEFORE DELETE ON public.post_category_finalizations FOR EACH ROW EXECUTE FUNCTION repair_post_category_finalization_admission_response_on_delete()"
       },
       "uniqueConstraints": {}
+    },
+    "post_classifier_applications": {
+      "checkConstraints": {
+        "chk_post_classifier_applications__configured_work": "CHECK (((local_topic_id IS NOT NULL) OR (decision_batch_id IS NOT NULL)))",
+        "chk_post_classifier_applications__lease": "CHECK ((((lease_token IS NULL) = (leased_at IS NULL)) AND ((lease_token IS NULL) = (lease_expires_at IS NULL)) AND ((leased_at IS NULL) OR (lease_expires_at > leased_at)) AND ((completed_at IS NULL) OR (lease_token IS NULL))))",
+        "chk_post_classifier_applications__local_outcome": "CHECK (((num_nonnulls(local_flagged, local_reason, local_confidence_score, local_confidence_threshold, local_classification, local_detector, local_detector_model_version) = ANY (ARRAY[0, 7])) AND ((local_confidence_score IS NULL) OR ((local_confidence_score >= (0)::double precision) AND (local_confidence_score <= (1)::double precision))) AND ((local_confidence_threshold IS NULL) OR ((local_confidence_threshold >= (0)::double precision) AND (local_confidence_threshold <= (1)::double precision)))))",
+        "chk_post_classifier_applications__phases": "CHECK ((((votes_applied_at IS NULL) OR ((outcomes_persisted_at IS NOT NULL) AND (outcomes_persisted_at <= votes_applied_at))) AND ((tags_applied_at IS NULL) OR ((votes_applied_at IS NOT NULL) AND (votes_applied_at <= tags_applied_at))) AND ((completed_at IS NULL) OR ((tags_applied_at IS NOT NULL) AND (tags_applied_at <= completed_at))) AND ((outcomes_persisted_at IS NULL) OR ((decision_batch_id IS NOT NULL) OR (local_flagged IS NOT NULL)))))",
+        "chk_post_classifier_applications__remote_failure": "CHECK ((((terminal_remote_failure_kind IS NULL) = (terminal_remote_failed_at IS NULL)) AND ((terminal_remote_failed_at IS NULL) OR ((decision_batch_id IS NOT NULL) AND (outcomes_persisted_at IS NULL)))))",
+        "chk_post_classifier_applications__superseded_lease": "CHECK (((superseded_at IS NULL) OR (lease_token IS NULL)))",
+        "post_classifier_applications_check": "CHECK (((octet_length(configuration_sha256) = 32) AND (configuration_sha256 = digest((configuration_json)::text, 'sha256'::text))))",
+        "post_classifier_applications_configuration_json_check": "CHECK ((json_typeof(configuration_json) = 'object'::text))",
+        "post_classifier_applications_detector_package_version_check": "CHECK ((btrim(detector_package_version) <> ''::text))",
+        "post_classifier_applications_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))",
+        "post_classifier_applications_local_classification_check": "CHECK ((local_classification = ANY (ARRAY['ai'::text, 'human'::text])))",
+        "post_classifier_applications_provider_attempts_started_check": "CHECK ((provider_attempts_started >= 0))",
+        "post_classifier_applications_terminal_remote_failure_kind_check": "CHECK ((terminal_remote_failure_kind = ANY (ARRAY['provider-error'::text, 'invalid-result'::text, 'context-rejected'::text, 'attempts-exhausted'::text])))"
+      },
+      "columns": {
+        "community_identity_id": {
+          "collation": null,
+          "comment": "Concrete retained community provenance identity; its live community link may be cleared on deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "completed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 27,
+          "type": "timestamp with time zone"
+        },
+        "configuration_json": {
+          "collation": null,
+          "comment": "Exact canonical ordered replay envelope; relational facts are materialized in sibling typed columns.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "json"
+        },
+        "configuration_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "bytea"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 29,
+          "type": "timestamp with time zone"
+        },
+        "decision_batch_id": {
+          "collation": null,
+          "comment": "Concrete same-post C3 batch reserved before provider execution; NULL for local-only work.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "uuid"
+        },
+        "detector_package_version": {
+          "collation": null,
+          "comment": "Installed local detector package version pinned for exact replay.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "input_sha256": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "bytea"
+        },
+        "lease_expires_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 23,
+          "type": "timestamp with time zone"
+        },
+        "lease_token": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "uuid"
+        },
+        "leased_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        },
+        "local_classification": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
+          "type": "text"
+        },
+        "local_confidence_score": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "double precision"
+        },
+        "local_confidence_threshold": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "double precision"
+        },
+        "local_detector": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "text"
+        },
+        "local_detector_model_version": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "text"
+        },
+        "local_flagged": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "boolean"
+        },
+        "local_reason": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
+        "local_topic_id": {
+          "collation": null,
+          "comment": "Concrete local detector topic relationship when the local classifier is configured.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        },
+        "outcomes_persisted_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 24,
+          "type": "timestamp with time zone"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "provider_attempts_started": {
+          "collation": null,
+          "comment": "Physical provider calls started under lease; effect-only retries and committed-result replay do not increment it.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "integer"
+        },
+        "shared_actor_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "superseded_at": {
+          "collation": null,
+          "comment": "Current obsolete-receipt marker; cleared when the exact approved content/configuration identity becomes current again. Outcomes and attempt budget remain immutable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 28,
+          "type": "timestamp with time zone"
+        },
+        "tags_applied_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 26,
+          "type": "timestamp with time zone"
+        },
+        "terminal_remote_failed_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
+        "terminal_remote_failure_kind": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 30,
+          "type": "timestamp with time zone"
+        },
+        "votes_applied_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 25,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One post/content/configuration fixed-classifier application; C3 and C4 retain remote results and votes.",
+      "foreignKeys": {
+        "fk_post_classifier_applications__batch_post": {
+          "columns": ["decision_batch_id", "post_id"],
+          "definition": "FOREIGN KEY (decision_batch_id, post_id) REFERENCES classifier_decision_batches(id, post_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "post_id"],
+          "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "post_classifier_applications_community_identity_id_fkey": {
+          "columns": ["community_identity_id"],
+          "definition": "FOREIGN KEY (community_identity_id) REFERENCES post_publication_community_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_community_identities",
+          "validated": true
+        },
+        "post_classifier_applications_local_topic_id_fkey": {
+          "columns": ["local_topic_id"],
+          "definition": "FOREIGN KEY (local_topic_id) REFERENCES topics(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "post_classifier_applications_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "post_classifier_applications_shared_actor_id_fkey": {
+          "columns": ["shared_actor_id"],
+          "definition": "FOREIGN KEY (shared_actor_id) REFERENCES users(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_post_classifier_applications__community_identity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__community_identity ON ONLY public.post_classifier_applications USING btree (community_identity_id, post_id) WHERE (community_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_identity_id",
+              "descending": false,
+              "expression": "community_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(community_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_classifier_applications__decision_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__decision_batch ON ONLY public.post_classifier_applications USING btree (decision_batch_id, post_id) WHERE (decision_batch_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_batch_id",
+              "descending": false,
+              "expression": "decision_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(decision_batch_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_classifier_applications__incomplete": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__incomplete ON ONLY public.post_classifier_applications USING btree (post_id, id) WHERE (completed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_classifier_applications__lease": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__lease ON ONLY public.post_classifier_applications USING btree (lease_expires_at, post_id, id) WHERE ((lease_token IS NOT NULL) AND (completed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((lease_token IS NOT NULL) AND (completed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_classifier_applications__local_topic": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__local_topic ON ONLY public.post_classifier_applications USING btree (local_topic_id, post_id) WHERE (local_topic_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "local_topic_id",
+              "descending": false,
+              "expression": "local_topic_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(local_topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_classifier_applications__recoverable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__recoverable ON ONLY public.post_classifier_applications USING btree (post_id, id) WHERE ((completed_at IS NULL) AND (superseded_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((completed_at IS NULL) AND (superseded_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_classifier_applications__shared_actor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_classifier_applications__shared_actor ON ONLY public.post_classifier_applications USING btree (shared_actor_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "shared_actor_id",
+              "descending": false,
+              "expression": "shared_actor_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_post_classifier_applications": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_post_classifier_applications ON ONLY public.post_classifier_applications USING btree (post_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_post_classifier_applications__decision_batch": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_post_classifier_applications__decision_batch ON ONLY public.post_classifier_applications USING btree (post_id, decision_batch_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "decision_batch_id",
+              "descending": false,
+              "expression": "decision_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_post_classifier_applications__input_config": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_post_classifier_applications__input_config ON ONLY public.post_classifier_applications USING btree (post_id, input_sha256, configuration_sha256)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": {
+        "accessClass": "target-scoped",
+        "children": "default",
+        "key": "post_id",
+        "retentionOwner": null,
+        "strategy": "RANGE"
+      },
+      "physicalPartition": {
+        "key": "RANGE (post_id)",
+        "strategy": "range"
+      },
+      "primaryKey": {
+        "columns": ["post_id", "id"],
+        "definition": "PRIMARY KEY (post_id, id)"
+      },
+      "relationKind": "partitioned table",
+      "triggers": {
+        "post_classifier_applications_guard": "CREATE TRIGGER post_classifier_applications_guard BEFORE UPDATE ON public.post_classifier_applications FOR EACH ROW EXECUTE FUNCTION fn_protect_post_classifier_application()",
+        "post_classifier_applications_scope_stamp": "CREATE TRIGGER post_classifier_applications_scope_stamp BEFORE INSERT ON public.post_classifier_applications FOR EACH ROW EXECUTE FUNCTION fn_stamp_post_classifier_application_scope()",
+        "post_classifier_applications_updated_at": "CREATE TRIGGER post_classifier_applications_updated_at BEFORE UPDATE ON public.post_classifier_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {
+        "uq_post_classifier_applications__decision_batch": {
+          "columns": ["post_id", "decision_batch_id"],
+          "definition": "UNIQUE (post_id, decision_batch_id)"
+        },
+        "uq_post_classifier_applications__input_config": {
+          "columns": ["post_id", "input_sha256", "configuration_sha256"],
+          "definition": "UNIQUE (post_id, input_sha256, configuration_sha256)"
+        }
+      }
     },
     "post_clearance_changes": {
       "checkConstraints": {
