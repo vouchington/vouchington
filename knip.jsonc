@@ -49,7 +49,7 @@
       // listener worker, so the API package does not have a direct static import for knip to see.
       "ignoreDependencies": [
         "@services/entity-listener-reconciliation",
-        // Foundation API packaged before the dependent worker cutover; no direct route import.
+        // Required packaging edge; classifier execution is consumed by the AI worker, not routes.
         "@services/post-classifier",
       ],
     },
@@ -74,7 +74,7 @@
         "@services/bluesky-follows",
         "@services/entity-listener-reconciliation",
         "@services/entity-relation-actions",
-        // Foundation API packaged before the dependent worker cutover; no direct route import.
+        // Required packaging edge; classifier execution is consumed by the AI worker, not routes.
         "@services/post-classifier",
       ],
     },

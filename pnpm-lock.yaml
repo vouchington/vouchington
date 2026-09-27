@@ -324,9 +324,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools

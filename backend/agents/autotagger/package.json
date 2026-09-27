@@ -35,7 +35,6 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",
-    "@ts-shared/utils": "workspace:^",
     "@voucha/tools": "workspace:^",
     "@voucha/types": "workspace:^"
   },
