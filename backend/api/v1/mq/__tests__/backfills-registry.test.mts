@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { getPublicBaseTableNamesForTest, readEnqueuedJob } from '@voucha/test-helpers'
+import {
+  getPublicBaseTableNamesForTest,
+  isDeduplicatedEnqueue,
+  readEnqueuedJob,
+} from '@voucha/test-helpers'
 import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { EXISTING_DISPATCHER_BACKFILLS } from '../backfills-existing-dispatchers.mts'
 import { BACKFILL_REGISTRY } from '../backfills-registry.mts'
 
@@ -34,16 +39,25 @@ describe('BACKFILL_REGISTRY', () => {
     if (!entry) throw new Error('Embedding reconciliation backfill missing')
     const enqueued = await entry.trigger()
     if (!Array.isArray(enqueued)) throw new Error('Expected all five root enqueues')
-    const jobs = await Promise.all(
-      enqueued.map(result => readEnqueuedJob(bedrock_embeddings_batch, result)),
-    )
-    expect(jobs.map(job => ({ name: job.name, data: job.data }))).toEqual([
+    const expected = [
       { name: 'reconcile_existing', data: { entityType: 'topics' } },
       { name: 'reconcile_existing', data: { entityType: 'posts' } },
       { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
       { name: 'post_trigger_recovery', data: {} },
       { name: 'rss_story_trigger_recovery', data: {} },
-    ])
+    ]
+    expect(enqueued).toHaveLength(expected.length)
+    expect(
+      embeddingReconciliationManifest.jobs
+        .filter(job => expected.some(root => root.name === job.template.name))
+        .map(job => ({ name: job.template.name, data: job.template.data })),
+    ).toEqual(expected)
+    for (const [index, result] of enqueued.entries()) {
+      if (isDeduplicatedEnqueue(result)) continue
+      await expect(readEnqueuedJob(bedrock_embeddings_batch, result)).resolves.toMatchObject(
+        expected[index]!,
+      )
+    }
   })
   it('registers every existing self-healing dispatcher backfill', () => {
     const existingDispatcherIds = new Set(

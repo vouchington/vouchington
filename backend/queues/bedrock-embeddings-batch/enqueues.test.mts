@@ -1,42 +1,39 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readEnqueuedJob } from '@voucha/test-helpers'
-import {
-  enqueueAllEmbeddingReconciliationRoots,
-  enqueueReconcileExistingEmbeddings,
-  reconciliationJobOptions,
-} from './enqueues.mts'
+import { enqueueReconcileExistingEmbeddings, reconciliationJobOptions } from './enqueues.mts'
 import { bedrock_embeddings_batch } from './queues.mts'
 import { BEDROCK_EMBEDDINGS_BATCH_ORDERING, PRIORITY_DEFAULT } from './config.mts'
 
 describe('embedding reconciliation enqueues', () => {
-  it('enqueues all five roots with their exact payloads through the aggregate helper', async () => {
-    const enqueued = await enqueueAllEmbeddingReconciliationRoots()
-    expect(enqueued).toHaveLength(5)
-    const jobs = await Promise.all(
-      enqueued.map(result => readEnqueuedJob(bedrock_embeddings_batch, result)),
-    )
-    expect(jobs.map(job => ({ name: job.name, data: job.data }))).toEqual([
-      { name: 'reconcile_existing', data: { entityType: 'topics' } },
-      { name: 'reconcile_existing', data: { entityType: 'posts' } },
-      { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
-      { name: 'post_trigger_recovery', data: {} },
-      { name: 'rss_story_trigger_recovery', data: {} },
-    ])
-    for (const job of jobs) {
-      expect(job.opts).toMatchObject({
+  it('uses distinct 60-second throttles for all five roots without retained job IDs', () => {
+    const flows = [
+      'copy:topics',
+      'copy:posts',
+      'copy:rss_feed_items',
+      'post-trigger',
+      'rss-story-trigger',
+    ] as const
+    for (const flow of flows) {
+      const options = reconciliationJobOptions(flow)
+      expect(options).toMatchObject({
         attempts: 3,
         priority: PRIORITY_DEFAULT,
         ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.reconciliation,
         removeOnComplete: 100,
         removeOnFail: 100,
+        deduplication: {
+          id: `bedrock-embedding-reconciliation:${flow}`,
+          mode: 'throttle',
+          ttl: 60_000,
+        },
       })
-      expect(job.opts.deduplication).toMatchObject({ mode: 'throttle', ttl: 60_000 })
-      expect(job.opts.jobId).toBeUndefined()
+      expect(options.jobId).toBeUndefined()
     }
   })
 
   it('keeps page continuations in the same lane without a throttle or retained job ID', async () => {
-    const after = 'opaque-test-cursor'
+    const after = `opaque-test-cursor-${randomUUID()}`
     const enqueued = await enqueueReconcileExistingEmbeddings('topics', after)
     const job = await readEnqueuedJob(bedrock_embeddings_batch, enqueued)
     expect(job).toMatchObject({

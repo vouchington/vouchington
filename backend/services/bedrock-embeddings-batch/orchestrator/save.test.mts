@@ -10,7 +10,13 @@ import {
   setPostEmbeddingContentOnlySha256,
   setPostDeletedForTest,
 } from '@voucha/test-helpers'
-import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
+import {
+  decodeScopedUuidCursor,
+  decodeUuidCursor,
+  encodeScopedUuidCursor,
+  isSimpleCursor,
+} from '@modules/pagination'
+import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { ban_evasion } from '@queues/ban-evasion/queues'
 import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
 import {
@@ -18,6 +24,11 @@ import {
   copyExistingPostEmbeddings,
 } from '@services/bedrock-embeddings-batch/entities/posts'
 import { copyExistingEmbeddings, copyExistingLockClause } from './reconcile-existing.mts'
+
+function scopedCursorBefore(id: string, scope: string): string {
+  const before = decodeUuidCursor(encodeUuidCursorBefore(id), isSimpleCursor, 'Invalid cursor')
+  return encodeScopedUuidCursor(before.id, scope)
+}
 
 describe('copyExistingLockClause', () => {
   it('uses typed lock checks for topic, post, and RSS feed item tables', () => {
@@ -66,7 +77,12 @@ describe('post embedding batch ban-evasion follow-up', () => {
       },
     ])
 
-    await copyExistingPostEmbeddings()
+    await expect(
+      copyExistingPostEmbeddings({
+        after: scopedCursorBefore(postId, 'embedding-reconciliation:posts:id-asc'),
+        limit: 1,
+      }),
+    ).resolves.toMatchObject({ updatedIds: [postId] })
 
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
   })
@@ -97,10 +113,18 @@ describe('post embedding batch ban-evasion follow-up', () => {
       },
     ])
 
-    await expect(copyExistingEmbeddings('posts')).resolves.toMatchObject({
+    await expect(
+      copyExistingEmbeddings('posts', {
+        after: scopedCursorBefore(postId, 'embedding-reconciliation:posts:id-asc'),
+        limit: 1,
+      }),
+    ).resolves.toMatchObject({
       updatedIds: expect.arrayContaining([postId]),
     })
-    await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts()
+    await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
+      after: scopedCursorBefore(postId, 'ban-evasion:post-embedding:pending:id-asc'),
+      limit: 1,
+    })
 
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
   })
@@ -152,7 +176,6 @@ describe('post embedding batch ban-evasion follow-up', () => {
         communityId,
         postType: 'article',
       })
-    const boundary = await makePost(member.id, 'Boundary', null)
     const first = await makePost(member.id, 'First', community.id)
     const nonFirst = await makePost(member.id, 'Second', community.id)
     const nextFirst = await makePost(otherMember.id, 'Third', community.id)
@@ -161,48 +184,39 @@ describe('post embedding batch ban-evasion follow-up', () => {
     await Promise.all(postIds.map((id, i) => setPostEmbeddingContentOnlySha256(id, hashes[i]!)))
     await insertTestEmbeddings(hashes.map(content_sha256 => ({ content_sha256 })))
     const scope = 'embedding-reconciliation:posts:id-asc'
-    const copied = await copyExistingEmbeddings('posts', {
-      after: encodeScopedUuidCursor(boundary, scope),
-      limit: 100,
-    })
-    expect(copied.updatedIds).toEqual(expect.arrayContaining(postIds))
+    for (const id of postIds) {
+      const copied = await copyExistingEmbeddings('posts', {
+        after: scopedCursorBefore(id, scope),
+        limit: 1,
+      })
+      expect(copied.updatedIds).toContain(id)
+    }
 
     const recoveryScope = 'ban-evasion:post-embedding:pending:id-asc'
-    let after = encodeScopedUuidCursor(boundary, recoveryScope)
-    let sawNonFirst = false
-    let sawNextFirst = false
-    let nonFirstEnqueuedCount: number | undefined
-    let nextFirstEnqueuedCount: number | undefined
-    for (let page = 0; page < 30 && !sawNextFirst; page += 1) {
+    for (const [id, expectedEnqueuedCount] of [
+      [first, 1],
+      [nonFirst, 0],
+      [nextFirst, 1],
+    ] as const) {
       const result = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-        after,
+        after: scopedCursorBefore(id, recoveryScope),
         limit: 1,
       })
       expect(result.scannedCount).toBe(1)
-      after = result.nextCursor!
-      const candidate = decodeScopedUuidCursor(after, recoveryScope, 'Invalid cursor').id
-      if (candidate === nonFirst) {
-        sawNonFirst = true
-        nonFirstEnqueuedCount = result.enqueuedCount
-      }
-      if (candidate === nextFirst) {
-        sawNextFirst = true
-        nextFirstEnqueuedCount = result.enqueuedCount
-      }
+      expect(decodeScopedUuidCursor(result.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
+        id,
+      )
+      expect(result.enqueuedCount).toBe(expectedEnqueuedCount)
     }
-    expect(sawNonFirst).toBe(true)
-    expect(sawNextFirst).toBe(true)
-    expect(nonFirstEnqueuedCount).toBe(0)
-    expect(nextFirstEnqueuedCount).toBe(1)
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
     await expect(getBanEvasionJobsFor(community.id, otherMember.id)).resolves.toHaveLength(1)
 
     await setPostDeletedForTest(first)
     const retry = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-      after: encodeScopedUuidCursor(boundary, recoveryScope),
-      limit: 100,
+      after: scopedCursorBefore(nonFirst, recoveryScope),
+      limit: 1,
     })
-    expect(retry.enqueuedCount).toBeGreaterThanOrEqual(1)
+    expect(retry.enqueuedCount).toBe(1)
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(2)
   })
 })

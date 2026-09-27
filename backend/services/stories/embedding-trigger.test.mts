@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { encodeScopedUuidCursor } from '@modules/pagination'
+import { decodeUuidCursor, encodeScopedUuidCursor, isSimpleCursor } from '@modules/pagination'
+import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { expireTestDedupEntry } from '../../../test-helpers/glide-mq-vitest-dedup.mts'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { enqueueBulkStoryClusteringStrict } from '@queues/ai-agents/enqueues/story-clustering'
@@ -18,10 +19,11 @@ import {
   triggerStoryClusteringForCurrentEmbeddings,
 } from './embedding-trigger.mts'
 
-async function makeItem(embedded = true): Promise<{ id: string; hash: Buffer }> {
+async function makeItem(embedded = true, itemId?: string): Promise<{ id: string; hash: Buffer }> {
   const feed = await createTestRssFeed({})
   const hash = randomBytes(32)
   const id = await insertTestRssFeedItem({
+    id: itemId,
     rssFeedId: feed.id,
     urlId: await createTestUrlWithHostname(),
     guid: `embedding-trigger-${randomUUID()}`,
@@ -30,6 +32,11 @@ async function makeItem(embedded = true): Promise<{ id: string; hash: Buffer }> 
     ...(embedded ? { embedding: makeRandomEmbedding(), tokens: 1 } : {}),
   })
   return { id, hash }
+}
+
+function recoveryCursorBefore(id: string): string {
+  const before = decodeUuidCursor(encodeUuidCursorBefore(id), isSimpleCursor, 'Invalid cursor')
+  return encodeScopedUuidCursor(before.id, 'stories:embedding-trigger:pending:id-asc')
 }
 
 describe('RSS embedding story trigger', () => {
@@ -63,7 +70,6 @@ describe('RSS embedding story trigger', () => {
   })
 
   it('leaves the marker pending when enqueue throws', async () => {
-    const boundary = await makeItem(false)
     const item = await makeItem()
     await expect(
       triggerStoryClusteringForCurrentEmbeddings([item.id], {
@@ -74,7 +80,7 @@ describe('RSS embedding story trigger', () => {
     ).rejects.toThrow('queue unavailable')
     expect((await getRssFeedItemStoryEmbeddingTriggerState(item.id))?.marked_sha256).toBeNull()
     const recovered = await reconcilePendingStoryClusteringEmbeddingTriggers({
-      after: encodeScopedUuidCursor(boundary.id, 'stories:embedding-trigger:pending:id-asc'),
+      after: recoveryCursorBefore(item.id),
       limit: 1,
     })
     expect(recovered).toMatchObject({ enqueuedCount: 1, scannedCount: 1 })
@@ -84,7 +90,6 @@ describe('RSS embedding story trigger', () => {
   })
 
   it('leaves the marker pending if marking fails after queue acceptance', async () => {
-    const boundary = await makeItem(false)
     const item = await makeItem()
     await expect(
       triggerStoryClusteringForCurrentEmbeddings([item.id], {
@@ -99,7 +104,7 @@ describe('RSS embedding story trigger', () => {
       job => 'rss_feed_item_id' in job.data && job.data.rss_feed_item_id === item.id,
     )
     expect(acceptedJob).toBeDefined()
-    const after = encodeScopedUuidCursor(boundary.id, 'stories:embedding-trigger:pending:id-asc')
+    const after = recoveryCursorBefore(item.id)
     const deduped = await reconcilePendingStoryClusteringEmbeddingTriggers({ after, limit: 1 })
     expect(deduped).toMatchObject({ enqueuedCount: 0, scannedCount: 1 })
     expect((await getRssFeedItemStoryEmbeddingTriggerState(item.id))?.marked_sha256).toBeNull()
@@ -131,21 +136,28 @@ describe('RSS embedding story trigger', () => {
   })
 
   it('scans one pending marker page and resumes with an opaque cursor', async () => {
-    const boundary = await makeItem(false)
-    const first = await makeItem()
-    const second = await makeItem()
-    let after = encodeScopedUuidCursor(boundary.id, 'stories:embedding-trigger:pending:id-asc')
-    const seen = new Set<string>()
-    for (let page = 0; page < 20 && seen.size < 2; page += 1) {
-      const result = await reconcilePendingStoryClusteringEmbeddingTriggers({ after, limit: 1 })
-      expect(result.scannedCount).toBeLessThanOrEqual(1)
-      if (result.nextCursor === null) break
-      after = result.nextCursor
-      if ((await getRssFeedItemStoryEmbeddingTriggerState(first.id))?.marked_sha256)
-        seen.add(first.id)
-      if ((await getRssFeedItemStoryEmbeddingTriggerState(second.id))?.marked_sha256)
-        seen.add(second.id)
-    }
-    expect(seen).toEqual(new Set([first.id, second.id]))
+    const timestamp = Date.now().toString(16).padStart(12, '0')
+    const base = `${timestamp.slice(0, 8)}-${timestamp.slice(8)}-7000-8000-${randomBytes(5).toString('hex')}`
+    const first = await makeItem(true, `${base}00`)
+    const second = await makeItem(true, `${base}01`)
+    const firstPage = await reconcilePendingStoryClusteringEmbeddingTriggers({
+      after: recoveryCursorBefore(first.id),
+      limit: 1,
+    })
+    expect(firstPage.scannedCount).toBe(1)
+    expect(firstPage.nextCursor).not.toBeNull()
+    expect((await getRssFeedItemStoryEmbeddingTriggerState(first.id))?.marked_sha256).toEqual(
+      first.hash,
+    )
+    expect((await getRssFeedItemStoryEmbeddingTriggerState(second.id))?.marked_sha256).toBeNull()
+
+    const secondPage = await reconcilePendingStoryClusteringEmbeddingTriggers({
+      after: firstPage.nextCursor!,
+      limit: 1,
+    })
+    expect(secondPage.scannedCount).toBe(1)
+    expect((await getRssFeedItemStoryEmbeddingTriggerState(second.id))?.marked_sha256).toEqual(
+      second.hash,
+    )
   })
 })

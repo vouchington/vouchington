@@ -12,7 +12,13 @@ import {
   setTopicDeletedForEmbeddingTest,
   setTopicEmbeddingContentSha256,
 } from '@voucha/test-helpers'
-import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
+import {
+  decodeScopedUuidCursor,
+  decodeUuidCursor,
+  encodeScopedUuidCursor,
+  isSimpleCursor,
+} from '@modules/pagination'
+import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
 import { copyExistingEmbeddings } from './reconcile-existing.mts'
 
 describe('copyExistingEmbeddings', () => {
@@ -25,7 +31,6 @@ describe('copyExistingEmbeddings', () => {
         slug: `${name.toLowerCase()}-${suffix}`,
         createdById: user.id,
       })
-    const boundary = await makeTopic('Boundary')
     const miss = await makeTopic('Miss')
     const deleted = await makeTopic('Deleted')
     const batchLocked = await makeTopic('BatchLocked')
@@ -49,30 +54,23 @@ describe('copyExistingEmbeddings', () => {
     await using transaction = await beginTransaction()
     await lockTopicEmbeddingRowForTest(transaction, rowLocked)
     const scope = 'embedding-reconciliation:topics:id-asc'
-    let after = encodeScopedUuidCursor(boundary, scope)
-    const seen = new Set<string>()
-    const copied = new Set<string>()
-    for (let page = 0; page < 30 && !seen.has(reusable); page += 1) {
+    const cursorBefore = (id: string) => {
+      const before = decodeUuidCursor(encodeUuidCursorBefore(id), isSimpleCursor, 'Invalid cursor')
+      return encodeScopedUuidCursor(before.id, scope)
+    }
+    for (const id of [miss, deleted, batchLocked, rowLocked, reusable]) {
+      const after = cursorBefore(id)
       const result = await copyExistingEmbeddings('topics', { after, limit: 1 })
       expect(result.scannedCount).toBe(1)
       expect(result.nextCursor).not.toBeNull()
-      result.updatedIds.forEach(id => copied.add(id))
-      after = result.nextCursor!
-      seen.add(decodeScopedUuidCursor(after, scope, 'Invalid cursor').id)
+      expect(decodeScopedUuidCursor(result.nextCursor!, scope, 'Invalid cursor').id).toBe(id)
+      expect(result.updatedIds).toEqual(id === reusable ? [id] : [])
     }
-    for (const id of [miss, deleted, batchLocked, rowLocked, reusable]) {
-      expect(seen.has(id)).toBe(true)
-    }
-    expect(copied.has(reusable)).toBe(true)
-    expect(copied.has(miss)).toBe(false)
-    expect(copied.has(deleted)).toBe(false)
-    expect(copied.has(batchLocked)).toBe(false)
-    expect(copied.has(rowLocked)).toBe(false)
 
     await transaction.commit()
     const retry = await copyExistingEmbeddings('topics', {
-      after: encodeScopedUuidCursor(boundary, scope),
-      limit: 100,
+      after: cursorBefore(rowLocked),
+      limit: 1,
     })
     expect(retry.updatedIds).toContain(rowLocked)
   })
