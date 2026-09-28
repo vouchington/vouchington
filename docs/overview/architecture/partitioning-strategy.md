@@ -112,7 +112,7 @@ parents are generated from `entityRelationMetadatum`; do not duplicate either li
 uses RANGE by relation ID. Both keys are required for full two-level pruning. Voter-only maintenance
 and export intentionally fan out and rely on local `user_id` indexes.
 
-The [isolated EXPLAIN pruning proof](../../../backend/scripts/explain-analyze/README.md#explicit-range-pruning)
+The [isolated EXPLAIN pruning proof](../../development/postgresql/explain-analyze/README.md#explicit-range-pruning)
 uses a disposable migrated sibling database with two populated explicit ranges and the default
 for review ratings, conversation messages, and relation votes. Actual review, conversation, and
 vote-stat service calls must execute only their target leaves in forced custom and generic plans.
