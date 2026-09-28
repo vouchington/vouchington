@@ -20,6 +20,7 @@ The posts service is the core content creation system. It handles multiple post 
   the canonical alias identifier from the primary after commit.
 - `delete.mts` — Soft deletion
 - `types.mts` — `Post`, `PostMetrics`, `PostElection`, `CreatePostInput` types
+- `posts-table-row.mts` — Base `posts` row for `INSERT ... RETURNING *`, distinct from view `Post`
 - `authorization.mts` — `currentUserCanUpdatePost`, `currentUserCanDeletePost` (creator or admin)
 - `audience.mts` — Validates broadcast/privacy combinations
 - `privacy-filter.mts` — `buildPrivacyFilter()` generates the reusable SQL WHERE fragment for remaining listing queries
