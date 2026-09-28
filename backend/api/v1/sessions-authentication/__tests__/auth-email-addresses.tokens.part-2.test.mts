@@ -2,6 +2,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import {
   createUniqueTestEmail,
   invalidateEmailDomainCaches,
@@ -12,8 +13,6 @@ import {
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { v7 } from 'uuid'
-
-const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
 
 describe('Email Address Authentication Routes', () => {
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>

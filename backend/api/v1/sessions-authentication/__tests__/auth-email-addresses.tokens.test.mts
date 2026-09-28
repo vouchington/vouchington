@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, request } from '@voucha/test-helpers/api/server'
+import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import {
   createUniqueTestEmail,
   overrideDynamicConfigFieldsForTest,
@@ -13,8 +14,6 @@ import { addDomainsToEmailBloomFilter } from '@services/urls-domains-blacklist'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { v7 } from 'uuid'
-
-const TEST_CAPTCHA_TOKEN = 'mock-captcha-token'
 
 function testForwardedIp(index: number): string {
   return `198.51.100.${index}`
