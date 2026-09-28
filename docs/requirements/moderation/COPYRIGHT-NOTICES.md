@@ -206,7 +206,11 @@ US cases and project case identifier, dates, target URL, restriction state, a me
 lifecycle timeline, and the claimant's current public profile when one exists. They never expose
 legal claimant or poster identity, email, mailing address, signature, raw email, evidence artifacts,
 encrypted fields, moderator rationale, or agent recommendation. A guest or erased claimant has no
-member-visible profile link.
+member-visible profile link. A guest who is not signed in acts only with a hashed, expiring,
+revocable capability for one case. Mail, a thread, or a token for another case does not authorize
+a correction, withdrawal, or court filing. A correction does not move the original receipt time.
+A court or CCB filing is classified urgent. Staff may ask for more information without extending
+the capability.
 
 Claimants and affected posters receive a participant projection for their own submissions. Copyright
 review staff receive a separate queue and private case projection. Staff-only routes may expose
