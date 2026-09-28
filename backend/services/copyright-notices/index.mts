@@ -124,15 +124,8 @@ export { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 export { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
 export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
 export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
-export {
-  previewCopyrightEvidenceRetention,
-  type RetentionBlockReason,
-  type RetentionPreview,
-} from './retention-preview.mts'
-export {
-  recordCopyrightEvidenceRetentionDisposition,
-  type RetentionDisposition,
-} from './retention-disposition.mts'
+export { previewCopyrightEvidenceRetention } from './retention-preview.mts'
+export { recordCopyrightEvidenceRetentionDisposition } from './retention-disposition.mts'
 export {
   currentUserCanApproveCopyrightTerritorialPolicy,
   recordCopyrightTerritorialPolicyApproval,

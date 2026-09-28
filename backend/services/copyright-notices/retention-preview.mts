@@ -111,7 +111,7 @@ export async function loadRetentionFacts(
           AND deadline.cancelled_at IS NULL
       ) AS deadline_open
     FROM copyright_notices notice
-    CROSS JOIN copyright_evidence_retention_gate gate
+    CROSS JOIN copyright_evidence_retention_gates gate
     LEFT JOIN copyright_notice_closures closure ON closure.copyright_notice_id = notice.id
     LEFT JOIN LATERAL (
       SELECT id FROM copyright_evidence_retention_policies

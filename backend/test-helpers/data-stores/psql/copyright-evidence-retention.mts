@@ -36,7 +36,7 @@ export async function readCopyrightEvidenceStorageKey(artifactId: string): Promi
 
 export async function setCopyrightEvidenceRetentionGate(enabled: boolean): Promise<void> {
   await write(sql`/* setCopyrightEvidenceRetentionGate */
-    UPDATE copyright_evidence_retention_gate
+    UPDATE copyright_evidence_retention_gates
     SET enabled = ${enabled}, updated_at = CURRENT_TIMESTAMP`)
 }
 
