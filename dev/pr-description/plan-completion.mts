@@ -1,4 +1,5 @@
 import { parseClosingIssueReferences } from './closing-refs.mts'
+import { extractRelatedIssuesReferenceText } from './content-policy.mts'
 import { parseNonClosingRefs } from './non-closing-refs.mts'
 
 export type PlanCompletionPullRequest = {
@@ -13,11 +14,6 @@ export type PlanCompletionAssessment =
   | { kind: 'stranded-sibling'; sibling: number }
   | { kind: 'unopened-work' }
 
-function relatedIssuesSection(body: string): string {
-  const sections = body.split(/^(?=##\s)/m)
-  return sections.find(section => /^##\s+Related\s+issues\s*$/im.test(section.split('\n')[0])) ?? ''
-}
-
 function referenceKeys(
   body: string,
   repository: string,
@@ -27,7 +23,7 @@ function referenceKeys(
     key.toLowerCase().startsWith(localPrefix)
       ? `#${key.slice(localPrefix.length)}`
       : key.toLowerCase()
-  const related = relatedIssuesSection(body)
+  const related = extractRelatedIssuesReferenceText(body)
   return {
     closing: new Set(
       parseClosingIssueReferences(related).map(reference => normalize(reference.key)),

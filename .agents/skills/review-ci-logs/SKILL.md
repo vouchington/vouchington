@@ -43,3 +43,9 @@ rather than streaming whole runs into context, preserve diagnostics while separa
 noise from real failures, and Return a short verdict to the calling session. Use the local
 transient-classification reference only to diagnose existing CI behavior; this adapter does not
 authorize retry-policy changes.
+
+When a finding concerns a PR, apply the portable Harness gaps classification against the first
+failing revision/run and actual pre-push evidence. Refresh the description using the
+[PR-description adapter](../pr-description/SKILL.md) and its helper after diagnosis and before
+handoff; retain established gaps after green checks. An absent local-check list is not evidence
+that verification was omitted. Respect the calling workflow's PR mutation scope.

@@ -42,3 +42,12 @@ No source issue; scheduled prompt run.
 If no independently mergeable change is confidently ready, stop and report why. Never merge, arm auto-merge, or run pr-shepherd.
 Apply both the `automation` and `automation:scheduled` labels to the draft PR, then re-fetch it and
 require both labels to be present before reporting completion.
+
+For any PR body this workflow is authorized to create or update, follow the
+[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
+and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
+Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
+headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
+approved description helper and retain established gaps after green checks. Do not add routine
+successful local-check lists. This standard does not expand this workflow's mutation authority.

@@ -81,7 +81,7 @@ describe('dev/pr-description.mts create — large-diff size gate', () => {
     await mkdir(binDir)
     await writeFile(
       bodyPath,
-      `## Summary\n\nLarge diff gate.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
+      `## Summary\n\nLarge diff gate.\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nCloses #7391\n\nWorkspace setup: not needed\n${VALID_PROVENANCE_BLOCK}\n`,
     )
     const ghPath = join(binDir, 'gh')
     await writeFakeGh(

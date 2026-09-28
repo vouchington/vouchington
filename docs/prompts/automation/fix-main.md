@@ -57,3 +57,12 @@ audit above); when the name does not resolve at all, do not defer to it — reco
 recommendation scoped to this repository instead.
 
 If no safe code change is justified, leave the workspace clean and report the owning PR, issue, or catalogued transient with evidence. If multiple materially different approaches remain, stop with `## Problem`, `## Options`, and `## Recommendation` instead of guessing.
+
+For any PR body this workflow is authorized to create or update, follow the
+[PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
+and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
+Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
+headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
+approved description helper and retain established gaps after green checks. Do not add routine
+successful local-check lists. This standard does not expand this workflow's mutation authority.

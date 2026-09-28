@@ -12,7 +12,15 @@ import type { IssueReferenceLookup, ReferencedIssue } from '../closing-refs.mts'
 import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBodyWithIssueReferences } from '../validate.mts'
 
-const PR_BODY = `## Related issues
+const PR_BODY = `## Summary
+
+Preserve issue lifecycle validation.
+
+## Impact
+
+Developers receive clearer workflow feedback; product behavior is unchanged.
+
+## Related issues
 
 Closes #7390
 
@@ -20,7 +28,15 @@ Workspace setup: ./dev/initialize monorepo
 ${VALID_PROVENANCE_BLOCK}
 `
 
-const FIX_MAIN_NO_CLOSING_REF_PR_BODY = `## Related issues
+const FIX_MAIN_NO_CLOSING_REF_PR_BODY = `## Summary
+
+Preserve issue lifecycle validation.
+
+## Impact
+
+Developers receive clearer workflow feedback; product behavior is unchanged.
+
+## Related issues
 
 Refs #456
 No closing reference; root-cause issue tracked via the Refs entry above.

@@ -103,7 +103,7 @@ describe('validatePrBody', () => {
   })
 
   it('rejects a closing keyword outside Related issues', () => {
-    const body = `## Summary\n\nCloses #999\n\n## Related issues\n\nRefs #123\n\nWorkspace setup: ./dev/initialize monorepo\n${VALID_PROVENANCE_BLOCK}\n`
+    const body = `## Summary\n\nCloses #999\n\n## Impact\n\nDevelopers receive clearer workflow feedback; product behavior is unchanged.\n\n## Related issues\n\nRefs #123\n\nWorkspace setup: ./dev/initialize monorepo\n${VALID_PROVENANCE_BLOCK}\n`
     expect(validatePrBody(body).errors.join(' ')).toContain('"## Related issues" section')
   })
 
