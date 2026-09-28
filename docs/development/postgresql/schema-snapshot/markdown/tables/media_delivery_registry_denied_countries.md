@@ -6,10 +6,11 @@ Countries where an allowed image placement is denied. Empty means the allow is n
 
 Not partitioned — growth: unbounded.
 
-| Column         | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                     |
-| -------------- | ------ | -------- | ------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
-| `delivery_key` | `text` | no       |         |          |           |           | Exact image-placement delivery tuple whose country set this row belongs to. |
-| `country_code` | `text` | no       |         |          |           |           | ISO 3166-1 alpha-2 country from the supported country lookup.               |
+| Column         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                     |
+| -------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `delivery_key` | `text`                     | no       |                     |          |           |           | Exact image-placement delivery tuple whose country set this row belongs to. |
+| `country_code` | `text`                     | no       |                     |          |           |           | ISO 3166-1 alpha-2 country from the supported country lookup.               |
+| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                             |
 
 **Primary key:** `PRIMARY KEY (delivery_key, country_code)`
 

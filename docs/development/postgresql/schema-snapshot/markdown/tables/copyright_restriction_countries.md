@@ -6,10 +6,11 @@ Countries where a country-set copyright ground denies delivery. Global grounds h
 
 Not partitioned — growth: unbounded.
 
-| Column                     | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                       |
-| -------------------------- | ------ | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------- |
-| `copyright_restriction_id` | `uuid` | no       |         |          |           |           |                                                               |
-| `country_code`             | `text` | no       |         |          |           |           | ISO 3166-1 alpha-2 country from the supported country lookup. |
+| Column                     | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                 |
+| -------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
+| `copyright_restriction_id` | `uuid`                     | no       |                     |          |           |           | Country-set copyright restriction that denies delivery in this country. |
+| `country_code`             | `text`                     | no       |                     |          |           |           | ISO 3166-1 alpha-2 country from the supported country lookup.           |
+| `updated_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                         |
 
 **Primary key:** `PRIMARY KEY (copyright_restriction_id, country_code)`
 

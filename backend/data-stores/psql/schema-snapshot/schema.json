@@ -32236,7 +32236,7 @@
       "columns": {
         "copyright_restriction_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Country-set copyright restriction that denies delivery in this country.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -32255,6 +32255,17 @@
           "nullable": false,
           "ordinalPosition": 2,
           "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Countries where a country-set copyright ground denies delivery. Global grounds have none.",
@@ -43585,6 +43596,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "text"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Countries where an allowed image placement is denied. Empty means the allow is not country-restricted.",
