@@ -15,16 +15,7 @@ import {
   stringValue,
   type LifecycleAdapter,
 } from './lifecycle-values'
-export {
-  booleanValue,
-  lifecycleNotApplicable,
-  nullableStringValue,
-  numberValue,
-  stringArrayValue,
-  stringValue,
-  type LifecycleAdapter,
-  type LifecycleObservation,
-} from './lifecycle-values'
+export type { LifecycleAdapter, LifecycleObservation } from './lifecycle-values'
 
 function lifecycleViewerRole(
   input: Record<string, LifecycleJson>,

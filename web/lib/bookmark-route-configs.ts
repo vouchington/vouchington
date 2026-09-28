@@ -7,11 +7,7 @@ import type { TitleRouteDropdownItem } from '@/components/shared/title-route-dro
 import { bookmarkRouteConfigData } from './bookmark-route-config-data'
 
 import type { BookmarkFamily, BookmarkRouteConfig } from './bookmark-route-config-types'
-export type {
-  BookmarkBreadcrumb,
-  BookmarkFamily,
-  BookmarkRouteConfig,
-} from './bookmark-route-config-types'
+export type { BookmarkFamily, BookmarkRouteConfig } from './bookmark-route-config-types'
 
 export const bookmarkRouteConfigs = bookmarkRouteConfigData
 
