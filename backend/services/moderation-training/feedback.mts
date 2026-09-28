@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { write, type QueryOptions } from '@data-stores/psql'
-import { trainingMetadataFacts } from './metadata-facts.mts'
+import { trainingMetadataFacts } from '@services/moderation-audit-facts'
 import type { ModerationTrainingFeedback, RecordModerationTrainingFeedbackInput } from './types.mts'
 
 export async function recordModerationTrainingFeedback(

@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { trainingMetadataFromRow } from '@services/moderation-training/metadata-facts.mts'
+import { trainingMetadataFromRow } from '@services/moderation-audit-facts'
 import sql from 'sql-template-strings'
 
 export async function getTestPostClearanceState(postId: string): Promise<

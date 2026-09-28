@@ -44,6 +44,7 @@
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@sentry/node": "11.0.0",
+    "@services/moderation-audit-facts": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",

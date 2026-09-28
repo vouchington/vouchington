@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { promptAuditSide } from './fields.mts'
+import { promptAuditSide } from '@services/moderation-audit-facts'
 
 export type CommunityAgentPromptChangeAction =
   | 'created'

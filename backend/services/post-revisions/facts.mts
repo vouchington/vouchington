@@ -26,16 +26,6 @@ const BROADCASTS = new Set(['everyone', 'users', 'followers', 'mutual_followers'
 const PRIVACIES = new Set(['public', 'private'])
 const VERTICALS = new Set(['credit_card', 'bank_account'])
 
-type TextPair = { changed: boolean; before: string | null; after: string | null }
-type BoolPair = { changed: boolean; before: boolean | null; after: boolean | null }
-type TimePair = {
-  changed: boolean
-  before: Date | null
-  after: Date | null
-  beforeSentinel: string | null
-  afterSentinel: string | null
-}
-
 export async function insertPostRevisionFacts(
   postId: string,
   revisionType: RevisionType,

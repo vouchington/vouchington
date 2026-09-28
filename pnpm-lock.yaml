@@ -4626,6 +4626,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@services/moderation-audit-facts':
+        specifier: workspace:^
+        version: link:../moderation-audit-facts
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -4663,6 +4666,9 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../moderation
+      '@services/moderation-audit-facts':
+        specifier: workspace:^
+        version: link:../moderation-audit-facts
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -6905,6 +6911,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/moderation-audit-facts: {}
+
   backend/services/moderation-cases:
     dependencies:
       '@data-stores/psql':
@@ -7068,6 +7076,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/moderation-audit-facts':
+        specifier: workspace:^
+        version: link:../moderation-audit-facts
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
@@ -7863,6 +7874,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/moderation-audit-facts':
+        specifier: workspace:^
+        version: link:../moderation-audit-facts
       '@services/moderation-training':
         specifier: workspace:^
         version: link:../moderation-training
@@ -10433,6 +10447,9 @@ importers:
       '@sentry/node':
         specifier: 11.0.0
         version: 11.0.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2))
+      '@services/moderation-audit-facts':
+        specifier: workspace:^
+        version: link:../services/moderation-audit-facts
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../ts-shared/money
