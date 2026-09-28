@@ -20,14 +20,12 @@ export async function insertLegacyContributionAdmissionConsumptionForTest(input:
   source: string
 }): Promise<void> {
   const reservationId = crypto.randomUUID()
+  await write(sql`/* insertLegacyContributionAdmissionConsumptionForTest.identity */
+    SELECT fn_ensure_audit_retained_identity(
+      'retained_post_admission_reservation_identities'::regclass,
+      ${reservationId}::uuid
+    )`)
   await write(sql`/* insertLegacyContributionAdmissionConsumptionForTest */
-    WITH ensured AS (
-      SELECT fn_ensure_audit_retained_identity(
-        'retained_post_admission_reservation_identities'::regclass,
-        ${reservationId}::uuid
-      ) AS pinned
-    )
     INSERT INTO post_admission_quota_consumptions (reservation_id, actor_id, source)
-    SELECT ${reservationId}::uuid, ${input.actorId}, ${input.source}
-    FROM ensured`)
+    VALUES (${reservationId}::uuid, ${input.actorId}, ${input.source})`)
 }

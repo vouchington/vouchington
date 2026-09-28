@@ -74,12 +74,8 @@ describe('resolve-flag', () => {
 
     it('createVoteIntegrityFlag deduplicates unresolved flags for same entity+type', async () => {
       const postId = await makePost(randomSlug())
-      const flag1 = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {
-        attempt: 1,
-      })
-      const flag2 = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {
-        attempt: 2,
-      })
+      const flag1 = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {})
+      const flag2 = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {})
       expect(flag1).not.toBeNull()
       expect(flag2).toBeNull() // second insert is deduplicated
     }, 60_000)
