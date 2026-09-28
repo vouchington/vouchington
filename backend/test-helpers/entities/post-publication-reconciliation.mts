@@ -27,7 +27,15 @@ export async function countTestPostPublicationAdvisoryLockConnections(
 export async function addTestPostDataPointTopic(postId: string, topicId: string): Promise<void> {
   await write(sql`
     /* addTestPostDataPointTopic */
-    INSERT INTO post_data_point_topics (post_id, topic_id) VALUES (${postId}, ${topicId})
+    INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
+    VALUES (
+      ${postId},
+      ${topicId},
+      COALESCE(
+        (SELECT MAX(order_index) + 1 FROM post_data_point_topics WHERE post_id = ${postId}),
+        0
+      )
+    )
   `)
 }
 
