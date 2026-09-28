@@ -25,7 +25,7 @@ export function callerCalleePermissionMismatches(topology: WorkflowTopology): st
   const workflowsByPath = new Map(topology.workflows.map(workflow => [workflow.path, workflow]))
   const jobsById = new Map(topology.jobs.map(job => [job.id, job]))
   for (const edge of topology.edges) {
-    if (edge.kind !== 'calls' || edge.local !== true || edge.to === undefined) continue
+    if (edge.kind !== 'calls' || !edge.local || edge.to === undefined) continue
     const callee = workflowsByPath.get(edge.to)
     const callerJob = jobsById.get(edge.from)
     if (!callerJob || !callee?.callable) continue

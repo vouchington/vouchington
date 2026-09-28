@@ -5,6 +5,7 @@ import {
   getGooglePlayServiceAccountConfig,
   GooglePlaySubscriptionLookupError,
 } from './configured-client.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
 const privateKeyPem = privateKey.export({ format: 'pem', type: 'pkcs8' })
@@ -36,7 +37,7 @@ describe('configured Google Play client', () => {
     const providerFetch = vi.fn<
       (input: string | URL | Request, init?: RequestInit) => Promise<Response>
     >(async (input, init) => {
-      const url = String(input)
+      const url = stringFromUnknown(input)
       requests.push({ url, init })
       if (url.endsWith('/token'))
         return Response.json({ access_token: 'play-access-token', expires_in: 3600 })
@@ -106,7 +107,7 @@ describe('configured Google Play client', () => {
     ).rejects.toThrow('Google OAuth token response is malformed')
 
     const failedApi = createGooglePlaySubscriptionsV2Client(failingConfig, async input =>
-      String(input).endsWith('/token')
+      stringFromUnknown(input).endsWith('/token')
         ? Response.json({ access_token: 'short-lived', expires_in: 0 })
         : new Response(null, { status: 429 }),
     )
@@ -114,7 +115,7 @@ describe('configured Google Play client', () => {
       failedApi.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
     ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 429')
     const invalidApi = createGooglePlaySubscriptionsV2Client(failingConfig, async input =>
-      String(input).endsWith('/token')
+      stringFromUnknown(input).endsWith('/token')
         ? Response.json({ access_token: 'short-lived', expires_in: 0 })
         : new Response(null, { status: 404 }),
     )
@@ -131,7 +132,7 @@ describe('configured Google Play client', () => {
       ['required', false],
     ] as const) {
       const badRequestApi = createGooglePlaySubscriptionsV2Client(failingConfig, async input =>
-        String(input).endsWith('/token')
+        stringFromUnknown(input).endsWith('/token')
           ? Response.json({ access_token: 'short-lived', expires_in: 0 })
           : Response.json({ error: { errors: [{ reason }] } }, { status: 400 }),
       )

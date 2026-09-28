@@ -9,6 +9,7 @@ import {
   makeIsolatedDatabaseName,
   type IsolatedDatabaseCaseId,
 } from './vitest-isolated-database-cases.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const exec = promisify(execFile)
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -115,14 +116,15 @@ export async function runIsolatedDatabaseCase(caseId: IsolatedDatabaseCaseId): P
       if (primaryFailure) {
         throw new AggregateError(
           [primaryFailure, cleanupFailure],
-          `Isolated database case ${caseId} failed: ${String(primaryFailure)}; cleanup also failed`,
+          `Isolated database case ${caseId} failed: ${stringFromUnknown(primaryFailure)}; cleanup also failed`,
           { cause: cleanupFailure },
         )
       }
       throw cleanupFailure
     }
   }
-  if (primaryFailure) throw primaryFailure
+  if (primaryFailure instanceof Error) throw primaryFailure
+  if (primaryFailure) throw new Error(stringFromUnknown(primaryFailure))
 }
 
 async function command(

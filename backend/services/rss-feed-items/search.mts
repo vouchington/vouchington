@@ -114,7 +114,7 @@ export async function searchRssFeedItems(options: SearchRssFeedItemsOptions = {}
   appendRssFeedItemsPageClauses(query, safeLimit)
 
   const { rows } = await read<RecencySearchRow>(query)
-  const hasNextPage = rows.some(row => row.has_next_page === true)
+  const hasNextPage = rows.some(row => row.has_next_page)
 
   const results = rows.map(row => ({
     __entity_type: 'rss_feed_item' as const,

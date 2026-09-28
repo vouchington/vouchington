@@ -24,6 +24,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/analytics": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "http-assert": "^1.5.0"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID, isUsernameOrSlug } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // URL/hostname key resolvers live in url-keys.mts (kept out of this file to stay under the
 // scc-complexity budget); re-exported here so `@services/entity-cache/keys` consumers resolve
@@ -165,7 +166,7 @@ export function getCacheKeys(keys: unknown[]): { ids: Set<string>; slugs: Set<st
       )
     }
     if (typeof x === 'string') return x !== '' ? [normalizeKey(x)] : []
-    throw new Error(`Invalid key: ${x}`)
+    throw new Error(`Invalid key: ${stringFromUnknown(x)}`)
   })
 
   const ids = new Set(stringKeys.filter(isUUID))

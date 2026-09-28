@@ -178,7 +178,7 @@ export async function deleteImageByIdWhileStorageLocked(
     return result as ImageDeleteResult
   }
   const deleteResult = await deleteImageInTransaction().catch(async error => {
-    await repairFailedImageDeliveryMutation({ imageIds: [String(image.id)] }).catch(onError)
+    await repairFailedImageDeliveryMutation({ imageIds: [image.id] }).catch(onError)
     throw error
   })
   if (!deleteResult.deletedThisImage) return

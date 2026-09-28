@@ -200,7 +200,7 @@ describe('blackboard-journal CLI', () => {
       },
     ).catch((error: unknown) => error)
 
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain("--mode 'autonomous'")
     expect(stderr).toContain("--source-event-id 'event-1'")
     expect(stderr).toContain("--work-outcome 'failure'")

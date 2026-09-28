@@ -17,6 +17,7 @@ import { assertPostShareEligibilityIsTargetBounded } from './plan-post-share-tar
 import { assertAdminEmailIndexPlan } from './plan-admin-email-gate.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-embedding-reconciliation-gate.mts'
 import { assertStoryMemberPagePlan } from './plan-story-member-pages-gate.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
   'relation__post__category__topic',
@@ -98,7 +99,7 @@ function assertSinglePartitionChild(
 ): void {
   const childNames = new Set(
     collectPlanNodes(result.plan)
-      .map(node => String(node['Relation Name'] ?? ''))
+      .map(node => stringFromUnknown(node['Relation Name'] ?? ''))
       .filter(name => name.startsWith(`${expected.parent}__`)),
   )
   const hasPartitionKey = new RegExp(`\\b${expected.key}\\b`).test(result.query_text)
@@ -112,7 +113,7 @@ function assertSinglePartitionChild(
 function assertEntityRelationVotePruning(result: ExplainResult): void {
   const voteChildren = new Set(
     collectPlanNodes(result.plan)
-      .map(node => String(node['Relation Name'] ?? ''))
+      .map(node => stringFromUnknown(node['Relation Name'] ?? ''))
       .filter(name => /__votes__(?:default|p_\w+)$/.test(name)),
   )
   const hasBothKeys = ['relation_table', 'entity_relation_id'].every(key =>
@@ -140,8 +141,8 @@ function assertUniversalTopicCandidatePlan(result: ExplainResult): void {
   )
   const indexedPostIdLookup = postAccesses.some(
     node =>
-      String(node['Node Type'] ?? '').includes('Index') &&
-      String(node['Index Cond'] ?? '').includes('id'),
+      stringFromUnknown(node['Node Type'] ?? '').includes('Index') &&
+      stringFromUnknown(node['Index Cond'] ?? '').includes('id'),
   )
   const scansPosts = postAccesses.some(node => node['Node Type'] === 'Seq Scan')
 
@@ -155,7 +156,9 @@ function assertUniversalTopicCandidatePlan(result: ExplainResult): void {
 function assertRssStateProjectionPlan(result: ExplainResult): void {
   const nodes = collectPlanNodes(result.plan)
   const historyAccess = nodes.find(node => RSS_STATE_HISTORY_RELATIONS.has(baseRelationName(node)))
-  const lateralNode = nodes.find(node => String(node['Node Type'] ?? '').includes('Lateral'))
+  const lateralNode = nodes.find(node =>
+    stringFromUnknown(node['Node Type'] ?? '').includes('Lateral'),
+  )
   if (historyAccess || lateralNode) {
     throw new Error(`${result.name} must read projected RSS state without lateral history scans`)
   }
@@ -163,7 +166,7 @@ function assertRssStateProjectionPlan(result: ExplainResult): void {
 
 function assertRelationListingUsesIndexOrder(result: ExplainResult): void {
   const sortNode = collectPlanNodes(result.plan).find(node =>
-    String(node['Node Type'] ?? '').includes('Sort'),
+    stringFromUnknown(node['Node Type'] ?? '').includes('Sort'),
   )
   if (sortNode) {
     throw new Error(`${result.name} must use relation index order without an explicit Sort`)
@@ -171,7 +174,7 @@ function assertRelationListingUsesIndexOrder(result: ExplainResult): void {
 }
 
 function baseRelationName(node: PlanNode): string {
-  return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
 function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {

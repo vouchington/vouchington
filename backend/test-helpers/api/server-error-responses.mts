@@ -1,3 +1,4 @@
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 // Route tests assert with supertest's `.expect(status)`, whose failure message drops the response
 // body, and `onError` stays silent under NODE_ENV=test — so an unexpected 500 fails with no server
 // message or stack. `createRequest()` records every 5xx here, and
@@ -62,7 +63,8 @@ function hasParsedBody(body: unknown): boolean {
 }
 
 function formatBody(body: unknown): string {
-  if (typeof body !== 'object' || body === null) return body ? String(body) : '(empty body)'
+  if (typeof body !== 'object' || body === null)
+    return body ? stringFromUnknown(body) : '(empty body)'
   const { stack, ...fields } = body as Record<string, unknown>
   const json = JSON.stringify(fields, null, 2)
   return typeof stack === 'string' ? `${json}\n${stack}` : json

@@ -18,6 +18,7 @@ import {
   redirectToLinkUi,
   reportBlueskyCallbackError,
 } from './auth-bluesky-callback-helpers.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type BeginBlueskyLinkRequest = {
   handle: string
@@ -117,7 +118,9 @@ app.route('/api/v1/auth/bluesky/callback').get(async (ctx: Context) => {
     assertNotSuspended(currentUser)
     authenticatedUserId = currentUser.id
     if (appStateError) {
-      throw appStateError instanceof Error ? appStateError : new Error(String(appStateError))
+      throw appStateError instanceof Error
+        ? appStateError
+        : new Error(stringFromUnknown(appStateError))
     }
     if (appState?.callbackMode !== 'web' || !appState.flowId) {
       throw createHttpError(400, 'Unable to identify Bluesky OAuth callback flow')

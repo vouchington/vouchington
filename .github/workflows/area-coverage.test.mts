@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import picomatch from 'picomatch'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type Step = {
   env?: Record<string, unknown>
@@ -41,7 +42,8 @@ const fullLcovUploads = (reusable: string): Step[] =>
 // retry), with matrix expressions sampled.
 function fullLcovArtifacts(reusable: string): string[] {
   const names = fullLcovUploads(reusable).map(
-    step => `lcov-full-${String(step.with?.suite)}${String(step.with?.['name-suffix'] ?? '')}`,
+    step =>
+      `lcov-full-${String(step.with?.suite)}${stringFromUnknown(step.with?.['name-suffix'] ?? '')}`,
   )
   return [...new Set(names)].map(name => name.replace(/\$\{\{[^}]*\}\}/g, '1'))
 }

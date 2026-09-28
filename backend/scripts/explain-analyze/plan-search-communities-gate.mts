@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // searchCommunities() (and the single-community getCommunityMetrics() read) used to pay for
 // view_community_metrics.post_count by re-scanning the whole posts table once per candidate
@@ -52,15 +53,15 @@ export function assertSearchCommunitiesEligibilityIsIndexed(result: ExplainResul
 type PlanNode = Record<string, unknown>
 
 function baseRelationName(node: PlanNode): string {
-  return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
 // A Bitmap Heap Scan reports its restriction on a child Bitmap Index Scan. Restrict the accepted
 // bitmap form to the community lookup that keeps the metrics join candidate-bound; an arbitrary
 // bitmap index (such as post_type) would still permit the former broad scan shape.
 function hasIndexedAccess(node: PlanNode): boolean {
-  if (String(node['Node Type'] ?? '') !== 'Bitmap Heap Scan') {
-    return Boolean(String(node['Index Cond'] ?? ''))
+  if (stringFromUnknown(node['Node Type'] ?? '') !== 'Bitmap Heap Scan') {
+    return Boolean(stringFromUnknown(node['Index Cond'] ?? ''))
   }
   const bitmapPlans = getBitmapPlans(node)
   return bitmapPlans.length > 0 && bitmapPlans.every(isCommunityBoundBitmap)
@@ -69,11 +70,11 @@ function hasIndexedAccess(node: PlanNode): boolean {
 function isCommunityBoundBitmap(value: unknown): boolean {
   if (value == null || typeof value !== 'object' || Array.isArray(value)) return false
   const node = value as PlanNode
-  const nodeType = String(node['Node Type'] ?? '')
+  const nodeType = stringFromUnknown(node['Node Type'] ?? '')
   if (nodeType === 'Bitmap Index Scan') {
     return (
-      String(node['Index Name'] ?? '') === POSTS_COMMUNITY_ID_INDEX &&
-      Boolean(String(node['Index Cond'] ?? ''))
+      stringFromUnknown(node['Index Name'] ?? '') === POSTS_COMMUNITY_ID_INDEX &&
+      Boolean(stringFromUnknown(node['Index Cond'] ?? ''))
     )
   }
 
@@ -89,7 +90,7 @@ function getBitmapPlans(node: PlanNode): unknown[] {
   if (!Array.isArray(node['Plans'])) return []
   return node['Plans'].filter(value => {
     if (value == null || typeof value !== 'object' || Array.isArray(value)) return false
-    const nodeType = String((value as PlanNode)['Node Type'] ?? '')
+    const nodeType = stringFromUnknown((value as PlanNode)['Node Type'] ?? '')
     return nodeType === 'Bitmap Index Scan' || nodeType === 'BitmapAnd' || nodeType === 'BitmapOr'
   })
 }

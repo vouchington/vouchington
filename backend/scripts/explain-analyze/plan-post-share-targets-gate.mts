@@ -4,6 +4,7 @@ import {
   POST_SHARE_DENSE_TARGET_COUNT,
   POST_SHARE_SPARSE_TARGET_COUNT,
 } from './seed-data/post-feed-shares.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertPostShareEligibilityIsTargetBounded(result: ExplainResult): void {
   const scenario = result.scenario_id
@@ -13,9 +14,9 @@ export function assertPostShareEligibilityIsTargetBounded(result: ExplainResult)
     if (
       nodes.some(
         node =>
-          String(node['Relation Name'] ?? '').startsWith('post_feed_shares') ||
-          String(node['Subplan Name'] ?? '').startsWith('CTE shared_post') ||
-          String(node['Subplan Name'] ?? '') === 'CTE eligible_shared_posts',
+          stringFromUnknown(node['Relation Name'] ?? '').startsWith('post_feed_shares') ||
+          stringFromUnknown(node['Subplan Name'] ?? '').startsWith('CTE shared_post') ||
+          stringFromUnknown(node['Subplan Name'] ?? '') === 'CTE eligible_shared_posts',
       )
     )
       throw new Error(`${result.name} must omit disabled share CTEs and delivery branches`)
@@ -76,7 +77,9 @@ function assertShareDeliveryJoinWork(
       0,
     )
   const rejected = nodes
-    .filter(node => String(node['Join Filter'] ?? '').includes('eligible_shared_posts.id'))
+    .filter(node =>
+      stringFromUnknown(node['Join Filter'] ?? '').includes('eligible_shared_posts.id'),
+    )
     .reduce(
       (total, node) =>
         total +
@@ -97,8 +100,8 @@ function assertIndexedTargetWork(
 ): void {
   const scans = nodes.filter(
     node =>
-      String(node['Alias'] ?? '').replace(/_\d+$/, '') === alias &&
-      String(node['Relation Name'] ?? '').startsWith('posts'),
+      stringFromUnknown(node['Alias'] ?? '').replace(/_\d+$/, '') === alias &&
+      stringFromUnknown(node['Relation Name'] ?? '').startsWith('posts'),
   )
   const executingScans = scans.filter(node => Number(node['Actual Loops'] ?? 0) > 0)
   const work = scans.reduce(
@@ -118,8 +121,8 @@ function assertIndexedTargetWork(
   if (
     executingScans.some(
       node =>
-        !String(node['Node Type'] ?? '').includes('Index') ||
-        !String(node['Index Cond'] ?? '').includes('(id = '),
+        !stringFromUnknown(node['Node Type'] ?? '').includes('Index') ||
+        !stringFromUnknown(node['Index Cond'] ?? '').includes('(id = '),
     ) ||
     (targets > 0 && !executingScans.length)
   )

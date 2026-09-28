@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const REMOTE_FOLLOWER_INDEX = 'idx_relation__remote_actor__follow__user__active_reverse'
 const REMOTE_FOLLOWER_RELATION = 'relation__remote_actor__follow__user'
@@ -10,7 +11,7 @@ export function assertRemoteFollowerPagePlanShapeIfApplicable(result: ExplainRes
   if (result.scenario_id !== 'remote-follower-inbox-late-cursor') return
   const nodes = collectPlanNodes(result.plan)
   const indexNode = nodes.find(node => node['Index Name'] === REMOTE_FOLLOWER_INDEX)
-  const indexCondition = String(indexNode?.['Index Cond'] ?? '')
+  const indexCondition = stringFromUnknown(indexNode?.['Index Cond'] ?? '')
   const hasStrictKeysetCondition =
     indexCondition.includes('object_id') &&
     indexCondition.includes('subject_id') &&
@@ -31,7 +32,8 @@ export function assertRemoteFollowerPagePlanShapeIfApplicable(result: ExplainRes
       isNodeWorkUnbounded(node),
   )
   const sortsUnbounded = nodes.some(
-    node => String(node['Node Type'] ?? '').includes('Sort') && isNodeWorkUnbounded(node),
+    node =>
+      stringFromUnknown(node['Node Type'] ?? '').includes('Sort') && isNodeWorkUnbounded(node),
   )
 
   if (

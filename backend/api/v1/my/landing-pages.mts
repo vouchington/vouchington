@@ -12,6 +12,7 @@ import {
   updateMyLandingPage,
   type LandingPageItemInput,
 } from '@services/my'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 function parseOptionalSubtitle(
   ctx: Context,
@@ -45,9 +46,9 @@ async function handleCreateMyLandingPage(ctx: Context) {
 
   const body = (await ctx.request.json('100kb')) as Record<string, unknown>
   const landingPage = await createMyLandingPage(currentUser.id, {
-    title: String(body.title ?? ''),
+    title: stringFromUnknown(body.title ?? ''),
     subtitle: parseOptionalSubtitle(ctx, body),
-    slug: String(body.slug ?? ''),
+    slug: stringFromUnknown(body.slug ?? ''),
   })
 
   ctx.setStatus(201)
@@ -95,9 +96,9 @@ async function handleUpdateMyLandingPage(ctx: Context) {
   }
 
   const landingPage = await updateMyLandingPage(currentUser.id, ctx.params.pageId!, {
-    title: 'title' in body ? String(body.title ?? '') : undefined,
+    title: 'title' in body ? stringFromUnknown(body.title ?? '') : undefined,
     subtitle: parseOptionalSubtitle(ctx, body),
-    slug: 'slug' in body ? String(body.slug ?? '') : undefined,
+    slug: 'slug' in body ? stringFromUnknown(body.slug ?? '') : undefined,
   })
 
   ctx.json({ landing_page: landingPage })

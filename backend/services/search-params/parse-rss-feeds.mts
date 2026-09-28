@@ -13,6 +13,7 @@ import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/en
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'
 import { resolveHashtagTopicSearch } from './hashtag-topic-search.mts'
 import { prepareQueryForValidation } from './prepare-query.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 export const VALID_FEED_TYPES = ['article', 'podcast', 'video', 'mixed'] as const
 
 type RssFeedsSearchOptions = {
@@ -153,7 +154,6 @@ export async function resolveRssFeedsSearchParams(
         : parseBooleanish(discoverableParam)
 
   const topicIds = [...new Set(resolvedTopicIds.filter((id): id is string => !!id))]
-
   const textSearchQuery = hashtagSearch.textSearchQuery
 
   const searchOptions: RssFeedsSearchOptions = {
@@ -170,7 +170,7 @@ export async function resolveRssFeedsSearchParams(
       : {}),
     ...(publisherTypeMatch === 'all' ? { publisher_type_match: 'all' as const } : {}),
     ...(requestedTextSearchQuery
-      ? { text_search_query: String(requestedTextSearchQuery) }
+      ? { text_search_query: stringFromUnknown(requestedTextSearchQuery) }
       : textSearchQuery
         ? { text_search_query: textSearchQuery }
         : {}),

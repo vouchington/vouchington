@@ -36,6 +36,7 @@ import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
 import { apiRequest, apiResponse } from '../../response-contract.mts'
 import { classifyFediverseInstance as classifyInstance } from '@services/fediverse-search/adapters/instance-classification'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type PublicFediverseInstanceAttributes = Omit<
   FediverseInstanceAttributes,
@@ -111,7 +112,7 @@ app
       topic_types: ['fediverse_instance'],
       fediverse_instance: true,
       ...(query.software !== undefined && {
-        fediverse_instance_software: String(query.software),
+        fediverse_instance_software: stringFromUnknown(query.software),
       }),
       ...(query.open_registrations !== undefined && {
         fediverse_instance_open_registrations: parseBooleanish(query.open_registrations),

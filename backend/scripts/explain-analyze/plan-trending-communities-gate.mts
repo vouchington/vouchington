@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // getTrendingCommunities used to LEFT JOIN every public community against view_community_metrics,
 // whose per-community correlated subqueries scanned before LIMIT — the O(all communities) shape
@@ -36,7 +37,7 @@ export function assertTrendingCommunitiesIsCandidateBounded(result: ExplainResul
 type PlanNode = Record<string, unknown>
 
 function baseRelationName(node: PlanNode): string {
-  return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
 function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {
