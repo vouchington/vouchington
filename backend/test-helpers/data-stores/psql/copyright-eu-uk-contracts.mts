@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
@@ -178,4 +178,15 @@ export async function insertTerritorialPolicyWithdrawal(
       copyright_territorial_policy_approval_id, withdrawn_by_id
     ) VALUES (${approvalId}, ${actorId})
   `)
+}
+
+/** Runs territorial setup inside a transaction and always rolls it back, so a temporary policy
+ * approval cannot enable EU or UK intake for later tests. */
+export async function withRolledBackTerritorialTransaction<Result>(
+  run: (transaction: TransactionQuery) => Promise<Result>,
+): Promise<Result> {
+  await using transaction = await beginTransaction()
+  const result = await run(transaction)
+  await transaction.rollback()
+  return result
 }

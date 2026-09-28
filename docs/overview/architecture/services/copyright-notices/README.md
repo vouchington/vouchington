@@ -93,5 +93,23 @@ disposition; restrict and terminate recheck the operative threshold at decision 
 EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
 receipt, routing, reasons or review, redress, escalation, and EU reporting facts, and they fail
 closed until a separate territorial policy approval exists. They do not use the US restoration
-clock or decide legal merits. The durable workflow is documented in
+clock or decide legal merits.
+
+```mermaid
+flowchart TD
+  policy[Unwithdrawn territorial policy approval]
+  policy -->|missing or withdrawn| closed[Fail closed]
+  policy -->|eu_dsa| euReceipt[EU receipt routed to the staff queue]
+  policy -->|uk| ukReceipt[UK receipt routed to the staff queue]
+  euReceipt --> ack[Acknowledgment attempts with no due time]
+  ack -->|fifth failure| escalated[Escalation]
+  euReceipt --> reasons[Staff-supplied statement of reasons]
+  reasons --> redress[Participant redress and staff disposition]
+  euReceipt --> supervised[Supervised complaint escalates when recorded]
+  policy --> report[Transparency counts for a caller-supplied period]
+  ukReceipt --> review[Staff-supplied review]
+  review --> ukRedress[Participant redress and staff disposition]
+```
+
+The durable workflow is documented in
 [`COPYRIGHT-NOTICES.md`](../../../../requirements/moderation/COPYRIGHT-NOTICES.md).

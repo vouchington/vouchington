@@ -274,21 +274,8 @@ counsel, and removing one ground cannot remove another.
 
 ## EU and UK contracts
 
-```mermaid
-flowchart TD
-  policy[Unwithdrawn territorial policy approval]
-  policy -->|missing or withdrawn| closed[Fail closed]
-  policy -->|eu_dsa| euReceipt[EU receipt routed to the staff queue]
-  policy -->|uk| ukReceipt[UK receipt routed to the staff queue]
-  euReceipt --> ack[Acknowledgment attempts with no due time]
-  ack -->|fifth failure| escalated[Escalation]
-  euReceipt --> reasons[Staff-supplied statement of reasons]
-  reasons --> redress[Participant redress and staff disposition]
-  euReceipt --> supervised[Supervised complaint escalates when recorded]
-  policy --> report[Transparency counts for a caller-supplied period]
-  ukReceipt --> review[Staff-supplied review]
-  review --> ukRedress[Participant redress and staff disposition]
-```
+The fail-closed flow is diagrammed in the
+[copyright notices service README](../../../backend/services/copyright-notices/README.md).
 
 Receipt stores the notifier's contact, content location, and grounds. It does not resolve a
 placement, write a lifecycle event, or create a US restoration deadline. Acknowledgment is an

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   concealTerritorialPolicyApprovals,
   insertTerritorialPolicyApproval,
   insertTerritorialPolicyWithdrawal,
   readCopyrightTerritorialContractShape,
+  withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 import {
   acknowledgeUkCopyrightNotice,
@@ -33,38 +33,39 @@ function noticeRequest(): TerritorialNoticeRequest {
 describe('UK copyright notice contracts', () => {
   it('fails closed without an approved policy and after that approval is withdrawn', async () => {
     const claimant = await createTestUser()
-    await using transaction = await beginTransaction()
-    await concealTerritorialPolicyApprovals(transaction, 'uk', claimant.id)
-    await expect(
-      receiveUkCopyrightNoticeInTransaction(
+    await withRolledBackTerritorialTransaction(async transaction => {
+      await concealTerritorialPolicyApprovals(transaction, 'uk', claimant.id)
+      await expect(
+        receiveUkCopyrightNoticeInTransaction(
+          claimant,
+          crypto.randomUUID(),
+          noticeRequest(),
+          transaction,
+        ),
+      ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+      const approvalId = await insertTerritorialPolicyApproval(
+        transaction,
+        'uk',
+        `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
+        claimant.id,
+      )
+      const opened = await receiveUkCopyrightNoticeInTransaction(
         claimant,
         crypto.randomUUID(),
         noticeRequest(),
         transaction,
-      ),
-    ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
-    const approvalId = await insertTerritorialPolicyApproval(
-      transaction,
-      'uk',
-      `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
-      claimant.id,
-    )
-    const opened = await receiveUkCopyrightNoticeInTransaction(
-      claimant,
-      crypto.randomUUID(),
-      noticeRequest(),
-      transaction,
-    )
-    expect(opened.route_destination).toBe('staff_queue')
-    await insertTerritorialPolicyWithdrawal(transaction, approvalId, claimant.id)
-    await expect(
-      receiveUkCopyrightNoticeInTransaction(
-        claimant,
-        crypto.randomUUID(),
-        noticeRequest(),
-        transaction,
-      ),
-    ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+      )
+      expect(opened.route_destination).toBe('staff_queue')
+      await insertTerritorialPolicyWithdrawal(transaction, approvalId, claimant.id)
+      await expect(
+        receiveUkCopyrightNoticeInTransaction(
+          claimant,
+          crypto.randomUUID(),
+          noticeRequest(),
+          transaction,
+        ),
+      ).rejects.toMatchObject({ status: 403, message: 'UK copyright notices are not available' })
+    })
   })
 
   it('records receipt, human review, and redress without EU rows or a US clock', async () => {

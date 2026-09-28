@@ -458,8 +458,6 @@ CREATE INDEX IF NOT EXISTS idx_copyright_eu_redress_requests__submitter
   ON copyright_eu_redress_requests (submitted_by_user_id) WHERE submitted_by_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_redress_decisions__decided_by
   ON copyright_eu_redress_decisions (decided_by_id) WHERE decided_by_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_copyright_eu_supervised_complaints__notice
-  ON copyright_eu_supervised_complaints (copyright_notice_id);
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_supervised_complaints__recorded_by
   ON copyright_eu_supervised_complaints (recorded_by_id) WHERE recorded_by_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_copyright_eu_escalations__notice

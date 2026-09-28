@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   concealTerritorialPolicyApprovals,
   insertTerritorialPolicyApproval,
   insertTerritorialPolicyWithdrawal,
   readCopyrightTerritorialContractShape,
+  withRolledBackTerritorialTransaction,
 } from '@voucha/test-helpers/data-stores/psql/copyright-eu-uk-contracts'
 import { createCopyrightFormIntake, createCopyrightNoticeAggregate } from './index.mts'
 import {
@@ -53,8 +53,7 @@ async function euActors() {
 describe('EU copyright notice contracts', () => {
   it('fails closed without an approved policy and keeps the US aggregate on us_dmca', async () => {
     const claimant = await createTestUser()
-    {
-      await using transaction = await beginTransaction()
+    await withRolledBackTerritorialTransaction(async transaction => {
       await concealTerritorialPolicyApprovals(transaction, 'eu_dsa', claimant.id)
       await expect(
         receiveEuCopyrightNoticeInTransaction(
@@ -86,7 +85,7 @@ describe('EU copyright notice contracts', () => {
           transaction,
         ),
       ).rejects.toMatchObject({ status: 403, message: 'EU copyright notices are not available' })
-    }
+    })
     await expect(
       createCopyrightNoticeAggregate({
         jurisdiction: 'eu_dsa',
