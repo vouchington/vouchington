@@ -86,8 +86,8 @@ importers:
         specifier: ^18.4.0
         version: 18.4.0
       eslint-plugin-no-mistakes:
-        specifier: ^0.67.1
-        version: 0.67.1(eslint@10.5.0(jiti@2.7.0))
+        specifier: ^0.67.2
+        version: 0.67.2(eslint@10.5.0(jiti@2.7.0))
       eslint-plugin-playwright:
         specifier: ^2.12.0
         version: 2.12.0(eslint@10.5.0(jiti@2.7.0))
@@ -119,8 +119,8 @@ importers:
         specifier: ^6
         version: 6.38.0
       no-mistakes:
-        specifier: ^0.67.1
-        version: 0.67.1
+        specifier: ^0.67.2
+        version: 0.67.2
       oxfmt:
         specifier: ^0.70.0
         version: 0.70.0
@@ -1604,8 +1604,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: 0.0.11
-        version: 0.0.11
+        specifier: 0.0.12
+        version: 0.0.12
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -12557,8 +12557,8 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
       no-mistakes:
-        specifier: ^0.67.1
-        version: 0.67.1
+        specifier: ^0.67.2
+        version: 0.67.2
       picomatch:
         specifier: ^4.0.4
         version: 4.0.7
@@ -12799,14 +12799,14 @@ importers:
         specifier: 0.2.2
         version: 0.2.2
       '@vouchington/postgres':
-        specifier: 0.0.11
-        version: 0.0.11
+        specifier: 0.0.12
+        version: 0.0.12
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
       no-mistakes:
-        specifier: ^0.67.1
-        version: 0.67.1
+        specifier: ^0.67.2
+        version: 0.67.2
       oxfmt:
         specifier: ^0.70.0
         version: 0.70.0
@@ -18214,8 +18214,8 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.11':
-    resolution: {integrity: sha512-lb00LmwIgkGeC+ZIihLuLsS97FdOSIYXOXzr61JL86zXK5MVmUGQo7wGuCZb2cjcmmyTYBb6A4/PVdXWku8CXg==}
+  '@vouchington/postgres@0.0.12':
+    resolution: {integrity: sha512-o2m4ZwCWC7/gmaFX3wScDXzQ5jUTNgW9MBB3U2i4w91fhau9g6sXxEs/YczIeRyXKtsxazYXcYdJTdA0rwxIGg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.1':
@@ -19171,8 +19171,8 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
-  eslint-plugin-no-mistakes@0.67.1:
-    resolution: {integrity: sha512-pOWzxJf3PEBd6XIFyegtz+zp8sZNbRPaugJxtrt1qGAnipupTXrH7kvR2K2zFWwXJsyL9VUQiGzgcB9zK5sueQ==}
+  eslint-plugin-no-mistakes@0.67.2:
+    resolution: {integrity: sha512-hWFxZJQXgokT1lpMGeIqrk/2LS/WT8Es6KfhZKXQ2uv1tBRR8bnpgINBq0pTovKkT3D36gyw9B5bhDPbVwe5rg==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       eslint: '>=9'
@@ -20514,30 +20514,30 @@ packages:
       sass:
         optional: true
 
-  no-mistakes-darwin-arm64@0.67.1:
-    resolution: {integrity: sha512-sUiPhQ7+Mn+YcQn/GrEooesaDTHiOO05pxn1UyCLBmYNILGZYEyUDMGH6I8UEwsk6wJ8vl4D2xsIci0JskKJ7A==}
+  no-mistakes-darwin-arm64@0.67.2:
+    resolution: {integrity: sha512-Y4BGYXTNJ4JAbFxOMin4w6Y+i5hYyXefMDCi6C7i8zecfbU59hcd3sTkyty5Bki4WQHFN6Nb5NvDS09zD4n+Yw==}
     cpu: [arm64]
     os: [darwin]
 
-  no-mistakes-linux-arm64-gnu@0.67.1:
-    resolution: {integrity: sha512-OxJlcHAudzR52QOlbzXgqJ84O4tvDJx+0ngXBlqXkaAi+9NZXkwlnVMQIqPnPwrFW5kiNPbB8STapt47TNTlVQ==}
+  no-mistakes-linux-arm64-gnu@0.67.2:
+    resolution: {integrity: sha512-jI3iLy5EkkvOoG40c1stQoxfE2e9i2iCAVKRUi6lUQyjZxq6GF5sACoQkwpUysGo6vbRxMHAAw+Y2yPbVuOJWw==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-linux-x64-gnu@0.67.1:
-    resolution: {integrity: sha512-JlfuatjcSO7zN9AQRpwEnk36mKJ1Ee3FE6tUb6ukfcGdk5efdrzhKwhLsUSh5mUZenQjjHamQPKCJOdQ0eFq7w==}
+  no-mistakes-linux-x64-gnu@0.67.2:
+    resolution: {integrity: sha512-Nj+3upD04jqmgcdre2D0paCQptpHr+Ao64fM+tUqfumYhqSlfNKl/U8oS4jrBF+phPaYGMdpmNf27jDE7s4e9Q==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  no-mistakes-win32-x64-msvc@0.67.1:
-    resolution: {integrity: sha512-zsi4J2haFDqkPEKgIqx5/Wha5rZyE72iYJfYAot7oCjtgRLmtHH89wjp4dUtGjqneXIjs8DUXk1VISOr4y4bpw==}
+  no-mistakes-win32-x64-msvc@0.67.2:
+    resolution: {integrity: sha512-5tCawSAWFh1FNH6+RRCvxyvAAidQVSprN3pDs6R47/gopsoJjeyX5aVrsaQ3gz68sMaNVL7/4YeTalAF9VxXxA==}
     cpu: [x64]
     os: [win32]
 
-  no-mistakes@0.67.1:
-    resolution: {integrity: sha512-ua+9d2DtoUDEJ/yNaKBzJ5EUxneItkLexaDJPeLlsWTCEEFDMIGJoAXb3Zf8h/vQqJilFso9gLVvXCyhQ58baw==}
+  no-mistakes@0.67.2:
+    resolution: {integrity: sha512-Z1uu95jv0aAaF5ImFAVavy04/EJHAUpJ3JxkTm0xc5cgow3PJvLn7gC1FXexHic3Qgttz3Uu5E/zt8LJkEUJlg==}
     hasBin: true
 
   node-app-attest@1.0.1:
@@ -22082,8 +22082,8 @@ packages:
   vscode-languageserver-textdocument@1.0.15:
     resolution: {integrity: sha512-Gsfr9S8LU3S6885cS+NaleasJ0n3V5y/SOTqHCifQiXWFw3G9w9/YItDfwHrlCz+dSZWWZ8ilYVMcJe7Sz7Sxw==}
 
-  vscode-languageserver-types@3.18.3:
-    resolution: {integrity: sha512-XIlzJ7Qp/jzSI1ds7/FwPAWrPeTZA7pAtlW4hdJ1J6xXWJL6dR9QYnDhJOdLzdKhUQ5Mm6mvUMw+3DcOQQasPw==}
+  vscode-languageserver-types@3.18.4:
+    resolution: {integrity: sha512-nQsacoiijvl0fRf2q28uFDrAVwRhdCa3QveiF7/CX0r18mLR5FU/1WskSsCKOjmEbtteKUnY8x8Yzxop+k0zwg==}
 
   w3c-xmlserializer@6.0.0:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
@@ -27249,7 +27249,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.11':
+  '@vouchington/postgres@0.0.12':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.0
@@ -28005,7 +28005,7 @@ snapshots:
   dockerfile-ast@0.7.1:
     dependencies:
       vscode-languageserver-textdocument: 1.0.15
-      vscode-languageserver-types: 3.18.3
+      vscode-languageserver-types: 3.18.4
 
   doctrine@3.0.0:
     dependencies:
@@ -28209,7 +28209,7 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-mistakes@0.67.1(eslint@10.5.0(jiti@2.7.0)):
+  eslint-plugin-no-mistakes@0.67.2(eslint@10.5.0(jiti@2.7.0)):
     dependencies:
       eslint: 10.5.0(jiti@2.7.0)
 
@@ -29714,24 +29714,24 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  no-mistakes-darwin-arm64@0.67.1:
+  no-mistakes-darwin-arm64@0.67.2:
     optional: true
 
-  no-mistakes-linux-arm64-gnu@0.67.1:
+  no-mistakes-linux-arm64-gnu@0.67.2:
     optional: true
 
-  no-mistakes-linux-x64-gnu@0.67.1:
+  no-mistakes-linux-x64-gnu@0.67.2:
     optional: true
 
-  no-mistakes-win32-x64-msvc@0.67.1:
+  no-mistakes-win32-x64-msvc@0.67.2:
     optional: true
 
-  no-mistakes@0.67.1:
+  no-mistakes@0.67.2:
     optionalDependencies:
-      no-mistakes-darwin-arm64: 0.67.1
-      no-mistakes-linux-arm64-gnu: 0.67.1
-      no-mistakes-linux-x64-gnu: 0.67.1
-      no-mistakes-win32-x64-msvc: 0.67.1
+      no-mistakes-darwin-arm64: 0.67.2
+      no-mistakes-linux-arm64-gnu: 0.67.2
+      no-mistakes-linux-x64-gnu: 0.67.2
+      no-mistakes-win32-x64-msvc: 0.67.2
 
   node-app-attest@1.0.1:
     dependencies:
@@ -31473,7 +31473,7 @@ snapshots:
 
   vscode-languageserver-textdocument@1.0.15: {}
 
-  vscode-languageserver-types@3.18.3: {}
+  vscode-languageserver-types@3.18.4: {}
 
   w3c-xmlserializer@6.0.0:
     dependencies:
