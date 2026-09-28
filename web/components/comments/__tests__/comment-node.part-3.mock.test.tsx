@@ -1,4 +1,9 @@
 import { scoreVoteProps } from '@/test-helpers/components/comments/comment-node.mock-support'
+import {
+  createCommentNodeProps,
+  makeCommentNode,
+  makeCommentPost,
+} from '@/test-helpers/components/comments/comment-node-fixtures'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,9 +11,11 @@ import { fireEvent, render, screen } from '@testing-library/react'
 
 import { CommentNode } from '../comment-node'
 
-import type { ElectionVote, Post } from '@/types/posts'
+import type { ElectionVote } from '@/types/posts'
 
-import type { CommentNodeData } from '../comment-tree-utils'
+const makePost = makeCommentPost
+const makeNode = makeCommentNode
+const defaultProps = createCommentNodeProps()
 
 vi.mock(import('@/lib/auth/context'), () => ({
   useAuth: () => ({ currentUser: null, isAuthenticated: false }),
@@ -21,54 +28,6 @@ vi.mock(
       CommentReplyForm: () => null,
     }) as unknown as typeof import('../comment-reply-form'),
 )
-
-const makePost = (overrides: Partial<Post> = {}): Post => ({
-  id: 'c1',
-  post_type: 'comment',
-  title: '',
-  slug: 'c1',
-  markdown: 'Hello',
-  root_id: 'root-1',
-  parent_id: 'root-1',
-  created_by_id: 'user-1',
-  created_by: { __entity_type: 'user', id: 'user-1', username: 'alice', profile_image_id: null },
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z',
-  deleted_at: null,
-  deleted_by_id: null,
-  archived_at: null,
-  archived_by_id: null,
-  broadcast: 'everyone',
-  privacy: 'public',
-  is_anonymous: false,
-
-  community_id: null,
-
-  clearance_status: 'approved',
-  ...overrides,
-})
-
-const makeNode = (post: Post, overrides: Partial<CommentNodeData> = {}): CommentNodeData => ({
-  post,
-  children: [],
-  html: '<p>Hello</p>',
-  ...overrides,
-})
-
-const defaultProps = {
-  depth: 0,
-  rootPostId: 'root-1',
-  rootPostType: 'discussion',
-  collapsedIds: new Set<string>(),
-  replyToId: null as string | null,
-  quoteMarkdown: '',
-  onToggleCollapse: vi.fn<VitestLooseMock>(),
-  onToggleReply: vi.fn<VitestLooseMock>(),
-  onCommentAdded: vi.fn<VitestLooseMock>(),
-  onQuote: vi.fn<VitestLooseMock>(),
-  isAdmin: false,
-  isThreadLocked: false,
-}
 
 describe('CommentNode', () => {
   beforeEach(() => {
