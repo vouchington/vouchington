@@ -29,16 +29,14 @@ export async function createCommunityLifecycleNotification(
         community_id,
         event_key,
         title,
-        body,
-        target_entity
+        body
       ) VALUES (
         ${input.userId},
         ${input.entityType},
         ${input.communityId},
         ${input.eventKey},
         ${truncateText(input.title, 300)},
-        ${truncateText(input.body, 1000)},
-        jsonb_build_object('__entity_type', 'community', 'id', ${input.communityId}::text)
+        ${truncateText(input.body, 1000)}
       )
       ON CONFLICT DO NOTHING
       RETURNING user_id, id

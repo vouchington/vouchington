@@ -1,6 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { AgentModel, AgentModelProvider } from '@voucha/types/entities/agent-model'
+import { appendConversationMessageReturning, conversationMessageColumns } from './chat-content.mts'
 import type {
   Conversation,
   ConversationMessage,
@@ -23,12 +24,19 @@ export async function createConversationMessage(
   createdById: string,
   content: unknown,
 ): Promise<ConversationMessage> {
-  const { rows } = await write<ConversationMessage>(sql`/* createConversationMessage */
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${conversationId}, ${createdById}, ${JSON.stringify(content)})
-    RETURNING *
-  `)
-  return rows[0]
+  const columns = conversationMessageColumns(content)
+  const query = sql`/* createConversationMessage */
+    INSERT INTO conversation_messages (
+      conversation_id, created_by_id, chat_role, chat_text, chat_error
+    )
+    VALUES (
+      ${conversationId}, ${createdById}, ${columns.role}, ${columns.text}, ${columns.error}
+    )
+    RETURNING
+  `
+  appendConversationMessageReturning(query)
+  const { rows } = await write<ConversationMessage>(query)
+  return rows[0]!
 }
 
 export async function createConversationMessageAgenticRun(params: {
@@ -94,24 +102,22 @@ export async function claimChatConversationMessageAgenticRun(params: {
       SELECT pg_advisory_xact_lock(hashtextextended(${params.conversationMessageId}, 0))
     `)
   const placeholder = await query<{
-    content: unknown
+    chat_role: string | null
+    chat_text: string | null
+    chat_error: string | null
   }>(sql`/* lockPendingChatAssistantPlaceholder */
-      SELECT content
+      SELECT chat_role, chat_text, chat_error
       FROM conversation_messages
       WHERE conversation_id = ${params.conversationId}
         AND id = ${params.conversationMessageId}
         AND deleted_at IS NULL
       FOR UPDATE
     `)
-  const content = placeholder.rows[0]?.content
+  const pending = placeholder.rows[0]
   if (
-    !content ||
-    typeof content !== 'object' ||
-    !('role' in content) ||
-    content.role !== 'assistant' ||
-    !('content' in content) ||
-    content.content !== null ||
-    ('error' in content && content.error != null)
+    pending?.chat_role !== 'assistant' ||
+    pending.chat_text !== null ||
+    pending.chat_error !== null
   ) {
     await query.commit()
     return undefined

@@ -4,6 +4,7 @@ import { listNotifications } from './list.mts'
 import { deleteNotification, markNotificationRead } from './mutations.mts'
 import { reconcileNotificationsForPost } from './reconcile-post.mts'
 import { reconcileNotificationsForRssFeedItem } from './reconcile-rss-feed-item.mts'
+import { cleanupRetainedIdentityRoots } from '../data-retention/cleanup-retained-identities.mts'
 import {
   createTestManualPostNotification,
   createTestManualRssFeedItemNotification,
@@ -14,6 +15,7 @@ import {
   createTestUser,
   getNotificationById,
   hardDeleteTestPost,
+  hasTestRetainedIdentityRoot,
   markTestNotificationPushed,
   restoreRssFeedItemsForTest,
   setPostModerationFlaggedForTest,
@@ -117,6 +119,9 @@ describe('content notification visibility reconciliation', () => {
       publication_post_id: post.id,
       delete_reason: 'system_pruned',
     })
+    expect((await listNotifications(recipient.id)).results).toHaveLength(0)
+    await cleanupRetainedIdentityRoots(1_000, { post: [post.id] })
+    expect(await hasTestRetainedIdentityRoot('post', post.id)).toBe(true)
   })
 
   it('keeps post removal notifications visible during content reconciliation', async () => {

@@ -85,6 +85,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'domain_blacklists',
   'email_address_login_tokens',
   'facebook_accounts',
+  'follower_distribution_selected_recipients',
   'fediverse_instance_integration_changes',
   'github_accounts',
   'google_accounts',

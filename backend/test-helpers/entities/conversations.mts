@@ -73,12 +73,6 @@ export async function createTestConversation(options: CreateTestConversationOpti
   return { id: conversation.id as string }
 }
 
-type CreateTestConversationMessageOptions = {
-  conversationId: string
-  createdById: string
-  content: unknown
-}
-
 type CreateTestModmailThreadOptions = {
   communityId: string
   subjectUserId: string
@@ -117,14 +111,7 @@ export async function createTestModmailThread(options: CreateTestModmailThreadOp
   return { id: conversationId }
 }
 
-export async function createTestConversationMessage(options: CreateTestConversationMessageOptions) {
-  const { rows } = await write(sql`
-    INSERT INTO conversation_messages (conversation_id, created_by_id, content)
-    VALUES (${options.conversationId}, ${options.createdById}, ${JSON.stringify(options.content)})
-    RETURNING id
-  `)
-  return { id: rows[0].id as string }
-}
+export { createTestConversationMessage } from './conversation-message-columns.mts'
 
 type TestConversationParticipant = {
   user_id: string

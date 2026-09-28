@@ -1,11 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers'
+import { InvalidConversationMessageContentError } from '@services/conversations-messages/chat-content'
 import {
   createConversation,
   createConversationMessage,
 } from '@services/conversations-messages/create'
 import type { PrivateUser } from '@services/users/types'
-import { buildChatInput, InvalidStoredChatHistoryError } from '../build-input.mts'
+import { buildChatInput } from '../build-input.mts'
 
 describe('buildChatInput', () => {
   let testUser: PrivateUser
@@ -103,7 +104,7 @@ describe('buildChatInput', () => {
     ])
   })
 
-  it('rejects malformed stored history without exposing its content', async () => {
+  it('rejects malformed chat content before it is stored', async () => {
     const malformedValues: unknown[] = [
       'sensitive non-object history',
       { role: 'system', content: 'sensitive privileged history' },
@@ -113,15 +114,13 @@ describe('buildChatInput', () => {
 
     for (const malformedValue of malformedValues) {
       const conversation = await createConversation(testUser.id, 'Malformed history')
-      await createConversationMessage(conversation.id, testUser.id, malformedValue)
-
       await expect(
-        buildChatInput(conversation.id, 'Current question', 'full-history'),
-      ).rejects.toThrow(InvalidStoredChatHistoryError)
+        createConversationMessage(conversation.id, testUser.id, malformedValue),
+      ).rejects.toThrow(InvalidConversationMessageContentError)
     }
   })
 
-  it('rejects unexpected stored message keys for each role', async () => {
+  it('rejects unexpected chat message keys for each role', async () => {
     const messagesWithUnexpectedKeys: unknown[] = [
       { role: 'user', content: 'Question', unexpected: 'sensitive user metadata' },
       {
@@ -134,11 +133,9 @@ describe('buildChatInput', () => {
 
     for (const storedMessage of messagesWithUnexpectedKeys) {
       const conversation = await createConversation(testUser.id, 'Unexpected history key')
-      await createConversationMessage(conversation.id, testUser.id, storedMessage)
-
       await expect(
-        buildChatInput(conversation.id, 'Current question', 'full-history'),
-      ).rejects.toThrow(InvalidStoredChatHistoryError)
+        createConversationMessage(conversation.id, testUser.id, storedMessage),
+      ).rejects.toThrow(InvalidConversationMessageContentError)
     }
   })
 

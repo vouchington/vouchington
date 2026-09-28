@@ -66,6 +66,14 @@ CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selecti
  LANGUAGE plpgsql
 ```
 
+## `fn_assert_follower_distribution_recipient_bounds`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_assert_web_push_endpoint_owner_subscription`
 
 ```sql
@@ -666,6 +674,15 @@ CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_delete_roll
 CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_rollup()
  RETURNS trigger
  LANGUAGE plpgsql
+```
+
+## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
 ```
 
 ## `fn_preserve_notification_publication_target`

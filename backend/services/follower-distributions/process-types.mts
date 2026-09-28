@@ -8,7 +8,6 @@ export type DistributionRow = {
   audience: 'all_followers' | 'selected_followers'
   post_id: string | null
   rss_feed_item_id: string | null
-  selected_recipient_user_ids: string[] | null
   last_processed_recipient_user_id: string | null
   completed_at: Date | null
   failed_at: Date | null

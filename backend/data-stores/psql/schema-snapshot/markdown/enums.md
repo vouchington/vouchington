@@ -170,6 +170,11 @@
 - `error`
 - `superseded`
 
+## `conversation_message_chat_roles`
+
+- `user`
+- `assistant`
+
 ## `conversation_message_directions`
 
 - `inbound`

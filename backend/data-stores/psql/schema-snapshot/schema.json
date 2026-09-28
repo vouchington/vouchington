@@ -96,6 +96,9 @@
     "conversation_message_agentic_runs_termination_reasons": {
       "values": ["no_tool_calls", "max_topics", "max_iterations", "stalled", "error", "superseded"]
     },
+    "conversation_message_chat_roles": {
+      "values": ["user", "assistant"]
+    },
     "conversation_message_directions": {
       "values": ["inbound", "outbound"]
     },
@@ -543,6 +546,9 @@
     "fn_assert_community_application_answer_selection_state(checked_answer_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selection_state(checked_answer_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM community_application_answers answer\n    WHERE answer.id = checked_answer_id\n  ) THEN\n    RETURN;\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM community_application_answers answer\n    WHERE answer.id = checked_answer_id\n      AND (\n        (\n          answer.is_null\n          AND EXISTS (\n            SELECT 1\n            FROM community_application_answer_selections selected\n            WHERE selected.application_answer_id = answer.id\n          )\n        )\n        OR (\n          NOT answer.is_null\n          AND answer.question_field_type = 'single_select'\n          AND (\n            SELECT count(*)\n            FROM community_application_answer_selections selected\n            WHERE selected.application_answer_id = answer.id\n          ) <> 1\n        )\n      )\n  ) THEN\n    RAISE EXCEPTION 'invalid community application answer selection state'\n      USING ERRCODE = '23514';\n  END IF;\nEND;\n$function$\n"
     },
+    "fn_assert_follower_distribution_recipient_bounds": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_follower_distribution_recipient_bounds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  distribution_ids UUID[] := ARRAY[]::UUID[];\n  checked_distribution_id UUID;\n  audience_value follower_distribution_audiences;\n  recipient_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'follower_distributions' THEN\n    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];\n  ELSE\n    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];\n    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN\n      distribution_ids := distribution_ids || OLD.distribution_id;\n    END IF;\n  END IF;\n\n  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP\n    SELECT audience INTO audience_value\n    FROM follower_distributions\n    WHERE id = checked_distribution_id;\n    IF NOT FOUND THEN\n      CONTINUE;\n    END IF;\n\n    SELECT COUNT(*) INTO recipient_count\n    FROM follower_distribution_selected_recipients\n    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;\n\n    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN\n      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers'\n      AND recipient_count < 1\n      AND NOT (\n        TG_TABLE_NAME = 'follower_distribution_selected_recipients'\n        AND TG_OP = 'DELETE'\n      ) THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
+    },
     "fn_assert_web_push_endpoint_owner_subscription": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_web_push_endpoint_owner_subscription()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  checked_endpoint_digest BYTEA := COALESCE(NEW.endpoint_digest, OLD.endpoint_digest);\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_endpoint_owners owner\n    WHERE owner.endpoint_digest = checked_endpoint_digest\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_subscriptions subscription\n        WHERE subscription.user_id = owner.user_id\n          AND subscription.id = owner.subscription_id\n          AND subscription.endpoint = owner.endpoint\n          AND subscription.deleted_at IS NULL\n      )\n  ) OR (\n    TG_OP <> 'INSERT'\n    AND EXISTS (\n      SELECT 1\n      FROM web_push_subscriptions subscription\n      WHERE subscription.user_id = OLD.user_id\n        AND subscription.id = OLD.subscription_id\n        AND subscription.endpoint = OLD.endpoint\n        AND subscription.deleted_at IS NULL\n        AND NOT EXISTS (\n          SELECT 1\n          FROM web_push_endpoint_owners owner\n          WHERE owner.endpoint_digest = OLD.endpoint_digest\n            AND owner.endpoint = OLD.endpoint\n            AND owner.user_id = OLD.user_id\n            AND owner.subscription_id = OLD.subscription_id\n        )\n    )\n  ) THEN\n    RAISE EXCEPTION 'web push endpoint owner requires one exact active subscription';\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
@@ -767,6 +773,9 @@
     },
     "fn_moderation_transparency_reports_insert_rollup": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      NULL::uuid AS community_id, 'reports'::text AS metric,\n      original_reason::text AS category, count(*)::integer AS count\n    FROM new_reports\n    WHERE moderation_transparency_community_id IS NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric, cohort.category, cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
+    },
+    "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    ELSE NULL\n  END\n$function$\n"
     },
     "fn_preserve_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -18429,7 +18438,7 @@
         "chk_conversation_messages__direction": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (direction IS NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND (direction IS NOT NULL)) OR ((kind = 'message'::conversation_message_kinds) AND (direction IS NULL))))",
         "chk_conversation_messages__discarded": "CHECK (((sent_at IS NULL) OR (discarded_at IS NULL)))",
         "chk_conversation_messages__edited": "CHECK ((((edited_at IS NULL) AND (edited_by_id IS NULL)) OR ((edited_at IS NOT NULL) AND (edited_by_id IS NOT NULL))))",
-        "chk_conversation_messages__kind_content": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (content IS NOT NULL)) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (body_text IS NOT NULL))))"
+        "chk_conversation_messages__kind_content": "CHECK ((((kind = 'chat'::conversation_message_kinds) AND (chat_role IS NOT NULL) AND (((chat_role = 'user'::conversation_message_chat_roles) AND (chat_text IS NOT NULL) AND (chat_error IS NULL)) OR (chat_role = 'assistant'::conversation_message_chat_roles))) OR ((kind = ANY (ARRAY['email'::conversation_message_kinds, 'note'::conversation_message_kinds])) AND (chat_role IS NULL) AND (chat_text IS NULL) AND (chat_error IS NULL) AND ((body_text IS NOT NULL) OR (body_html IS NOT NULL))) OR ((kind = 'message'::conversation_message_kinds) AND (chat_role IS NULL) AND (chat_text IS NULL) AND (chat_error IS NULL) AND (body_text IS NOT NULL))))"
       },
       "columns": {
         "ai_generated_at": {
@@ -18440,7 +18449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "ai_prompt": {
@@ -18451,7 +18460,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "text"
         },
         "approved_at": {
@@ -18462,7 +18471,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -18473,7 +18482,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "uuid"
         },
         "body_html": {
@@ -18484,7 +18493,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "body_text": {
@@ -18495,7 +18504,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "bounced_at": {
@@ -18506,19 +18515,41 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
-        "content": {
+        "chat_error": {
           "collation": null,
-          "comment": "Message content stored as JSONB. Used for chat messages.",
+          "comment": "Chat assistant error text. NULL when the turn has not failed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "text"
+        },
+        "chat_role": {
+          "collation": null,
+          "comment": "Chat speaker. user or assistant for kind chat; NULL for email, note, and direct messages.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 11,
-          "type": "jsonb"
+          "type": "conversation_message_chat_roles"
+        },
+        "chat_text": {
+          "collation": null,
+          "comment": "Chat message text. NULL while an assistant placeholder is pending or failed before output.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
         },
         "conversation_id": {
           "collation": null,
@@ -18583,7 +18614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "direction": {
@@ -18605,7 +18636,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         },
         "drafted_at": {
@@ -18616,7 +18647,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "edited_at": {
@@ -18627,7 +18658,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "edited_by_id": {
@@ -18638,7 +18669,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "email_from": {
@@ -18649,7 +18680,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "email_message_id": {
@@ -18660,7 +18691,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "email_subject": {
@@ -18671,7 +18702,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "email_to": {
@@ -18682,7 +18713,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "id": {
@@ -18715,7 +18746,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "sent_at": {
@@ -18726,7 +18757,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -18752,7 +18783,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages use content JSONB; email-channel messages use body_text/body_html.",
+      "comment": "Individual messages within a conversation, range-partitioned by conversation UUIDv7. Chat messages store role, text, and error in typed columns; email-channel messages use body_text/body_html.",
       "foreignKeys": {
         "conversation_messages_approved_by_id_fkey": {
           "columns": ["approved_by_id"],
@@ -32652,9 +32683,117 @@
         }
       }
     },
+    "follower_distribution_selected_recipients": {
+      "checkConstraints": {},
+      "columns": {
+        "distribution_id": {
+          "collation": null,
+          "comment": "Selected-followers distribution that owns this recipient.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "recipient_user_id": {
+          "collation": null,
+          "comment": "User selected at acceptance. Later unfollows do not remove the row; hard deletion does.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Distribution-owned selected recipient snapshot. Delivery identity stays on follower_distribution_deliveries.",
+      "foreignKeys": {
+        "fk_fd_selected_recipients__distribution": {
+          "columns": ["distribution_id"],
+          "definition": "FOREIGN KEY (distribution_id) REFERENCES follower_distributions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "follower_distributions",
+          "validated": true
+        },
+        "fk_fd_selected_recipients__user": {
+          "columns": ["recipient_user_id"],
+          "definition": "FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "follower_distribution_selected_recipients_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX follower_distribution_selected_recipients_pkey ON public.follower_distribution_selected_recipients USING btree (distribution_id, recipient_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "distribution_id",
+              "descending": false,
+              "expression": "distribution_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "recipient_user_id",
+              "descending": false,
+              "expression": "recipient_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_fd_selected_recipients__recipient_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_fd_selected_recipients__recipient_user_id ON public.follower_distribution_selected_recipients USING btree (recipient_user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "recipient_user_id",
+              "descending": false,
+              "expression": "recipient_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["distribution_id", "recipient_user_id"],
+        "definition": "PRIMARY KEY (distribution_id, recipient_user_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_fd_selected_recipients_bounds": "CREATE CONSTRAINT TRIGGER trigger_fd_selected_recipients_bounds AFTER INSERT OR DELETE OR UPDATE ON public.follower_distribution_selected_recipients DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds()"
+      },
+      "uniqueConstraints": {}
+    },
     "follower_distributions": {
       "checkConstraints": {
-        "chk_follower_distributions__audience_selection": "CHECK ((((audience = 'all_followers'::follower_distribution_audiences) AND (selected_recipient_user_ids IS NULL)) OR ((audience = 'selected_followers'::follower_distribution_audiences) AND (selected_recipient_user_ids IS NOT NULL) AND (cardinality(selected_recipient_user_ids) > 0) AND (cardinality(selected_recipient_user_ids) <= 100))))",
         "chk_follower_distributions__entity": "CHECK ((((action = ANY (ARRAY['post_share'::follower_distribution_actions, 'post_send'::follower_distribution_actions])) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL)) OR ((action = ANY (ARRAY['rss_feed_item_share'::follower_distribution_actions, 'rss_feed_item_send'::follower_distribution_actions])) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL))))",
         "chk_follower_distributions__terminal_state": "CHECK (((completed_at IS NULL) OR (failed_at IS NULL)))",
         "follower_distributions_failure_reason_check": "CHECK (((failure_reason IS NULL) OR (length(failure_reason) <= 1000)))"
@@ -32690,7 +32829,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -32701,7 +32840,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "failed_at": {
@@ -32712,7 +32851,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "failure_reason": {
@@ -32723,7 +32862,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "id": {
@@ -32745,7 +32884,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "post_id": {
@@ -32770,17 +32909,6 @@
           "ordinalPosition": 6,
           "type": "uuid"
         },
-        "selected_recipient_user_ids": {
-          "collation": null,
-          "comment": "Bounded selected follower ids for selected_followers distributions.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "uuid[]"
-        },
         "sender_user_id": {
           "collation": null,
           "comment": "User who requested the distribution.",
@@ -32800,7 +32928,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         }
       },
@@ -33056,6 +33184,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_fd_distributions_recipient_bounds": "CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds AFTER INSERT OR UPDATE OF audience ON public.follower_distributions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds()",
         "trigger_follower_distributions_updated_at": "CREATE TRIGGER trigger_follower_distributions_updated_at BEFORE UPDATE ON public.follower_distributions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -53705,13 +53834,13 @@
     },
     "notifications": {
       "checkConstraints": {
-        "chk_notifications__community_event_shape": "CHECK (((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'community_activity_digest'::notification_entity_types])) OR ((event_key IS NOT NULL) AND (target_path IS NULL) AND (((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (community_id IS NOT NULL) AND (target_entity = jsonb_build_object('__entity_type', 'community', 'id', community_id)) AND (target_intent IS NULL)) OR ((entity_type = 'community_activity_digest'::notification_entity_types) AND (community_id IS NULL) AND (target_entity IS NULL) AND (target_intent = 'notifications_inbox'::text))))))",
+        "chk_notifications__community_event_shape": "CHECK (((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'community_activity_digest'::notification_entity_types])) OR ((event_key IS NOT NULL) AND (target_path IS NULL) AND (((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (community_id IS NOT NULL) AND (target_intent IS NULL)) OR ((entity_type = 'community_activity_digest'::notification_entity_types) AND (community_id IS NULL) AND (target_intent = 'notifications_inbox'::text))))))",
         "chk_notifications__delete_reason": "CHECK ((((deleted_at IS NULL) AND (delete_reason IS NULL)) OR ((deleted_at IS NOT NULL) AND (delete_reason IS NOT NULL))))",
         "chk_notifications__delivery_sender": "CHECK ((((delivery_type = 'subscription'::notification_delivery_types) AND (sent_by_user_id IS NULL)) OR ((delivery_type = 'manual_send'::notification_delivery_types) AND (sent_by_user_id IS NOT NULL))))",
         "chk_notifications__entity_columns": "CHECK ((((entity_type = 'post'::notification_entity_types) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'rss_feed_item'::notification_entity_types) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = ANY (ARRAY['follow'::notification_entity_types, 'referral_signup'::notification_entity_types])) AND (actor_user_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_report'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'review_dispute'::notification_entity_types) AND (review_dispute_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'user_warning'::notification_entity_types) AND (user_warning_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_appeal'::notification_entity_types) AND (moderation_appeal_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'community_ban'::notification_entity_types) AND (community_ban_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL)) OR ((entity_type = 'critical_moderation_alert'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL))))",
         "chk_notifications__event_key": "CHECK (((event_key IS NULL) OR ((length(event_key) >= 1) AND (length(event_key) <= 300))))",
-        "chk_notifications__structured_target": "CHECK ((((target_entity IS NULL) OR ((jsonb_typeof(target_entity) = 'object'::text) AND (target_entity ? '__entity_type'::text) AND (target_entity ? 'id'::text))) AND ((target_intent IS NULL) OR (target_intent = 'notifications_inbox'::text))))",
-        "chk_notifications__target": "CHECK ((num_nonnulls(target_path, target_entity, target_intent) = 1))",
+        "chk_notifications__structured_target": "CHECK (((target_intent IS NULL) OR (target_intent = 'notifications_inbox'::text)))",
+        "chk_notifications__target": "CHECK ((((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (target_path IS NULL) AND (target_intent IS NULL)) OR ((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (num_nonnulls(target_path, target_intent) = 1))))",
         "notifications_actor_label_check": "CHECK (((actor_label IS NULL) OR (length(actor_label) <= 100)))",
         "notifications_body_check": "CHECK ((length(body) <= 1000))",
         "notifications_copyright_notice_entity_shape": "CHECK ((((entity_type = 'copyright_notice'::notification_entity_types) AND (copyright_notice_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL) AND (conversation_id IS NULL) AND (community_id IS NULL)) OR ((entity_type <> 'copyright_notice'::notification_entity_types) AND (copyright_notice_id IS NULL))))",
@@ -53804,7 +53933,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "delete_reason": {
@@ -53815,7 +53944,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 28,
           "type": "notification_delete_reasons"
         },
         "deleted_at": {
@@ -53826,7 +53955,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "delivery_type": {
@@ -53908,7 +54037,7 @@
         },
         "publication_post_id": {
           "collation": null,
-          "comment": "Stable post target retained after the display FK is cleared by hard deletion, for publication reconciliation only.",
+          "comment": "Stable post target retained after the display FK is cleared by hard deletion. References the retained post identity and does not grant live visibility.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -53919,7 +54048,7 @@
         },
         "publication_rss_feed_item_id": {
           "collation": null,
-          "comment": "Stable RSS item target retained after the display FK is cleared by hard deletion, for publication reconciliation only.",
+          "comment": "Stable RSS item target retained after the display FK is cleared by hard deletion. References the retained RSS item identity and does not grant live visibility.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -53936,7 +54065,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "read_at": {
@@ -53947,7 +54076,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "review_dispute_id": {
@@ -53983,31 +54112,20 @@
           "ordinalPosition": 19,
           "type": "uuid"
         },
-        "target_entity": {
+        "target_intent": {
           "collation": null,
-          "comment": "Structured entity navigation target; preferred over the legacy target_path.",
+          "comment": "Structured application navigation intent. Community entity targets are derived from community_id instead of a stored document.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 24,
-          "type": "jsonb"
-        },
-        "target_intent": {
-          "collation": null,
-          "comment": "Structured application navigation intent; preferred over the legacy target_path.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 25,
           "type": "text"
         },
         "target_path": {
           "collation": null,
-          "comment": "URL path the notification links to.",
+          "comment": "URL path the notification links to. Producers that navigate by path still write this column.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -54035,7 +54153,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -54106,6 +54224,24 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "moderation_reports",
+          "validated": true
+        },
+        "fk_notifications__publication_post_id": {
+          "columns": ["publication_post_id"],
+          "definition": "FOREIGN KEY (publication_post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        },
+        "fk_notifications__publication_rss_feed_item_id": {
+          "columns": ["publication_rss_feed_item_id"],
+          "definition": "FOREIGN KEY (publication_rss_feed_item_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_rss_feed_item_identities",
           "validated": true
         },
         "fk_notifications__review_dispute_id": {
