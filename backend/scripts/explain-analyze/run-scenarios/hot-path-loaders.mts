@@ -49,55 +49,55 @@ export async function runHotPathLoaderScenarios() {
   // Author/profile links: loaded by both the post-detail and user-profile routes.
   await runAndCapture('profile-links', () => listProfileLinks(seedUser.id))
 
-  const firstCardPage = await getIndividualCards(seedUser as any, seedUser as any, { limit: 25 })
+  const firstCardPage = await getIndividualCards(seedUser, seedUser, { limit: 25 })
   await runAndCapture('individual-cards-page', () =>
-    getIndividualCards(seedUser as any, seedUser as any, {
+    getIndividualCards(seedUser, seedUser, {
       after: firstCardPage.page_info.end_cursor!,
       limit: 25,
     }),
   )
 
   const firstPointValuationPage = await getIndividualRewardsProgramPointValuations(
-    seedUser as any,
-    seedUser as any,
+    seedUser,
+    seedUser,
     { limit: 25 },
   )
   await runAndCapture('point-valuations-page', () =>
-    getIndividualRewardsProgramPointValuations(seedUser as any, seedUser as any, {
+    getIndividualRewardsProgramPointValuations(seedUser, seedUser, {
       after: firstPointValuationPage.page_info.end_cursor!,
       limit: 25,
     }),
   )
 
   const firstSpendingCategoryPage = await getHouseholdSpendingCategoriesByUserId(
-    seedUser as any,
-    seedUser as any,
+    seedUser,
+    seedUser,
     { limit: 25 },
   )
   await runAndCapture('spending-categories-page', () =>
-    getHouseholdSpendingCategoriesByUserId(seedUser as any, seedUser as any, {
+    getHouseholdSpendingCategoriesByUserId(seedUser, seedUser, {
       after: firstSpendingCategoryPage.page_info.end_cursor!,
       limit: 25,
     }),
   )
 
   const firstRewardsProgramStatusPage = await getIndividualRewardsProgramStatuses(
-    seedUser as any,
-    seedUser as any,
+    seedUser,
+    seedUser,
     { limit: 25 },
   )
   await runAndCapture('rewards-program-statuses-page', () =>
-    getIndividualRewardsProgramStatuses(seedUser as any, seedUser as any, {
+    getIndividualRewardsProgramStatuses(seedUser, seedUser, {
       after: firstRewardsProgramStatusPage.page_info.end_cursor!,
       limit: 25,
     }),
   )
 
-  const firstSavedPostsPage = await getUserPostsCollection(seedUser as any, seedUser.id, 'saved', {
+  const firstSavedPostsPage = await getUserPostsCollection(seedUser, seedUser.id, 'saved', {
     limit: 25,
   })
   await runAndCapture('profile-posts-page', () =>
-    getUserPostsCollection(seedUser as any, seedUser.id, 'saved', {
+    getUserPostsCollection(seedUser, seedUser.id, 'saved', {
       after: firstSavedPostsPage.page_info.end_cursor!,
       limit: 25,
     }),
@@ -105,6 +105,6 @@ export async function runHotPathLoaderScenarios() {
 
   // User profile: per-profile metrics aggregation (view_user_metrics + member-community count).
   await runAndCapture('user-profile-metrics', () =>
-    getUserProfileMetricsByAny(seedUser.id, { currentUser: seedUser as any }),
+    getUserProfileMetricsByAny(seedUser.id, { currentUser: seedUser }),
   )
 }

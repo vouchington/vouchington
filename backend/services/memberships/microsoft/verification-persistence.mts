@@ -1,4 +1,4 @@
-import { type QueryExecutor } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { ProviderMembershipSourceConflictError } from '../provider-source.mts'

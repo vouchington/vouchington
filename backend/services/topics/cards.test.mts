@@ -162,13 +162,20 @@ describe('cards', () => {
     ['topics__cards_brand_id_fkey', 422, 'Invalid brand_id'],
   ])('maps the %s race to a precise domain error', async (constraint, status, message) => {
     await assert.rejects(
-      mapCardAttributeReferenceError(() => Promise.reject({ code: '23503', constraint })),
+      mapCardAttributeReferenceError(() =>
+        Promise.reject(
+          Object.assign(new Error('database constraint'), { code: '23503', constraint }),
+        ),
+      ),
       { status, message },
     )
   })
 
   it('does not relabel unrelated database errors as card reference errors', async () => {
-    const error = { code: '23503', constraint: 'topics__cards_currency_code_fkey' }
+    const error = Object.assign(new Error('database constraint'), {
+      code: '23503',
+      constraint: 'topics__cards_currency_code_fkey',
+    })
 
     await assert.rejects(
       mapCardAttributeReferenceError(() => Promise.reject(error)),

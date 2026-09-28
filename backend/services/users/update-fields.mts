@@ -131,7 +131,7 @@ export async function updateUserFields(userId: string, options: UpdateUserOption
   await write(query)
 
   if (typeof username === 'string') {
-    entityCacheBloomFilters.users.add([normalizeKey(username)])
+    void entityCacheBloomFilters.users.add([normalizeKey(username)])
   }
   await Promise.all([
     invalidate.users(userId, previousUsername, validatedUsername),

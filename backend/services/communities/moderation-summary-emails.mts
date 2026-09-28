@@ -106,7 +106,7 @@ export async function isModerationEmailsEnabled(userId: string): Promise<boolean
       LIMIT 1
     `,
   )
-  return rows[0]?.moderation_emails_enabled === true
+  return rows.at(0)?.moderation_emails_enabled ?? false
 }
 
 export async function getModerationEmailTimezone(userId: string): Promise<string> {

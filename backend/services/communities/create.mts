@@ -146,7 +146,7 @@ export async function createCommunity(
   }
 
   assert(community, 500, 'Failed to create community')
-  entityCacheBloomFilters.communities.add([
+  void entityCacheBloomFilters.communities.add([
     normalizeKey(community.id),
     normalizeKey(community.slug),
   ])

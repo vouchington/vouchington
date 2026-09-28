@@ -248,8 +248,8 @@ describe('createSqsConsumer', () => {
     const deleteCalls: string[] = []
     const port = createOneShotPort([message], deleteCalls)
 
-    const handlerStarted = createDeferred<void>()
-    const releaseHandler = createDeferred<void>()
+    const handlerStarted = createDeferred()
+    const releaseHandler = createDeferred()
     const handleMessage: SqsConsumerHandler = async () => {
       handlerStarted.resolve()
       await releaseHandler.promise

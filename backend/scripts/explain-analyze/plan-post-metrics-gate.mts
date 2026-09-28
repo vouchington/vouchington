@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const POST_METRICS_SCENARIO = 'post-metrics-batch'
 const SOURCE_ROW_CEILINGS = new Map<string, number>([
@@ -22,8 +23,8 @@ export function assertPostMetricsBatchIsCandidateBounded(result: ExplainResult):
   if (
     nodes.some(
       node =>
-        String(node['Subplan Name'] ?? '').startsWith('SubPlan') &&
-        String(node['Node Type'] ?? '').includes('Aggregate'),
+        stringFromUnknown(node['Subplan Name'] ?? '').startsWith('SubPlan') &&
+        stringFromUnknown(node['Node Type'] ?? '').includes('Aggregate'),
     )
   ) {
     throw new Error(
@@ -58,7 +59,7 @@ export function assertPostMetricsBatchIsCandidateBounded(result: ExplainResult):
 }
 
 function baseRelationName(node: PlanNode): string {
-  return String(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
+  return stringFromUnknown(node['Relation Name'] ?? '').replace(/__(?:default|p_\w+)$/, '')
 }
 
 function collectPlanNodes(value: unknown, nodes: PlanNode[] = []): PlanNode[] {

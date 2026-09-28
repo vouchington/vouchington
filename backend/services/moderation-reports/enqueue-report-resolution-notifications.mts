@@ -16,7 +16,7 @@ export function enqueueReportResolutionNotificationsBestEffort(
         notificationId: notification.id,
       })),
     )
-    if (result) void result.catch(onError)
+    void result.catch(onError)
   } catch (error) {
     onError(error instanceof Error ? error : new Error(String(error)))
   }

@@ -7,6 +7,7 @@ import {
   getCommentAncestorPage,
   getCommentAncestorTargetByAny,
 } from '@services/comments/ancestor-page'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 interface ResolvedCommentAncestorPage {
   ancestors: CommentNode[]
@@ -33,7 +34,7 @@ export async function resolveCommentAncestorPage({
   const cursor =
     after === undefined
       ? undefined
-      : decodeCommentAncestorCursor(String(after), {
+      : decodeCommentAncestorCursor(stringFromUnknown(after), {
           root_id: rootId,
           target_id: target.id,
         })

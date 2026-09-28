@@ -26,19 +26,19 @@ export async function putMediaDeliveryRegistryRecord(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<PutItemCommandOutput> {
   const tableName = getRequiredMediaDeliveryEnvironment('MEDIA_DELIVERY_REGISTRY_TABLE', env)
-  return await getDynamoDbClient(getMediaDeliveryRegistryRegion(env)).send(
+  return getDynamoDbClient(getMediaDeliveryRegistryRegion(env)).send(
     new PutItemCommand({
       TableName: tableName,
       Item: {
         delivery_key: { S: record.deliveryKey },
         state: { S: record.state },
-        generation: { N: String(record.generation) },
+        generation: { N: record.generation },
       },
       ConditionExpression:
         'attribute_not_exists(delivery_key) OR #generation < :generation OR (#generation = :generation AND #state = :state)',
       ExpressionAttributeNames: { '#generation': 'generation', '#state': 'state' },
       ExpressionAttributeValues: {
-        ':generation': { N: String(record.generation) },
+        ':generation': { N: record.generation },
         ':state': { S: record.state },
       },
     }),
@@ -55,7 +55,7 @@ export async function invalidateMediaDeliveryPath(
     'MEDIA_DELIVERY_CLOUDFRONT_DISTRIBUTION_ID',
     env,
   )
-  return await getCloudFrontClient().send(
+  return getCloudFrontClient().send(
     new CreateInvalidationCommand({
       DistributionId: distributionId,
       InvalidationBatch: {

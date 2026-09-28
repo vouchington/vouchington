@@ -69,6 +69,7 @@ export type EntityJobs =
   | 'processConversationMessageCreated'
   | 'processCommunityAgentPromptsDeactivated'
 
+// oxlint-disable-next-line typescript/no-explicit-any -- specific job payloads are not assignable to unknown
 export type EntityJobsListeners = Record<EntityJobs, (data: any) => unknown>
 
 export type ReconcileEntityData = {

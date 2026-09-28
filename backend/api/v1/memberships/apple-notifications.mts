@@ -9,7 +9,7 @@ import {
 import { parseJsonBody } from '../../response-helpers.mts'
 
 app.route('/api/v1/memberships/apple-app-store/notifications').post(async (ctx: Context) => {
-  const evidence = await parseJsonBody<unknown>(ctx, '32kb')
+  const evidence = await parseJsonBody(ctx, '32kb')
   const context = getMembershipProviderContext('apple_app_store')
   try {
     const notification = await ingestAppleAppStoreNotification({

@@ -350,6 +350,12 @@ for a worked example. Both restatements are enforced by `structured-config-polic
 enabled from [`.oxlintrc.react.json`](../../../../.oxlintrc.react.json); React/Next/JSX doctor _enables_
 live there too. Generic `js-*` and security doctor rules stay at root.
 
+The root and nested plugin lists also enable Oxlint's configured TypeScript rules. Keep
+`typescript` present in every inherited-config copy; `structured-config-policy` enforces parity,
+while [`typescript-plugin-oxlint.test.mts`](../../../../static-code-analysis/oxlint-plugin/typescript-plugin-oxlint.test.mts) runs
+the installed analyzer with the real root and backend-agent configurations to prove syntax and
+type-aware TypeScript rules are active. The full lint command is `pnpm run oxlint`.
+
 Each selected area coverage job consumes only its own full-LCOV artifacts and runs
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional
 fan-in probe. Generic missing/over-cap job timeouts and step-exceeds-job checks live in

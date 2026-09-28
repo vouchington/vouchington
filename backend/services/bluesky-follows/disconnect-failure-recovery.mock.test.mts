@@ -37,8 +37,8 @@ async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promis
 describe('synchronous Bluesky disconnect failure recovery', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()
-    revokeBlueskySessionMock.mockImplementation(
-      async (_client: NodeOAuthClient, did: string) => await new BlueskySessionStore().del(did),
+    revokeBlueskySessionMock.mockImplementation(async (_client: NodeOAuthClient, did: string) =>
+      new BlueskySessionStore().del(did),
     )
   })
 

@@ -110,7 +110,7 @@ function deliverToMockedNetwork(captured: CapturedRequest[]) {
         .mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
       fetch: vi.fn<VitestLooseMock>(async (url: string, init: Record<string, unknown>) => {
         captured.push({
-          url: url.toString(),
+          url,
           headers: init.headers as Record<string, string>,
           body: init.body as string,
         })

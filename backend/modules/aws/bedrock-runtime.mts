@@ -57,7 +57,7 @@ function getDirectBedrockRuntimeClient(): BedrockRuntimeClient {
 }
 
 export async function closeBedrockRuntimeClients(): Promise<void> {
-  if (closePromise) return await closePromise
+  if (closePromise) return closePromise
   const direct = directBedrockRuntimeClient
   const proxied = proxiedBedrockRuntimeClient
   directBedrockRuntimeClient = undefined
@@ -65,7 +65,7 @@ export async function closeBedrockRuntimeClients(): Promise<void> {
   direct?.destroy()
   proxied?.destroy()
   closePromise = Promise.resolve()
-  return await closePromise
+  return closePromise
 }
 
 addGracefulShutdownDrainCallback(closeBedrockRuntimeClients)

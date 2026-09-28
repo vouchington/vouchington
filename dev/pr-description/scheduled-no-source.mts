@@ -180,7 +180,7 @@ export function validateFixMainRootCauseRef(
   if (rootCauseRef === undefined || lookup === undefined) {
     return []
   }
-  if (lookup.ok !== true) {
+  if (!lookup.ok) {
     return [
       `${rootCauseRef.key} could not be resolved as an open GitHub issue: ${lookup.error}. ${FIX_MAIN_ROOT_CAUSE_CONTEXT_LABEL}`,
     ]

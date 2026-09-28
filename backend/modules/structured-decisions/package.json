@@ -22,6 +22,7 @@
   "scripts": {},
   "dependencies": {
     "@modules/utils": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "undici": "^8.11.2"
   }

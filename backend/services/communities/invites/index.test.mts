@@ -65,7 +65,7 @@ describe('index', () => {
     })
 
     it('falls back when recipient locale lookup fails', async () => {
-      for (const error of [new Error('lookup unavailable'), 'lookup unavailable']) {
+      for (const error of [new Error('lookup unavailable'), new Error('other lookup failure')]) {
         await expect(
           getCommunityInviteRecipientUiLocale('tests+lookup-failure@voucha.ai', () =>
             Promise.reject(error),

@@ -10,5 +10,5 @@ const adapters = createFediverseAdapters()
 export async function searchFediverse(
   options: FediverseSearchOptions,
 ): Promise<FediverseSearchResponse> {
-  return await search(options, adapters)
+  return search(options, adapters)
 }

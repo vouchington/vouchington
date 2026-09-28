@@ -43,7 +43,7 @@ async function writeLine(
   writer: ReturnType<typeof createWriteStream>,
   line: string,
 ): Promise<void> {
-  if (writer.errored) throw writer.errored
+  assertWriterHealthy(writer)
   if (writer.write(`${line}\n`)) return
   await new Promise<void>((resolve, reject) => {
     const onDrain = (): void => {
@@ -64,9 +64,13 @@ async function writeLine(
 }
 
 async function closeWriter(writer: ReturnType<typeof createWriteStream>): Promise<void> {
-  if (writer.errored) throw writer.errored
+  assertWriterHealthy(writer)
   writer.end()
   await finished(writer)
+  assertWriterHealthy(writer)
+}
+
+function assertWriterHealthy(writer: ReturnType<typeof createWriteStream>): void {
   if (writer.errored) throw writer.errored
 }
 

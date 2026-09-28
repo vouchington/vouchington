@@ -60,7 +60,7 @@ export async function waitForCondition(
     if (await predicate()) return true
     await new Promise(resolve => setTimeout(resolve, intervalMs))
   }
-  return await predicate()
+  return predicate()
 }
 
 export type ObliterableQueue = { obliterate: (opts?: { force?: boolean }) => Promise<void> }

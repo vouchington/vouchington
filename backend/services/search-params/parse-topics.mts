@@ -121,7 +121,7 @@ export async function resolveTopicsSearchParams(
 }
 
 async function parseTopicsSearchParamsImpl(query: Record<string, unknown>) {
-  return await resolveTopicsSearchParams(prepareTopicsSearchParams(query))
+  return resolveTopicsSearchParams(prepareTopicsSearchParams(query))
 }
 
 export const parseTopicsSearchParams = withQueryContract(

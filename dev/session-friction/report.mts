@@ -6,7 +6,7 @@ import {
   type SessionFrictionReportOptions,
 } from 'vouchington-tooling/session-friction'
 
-import { type BlackboardEntriesClient } from '../blackboard/client.mts'
+import type { BlackboardEntriesClient } from '../blackboard/client.mts'
 import { parseFlagArgs, type FlagKey } from '../blackboard/parse-flag-args.mts'
 import { requireSessionId } from '../agent-session-id/resolve.mts'
 import { frictionLogDirectory } from './config.mts'

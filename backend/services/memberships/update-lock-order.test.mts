@@ -9,7 +9,7 @@ import {
 import { updateMembershipFromEvent } from './update.mts'
 
 async function updateWithoutRecording(options: Parameters<typeof updateMembershipFromEvent>[0]) {
-  return await updateMembershipFromEvent(options, async () => {})
+  return updateMembershipFromEvent(options, async () => {})
 }
 
 describe('updateMembershipFromEvent lock order', () => {

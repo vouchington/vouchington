@@ -5,9 +5,5 @@ export async function processConversationMessageCreated(data: {
   messageId: string
   senderId: string
 }) {
-  return await enqueueConversationMessageNotification(
-    data.conversationId,
-    data.messageId,
-    data.senderId,
-  )
+  return enqueueConversationMessageNotification(data.conversationId, data.messageId, data.senderId)
 }

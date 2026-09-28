@@ -28,25 +28,25 @@ export default async function processPsql(
 ) {
   switch (jobName) {
     case 'runMigrations':
-      return await (dependencies?.runMigrations ?? runMigrations)()
+      return (dependencies?.runMigrations ?? runMigrations)()
     case 'runViews':
-      return await (dependencies?.runViews ?? runViews)()
+      return (dependencies?.runViews ?? runViews)()
     case 'runConfigDriven':
-      return await (dependencies?.runConfigDriven ?? runConfigDriven)()
+      return (dependencies?.runConfigDriven ?? runConfigDriven)()
     case 'createPartitions':
-      return await (dependencies?.createPartitions ?? createMonthlyPartitions)()
+      return (dependencies?.createPartitions ?? createMonthlyPartitions)()
     case 'cleanupPartitions':
-      return await (dependencies?.cleanupPartitions ?? cleanupPartitions)()
+      return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup':
-      return await (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)()
+      return (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)()
     case 'refreshMaterializedView': {
       if (!data?.viewName) {
         throw new Error('refreshMaterializedView job requires data.viewName')
       }
-      return await (dependencies?.refreshMaterializedView ?? refreshMaterializedView)(data.viewName)
+      return (dependencies?.refreshMaterializedView ?? refreshMaterializedView)(data.viewName)
     }
     case 'reconcileVoteDrift':
-      return await (dependencies?.reconcileVoteDrift ?? reconcilePostVoteDrift)()
+      return (dependencies?.reconcileVoteDrift ?? reconcilePostVoteDrift)()
     default:
       throw new Error(`Unknown job: ${jobName}`)
   }

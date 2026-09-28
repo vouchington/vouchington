@@ -2,34 +2,47 @@ import { renewUserDeletionAttempt } from './lifecycle.mts'
 
 const HEARTBEAT_INTERVAL_MS = 60_000
 
+type UserDeletionHeartbeatOptions = {
+  heartbeatIntervalMs?: number
+  renewAttempt?: (requestId: string, processingAttemptId: string) => Promise<boolean>
+}
+
 export async function runWithUserDeletionAttemptHeartbeat<T>(
   requestId: string,
   processingAttemptId: string,
   operation: () => Promise<T>,
+  options: UserDeletionHeartbeatOptions = {},
 ): Promise<T> {
-  await assertUserDeletionAttemptOwnership(requestId, processingAttemptId)
+  const renewAttempt = options.renewAttempt ?? renewUserDeletionAttempt
+  const heartbeatIntervalMs = options.heartbeatIntervalMs ?? HEARTBEAT_INTERVAL_MS
+  await assertUserDeletionAttemptOwnership(requestId, processingAttemptId, renewAttempt)
 
   let ownershipLost = false
-  let heartbeatError: unknown
+  let heartbeatError: { reason: unknown } | undefined
   let heartbeat = Promise.resolve()
   const timer = setInterval(() => {
     heartbeat = heartbeat
       .then(async () => {
-        if (!(await renewUserDeletionAttempt(requestId, processingAttemptId))) ownershipLost = true
+        if (!(await renewAttempt(requestId, processingAttemptId))) ownershipLost = true
         return undefined
       })
       .catch(error => {
-        heartbeatError = error
+        heartbeatError = { reason: error }
       })
-  }, HEARTBEAT_INTERVAL_MS)
+  }, heartbeatIntervalMs)
   timer.unref()
 
   try {
     const result = await operation()
     await heartbeat
-    if (heartbeatError) throw heartbeatError
+    if (heartbeatError) {
+      const { reason } = heartbeatError
+      throw reason instanceof Error
+        ? reason
+        : new Error('User deletion heartbeat failed', { cause: reason })
+    }
     if (ownershipLost) throw new Error('User deletion attempt lost ownership during external work')
-    await assertUserDeletionAttemptOwnership(requestId, processingAttemptId)
+    await assertUserDeletionAttemptOwnership(requestId, processingAttemptId, renewAttempt)
     return result
   } finally {
     clearInterval(timer)
@@ -39,8 +52,9 @@ export async function runWithUserDeletionAttemptHeartbeat<T>(
 async function assertUserDeletionAttemptOwnership(
   requestId: string,
   processingAttemptId: string,
+  renewAttempt: (requestId: string, processingAttemptId: string) => Promise<boolean>,
 ): Promise<void> {
-  if (!(await renewUserDeletionAttempt(requestId, processingAttemptId))) {
+  if (!(await renewAttempt(requestId, processingAttemptId))) {
     throw new Error('User deletion attempt lost ownership before external work')
   }
 }

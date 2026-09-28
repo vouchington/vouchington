@@ -1,10 +1,10 @@
 import onError from '@modules/on-error'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
-import { type JobOptions, type Queue } from 'glide-mq'
+import type { JobOptions, Queue } from 'glide-mq'
 import { retryTransientEnqueue } from './glide-mq-retry.mts'
 
-type AddQueue = Pick<Queue<any>, 'add'>
-type AddBulkQueue = Pick<Queue<any>, 'addBulk'>
+type AddQueue = Pick<Queue, 'add'>
+type AddBulkQueue = Pick<Queue, 'addBulk'>
 
 type ErrorWithReportingContext = Error & {
   extra?: Record<string, unknown> | null

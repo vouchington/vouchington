@@ -148,6 +148,7 @@ describe('crawler utils errors', () => {
         crawlerType: 'html',
         startedAt,
         dependencies: {
+          // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- This case verifies passthrough of an external non-Error rejection.
           readResponseBodyAsBuffer: () => Promise.reject('read failed'),
         },
       }),

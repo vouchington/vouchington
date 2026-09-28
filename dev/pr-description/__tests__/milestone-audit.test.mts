@@ -26,10 +26,7 @@ function referencedIssue(overrides: Partial<ReferencedIssue>): ReferencedIssue {
   }
 }
 
-function closingIssue(
-  overrides: Partial<ReferencedIssue>,
-  repo: string | undefined = undefined,
-): ClosingIssueForAudit {
+function closingIssue(overrides: Partial<ReferencedIssue>, repo?: string): ClosingIssueForAudit {
   return { issue: referencedIssue(overrides), repo }
 }
 

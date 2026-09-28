@@ -105,7 +105,7 @@ export async function handleOpenAIModerationOmniSingleJob(
         throw new Error(`Unknown job type: ${job.name}`)
     }
   } catch (error: unknown) {
-    return await handleOpenAIRateLimit(error, worker)
+    return handleOpenAIRateLimit(error, worker)
   }
 }
 

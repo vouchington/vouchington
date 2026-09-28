@@ -49,7 +49,7 @@ export async function runApprovedTopicRecommendationSideEffects(
   )
 
   if (transactionResult.aliases.length > 0) {
-    entityCacheBloomFilters.topics.add(transactionResult.aliases.map(normalizeKey))
+    void entityCacheBloomFilters.topics.add(transactionResult.aliases.map(normalizeKey))
   }
 
   await invalidate.topics(

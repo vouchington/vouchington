@@ -13,7 +13,7 @@ import { requireAuth, parseJsonBody } from '../../response-helpers.mts'
 
 app.route('/api/v1/dynamic-config/namespaces').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/dynamic-config/namespaces')
-  ctx.json({ namespaces: await listDynamicConfigNamespaces(currentUser) })
+  ctx.json({ namespaces: listDynamicConfigNamespaces(currentUser) })
 })
 
 app.route('/api/v1/dynamic-config/namespaces/:namespace/history').get(async (ctx: Context) => {

@@ -20,7 +20,7 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
 
 ### Testing
 
-- Uses `BULLMQ_INLINE_MODE` in tests for synchronous processing
+- Tests enqueue jobs and run processors under their owning test fixtures; enqueue admission does not synchronously process an email.
 - No external email service calls in tests (mocked)
 
 ## Related

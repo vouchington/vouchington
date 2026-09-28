@@ -9,6 +9,7 @@ import {
 import type { PageInfo } from '@voucha/types/pagination'
 import type { PostSearchOptions } from './types.mts'
 import type { PostSearchRow } from './get-ids.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export type PostSearchCursorValues = {
   id_lt?: string
@@ -113,6 +114,6 @@ function requiredNumber(value: unknown, column: string): number {
 
 function parseNumeric(value: unknown): number | null {
   if (value === undefined || value === null) return null
-  const parsed = Number.parseFloat(String(value))
+  const parsed = Number.parseFloat(stringFromUnknown(value))
   return Number.isNaN(parsed) ? null : parsed
 }

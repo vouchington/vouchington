@@ -90,7 +90,7 @@ describe('glide-mq-factory shared client injection', () => {
     const { workerQueueCommandClient } = await import('../glide-mq-shared-client.mts')
     expect(mockCreateSpeedkeyClient).not.toHaveBeenCalled()
 
-    await workerQueueCommandClient.close()
+    await Promise.resolve(workerQueueCommandClient.close())
 
     expect(mockCreateSpeedkeyClient).toHaveBeenCalledOnce()
     expect(mockSpeedkeyClient.close).toHaveBeenCalledOnce()
@@ -129,7 +129,7 @@ describe('glide-mq-factory shared client injection', () => {
   it('shutdown callback closes the real client when it was realized', async () => {
     const { closeSharedCommandClientFromRegistry } = await importGlideMqRegistry()
     const { workerQueueCommandClient } = await import('../glide-mq-shared-client.mts')
-    await workerQueueCommandClient.close()
+    await Promise.resolve(workerQueueCommandClient.close())
     mockSpeedkeyClient.close.mockClear()
     await closeSharedCommandClientFromRegistry()
     expect(mockSpeedkeyClient.close).toHaveBeenCalledOnce()

@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type PlanNode = Record<string, unknown>
 
@@ -6,7 +7,7 @@ export function assertReviewSuccessionCandidatePlanIfApplicable(result: ExplainR
   if (result.scenario_id !== 'review-succession-candidates') return
   const requiredRelations = new Set(['posts', 'post_review_topic_ratings'])
   const accesses = collectPlanNodes(result.plan).filter(node => {
-    const relation = baseRelationName(String(node['Relation Name'] ?? ''))
+    const relation = baseRelationName(stringFromUnknown(node['Relation Name'] ?? ''))
     return requiredRelations.has(relation)
   })
   const accessedRelations = new Set(

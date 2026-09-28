@@ -29,7 +29,7 @@ export async function processEmailJob(
 ): Promise<unknown> {
   const jobName = job.name as EmailJobs
   if (jobName === 'processSendCopyrightNoticeEmail') {
-    return await processSendCopyrightNoticeEmail(job.data)
+    return processSendCopyrightNoticeEmail(job.data)
   }
   if (isDispatcherJob(jobName)) {
     return processEmailDispatcherJob(jobName, dispatchers)

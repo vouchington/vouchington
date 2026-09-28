@@ -28,7 +28,7 @@ describe('runToolLoop usage settlement barrier', () => {
     const recorderSettled = Promise.withResolvers<void>()
     const recordUsage = vi
       .fn<typeof recordAgentResponseUsage>()
-      .mockImplementationOnce(async () => await recorderSettled.promise)
+      .mockImplementationOnce(async () => recorderSettled.promise)
       .mockResolvedValue(undefined)
     const createOpenAIResponse = vi
       .fn<VitestLooseMock>()

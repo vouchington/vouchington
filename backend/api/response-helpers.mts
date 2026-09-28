@@ -84,5 +84,8 @@ async function applyRouteRateLimitBeforeSignatureError(
 ): Promise<void> {
   await ctx.applyRouteRateLimit(routeId)
   const error = await signatureError
-  if (error) throw error
+  if (error)
+    throw error instanceof Error
+      ? error
+      : new Error('Signature verification failed', { cause: error })
 }

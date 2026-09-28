@@ -19,5 +19,5 @@ export async function runWithOpenAIResponseAttemptHooks<T>(
   hooks: OpenAIResponseAttemptHooks,
   callback: () => Promise<T>,
 ): Promise<T> {
-  return await responseAttemptHooksContext.run(hooks, callback)
+  return responseAttemptHooksContext.run(hooks, callback)
 }

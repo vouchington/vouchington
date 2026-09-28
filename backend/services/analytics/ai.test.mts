@@ -31,7 +31,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM ai_calls WHERE kind = 'embedding' AND model = 'nova-2-multimodal-embeddings-v1'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -54,7 +54,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM ai_calls WHERE kind = 'embedding' AND model = '${model}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -67,7 +67,7 @@ describe('ai', () => {
       trackAIEmbeddingShortCircuit({ reason: 'batch_lock', entityType: 'post' })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM ai_calls WHERE kind = 'embedding_short_circuit' AND reason = 'batch_lock'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -81,7 +81,7 @@ describe('ai', () => {
       trackAIEmbeddingShortCircuit({ reason: 'centralized_cache', entityType: 'topic' })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM ai_calls WHERE kind = 'embedding_short_circuit' AND reason = 'centralized_cache'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -95,7 +95,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM ai_calls WHERE kind = 'embedding_short_circuit' AND reason = 'single_skipped_for_backlog'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -115,7 +115,7 @@ describe('ai', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM ai_calls WHERE kind = 'moderation' AND model = 'omni-moderation'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)

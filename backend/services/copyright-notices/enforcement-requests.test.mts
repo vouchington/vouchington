@@ -117,7 +117,7 @@ describe('copyright enforcement requests', () => {
           supersedesAssessmentId: assessment.id,
         })
         await expect(processCopyrightEnforcementRequest(assessment.id)).resolves.toBe('not_claimed')
-        return await acceptCopyrightNoticeAndImposeRestriction(input)
+        return acceptCopyrightNoticeAndImposeRestriction(input)
       })
 
     await expect(

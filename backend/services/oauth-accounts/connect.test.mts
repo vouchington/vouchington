@@ -102,6 +102,7 @@ describe('runOAuthAccountConnectionPostCommitEffects', () => {
     const reportError = vi.fn<(error: unknown) => void>()
 
     await runOAuthAccountConnectionPostCommitEffects(userId, {
+      // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Post-commit reporting must normalize non-Error queue failures.
       enqueueVoteWeightRecalculation: (_userId: string) => Promise.reject('queue unavailable'),
       invalidateVerifiedEmail,
       reportError,

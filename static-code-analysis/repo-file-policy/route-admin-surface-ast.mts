@@ -69,7 +69,7 @@ function containsCall(root: ts.Node, name: string, firstArgumentName?: string): 
 function firstArgumentMatches(call: ts.CallExpression, name: string | undefined): boolean {
   if (!name) return true
   const first = call.arguments[0] && unwrapExpression(call.arguments[0])
-  return Boolean(first && ts.isIdentifier(first) && first.text === name)
+  return first !== undefined && ts.isIdentifier(first) && first.text === name
 }
 
 function functionReturnsDefault(root: ts.Node, pageName: string): boolean {

@@ -68,6 +68,18 @@ describe('POST /api/v1/my/import/rss-feeds — CSV via JSON body', () => {
     expect(response.body.import).toBeDefined()
   })
 
+  it('extracts xmlurl from a tab-separated csv field', async () => {
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const response = await request
+      .post('/api/v1/my/import/rss-feeds')
+      .set('Content-Type', 'application/json')
+      .send({ csv: 'xmlurl\ttitle\nhttps://tsv.example/feed\tFeed' })
+      .expect(201)
+
+    expect(response.body.import).toBeDefined()
+  })
+
   it('extracts URL from csv field with xmlUrl column', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

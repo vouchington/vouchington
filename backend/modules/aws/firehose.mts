@@ -26,7 +26,7 @@ export const FirehoseDeliveryClient = new Proxy({} as FirehoseClient, {
 export async function putFirehoseRecordBatch(
   input: PutRecordBatchCommandInput,
 ): Promise<PutRecordBatchCommandOutput> {
-  return await FirehoseDeliveryClient.send(new PutRecordBatchCommand(input))
+  return FirehoseDeliveryClient.send(new PutRecordBatchCommand(input))
 }
 
 function getClientProperty(target: object, prop: string | symbol): unknown {

@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { collectPlanNodes } from './plan-nodes.mts'
 
 const EMAIL_INDEX = 'idx_user_email_addresses_email_primary'
@@ -12,7 +13,7 @@ export function assertAdminEmailIndexPlan(result: ExplainResult): void {
     node =>
       node['Index Name'] === EMAIL_INDEX &&
       Number(node['Actual Loops'] ?? 0) > 0 &&
-      String(node['Index Cond'] ?? '').includes('email_address'),
+      stringFromUnknown(node['Index Cond'] ?? '').includes('email_address'),
   )
   const broad = nodes.some(
     node =>

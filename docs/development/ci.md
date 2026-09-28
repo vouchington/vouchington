@@ -153,6 +153,10 @@ after the node-versions download while adding Node to the tool cache, is catalog
 
 <a id="area-workflows"></a>The per-area workflows listed in the [Workflow automation map](ci/workflows/reference-workflow-automation-map.md) run on pull-request events and merge groups. Their names are the [Main ruleset's required gates](../../.github/workflows/AGENTS.md). `static` runs full repository static analysis on every change, including docs-only changes. Every other area starts with `changes` ([`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml)), which selects its area from shared path filters. A selected area runs every suite it owns in full, gated by its area static checks; credentialed suites skip on untrusted pull requests, and Storybook skips on them unless a dependency bot opened the PR. The job named after the area is its required check and passes when the area is skipped. Its `coverage` job ([`ci-area-coverage.yml`](../../.github/workflows/ci-area-coverage.yml)) enforces the patch coverage rules in `.coverage-rules.yml`, and its `codecov` job uploads each suite's full LCOV under a carryforward flag without gating. Each concurrency group starts with a literal area prefix and cancels only superseded pull-request runs. [`nightly.yml`](../../.github/workflows/nightly.yml) calls every area workflow daily and on manual dispatch, selecting every area for those events.
 
+The existing Oxlint CI step evaluates its configured TypeScript rules from the effective root and
+nested plugin lists; parity and runtime-backed activation coverage are documented in the
+[static-analysis guide](../../static-code-analysis/README.md).
+
 The main-only protected Storybook and internal-documentation artifacts are keep-classified for
 their one-day retention because the trusted infrastructure publishers consume the exact completed
 source-run artifacts after the source workflows complete. Each artifact is named with its source

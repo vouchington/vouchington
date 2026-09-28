@@ -34,7 +34,7 @@ process.emitWarning = ((
     warning,
     optionsOrType as never,
     code,
-    ...(args as [Function?]),
+    ...(args as [ctor?: (...args: never[]) => unknown]),
   )
 }) as typeof process.emitWarning
 const defaultCiVitestWorkers = 2

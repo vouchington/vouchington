@@ -43,7 +43,7 @@ const fetchCrawlHtml = async (
   // `timeoutMs`, when set, is a per-phase budget applied independently to DNS resolution, the
   // request-to-headers phase, and the response-body phase — not one value divided between them.
   const resolvedAddresses = await resolveCrawlerAddresses(url, { timeoutMs })
-  return await fetchCrawlerHtml(
+  return fetchCrawlerHtml(
     {
       url,
       lastModifiedAt,
@@ -61,7 +61,7 @@ const fetchCrawlHtml = async (
 export const crawlUrl = async (
   urlId: string,
   hopCount: number = 0,
-  visitedUrls: Set<string> = new Set(),
+  visitedUrls = new Set<string>(),
   options?: CrawlUrlOptions,
 ): Promise<CrawlUrlReturn> => {
   const scopedOptions = scopeCrawlDeadline(options)

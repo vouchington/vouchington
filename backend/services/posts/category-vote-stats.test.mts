@@ -20,6 +20,7 @@ describe('category vote stats committed-chunk effects', () => {
       },
       enqueueNotifications: id => {
         notified.push(id)
+        return Promise.resolve()
       },
     })
     expect(refreshed.map(chunk => chunk.length)).toEqual([PRIMARY_REFRESH_BATCH_SIZE, 1])
@@ -40,6 +41,7 @@ describe('category vote stats committed-chunk effects', () => {
           refresh: async () => result,
           enqueueNotifications: id => {
             notified.push(id)
+            return Promise.resolve()
           },
         },
       )
@@ -57,6 +59,7 @@ describe('category vote stats committed-chunk effects', () => {
       refresh: async targets => (++chunks === 1 ? targets : undefined),
       enqueueNotifications: id => {
         notified.push(id)
+        return Promise.resolve()
       },
     })
     expect(chunks).toBe(2)

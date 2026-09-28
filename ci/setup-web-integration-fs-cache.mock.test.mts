@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type MockSpawn = (
   command: string,
@@ -120,7 +121,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
 
     const calls = vi.mocked(fs.writeFileSync).mock.calls
     const [, reportJson] = calls[calls.length - 1]
-    const report = JSON.parse(String(reportJson)) as { nextBuildCache: string }
+    const report = JSON.parse(stringFromUnknown(reportJson)) as { nextBuildCache: string }
     expect(report.nextBuildCache).toBe('miss')
   })
 
@@ -140,7 +141,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     // The final write carries every step's timing plus the overall total.
     const calls = vi.mocked(fs.writeFileSync).mock.calls
     const [, reportJson] = calls[calls.length - 1]
-    const report = JSON.parse(String(reportJson)) as {
+    const report = JSON.parse(stringFromUnknown(reportJson)) as {
       nextBuildCache: string
       timings: Record<string, number>
     }
@@ -162,7 +163,7 @@ describe('setup-web-integration Turbopack build cache CI gate (#11431)', () => {
     expect(fs.renameSync).not.toHaveBeenCalled()
     const calls = vi.mocked(fs.writeFileSync).mock.calls
     const [, reportJson] = calls[calls.length - 1]
-    const report = JSON.parse(String(reportJson)) as { nextBuildCache: string }
+    const report = JSON.parse(stringFromUnknown(reportJson)) as { nextBuildCache: string }
     expect(report.nextBuildCache).toBe('disabled')
   })
 })

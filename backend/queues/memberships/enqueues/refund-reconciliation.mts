@@ -74,8 +74,10 @@ export const refundReconciliationSchedule = {
 } as const
 
 /** Durable reconciliation state is already committed when this wake-up is requested. */
-export function enqueueDispatchMembershipRefundReconciliationBestEffort(): void {
-  void Promise.resolve().then(enqueueDispatchMembershipRefundReconciliation).catch(onError)
+export function enqueueDispatchMembershipRefundReconciliationBestEffort(): Promise<void> {
+  return Promise.resolve()
+    .then(enqueueDispatchMembershipRefundReconciliation)
+    .then(() => undefined, onError)
 }
 
 export function enqueueReconcileMembershipRefundOperation(
@@ -92,8 +94,8 @@ export function enqueueReconcileMembershipRefundOperation(
 /** An event may wake only a durable lease; scheduler recovery remains authoritative. */
 export function enqueueReconcileMembershipRefundOperationBestEffort(
   data: ReconcileMembershipRefundOperationData,
-): void {
-  void Promise.resolve()
+): Promise<void> {
+  return Promise.resolve()
     .then(() => enqueueReconcileMembershipRefundOperation(data))
-    .catch(onError)
+    .then(() => undefined, onError)
 }

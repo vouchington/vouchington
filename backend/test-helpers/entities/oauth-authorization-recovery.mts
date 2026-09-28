@@ -32,7 +32,7 @@ export async function completeTestOAuthAuthorizationWhileRecoveryWaits<T>(
     )
     await transaction.commit()
   }
-  if (!recovery) throw new Error('OAuth authorization recovery did not start')
+  if (recovery === undefined) throw new Error('OAuth authorization recovery did not start')
   return recovery
 }
 

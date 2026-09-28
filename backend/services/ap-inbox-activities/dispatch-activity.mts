@@ -43,7 +43,7 @@ export async function dispatchInboundActivity(
   options: QueryOptions = {},
 ): Promise<InboundPostCommitAction | undefined> {
   if (activity.type === 'Follow') {
-    return await handleFollow(remoteActor, activity, options)
+    return handleFollow(remoteActor, activity, options)
   }
   if (activity.type === 'Like') {
     await handleLike(remoteActor, activity, options)

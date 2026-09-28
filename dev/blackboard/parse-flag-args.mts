@@ -30,7 +30,7 @@ export function parseFlagArgs<Parsed extends Record<string, FlagValue>>(
     }
     const flag: FlagKey<Parsed> | undefined = optionsEnded ? undefined : flagKeys[arg]
     if (flag) {
-      const key = String(typeof flag === 'string' ? flag : flag.key)
+      const key = typeof flag === 'string' ? flag : flag.key
       if (typeof flag !== 'string' && flag.type === 'boolean') {
         if (parsed[key] !== undefined) throw new Error(`${arg} may only be specified once`)
         parsed[key] = true

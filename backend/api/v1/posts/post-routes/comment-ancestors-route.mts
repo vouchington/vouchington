@@ -10,10 +10,7 @@ import {
   createVoteHandler,
   type CreateVoteHandlerOptions,
 } from '../../../election-vote-handler.mts'
-import {
-  createVoteStatsNoopReconciler,
-  type ElectionVoteMutationResult,
-} from '@services/elections-votes/shared'
+import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/elections/enqueues'
 import { getRouteAccessPost } from '../get-route-access-post.mts'
@@ -23,7 +20,7 @@ import {
   apiRequestContract,
 } from '../../../response-contract.mts'
 
-const postVoteOptions: CreateVoteHandlerOptions<ElectionVoteMutationResult> = {
+const postVoteOptions: CreateVoteHandlerOptions = {
   rateLimitPrefix: 'post-election-vote',
   routeKey: 'PUT:/api/v1/posts/:id/vote',
   requestContractOperation: 'PUT:/api/v1/posts/:id/vote',

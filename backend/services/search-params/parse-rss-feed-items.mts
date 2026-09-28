@@ -171,7 +171,7 @@ export async function resolveRssFeedItemsSearchParams(
 }
 
 async function parseRssFeedItemsSearchParamsImpl(query: Record<string, unknown>) {
-  return await resolveRssFeedItemsSearchParams(prepareRssFeedItemsSearchParams(query))
+  return resolveRssFeedItemsSearchParams(prepareRssFeedItemsSearchParams(query))
 }
 
 export const parseRssFeedItemsSearchParams = withQueryContract(

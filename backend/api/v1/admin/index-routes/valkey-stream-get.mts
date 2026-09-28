@@ -16,7 +16,9 @@ let subscriberCount = 0
 let ticker: ReturnType<typeof setInterval> | null = null
 
 async function fetchSnapshot() {
-  const cacheGroupsResult = await Promise.allSettled([getCacheGroups()]).then(([result]) => result)
+  const cacheGroupsResult = await Promise.allSettled([Promise.resolve(getCacheGroups())]).then(
+    ([result]) => result,
+  )
   const errors: { groups?: string } = {}
   if (cacheGroupsResult.status === 'rejected') {
     errors.groups =

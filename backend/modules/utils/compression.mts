@@ -10,7 +10,7 @@ export function gunzipBytes(value: Uint8Array): Promise<Uint8Array> {
 
 type ByteTransform = (
   value: Uint8Array,
-  callback: (error: Error | null, result: Buffer<ArrayBufferLike>) => void,
+  callback: (error: Error | null, result: Buffer) => void,
 ) => void
 
 function transformBytes(value: Uint8Array, transform: ByteTransform): Promise<Uint8Array> {

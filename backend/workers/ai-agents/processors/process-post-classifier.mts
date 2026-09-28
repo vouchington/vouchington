@@ -80,7 +80,7 @@ export async function processPostClassifier(
     leaseSeconds: LEASE_SECONDS,
   })
   if (claim.kind === 'in_progress') {
-    return await job.moveToDelayed(Date.now() + claim.retryAfterSeconds * 1_000)
+    return job.moveToDelayed(Date.now() + claim.retryAfterSeconds * 1_000)
   }
   if (claim.kind === 'stale') {
     await supersedeAndDispatchCurrent(job.data, inputSha256, configurationSha256)

@@ -213,7 +213,7 @@ async function setAuthorizedSession(
   await ensureTestBlueskyLinkAuthorization({ authorizationId, userId, callbackMode })
   await runWithBlueskySessionAuthorization(
     { authorizationId, owner: { kind: 'linking', userId }, callbackMode },
-    async () => await store.set(did, session),
+    async () => store.set(did, session),
   )
   return authorizationId
 }
@@ -249,7 +249,7 @@ async function deleteLinkingSession(
 ): Promise<void> {
   await runWithBlueskySessionAuthorization(
     { authorizationId, owner: { kind: 'linking', userId } },
-    async () => await store.del(did),
+    async () => store.del(did),
   )
 }
 

@@ -51,7 +51,7 @@ export async function finalizePostUpdateAndDeliver(
 ): Promise<Post> {
   const resolvedDependencies = { ...defaultPostCommitDeliveryDependencies, ...dependencies }
   if (changes.slug && updatedPost.slug) {
-    entityCacheBloomFilters.posts.add([normalizeKey(updatedPost.slug)])
+    void entityCacheBloomFilters.posts.add([normalizeKey(updatedPost.slug)])
   }
   let finalizedPost = updatedPost
   try {

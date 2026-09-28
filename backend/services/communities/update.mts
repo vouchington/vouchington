@@ -81,7 +81,10 @@ export async function updateCommunity(
 
   const updated = await getCommunity(communityId, options)
   assert(updated, 404, 'Community not found after update')
-  entityCacheBloomFilters.communities.add([normalizeKey(updated.id), normalizeKey(updated.slug)])
+  void entityCacheBloomFilters.communities.add([
+    normalizeKey(updated.id),
+    normalizeKey(updated.slug),
+  ])
   if (!options?.query) {
     await Promise.all([
       invalidate.communities(community, updated),

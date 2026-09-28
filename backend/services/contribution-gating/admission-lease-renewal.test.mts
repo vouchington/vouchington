@@ -68,5 +68,5 @@ async function renewExpiredContributionAdmissionLease(
   const result = renewContributionAdmissionLease(query, reservationId, leaseId)
 
   await query.commit()
-  return result
+  return await result
 }

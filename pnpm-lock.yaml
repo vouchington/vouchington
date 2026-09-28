@@ -394,6 +394,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/tools':
         specifier: workspace:^
         version: link:../../tools
@@ -672,6 +675,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2519,6 +2525,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../utils
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -6017,6 +6026,9 @@ importers:
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -6179,7 +6191,11 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/services/honeypot: {}
+  backend/services/honeypot:
+    dependencies:
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
 
   backend/services/hostname-blocking:
     dependencies:
@@ -6672,6 +6688,9 @@ importers:
       '@ts-shared/money':
         specifier: workspace:^
         version: link:../../../ts-shared/money
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -8269,6 +8288,9 @@ importers:
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12553,6 +12575,9 @@ importers:
 
   ci:
     dependencies:
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../ts-shared/utils
       auto-harness-client:
         specifier: 0.8.1
         version: 0.8.1

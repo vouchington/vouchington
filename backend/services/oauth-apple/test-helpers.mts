@@ -21,9 +21,9 @@ export function makeAppleJwk(kid: string): Record<string, string> {
     kid,
     alg: 'RS256',
     use: 'sig',
-    kty: String(appleJwk.kty),
-    n: String(appleJwk.n),
-    e: String(appleJwk.e),
+    kty: appleJwk.kty,
+    n: appleJwk.n,
+    e: appleJwk.e,
   }
 }
 

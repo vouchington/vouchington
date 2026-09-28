@@ -5,6 +5,7 @@ import {
   RSS_FEED_ITEM_SEED_COUNT,
   RSS_FEED_SEED_COUNT,
 } from './seed-data/common.mts'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // Each item has at most ceil(feeds / hostnames) sources in the normal seed. Allow one pass
 // for membership and one eligibility pass per direct/shared cohort, rather than work per sibling.
@@ -58,5 +59,5 @@ function scannedRows(node: Record<string, unknown>): number {
 }
 
 function baseRelationName(value: unknown): string {
-  return String(value ?? '').replace(/__(?:default|p_\w+)$|_default$/, '')
+  return stringFromUnknown(value ?? '').replace(/__(?:default|p_\w+)$|_default$/, '')
 }

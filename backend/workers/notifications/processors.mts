@@ -65,7 +65,7 @@ export async function processReconcilePostNotifications(
   dependencies?: Partial<NotificationProcessorDependencies>,
 ) {
   const reconcile = dependencies?.reconcileNotificationsForPost ?? reconcileNotificationsForPost
-  return await reconcile(data.postId, {
+  return reconcile(data.postId, {
     onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
   })
 }
@@ -76,7 +76,7 @@ export async function processReconcileRssFeedItemNotifications(
 ) {
   const reconcile =
     dependencies?.reconcileNotificationsForRssFeedItem ?? reconcileNotificationsForRssFeedItem
-  return await reconcile(data.rssFeedItemId, {
+  return reconcile(data.rssFeedItemId, {
     onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
   })
 }

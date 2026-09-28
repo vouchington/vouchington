@@ -111,7 +111,7 @@ describe('retrospective-save CLI', () => {
       (error: unknown) => error,
     )
     expect(rejection).toMatchObject({ code: 1 })
-    expect(String((rejection as { stderr: string }).stderr)).toContain('Usage:')
+    expect((rejection as { stderr: string }).stderr).toContain('Usage:')
   })
 
   it('prints Error and Replay-with lines on stderr and exits 1 on a hard failure', async () => {
@@ -148,7 +148,7 @@ describe('retrospective-save CLI', () => {
     )
 
     expect(rejection).toMatchObject({ code: 1 })
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('Error:')
     expect(stderr).toContain(
       `Replay with: node dev/retrospective-save.mts save --file '${stagedFile}' ` +
@@ -179,7 +179,7 @@ describe('retrospective-save CLI', () => {
       { cwd: dir },
     ).catch((error: unknown) => error)
 
-    expect(String((rejection as { stderr: string }).stderr)).toContain(
+    expect((rejection as { stderr: string }).stderr).toContain(
       '--root-codex --new-root-codex-session',
     )
   })
@@ -201,7 +201,7 @@ describe('retrospective-save CLI', () => {
       '--session-id',
       'sess-1',
     ]).catch((error: unknown) => error)
-    const stderr = String((rejection as { stderr: string }).stderr)
+    const stderr = (rejection as { stderr: string }).stderr
     expect(stderr).toContain('--root-codex cannot be used with --session-id')
     expect(stderr).not.toContain('Replay with:')
   })

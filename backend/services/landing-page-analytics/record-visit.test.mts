@@ -31,7 +31,7 @@ describe('record-visit', () => {
       await recordLandingPageVisit({ landingPageId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${landingPageId}' AND session_id = '${sessionId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -50,7 +50,7 @@ describe('record-visit', () => {
       })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${landingPageId}' AND session_id = '${sessionId}'`,
       )
       expect(rows.length).toBeGreaterThanOrEqual(1)
@@ -65,7 +65,7 @@ describe('record-visit', () => {
       await recordLandingPageVisit({ landingPageId: fakeLandingPageId, sessionId })
       await flush()
 
-      const rows = await query<Record<string, unknown>>(
+      const rows = await query(
         `SELECT * FROM web_page_view WHERE page_kind = 'landing_page' AND page_id = '${fakeLandingPageId}'`,
       )
       expect(rows).toHaveLength(0)

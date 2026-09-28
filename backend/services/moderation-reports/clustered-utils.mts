@@ -69,7 +69,7 @@ export function parseReasonBreakdown(
   reasonCounts: Record<string, number> | null,
 ): ModerationReportReasonBreakdown {
   return MODERATION_REPORT_REASONS.flatMap(reason => {
-    const count = Number(reasonCounts?.[reason] ?? 0)
+    const count = reasonCounts?.[reason] ?? 0
     return count > 0 ? [{ reason, count }] : []
   })
 }

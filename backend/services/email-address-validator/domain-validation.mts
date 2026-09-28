@@ -11,7 +11,7 @@ let resolveMxRecordsForValidation = resolveMxRecords
 
 type DomainValidationResult = { success: true } | { success: false; reason: string }
 
-const cache = new ValkeyCache<string>({
+const cache = new ValkeyCache({
   prefix: 'email-domain-validation',
   ttlSeconds: CACHE_TTL_SECONDS,
 })

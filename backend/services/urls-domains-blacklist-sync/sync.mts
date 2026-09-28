@@ -93,7 +93,7 @@ export async function syncBlacklistSource(
 
 /* no-mistakes: integration=http */
 async function fetchBlacklist(url: string, cache: SourceCacheHeaders | null): Promise<Response> {
-  return await undici.fetch(url, {
+  return undici.fetch(url, {
     dispatcher: getExternalRequestDispatcher(),
     headers: createBlacklistFetchHeaders(cache),
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

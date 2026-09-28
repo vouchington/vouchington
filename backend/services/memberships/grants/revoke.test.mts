@@ -82,7 +82,7 @@ describe('revokeMembershipGrant', () => {
     expect(queuedGrantId).toBeDefined()
     await revokeMembershipGrant(admin.id, queuedGrantId!, 'revoke before replay')
     await updateTestMembershipExpiresAt(active.id, new Date('2020-01-01T00:00:00.000Z'))
-    const enqueueEntitlementEffects = vi.fn<() => void>()
+    const enqueueEntitlementEffects = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 
     const replayed = await revokeMembershipGrant(
       admin.id,

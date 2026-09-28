@@ -1,4 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
+import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertPlanReturnedRows(result: ExplainResult): void {
   const rootNode = rootPlanNode(result.plan)
@@ -6,7 +7,7 @@ export function assertPlanReturnedRows(result: ExplainResult): void {
   if (typeof actualRows === 'number' && actualRows > 0) return
   throw new Error(
     `${result.name} (${result.scenario_id ?? 'unknown scenario'}) produced no analyzable plan ` +
-      `with real rows (Actual Rows: ${actualRows ?? 'missing'}); every EXPLAIN ANALYZE scenario ` +
+      `with real rows (Actual Rows: ${stringFromUnknown(actualRows ?? 'missing')}); every EXPLAIN ANALYZE scenario ` +
       `must exercise real seeded data`,
   )
 }

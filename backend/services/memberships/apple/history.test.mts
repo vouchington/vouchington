@@ -154,9 +154,10 @@ describe('Apple transaction history', () => {
 })
 
 function createTestAppleSigningKey(): string {
-  return generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
-    .privateKey.export({ format: 'pem', type: 'pkcs8' })
-    .toString()
+  return generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey.export({
+    format: 'pem',
+    type: 'pkcs8',
+  })
 }
 
 function decodeAppleServerApiBearer(authorization: string): {

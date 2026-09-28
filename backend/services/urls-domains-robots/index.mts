@@ -117,7 +117,7 @@ export const fetchRobotsTxt = async (
     return DISALLOW_ROBOTS_TXT
   }
 
-  return await fetchRobotsTxtWithRetry(domain, dependencies)
+  return fetchRobotsTxtWithRetry(domain, dependencies)
 }
 
 export const fetchRobotsTxtCached = cache.cacheGetByAny(fetchRobotsTxt)

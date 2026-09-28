@@ -9,7 +9,7 @@ export async function deleteImageById(
 ) {
   const image = await getImageByAny(imageId, { includeQuarantinePending })
   if (!image) return
-  return await withImageStorageLifecycleLock(image.id, async () =>
+  return withImageStorageLifecycleLock(image.id, async () =>
     deleteImageByIdWhileStorageLocked(image.id, omitRollback, includeQuarantinePending),
   )
 }
