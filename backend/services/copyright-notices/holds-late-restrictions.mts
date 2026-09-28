@@ -101,15 +101,3 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   )
   return intentIds.filter((id): id is string => id !== null)
 }
-
-export async function lockLateHoldPlacements(
-  targetIds: string[],
-  transaction: TransactionQuery,
-): Promise<void> {
-  await transaction(sql`/* appendCopyrightLegalHoldAssessment:placementLocks */
-    SELECT pg_advisory_xact_lock(hashtextextended(concat('image-placement:', placement_id), 0))
-    FROM copyright_notice_targets
-    WHERE id = ANY(${targetIds}::uuid[])
-    ORDER BY placement_id
-  `)
-}
