@@ -1,23 +1,29 @@
-import { describe, expect, it, vi } from 'vitest'
-
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+/* oxlint-disable no-mistakes/playwright-consistent-attribute, no-mistakes/playwright-literals -- moved test support preserves existing Testing Library selectors */
+import type { ReactNode } from 'react'
+import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
+import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import type { Post } from '@/types/posts'
+import type { RssFeedItem, Story } from '@/types/rss-feed-items'
 
-import { render, screen } from '@testing-library/react'
+const mockAuthState = vi.hoisted(() => ({ isAuthenticated: true }))
+export { mockAuthState }
+
+const nextDynamicMock = vi.hoisted(() => {
+  return {
+    default: () => {
+      // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
+      return function MockDynamic() {
+        return null
+      }
+    },
+  }
+})
 
 vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
-
-const nextDynamicMock = vi.hoisted(() => {
-  return {
-    default: () =>
-      function MockDynamic() {
-        return null
-      },
-  }
-})
 
 vi.mock(import('next/dynamic'), () => nextDynamicMock)
 
@@ -30,7 +36,7 @@ vi.mock(
         href,
         ...props
       }: {
-        children: React.ReactNode
+        children: ReactNode
         href: string
         [k: string]: unknown
       }) => (
@@ -52,7 +58,8 @@ vi.mock(
   import('@/lib/auth/context'),
   () =>
     ({
-      useAuth: () => ({ isAuthenticated: true }),
+      useAuth: () => ({ isAuthenticated: mockAuthState.isAuthenticated }),
+      useOptionalAuth: () => null,
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
@@ -62,6 +69,7 @@ vi.mock(import('@/lib/api/client/elections'), () => ({
 
 vi.mock(import('@/components/shared/hide-button'), () => ({
   HideButton: () => (
+    // ast-grep-ignore: web-no-raw-form-elements -- test double replaces HideButton with a native button the cluster tests query by label
     <button
       data-testid='hide-button'
       type='button'
@@ -96,13 +104,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/votes/score-vote'),
 )
 
-import { NewsItemCluster } from '../news-item-cluster'
-
-import type { RssFeedItem, Story } from '@/types/rss-feed-items'
-
-import type { Post } from '@/types/posts'
-
-const makeItem = (id: string, title: string): RssFeedItem =>
+export const makeItem = (id: string, title: string): RssFeedItem =>
   makeRssFeedItem({
     id,
     published_at: '2025-01-15T10:00:00Z',
@@ -125,7 +127,7 @@ const makeItem = (id: string, title: string): RssFeedItem =>
     },
   })
 
-const makeStory = (overrides?: Partial<Story>): Story => ({
+export const makeStory = (overrides?: Partial<Story>): Story => ({
   id: 'story-1',
   title: 'Test Story',
   cluster_reason: null,
@@ -134,7 +136,7 @@ const makeStory = (overrides?: Partial<Story>): Story => ({
   ...overrides,
 })
 
-const makePost = (overrides?: Partial<Post>): Post => ({
+export const makePost = (overrides?: Partial<Post>): Post => ({
   id: 'post-1',
   post_type: 'discussion',
   title: 'Test Post',
@@ -154,35 +156,4 @@ const makePost = (overrides?: Partial<Post>): Post => ({
   community_id: null,
   clearance_status: 'approved',
   ...overrides,
-})
-
-const primary = makeItem('item-1', 'Primary Article')
-
-describe('NewsItemCluster rendering', () => {
-  it('filters story-post from primary relatedPosts when storyPost is provided', () => {
-    const storyPost = makePost({
-      id: 'sp-1',
-      post_type: 'story',
-      slug: 'ai-story',
-      title: 'The Story Post',
-    })
-    const otherPost = makePost({
-      id: 'other-1',
-      post_type: 'discussion',
-      slug: 'other',
-      title: 'Other Discussion',
-    })
-    render(
-      <NewsItemCluster
-        primary={primary}
-        storyItems={[]}
-        story={makeStory()}
-        storyPost={storyPost}
-        relatedPosts={[storyPost, otherPost]}
-        view='summary'
-      />,
-    )
-    expect(screen.queryByText('The Story Post')).toBeNull()
-    expect(screen.queryAllByText('Other Discussion').length).toBeGreaterThan(0)
-  })
 })
