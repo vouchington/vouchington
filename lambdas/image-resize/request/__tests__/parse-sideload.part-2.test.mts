@@ -55,7 +55,7 @@ describe('parseSideloadRequest — signature verification', () => {
 
   function makeSignedEvent(url: string, extraParams: Record<string, string> = {}) {
     const base64url = toBase64Url(url)
-    const path = `/sideload/${base64url}`
+    const path = `/sideload/v2/${base64url}`
     const sig = signPath(path, [TEST_SIDELOAD_SIGNING_KEY])
     return createMockEvent(base64url, { w: '800', sig, ...extraParams })
   }
@@ -99,7 +99,7 @@ describe('parseSideloadRequest — signature verification', () => {
     const signedForUrl = 'https://example.com/image.jpg'
     const otherUrl = 'https://evil.com/malicious.jpg'
     const base64url = toBase64Url(signedForUrl)
-    const path = `/sideload/${base64url}`
+    const path = `/sideload/v2/${base64url}`
     const sig = signPath(path, [TEST_SIDELOAD_SIGNING_KEY])
     // Use the correct sig but a different base64url in the request
     const tamperedBase64url = toBase64Url(otherUrl)
@@ -111,7 +111,7 @@ describe('parseSideloadRequest — signature verification', () => {
     const oldKey = 'cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe'
     const url = 'https://example.com/image.jpg'
     const base64url = toBase64Url(url)
-    const path = `/sideload/${base64url}`
+    const path = `/sideload/v2/${base64url}`
     // Signed with old key
     const sig = signPath(path, [oldKey])
     // Lambda configured with [newKey, oldKey]

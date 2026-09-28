@@ -69,7 +69,7 @@ describe('parseRouterRequest', () => {
     it('should detect sideload route from path', () => {
       const url = 'https://example.com/image.jpg'
       const base64url = Buffer.from(url).toString('base64')
-      const event = createMockEvent(`/sideload/${base64url}`, { base64url }, { w: '800' })
+      const event = createMockEvent(`/sideload/v2/${base64url}`, { base64url }, { w: '800' })
 
       const result = parseRouterRequest(event)
 
@@ -83,7 +83,7 @@ describe('parseRouterRequest', () => {
       const url = 'https://example.com/function-url-image.jpg'
       const base64url = Buffer.from(url).toString('base64url')
       const event = {
-        rawPath: `/sideload/${base64url}`,
+        rawPath: `/sideload/v2/${base64url}`,
         pathParameters: null,
         queryStringParameters: { w: '400' },
         headers: {},
@@ -110,7 +110,7 @@ describe('parseRouterRequest', () => {
       const url = 'https://example.com/image.jpg'
       const base64url = Buffer.from(url).toString('base64')
       const event = createMockEvent(
-        `/sideload/${base64url}`,
+        `/sideload/v2/${base64url}`,
         { base64url },
         {
           w: '1200',
@@ -138,7 +138,7 @@ describe('parseRouterRequest', () => {
     it('should handle sideload route with complex URL', () => {
       const url = 'https://cdn.example.com/images/2024/photo.jpg?v=123&quality=high'
       const base64url = Buffer.from(url).toString('base64')
-      const event = createMockEvent(`/sideload/${base64url}`, { base64url }, { w: '800' })
+      const event = createMockEvent(`/sideload/v2/${base64url}`, { base64url }, { w: '800' })
 
       const result = parseRouterRequest(event)
 
@@ -222,7 +222,7 @@ describe('parseRouterRequest', () => {
       const base64url = Buffer.from(url).toString('base64')
       // Even with S3 query params present
       const event = createMockEvent(
-        `/sideload/${base64url}`,
+        `/sideload/v2/${base64url}`,
         { base64url },
         { w: '800', key: 'ignored.jpg' },
       )

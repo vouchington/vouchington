@@ -58,7 +58,7 @@ describe('Lambda dev server Playwright fixture', () => {
 
   it('serves the reserved sideload source as a local PNG', async () => {
     const encoded = Buffer.from(PLAYWRIGHT_PODCAST_COVER_URL).toString('base64url')
-    const response = await request(`/sideload/${encoded}?w=400`)
+    const response = await request(`/sideload/v2/${encoded}?w=400`)
 
     expect(response.status).toBe(200)
     expect(response.headers['cache-control']).toBe('no-store')

@@ -60019,6 +60019,271 @@
         }
       }
     },
+    "og_dependency_manifest_placements": {
+      "checkConstraints": {
+        "og_dependency_manifest_placements_ordinal_check": "CHECK ((ordinal >= 0))",
+        "og_dependency_manifest_placements_placement_revision_check": "CHECK ((placement_revision >= 0))"
+      },
+      "columns": {
+        "image_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "manifest_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "ordinal": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "integer"
+        },
+        "placement_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "placement_revision": {
+          "collation": null,
+          "comment": "Placement revision observed at registration. A later revision does not satisfy this dependency.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "integer"
+        }
+      },
+      "comment": "One source placement embedded by an OG manifest. Authorization uses the recorded revision, not a later sibling.",
+      "foreignKeys": {
+        "fk_og_dependency_manifest_placements__image": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "fk_og_dependency_manifest_placements__placement": {
+          "columns": ["placement_id"],
+          "definition": "FOREIGN KEY (placement_id) REFERENCES media_placements(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "media_placements",
+          "validated": true
+        },
+        "og_dependency_manifest_placements_manifest_id_fkey": {
+          "columns": ["manifest_id"],
+          "definition": "FOREIGN KEY (manifest_id) REFERENCES og_dependency_manifests(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "og_dependency_manifests",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_og_dependency_manifest_placements__image": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_og_dependency_manifest_placements__image ON public.og_dependency_manifest_placements USING btree (image_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_og_dependency_manifest_placements__placement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_og_dependency_manifest_placements__placement ON public.og_dependency_manifest_placements USING btree (placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "og_dependency_manifest_placements_manifest_id_placement_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX og_dependency_manifest_placements_manifest_id_placement_id_key ON public.og_dependency_manifest_placements USING btree (manifest_id, placement_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "manifest_id",
+              "descending": false,
+              "expression": "manifest_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "placement_id",
+              "descending": false,
+              "expression": "placement_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "og_dependency_manifest_placements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX og_dependency_manifest_placements_pkey ON public.og_dependency_manifest_placements USING btree (manifest_id, ordinal)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "manifest_id",
+              "descending": false,
+              "expression": "manifest_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "ordinal",
+              "descending": false,
+              "expression": "ordinal",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["manifest_id", "ordinal"],
+        "definition": "PRIMARY KEY (manifest_id, ordinal)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "og_dependency_manifest_placements_manifest_id_placement_id_key": {
+          "columns": ["manifest_id", "placement_id"],
+          "definition": "UNIQUE (manifest_id, placement_id)"
+        }
+      }
+    },
+    "og_dependency_manifests": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Registered set of placement dependencies for one OG render. Unknown manifests are not delivery authority.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "og_dependency_manifests_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX og_dependency_manifests_pkey ON public.og_dependency_manifests USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "openai_background_responses": {
       "checkConstraints": {
         "openai_background_responses_response_id_check": "CHECK (((response_id = TRIM(BOTH FROM response_id)) AND ((char_length(response_id) >= 1) AND (char_length(response_id) <= 100))))"

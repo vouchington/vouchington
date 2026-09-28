@@ -4,7 +4,11 @@ import { PublicLandingPageView } from '@/components/landing-pages/public-landing
 import { getUserLandingPage } from '@/lib/api/server'
 import { landingPageHref } from '@/lib/links/entity-href'
 import { createNoIndexMetadata, createPageMetadata, createExcerpt } from '@/lib/seo/metadata'
-import { buildLandingOgImageUrl, extractTopCategories } from '@/lib/seo/og-image-url'
+import {
+  buildLandingOgImageUrl,
+  extractTopCategories,
+  landingOgDependencies,
+} from '@/lib/seo/og-image-url'
 import { getTranslations } from '@/lib/i18n/get-translations'
 
 interface PageProps {
@@ -32,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       displayName: data.user.display_name || data.user.username,
       username: data.user.username,
       topCategories: extractTopCategories(data),
-      avatarImageId: data.user.profile_image_id,
+      dependencies: landingOgDependencies(data.user.profile_image_placement),
     }),
   })
 }

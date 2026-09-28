@@ -117,22 +117,36 @@ describe('handler.og', () => {
     expect(dependencies.fetchImageFromUrl).not.toHaveBeenCalled()
   })
 
-  it('renders a landing card with an avatar fetched from the origin bucket', async () => {
+  it('renders a landing card with an avatar fetched from an allowed placement', async () => {
+    const imageId = '22222222-2222-4222-8222-222222222222'
+    const allowing = createLambdaHandler(
+      { source: mockEnvConfig, sideload: mockSideloadConfig },
+      {
+        ...dependencies,
+        authorizeDependencies: async () => ['allow'],
+      },
+    )
     const event = createMockOgEvent({
       type: 'landing',
       displayName: 'Ada Lovelace',
       username: 'ada',
       topCategories: ['math', 'computing'],
-      avatarImageId: 'avatars/ada.png',
+      dependencies: [
+        {
+          placementId: '11111111-1111-4111-8111-111111111111',
+          revision: 1,
+          imageId,
+        },
+      ],
     })
 
-    const result = await handler(event)
+    const result = await allowing(event)
 
     expect(result.statusCode).toBe(200)
     expect(dependencies.fetchImageFromS3).toHaveBeenCalledWith(
       expect.anything(),
       mockEnvConfig.s3_bucket_origin.bucket,
-      'avatars/ada.png',
+      imageId,
     )
   })
 
@@ -154,15 +168,28 @@ describe('handler.og', () => {
     vi.mocked(dependencies.fetchImageFromS3!).mockRejectedValue(
       new S3OperationError('not found', 404),
     )
+    const allowing = createLambdaHandler(
+      { source: mockEnvConfig, sideload: mockSideloadConfig },
+      {
+        ...dependencies,
+        authorizeDependencies: async () => ['allow'],
+      },
+    )
     const event = createMockOgEvent({
       type: 'landing',
       displayName: 'Ada Lovelace',
       username: 'ada',
       topCategories: ['math'],
-      avatarImageId: 'avatars/missing.png',
+      dependencies: [
+        {
+          placementId: '11111111-1111-4111-8111-111111111111',
+          revision: 1,
+          imageId: '22222222-2222-4222-8222-222222222222',
+        },
+      ],
     })
 
-    const result = await handler(event)
+    const result = await allowing(event)
 
     expect(result.statusCode).toBe(200)
   })

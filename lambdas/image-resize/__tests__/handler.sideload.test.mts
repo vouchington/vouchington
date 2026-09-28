@@ -38,7 +38,7 @@ describe('handler.sideload', () => {
   ): APIGatewayProxyEvent {
     const base64url = toBase64Url(url)
     return {
-      path: `/sideload/${base64url}`,
+      path: `/sideload/v2/${base64url}`,
       pathParameters: { base64url },
       queryStringParameters: params,
       headers,
@@ -150,9 +150,9 @@ describe('handler.sideload', () => {
 
         const result = await handler(event)
 
-        expect(result.statusCode).toBe(400)
+        expect(result.statusCode).toBe(404)
         const body = JSON.parse(result.body)
-        expect(body.error).toContain('base64url')
+        expect(body.error).toContain('Removed sideload route')
       })
 
       it('should return 400 for invalid quality', async () => {
@@ -201,7 +201,7 @@ describe('handler.sideload', () => {
         const url = 'https://example.com/function-url-image.jpg'
         const base64url = toBase64Url(url)
         const event = {
-          rawPath: `/sideload/${base64url}`,
+          rawPath: `/sideload/v2/${base64url}`,
           pathParameters: null,
           queryStringParameters: { w: '800' },
           headers: {},

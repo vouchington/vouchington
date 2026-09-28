@@ -72,7 +72,7 @@ registry remain infrastructure-owned; the Lambda route alone does not provide wi
 
 ### Sideloaded images
 
-`GET /sideload/<base64url>?w=<width>&h=<height>&q=<quality>&l=<0|1>&p=<0|1>&sig=<hmac>`
+`GET /sideload/v2/<base64url>?w=<width>&h=<height>&q=<quality>&l=<0|1>&p=<0|1>&sig=<hmac>`
 
 - `base64url` — original URL encoded with RFC 4648 §5 base64url (`-` not `+`, `_` not `/`)
 - `sig` (required) — HMAC path signature from `@ts-shared/url-signing`; missing or invalid returns 403
@@ -80,7 +80,7 @@ registry remain infrastructure-owned; the Lambda route alone does not provide wi
 
 #### SSRF Security
 
-Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.169.254`), IPv6 private ranges, legacy IPv4 literal encodings, and hostnames `localhost`/`metadata.google.internal` are blocked. Hostname sideloads validate DNS answers and fetch through the [`ssrf-guard`](https://www.npmjs.com/package/ssrf-guard) Node `safeFetch` helper so the actual request uses only validated public addresses. Redirects are followed only after the target URL is revalidated.
+Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.169.254`), IPv6 private ranges, legacy IPv4 literal encodings, and hostnames `localhost`/`metadata.google.internal` are blocked. First-party media hosts (`images.voucha.ai`, `images-staging.voucha.ai`, `IMAGE_ORIGIN`, and `MEDIA_SOURCE_HOST_ALIASES`, including subdomains) are rejected at signing and again before every fetch and redirect hop. Hostname sideloads validate DNS answers and fetch through the [`ssrf-guard`](https://www.npmjs.com/package/ssrf-guard) Node `safeFetch` helper so the actual request uses only validated public addresses. Redirects are followed one hop at a time with `maxRedirects: 0` so each target is authorized before the next pinned fetch. Removed `/sideload/` routes return 404 before any cache lookup.
 
 ### OG cards
 
@@ -88,17 +88,17 @@ Private IPv4 ranges, loopback, link-local (including AWS metadata at `169.254.16
 
 - `base64url` — a JSON-encoded, base64url-encoded discriminated-union payload (mirrors `web/lib/seo/og-image-url.ts`):
   - `{ type: 'generic', eyebrow, title, description, domainLabel }`
-  - `{ type: 'landing', displayName, username, topCategories: string[], avatarImageId? }` — `avatarImageId` is omitted entirely (not `null`) when the profile has no avatar
+  - `{ type: 'landing', displayName, username, topCategories: string[], dependencies }` — `dependencies` is a list of `{ placementId, revision, imageId }` tuples. Every dependency must authorize before any avatar byte is read. An unknown, withheld, or short result renders the letter placeholder and does not read S3. A raw `avatarImageId` is not a byte source.
   - both branches also carry a `rendererVersion` field (web's `OG_RENDERER_VERSION`) — a pure cache-buster the Lambda ignores; it only exists so a renderer change mints a fresh `/og/` URL instead of matching a stale immutable-cached PNG
 - `sig` — HMAC signature over the **path only** (not the query string), via the same `@ts-shared/url-signing` helpers and signing keys as sideload; missing or invalid returns 403 under the same signing-required gate as sideload (`NODE_ENV=production` or `ENVIRONMENT` is `staging`/`production`)
 - Renders a 1200×630 PNG with `satori` (flexbox layout → SVG) and `sharp` (SVG → PNG), using bundled `@fontsource/inter` `.woff` files
-- Landing cards fetch the avatar directly from the source bucket via `fetchImageFromS3` (no HTTP fetch — required for the IPv6-only egress flip) and normalize it to a 192×192 circle; a missing, oversize (50 MB / 24 MP), or unfetchable avatar falls back to an initial-letter avatar and never fails the request
+- Landing cards fetch an allowed dependency's image directly from the source bucket via `fetchImageFromS3` (no HTTP fetch — required for the IPv6-only egress flip) and normalize it to a 192×192 circle; a missing, oversize (50 MB / 24 MP), unauthorized, or unfetchable avatar falls back to an initial-letter avatar and never fails the request
 - Bypasses the cache contract below entirely: OG responses are never written to the cache bucket and are re-rendered on every invocation. The `/og/<base64url>` path is already content-addressed, so CloudFront's own edge cache (not this Lambda's S3 render cache) is what makes repeat requests cheap. `CACHE_VERSION` does not apply to this route — instead, bump `OG_RENDERER_VERSION` in `web/lib/seo/og-image-url.ts` whenever the renderer output changes (see issue #8046), which mints new `/og/` paths and lets old immutable-cached PNGs age out untouched.
 
 ## Cache Contract
 
 - Source key: `${key}--w${width}-h${height}-l${lossless}-p${progressive}-q${quality}-f${format}-v${cacheVersion}`
-- Sideload key: `${sha256(url)}--w${width}-h${height}-l${lossless}-p${progressive}-q${quality}-f${format}-v${cacheVersion}`
+- Sideload key: `transformed/sideload/v2/${sha256(url)}--w${width}-h${height}-l${lossless}-p${progressive}-q${quality}-f${format}-v${cacheVersion}`
 - Stored with `Cache-Control: public, max-age=31536000, immutable`, `StorageClass = ONEZONE_IA`
 - Cache hits read from S3; misses fan out through the resize pipeline. A cache `PutObject` failure is logged to Sentry and still returns the rendered image (HTTP 200).
 - CloudFront cache and origin-request policies allowlist query strings (`w,h,q,l,p,f,sig` for `/images` and `/sideload`; `sig` only for `/og`). Extra params do not bust the edge cache. Gzip/brotli are off so `Accept-Encoding` is not in the cache key.

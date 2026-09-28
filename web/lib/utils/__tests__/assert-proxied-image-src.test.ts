@@ -14,7 +14,7 @@ describe('assertProxiedImageSrc', () => {
 
   it('allows relative paths', () => {
     expect(() => assertProxiedImageSrc('/images/foo.png')).not.toThrow()
-    expect(() => assertProxiedImageSrc('/sideload/abc?w=400')).not.toThrow()
+    expect(() => assertProxiedImageSrc('/sideload/v2/abc?w=400')).not.toThrow()
   })
 
   it('allows data: URLs', () => {
@@ -26,15 +26,15 @@ describe('assertProxiedImageSrc', () => {
   })
 
   it('throws for raw external http URL in dev', () => {
-    expect(() => assertProxiedImageSrc('http://example.com/img.png')).toThrow('/sideload/')
+    expect(() => assertProxiedImageSrc('http://example.com/img.png')).toThrow('/sideload/v2/')
   })
 
   it('throws for raw external https URL in dev', () => {
-    expect(() => assertProxiedImageSrc('https://example.com/img.png')).toThrow('/sideload/')
+    expect(() => assertProxiedImageSrc('https://example.com/img.png')).toThrow('/sideload/v2/')
   })
 
   it('throws for protocol-relative URL (// prefix) in dev', () => {
-    expect(() => assertProxiedImageSrc('//example.com/img.png')).toThrow('/sideload/')
+    expect(() => assertProxiedImageSrc('//example.com/img.png')).toThrow('/sideload/v2/')
   })
 
   it('allows https URL that starts with IMAGE_ORIGIN env var', () => {
@@ -51,15 +51,18 @@ describe('assertProxiedImageSrc', () => {
 
   it('recognizes only relative or exact-origin sideload URLs', () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.voucha.ai')
-    expect(isSideloadImageSrc('/sideload/abc?sig=test')).toBe(true)
-    expect(isSideloadImageSrc('https://images.voucha.ai/sideload/abc?sig=test')).toBe(true)
+    expect(isSideloadImageSrc('/sideload/abc?sig=test')).toBe(false)
+    expect(isSideloadImageSrc('/sideload/v2/abc?sig=test')).toBe(true)
+    expect(isSideloadImageSrc('https://images.voucha.ai/sideload/v2/abc?sig=test')).toBe(true)
     expect(isSideloadImageSrc('https://images.voucha.ai/images/abc?w=400')).toBe(false)
     expect(isSideloadImageSrc('https://images.voucha.ai.evil.example/sideload/abc')).toBe(false)
   })
 
   it('throws for https URL that does not match IMAGE_ORIGIN', () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://cdn.example.com')
-    expect(() => assertProxiedImageSrc('https://other.example.com/img.png')).toThrow('/sideload/')
+    expect(() => assertProxiedImageSrc('https://other.example.com/img.png')).toThrow(
+      '/sideload/v2/',
+    )
   })
 
   it('allows https URL from window.__IMAGE_ORIGIN__ in browser context', () => {

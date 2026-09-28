@@ -69,6 +69,7 @@ describe('fetchImageFromUrl', () => {
     expect(mockFetchWithPinnedDns).toHaveBeenCalledWith(
       new URL('https://example.com/image.jpg'),
       expect.any(AbortSignal),
+      { maxRedirects: 0 },
     )
   })
 
@@ -157,6 +158,7 @@ describe('fetchImageFromUrl', () => {
     expect(mockFetchWithPinnedDns).toHaveBeenCalledWith(
       new URL('https://example.com/image.jpg'),
       expect.any(AbortSignal),
+      { maxRedirects: 0 },
     )
   })
 

@@ -2546,6 +2546,9 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -6623,6 +6626,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../../../ts-shared/url-signing
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -12629,6 +12635,9 @@ importers:
       '@ts-shared/session-jwt':
         specifier: workspace:^
         version: link:../ts-shared/session-jwt
+      '@ts-shared/url-signing':
+        specifier: workspace:^
+        version: link:../ts-shared/url-signing
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../ts-shared/utils

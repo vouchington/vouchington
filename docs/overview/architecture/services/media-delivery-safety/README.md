@@ -94,6 +94,12 @@ The exact observed marker token is acknowledged before a separate scheduled, cur
 orphan sweep may remove an unreferenced binding and then its image root. A committed registry
 reference keeps those identities pinned; cleanup never authorizes a route.
 
+OG cards register an explicit dependency manifest of placement tuples. Authorization allows
+delivery only when that manifest exists and every recorded tuple passes the same
+`imageDeliveryAuthorityProof()` used for placement publication. A missing manifest is denied.
+An empty registered manifest allows the card with no source bytes. A later placement revision
+or withhold does not satisfy the recorded dependency.
+
 ```mermaid
 flowchart LR
   owner[Owner transaction and placement fences] --> marker[Independent durable marker]

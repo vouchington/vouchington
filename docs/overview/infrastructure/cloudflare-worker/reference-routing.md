@@ -71,6 +71,7 @@ absolute URLs against those hosts. In local dev, `IMAGE_ORIGIN=http://localhost:
 the URL builder sends image requests directly to the local image-resize Lambda
 on that port.
 
-Backend sideload emitters also return absolute URLs on the image host. An apex
-`/sideload/*` request therefore follows the normal web route and is not an image
-proxy fallback.
+Backend sideload emitters also return absolute URLs on the image host. A removed
+apex `/sideload/*` route returns 404 before cache dispatch and before origin
+fetch. The current `/sideload/v2/<base64url>` route still follows the normal web
+route and is not an image proxy fallback.

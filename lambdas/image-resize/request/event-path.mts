@@ -1,4 +1,5 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
+import { isCurrentSideloadRoute, isRemovedSideloadRoute } from '@ts-shared/url-signing'
 
 type FunctionUrlEvent = APIGatewayProxyEvent & { rawPath?: string }
 
@@ -7,13 +8,20 @@ export function getRequestPath(event: APIGatewayProxyEvent): string {
 }
 
 export function isSideloadRequest(event: APIGatewayProxyEvent): boolean {
-  return getRequestPath(event).includes('/sideload/') || Boolean(event.pathParameters?.base64url)
+  const path = getRequestPath(event)
+  return (
+    isCurrentSideloadRoute(path) ||
+    isRemovedSideloadRoute(path) ||
+    Boolean(event.pathParameters?.base64url)
+  )
 }
 
 export function getSideloadBase64url(event: APIGatewayProxyEvent): string | undefined {
-  return (
-    event.pathParameters?.base64url ?? getRequestPath(event).match(/^\/sideload\/([^/]+)$/)?.[1]
-  )
+  const path = getRequestPath(event)
+  const fromPath = path.match(/^\/sideload\/v2\/([^/]+)$/)?.[1]
+  if (fromPath) return fromPath
+  if (isRemovedSideloadRoute(path)) return undefined
+  return event.pathParameters?.base64url
 }
 
 // OG card requests use a distinct path segment and path-parameter name
