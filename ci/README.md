@@ -39,6 +39,8 @@ CI-local reproduction and workflow support scripts. Run commands from the worktr
 | [`cleanup-artifacts-patterns.json`](cleanup-artifacts-patterns.json), [`cleanup-artifacts-pattern-matcher.mjs`](cleanup-artifacts-pattern-matcher.mjs), [`cleanup-run-artifacts.mjs`](cleanup-run-artifacts.mjs) | Canonical Actions artifact keep/delete policy, its dependency-free exact-or-prefix matcher, and the minimal same-run fan-in cleanup used without installing workspace dependencies. |
 
 CI scripts belong here when they reproduce or prepare GitHub Actions behavior.
+DNS hostname exclusions in [`../lychee.toml`](../lychee.toml) allow one terminal dot before the port or path boundary.
+[`lint-links.test.mts`](lint-links.test.mts) checks ordinary forms, terminal-dot forms, and lookalike hosts with `lychee --dump`.
 
 Repository-owned Node test listeners allocate a plain or Fetch-safe ephemeral port through
 [`@ts-shared/utils/ephemeral-ports`](../ts-shared/utils/ephemeral-ports.mts).
