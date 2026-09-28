@@ -52,7 +52,6 @@ import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock
 import { getBacklogThreshold, getStaleTtlHours } from '@services/bedrock-embeddings/batch/config'
 
 export {
-  processReconciliationPage,
   processExistingEmbeddingReconciliation,
   processPostEmbeddingTriggerRecovery,
   processRssStoryTriggerRecovery,
