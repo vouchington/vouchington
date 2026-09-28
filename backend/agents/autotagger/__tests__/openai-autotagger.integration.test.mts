@@ -52,9 +52,8 @@ describe('callOpenAIAutotagger with real tools and persistence', () => {
     const content = `Categorize ${post.id}`
     const conversation = await createConversation(owner.id, `Autotag ${post.id}`)
     const message = await createConversationMessage(conversation.id, owner.id, {
-      type: 'autotag',
-      entity_type: 'post',
-      entity_id: post.id,
+      role: 'assistant',
+      content: null,
     })
     const toolCall = {
       type: 'function_call' as const,
@@ -136,9 +135,8 @@ describe('callOpenAIAutotagger with real tools and persistence', () => {
     expect(messages).toHaveLength(1)
     expect(messages[0]).toMatchObject({ id: message.id, created_by_id: owner.id })
     expect(messages[0].content).toEqual({
-      type: 'autotag',
-      entity_type: 'post',
-      entity_id: post.id,
+      role: 'assistant',
+      content: null,
     })
     const run = await getLatestConversationMessageAgenticRunByConversationMessageId(message.id)
     expect(run).toMatchObject({
@@ -177,9 +175,8 @@ describe('callOpenAIAutotagger with real tools and persistence', () => {
     const content = `No relevant topics for ${post.id}`
     const conversation = await createConversation(owner.id, `Autotag no-tool ${post.id}`)
     const message = await createConversationMessage(conversation.id, owner.id, {
-      type: 'autotag',
-      entity_type: 'post',
-      entity_id: post.id,
+      role: 'assistant',
+      content: null,
     })
     const response = completedProviderResponse(
       makeSdkTextResponse('No related topic.', {
