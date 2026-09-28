@@ -28,11 +28,17 @@ describe('husky-hooks', () => {
       .filter((name: string) => !['AGENTS.md', '_'].includes(name) && !name.endsWith('.test.mts'))
       .sort()
 
-    expect(activeHooks).toEqual(['commit-msg', 'post-checkout', 'post-merge', 'post-rewrite'])
+    expect(activeHooks).toEqual([
+      'commit-msg',
+      'post-checkout',
+      'post-merge',
+      'post-rewrite',
+      'pre-push',
+    ])
   })
 
   it('keeps every active hook as a no-op in GitHub Actions', () => {
-    const activeHooks = ['commit-msg', 'post-checkout', 'post-merge', 'post-rewrite']
+    const activeHooks = ['commit-msg', 'post-checkout', 'post-merge', 'post-rewrite', 'pre-push']
 
     for (const hook of activeHooks) {
       const expectedPrefix = `#!/bin/sh\n${githubActionsGuard}`
@@ -106,6 +112,7 @@ EOF
         'post-checkout': ['old', 'new', '1'],
         'post-merge': ['0'],
         'post-rewrite': ['rebase'],
+        'pre-push': [],
       }
 
       for (const [hook, args] of Object.entries(hookArgs)) {

@@ -1,0 +1,10 @@
+#!/bin/sh
+[ "${GITHUB_ACTIONS:-}" = "true" ] && exit 0
+
+repo_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P) || exit 0
+node "$repo_root/dev/plain-force-push.mts"
+cmd_status=$?
+if [ "$cmd_status" -eq 1 ]; then
+  exit 1
+fi
+exit 0
