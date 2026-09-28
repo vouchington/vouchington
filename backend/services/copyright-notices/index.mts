@@ -114,6 +114,7 @@ export {
   CopyrightDeliveryNotClaimedError,
 } from './delivery-transport.mts'
 export { copyrightAppealRecommendations } from './appeal-recommendations.mts'
+export { closeCopyrightNoticeCase } from './case-closure.mts'
 export {
   acknowledgeEuCopyrightNotice,
   recordEuCopyrightAcknowledgmentFailure,
@@ -123,6 +124,15 @@ export { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
 export { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
 export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
 export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
+export {
+  previewCopyrightEvidenceRetention,
+  type RetentionBlockReason,
+  type RetentionPreview,
+} from './retention-preview.mts'
+export {
+  recordCopyrightEvidenceRetentionDisposition,
+  type RetentionDisposition,
+} from './retention-disposition.mts'
 export {
   currentUserCanApproveCopyrightTerritorialPolicy,
   recordCopyrightTerritorialPolicyApproval,

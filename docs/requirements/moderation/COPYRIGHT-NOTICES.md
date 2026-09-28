@@ -364,6 +364,14 @@ legal hold on a placement whose post author is that account. A qualifying hold i
 with an original claimant, the same material, a proceeding kind, a commencement time, and a
 designated-agent receipt, and with no resolution row. An open review alone does not block deletion.
 
+## Evidence retention preview
+
+Evidence retention is preview-only. The server gate is inserted disabled, and no table stores a
+retention duration. A preview names the case evidence and every reason it is blocked: the gate,
+an unapproved policy, an open case, an unresolved legal hold, or an open deadline. Recording a
+disposition writes `refused` or `not_destroyed`. Neither outcome deletes an evidence object or a
+preserved email. Actual destruction needs a separate human and legal authority.
+
 ## Activation gates
 
 Before accepting live notices, the operator must register and publish the actual US designated
