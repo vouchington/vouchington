@@ -53,7 +53,7 @@ function assertSelectorPlan(
   if (
     !['Index Scan', 'Index Only Scan'].includes(String(scan['Node Type'])) ||
     !condition.includes('story_id =') ||
-    (after && !condition.includes('id <')) ||
+    (after && !hasStoryMembershipContinuationBound(condition)) ||
     Number(scan['Actual Loops']) !== 1
   )
     throw new Error(`${result.name} must use one story_id index probe${after ? ' with id <' : ''}`)
@@ -85,6 +85,14 @@ function assertHydrationPlan(result: ExplainResult, limit: number): void {
   )
   if (broadItems.length)
     throw new Error(`${result.name} must not sequentially scan RSS items to hydrate a page`)
+}
+
+function hasStoryMembershipContinuationBound(indexCondition: string): boolean {
+  return (
+    indexCondition.includes('id <') ||
+    indexCondition.includes('ROW(story_id, id) <') ||
+    indexCondition.includes('(story_id, id) <')
+  )
 }
 
 function physicalRows(node: Record<string, unknown>): number {

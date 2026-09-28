@@ -32,12 +32,23 @@ export function assertBoundedStoryMemberPlan(
     if (
       !['Index Scan', 'Index Only Scan'].includes(String(node['Node Type'])) ||
       !indexCondition.includes('story_id =') ||
-      (after && !indexCondition.includes('id <')) ||
+      (after && !hasStoryMembershipContinuationBound(indexCondition)) ||
       work > limit + 1 + Number(excludesPrimary)
-    )
-      throw new Error(`Unbounded story membership work: ${work}`)
+    ) {
+      throw new Error(
+        `Unbounded story membership work: ${work} (${String(node['Node Type'])} ${indexCondition || 'without an index condition'})`,
+      )
+    }
   }
   if (!nodes.some(node => node['Node Type'] === 'Limit' && node['Actual Rows'] === limit + 1)) {
     throw new Error('Story membership lookahead limit missing')
   }
+}
+
+function hasStoryMembershipContinuationBound(indexCondition: string): boolean {
+  return (
+    indexCondition.includes('id <') ||
+    indexCondition.includes('ROW(story_id, id) <') ||
+    indexCondition.includes('(story_id, id) <')
+  )
 }

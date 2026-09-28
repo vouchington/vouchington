@@ -117,7 +117,13 @@ function buildMemberSelection(
       WHERE rss_feed_items.story_id = input.story_id
         AND rss_feed_items.deleted_at IS NULL
         AND rss_feed_items.id IS DISTINCT FROM input.exclude_item_id`)
-  if (hasAfter) query.append(sql` AND rss_feed_items.id < input.after_id`)
+  // Compare (story_id, id) so continuation uses the story membership index when
+  // that story owns the newest ids in the partition.
+  if (hasAfter) {
+    query.append(
+      sql` AND (rss_feed_items.story_id, rss_feed_items.id) < (input.story_id, input.after_id)`,
+    )
+  }
   return query.append(sql` ORDER BY rss_feed_items.id DESC LIMIT ${limit + 1}
     ) member`)
 }

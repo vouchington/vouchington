@@ -87,6 +87,9 @@ describe('story member EXPLAIN gates', () => {
     ).Plan.Plans[0]!.Plans[0] as Record<string, unknown>
     scan['Index Cond'] = '(story_id = input.story_id)'
     expect(() => assertStoryMemberPagePlan(input)).toThrow('with id <')
+    scan['Index Cond'] =
+      '((ROW(story_id, id) < ROW(input.story_id, input.after_id)) AND (story_id = input.story_id))'
+    expect(() => assertStoryMemberPagePlan(input)).not.toThrow()
     input.name = 'getStoryItemIds:force_custom_plan'
     expect(() => assertStoryMemberPagePlan(input)).toThrow('production story member selector')
   })
