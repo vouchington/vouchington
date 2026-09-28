@@ -127,6 +127,21 @@ export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.
 export { previewCopyrightEvidenceRetention } from './retention-preview.mts'
 export { recordCopyrightEvidenceRetentionDisposition } from './retention-disposition.mts'
 export {
+  acknowledgeCopyrightStaffAlert,
+  listCopyrightStaffAlertAcknowledgements,
+  listOpenCopyrightStaffAlerts,
+} from './staff-alerts-read.mts'
+export type {
+  CopyrightStaffAlert,
+  CopyrightStaffAlertAcknowledgement,
+} from './staff-alerts-read.mts'
+export {
+  approveCopyrightStaffAlertPolicy,
+  revokeCopyrightStaffAlertPolicy,
+} from './staff-alerts-policy.mts'
+export { syncCopyrightStaffAlertsFromRecovery } from './staff-alerts-recovery.mts'
+export { syncCopyrightStaffAlerts } from './staff-alerts-sync.mts'
+export {
   currentUserCanApproveCopyrightTerritorialPolicy,
   recordCopyrightTerritorialPolicyApproval,
   withdrawCopyrightTerritorialPolicyApproval,
