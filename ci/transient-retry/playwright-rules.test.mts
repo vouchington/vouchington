@@ -6,12 +6,8 @@ import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 
 const playwrightShardOneJobName = 'test-playwright / playwright-tests (1)'
 const playwrightShardTwoJobName = 'test-playwright / playwright-tests (2)'
-const mainWebPlaywrightShardOneJobName = 'playwright-tests / playwright-tests (1)'
 const credentialedPlaywrightJobName = 'test-playwright-credentialed / playwright-credentialed-tests'
-const mainWebCredentialedPlaywrightJobName =
-  'playwright-credentialed-tests / playwright-credentialed-tests'
 const storybookJobName = 'storybook / storybook'
-const mainStorybookJobName = 'storybook-build / storybook'
 const matchingLog = [
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-18T11:17:11.1334420Z $ cross-env NODE_ENV=production next build',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-18T11:17:34.0919537Z ##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',
@@ -40,11 +36,6 @@ const aptWaitTimeoutLog = [
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:25:45.9351067Z ::error::Timed out waiting for apt/dpkg locks after 120s: /var/lib/dpkg/lock-frontend',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:25:45.9595126Z ##[error]Process completed with exit code 1.',
-].join('\n')
-const aptWaitTimeoutLogShardTwo = [
-  'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
-  'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:35:45.9351067Z ::error::Timed out waiting for apt/dpkg locks after 300s: /var/lib/dpkg/lock-frontend',
-  'test-playwright / playwright-tests (2)\tUNKNOWN STEP\t2026-06-19T04:35:45.9595126Z ##[error]Process completed with exit code 1.',
 ].join('\n')
 const echoedTimeoutSourceLog = [
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
@@ -76,17 +67,6 @@ describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
     expect(await runnerShutdownLeafRerunMatch(makeCtx())).toBe(true)
   })
 
-  it('also matches Main CI (web) playwright shard shutdown (previously excluded)', async () => {
-    expect(
-      await runnerShutdownLeafRerunMatch(
-        makeCtx({
-          workflowName: 'Main CI (web)',
-          failedJobNames: [playwrightShardOneJobName, playwrightShardTwoJobName],
-        }),
-      ),
-    ).toBe(true)
-  })
-
   it('does not match non-idempotent workflows', async () => {
     expect(await runnerShutdownLeafRerunMatch(makeCtx({ workflowName: 'Stateful workflow' }))).toBe(
       false,
@@ -115,20 +95,6 @@ describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
 })
 
 describe('main-web-playwright-setup-apt-lock', () => {
-  it('reruns Main CI web when a Playwright shard fails before tests on an apt lock', async () => {
-    const result = await decide(
-      makeCtx({
-        workflowName: 'Main CI (web)',
-        failedJobNames: [mainWebPlaywrightShardOneJobName],
-        failedJobLogs: () =>
-          Promise.resolve(new Map([[mainWebPlaywrightShardOneJobName, aptLockLog]])),
-      }),
-      RULES,
-    )
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
-  })
-
   it.each([aptLockLog, dependencyAptLockLog])(
     'matches CI workflow apt lock failures with downstream aggregate failures',
     async aptFailureLog => {
@@ -159,29 +125,6 @@ describe('main-web-playwright-setup-apt-lock', () => {
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
   })
 
-  it('matches Main CI web with OTel fan-in and multiple shard apt-lock timeouts', async () => {
-    const result = await decide(
-      makeCtx({
-        workflowName: 'Main CI (web)',
-        failedJobNames: [
-          mainWebPlaywrightShardOneJobName,
-          'playwright-tests / playwright-tests (2)',
-          'store-playwright-otel',
-        ],
-        failedJobLogs: () =>
-          Promise.resolve(
-            new Map([
-              [mainWebPlaywrightShardOneJobName, aptWaitTimeoutLog],
-              ['playwright-tests / playwright-tests (2)', aptWaitTimeoutLogShardTwo],
-            ]),
-          ),
-      }),
-      RULES,
-    )
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
-  })
-
   it('matches credentialed Playwright setup timeouts', async () => {
     const result = await decide(
       makeCtx({
@@ -189,20 +132,6 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobNames: [credentialedPlaywrightJobName],
         failedJobLogs: () =>
           Promise.resolve(new Map([[credentialedPlaywrightJobName, aptWaitTimeoutLog]])),
-      }),
-      RULES,
-    )
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
-  })
-
-  it('matches Main CI web credentialed Playwright setup timeouts', async () => {
-    const result = await decide(
-      makeCtx({
-        workflowName: 'Main CI (web)',
-        failedJobNames: [mainWebCredentialedPlaywrightJobName],
-        failedJobLogs: () =>
-          Promise.resolve(new Map([[mainWebCredentialedPlaywrightJobName, aptWaitTimeoutLog]])),
       }),
       RULES,
     )
@@ -223,41 +152,13 @@ describe('main-web-playwright-setup-apt-lock', () => {
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
   })
 
-  it('matches Main CI Storybook setup apt-lock wait timeouts', async () => {
-    const result = await decide(
-      makeCtx({
-        workflowName: 'Main CI (storybook)',
-        failedJobNames: [mainStorybookJobName],
-        failedJobLogs: () =>
-          Promise.resolve(new Map([[mainStorybookJobName, aptWaitTimeoutLogShardTwo]])),
-      }),
-      RULES,
-    )
-    expect(result.decision).toBe('rerun')
-    expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
-  })
-
-  it('does not treat OTel fan-in as downstream of credentialed Playwright setup', async () => {
-    const result = await decide(
-      makeCtx({
-        workflowName: 'Main CI (web)',
-        failedJobNames: [mainWebCredentialedPlaywrightJobName, 'store-playwright-otel'],
-        failedJobLogs: () =>
-          Promise.resolve(new Map([[mainWebCredentialedPlaywrightJobName, aptWaitTimeoutLog]])),
-      }),
-      RULES,
-    )
-    expect(result.decision).toBe('dispatch')
-    expect(result.matchedRule).toBe('')
-  })
-
   it('does not match timeout strings from echoed setup script source', async () => {
     const result = await decide(
       makeCtx({
-        workflowName: 'Main CI (web)',
-        failedJobNames: [mainWebPlaywrightShardOneJobName],
+        workflowName: 'Web',
+        failedJobNames: [playwrightShardOneJobName],
         failedJobLogs: () =>
-          Promise.resolve(new Map([[mainWebPlaywrightShardOneJobName, echoedTimeoutSourceLog]])),
+          Promise.resolve(new Map([[playwrightShardOneJobName, echoedTimeoutSourceLog]])),
       }),
       RULES,
     )
@@ -265,13 +166,12 @@ describe('main-web-playwright-setup-apt-lock', () => {
     expect(result.matchedRule).toBe('')
   })
 
-  it('does not match when another Main CI web job failed', async () => {
+  it('does not match when another Web job failed', async () => {
     const result = await decide(
       makeCtx({
-        workflowName: 'Main CI (web)',
-        failedJobNames: [mainWebPlaywrightShardOneJobName, 'test-web / web-tests (1)'],
-        failedJobLogs: () =>
-          Promise.resolve(new Map([[mainWebPlaywrightShardOneJobName, aptLockLog]])),
+        workflowName: 'Web',
+        failedJobNames: [playwrightShardOneJobName, 'test-web / web-tests (1)'],
+        failedJobLogs: () => Promise.resolve(new Map([[playwrightShardOneJobName, aptLockLog]])),
       }),
       RULES,
     )
@@ -282,11 +182,10 @@ describe('main-web-playwright-setup-apt-lock', () => {
   it('does not match after the retry cap is exhausted', async () => {
     const result = await decide(
       makeCtx({
-        workflowName: 'Main CI (web)',
+        workflowName: 'Web',
         runAttempt: 2,
-        failedJobNames: [mainWebPlaywrightShardOneJobName],
-        failedJobLogs: () =>
-          Promise.resolve(new Map([[mainWebPlaywrightShardOneJobName, aptLockLog]])),
+        failedJobNames: [playwrightShardOneJobName],
+        failedJobLogs: () => Promise.resolve(new Map([[playwrightShardOneJobName, aptLockLog]])),
       }),
       RULES,
     )

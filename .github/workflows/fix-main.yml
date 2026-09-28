@@ -3,11 +3,8 @@ name: Automation Fix Main
 on:
   workflow_run:
     workflows:
-      - GitHub Actions Static Analysis
-      - Gitleaks
-      - Lint Links
+      - Nightly
       - 'Main CI (backend)'
-      - 'Main CI (checks)'
       - 'Main CI (cloudflare-worker)'
       - 'Main CI (lambdas)'
       - 'Main CI (storybook)'
@@ -34,6 +31,11 @@ jobs:
       vars.HARNESS_FIX_MAIN_ENABLED == 'true' &&
       (
         github.event.workflow_run.event == 'push' ||
+        (
+          (github.event.workflow_run.event == 'schedule' ||
+           github.event.workflow_run.event == 'workflow_dispatch') &&
+          github.event.workflow_run.name == 'Nightly'
+        ) ||
         (
           github.event.workflow_run.event == 'workflow_run' &&
           github.event.workflow_run.name == 'Dispatch completed deploy'

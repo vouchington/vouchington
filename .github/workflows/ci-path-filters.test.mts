@@ -26,21 +26,6 @@ type PathFilters = Record<string, string[]>
 const detectChangesWorkflow = load(
   readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8'),
 ) as Workflow
-const mainChecks = load(readFileSync('.github/workflows/main-checks.yml', 'utf8')) as {
-  on?: { push?: { paths?: string[] } }
-  jobs?: Record<
-    string,
-    {
-      if?: string
-      needs?: string[]
-      steps?: Array<{
-        id?: string
-        uses?: string
-        with?: { filters?: string; 'fetch-depth'?: string }
-      }>
-    }
-  >
-}
 
 function loadDetectChangesFilters(): PathFilters {
   return primaryPathFilters
@@ -50,21 +35,9 @@ function loadRuntimeFilters(): PathFilters {
   return runtimePathFilters
 }
 
-function loadMainChecksFilters(): PathFilters {
-  const filterStep = mainChecks.jobs?.['select-main-checks']?.steps?.find(
-    step => step.id === 'filter',
-  )
-  return load(filterStep?.with?.filters ?? '') as PathFilters
-}
-
 function filterMatches(globs: string[] | undefined, path: string, every = false): boolean {
   const matches = (glob: string) => picomatch.isMatch(path, glob)
   return every ? (globs ?? []).every(matches) : (globs ?? []).some(matches)
-}
-
-function probePath(glob: string): string {
-  const relative = glob.startsWith('**/') ? `probe/${glob.slice(3)}` : glob
-  return relative.replaceAll('**', 'nested').replaceAll('*', 'x')
 }
 
 const pr9389Files = [
@@ -189,80 +162,5 @@ describe('detect-changes path filters', () => {
       expect(filterMatches(filters.portability, path)).toBe(false)
       expect(filterMatches(filters['shell-scripts'], path)).toBe(false)
     }
-  })
-})
-
-describe('main-checks per-job selection', () => {
-  it('keeps on.push.paths covering every select-main-checks group glob', () => {
-    const union = mainChecks.on?.push?.paths ?? []
-    const uncovered = [...new Set(Object.values(loadMainChecksFilters()).flat())].filter(
-      glob => !union.includes(glob) && !filterMatches(union, probePath(glob)),
-    )
-    expect(uncovered).toEqual([])
-    expect(filterMatches(union, 'test-helpers/vitest-config/environment.mts')).toBe(true)
-  })
-
-  it('fail-opens each suite when the selector does not emit false', () => {
-    for (const job of ['tooling-tests', 'ts-shared-tests', 'explain-analyze']) {
-      const suite = mainChecks.jobs?.[job]
-      expect(suite?.needs).toEqual(['select-main-checks'])
-      expect(suite?.if).toContain('!cancelled()')
-      expect(suite?.if).toMatch(/needs\.select-main-checks\.outputs\.\S+ != 'false'/)
-    }
-  })
-
-  it('checks out enough history for dorny to diff a push', () => {
-    const select = mainChecks.jobs?.['select-main-checks']
-    const checkout = select?.steps?.find(step => step.uses?.startsWith('actions/checkout@'))
-    const filter = select?.steps?.find(step => step.id === 'filter')
-    expect([0, 2, '0', '2']).toContain(checkout?.with?.['fetch-depth'])
-    const ciPin = readFileSync('.github/workflows/ci-detect-changes.yml', 'utf8').match(
-      /dorny\/paths-filter@[0-9a-f]{40}/u,
-    )?.[0]
-    expect(ciPin).toBeDefined()
-    expect(filter?.uses).toBe(ciPin)
-  })
-
-  it('keeps workspace-boundary sources on the tooling group', () => {
-    const tooling = loadMainChecksFilters().tooling
-    expect(tooling).toEqual(
-      expect.arrayContaining([
-        'api-fixtures/package.json',
-        'backend/**',
-        'pnpm-workspace.yaml',
-        'ts-shared/**',
-        'static-code-analysis/**',
-      ]),
-    )
-  })
-
-  it('does not start ts-shared or explain-analyze for the #9389 file set', () => {
-    const filters = loadMainChecksFilters()
-    for (const path of pr9389Files) {
-      // Every path in this set now matches `tooling` directly: the `.agents/skills/**` glob
-      // (added to close the no-mistakes affected-test planner gap in #11030) covers the skill
-      // docs, and `ci/**` already covered the ci/ file.
-      expect(filterMatches(filters.tooling, path)).toBe(true)
-      expect(filterMatches(filters['ts-shared'], path)).toBe(false)
-      expect(filterMatches(filters['explain-analyze'], path)).toBe(false)
-    }
-  })
-
-  it('splits #9250 tooling coverage from explain-analyze sources', () => {
-    const filters = loadMainChecksFilters()
-    expect(filterMatches(filters.tooling, 'backend/package.json')).toBe(true)
-    expect(filterMatches(filters['ts-shared'], 'backend/package.json')).toBe(false)
-    expect(filterMatches(filters['explain-analyze'], 'backend/package.json')).toBe(false)
-    expect(filterMatches(filters.tooling, 'backend/api/foo.mts')).toBe(true)
-    expect(filterMatches(filters['explain-analyze'], 'backend/api/foo.mts')).toBe(false)
-    expect(filterMatches(filters.tooling, 'backend/services/foo.mts')).toBe(true)
-    expect(filterMatches(filters['explain-analyze'], 'backend/services/foo.mts')).toBe(true)
-    expect(filterMatches(filters['ts-shared'], 'backend/services/foo.mts')).toBe(false)
-    expect(
-      filterMatches(filters['explain-analyze'], 'backend/data-stores/psql/migrations/foo.sql'),
-    ).toBe(true)
-    expect(
-      filterMatches(filters['explain-analyze'], 'backend/scripts/explain-analyze/run.mts'),
-    ).toBe(true)
   })
 })

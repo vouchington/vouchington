@@ -1,5 +1,5 @@
-# OTel Collector config for main-branch Playwright observability in CI.
-# The workflow mounts /otel-output and uploads these files to S3 after the run.
+# OTel Collector config for opt-in Playwright diagnostics in CI.
+# The manual workflow mounts /otel-output and uploads a short-lived debug artifact.
 
 receivers:
   otlp:

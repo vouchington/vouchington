@@ -14,7 +14,7 @@ function workflowJobSection(body: string, jobName: string): string {
 }
 
 describe('tests-playwright.yml OTel collector', () => {
-  it('supports main-only OTel observability without expanding PR behavior', () => {
+  it('supports opt-in manual OTel observability without expanding PR or main behavior', () => {
     const webWorkflow = readFileSync('.github/workflows/web.yml', 'utf8')
     const pathFilters = readFileSync('.github/ci-path-filters.yml', 'utf8')
     const mainWebWorkflow = readFileSync('.github/workflows/main-web.yml', 'utf8')
@@ -52,34 +52,11 @@ describe('tests-playwright.yml OTel collector', () => {
     )
     expect(workflow).not.toContain('aws-actions/configure-aws-credentials')
     expect(workflow).not.toContain('id-token: write')
-    // Area CI leaves the opt-in off; only main publication enables OTel observability.
+    // Area and main CI leave the opt-in off; workflow_dispatch owns one-off diagnostics.
     expect(workflowJobSection(webWorkflow, 'test-playwright')).not.toContain('otel_enabled:')
-    expect(mainWebWorkflow).toContain("otel_enabled: ${{ vars.PLAYWRIGHT_OTEL_ENABLED == 'true' }}")
-    // store-playwright-otel moved to main-web.yml (main-only push workflow)
-    expect(mainWebWorkflow).toContain('store-playwright-otel:')
-    const playwrightOtelStoreJob = workflowJobSection(mainWebWorkflow, 'store-playwright-otel')
-    expect(playwrightOtelStoreJob).toContain('continue-on-error: true')
-    expect(mainWebWorkflow).toContain(
-      "(needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'failure')",
-    )
-    expect(playwrightOtelStoreJob).toContain('pattern: playwright-otel-output-shard-*')
-    expect(playwrightOtelStoreJob).toContain('github-token: ${{ secrets.GITHUB_TOKEN }}')
-    expect(playwrightOtelStoreJob).toContain('repository: ${{ github.repository }}')
-    expect(playwrightOtelStoreJob).toContain('run-id: ${{ github.run_id }}')
-    expect(playwrightOtelStoreJob).toContain('id: otel-store-credentials')
-    expect(playwrightOtelStoreJob).toContain(
-      'if [ -n "$AWS_OTEL_STORE_ROLE_ARN" ] && [ -n "$AWS_OTEL_STORE_URI" ]; then',
-    )
-    expect(
-      playwrightOtelStoreJob.match(
-        /if: steps\.otel-store-credentials\.outputs\.available == 'true'/g,
-      ),
-    ).toHaveLength(3)
-    expect(playwrightOtelStoreJob).toContain(
-      'role-to-assume: ${{ secrets.AWS_OTEL_STORE_ROLE_ARN }}',
-    )
-    expect(playwrightOtelStoreJob).not.toContain('role-to-assume: ${{ secrets.AWS_TEST_ROLE_ARN }}')
-    expect(mainWebWorkflow).toContain('OTEL_STORE_URI: ${{ secrets.AWS_OTEL_STORE_URI }}')
+    expect(mainWebWorkflow).not.toContain('otel_enabled:')
+    expect(mainWebWorkflow).not.toContain('store-playwright-otel')
+    expect(workflow).toContain('workflow_dispatch:')
     expect(webWorkflow).not.toContain('test-playwright-otel:')
     expect(pathFilters).toContain("'playwright/config/**'")
     expect(pathFilters).toContain('playwright/config/**')

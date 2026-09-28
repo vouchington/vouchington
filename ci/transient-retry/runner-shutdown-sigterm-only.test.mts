@@ -26,7 +26,7 @@ const makeCtx = (
   log = backendUnitSigtermOnlyLog,
   jobName = backendUnitShardJobName,
 ): WorkflowRunContext => ({
-  workflowName: 'Main CI (backend)',
+  workflowName: 'Backend',
   conclusion: 'failure',
   runAttempt: 1,
   failedJobNames: [jobName],

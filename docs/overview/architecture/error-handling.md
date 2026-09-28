@@ -1,7 +1,7 @@
 # Error Handling
 
 Canonical reference for the error handling system across backend, Cloudflare Worker, and web.
-For the CI-main Sentry observability plan used by coding agents, see
+For deployed Sentry and local or opt-in CI Playwright observability used by coding agents, see
 [Harness Engineering](../../development/harness-engineering.md). For deployed
 CloudWatch and Sentry hunting, see
 [Deployed Error Investigation](../../operations/deployed-error-investigation.md).

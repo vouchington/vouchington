@@ -100,14 +100,12 @@ describe('checks-static workflow', () => {
     expect(job).toContain('- uses: ./.github/actions/setup-backend')
   })
 
-  it('owns the backend dependency and TypeScript checks lifted from tests-backend-modules.yml', () => {
+  it('owns the backend dependency and fixture checks', () => {
     const job = jobSection('static-backend')
     expect(job).toContain(
       'pnpm exec depcruise --config backend/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content backend',
     )
-    expect(job).toContain(
-      'pnpm exec tsc --noEmit --incremental --project backend/tsconfig.json && pnpm exec tsc --noEmit --project email-templates/tsconfig.json',
-    )
+    expect(job).not.toContain('Typecheck backend and email templates')
   })
 
   it('regenerates API fixture snapshots and rejects tracked or untracked drift', () => {
@@ -127,20 +125,17 @@ if [ -n "$untracked_generated_files" ]; then
 fi\n`,
     })
     expect(job.indexOf('- name: Check API fixture snapshots are up to date')).toBeGreaterThan(
-      job.indexOf('- name: Typecheck backend and email templates'),
-    )
-    expect(job.indexOf('- name: Check API fixture snapshots are up to date')).toBeGreaterThan(
       job.indexOf('- name: Check backend dependencies'),
     )
   })
 
-  it('owns the web pages-router, dependency, typecheck, build, and smoke checks lifted from tests-web.yml', () => {
+  it('owns the web pages-router, dependency, build, and smoke checks lifted from tests-web.yml', () => {
     const job = jobSection('static-web')
     expect(job).toContain('Pages Router directory found')
     expect(job).toContain(
       'pnpm exec depcruise --config web/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content web',
     )
-    expect(job).toContain('pnpm exec next typegen && pnpm exec tsc --noEmit --incremental')
+    expect(job).not.toContain('Typecheck web')
     expect(job).not.toContain('VOUCHA_BUILD_LOCK_ON_ACQUIRE_TIMEOUT')
     expect(job).not.toContain('VOUCHA_BUILD_LOCK_WAIT_SECONDS')
     expect(job).toContain('./web/scripts/tests/smoke-test-web.sh')
@@ -162,34 +157,23 @@ fi\n`,
     expect(job).toContain('IMAGE_ORIGIN: http://localhost:3100')
   })
 
-  it('owns the lambdas dependency and TypeScript checks lifted from tests-lambdas.yml', () => {
+  it('owns the lambdas dependency and smoke checks', () => {
     const job = jobSection('static-lambdas')
     expect(job).toContain(
       'pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas',
     )
-    expect(job).toContain('pnpm exec tsc --noEmit --project lambdas/tsconfig.json')
+    expect(job).not.toContain('Typecheck lambdas')
   })
 
-  it('runs each compiler gate before a fallible repository command can stop the job', () => {
-    const boundaries = [
-      ['static-backend', 'Typecheck backend and email templates', 'Check backend dependencies'],
-      ['static-web', 'Typecheck web', 'Next.js pages-router check'],
-      ['static-lambdas', 'Typecheck lambdas', 'Check lambda dependencies'],
-      ['static-cloudflare', 'Typecheck Cloudflare Worker', 'Smoke test Cloudflare Worker runtime'],
-    ] as const
-
-    for (const [jobName, typecheck, laterCommand] of boundaries) {
-      const job = jobSection(jobName)
-      expect(job.indexOf(`- name: ${typecheck}`)).toBeGreaterThanOrEqual(0)
-      expect(job.indexOf(`- name: ${typecheck}`)).toBeLessThan(
-        job.indexOf(`- name: ${laterCommand}`),
-      )
-    }
+  it('does not duplicate compiler gates owned by unconditional static analysis', () => {
+    expect(workflow).not.toMatch(/- name: Typecheck /)
+    expect(workflow).not.toContain('pnpm exec tsc --noEmit')
+    expect(workflow).not.toContain('pnpm exec next typegen')
   })
 
-  it('owns the Cloudflare Worker typecheck, smoke, and dry-run deploy checks lifted from tests-cloudflare-worker.yml', () => {
+  it('owns the Cloudflare Worker smoke and dry-run deploy checks lifted from tests-cloudflare-worker.yml', () => {
     const job = jobSection('static-cloudflare')
-    expect(job).toContain('pnpm exec tsc --noEmit --project cloudflare-worker/tsconfig.json')
+    expect(job).not.toContain('Typecheck Cloudflare Worker')
     expect(job).toContain('./scripts/tests/smoke-test-cloudflare-worker.sh')
     expect(job).toContain(
       'CSP_BROWSER_UPLOAD_ORIGINS=["https://test-images.s3.us-west-2.amazonaws.com","https://test-images.s3.dualstack.us-west-2.amazonaws.com"]',

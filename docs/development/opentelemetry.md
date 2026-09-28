@@ -2,7 +2,7 @@
 
 Distributed tracing for local development, designed to mirror the AWS deploy path with
 no app-code changes at deploy time. For the agent-observability roadmap that uses
-local Playwright plus CI-main OTel output, see [Harness Engineering](harness-engineering.md).
+local Playwright plus opt-in CI diagnostic output, see [Harness Engineering](harness-engineering.md).
 
 ## Architecture
 
@@ -137,7 +137,7 @@ App instrumentation code is **unchanged** between local and AWS.
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `dev/otel/compose.yaml`               | Docker Compose: collector + Jaeger                                                                                           |
 | `dev/otel/collector-config.yaml`      | Collector pipeline (local→Jaeger; AWS swap commented)                                                                        |
-| `dev/otel/collector-config-ci.yaml`   | Collector pipeline for main CI Playwright OTel output files uploaded to S3                                                   |
+| `dev/otel/collector-config-ci.yaml`   | Collector pipeline for opt-in Playwright CI debug artifacts                                                                  |
 | `dev/otel-up`                         | Start the local stack                                                                                                        |
 | `dev/otel-down`                       | Stop the local stack                                                                                                         |
 | `dev/otel-register.mts`               | The single OTel TracerProvider/OTLP owner: re-exports the `@opentelemetry/auto-instrumentations-node/register` hook          |

@@ -75,67 +75,12 @@ jobs:
     steps:
       - run: ':'
 
-  test-backend-modules:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    uses: ./.github/workflows/tests-backend-modules.yml
-    permissions:
-      actions: read
-      contents: read
-
-  test-backend-unit:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    uses: ./.github/workflows/tests-backend-unit.yml
-    permissions:
-      actions: read
-      contents: read
-    secrets: inherit
-
-  backend-smoke:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    uses: ./.github/workflows/checks-backend-smoke.yml
-    permissions:
-      actions: read
-      contents: read
-
-  test-backend-credentialed:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    uses: ./.github/workflows/tests-backend-credentialed.yml
-    permissions:
-      actions: read
-      contents: read
-      id-token: write
-    with:
-      trusted_secret_context: true
-    secrets: inherit
-
-  postgres-schema-tests:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    uses: ./.github/workflows/tests-postgres-schema.yml
-    permissions:
-      actions: read
-      contents: read
-    secrets: inherit
-
   # Reuses the backend images the merge group published for this commit once their provenance
   # verifies. Only images that are missing get built, through the same smoke/Trivy composite that
   # PR validation uses, and published.
-  #
-  # Gated on static-checks only, like every other job here, so it runs alongside the test jobs
-  # rather than after them. A revision whose tests later fail still leaves images in GHCR, but
-  # nothing ever deploys them: dispatch-completed-deploy.yml fires only when this whole workflow
-  # concludes successfully, and vouchington-infra resolves digests solely for the revision its
-  # preflight verified. Those unreferenced images are reaped by ghcr-cleanup.yml.
   publish-backend-images:
-    needs: [detect-image-publication, static-checks]
-    if: >-
-      !cancelled() &&
-      needs.detect-image-publication.outputs.publish == 'true' &&
-      needs.static-checks.result == 'success'
+    needs: [detect-image-publication]
+    if: needs.detect-image-publication.outputs.publish == 'true'
     uses: ./.github/workflows/publish-backend-images.yml
     permissions:
       actions: read
@@ -146,11 +91,3 @@ jobs:
     with:
       trusted_secret_context: true
     secrets: inherit
-
-  static-checks:
-    uses: ./.github/workflows/checks-static.yml
-    with:
-      backend: true
-    permissions:
-      contents: read
-      actions: read

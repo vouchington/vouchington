@@ -23,7 +23,7 @@ const shutdownOnlyMarkers = [
 
 const backendUnitJobName = 'test-backend-unit / backend-tests (1)'
 const playwrightJobName = 'test-playwright / playwright-tests (1)'
-const toolingJobName = 'tooling-tests / tooling'
+const toolingJobName = 'test-tooling / tooling'
 const webIntegrationJobName = 'test-web-integration / web-integration-tests (1)'
 const webTestsJobName = 'test-web / web-tests (1)'
 
@@ -100,18 +100,6 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
             [webTestsJobName, cleanShutdownLog],
             ['coverage / Patch Coverage', cgroupOom],
           ]),
-        ),
-    ],
-    [
-      'store-playwright-otel downstream',
-      () =>
-        makeCtx(
-          [playwrightJobName, 'store-playwright-otel', 'web'],
-          new Map([
-            [playwrightJobName, cleanShutdownLog],
-            ['store-playwright-otel', `##[error]No Playwright OTel artifacts found\n${cgroupOom}`],
-          ]),
-          { jobConclusions: new Map([['store-playwright-otel', 'failure']]) },
         ),
     ],
   ])('does NOT rerun when OOM evidence is in %s', async (_name, createCtx) => {
@@ -222,7 +210,7 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
             ].join('\n'),
           ],
         ]),
-        { workflowName: 'Main CI (checks)' },
+        { workflowName: 'Tooling' },
       ),
     )
     expect(matched).toBe(false)
@@ -242,7 +230,7 @@ describe('runnerShutdownLeafRerunMatch safety regressions', () => {
             ].join('\n'),
           ],
         ]),
-        { workflowName: 'Main CI (checks)' },
+        { workflowName: 'Tooling' },
       ),
     )
     expect(matched).toBe(false)

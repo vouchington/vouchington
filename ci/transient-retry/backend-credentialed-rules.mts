@@ -18,7 +18,7 @@ function hasOnlyBackendCredentialedLeafFailure(ctx: WorkflowRunContext): boolean
 }
 
 function isBackendCredentialedWorkflow(workflowName: string): boolean {
-  return workflowName === 'Backend' || workflowName === 'Main CI (backend)'
+  return workflowName === 'Backend'
 }
 
 /**

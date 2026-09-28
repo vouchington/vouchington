@@ -10,13 +10,10 @@ const KEEP_NAMES = [
   'next-static-abc123',
   // Best-effort diagnostic evidence for an intermittent CI failure (issue #10937).
   // retention-days: 1 already bounds storage cost, so there is no need to also delete it on the
-  // very run whose evidence it is meant to preserve -- cleanup-run fires from the terminal *success* fan-in (main-web.yml, main-checks.yml), which
-  // would otherwise destroy the healthy-but-slow case Phase 1 exists to capture.
+  // very run whose evidence it is meant to preserve.
   'web-build-timings-build-web-targets-123-1',
   // Same reasoning as web-build-timings-* above, for issue #51: a flaky test that fails then
-  // passes on retry is exactly the case these diagnostics exist to capture, and that retry
-  // makes the job -- and therefore the terminal fan-in -- green, so cleanup-run would otherwise
-  // delete them on precisely the runs worth diagnosing.
+  // passes on retry is exactly the case these diagnostics exist to capture.
   'playwright-test-results-shard-2',
   'playwright-junit-shard-2',
   'playwright-credentialed-junit',

@@ -10,7 +10,7 @@ dispatch.
 
 ## Procedure when enabled
 
-1. A CI run completes with `failure`, `timed_out`, or `cancelled` on `main`.
+1. A subscribed main publication run, or a scheduled/manual `Nightly` run on `main`, completes with `failure`, `timed_out`, or `cancelled`.
 2. `fix-main.yml` triggers its `triage-and-rerun` job.
 3. That job runs `node ci/transient-retry/decide.mts`, which:
    - Fetches prior attempt job counts and failed job names via the GitHub API with bounded retries for transport failures.
@@ -70,7 +70,7 @@ no-op manual completion cancelling it.
 `runnerShutdownLeafRerunMatch` (`ci/transient-retry/runner-shutdown-consumers.mts`) is the matcher
 for the standalone `runner-shutdown-leaf-rerun` rule and also narrows the coverage-artifact rules
 above. It treats each exact sibling job as a consumer with its own durable-failure guard —
-`static-checks / static-web`, for example, only counts as a clean shutdown after the `next build`
+`static-web / static-web`, for example, only counts as a clean shutdown after the `next build`
 command started and only when no compiler, bundler, smoke-test, non-SIGTERM exit, or other web-stack
 failure signal is present. Every new consumer must carry a trimmed real-log fixture and
 counterfixtures; unknown consumers are treated as a real failure by the matcher.

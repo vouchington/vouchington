@@ -25,8 +25,6 @@ permissions:
 
 jobs:
   publish-image-resize:
-    needs: [static-checks, lambdas-tests]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' && needs.lambdas-tests.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -56,20 +54,3 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           overwrite: true
-
-  lambdas-tests:
-    needs: [static-checks]
-    if: ${{ !cancelled() && needs.static-checks.result == 'success' }}
-    permissions:
-      actions: read
-      contents: read
-    uses: ./.github/workflows/tests-lambdas.yml
-    secrets: inherit
-
-  static-checks:
-    uses: ./.github/workflows/checks-static.yml
-    with:
-      lambdas: true
-    permissions:
-      contents: read
-      actions: read

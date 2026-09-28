@@ -8,16 +8,12 @@ import {
 const webApiShard = 'test-web-api / web-api-tests (2)'
 
 describe('web API runner-shutdown consumer', () => {
-  it.each([
-    'test-tooling / tooling',
-    'tooling-tests / tooling',
-    'static-web / static-web',
-    'static-checks / static-web',
-    'storybook / storybook',
-    'storybook-build / storybook',
-  ])('retains the area and main consumer %s', jobName => {
-    expect(findRunnerShutdownConsumer(jobName)).toBeDefined()
-  })
+  it.each(['test-tooling / tooling', 'static-web / static-web', 'storybook / storybook'])(
+    'retains the area consumer %s',
+    jobName => {
+      expect(findRunnerShutdownConsumer(jobName)).toBeDefined()
+    },
+  )
 
   it('registers a web API shard as a known consumer', () => {
     expect(isWebApiShardJob(webApiShard)).toBe(true)

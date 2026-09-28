@@ -39,7 +39,7 @@ function storybookBrowserEnv(): Record<string, unknown> {
 
 describe('RULES catalogue', () => {
   describe('storybook-browser-startup-transient warm-cache variant', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
 
     it('keeps the workflow env marker aligned with Storybook browser log fingerprints', async () => {
       const env = storybookBrowserEnv()
@@ -55,7 +55,7 @@ describe('RULES catalogue', () => {
         '##[error]Process completed with exit code 143.',
       ].join('')
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
@@ -74,7 +74,7 @@ describe('RULES catalogue', () => {
         '##[error]Process completed with exit code 143.\n' +
         '##[error]The runner has received a shutdown signal.'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, warmCacheLog]])),
       })
@@ -93,7 +93,7 @@ describe('RULES catalogue', () => {
         '##[error]The runner has received a shutdown signal.\n' +
         '##[error]The operation was canceled.'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         ruleAttempts: new Map([['storybook-browser-startup-transient', 1]]),
         failedJobNames: [storybookJobName],
@@ -114,7 +114,7 @@ describe('RULES catalogue', () => {
         '##[error]The runner has received a shutdown signal.\n' +
         '##[error]The operation was canceled'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         ruleAttempts: new Map([['storybook-browser-startup-transient', 1]]),
         failedJobNames: [storybookJobName],
@@ -136,7 +136,7 @@ describe('RULES catalogue', () => {
         '##[error]The runner has received a shutdown signal.\n' +
         '##[error]The operation was canceled'
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 2,
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
@@ -148,7 +148,7 @@ describe('RULES catalogue', () => {
 
     it('does not match the watchdog hang before Vite is ready', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -172,7 +172,7 @@ describe('RULES catalogue', () => {
     it('matches the terminal watchdog attempt when Vite ready is outside the last-output tail', async () => {
       const debugTail = `${'Playwright debug output\n'.repeat(80)}tail only\n`
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -199,7 +199,7 @@ describe('RULES catalogue', () => {
 
     it('matches the terminal watchdog hang when a previous step emitted a Vitest summary', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -224,7 +224,7 @@ describe('RULES catalogue', () => {
 
     it('does not match an earlier watchdog hang followed by a later real failure', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -250,7 +250,7 @@ describe('RULES catalogue', () => {
 
     it('matches the watchdog hang when the runner exits after terminating the child', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
@@ -273,7 +273,7 @@ describe('RULES catalogue', () => {
 
     it('does not match a watchdog hang after Storybook browser tests start', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(

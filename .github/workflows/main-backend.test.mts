@@ -28,35 +28,31 @@ describe('main-backend workflow', () => {
     expect(workflow).toContain("- 'ci/allocate-browser-safe-ports.py'")
   })
 
-  it('runs PR and Main backend tests when the CI package export boundary changes', () => {
+  it('selects backend PR validation and main publication when the CI package boundary changes', () => {
     expect(ciBackendFilter()).toContain('ci/package.json')
 
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
     expect(workflow).toContain("- 'ci/package.json'")
   })
 
-  it('runs the service-free backend workflow without an inline deploy dispatch', () => {
+  it('contains only image publication selection, intent, and publication jobs', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
+    const parsed = load(workflow) as { jobs?: Record<string, unknown> }
 
-    expect(jobSection(workflow, 'test-backend-modules')).toContain(
-      'uses: ./.github/workflows/tests-backend-modules.yml',
-    )
+    expect(Object.keys(parsed.jobs ?? {}).toSorted()).toEqual([
+      'backend-deploy-intent',
+      'detect-image-publication',
+      'publish-backend-images',
+    ])
     expect(workflow).not.toContain('source_workflow:')
   })
 
-  it('runs standalone backend smoke in parallel', () => {
+  it('publishes only when the shared publication-intent detector selects backend images', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
-    const smokeJob = jobSection(workflow, 'backend-smoke')
+    const publish = jobSection(workflow, 'publish-backend-images')
 
-    expect(smokeJob).toContain('uses: ./.github/workflows/checks-backend-smoke.yml')
-  })
-
-  it('gates backend checks on the static-checks workflow', () => {
-    const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
-    const staticChecksJob = jobSection(workflow, 'static-checks')
-
-    expect(staticChecksJob).toContain('uses: ./.github/workflows/checks-static.yml')
-    expect(staticChecksJob).toContain('backend: true')
+    expect(publish).toContain('needs: [detect-image-publication]')
+    expect(publish).toContain("if: needs.detect-image-publication.outputs.publish == 'true'")
   })
 
   it('leaves source-only deployment metadata to the completed-run receiver', () => {

@@ -26,12 +26,12 @@ const workflow = load(
 ) as Workflow
 
 describe('Main Cloudflare Worker workflow', () => {
-  it('publishes one attempt-bound bundle only after both validation gates succeed', () => {
+  it('contains only the attempt-bound publication job', () => {
     const publish = workflow.jobs?.['publish-cloudflare-worker']
 
-    expect(publish?.needs).toEqual(['static-checks', 'cloudflare-worker-tests'])
-    expect(publish?.if).toContain("needs.static-checks.result == 'success'")
-    expect(publish?.if).toContain("needs.cloudflare-worker-tests.result == 'success'")
+    expect(Object.keys(workflow.jobs ?? {})).toEqual(['publish-cloudflare-worker'])
+    expect(publish?.needs).toBeUndefined()
+    expect(publish?.if).toBeUndefined()
     expect(publish?.permissions).toEqual({ contents: 'read' })
 
     const build = publish?.steps?.find(step =>

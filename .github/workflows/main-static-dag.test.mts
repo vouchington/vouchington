@@ -10,40 +10,21 @@ function workflow(path: string): Workflow {
   return load(readFileSync(path, 'utf8')) as Workflow
 }
 
-function expectHardStaticGate(job: Job | undefined): void {
-  expect(job?.needs).toContain('static-checks')
-  expect(job?.if).toContain("needs.static-checks.result == 'success'")
-  expect(job?.if).not.toContain("needs.static-checks.result == 'failure'")
-}
+describe('main publication dependency DAG', () => {
+  it('keeps publication workflows free of static and test jobs', () => {
+    const expected = new Map<string, string[]>([
+      [
+        'main-backend.yml',
+        ['backend-deploy-intent', 'detect-image-publication', 'publish-backend-images'],
+      ],
+      ['main-web.yml', ['detect-image-publication', 'publish-web-images', 'web-deploy-intent']],
+      ['main-lambdas.yml', ['publish-image-resize']],
+      ['main-cloudflare-worker.yml', ['publish-cloudflare-worker']],
+      ['main-storybook.yml', ['publish-storybook']],
+    ])
 
-describe('grouped main dependency DAG', () => {
-  it('keeps main workflows independent after their static checks', () => {
-    const backend = workflow('.github/workflows/main-backend.yml').jobs
-    for (const testJob of [
-      'test-backend-modules',
-      'test-backend-unit',
-      'backend-smoke',
-      'test-backend-credentialed',
-      'postgres-schema-tests',
-    ]) {
-      expectHardStaticGate(backend?.[testJob])
+    for (const [file, jobs] of expected) {
+      expect(Object.keys(workflow(`.github/workflows/${file}`).jobs ?? {}).toSorted()).toEqual(jobs)
     }
-
-    const web = workflow('.github/workflows/main-web.yml').jobs
-    for (const testJob of [
-      'test-web',
-      'test-web-api',
-      'test-web-integration',
-      'playwright-tests',
-      'playwright-credentialed-tests',
-    ]) {
-      expectHardStaticGate(web?.[testJob])
-      expect(web?.[testJob]?.needs).toEqual(['static-checks'])
-    }
-
-    expectHardStaticGate(workflow('.github/workflows/main-lambdas.yml').jobs?.['lambdas-tests'])
-    expectHardStaticGate(
-      workflow('.github/workflows/main-cloudflare-worker.yml').jobs?.['cloudflare-worker-tests'],
-    )
   })
 })

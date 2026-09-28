@@ -90,7 +90,7 @@ const staticAnalysisProducerFailedRetry = {
 
 describe('RULES catalogue', () => {
   describe('storybook-browser-vite-optimizer-timeout', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
     const matchingLog = [
       'VITEST_STORYBOOK_BROWSER: 1',
       'RUN /home/runner/actions-runner/2/_work/filaments/filaments',
@@ -100,7 +100,7 @@ describe('RULES catalogue', () => {
 
     it('matches GitHub logs with ANSI-styled Vite optimizer output', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
@@ -111,7 +111,7 @@ describe('RULES catalogue', () => {
   })
 
   describe('storybook-browser-watchdog-hang-after-vite-startup', () => {
-    const storybookJobName = 'storybook-build / storybook'
+    const storybookJobName = 'storybook / storybook'
     const ciStorybookJobName = 'storybook / storybook'
     const matchingLog =
       'VITEST_STORYBOOK_BROWSER: 1\n' +
@@ -126,7 +126,7 @@ describe('RULES catalogue', () => {
 
     it('matches the Main CI Storybook browser watchdog hang after Vite startup', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
@@ -148,7 +148,7 @@ describe('RULES catalogue', () => {
 
     it('does not match the same watchdog fingerprint after the retry cap is exhausted', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         runAttempt: 3,
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
@@ -160,7 +160,7 @@ describe('RULES catalogue', () => {
 
     it('does not match a Storybook assertion failure after tests started', async () => {
       const ctx = makeCtx({
-        workflowName: 'Main CI (storybook)',
+        workflowName: 'Web',
         failedJobNames: [storybookJobName],
         failedJobLogs: () =>
           Promise.resolve(
