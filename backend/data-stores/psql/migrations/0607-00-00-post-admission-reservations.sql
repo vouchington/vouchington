@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS post_admission_reservations (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_post_admission_reservation_identities (id) ON DELETE RESTRICT,
   actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   idempotency_key UUID NOT NULL,
   intent_sha256 TEXT NOT NULL,
@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
   policy_revision TEXT NOT NULL,
   state TEXT NOT NULL DEFAULT 'in_progress',
   response JSONB,
-  replay_metadata JSONB,
-  committed_post_id UUID,
+  replay_finalization TEXT CHECK (replay_finalization IS NULL OR replay_finalization IN ('pending', 'complete')),
+  committed_post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   committed_status TEXT,
   retryable_failure JSONB,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -33,20 +33,29 @@ CREATE TABLE IF NOT EXISTS post_admission_reservations (
     AND char_length(post_type) BETWEEN 1 AND 64
     AND char_length(policy_revision) BETWEEN 1 AND 128
     AND (response IS NULL OR octet_length(response::text) <= 2097152)
-    AND (replay_metadata IS NULL OR (
-      jsonb_typeof(replay_metadata) = 'object' AND octet_length(replay_metadata::text) <= 8192
-    ))
   ),
   CONSTRAINT post_admission_reservations_state_payload_check CHECK (
-    (state = 'committed' AND response IS NOT NULL AND replay_metadata IS NOT NULL
+    (state = 'committed' AND response IS NOT NULL AND replay_finalization IS NOT NULL
       AND committed_post_id IS NOT NULL AND committed_status IS NOT NULL
       AND expires_at IS NOT NULL AND expires_at = retention_expires_at)
-    OR (state IN ('in_progress', 'retryable_failed') AND response IS NULL AND replay_metadata IS NULL
+    OR (state IN ('in_progress', 'retryable_failed') AND response IS NULL AND replay_finalization IS NULL
       AND committed_post_id IS NULL AND committed_status IS NULL AND expires_at IS NULL)
-    OR (state = 'expired' AND response IS NULL AND replay_metadata IS NULL
+    OR (state = 'expired' AND response IS NULL AND replay_finalization IS NULL
       AND committed_post_id IS NULL AND committed_status IS NULL AND expires_at IS NULL)
   )
 );
+
+CREATE OR REPLACE FUNCTION fn_register_retained_post_admission_reservation_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_post_admission_reservation_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_post_admission_reservation_identity
+BEFORE INSERT ON post_admission_reservations
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_post_admission_reservation_identity();
 
 CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__retention
 ON post_admission_reservations (retention_expires_at, id);
@@ -62,8 +71,8 @@ COMMENT ON COLUMN post_admission_reservations.post_type IS 'Authored post type r
 COMMENT ON COLUMN post_admission_reservations.policy_revision IS 'Contribution-policy revision evaluated for this request.';
 COMMENT ON COLUMN post_admission_reservations.state IS 'Admission lifecycle: in_progress, committed, retryable_failed, or expired.';
 COMMENT ON COLUMN post_admission_reservations.response IS 'Serialized successful response retained for exact idempotent replay.';
-COMMENT ON COLUMN post_admission_reservations.replay_metadata IS 'Bounded route and scope metadata paired with the replay response.';
-COMMENT ON COLUMN post_admission_reservations.committed_post_id IS 'Created post UUID retained in the replay record after the post may be deleted.';
+COMMENT ON COLUMN post_admission_reservations.replay_finalization IS 'Owned admission finalization state paired with the exact replay response: pending or complete.';
+COMMENT ON COLUMN post_admission_reservations.committed_post_id IS 'Created post identity retained in the replay record after the live post may be deleted.';
 COMMENT ON COLUMN post_admission_reservations.committed_status IS 'Successful response status retained with the exact replay payload.';
 COMMENT ON COLUMN post_admission_reservations.retryable_failure IS 'Serialized transient failure retained while the request can be retried.';
 COMMENT ON COLUMN post_admission_reservations.committed_at IS 'Clock timestamp at which the protected mutation committed.';
@@ -74,3 +83,7 @@ COMMENT ON COLUMN post_admission_reservations.retention_expires_at IS 'Indexed d
 CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_retention
   ON post_admission_reservations (committed_post_id, retention_expires_at)
   WHERE state = 'committed';
+
+CREATE INDEX IF NOT EXISTS idx_post_admission_reservations__committed_post_id
+  ON post_admission_reservations (committed_post_id)
+  WHERE committed_post_id IS NOT NULL;

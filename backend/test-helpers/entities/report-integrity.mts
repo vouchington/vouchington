@@ -128,25 +128,33 @@ export async function insertTestReportIntegrityFlag(options: {
     resolution = null,
   } = options
 
-  const details = JSON.stringify({ reporter_user_ids: reporterUserIds })
-
   const { rows } = await write<{ id: string }>(sql`/* insertTestReportIntegrityFlag */
-    INSERT INTO report_integrity_flags
-      (post_id, reported_user_id, hostname_id, rss_feed_item_id,
-       flag_type, reporter_count, new_account_reporter_pct, details, resolved_at, resolution)
-    VALUES (
-      ${postId}::uuid,
-      ${reportedUserId}::uuid,
-      ${hostnameId}::uuid,
-      ${rssId}::uuid,
-      'mass_report_suspected',
-      ${reporterCount},
-      ${newAccountReporterPct},
-      ${details}::jsonb,
-      ${resolvedAt === undefined ? null : resolvedAt},
-      ${resolution === undefined ? null : resolution}
+    WITH inserted AS (
+      INSERT INTO report_integrity_flags
+        (post_id, reported_user_id, hostname_id, rss_feed_item_id,
+         flag_type, reporter_count, new_account_reporter_pct, resolved_at, resolution)
+      VALUES (
+        ${postId}::uuid,
+        ${reportedUserId}::uuid,
+        ${hostnameId}::uuid,
+        ${rssId}::uuid,
+        'mass_report_suspected',
+        ${reporterCount},
+        ${newAccountReporterPct},
+        ${resolvedAt === undefined ? null : resolvedAt},
+        ${resolution === undefined ? null : resolution}
+      )
+      RETURNING id
+    ),
+    reporters AS (
+      INSERT INTO report_integrity_flag_reporters (flag_id, position, reporter_user_id)
+      SELECT inserted.id, item.position::integer - 1, item.reporter_user_id
+      FROM inserted
+      CROSS JOIN UNNEST(${reporterUserIds}::uuid[]) WITH ORDINALITY AS item(reporter_user_id, position)
+      RETURNING flag_id
     )
-    RETURNING id
+    SELECT id FROM inserted
+    WHERE EXISTS (SELECT 1 FROM reporters) OR NOT EXISTS (SELECT 1 FROM reporters)
   `)
   return rows[0]!.id
 }

@@ -257,7 +257,7 @@ async function getAutomodPerformance(
       JOIN LATERAL (
         SELECT category AS source_type,
           CASE WHEN category = 'spam_detection' THEN (
-            SELECT NULLIF(disposition.evidence->>'composite_score', '')::numeric
+            SELECT disposition.evidence_composite_score
             FROM post_moderation_versions version
             JOIN post_moderation_dispositions disposition ON disposition.version_id = version.id
             WHERE version.post_id = p.id

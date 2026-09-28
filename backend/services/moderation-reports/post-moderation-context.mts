@@ -48,7 +48,7 @@ export async function getPostModerationContextBatch(
       SELECT disposition.disposition, disposition.evidence
       FROM post_moderation_versions version
       JOIN LATERAL (
-        SELECT latest.disposition, latest.evidence, latest.id
+        SELECT latest.disposition, fn_post_moderation_disposition_evidence(latest.id) AS evidence, latest.id
         FROM post_moderation_dispositions latest
         WHERE latest.version_id = version.id
           AND latest.source = 'openai_omni'

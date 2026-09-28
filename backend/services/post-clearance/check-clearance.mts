@@ -94,11 +94,10 @@ async function applyClearanceDecision(
       ),
       inserted_change AS (
         INSERT INTO post_clearance_changes (
-          post_id, change_type, changed_by_id, public_reason_code, metadata,
-          moderation_transparency_categories
+          post_id, change_type, changed_by_id, public_reason_code,
+          moderation_version_policy_revision, moderation_transparency_categories
         )
-        SELECT post_id, change_type, $2, public_reason_code,
-          jsonb_build_object('moderation_version_policy_revision', $3),
+        SELECT post_id, change_type, $2, public_reason_code, $3,
           CASE WHEN change_type = 'reject'
             THEN COALESCE(signal_sources, '{}'::text[]) ELSE '{}'::text[] END
         FROM changed_decision

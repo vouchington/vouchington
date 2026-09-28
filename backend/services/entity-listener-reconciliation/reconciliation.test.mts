@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   createTestPost,
+  createTestTopic,
   createTestUser,
   deleteTestPost,
   setUserReferrerId,
@@ -68,13 +69,15 @@ describe('entity-listener reconciliation', () => {
 
   it('derives replay semantics from append-only post revisions', async () => {
     const post = await createTestPost()
+    const topic = await createTestTopic()
+    const ratingTopic = await createTestTopic()
     const revision = await createPostRevision(
       post.id,
       'update',
       {
         markdown: { before: 'old', after: 'new' },
-        structured_data: { before: { topic_ids: ['topic-1'] }, after: { topic_ids: [] } },
-        review_topic_ratings: { before: ['topic-2'], after: [] },
+        structured_data: { before: { topic_ids: [topic.id] }, after: { topic_ids: [] } },
+        review_topic_ratings: { before: [ratingTopic.id], after: [] },
       },
       null,
     )

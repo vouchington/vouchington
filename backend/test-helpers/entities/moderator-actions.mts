@@ -28,7 +28,7 @@ export async function insertTestModeratorAction(
     INSERT INTO moderator_actions (
       id,
       actor_id, action_type, community_id, post_id, target_user_id,
-      report_id, review_dispute_id, community_application_id, reason, metadata
+      report_id, review_dispute_id, community_application_id, reason
     ) VALUES (
       COALESCE(${id}::uuid, uuidv7()),
       ${options.actorId},
@@ -39,8 +39,7 @@ export async function insertTestModeratorAction(
       ${options.reportId ?? null},
       ${options.reviewDisputeId ?? null},
       ${options.communityApplicationId ?? null},
-      ${options.reason ?? null},
-      ${JSON.stringify(options.metadata ?? {})}
+      ${options.reason ?? null}
     )
     RETURNING id
     `,
@@ -68,8 +67,8 @@ export async function insertTestModeratorActions(options: {
     uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequenceStart + index }),
   )
   const { rows } = await write<{ id: string }>(sql`/* insertTestModeratorActions */
-    INSERT INTO moderator_actions (id, actor_id, action_type, metadata)
-    SELECT action_id, ${options.actorId}::uuid, action_type, '{}'::jsonb
+    INSERT INTO moderator_actions (id, actor_id, action_type)
+    SELECT action_id, ${options.actorId}::uuid, action_type
     FROM unnest(${actionIds}::uuid[], ${options.actionTypes}::moderator_action_types[])
       AS input(action_id, action_type)
     RETURNING id

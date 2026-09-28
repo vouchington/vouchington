@@ -101,21 +101,21 @@ export async function completeContributionAdmissionResponseForTest(input: {
   await write(sql`/* completeContributionAdmissionResponseForTest */
     UPDATE post_admission_reservations
     SET response = ${JSON.stringify(input.response)}::jsonb,
-      replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
+      replay_finalization = 'complete',
       updated_at = NOW()
     WHERE actor_id = ${input.actorId}
       AND idempotency_key = ${input.idempotencyKey}
       AND state = 'committed'`)
 }
 
-export async function setContributionAdmissionReplayMetadataForTest(input: {
+export async function setContributionAdmissionReplayFinalizationForTest(input: {
   actorId: string
   idempotencyKey: string
-  replayMetadata: unknown
+  finalization: 'pending' | 'complete'
 }): Promise<void> {
-  await write(sql`/* setContributionAdmissionReplayMetadataForTest */
+  await write(sql`/* setContributionAdmissionReplayFinalizationForTest */
     UPDATE post_admission_reservations
-    SET replay_metadata = ${JSON.stringify(input.replayMetadata)}::jsonb,
+    SET replay_finalization = ${input.finalization},
       updated_at = NOW()
     WHERE actor_id = ${input.actorId}
       AND idempotency_key = ${input.idempotencyKey}

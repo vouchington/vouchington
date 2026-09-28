@@ -5,8 +5,9 @@ import { ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT } from './membership-timestamp-al
 import { SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT } from './social-graph-timestamp-allowlists.mts'
 import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
 import { MEDIA_PLACEMENT_MISSING_UPDATED_AT } from './media-placement-allowlists.mts'
-import { COMMUNITY_APPLICATION_MISSING_UPDATED_AT } from './community-application-allowlists.mts'
+import { DYNAMIC_CONFIG_AUDIT_TABLES } from '../../../../data-stores/psql/dynamic-config-audit-schema.mts'
 import { RETAINED_MISSING_UPDATED_AT } from '../../../../data-stores/psql/schema-growth-retained-identities.mts'
+import { COMMUNITY_APPLICATION_MISSING_UPDATED_AT } from './community-application-allowlists.mts'
 
 export const ALLOWED_NON_UUIDV7_CREATED_AT = new Map<string, string>([])
 export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
@@ -80,6 +81,44 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
   ...ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT,
   ...MEDIA_PLACEMENT_MISSING_UPDATED_AT,
   ...COMMUNITY_APPLICATION_MISSING_UPDATED_AT,
+  [
+    'post_admission_quota_consumptions',
+    'Immutable committed-admission quota ledger; rows are inserted once and only later deleted by retention pruning.',
+  ],
+  ...DYNAMIC_CONFIG_AUDIT_TABLES.map(
+    table =>
+      [
+        table,
+        'Append-only dynamic config snapshot. The parent audit row owns the lifecycle timestamp.',
+      ] as const,
+  ),
+  [
+    'moderator_action_restrictions',
+    'Ordered restriction facts captured once with a moderator action.',
+  ],
+  ['moderator_action_topic_slugs', 'Ordered topic slugs captured once with a moderator action.'],
+  [
+    'post_moderation_disposition_categories',
+    'Ordered flagged categories captured once with a moderation disposition.',
+  ],
+  [
+    'post_moderation_disposition_signals',
+    'Ordered spam signals captured once with a moderation disposition.',
+  ],
+  ['post_revision_categories', 'Ordered category facts captured once with a post revision.'],
+  [
+    'post_revision_data_point_topics',
+    'Ordered data-point topic ids captured once with a post revision.',
+  ],
+  ['post_revision_data_points', 'Typed data-point snapshot captured once with a post revision.'],
+  ['post_revision_images', 'Ordered image facts captured once with a post revision.'],
+  ['post_revision_rating_topics', 'Ordered review topic ids captured once with a post revision.'],
+  [
+    'report_integrity_flag_reporters',
+    'Detection-time reporter set captured once with a report integrity flag.',
+  ],
+  ['topic_revision_alias_entries', 'Alias facts captured once with a topic revision.'],
+  ['vote_integrity_flag_ips', 'Correlated IP facts captured once with a vote integrity flag.'],
   [
     'moderation_transparency_daily_rollups',
     'Trigger-maintained aggregate projection; latest_occurred_at is the only lifecycle timestamp used by its release contract.',

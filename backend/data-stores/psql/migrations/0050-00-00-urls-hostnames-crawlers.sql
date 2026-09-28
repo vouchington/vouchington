@@ -28,7 +28,7 @@ $$;
 --------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS url_hostnames (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_url_hostname_identities (id) ON DELETE RESTRICT,
 
   hostname TEXT UNIQUE NOT NULL,
   CHECK (char_length(hostname) <= 255),
@@ -108,6 +108,18 @@ CREATE INDEX IF NOT EXISTS idx_url_hostnames__dns_disabled_at
   ON url_hostnames (dns_disabled_at)
   WHERE dns_disabled_at IS NOT NULL;
 
+CREATE OR REPLACE FUNCTION fn_register_retained_url_hostname_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_url_hostname_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_url_hostname_identity
+BEFORE INSERT ON url_hostnames
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_url_hostname_identity();
+
 CREATE OR REPLACE TRIGGER trigger_url_hostnames_updated_at
 BEFORE UPDATE ON url_hostnames
 FOR EACH ROW
@@ -158,7 +170,7 @@ COMMENT ON COLUMN url_content_types.mime_type IS 'Lowercase MIME type string (e.
 --------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS urls (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_url_identities (id) ON DELETE RESTRICT,
 
   url TEXT CHECK (char_length(url) <= 2083) UNIQUE NOT NULL,
   CHECK (url = TRIM(url)),
@@ -177,6 +189,18 @@ CREATE TABLE IF NOT EXISTS urls (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE OR REPLACE FUNCTION fn_register_retained_url_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_url_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_url_identity
+BEFORE INSERT ON urls
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_url_identity();
 
 CREATE OR REPLACE TRIGGER trigger_urls_updated_at
 BEFORE UPDATE ON urls

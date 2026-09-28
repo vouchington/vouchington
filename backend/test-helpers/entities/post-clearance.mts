@@ -33,14 +33,16 @@ export async function insertTestPostClearanceChange(options: {
     : null
   const { rows } = await write<{ id: string }>(sql`
     /* insertTestPostClearanceChange */
-    INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id, metadata, moderation_transparency_categories)
+    INSERT INTO post_clearance_changes (
+      id, post_id, change_type, changed_by_id, audit_source, moderation_transparency_categories
+    )
     VALUES (
       COALESCE(${id}::uuid, uuidv7()),
       ${options.postId},
       ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]},
       ${changedById},
-      ${JSON.stringify(options.metadata ?? {})}::jsonb
-      , ${options.moderationTransparencyCategories ?? []}::text[]
+      ${options.metadata?.audit_source ?? options.metadata?.source ?? null},
+      ${options.moderationTransparencyCategories ?? []}::text[]
     )
     RETURNING id
   `)
@@ -55,8 +57,7 @@ export async function updateTestPostClearanceChange(options: {
 }): Promise<void> {
   await write(sql`/* updateTestPostClearanceChange */
     UPDATE post_clearance_changes
-    SET change_type = ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]},
-        metadata = ${JSON.stringify(options.metadata ?? {})}::jsonb
+    SET change_type = ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]}
     WHERE id = ${options.id}::uuid
   `)
 }
@@ -121,10 +122,10 @@ export async function appendTestPlatformRejectionNote(postId: string, note: stri
     ), inserted_change AS (
       INSERT INTO post_clearance_changes (
         post_id, change_type, changed_by_id, public_reason_code, private_note,
-        platform_override, metadata
+        platform_override, audit_source
       )
       SELECT post_id, 'reject', changed_by_id, 'staff_rejected', ${note}, TRUE,
-        '{"test_fixture":true}'::jsonb
+        'test_fixture'
       FROM current_change
       WHERE changed_by_id IS NOT NULL
       RETURNING id, post_id, created_at
@@ -162,7 +163,19 @@ export async function getLatestPostClearanceMetadata(
   postId: string,
 ): Promise<Record<string, unknown>> {
   const { rows } = await read<{ metadata: Record<string, unknown> }>(sql`
-    SELECT metadata
+    SELECT jsonb_strip_nulls(jsonb_build_object(
+      'creation_moderation_bypassed', creation_moderation_bypassed,
+      'moderation_version_policy_revision', moderation_version_policy_revision,
+      'source_key', source_key,
+      'moderation_training', moderation_training,
+      'reason', compensation_reason,
+      'compensates_change_id', compensates_change_id,
+      'audit_source', audit_source
+    )) || CASE
+      WHEN compensation_reason IS NOT NULL
+        THEN jsonb_build_object('restores_change_id', to_jsonb(restores_change_id))
+      ELSE '{}'::jsonb
+    END AS metadata
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id DESC

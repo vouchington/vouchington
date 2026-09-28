@@ -10,12 +10,12 @@ export async function hasPostCreationModerationBypass(postId: string): Promise<b
           SELECT 1
           FROM post_clearance_changes
           WHERE post_id = ${postId}
-            AND metadata ? 'creation_moderation_bypassed'
+            AND creation_moderation_bypassed IS NOT NULL
         ) THEN EXISTS (
           SELECT 1
           FROM post_clearance_changes
           WHERE post_id = ${postId}
-            AND metadata @> '{"creation_moderation_bypassed":true}'::jsonb
+            AND creation_moderation_bypassed IS TRUE
         )
         ELSE EXISTS (
           SELECT 1

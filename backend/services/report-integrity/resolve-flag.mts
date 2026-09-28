@@ -26,7 +26,7 @@ export async function resolveReportIntegrityFlag(
       flag_type,
       reporter_count,
       new_account_reporter_pct,
-      details,
+      fn_report_integrity_flag_details(id) AS details,
       resolved_at,
       resolved_by_id,
       resolution,

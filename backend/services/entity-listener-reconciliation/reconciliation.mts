@@ -85,7 +85,13 @@ export async function* streamEntityReconciliationCandidateBatches(
           END,
           post_id,
           floor(extract(epoch FROM created_at) * 1000000)::text,
-          id, jsonb_build_object('changes', changes), created_at
+          id, jsonb_build_object(
+            'title', title_changed,
+            'markdown', markdown_changed,
+            'ai_summary_markdown', ai_summary_markdown_changed,
+            'structured_data', structured_data_changed,
+            'post_images', post_images_changed
+          ), created_at
         FROM post_revisions
         WHERE id >= ${firstRevisionId} AND id < ${afterLastRevisionId}
         UNION ALL
@@ -104,7 +110,7 @@ export async function* streamEntityReconciliationCandidateBatches(
     `,
     { batchSize: BATCH_SIZE },
   )) {
-    const changes = row.details?.changes as Record<string, { before?: unknown }> | undefined
+    const changes = row.details as Record<string, boolean> | undefined
     batch.push({
       entityType: row.entity_type,
       entityId: row.entity_id,
@@ -125,10 +131,10 @@ export async function* streamEntityReconciliationCandidateBatches(
   if (batch.length > 0) yield batch
 }
 
-function isPostContentChange(changes?: Record<string, unknown>): boolean {
+function isPostContentChange(changes?: Record<string, boolean>): boolean {
   if (!changes) return false
   return ['title', 'markdown', 'ai_summary_markdown', 'structured_data', 'post_images'].some(
-    field => field in changes,
+    field => changes[field] === true,
   )
 }
 

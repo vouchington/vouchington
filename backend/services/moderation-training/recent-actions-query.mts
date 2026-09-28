@@ -161,7 +161,7 @@ export function buildRecentAutomodActionsQuery(
         TRUE AS flagged,
         NULL::text AS reason,
         '[]'::jsonb AS categories,
-        disposition.evidence AS model_output,
+        fn_post_moderation_disposition_evidence(disposition.id) AS model_output,
         'rejected'::text AS current_state,
         latest_feedback.label AS feedback_label
       FROM posts p
@@ -170,14 +170,11 @@ export function buildRecentAutomodActionsQuery(
        AND version.content_sha256 = p.llm_moderation_content_sha256
        AND version.policy_revision = '2026-09-09.1'
       JOIN LATERAL (
-        SELECT evidence
-        FROM (
-          SELECT disposition, evidence
-          FROM post_moderation_dispositions
-          WHERE version_id = version.id AND source = 'openai_omni'
-          ORDER BY id DESC LIMIT 1
-        ) latest
-        WHERE latest.disposition IN ('review', 'reject')
+        SELECT id
+        FROM post_moderation_dispositions
+        WHERE version_id = version.id AND source = 'openai_omni'
+          AND disposition IN ('review', 'reject')
+        ORDER BY id DESC LIMIT 1
       ) disposition ON true
       LEFT JOIN LATERAL (
         SELECT label
@@ -210,11 +207,11 @@ export function buildRecentAutomodActionsQuery(
         CASE WHEN p.post_type = 'comment' AND root_post.id IS NOT NULL THEN '/' || CASE root_post.post_type WHEN 'data_point' THEN 'data-point' WHEN 'blog_post' THEN 'blog-post' WHEN 'topic_recommendation' THEN 'topic-recommendations' ELSE root_post.post_type::text END || '/' || root_post.id::text || '/comment/' || p.id::text WHEN p.post_type = 'topic_recommendation' THEN '/topic-recommendations/' || p.id::text || '/edit' ELSE '/' || CASE p.post_type WHEN 'data_point' THEN 'data-point' WHEN 'blog_post' THEN 'blog-post' ELSE p.post_type::text END || '/' || p.id::text END AS post_href,
         p.created_at,
         p.rejected_at AS action_at,
-        NULLIF(disposition.evidence->>'composite_score', '')::double precision AS confidence_score,
+        disposition.evidence_composite_score AS confidence_score,
         TRUE AS flagged,
         NULL::text AS reason,
         '[]'::jsonb AS categories,
-        disposition.evidence AS model_output,
+        fn_post_moderation_disposition_evidence(disposition.id) AS model_output,
         'rejected'::text AS current_state,
         latest_feedback.label AS feedback_label
       FROM posts p
@@ -223,14 +220,11 @@ export function buildRecentAutomodActionsQuery(
        AND version.content_sha256 = p.llm_moderation_content_sha256
        AND version.policy_revision = '2026-09-09.1'
       JOIN LATERAL (
-        SELECT evidence
-        FROM (
-          SELECT disposition, evidence
-          FROM post_moderation_dispositions
-          WHERE version_id = version.id AND source = 'spam_detection'
-          ORDER BY id DESC LIMIT 1
-        ) latest
-        WHERE latest.disposition IN ('review', 'reject')
+        SELECT id, evidence_composite_score
+        FROM post_moderation_dispositions
+        WHERE version_id = version.id AND source = 'spam_detection'
+          AND disposition IN ('review', 'reject')
+        ORDER BY id DESC LIMIT 1
       ) disposition ON true
       LEFT JOIN LATERAL (
         SELECT label

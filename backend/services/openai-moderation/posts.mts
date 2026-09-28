@@ -129,10 +129,10 @@ export async function findExistingPostOpenAIModeration(
 ): Promise<{ results: PersistedOpenAIModerationResults; flagged: boolean } | null> {
   const query = options.readOnly === false ? write : read
   const { rows } = await query(sql`/* findExistingPostOpenAIModeration */
-    SELECT disposition.disposition, disposition.evidence
+    SELECT disposition.disposition, fn_post_moderation_disposition_evidence(disposition.id) AS evidence
     FROM post_moderation_versions version
     JOIN LATERAL (
-      SELECT disposition, evidence, id
+      SELECT id, disposition
       FROM post_moderation_dispositions
       WHERE version_id = version.id
         AND source = 'openai_omni'

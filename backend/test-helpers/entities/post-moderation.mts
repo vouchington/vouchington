@@ -1,5 +1,6 @@
 /* oxlint-disable max-lines -- Ledger fixture readers and writers retain one coherent test boundary. */
 import { read, write } from '@data-stores/psql'
+import { dispositionEvidenceFacts } from '@services/post-clearance/evidence-facts.mts'
 import sql from 'sql-template-strings'
 
 type TestModerationSource = 'openai_omni' | 'spam_detection'
@@ -12,6 +13,7 @@ export async function recordTestPostModerationDisposition(input: {
   reasonCode: string
   evidence?: Record<string, unknown>
 }): Promise<void> {
+  const evidence = dispositionEvidenceFacts(input.evidence)
   await write(sql`/* recordTestPostModerationDisposition */
     WITH current_post AS (
       SELECT id, llm_moderation_content_sha256 FROM posts WHERE id = ${input.postId}
@@ -24,12 +26,37 @@ export async function recordTestPostModerationDisposition(input: {
       INSERT INTO post_moderation_work_items (version_id, source)
       SELECT version.id, ${input.source}::post_moderation_sources FROM version
       ON CONFLICT (version_id, source) DO NOTHING
+    ), inserted AS (
+      INSERT INTO post_moderation_dispositions (
+        version_id, source, disposition, reason_code,
+        evidence_platform_override, evidence_composite_score, evidence_error_code
+      )
+      SELECT version.id, ${input.source}::post_moderation_sources,
+        ${input.disposition}::post_moderation_disposition_types,
+        ${input.reasonCode},
+        ${evidence.platformOverride},
+        ${evidence.compositeScore},
+        ${evidence.errorCode}
+      FROM version
+      RETURNING id
+    ), categories AS (
+      INSERT INTO post_moderation_disposition_categories (disposition_id, position, category)
+      SELECT inserted.id, item.position::integer - 1, item.category
+      FROM inserted
+      CROSS JOIN UNNEST(${evidence.categories}::text[]) WITH ORDINALITY AS item(category, position)
+      RETURNING disposition_id
     )
-    INSERT INTO post_moderation_dispositions (version_id, source, disposition, reason_code, evidence)
-    SELECT version.id, ${input.source}::post_moderation_sources,
-      ${input.disposition}::post_moderation_disposition_types,
-      ${input.reasonCode}, ${JSON.stringify(input.evidence ?? {})}::jsonb
-    FROM version
+    INSERT INTO post_moderation_disposition_signals (
+      disposition_id, position, signal, score, flagged
+    )
+    SELECT inserted.id, item.position::integer - 1, item.signal, item.score, item.flagged
+    FROM inserted
+    CROSS JOIN UNNEST(
+      ${evidence.signals.map(signal => signal.signal)}::text[],
+      ${evidence.signals.map(signal => signal.score)}::double precision[],
+      ${evidence.signals.map(signal => signal.flagged)}::boolean[]
+    ) WITH ORDINALITY AS item(signal, score, flagged, position)
+    WHERE EXISTS (SELECT 1 FROM categories) OR NOT EXISTS (SELECT 1 FROM categories)
   `)
 }
 
@@ -65,14 +92,14 @@ export async function getPostModerationData(postId: string): Promise<{
   }>(sql`/* getPostModerationData */
     SELECT post.llm_moderation_content_sha256 AS openai_omni_moderation_content_sha256,
       version.content_sha256 AS openai_omni_moderation_input_sha256,
-      disposition.evidence AS openai_omni_moderation_results,
+      fn_post_moderation_disposition_evidence(disposition.id) AS openai_omni_moderation_results,
       CASE WHEN disposition.disposition IS NULL THEN NULL ELSE disposition.disposition <> 'pass' END AS openai_omni_moderation_flagged,
       disposition.decided_at AS openai_omni_moderation_created_at
     FROM posts post
     LEFT JOIN post_moderation_versions version ON version.post_id = post.id
       AND version.content_sha256 = post.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'
     LEFT JOIN LATERAL (
-      SELECT disposition, evidence, decided_at FROM post_moderation_dispositions
+      SELECT id, disposition, decided_at FROM post_moderation_dispositions
       WHERE version_id = version.id AND source = 'openai_omni' ORDER BY id DESC LIMIT 1
     ) disposition ON true
     WHERE post.id = ${postId} ORDER BY version.id DESC NULLS LAST LIMIT 1
@@ -119,13 +146,13 @@ export async function getPostSpamDetectionState(postId: string): Promise<{
   }>(sql`/* getPostSpamDetectionState */
     SELECT CASE WHEN disposition.disposition IS NULL THEN NULL ELSE disposition.disposition <> 'pass' END AS spam_detection_flagged,
       disposition.decided_at AS spam_detection_created_at,
-      NULLIF(disposition.evidence->>'composite_score', '')::double precision AS spam_detection_score,
-      disposition.evidence AS spam_detection_results
+      disposition.evidence_composite_score AS spam_detection_score,
+      fn_post_moderation_disposition_evidence(disposition.id) AS spam_detection_results
     FROM posts post
     LEFT JOIN post_moderation_versions version ON version.post_id = post.id
       AND version.content_sha256 = post.llm_moderation_content_sha256 AND version.policy_revision = '2026-09-09.1'
     LEFT JOIN LATERAL (
-      SELECT disposition, evidence, decided_at FROM post_moderation_dispositions
+      SELECT id, disposition, decided_at, evidence_composite_score FROM post_moderation_dispositions
       WHERE version_id = version.id AND source = 'spam_detection' ORDER BY id DESC LIMIT 1
     ) disposition ON true
     WHERE post.id = ${postId} ORDER BY version.id DESC NULLS LAST LIMIT 1

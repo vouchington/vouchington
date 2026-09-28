@@ -32,7 +32,10 @@ CREATE TABLE IF NOT EXISTS report_integrity_flags (
   reporter_count   int NOT NULL,
   new_account_reporter_pct double precision NOT NULL
     CHECK (new_account_reporter_pct >= 0 AND new_account_reporter_pct <= 1),
-  details          jsonb NOT NULL DEFAULT '{}',
+  detail_new_account_reporter_count INTEGER,
+  detail_threshold INTEGER,
+  detail_window_minutes INTEGER,
+  detail_new_account_age_days INTEGER,
   resolved_at      timestamptz,
   resolved_by_id   uuid REFERENCES users ON DELETE SET NULL,
   resolution       report_integrity_resolutions,
@@ -87,7 +90,48 @@ COMMENT ON COLUMN report_integrity_flags.rss_feed_item_id IS 'Flagged RSS feed i
 COMMENT ON COLUMN report_integrity_flags.flag_type IS 'Type of integrity violation detected.';
 COMMENT ON COLUMN report_integrity_flags.reporter_count IS 'Number of distinct reporters who filed pending reports on this entity within the detection window.';
 COMMENT ON COLUMN report_integrity_flags.new_account_reporter_pct IS 'Percentage (0-1) of those reporters whose accounts are considered new (< NEW_ACCOUNT_AGE_DAYS old).';
-COMMENT ON COLUMN report_integrity_flags.details IS 'JSON details about the detected anomaly including thresholds used.';
+COMMENT ON COLUMN report_integrity_flags.detail_new_account_reporter_count IS 'How many captured reporters were new accounts at detection.';
+COMMENT ON COLUMN report_integrity_flags.detail_threshold IS 'Reporter-count threshold used at detection.';
+COMMENT ON COLUMN report_integrity_flags.detail_window_minutes IS 'Detection window in minutes.';
+COMMENT ON COLUMN report_integrity_flags.detail_new_account_age_days IS 'Account-age cutoff in days used at detection.';
+
+CREATE TABLE IF NOT EXISTS report_integrity_flag_reporters (
+  flag_id UUID NOT NULL REFERENCES report_integrity_flags (id) ON DELETE CASCADE,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  reporter_user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  PRIMARY KEY (flag_id, reporter_user_id),
+  UNIQUE (flag_id, position)
+);
+COMMENT ON TABLE report_integrity_flag_reporters IS 'Authoritative detection-time reporter set. Hard-deleted users are removed so penalties skip them.';
+COMMENT ON COLUMN report_integrity_flag_reporters.flag_id IS 'Report integrity flag that captured this reporter.';
+COMMENT ON COLUMN report_integrity_flag_reporters.position IS 'Detection-time order of the reporter.';
+COMMENT ON COLUMN report_integrity_flag_reporters.reporter_user_id IS 'Live user who reported the entity at detection. Cascade-deleted with the user.';
+CREATE INDEX IF NOT EXISTS idx_report_integrity_flag_reporters__user_id
+  ON report_integrity_flag_reporters (reporter_user_id);
+
+CREATE OR REPLACE FUNCTION fn_report_integrity_flag_details(p_flag_id UUID)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT jsonb_strip_nulls(jsonb_build_object(
+    'reporter_count', flag.reporter_count,
+    'new_account_reporter_count', flag.detail_new_account_reporter_count,
+    'new_account_reporter_pct', flag.new_account_reporter_pct,
+    'threshold', flag.detail_threshold,
+    'window_minutes', flag.detail_window_minutes,
+    'new_account_age_days', flag.detail_new_account_age_days,
+    'reporter_user_ids', COALESCE((
+      SELECT jsonb_agg(reporter.reporter_user_id ORDER BY reporter.position)
+      FROM report_integrity_flag_reporters reporter
+      WHERE reporter.flag_id = flag.id
+    ), '[]'::jsonb)
+  ))
+  FROM report_integrity_flags flag
+  WHERE flag.id = p_flag_id
+$$;
+COMMENT ON FUNCTION fn_report_integrity_flag_details(UUID) IS
+  'Rebuilds report-integrity details from typed detection facts and the captured reporter set.';
 COMMENT ON COLUMN report_integrity_flags.resolved_at IS 'When a moderator resolved this flag.';
 COMMENT ON COLUMN report_integrity_flags.resolved_by_id IS 'Moderator who resolved this flag.';
 COMMENT ON COLUMN report_integrity_flags.resolution IS 'Outcome: dismissed or penalized.';

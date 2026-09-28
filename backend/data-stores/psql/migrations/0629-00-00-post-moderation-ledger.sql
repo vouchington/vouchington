@@ -68,11 +68,11 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
   attempt_id UUID,
   disposition post_moderation_disposition_types NOT NULL,
   reason_code TEXT NOT NULL CHECK (char_length(reason_code) BETWEEN 1 AND 100),
-  evidence JSONB NOT NULL DEFAULT '{}'::jsonb,
-  actor_user_id UUID,
+  evidence_platform_override BOOLEAN NOT NULL DEFAULT FALSE,
+  evidence_composite_score DOUBLE PRECISION,
+  evidence_error_code TEXT CHECK (evidence_error_code IS NULL OR char_length(evidence_error_code) BETWEEN 1 AND 100),
+  actor_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   decided_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (jsonb_typeof(evidence) = 'object'),
-  CHECK (octet_length(evidence::text) <= 16384),
   CHECK ((source = 'staff') = (actor_user_id IS NOT NULL)),
   CHECK (source <> 'staff' OR attempt_id IS NULL),
   CHECK (disposition <> 'reject' OR source = 'staff'
@@ -84,6 +84,64 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__version_source_id
 ON post_moderation_dispositions (version_id, source, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__actor_user_id
+ON post_moderation_dispositions (actor_user_id) WHERE actor_user_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS post_moderation_disposition_categories (
+  disposition_id UUID NOT NULL REFERENCES post_moderation_dispositions (id) ON DELETE CASCADE,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  category TEXT NOT NULL CHECK (char_length(category) BETWEEN 1 AND 100),
+  PRIMARY KEY (disposition_id, position)
+);
+COMMENT ON TABLE post_moderation_disposition_categories IS 'Ordered flagged categories extracted from an OpenAI moderation disposition.';
+COMMENT ON COLUMN post_moderation_disposition_categories.disposition_id IS 'Disposition whose flagged categories these rows record.';
+COMMENT ON COLUMN post_moderation_disposition_categories.position IS 'Zero-based order of the flagged category.';
+COMMENT ON COLUMN post_moderation_disposition_categories.category IS 'Provider category name that was flagged.';
+
+CREATE TABLE IF NOT EXISTS post_moderation_disposition_signals (
+  disposition_id UUID NOT NULL REFERENCES post_moderation_dispositions (id) ON DELETE CASCADE,
+  position INTEGER NOT NULL CHECK (position >= 0 AND position < 100),
+  signal TEXT NOT NULL CHECK (char_length(signal) BETWEEN 1 AND 100),
+  score DOUBLE PRECISION NOT NULL,
+  flagged BOOLEAN NOT NULL,
+  PRIMARY KEY (disposition_id, position)
+);
+COMMENT ON TABLE post_moderation_disposition_signals IS 'Ordered spam signals extracted from a spam-detection disposition.';
+COMMENT ON COLUMN post_moderation_disposition_signals.disposition_id IS 'Disposition whose spam signals these rows record.';
+COMMENT ON COLUMN post_moderation_disposition_signals.position IS 'Zero-based order of the signal, at most 100.';
+COMMENT ON COLUMN post_moderation_disposition_signals.signal IS 'Stable spam signal name.';
+COMMENT ON COLUMN post_moderation_disposition_signals.score IS 'Signal score recorded with the disposition.';
+COMMENT ON COLUMN post_moderation_disposition_signals.flagged IS 'Whether this signal was flagged.';
+
+CREATE OR REPLACE FUNCTION fn_post_moderation_disposition_evidence(p_disposition_id UUID)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT jsonb_strip_nulls(jsonb_build_object(
+    'platform_override', CASE WHEN disposition.evidence_platform_override THEN TRUE ELSE NULL END,
+    'composite_score', disposition.evidence_composite_score,
+    'error_code', disposition.evidence_error_code,
+    'flagged_categories', (
+      SELECT jsonb_agg(category.category ORDER BY category.position)
+      FROM post_moderation_disposition_categories category
+      WHERE category.disposition_id = disposition.id
+    ),
+    'signals', (
+      SELECT jsonb_agg(
+        jsonb_build_object('signal', signal.signal, 'score', signal.score, 'flagged', signal.flagged)
+        ORDER BY signal.position
+      )
+      FROM post_moderation_disposition_signals signal
+      WHERE signal.disposition_id = disposition.id
+    )
+  ))
+  FROM post_moderation_dispositions disposition
+  WHERE disposition.id = p_disposition_id
+$$;
+COMMENT ON FUNCTION fn_post_moderation_disposition_evidence(UUID) IS
+  'Rebuilds the staff evidence object from typed disposition facts. Empty facts return an empty object.';
 
 COMMENT ON TABLE post_moderation_versions IS 'Immutable moderation generations keyed by canonical post content and policy revision.';
 COMMENT ON TABLE post_moderation_work_items IS 'Durable current work projection with generation and lease-token fencing for bounded moderation attempts.';
@@ -113,6 +171,8 @@ COMMENT ON COLUMN post_moderation_dispositions.source IS 'Automated or staff sou
 COMMENT ON COLUMN post_moderation_dispositions.attempt_id IS 'Provider attempt that produced this automated outcome; absent for staff decisions.';
 COMMENT ON COLUMN post_moderation_dispositions.disposition IS 'Normalized moderation result: pass, review, reject, or incomplete.';
 COMMENT ON COLUMN post_moderation_dispositions.reason_code IS 'Stable provider-neutral policy or availability reason code.';
-COMMENT ON COLUMN post_moderation_dispositions.evidence IS 'Bounded private evidence for moderation staff; never part of public post contracts.';
-COMMENT ON COLUMN post_moderation_dispositions.actor_user_id IS 'Immutable staff-actor audit snapshot that intentionally survives user deletion.';
+COMMENT ON COLUMN post_moderation_dispositions.evidence_platform_override IS 'True when staff evidence records a platform override. False omits the key from the rebuilt object.';
+COMMENT ON COLUMN post_moderation_dispositions.evidence_composite_score IS 'Spam composite score when the disposition recorded one.';
+COMMENT ON COLUMN post_moderation_dispositions.evidence_error_code IS 'Stable automation failure code when an exhausted attempt recorded incomplete evidence.';
+COMMENT ON COLUMN post_moderation_dispositions.actor_user_id IS 'Retained staff-actor identity. It survives user deletion and does not authorize that user.';
 COMMENT ON COLUMN post_moderation_dispositions.decided_at IS 'UUIDv7-derived clock time at which this immutable disposition was created.';

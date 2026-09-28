@@ -30,7 +30,21 @@ export async function searchModeratorActions(
   }
 
   const query = sql`/* searchModeratorActions */
-    SELECT ma.*
+    SELECT
+      ma.id,
+      ma.community_id,
+      ma.moderation_transparency_community_id,
+      ma.actor_id,
+      ma.action_type,
+      ma.post_id,
+      ma.target_user_id,
+      ma.report_id,
+      ma.review_dispute_id,
+      ma.moderation_appeal_id,
+      ma.community_application_id,
+      ma.reason,
+      COALESCE(fn_moderator_action_metadata(ma.id), '{}'::jsonb) AS metadata,
+      ma.created_at
     FROM moderator_actions ma
     WHERE TRUE
   `

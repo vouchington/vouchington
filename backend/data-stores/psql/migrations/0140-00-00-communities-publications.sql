@@ -49,7 +49,7 @@ END $$;
 
 -- communities
 CREATE TABLE IF NOT EXISTS communities (
-  id UUID DEFAULT uuidv7() PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_community_identities (id) ON DELETE RESTRICT,
   created_via content_creation_channels,
   created_via_oauth_client_id UUID,
   CONSTRAINT communities_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
@@ -92,6 +92,18 @@ CREATE TABLE IF NOT EXISTS communities (
   CHECK (char_length(slug) BETWEEN 1 AND 80),
   CHECK (slug ~ '^[a-z0-9-]+$')
 );
+
+CREATE OR REPLACE FUNCTION fn_register_retained_community_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_community_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_community_identity
+BEFORE INSERT ON communities
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_community_identity();
 
 CREATE OR REPLACE TRIGGER trigger_communities_updated_at
   BEFORE UPDATE ON communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -682,6 +694,8 @@ END $$;
 CREATE TABLE IF NOT EXISTS community_agent_prompts (
   -- extension table: id IS an agent_prompts.id; timestamps come from agent_prompts
   id UUID NOT NULL PRIMARY KEY REFERENCES agent_prompts(id) ON DELETE CASCADE,
+  CONSTRAINT fk_community_agent_prompts__retained_identity
+    FOREIGN KEY (id) REFERENCES retained_community_agent_prompt_identities (id) ON DELETE RESTRICT,
 
   community_id  UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
   created_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -698,6 +712,18 @@ CREATE TABLE IF NOT EXISTS community_agent_prompts (
   CONSTRAINT chk_community_agent_prompts__lifecycle
     CHECK (NOT (activated_at IS NOT NULL AND deactivated_at IS NOT NULL))
 );
+
+CREATE OR REPLACE FUNCTION fn_register_retained_community_agent_prompt_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_community_agent_prompt_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_community_agent_prompt_identity
+BEFORE INSERT ON community_agent_prompts
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_community_agent_prompt_identity();
 
 -- Lookup by community for listing
 CREATE INDEX IF NOT EXISTS idx_community_agent_prompts__community_id

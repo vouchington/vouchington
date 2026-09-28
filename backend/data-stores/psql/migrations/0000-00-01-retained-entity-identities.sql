@@ -66,8 +66,47 @@ CREATE TRIGGER trigger_guard_retained_image_placement_binding
 BEFORE UPDATE ON retained_image_placement_bindings
 FOR EACH ROW EXECUTE FUNCTION fn_guard_retained_image_placement_binding();
 
+CREATE TABLE IF NOT EXISTS retained_url_hostname_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_url_hostname_identities IS 'Hostname identity retained for audit facts after the live hostname row is gone; never authorizes the hostname.';
+
+CREATE TABLE IF NOT EXISTS retained_url_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_url_identities IS 'URL identity retained for audit facts after the live URL row is gone; never authorizes the URL.';
+
+CREATE TABLE IF NOT EXISTS retained_topic_alias_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_topic_alias_identities IS 'Topic alias identity retained for revision facts after the live alias row is deleted.';
+
+CREATE TABLE IF NOT EXISTS retained_community_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_community_identities IS 'Community identity retained for immutable moderation-scope stamps after the live community is deleted; never authorizes the community.';
+
+CREATE TABLE IF NOT EXISTS retained_community_agent_prompt_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_community_agent_prompt_identities IS 'Community agent prompt identity retained so prompt audit history survives hard deletion; never authorizes the prompt.';
+
+CREATE TABLE IF NOT EXISTS retained_community_restriction_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_community_restriction_identities IS 'Community restriction identity retained for moderator-action facts after the live restriction row is deleted.';
+
+CREATE TABLE IF NOT EXISTS retained_post_admission_reservation_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_post_admission_reservation_identities IS 'Admission reservation identity retained so quota consumption outlives the 48-hour replay row.';
+
 CREATE TABLE IF NOT EXISTS retained_identity_cleanup_progress (
-  family TEXT PRIMARY KEY CHECK (family IN ('user', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding')),
+  family TEXT PRIMARY KEY CHECK (family IN (
+    'user', 'topic', 'post', 'rss_feed_item', 'image', 'image_placement_binding',
+    'url_hostname', 'url', 'topic_alias', 'community', 'community_agent_prompt',
+    'community_restriction', 'post_admission_reservation'
+  )),
   cursor_identity_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -76,7 +115,10 @@ COMMENT ON COLUMN retained_identity_cleanup_progress.family IS 'Concrete retaine
 COMMENT ON COLUMN retained_identity_cleanup_progress.cursor_identity_id IS 'Last scanned identity, not a durable relationship to that identity.';
 
 INSERT INTO retained_identity_cleanup_progress (family)
-VALUES ('user'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('image_placement_binding')
+VALUES
+  ('user'), ('topic'), ('post'), ('rss_feed_item'), ('image'), ('image_placement_binding'),
+  ('url_hostname'), ('url'), ('topic_alias'), ('community'), ('community_agent_prompt'),
+  ('community_restriction'), ('post_admission_reservation')
 ON CONFLICT (family) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION fn_ensure_retained_image_identity(identity_id UUID)
@@ -173,5 +215,29 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM fn_ensure_retained_rss_feed_item_identity(NEW.id);
   RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_ensure_audit_retained_identity(root regclass, identity_id UUID)
+RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE
+  pinned UUID;
+BEGIN
+  IF root NOT IN (
+    'retained_url_hostname_identities'::regclass,
+    'retained_url_identities'::regclass,
+    'retained_topic_alias_identities'::regclass,
+    'retained_community_identities'::regclass,
+    'retained_community_agent_prompt_identities'::regclass,
+    'retained_community_restriction_identities'::regclass,
+    'retained_post_admission_reservation_identities'::regclass
+  ) THEN
+    RAISE EXCEPTION 'unsupported audit retained identity root %', root USING ERRCODE = 'check_violation';
+  END IF;
+  LOOP
+    EXECUTE format('INSERT INTO %s (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', root) USING identity_id;
+    EXECUTE format('SELECT id FROM %s WHERE id = $1 FOR KEY SHARE', root) INTO pinned USING identity_id;
+    EXIT WHEN pinned IS NOT NULL;
+  END LOOP;
 END;
 $$;

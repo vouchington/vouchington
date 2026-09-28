@@ -38,11 +38,10 @@ describe('recordMediaReveal', () => {
     expect(after.count).toBe(before.count + 1)
   })
 
-  it('persists a reveal row with optional metadata', async () => {
+  it('persists a reveal row', async () => {
     const before = await getExposureState(moderator.id)
     await recordMediaReveal(moderator.id, {
       surface: 'reports',
-      metadata: { source: 'test' },
     })
     const after = await getExposureState(moderator.id)
     expect(after.count).toBe(before.count + 1)

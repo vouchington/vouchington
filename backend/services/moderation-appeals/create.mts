@@ -96,7 +96,10 @@ export async function createModerationAppeal(
         sent_at,
         resolved_at,
         resolution_action,
-        metadata
+        original_decision_recorded,
+        original_decision_reason,
+        original_decision_actor_id,
+        original_decision_at
       )
       SELECT
         lifecycle_change_id.id,
@@ -109,14 +112,10 @@ export async function createModerationAppeal(
         upserted.sent_at,
         upserted.resolved_at,
         upserted.resolution_action,
-        jsonb_build_object(
-          'original_decision',
-          jsonb_build_object(
-            'reason', ${originalDecisionReason}::text,
-            'actor_id', ${originalDecisionActorId}::uuid,
-            'decided_at', ${originalDecisionAt}::timestamptz
-          )
-        )
+        TRUE,
+        ${originalDecisionReason},
+        ${originalDecisionActorId},
+        ${originalDecisionAt}
       FROM upserted
       CROSS JOIN lifecycle_change_id
       WHERE upserted.inserted

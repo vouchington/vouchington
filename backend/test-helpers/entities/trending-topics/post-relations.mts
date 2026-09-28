@@ -26,8 +26,8 @@ export async function insertBatchPostRelations(params: {
   await write(
     sql`/* insertBatchPostRelations:approve */
     WITH inserted_change AS (
-      INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id, metadata)
-      SELECT unnest_id, 'approve', ${userId}, '{"source":"trending-topic-test-helper"}'::jsonb
+      INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id, audit_source)
+      SELECT unnest_id, 'approve', ${userId}, 'trending-topic-test-helper'
       FROM UNNEST(${postIds}::uuid[]) AS unnest_id
       RETURNING id, post_id, created_at
     )

@@ -109,8 +109,7 @@ export async function createReviewDispute(
         approved_at,
         sent_at,
         resolved_at,
-        resolution_action,
-        metadata
+        resolution_action
       )
       SELECT
         lifecycle_change_id.id,
@@ -122,8 +121,7 @@ export async function createReviewDispute(
         upserted.approved_at,
         upserted.sent_at,
         upserted.resolved_at,
-        upserted.resolution_action,
-        '{}'::jsonb
+        upserted.resolution_action
       FROM upserted
       CROSS JOIN lifecycle_change_id
       WHERE upserted.inserted

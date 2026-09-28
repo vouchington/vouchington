@@ -25,7 +25,7 @@ export const VOTE_INTEGRITY_FLAG_PROJECTION = `
   id,
   ${VOTE_INTEGRITY_FLAG_TARGET_PROJECTION},
   flag_type,
-  details,
+  fn_vote_integrity_flag_details(id) AS details,
   resolved_at,
   resolved_by_id,
   resolution,

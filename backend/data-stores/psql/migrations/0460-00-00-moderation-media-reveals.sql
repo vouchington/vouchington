@@ -22,9 +22,7 @@ CREATE TABLE IF NOT EXISTS moderation_media_reveals (
   surface       moderation_media_reveal_surfaces NOT NULL,
   -- revealed_at is a real (mutable) column used for time-window counting.
   -- It must NOT be a virtual column derived from id, since queries filter by this range.
-  revealed_at   timestamptz NOT NULL DEFAULT now(),
-  metadata      jsonb       NOT NULL DEFAULT '{}'::jsonb,
-  CHECK (jsonb_typeof(metadata) = 'object')
+  revealed_at   timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__moderator_revealed
@@ -43,8 +41,6 @@ COMMENT ON COLUMN moderation_media_reveals.report_id IS 'Report entity being rev
 COMMENT ON COLUMN moderation_media_reveals.surface IS 'Queue surface where the reveal occurred: mod_queue (community queue), review_queue (admin review), reports (reports UI), post_page (public post page in mod context).';
 
 COMMENT ON COLUMN moderation_media_reveals.revealed_at IS 'When the moderator clicked to reveal the media. Real column (not virtual) for time-window range queries.';
-
-COMMENT ON COLUMN moderation_media_reveals.metadata IS 'Structured context (e.g. community_id, image_id).';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__post_id
