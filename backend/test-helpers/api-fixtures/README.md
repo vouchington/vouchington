@@ -54,10 +54,10 @@ routes share a helper function that would otherwise contain the discovery-releva
 response body for the route to emit. See `completeMfaVerification` in
 `backend/api/v1/sessions-authentication/auth-mfa-routes/complete-mfa-verification.mts` for the
 pattern (used because `auth-mfa-totp-verification-post.mts` and
-`auth-mfa-passkeys-authentication-verification-post.mts` share it). A call the extractor cannot
-attribute to exactly one route is currently skipped rather than rejected (#629); until that
-lands, this convention is the only way to keep a shared helper's routes covered by the generated
-corpus.
+`auth-mfa-passkeys-authentication-verification-post.mts` share it). Generation rejects a `ctx.json(...)` or streamed JSON call whose enclosing function is
+registered on more than one distinct route, so that success body cannot disappear from the
+generated contract. The one-route-per-helper limit is unchanged. A hand-rolled 4xx branch, and a
+dynamic-status `ctx.json({ error })` payload, stay out of the success contract.
 
 Response metadata belongs to each concrete emission, not to the route as a whole. The extractor
 uses the nearest preceding `ctx.setStatus(...)` in the emission's active lexical branch; a dynamic
