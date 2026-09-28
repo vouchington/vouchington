@@ -18,17 +18,23 @@ CREATE TABLE IF NOT EXISTS post_clearance_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
   change_type post_clearance_change_types NOT NULL,
-  changed_by_id UUID,
+  changed_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   public_reason_code TEXT CHECK (
     public_reason_code IS NULL OR char_length(public_reason_code) BETWEEN 1 AND 100
   ),
   private_note TEXT CHECK (private_note IS NULL OR char_length(private_note) <= 4000),
   platform_override BOOLEAN NOT NULL DEFAULT FALSE,
-  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  creation_moderation_bypassed BOOLEAN,
+  moderation_version_policy_revision TEXT,
+  source_key TEXT,
+  moderation_training BOOLEAN,
+  compensation_reason TEXT,
+  compensates_change_id UUID,
+  restores_change_id UUID,
+  audit_source TEXT,
   moderation_transparency_categories TEXT[] NOT NULL DEFAULT '{}',
-  moderation_transparency_community_id UUID,
+  moderation_transparency_community_id UUID REFERENCES retained_community_identities (id) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CHECK (jsonb_typeof(metadata) = 'object'),
   CHECK (NOT platform_override OR (changed_by_id IS NOT NULL AND public_reason_code IS NOT NULL)),
   CHECK (private_note IS NULL OR platform_override),
   CHECK (moderation_transparency_categories IN (
@@ -74,6 +80,32 @@ ON posts (latest_clearance_change_id) WHERE latest_clearance_change_id IS NOT NU
 CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__post_id__id
 ON post_clearance_changes (post_id, id DESC);
 
+ALTER TABLE post_clearance_changes
+  DROP CONSTRAINT IF EXISTS fk_post_clearance_changes__compensates_change_id;
+ALTER TABLE post_clearance_changes
+  ADD CONSTRAINT fk_post_clearance_changes__compensates_change_id
+  FOREIGN KEY (compensates_change_id) REFERENCES post_clearance_changes (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_clearance_changes
+  VALIDATE CONSTRAINT fk_post_clearance_changes__compensates_change_id;
+
+ALTER TABLE post_clearance_changes
+  DROP CONSTRAINT IF EXISTS fk_post_clearance_changes__restores_change_id;
+ALTER TABLE post_clearance_changes
+  ADD CONSTRAINT fk_post_clearance_changes__restores_change_id
+  FOREIGN KEY (restores_change_id) REFERENCES post_clearance_changes (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_clearance_changes
+  VALIDATE CONSTRAINT fk_post_clearance_changes__restores_change_id;
+
+CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__changed_by_id
+  ON post_clearance_changes (changed_by_id) WHERE changed_by_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__transparency_community_id
+  ON post_clearance_changes (moderation_transparency_community_id)
+  WHERE moderation_transparency_community_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__compensates_change_id
+  ON post_clearance_changes (compensates_change_id) WHERE compensates_change_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_post_clearance_changes__restores_change_id
+  ON post_clearance_changes (restores_change_id) WHERE restores_change_id IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_posts__approved
 ON posts (id DESC)
 WHERE approved_at IS NOT NULL AND deleted_at IS NULL;
@@ -85,10 +117,17 @@ WHERE deleted_at IS NULL AND (rejected_at IS NOT NULL OR in_review_at IS NOT NUL
 COMMENT ON TABLE post_clearance_changes IS 'Append-only audit log of post clearance transitions.';
 COMMENT ON COLUMN post_clearance_changes.post_id IS 'The post whose clearance state changed.';
 COMMENT ON COLUMN post_clearance_changes.change_type IS 'Type of clearance transition.';
-COMMENT ON COLUMN post_clearance_changes.changed_by_id IS 'User or admin who initiated the change (no FK for audit persistence).';
+COMMENT ON COLUMN post_clearance_changes.changed_by_id IS 'Retained user identity of who initiated the change. It survives user deletion and does not authorize that user.';
 COMMENT ON COLUMN post_clearance_changes.public_reason_code IS 'Stable provider-neutral reason safe to expose to the affected author.';
 COMMENT ON COLUMN post_clearance_changes.private_note IS 'Private staff note; never returned in public or author post contracts.';
 COMMENT ON COLUMN post_clearance_changes.platform_override IS 'True when platform moderation staff intentionally overrode automated or community state.';
-COMMENT ON COLUMN post_clearance_changes.metadata IS 'Structured metadata about the clearance transition.';
+COMMENT ON COLUMN post_clearance_changes.creation_moderation_bypassed IS 'Present only when creation recorded the administrator bypass flag. Null means the key was absent.';
+COMMENT ON COLUMN post_clearance_changes.moderation_version_policy_revision IS 'Policy revision of the moderation version that produced an automated clearance decision.';
+COMMENT ON COLUMN post_clearance_changes.source_key IS 'Automod training source key when this clearance came from moderation training.';
+COMMENT ON COLUMN post_clearance_changes.moderation_training IS 'True when moderation training applied this clearance. Null when that flag was absent.';
+COMMENT ON COLUMN post_clearance_changes.compensation_reason IS 'Why a clearance compensation restored an earlier decision.';
+COMMENT ON COLUMN post_clearance_changes.compensates_change_id IS 'Clearance change this compensation undoes.';
+COMMENT ON COLUMN post_clearance_changes.restores_change_id IS 'Earlier clearance change restored by this compensation, when one existed.';
+COMMENT ON COLUMN post_clearance_changes.audit_source IS 'Non-product writer label such as a seed or explain fixture. Null for product writers.';
 COMMENT ON COLUMN post_clearance_changes.moderation_transparency_categories IS 'Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency.';
-COMMENT ON COLUMN post_clearance_changes.moderation_transparency_community_id IS 'Immutable community scope stamped from the post for global-transparency exclusion.';
+COMMENT ON COLUMN post_clearance_changes.moderation_transparency_community_id IS 'Retained community identity stamped from the post for global-transparency exclusion. It does not authorize the community.';

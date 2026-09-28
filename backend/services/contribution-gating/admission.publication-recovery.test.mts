@@ -7,7 +7,7 @@ import {
   enableQueryCapture,
   expireContributionAdmissionClaimForTest,
   getContributionAdmissionReservationStateForTest,
-  setContributionAdmissionReplayMetadataForTest,
+  setContributionAdmissionReplayFinalizationForTest,
   stopTestQueryCapture,
 } from '@voucha/test-helpers'
 import { runContributionAdmission } from './admission.mts'
@@ -67,11 +67,7 @@ describe('contribution admission response publication', () => {
           return {
             response,
             finalize: async () => {
-              await setContributionAdmissionReplayMetadataForTest({
-                actorId: user.id,
-                idempotencyKey,
-                replayMetadata: { padding: 'x'.repeat(8_170) },
-              })
+              throw new Error('Injected publication failure')
             },
           }
         }),
@@ -81,10 +77,10 @@ describe('contribution admission response publication', () => {
     await expect(
       getContributionAdmissionReservationStateForTest({ actorId: user.id, idempotencyKey }),
     ).resolves.toBe('committed')
-    await setContributionAdmissionReplayMetadataForTest({
+    await setContributionAdmissionReplayFinalizationForTest({
       actorId: user.id,
       idempotencyKey,
-      replayMetadata: { route: 'test', scope: 'test' },
+      finalization: 'pending',
     })
     await expireContributionAdmissionClaimForTest({ actorId: user.id, idempotencyKey })
 
@@ -116,11 +112,7 @@ describe('contribution admission response publication', () => {
             executePreparedContribution(query, async () => ({
               response,
               finalize: async () => {
-                await setContributionAdmissionReplayMetadataForTest({
-                  actorId: user.id,
-                  idempotencyKey,
-                  replayMetadata: { padding: 'x'.repeat(8_170) },
-                })
+                throw new Error('Injected publication failure')
               },
             })),
         }),

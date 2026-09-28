@@ -141,11 +141,11 @@ export async function failPostModerationAttempt(
       ),
       inserted_disposition AS (
         INSERT INTO post_moderation_dispositions (
-          version_id, source, attempt_id, disposition, reason_code, evidence
+          version_id, source, attempt_id, disposition, reason_code, evidence_error_code
         )
         SELECT released_work.version_id, released_work.source, $1,
           'incomplete'::post_moderation_disposition_types, 'automation_unavailable',
-          jsonb_build_object('error_code', $5)
+          $5
         FROM released_work
         WHERE released_work.exhausted
         ON CONFLICT (attempt_id) DO NOTHING

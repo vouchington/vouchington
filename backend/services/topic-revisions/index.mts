@@ -1,16 +1,12 @@
 import type { QueryOptions } from '@data-stores/psql/types'
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PublicUser } from '@services/users/types'
+import { insertTopicRevisionFacts, type TopicRevisionChanges } from './facts.mts'
 
 type RevisionType = 'create' | 'update' | 'delete'
 
-type FieldChange = {
-  before: unknown
-  after: unknown
-}
-
-export type TopicRevisionChanges = Record<string, FieldChange>
+export type { TopicRevisionChanges }
 
 const TOPIC_TRACKED_FIELDS = [
   'name',
@@ -50,36 +46,24 @@ export async function createTopicRevision(
   revisedById: string | null,
   options?: QueryOptions,
 ): Promise<TopicRevision> {
-  const {
-    rows: [row],
-  } = await write<TopicRevision>(
-    sql`/* createTopicRevision */
-    INSERT INTO topic_revisions (
-      topic_id,
-      revision_type,
-      revised_by_id,
-      revised_by_roles,
-      changes
-    )
-    VALUES (
-      ${topicId},
-      ${revisionType},
-      ${revisedById},
-      COALESCE(
-        (
-          SELECT ARRAY_AGG(user_roles_types.slug)
-          FROM user_roles
-          LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
-          WHERE user_roles.user_id = ${revisedById}
-        ),
-        ARRAY[]::TEXT[]
-      ),
-      ${JSON.stringify(changes)}
-    )
-    RETURNING id, topic_id, revision_type, revised_by_id, revised_by_roles, changes, created_at`,
+  const roles = sql`COALESCE(
+    (
+      SELECT ARRAY_AGG(user_roles_types.slug)
+      FROM user_roles
+      LEFT JOIN user_roles_types ON user_roles_types.id = user_roles.role_type_id
+      WHERE user_roles.user_id = ${revisedById}
+    ),
+    ARRAY[]::TEXT[]
+  )`
+  const row = await insertTopicRevisionFacts(
+    topicId,
+    revisionType,
+    changes,
+    revisedById,
+    roles,
     options,
   )
-  return row
+  return { ...row, changes }
 }
 
 export async function getLatestTopicContentUpdate(
@@ -95,7 +79,7 @@ export async function getLatestTopicContentUpdate(
     JOIN view_embedded_users eu ON eu.id = tr.revised_by_id
     WHERE tr.topic_id = ${topicId}
       AND tr.revision_type IN ('create', 'update')
-      AND tr.changes ?| ARRAY['name', 'markdown']
+      AND (tr.name_changed OR tr.markdown_changed)
       AND tr.revised_by_roles @> ARRAY['administrator']::TEXT[]
     ORDER BY tr.id DESC
     LIMIT 1`,

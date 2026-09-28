@@ -13,6 +13,16 @@ export const RETAINED_ID_POLICIES = [
   ['retained_post_identities', sharedParentUuidv7('posts')],
   ['retained_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],
   ['retained_image_identities', sharedParentUuidv7('images')],
+  ['retained_url_hostname_identities', sharedParentUuidv7('url_hostnames')],
+  ['retained_url_identities', sharedParentUuidv7('urls')],
+  ['retained_topic_alias_identities', sharedParentUuidv7('topic_aliases')],
+  ['retained_community_identities', sharedParentUuidv7('communities')],
+  ['retained_community_agent_prompt_identities', sharedParentUuidv7('community_agent_prompts')],
+  ['retained_community_restriction_identities', sharedParentUuidv7('community_restrictions')],
+  [
+    'retained_post_admission_reservation_identities',
+    sharedParentUuidv7('post_admission_reservations'),
+  ],
   ...entityRelationMetadatum.flatMap(metadata =>
     metadata.election
       ? ([[`retained_${metadata.table_name}`, sharedParentUuidv7(metadata.table_name)]] as const)

@@ -23,7 +23,7 @@ export async function selectPostIndicators(clusters: ClusterRow[]): Promise<Post
         SELECT 1
         FROM post_moderation_versions version
         JOIN LATERAL (
-          SELECT evidence
+          SELECT fn_post_moderation_disposition_evidence(id) AS evidence
           FROM post_moderation_dispositions
           WHERE version_id = version.id
             AND source = 'spam_detection'
@@ -43,7 +43,7 @@ export async function selectPostIndicators(clusters: ClusterRow[]): Promise<Post
         SELECT 1
         FROM post_moderation_versions version
         JOIN LATERAL (
-          SELECT evidence
+          SELECT fn_post_moderation_disposition_evidence(id) AS evidence
           FROM post_moderation_dispositions
           WHERE version_id = version.id
             AND source = 'spam_detection'

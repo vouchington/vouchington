@@ -48,15 +48,21 @@ export async function createVoteIntegrityFlag(
   const query = sql`/* createVoteIntegrityFlag */
     INSERT INTO vote_integrity_flags (`
   query.append(fkColumn)
-  query.append(sql`, flag_type, details)
-    VALUES (${entityId}::uuid, ${flagType}, ${JSON.stringify(details)}::jsonb)
+  const facts = voteDetailFacts(details)
+  query.append(sql`, flag_type, young_account_vote_count, detail_threshold, detail_window_minutes, young_account_age_days)
+    VALUES (
+      ${entityId}::uuid,
+      ${flagType},
+      ${facts.youngAccountVoteCount},
+      ${facts.threshold},
+      ${facts.windowMinutes},
+      ${facts.youngAccountAgeDays}
+    )
     /* no-mistakes: deadlock-safe -- this direct entity insert has one source row; its populated FK selects one pending-flag partial index. */
     ON CONFLICT DO NOTHING
-    RETURNING `)
-  query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+    RETURNING id`)
 
-  const { rows } = await write(query)
-  return (rows[0] as VoteIntegrityFlag | undefined) ?? null
+  return finishVoteIntegrityFlag(query, facts.ips)
 }
 
 async function createAgentModerationVoteIntegrityFlag(
@@ -64,21 +70,21 @@ async function createAgentModerationVoteIntegrityFlag(
   flagType: VoteIntegrityFlagType,
   details: Record<string, unknown>,
 ): Promise<VoteIntegrityFlag | null> {
+  const facts = voteDetailFacts(details)
   const query = sql`/* createAgentModerationVoteIntegrityFlag */
     INSERT INTO vote_integrity_flags (
-      agent_moderation_post_id, agent_moderation_id, flag_type, details
+      agent_moderation_post_id, agent_moderation_id, flag_type,
+      young_account_vote_count, detail_threshold, detail_window_minutes, young_account_age_days
     )
-    SELECT post_id, id, ${flagType}, ${JSON.stringify(details)}::jsonb
+    SELECT post_id, id, ${flagType},
+      ${facts.youngAccountVoteCount}, ${facts.threshold}, ${facts.windowMinutes}, ${facts.youngAccountAgeDays}
     FROM agent_moderations
     WHERE id = ${entityId}::uuid
       AND deleted_at IS NULL
     /* no-mistakes: deadlock-safe -- agent_moderations.id is a one-row primary-key lookup; populated columns select one pending-flag partial index. */
     ON CONFLICT DO NOTHING
-    RETURNING `
-  query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
-
-  const { rows } = await write(query)
-  return (rows[0] as VoteIntegrityFlag | undefined) ?? null
+    RETURNING id`
+  return finishVoteIntegrityFlag(query, facts.ips)
 }
 
 async function createEntityRelationVoteIntegrityFlag(
@@ -110,21 +116,90 @@ async function createEntityRelationVoteIntegrityFlag(
   query.append(sql`)
     INSERT INTO vote_integrity_flags (`)
   query.append(targetColumns.join(', '))
-  query.append(sql`, flag_type, details)
+  const facts = voteDetailFacts(details)
+  query.append(sql`, flag_type, young_account_vote_count, detail_threshold, detail_window_minutes, young_account_age_days)
     SELECT `)
   voteIntegrityRelationTargets.forEach((_target, index) => {
     if (index > 0) query.append(', ')
     query.append(`CASE WHEN relation_index = ${index} THEN subject_id END, `)
     query.append(`CASE WHEN relation_index = ${index} THEN id END`)
   })
-  query.append(sql`, ${flagType}, ${JSON.stringify(details)}::jsonb
+  query.append(sql`, ${flagType}, ${facts.youngAccountVoteCount}, ${facts.threshold}, ${facts.windowMinutes}, ${facts.youngAccountAgeDays}
     FROM matched_relation
     ORDER BY relation_index, subject_id, id
     /* no-mistakes: deadlock-safe -- relation_index is the stable relation catalog order; each row populates only its relation-specific pending-flag partial index. */
     ON CONFLICT DO NOTHING
-    RETURNING `)
-  query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+    RETURNING id`)
+  return finishVoteIntegrityFlag(query, facts.ips)
+}
 
-  const { rows } = await write(query)
-  return (rows[0] as VoteIntegrityFlag | undefined) ?? null
+async function finishVoteIntegrityFlag(
+  query: ReturnType<typeof sql>,
+  ips: Array<{ ipAddress: string; distinctUserCount: number }>,
+): Promise<VoteIntegrityFlag | null> {
+  const { rows } = await write<{ id: string }>(query)
+  const flagId = rows[0]?.id
+  if (!flagId) return null
+  if (ips.length > 0) {
+    await write(sql`/* createVoteIntegrityFlagIps */
+      INSERT INTO vote_integrity_flag_ips (flag_id, position, ip_address, distinct_user_count)
+      SELECT ${flagId}::uuid, item.position::integer - 1, item.ip_address, item.distinct_user_count
+      FROM UNNEST(
+        ${ips.map(ip => ip.ipAddress)}::text[],
+        ${ips.map(ip => ip.distinctUserCount)}::integer[]
+      ) WITH ORDINALITY AS item(ip_address, distinct_user_count, position)
+    `)
+  }
+  const loaded = sql`/* loadVoteIntegrityFlag */
+    SELECT `
+  loaded.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+  loaded.append(sql` FROM vote_integrity_flags WHERE id = ${flagId}`)
+  const { rows: flags } = await write(loaded)
+  return (flags[0] as VoteIntegrityFlag | undefined) ?? null
+}
+
+function voteDetailFacts(details: Record<string, unknown>): {
+  youngAccountVoteCount: number | null
+  threshold: number | null
+  windowMinutes: number | null
+  youngAccountAgeDays: number | null
+  ips: Array<{ ipAddress: string; distinctUserCount: number }>
+} {
+  const known = new Set([
+    'young_account_vote_count',
+    'threshold',
+    'window_minutes',
+    'young_account_age_days',
+    'correlated_ips',
+  ])
+  for (const key of Object.keys(details)) {
+    if (!known.has(key)) throw new Error(`Unknown vote integrity detail: ${key}`)
+  }
+  const ips = Array.isArray(details.correlated_ips) ? details.correlated_ips : []
+  if (details.correlated_ips != null && !Array.isArray(details.correlated_ips)) {
+    throw new Error('Invalid vote integrity correlated IPs')
+  }
+  return {
+    youngAccountVoteCount: detailNumber(details, 'young_account_vote_count'),
+    threshold: detailNumber(details, 'threshold'),
+    windowMinutes: detailNumber(details, 'window_minutes'),
+    youngAccountAgeDays: detailNumber(details, 'young_account_age_days'),
+    ips: ips.map(item => {
+      if (!item || typeof item !== 'object') throw new Error('Invalid vote integrity correlated IP')
+      const ip = item as { ip_address?: unknown; distinct_user_count?: unknown }
+      if (typeof ip.ip_address !== 'string' || typeof ip.distinct_user_count !== 'number') {
+        throw new Error('Invalid vote integrity correlated IP')
+      }
+      return { ipAddress: ip.ip_address, distinctUserCount: ip.distinct_user_count }
+    }),
+  }
+}
+
+function detailNumber(details: Record<string, unknown>, key: string): number | null {
+  if (!Object.hasOwn(details, key)) return null
+  const value = details[key]
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`Invalid vote integrity detail: ${key}`)
+  }
+  return value
 }

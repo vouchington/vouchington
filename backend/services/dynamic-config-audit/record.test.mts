@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { randomBytes } from 'node:crypto'
 import { createTestUser, getDynamicConfigChangeLogRows } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { recordDynamicConfigChange } from './record.mts'
@@ -12,13 +11,15 @@ describe('recordDynamicConfigChange', () => {
   })
 
   it('inserts a row into dynamic_config_change_logs', async () => {
-    const configKey = `test-config-${randomBytes(4).toString('hex')}`
+    const configKey = 'vote-weight-config'
     const prev = { multiplier_mfa: 1.5 }
     const next = { multiplier_mfa: 2.0 }
 
     await recordDynamicConfigChange(adminUser.id, configKey, prev, next)
 
-    const rows = await getDynamicConfigChangeLogRows(configKey)
+    const rows = (await getDynamicConfigChangeLogRows(configKey)).filter(
+      row => row.changed_by_id === adminUser.id,
+    )
 
     const row = rows[0]
     expect(row).toBeDefined()
@@ -29,15 +30,17 @@ describe('recordDynamicConfigChange', () => {
   })
 
   it('records multiple changes for the same config key', async () => {
-    const configKey = `test-multi-${randomBytes(4).toString('hex')}`
-    const change1 = { multiplier_mfa: 1.5 }
-    const change2 = { multiplier_mfa: 2.0 }
-    const change3 = { multiplier_mfa: 3.0 }
+    const configKey = 'rate-limit-thresholds'
+    const change1 = { read_tier0: 10 }
+    const change2 = { read_tier0: 20 }
+    const change3 = { read_tier0: 30 }
 
     await recordDynamicConfigChange(adminUser.id, configKey, change1, change2)
     await recordDynamicConfigChange(adminUser.id, configKey, change2, change3)
 
-    const rows = await getDynamicConfigChangeLogRows(configKey)
+    const rows = (await getDynamicConfigChangeLogRows(configKey)).filter(
+      row => row.changed_by_id === adminUser.id,
+    )
 
     expect(rows).toHaveLength(2)
     expect(rows[0].next_fields).toMatchObject(change3)
@@ -45,16 +48,38 @@ describe('recordDynamicConfigChange', () => {
   })
 
   it('resolves without error when writing a valid audit record', async () => {
-    const configKey = `test-valid-${randomBytes(4).toString('hex')}`
-    const prev = { foo: 'bar' }
-    const next = { foo: 'baz' }
+    const configKey = 'request-client-info'
+    const prev = { enforcement_enabled: false }
+    const next = { enforcement_enabled: true }
 
     await expect(
       recordDynamicConfigChange(adminUser.id, configKey, prev, next),
     ).resolves.toBeUndefined()
 
-    const rows = await getDynamicConfigChangeLogRows(configKey)
+    const rows = (await getDynamicConfigChangeLogRows(configKey)).filter(
+      row => row.changed_by_id === adminUser.id,
+    )
 
     expect(rows[0].changed_by_id).toBe(adminUser.id)
+    expect(rows[0].next_fields).toMatchObject(next)
+  })
+
+  it('rejects unknown namespaces and fields', async () => {
+    await expect(
+      recordDynamicConfigChange(
+        adminUser.id,
+        'not-a-config',
+        { enabled: true },
+        { enabled: false },
+      ),
+    ).rejects.toThrow('Unknown dynamic config namespace')
+    await expect(
+      recordDynamicConfigChange(
+        adminUser.id,
+        'feature-flags',
+        { not_a_field: true },
+        { memberships: false },
+      ),
+    ).rejects.toThrow('Unknown dynamic config field')
   })
 })

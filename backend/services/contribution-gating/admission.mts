@@ -109,7 +109,7 @@ export async function runContributionAdmission<T>(
         SELECT ${committedAt}::timestamptz AS committed_at
       )
       UPDATE post_admission_reservations r SET state = 'committed', response = ${JSON.stringify(response)}::jsonb,
-        replay_metadata = ${JSON.stringify({ route: audit.route, scope: audit.scope, finalization: 'pending' })}::jsonb,
+        replay_finalization = 'pending',
         committed_post_id = ${committedContributionPostId(response)}, committed_status = 'created',
         committed_at = terminal.committed_at,
         expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute',

@@ -1,15 +1,9 @@
 import type { QueryOptions } from '@data-stores/psql/types'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import { insertPostRevisionFacts, type PostRevisionChanges } from './facts.mts'
 
 type RevisionType = 'create' | 'update' | 'delete'
 
-type FieldChange = {
-  before: unknown
-  after: unknown
-}
-
-export type PostRevisionChanges = Record<string, FieldChange>
+export type { PostRevisionChanges }
 
 const POST_TRACKED_FIELDS = [
   'title',
@@ -41,16 +35,8 @@ export async function createPostRevision(
   revisedById: string | null,
   options?: QueryOptions,
 ): Promise<PostRevision> {
-  const {
-    rows: [row],
-  } = await write<PostRevision>(
-    sql`/* createPostRevision */
-    INSERT INTO post_revisions (post_id, revision_type, revised_by_id, changes)
-    VALUES (${postId}, ${revisionType}, ${revisedById}, ${JSON.stringify(changes)})
-    RETURNING id, post_id, revision_type, revised_by_id, changes, created_at`,
-    options,
-  )
-  return row
+  const row = await insertPostRevisionFacts(postId, revisionType, changes, revisedById, options)
+  return { ...row, changes }
 }
 
 export function computePostChanges(

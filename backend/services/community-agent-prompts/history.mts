@@ -1,6 +1,10 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityAgentPromptChangeAction } from '@services/community-agent-prompt-audit'
+import {
+  PROMPT_AUDIT_SELECT,
+  promptFieldsFromRow,
+} from '@services/community-agent-prompt-audit/fields.mts'
 
 const DEFAULT_LIMIT = 20
 
@@ -36,15 +40,15 @@ export async function listCommunityAgentPromptHistory(
       c.id,
       c.agent_prompt_id,
       c.community_id,
-      c.action,
-      c.previous_fields,
-      c.next_fields,
+      c.action, `
+  query.append(PROMPT_AUDIT_SELECT)
+  query.append(sql`,
       c.created_at,
       c.changed_by_id AS changed_by_user_id,
       u.username AS changed_by_username
     FROM community_agent_prompt_changes c
     LEFT JOIN users u ON u.id = c.changed_by_id AND u.deleted_at IS NULL
-    WHERE c.community_id = ${communityId}`
+    WHERE c.community_id = ${communityId}`)
 
   if (options.promptId) {
     query.append(sql` AND c.agent_prompt_id = ${options.promptId}`)
@@ -55,17 +59,17 @@ export async function listCommunityAgentPromptHistory(
 
   query.append(sql` ORDER BY c.id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read<{
-    id: string
-    agent_prompt_id: string
-    community_id: string
-    action: CommunityAgentPromptChangeAction
-    previous_fields: Record<string, unknown>
-    next_fields: Record<string, unknown>
-    created_at: Date
-    changed_by_user_id: string | null
-    changed_by_username: string | null
-  }>(query)
+  const { rows } = await read<
+    Record<string, unknown> & {
+      id: string
+      agent_prompt_id: string
+      community_id: string
+      action: CommunityAgentPromptChangeAction
+      created_at: Date
+      changed_by_user_id: string | null
+      changed_by_username: string | null
+    }
+  >(query)
 
   let nextCursor: string | null = null
   if (rows.length > limit) {
@@ -81,9 +85,12 @@ export async function listCommunityAgentPromptHistory(
     changed_by: row.changed_by_user_id
       ? { id: row.changed_by_user_id, username: row.changed_by_username }
       : null,
-    previous_fields: row.previous_fields,
-    next_fields: row.next_fields,
-    changed_fields: getChangedFields(row.previous_fields, row.next_fields),
+    previous_fields: promptFieldsFromRow(row, 'previous'),
+    next_fields: promptFieldsFromRow(row, 'next'),
+    changed_fields: getChangedFields(
+      promptFieldsFromRow(row, 'previous'),
+      promptFieldsFromRow(row, 'next'),
+    ),
     created_at: row.created_at.toISOString(),
   }))
 

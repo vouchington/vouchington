@@ -35,9 +35,9 @@ export async function reconcilePostModerationWork(
       ),
       exhausted_dispositions AS (
         INSERT INTO post_moderation_dispositions (
-          version_id, source, disposition, reason_code, evidence
+          version_id, source, disposition, reason_code
         )
-        SELECT version_id, source, 'incomplete', 'automation_unavailable', '{}'::jsonb
+        SELECT version_id, source, 'incomplete', 'automation_unavailable'
         FROM expired_work
         RETURNING version_id
       ),

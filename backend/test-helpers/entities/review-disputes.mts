@@ -43,14 +43,13 @@ export async function insertTestReviewDispute(input: {
     ),
     inserted_change AS (
       INSERT INTO review_dispute_lifecycle_changes (
-        id, review_dispute_id, change_type, changed_by_id, metadata
+        id, review_dispute_id, change_type, changed_by_id
       )
       SELECT
         ids.lifecycle_change_id,
         inserted_dispute.id,
         'create',
-        ${input.disputantUserId},
-        '{}'::jsonb
+        ${input.disputantUserId}
       FROM ids
       CROSS JOIN inserted_dispute
     )

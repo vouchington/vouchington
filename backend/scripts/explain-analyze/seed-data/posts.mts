@@ -73,7 +73,7 @@ export async function seedPosts(count = 10_000): Promise<void> {
         )
         await diagnostics.operation('clearance', batchIndex, () =>
           query(
-            `/* seedExplainData */ WITH seed_posts AS ( SELECT UNNEST($1::uuid[]) AS post_id ), inserted_change AS ( INSERT INTO post_clearance_changes (post_id, change_type, metadata) SELECT seed_posts.post_id, 'approve', '{"source":"explain-seed"}'::jsonb FROM seed_posts JOIN posts ON posts.id = seed_posts.post_id WHERE posts.approved_at IS NULL AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL RETURNING id, post_id, created_at ) UPDATE posts SET latest_clearance_change_id = inserted_change.id, approved_at = inserted_change.created_at, rejected_at = NULL, in_review_at = NULL FROM inserted_change WHERE posts.id = inserted_change.post_id`,
+            `/* seedExplainData */ WITH seed_posts AS ( SELECT UNNEST($1::uuid[]) AS post_id ), inserted_change AS ( INSERT INTO post_clearance_changes (post_id, change_type, audit_source) SELECT seed_posts.post_id, 'approve', 'explain-seed' FROM seed_posts JOIN posts ON posts.id = seed_posts.post_id WHERE posts.approved_at IS NULL AND posts.rejected_at IS NULL AND posts.in_review_at IS NULL RETURNING id, post_id, created_at ) UPDATE posts SET latest_clearance_change_id = inserted_change.id, approved_at = inserted_change.created_at, rejected_at = NULL, in_review_at = NULL FROM inserted_change WHERE posts.id = inserted_change.post_id`,
             [postIds],
           ),
         )

@@ -46,8 +46,7 @@ export async function approveReviewDispute(
         approved_at,
         sent_at,
         resolved_at,
-        resolution_action,
-        metadata
+        resolution_action
       )
       SELECT
         lifecycle_change_id.id,
@@ -59,8 +58,7 @@ export async function approveReviewDispute(
         updated.approved_at,
         updated.sent_at,
         updated.resolved_at,
-        updated.resolution_action,
-        '{}'::jsonb
+        updated.resolution_action
       FROM updated
       CROSS JOIN lifecycle_change_id
     )

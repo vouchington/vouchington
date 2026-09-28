@@ -83,12 +83,12 @@ export async function persistPostCategoryFinalization(
       RETURNING post_id, actor_user_ids, topic_category_owner_id, generation
     ), complete_response_without_refresh AS (
       UPDATE post_admission_reservations
-      SET replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
+      SET replay_finalization = 'complete',
         updated_at = NOW()
       WHERE committed_post_id = $1
         AND state = 'committed'
         AND $4 = 'update'
-        AND COALESCE(replay_metadata->>'finalization', 'pending') <> 'complete'
+        AND COALESCE(replay_finalization, 'pending') <> 'complete'
     )
     SELECT post_id, actor_user_ids, topic_category_owner_id, generation
     FROM finalization`,

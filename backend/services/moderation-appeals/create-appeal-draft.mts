@@ -60,7 +60,8 @@ export async function createModerationAppealDraft(
         sent_at,
         resolved_at,
         resolution_action,
-        metadata
+        ai_model,
+        ai_recommended_action
       )
       SELECT
         lifecycle_change_id.id,
@@ -73,7 +74,8 @@ export async function createModerationAppealDraft(
         updated.sent_at,
         updated.resolved_at,
         updated.resolution_action,
-        ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction })}::jsonb
+        ${input.model},
+        ${input.recommendedAction}
       FROM updated
       CROSS JOIN lifecycle_change_id
     )

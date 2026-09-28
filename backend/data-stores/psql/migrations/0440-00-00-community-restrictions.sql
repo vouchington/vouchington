@@ -10,7 +10,7 @@ DO $$ BEGIN
 END $$;
 
 CREATE TABLE IF NOT EXISTS community_restrictions (
-  id UUID DEFAULT uuidv7() PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_community_restriction_identities (id) ON DELETE RESTRICT,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   restriction_type community_restriction_types NOT NULL,
   activated_by_id UUID REFERENCES users ON DELETE SET NULL,
@@ -24,6 +24,18 @@ CREATE TABLE IF NOT EXISTS community_restrictions (
   CHECK (reason IS NULL OR char_length(reason) <= 1000),
   CHECK (reason IS NULL OR reason = TRIM(reason))
 );
+
+CREATE OR REPLACE FUNCTION fn_register_retained_community_restriction_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_community_restriction_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_community_restriction_identity
+BEFORE INSERT ON community_restrictions
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_community_restriction_identity();
 
 CREATE OR REPLACE TRIGGER trigger_community_restrictions_updated_at
   BEFORE UPDATE ON community_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
@@ -45,3 +57,78 @@ COMMENT ON COLUMN community_restrictions.updated_at IS 'When the restriction row
 COMMENT ON COLUMN community_restrictions.lifted_at IS 'When a moderator manually lifted the restriction early. NULL means not manually lifted.';
 COMMENT ON COLUMN community_restrictions.lifted_by_id IS 'Who lifted the restriction early.';
 COMMENT ON COLUMN community_restrictions.reason IS 'Optional reason recorded for moderation history.';
+
+CREATE TABLE IF NOT EXISTS moderator_action_restrictions (
+  action_id UUID NOT NULL REFERENCES moderator_actions (id) ON DELETE CASCADE,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  restriction_id UUID NOT NULL REFERENCES retained_community_restriction_identities (id) ON DELETE RESTRICT,
+  restriction_type community_restriction_types NOT NULL,
+  PRIMARY KEY (action_id, position)
+);
+COMMENT ON TABLE moderator_action_restrictions IS 'Ordered restriction identities captured on activate or lift moderator actions.';
+COMMENT ON COLUMN moderator_action_restrictions.action_id IS 'Moderator action that recorded these restrictions.';
+COMMENT ON COLUMN moderator_action_restrictions.position IS 'Zero-based order matching the captured restriction list.';
+COMMENT ON COLUMN moderator_action_restrictions.restriction_id IS 'Retained community restriction identity. It does not keep the restriction active.';
+COMMENT ON COLUMN moderator_action_restrictions.restriction_type IS 'Restriction behavior captured with that identity.';
+CREATE INDEX IF NOT EXISTS idx_moderator_action_restrictions__restriction_id
+  ON moderator_action_restrictions (restriction_id);
+
+CREATE OR REPLACE FUNCTION fn_moderator_action_metadata(p_action_id UUID)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+AS $fn$
+  SELECT
+    jsonb_strip_nulls(jsonb_build_object(
+      'role', ma.metadata_role::text,
+      'previous_role', ma.metadata_previous_role::text,
+      'reason', ma.metadata_reason,
+      'imageId', ma.metadata_image_id,
+      'source_key', ma.metadata_source_key,
+      'moderation_training', ma.metadata_moderation_training,
+      'topic_slugs', (
+        SELECT jsonb_agg(topic_slug ORDER BY position)
+        FROM moderator_action_topic_slugs
+        WHERE action_id = ma.id
+      ),
+      'restriction_id', CASE
+        WHEN NOT ma.metadata_expires_at_present THEN (
+          SELECT restriction_id
+          FROM moderator_action_restrictions
+          WHERE action_id = ma.id
+          ORDER BY position
+          LIMIT 1
+        )
+      END,
+      'restriction_type', CASE
+        WHEN NOT ma.metadata_expires_at_present THEN (
+          SELECT restriction_type::text
+          FROM moderator_action_restrictions
+          WHERE action_id = ma.id
+          ORDER BY position
+          LIMIT 1
+        )
+      END,
+      'restriction_ids', CASE
+        WHEN ma.metadata_expires_at_present THEN (
+          SELECT jsonb_agg(restriction_id ORDER BY position)
+          FROM moderator_action_restrictions
+          WHERE action_id = ma.id
+        )
+      END,
+      'restriction_types', CASE
+        WHEN ma.metadata_expires_at_present THEN (
+          SELECT jsonb_agg(restriction_type ORDER BY position)
+          FROM moderator_action_restrictions
+          WHERE action_id = ma.id
+        )
+      END
+    ))
+    || CASE
+      WHEN ma.metadata_expires_at_present
+        THEN jsonb_build_object('expires_at', to_jsonb(ma.metadata_expires_at))
+      ELSE '{}'::jsonb
+    END
+  FROM moderator_actions ma
+  WHERE ma.id = p_action_id
+$fn$;

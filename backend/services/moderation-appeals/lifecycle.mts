@@ -9,7 +9,6 @@ export interface AppealLifecycleSnapshot {
   sent_at?: Date | null
   resolved_at?: Date | null
   resolution_action?: ModerationAppealAction | null
-  metadata?: Record<string, unknown>
 }
 
 export async function appendAppealLifecycleChange(
@@ -30,8 +29,7 @@ export async function appendAppealLifecycleChange(
       approved_at,
       sent_at,
       resolved_at,
-      resolution_action,
-      metadata
+      resolution_action
     )
     VALUES (
       ${appealId},
@@ -42,8 +40,7 @@ export async function appendAppealLifecycleChange(
       ${snapshot.approved_at ?? null},
       ${snapshot.sent_at ?? null},
       ${snapshot.resolved_at ?? null},
-      ${snapshot.resolution_action ?? null},
-      ${JSON.stringify(snapshot.metadata ?? {})}
+      ${snapshot.resolution_action ?? null}
     )
     RETURNING id
   `,

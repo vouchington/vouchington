@@ -35,7 +35,7 @@ export function buildRecentAutomodActionsStatsQuery(
             AND NULLIF(am.results->>'confidence_score', '') ~ '^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$'
             THEN (am.results->>'confidence_score')::double precision
           WHEN mtf.source_type = 'spam_detection'
-            THEN NULLIF(spam_disposition.evidence->>'composite_score', '')::double precision
+            THEN spam_disposition.evidence_composite_score
           ELSE NULL
         END AS confidence_score
       FROM moderation_training_feedbacks mtf
@@ -45,7 +45,7 @@ export function buildRecentAutomodActionsStatsQuery(
        AND spam_version.content_sha256 = mtf.input_sha256
        AND spam_version.policy_revision = '2026-09-09.1'
       LEFT JOIN LATERAL (
-        SELECT evidence
+        SELECT evidence_composite_score
         FROM post_moderation_dispositions
         WHERE version_id = spam_version.id
           AND source = 'spam_detection'

@@ -6,14 +6,15 @@ Append-only revision log for posts. Tracks per-field before/after diffs when pos
 
 ### `post_revisions`
 
-| Column        | Type                  | Description                                        |
-| ------------- | --------------------- | -------------------------------------------------- |
-| id            | UUID (PK)             | UUIDv7, provides temporal ordering                 |
-| post_id       | UUID (FK)             | References `posts(id)` with CASCADE delete         |
-| revision_type | revision_types (ENUM) | `create`, `update`, or `delete`                    |
-| revised_by_id | UUID (FK)             | User who made the change; nullable                 |
-| changes       | JSONB                 | `{ "field": { "before": <old>, "after": <new> } }` |
-| created_at    | TIMESTAMPTZ           | Virtual, derived from UUIDv7 id                    |
+| Column        | Type                  | Description                                |
+| ------------- | --------------------- | ------------------------------------------ |
+| id            | UUID (PK)             | UUIDv7, provides temporal ordering         |
+| post_id       | UUID (FK)             | References `posts(id)` with CASCADE delete |
+| revision_type | revision_types (ENUM) | `create`, `update`, or `delete`            |
+| revised_by_id | UUID (FK)             | User who made the change; nullable         |
+| created_at    | TIMESTAMPTZ           | Virtual, derived from UUIDv7 id            |
+
+Changed fields are typed columns and child rows. Each tracked field has a `*_changed` flag plus nullable before/after values. Unchanged fields are omitted. `createPostRevision` still returns the caller's changes object.
 
 Partitioned by RANGE on `id` with a DEFAULT partition.
 

@@ -8,7 +8,6 @@ export interface RecordMediaRevealInput {
   postId?: string | null
   reportId?: string | null
   surface: ModMediaRevealSurface
-  metadata?: Record<string, unknown>
 }
 
 export async function recordMediaReveal(
@@ -22,14 +21,12 @@ export async function recordMediaReveal(
       moderator_id,
       post_id,
       report_id,
-      surface,
-      metadata
+      surface
     ) VALUES (
       ${moderatorId},
       ${input.postId ?? null},
       ${input.reportId ?? null},
-      ${input.surface},
-      ${JSON.stringify(input.metadata ?? {})}
+      ${input.surface}
     )`,
     options,
   )

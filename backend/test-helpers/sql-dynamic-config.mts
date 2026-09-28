@@ -24,7 +24,11 @@ export async function getDynamicConfigChangeLogRows(configKey: string): Promise<
     next_fields: unknown
     changed_by_id: string
   }>(sql`/* getDynamicConfigChangeLogRowsForTest */
-    SELECT config_key, previous_fields, next_fields, changed_by_id
+    SELECT
+      config_key,
+      COALESCE(fn_dynamic_config_change_fields(id, config_key, 'previous'), '{}'::jsonb) AS previous_fields,
+      COALESCE(fn_dynamic_config_change_fields(id, config_key, 'next'), '{}'::jsonb) AS next_fields,
+      changed_by_id
     FROM dynamic_config_change_logs
     WHERE config_key = ${configKey}
     ORDER BY id DESC

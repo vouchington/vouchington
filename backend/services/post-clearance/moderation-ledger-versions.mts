@@ -1,4 +1,5 @@
 import { write, type QueryOptions } from '@data-stores/psql'
+import { dispositionEvidenceFacts } from './evidence-facts.mts'
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,
@@ -70,6 +71,7 @@ export async function recordPostModerationDisposition(
   disposition: RecordPostModerationDisposition,
   options: QueryOptions = {},
 ): Promise<boolean> {
+  const evidence = dispositionEvidenceFacts(disposition.evidence)
   const { rows } = await write(
     `/* recordPostModerationDisposition */
       WITH current_version AS (
@@ -79,19 +81,37 @@ export async function recordPostModerationDisposition(
           ON post.id = version.post_id
          AND post.llm_moderation_content_sha256 = version.content_sha256
         WHERE version.id = $1
-          AND version.policy_revision = $8
+          AND version.policy_revision = $10
           AND post.deleted_at IS NULL
       ),
       inserted AS (
         INSERT INTO post_moderation_dispositions (
-          version_id, source, attempt_id, disposition, reason_code, evidence, actor_user_id
+          version_id, source, attempt_id, disposition, reason_code,
+          evidence_platform_override, evidence_composite_score, evidence_error_code, actor_user_id
         )
         SELECT id, $2::post_moderation_sources, $3::uuid, $4::post_moderation_disposition_types,
-          $5, $6::jsonb, $7
+          $5, $6, $7, $8, $9
         FROM current_version
         ORDER BY $3::uuid ASC NULLS LAST
         ON CONFLICT (attempt_id) DO NOTHING
-        RETURNING version_id, source
+        RETURNING id, version_id, source
+      ),
+      categories AS (
+        INSERT INTO post_moderation_disposition_categories (disposition_id, position, category)
+        SELECT inserted.id, item.position::integer - 1, item.category
+        FROM inserted
+        CROSS JOIN UNNEST($11::text[]) WITH ORDINALITY AS item(category, position)
+        RETURNING disposition_id
+      ),
+      signals AS (
+        INSERT INTO post_moderation_disposition_signals (
+          disposition_id, position, signal, score, flagged
+        )
+        SELECT inserted.id, item.position::integer - 1, item.signal, item.score, item.flagged
+        FROM inserted
+        CROSS JOIN UNNEST($12::text[], $13::double precision[], $14::boolean[])
+          WITH ORDINALITY AS item(signal, score, flagged, position)
+        RETURNING disposition_id
       )
       UPDATE post_moderation_work_items work
       SET completed_at = CASE WHEN $4::post_moderation_disposition_types = 'incomplete'
@@ -102,6 +122,11 @@ export async function recordPostModerationDisposition(
       FROM inserted
       WHERE work.version_id = inserted.version_id
         AND work.source = inserted.source
+        AND (
+          EXISTS (SELECT 1 FROM categories)
+          OR EXISTS (SELECT 1 FROM signals)
+          OR NOT EXISTS (SELECT 1 FROM categories)
+        )
       RETURNING work.version_id`,
     [
       disposition.versionId,
@@ -109,9 +134,15 @@ export async function recordPostModerationDisposition(
       disposition.attemptId ?? null,
       disposition.disposition,
       disposition.reasonCode,
-      JSON.stringify(disposition.evidence ?? {}),
+      evidence.platformOverride,
+      evidence.compositeScore,
+      evidence.errorCode,
       disposition.actorUserId ?? null,
       POST_MODERATION_POLICY_REVISION,
+      evidence.categories,
+      evidence.signals.map(signal => signal.signal),
+      evidence.signals.map(signal => signal.score),
+      evidence.signals.map(signal => signal.flagged),
     ],
     options,
   )

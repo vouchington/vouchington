@@ -145,12 +145,15 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
               AND (in_review_at IS NOT NULL OR rejected_at IS NOT NULL)
           ),
           inserted_change AS (
-            INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id, metadata)
+            INSERT INTO post_clearance_changes (
+              post_id, change_type, changed_by_id, source_key, moderation_training
+            )
             SELECT
               target_post.id,
               'approve',
               ${input.actorUserId},
-              ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb
+              ${input.sourceKey},
+              TRUE
             FROM target_post
             RETURNING id, post_id, created_at
           )
@@ -193,14 +196,16 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
             post_id,
             change_type,
             changed_by_id,
-            metadata,
+            source_key,
+            moderation_training,
             moderation_transparency_categories
           )
           SELECT
             ${context.post_id},
             'reject',
             ${input.actorUserId},
-            ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb,
+            ${input.sourceKey},
+            TRUE,
             COALESCE((
               SELECT array_agg(latest.source::text ORDER BY latest.source)
               FROM post_moderation_versions version

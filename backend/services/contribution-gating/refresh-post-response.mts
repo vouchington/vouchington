@@ -59,7 +59,7 @@ export async function refreshContributionAdmissionPostResponses(
           END
           ELSE response
         END,
-        replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
+        replay_finalization = 'complete',
         updated_at = NOW()
     WHERE committed_post_id = ${postId}
       AND state = 'committed'
