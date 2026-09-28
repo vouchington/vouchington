@@ -9,17 +9,14 @@ import { runStaleCleanup } from '@services/bedrock-embeddings-batch/orchestrator
 import { applyImageBatchUpdates } from '@services/bedrock-embeddings-batch/orchestrator/save-images'
 import {
   streamPendingTopics,
-  copyExistingTopicEmbeddings,
   applyTopicBatchUpdates,
 } from '@services/bedrock-embeddings-batch/entities/topics'
 import {
   streamPendingPosts,
-  copyExistingPostEmbeddings,
   applyPostBatchUpdates,
 } from '@services/bedrock-embeddings-batch/entities/posts'
 import {
   streamPendingRssFeedItems,
-  copyExistingRssFeedItemEmbeddings,
   applyRssFeedItemBatchUpdates,
 } from '@services/bedrock-embeddings-batch/entities/rss-feed-items'
 import { streamPendingCrawlChunks } from '@services/bedrock-embeddings-batch/entities/crawl-chunks'
@@ -51,11 +48,16 @@ import { getQueueStats } from '@services/queue-monitoring/get-queue-stats'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
 import { getBacklogThreshold, getStaleTtlHours } from '@services/bedrock-embeddings/batch/config'
 
+export {
+  processExistingEmbeddingReconciliation,
+  processPostEmbeddingTriggerRecovery,
+  processRssStoryTriggerRecovery,
+} from './processors/reconciliation.mts'
+
 export const processTopicBatchCreation = (): Promise<CreateBatchResult> =>
   processBatchCreation({
     jobType: 'topics',
     streamPending: streamPendingTopics,
-    copyExisting: copyExistingTopicEmbeddings,
     reEnqueue: enqueueCreateTopicEmbeddingsBatch,
   })
 
@@ -63,7 +65,6 @@ export const processPostBatchCreation = (): Promise<CreateBatchResult> =>
   processBatchCreation({
     jobType: 'posts',
     streamPending: streamPendingPosts,
-    copyExisting: copyExistingPostEmbeddings,
     reEnqueue: enqueueCreatePostEmbeddingsBatch,
   })
 
@@ -71,7 +72,6 @@ export const processRssFeedItemBatchCreation = (): Promise<CreateBatchResult> =>
   processBatchCreation({
     jobType: 'rss_feed_items',
     streamPending: streamPendingRssFeedItems,
-    copyExisting: copyExistingRssFeedItemEmbeddings,
     reEnqueue: enqueueCreateRssFeedItemEmbeddingsBatch,
   })
 

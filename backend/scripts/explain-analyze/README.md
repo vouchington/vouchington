@@ -123,6 +123,13 @@ caps physical RSS candidate work at the scenario page size plus lookahead, count
 rechecked rows with their loops without summing ancestor result rows. Both prepared plan modes
 must pass; response-page timestamp formatting must preserve this index traversal.
 
+Embedding reconciliation scenarios mark a sparse 100-item current-embedding cohort late in the
+25,000-item RSS seed. The RSS recovery service scans it with an opaque keyset cursor and a no-op
+queue boundary; its plan gate requires the pending partial index, an `id` index condition, `Limit`,
+and at most 100 physical candidates without a sequential scan or sort. The first-community-post
+scenario requires the existing `(created_by_id, community_id, id)` partial index for UUIDv7 order,
+with no extra timestamp index. Both gates run for custom and generic prepared plans.
+
 ### Isolated topic-metrics benchmark
 
 Use the heavyweight benchmark only for before/after investigation, not as a CI timing gate:

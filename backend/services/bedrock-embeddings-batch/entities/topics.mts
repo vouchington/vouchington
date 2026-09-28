@@ -1,7 +1,12 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import type { BatchUpdateItem } from '@services/bedrock-embeddings/batch/types'
-import { copyExistingEmbeddings, applyBatchUpdates } from '../orchestrator/save.mts'
+import { applyBatchUpdates } from '../orchestrator/save.mts'
+import {
+  copyExistingEmbeddings,
+  type EmbeddingReconciliationOptions,
+  type EmbeddingReconciliationPage,
+} from '../orchestrator/reconcile-existing.mts'
 import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 import {
   reusableEmbeddingMissingClause,
@@ -11,8 +16,10 @@ import {
 
 type PendingTopic = PendingEntity
 
-export async function copyExistingTopicEmbeddings(): Promise<void> {
-  await copyExistingEmbeddings('topics', { excludeDeleted: true })
+export async function copyExistingTopicEmbeddings(
+  options: EmbeddingReconciliationOptions = {},
+): Promise<EmbeddingReconciliationPage> {
+  return copyExistingEmbeddings('topics', options)
 }
 
 export async function* streamPendingTopics(): AsyncGenerator<PendingTopic, void, unknown> {

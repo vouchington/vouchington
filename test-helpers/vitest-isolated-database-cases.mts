@@ -38,6 +38,11 @@ const isolatedDatabaseCases = {
     fullName:
       'copyright API cache policy marks member, staff, and raw-email responses private and no-store',
   },
+  'embedding-reconciliation-router': {
+    file: 'backend/workers/bedrock-embeddings-batch/__tests__/worker-router.test.mts',
+    fullName:
+      'bedrock embeddings batch worker processor reconciles a cached topic even when Bedrock creation is saturated',
+  },
 } as const
 
 export type IsolatedDatabaseCaseId = keyof typeof isolatedDatabaseCases

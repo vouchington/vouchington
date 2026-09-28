@@ -2,22 +2,28 @@ import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { createRssFeedItemEmbeddingContent } from '@services/rss-feed-items/content'
 import type { RssFeedItemToUpsert } from '@services/rss-feed-items/types'
 import type { BatchUpdateItem } from '@services/bedrock-embeddings/batch/types'
-import { copyExistingEmbeddings, applyBatchUpdates } from '../orchestrator/save.mts'
+import { applyBatchUpdates } from '../orchestrator/save.mts'
+import {
+  copyExistingEmbeddings,
+  type EmbeddingReconciliationOptions,
+  type EmbeddingReconciliationPage,
+} from '../orchestrator/reconcile-existing.mts'
 import { lockExistsClause } from '@services/bedrock-embeddings/batch/lock-targets'
 import {
   reusableEmbeddingMissingClause,
   streamPendingEntities,
   type PendingEntity,
 } from './shared.mts'
-import { enqueueBulkStoryClustering } from '@queues/ai-agents/enqueues/story-clustering'
+import { triggerStoryClusteringForCurrentEmbeddings } from '@services/stories/embedding-trigger'
 
 type PendingRssFeedItem = PendingEntity
 
-export async function copyExistingRssFeedItemEmbeddings(): Promise<void> {
-  const updatedIds = await copyExistingEmbeddings('rss_feed_items')
-  if (updatedIds.length > 0) {
-    await enqueueBulkStoryClustering(updatedIds.map(id => ({ rss_feed_item_id: id })))
-  }
+export async function copyExistingRssFeedItemEmbeddings(
+  options: EmbeddingReconciliationOptions = {},
+): Promise<EmbeddingReconciliationPage> {
+  const page = await copyExistingEmbeddings('rss_feed_items', options)
+  await triggerStoryClusteringForCurrentEmbeddings(page.updatedIds)
+  return page
 }
 
 export async function* streamPendingRssFeedItems(): AsyncGenerator<
@@ -45,7 +51,5 @@ export async function* streamPendingRssFeedItems(): AsyncGenerator<
 
 export async function applyRssFeedItemBatchUpdates(items: BatchUpdateItem[]): Promise<void> {
   const updatedIds = await applyBatchUpdates('rss_feed_items', items)
-  if (updatedIds.length > 0) {
-    await enqueueBulkStoryClustering(updatedIds.map(id => ({ rss_feed_item_id: id })))
-  }
+  await triggerStoryClusteringForCurrentEmbeddings(updatedIds)
 }

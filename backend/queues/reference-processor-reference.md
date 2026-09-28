@@ -123,6 +123,9 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | bedrock-embeddings-batch                     | rss_feed_items                                 | creation                                  | 10               |
 | bedrock-embeddings-batch                     | crawl_chunks                                   | creation                                  | 10               |
 | bedrock-embeddings-batch                     | poll_batch                                     | polling                                   | 10               |
+| bedrock-embeddings-batch                     | reconcile_existing                             | reconciliation                            | 10               |
+| bedrock-embeddings-batch                     | post_trigger_recovery                          | reconciliation                            | 10               |
+| bedrock-embeddings-batch                     | rss_story_trigger_recovery                     | reconciliation                            | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | post                                           | —                                         | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | topic                                          | —                                         | 10               |
 | bedrock_embeddings_nova_multimodal_v1_single | rss_feed_item                                  | —                                         | 10               |

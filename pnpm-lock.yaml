@@ -2758,6 +2758,10 @@ importers:
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/queues/bloom-filters:
     dependencies:
@@ -3398,6 +3402,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../modules/pagination
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../modules/token-secrets
@@ -4162,12 +4169,12 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/ai-agents':
-        specifier: workspace:^
-        version: link:../../queues/ai-agents
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -4186,6 +4193,9 @@ importers:
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../rss-feed-items
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../stories
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
@@ -9056,6 +9066,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -11084,6 +11097,9 @@ importers:
       '@services/rss-feed-items':
         specifier: workspace:^
         version: link:../../services/rss-feed-items
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../../services/stories
       '@services/topics':
         specifier: workspace:^
         version: link:../../services/topics
@@ -11121,9 +11137,15 @@ importers:
       '@services/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings-batch
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../../services/communities
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../../services/queue-monitoring
+      '@services/stories':
+        specifier: workspace:^
+        version: link:../../services/stories
       glide-mq:
         specifier: ^0.15.5
         version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
@@ -11131,6 +11153,9 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

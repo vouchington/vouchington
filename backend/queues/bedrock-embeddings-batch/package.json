@@ -19,5 +19,8 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.15.5"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
   }
 }

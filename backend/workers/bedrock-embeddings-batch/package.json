@@ -22,11 +22,14 @@
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/bedrock-embeddings-batch": "workspace:^",
+    "@services/communities": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
+    "@services/stories": "workspace:^",
     "glide-mq": "^0.15.5"
   },
   "devDependencies": {
     "@modules/aws": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

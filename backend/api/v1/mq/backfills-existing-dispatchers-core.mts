@@ -5,7 +5,10 @@ import {
   enqueueCrawlTier1Dispatcher,
   enqueueCrawlTier2Dispatcher,
 } from '@queues/crawl-hostnames/enqueues'
-import { enqueueEmbeddingsBatchPollDispatcher } from '@queues/bedrock-embeddings-batch/enqueues'
+import {
+  enqueueAllEmbeddingReconciliationRoots,
+  enqueueEmbeddingsBatchPollDispatcher,
+} from '@queues/bedrock-embeddings-batch/enqueues'
 import { enqueueOAuthAuthorizationExchangeDispatcher } from '@queues/oauth-authorization-exchange/enqueues'
 import {
   enqueueNightlyBackfillWeekDispatcher,
@@ -14,6 +17,14 @@ import {
 } from '@queues/sitemaps/enqueues'
 
 export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
+  {
+    id: 'bedrock-embedding-reconciliation',
+    queue_name: 'bedrock-embeddings-batch',
+    job_name: 'reconcile_existing',
+    description: 'Start all five embedding copy and downstream delivery reconciliation roots',
+    source_table: 'topics, posts, rss_feed_items',
+    trigger: enqueueAllEmbeddingReconciliationRoots,
+  },
   {
     id: 'oauth-authorization-exchange-dispatch',
     queue_name: 'oauth-authorization-exchange',
