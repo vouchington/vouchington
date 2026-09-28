@@ -115,4 +115,17 @@ describe('validateScopeSet', () => {
       hasScope(['mcp.user:read', 'mcp.user:write'], 'post-relations.owned-private:write'),
     ).toBe(false)
   })
+
+  it('reads a replaced credential surface from the live catalogue', () => {
+    const definition = SCOPE_DEFINITIONS['rss:read']
+    const originalSurfaces = definition.surfaces
+    try {
+      Reflect.set(definition, 'surfaces', ['oauth'])
+      expect(
+        validateScopeSet(['rss:read'], { surface: 'api-key', allowMixedAudiences: false }),
+      ).toEqual({ valid: false, code: 'unsupported-surface', scope: 'rss:read' })
+    } finally {
+      Reflect.set(definition, 'surfaces', originalSurfaces)
+    }
+  })
 })

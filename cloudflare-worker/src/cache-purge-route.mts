@@ -16,7 +16,7 @@ import { timingSafeCredentialMatch } from './basic-auth.mts'
 import { edgeErrorResponse } from './error-response.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache/purge'
-import { isValidCacheTag } from '@ts-shared/cache/cache-tag-encoding'
+import { isValidCacheTag } from '@vouchington/utils/cache-tags'
 import type { StagingCanaryFault } from './staging-canary.mts'
 
 // Cloudflare fails an entire purge batch when any single tag is over-long or carries a byte

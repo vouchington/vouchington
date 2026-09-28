@@ -44,6 +44,7 @@
     "@ts-shared/session-jwt": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
+    "@vouchington/utils": "0.5.3",
     "isbot": "^5.2.2"
   },
   "devDependencies": {

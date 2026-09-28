@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { handleCachePurgeRequest } from '../cache-purge-route.mts'
 import type { EdgeExecutionContext, Env } from '../types.mts'
 import { CACHE_PURGE_SECRET_HEADER } from '@ts-shared/cache/purge'
-import { MAX_CACHE_TAG_BYTES } from '@ts-shared/cache/cache-tag-encoding'
+import { MAX_CACHE_TAG_BYTES } from '@vouchington/utils/cache-tags'
 
 const SECRET = 'shared-worker-secret'
 

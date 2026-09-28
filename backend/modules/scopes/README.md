@@ -5,7 +5,10 @@ Canonical scope catalogue and strict parser shared by API-key and OAuth authoriz
 Scopes use `<resource>:<action>`. Resources are lowercase dot-delimited identifiers and actions are
 `read` or `write`. Only catalogue entries are valid; callers must not normalize case or whitespace.
 The validator rejects duplicates, missing prerequisite scopes, unsupported credential surfaces, and
-mixed audiences unless the caller explicitly permits an OAuth grant to span audiences.
+mixed audiences unless the caller explicitly permits an OAuth grant to span audiences. Graph
+validation, prerequisite expansion, audience and surface filtering, and coverage walks come from
+`@vouchington/utils/scopes`. This module keeps the catalogue, compatibility grants, and
+authorization decisions.
 
 `listScopeCatalog()` projects the catalogue into the wire shape served by
 [`GET /api/v1/scopes`](../../api/v1/scopes/README.md), so clients build pickers from data. Its

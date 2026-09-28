@@ -9,14 +9,14 @@
 // identifier literally appears in the path — no DB lookup needed, Workers-safe — and the
 // backend's dual-form purge guarantees whichever form was cached still gets purged.
 //
-// Both sides mint through `cacheTag()` (cache-tag-encoding.mts), which normalizes then
+// Both sides mint through `cacheTag()` from `@vouchington/utils/cache-tags`, which normalizes then
 // percent-encodes a raw identifier. `deriveEntityCacheTags` decodes the edge's `URL.pathname`
 // segments first, so both sides hand `cacheTag()` the same raw value and collapse onto one
 // canonical, Cloudflare-legal string. That decode lives here, at the one place a percent-encoded
 // identifier originates, and deliberately not inside the encoder — see
 // `decodeCacheTagPathSegment`.
 
-import { cacheTag, decodeCacheTagPathSegment } from './cache-tag-encoding.mts'
+import { cacheTag, decodeCacheTagPathSegment } from '@vouchington/utils/cache-tags'
 
 export const postTag = (idOrSlug: string): string => cacheTag('post', idOrSlug)
 export const topicTag = (idOrSlug: string): string => cacheTag('topic', idOrSlug)
