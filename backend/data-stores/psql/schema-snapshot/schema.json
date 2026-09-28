@@ -27407,7 +27407,7 @@
         },
         "copyright_notice_correspondence_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Correspondence message this event records.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27418,7 +27418,7 @@
         },
         "copyright_notice_deadline_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Counter-notice deadline started by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27429,7 +27429,7 @@
         },
         "copyright_notice_delivery_intent_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Delivery intent replayed by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27440,7 +27440,7 @@
         },
         "copyright_notice_email_intake_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Email intake cited by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27451,7 +27451,7 @@
         },
         "copyright_notice_evidence_artifact_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Evidence artifact recorded by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27473,7 +27473,7 @@
         },
         "copyright_notice_legal_hold_assessment_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Legal-hold assessment recorded by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27484,7 +27484,7 @@
         },
         "copyright_notice_legal_hold_resolution_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Legal-hold resolution recorded by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27495,7 +27495,7 @@
         },
         "copyright_notice_submission_assessment_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Assessment that this event records.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27506,7 +27506,7 @@
         },
         "copyright_notice_submission_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Submission whose receipt or review this event records.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27517,7 +27517,7 @@
         },
         "copyright_restriction_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Restriction imposed or reviewed by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27528,7 +27528,7 @@
         },
         "counter_notice_accepted": {
           "collation": null,
-          "comment": null,
+          "comment": "Whether the counter-notice review accepted the counter-notice.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27572,7 +27572,7 @@
         },
         "media_delivery_registry_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Media delivery registry record replayed by this event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27583,7 +27583,7 @@
         },
         "recovery_source": {
           "collation": null,
-          "comment": null,
+          "comment": "Durable record used to recover an assessed submission.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27594,7 +27594,7 @@
         },
         "replay_reason": {
           "collation": null,
-          "comment": null,
+          "comment": "Why an operator replayed a failed action or registry record.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -27605,7 +27605,7 @@
         },
         "review_action": {
           "collation": null,
-          "comment": null,
+          "comment": "Human review outcome stored on a mandatory-review event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -28987,7 +28987,7 @@
       "columns": {
         "binding_family": {
           "collation": null,
-          "comment": null,
+          "comment": "Retained placement binding family for this image. The current family is post.",
           "defaultExpression": "'post'::text",
           "generated": null,
           "generatedExpression": null,
@@ -29031,7 +29031,7 @@
         },
         "placement_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Retained placement identity shared with the parent target so the image binding matches that exact hosted use.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

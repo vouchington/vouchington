@@ -6,14 +6,14 @@ Typed image subtype for a copyright target; future video support adds a sibling 
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                       |
-| ---------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------- |
-| `copyright_notice_target_id` | `uuid`                     | no       |                     |          |           |           | Copyright target whose hosted media is the referenced image.  |
-| `placement_id`               | `uuid`                     | no       |                     |          |           |           |                                                               |
-| `image_id`                   | `uuid`                     | no       |                     |          |           |           | Image asset captured for the exact hosted placement revision. |
-| `binding_family`             | `text`                     | no       | `'post'::text`      |          |           |           |                                                               |
-| `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
+| Column                       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                       |
+| ---------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_target_id` | `uuid`                     | no       |                     |          |           |           | Copyright target whose hosted media is the referenced image.                                                  |
+| `placement_id`               | `uuid`                     | no       |                     |          |           |           | Retained placement identity shared with the parent target so the image binding matches that exact hosted use. |
+| `image_id`                   | `uuid`                     | no       |                     |          |           |           | Image asset captured for the exact hosted placement revision.                                                 |
+| `binding_family`             | `text`                     | no       | `'post'::text`      |          |           |           | Retained placement binding family for this image. The current family is post.                                 |
+| `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_target_id)`
 
