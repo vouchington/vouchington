@@ -6,19 +6,26 @@ Append-only audit log of post clearance transitions.
 
 RANGE partitioned on `id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                                 | Type                          | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                     |
-| -------------------------------------- | ----------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `id`                                   | `uuid`                        | no       | `uuidv7()`                   |          |           |           |                                                                                                             |
-| `post_id`                              | `uuid`                        | no       |                              |          |           |           | The post whose clearance state changed.                                                                     |
-| `change_type`                          | `post_clearance_change_types` | no       |                              |          |           |           | Type of clearance transition.                                                                               |
-| `changed_by_id`                        | `uuid`                        | yes      |                              |          |           |           | User or admin who initiated the change (no FK for audit persistence).                                       |
-| `public_reason_code`                   | `text`                        | yes      |                              |          |           |           | Stable provider-neutral reason safe to expose to the affected author.                                       |
-| `private_note`                         | `text`                        | yes      |                              |          |           |           | Private staff note; never returned in public or author post contracts.                                      |
-| `platform_override`                    | `boolean`                     | no       | `false`                      |          |           |           | True when platform moderation staff intentionally overrode automated or community state.                    |
-| `metadata`                             | `jsonb`                       | no       | `'{}'::jsonb`                |          |           |           | Structured metadata about the clearance transition.                                                         |
-| `moderation_transparency_categories`   | `text[]`                      | no       | `'{}'::text[]`               |          |           |           | Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency. |
-| `moderation_transparency_community_id` | `uuid`                        | yes      |                              |          |           |           | Immutable community scope stamped from the post for global-transparency exclusion.                          |
-| `created_at`                           | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                             |
+| Column                                 | Type                          | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                   |
+| -------------------------------------- | ----------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                   | `uuid`                        | no       | `uuidv7()`                   |          |           |           |                                                                                                                           |
+| `post_id`                              | `uuid`                        | no       |                              |          |           |           | The post whose clearance state changed.                                                                                   |
+| `change_type`                          | `post_clearance_change_types` | no       |                              |          |           |           | Type of clearance transition.                                                                                             |
+| `changed_by_id`                        | `uuid`                        | yes      |                              |          |           |           | Retained user identity of who initiated the change. It survives user deletion and does not authorize that user.           |
+| `public_reason_code`                   | `text`                        | yes      |                              |          |           |           | Stable provider-neutral reason safe to expose to the affected author.                                                     |
+| `private_note`                         | `text`                        | yes      |                              |          |           |           | Private staff note; never returned in public or author post contracts.                                                    |
+| `platform_override`                    | `boolean`                     | no       | `false`                      |          |           |           | True when platform moderation staff intentionally overrode automated or community state.                                  |
+| `creation_moderation_bypassed`         | `boolean`                     | yes      |                              |          |           |           | Present only when creation recorded the administrator bypass flag. Null means the key was absent.                         |
+| `moderation_version_policy_revision`   | `text`                        | yes      |                              |          |           |           | Policy revision of the moderation version that produced an automated clearance decision.                                  |
+| `source_key`                           | `text`                        | yes      |                              |          |           |           | Automod training source key when this clearance came from moderation training.                                            |
+| `moderation_training`                  | `boolean`                     | yes      |                              |          |           |           | True when moderation training applied this clearance. Null when that flag was absent.                                     |
+| `compensation_reason`                  | `text`                        | yes      |                              |          |           |           | Why a clearance compensation restored an earlier decision.                                                                |
+| `compensates_change_id`                | `uuid`                        | yes      |                              |          |           |           | Clearance change this compensation undoes.                                                                                |
+| `restores_change_id`                   | `uuid`                        | yes      |                              |          |           |           | Earlier clearance change restored by this compensation, when one existed.                                                 |
+| `audit_source`                         | `text`                        | yes      |                              |          |           |           | Non-product writer label such as a seed or explain fixture. Null for product writers.                                     |
+| `moderation_transparency_categories`   | `text[]`                      | no       | `'{}'::text[]`               |          |           |           | Immutable automated-source categories stamped at rejection time for aggregate-only moderation transparency.               |
+| `moderation_transparency_community_id` | `uuid`                        | yes      |                              |          |           |           | Retained community identity stamped from the post for global-transparency exclusion. It does not authorize the community. |
+| `created_at`                           | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,18 +36,25 @@ _none_
 
 - `post_clearance_changes_check`: `CHECK (((NOT platform_override) OR ((changed_by_id IS NOT NULL) AND (public_reason_code IS NOT NULL))))`
 - `post_clearance_changes_check1`: `CHECK (((private_note IS NULL) OR platform_override))`
-- `post_clearance_changes_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 - `post_clearance_changes_moderation_transparency_categories_check`: `CHECK ((((((moderation_transparency_categories = '{}'::text[]) OR (moderation_transparency_categories = '{openai_omni}'::text[])) OR (moderation_transparency_categories = '{spam_detection}'::text[])) OR (moderation_transparency_categories = '{post_clearance_reject}'::text[])) OR (moderation_transparency_categories = '{openai_omni,spam_detection}'::text[])))`
 - `post_clearance_changes_private_note_check`: `CHECK (((private_note IS NULL) OR (char_length(private_note) <= 4000)))`
 - `post_clearance_changes_public_reason_code_check`: `CHECK (((public_reason_code IS NULL) OR ((char_length(public_reason_code) >= 1) AND (char_length(public_reason_code) <= 100))))`
 
 **Foreign keys:**
 
+- `fk_post_clearance_changes__compensates_change_id`: `FOREIGN KEY (compensates_change_id) REFERENCES post_clearance_changes(id) ON DELETE RESTRICT`
+- `fk_post_clearance_changes__restores_change_id`: `FOREIGN KEY (restores_change_id) REFERENCES post_clearance_changes(id) ON DELETE RESTRICT`
+- `post_clearance_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
+- `post_clearance_changes_moderation_transparency_community_i_fkey`: `FOREIGN KEY (moderation_transparency_community_id) REFERENCES retained_community_identities(id) ON DELETE RESTRICT`
 - `post_clearance_changes_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_post_clearance_changes__changed_by_id`: `CREATE INDEX idx_post_clearance_changes__changed_by_id ON ONLY public.post_clearance_changes USING btree (changed_by_id) WHERE (changed_by_id IS NOT NULL)`
+- `idx_post_clearance_changes__compensates_change_id`: `CREATE INDEX idx_post_clearance_changes__compensates_change_id ON ONLY public.post_clearance_changes USING btree (compensates_change_id) WHERE (compensates_change_id IS NOT NULL)`
 - `idx_post_clearance_changes__post_id__id`: `CREATE INDEX idx_post_clearance_changes__post_id__id ON ONLY public.post_clearance_changes USING btree (post_id, id DESC)`
+- `idx_post_clearance_changes__restores_change_id`: `CREATE INDEX idx_post_clearance_changes__restores_change_id ON ONLY public.post_clearance_changes USING btree (restores_change_id) WHERE (restores_change_id IS NOT NULL)`
+- `idx_post_clearance_changes__transparency_community_id`: `CREATE INDEX idx_post_clearance_changes__transparency_community_id ON ONLY public.post_clearance_changes USING btree (moderation_transparency_community_id) WHERE (moderation_transparency_community_id IS NOT NULL)`
 - `post_clearance_changes_pkey`: `CREATE UNIQUE INDEX post_clearance_changes_pkey ON ONLY public.post_clearance_changes USING btree (id)`
 
 **Triggers:**

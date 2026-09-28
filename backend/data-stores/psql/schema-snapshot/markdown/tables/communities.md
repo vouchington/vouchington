@@ -67,6 +67,7 @@ _none_
 - `communities_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
 - `communities_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `communities_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
+- `communities_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_community_identities(id) ON DELETE RESTRICT`
 - `communities_profile_image_id_fkey`: `FOREIGN KEY (profile_image_id) REFERENCES images(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -91,4 +92,5 @@ _none_
 
 - `communities_content_provenance_immutable`: `CREATE TRIGGER communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()`
 - `trigger_communities_updated_at`: `CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_retained_community_identity`: `CREATE TRIGGER trigger_register_retained_community_identity BEFORE INSERT ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_register_retained_community_identity()`
 - `trigger_sync_community_image_placements`: `CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_sync_community_image_placements()`

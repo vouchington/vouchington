@@ -15,7 +15,6 @@ Not partitioned — growth: unbounded.
 | `report_id`    | `uuid`                             | yes      |                              |          |           |           | Report entity being reviewed when media was revealed. NULL for direct post reveals.                                                                                   |
 | `surface`      | `moderation_media_reveal_surfaces` | no       |                              |          |           |           | Queue surface where the reveal occurred: mod_queue (community queue), review_queue (admin review), reports (reports UI), post_page (public post page in mod context). |
 | `revealed_at`  | `timestamp with time zone`         | no       | `now()`                      |          |           |           | When the moderator clicked to reveal the media. Real column (not virtual) for time-window range queries.                                                              |
-| `metadata`     | `jsonb`                            | no       | `'{}'::jsonb`                |          |           |           | Structured context (e.g. community_id, image_id).                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,8 +22,7 @@ Not partitioned — growth: unbounded.
 _none_
 
 **Check constraints:**
-
-- `moderation_media_reveals_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+_none_
 
 **Foreign keys:**
 

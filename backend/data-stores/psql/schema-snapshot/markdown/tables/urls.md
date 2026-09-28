@@ -39,6 +39,7 @@ Not partitioned — growth: unbounded.
 - `urls_canonical_url_id_fkey`: `FOREIGN KEY (canonical_url_id) REFERENCES urls(id) ON DELETE SET NULL`
 - `urls_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `urls_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
+- `urls_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_url_identities(id) ON DELETE RESTRICT`
 - `urls_url_content_type_id_fkey`: `FOREIGN KEY (url_content_type_id) REFERENCES url_content_types(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -54,4 +55,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_register_retained_url_identity`: `CREATE TRIGGER trigger_register_retained_url_identity BEFORE INSERT ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_register_retained_url_identity()`
 - `trigger_urls_updated_at`: `CREATE TRIGGER trigger_urls_updated_at BEFORE UPDATE ON public.urls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

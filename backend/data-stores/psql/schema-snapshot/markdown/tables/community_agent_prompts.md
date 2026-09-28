@@ -33,6 +33,7 @@ _none_
 - `community_agent_prompts_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
 - `community_agent_prompts_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `community_agent_prompts_id_fkey`: `FOREIGN KEY (id) REFERENCES agent_prompts(id) ON DELETE CASCADE`
+- `fk_community_agent_prompts__retained_identity`: `FOREIGN KEY (id) REFERENCES retained_community_agent_prompt_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
@@ -46,3 +47,4 @@ _none_
 **Triggers:**
 
 - `moderation_transparency_community_prompts_lock`: `CREATE TRIGGER moderation_transparency_community_prompts_lock BEFORE INSERT OR DELETE OR UPDATE ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_lock_agent_moderation_transparency_community_prompt()`
+- `trigger_register_retained_community_agent_prompt_identity`: `CREATE TRIGGER trigger_register_retained_community_agent_prompt_identity BEFORE INSERT ON public.community_agent_prompts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_community_agent_prompt_identity()`

@@ -6,20 +6,25 @@ Append-only audit log of state transitions for moderation appeals.
 
 Not partitioned — growth: unbounded.
 
-| Column                 | Type                                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
-| ---------------------- | ------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `id`                   | `uuid`                                     | no       | `uuidv7()`                   |          |           |           |                                                                                   |
-| `moderation_appeal_id` | `uuid`                                     | no       |                              |          |           |           | The appeal this lifecycle change belongs to.                                      |
-| `change_type`          | `moderation_appeal_lifecycle_change_types` | no       |                              |          |           |           | The type of state transition recorded by this change row.                         |
-| `changed_by_id`        | `uuid`                                     | yes      |                              |          |           |           | The user who performed the action; NULL for system/AI actions.                    |
-| `drafted_at`           | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of drafted_at at the time of this change.                                |
-| `edited_at`            | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of edited_at at the time of this change.                                 |
-| `approved_at`          | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of approved_at at the time of this change.                               |
-| `sent_at`              | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of sent_at at the time of this change.                                   |
-| `resolved_at`          | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of resolved_at at the time of this change.                               |
-| `resolution_action`    | `moderation_appeal_action`                 | yes      |                              |          |           |           | Snapshot of resolution_action at the time of this change.                         |
-| `metadata`             | `jsonb`                                    | no       | `'{}'::jsonb`                |          |           |           | Extra structured metadata for this lifecycle event (e.g. AI model, token counts). |
-| `created_at`           | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
+| Column                       | Type                                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                 |
+| ---------------------------- | ------------------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------- |
+| `id`                         | `uuid`                                     | no       | `uuidv7()`                   |          |           |           |                                                                                         |
+| `moderation_appeal_id`       | `uuid`                                     | no       |                              |          |           |           | The appeal this lifecycle change belongs to.                                            |
+| `change_type`                | `moderation_appeal_lifecycle_change_types` | no       |                              |          |           |           | The type of state transition recorded by this change row.                               |
+| `changed_by_id`              | `uuid`                                     | yes      |                              |          |           |           | The user who performed the action; NULL for system/AI actions.                          |
+| `drafted_at`                 | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of drafted_at at the time of this change.                                      |
+| `edited_at`                  | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of edited_at at the time of this change.                                       |
+| `approved_at`                | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of approved_at at the time of this change.                                     |
+| `sent_at`                    | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of sent_at at the time of this change.                                         |
+| `resolved_at`                | `timestamp with time zone`                 | yes      |                              |          |           |           | Snapshot of resolved_at at the time of this change.                                     |
+| `resolution_action`          | `moderation_appeal_action`                 | yes      |                              |          |           |           | Snapshot of resolution_action at the time of this change.                               |
+| `original_decision_recorded` | `boolean`                                  | no       | `false`                      |          |           |           | True when this create event stored the original decision snapshot.                      |
+| `original_decision_reason`   | `text`                                     | yes      |                              |          |           |           | Reason captured from the decision being appealed.                                       |
+| `original_decision_actor_id` | `uuid`                                     | yes      |                              |          |           |           | Retained user identity of the original decision actor. It does not authorize that user. |
+| `original_decision_at`       | `timestamp with time zone`                 | yes      |                              |          |           |           | When the original decision was made.                                                    |
+| `ai_model`                   | `text`                                     | yes      |                              |          |           |           | Model name recorded on the AI draft event.                                              |
+| `ai_recommended_action`      | `moderation_appeal_action`                 | yes      |                              |          |           |           | Recommended action recorded on the AI draft event.                                      |
+| `created_at`                 | `timestamp with time zone`                 | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,12 +36,14 @@ _none_
 
 **Foreign keys:**
 
+- `moderation_appeal_lifecycle_cha_original_decision_actor_id_fkey`: `FOREIGN KEY (original_decision_actor_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `moderation_appeal_lifecycle_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderation_appeal_lifecycle_changes_moderation_appeal_id_fkey`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_moderation_appeal_lifecycle__appeal_created`: `CREATE INDEX idx_moderation_appeal_lifecycle__appeal_created ON public.moderation_appeal_lifecycle_changes USING btree (moderation_appeal_id, id DESC)`
+- `idx_moderation_appeal_lifecycle__original_actor`: `CREATE INDEX idx_moderation_appeal_lifecycle__original_actor ON public.moderation_appeal_lifecycle_changes USING btree (original_decision_actor_id) WHERE (original_decision_actor_id IS NOT NULL)`
 - `moderation_appeal_lifecycle_changes_pkey`: `CREATE UNIQUE INDEX moderation_appeal_lifecycle_changes_pkey ON public.moderation_appeal_lifecycle_changes USING btree (id)`
 
 **Triggers:**

@@ -6,14 +6,12 @@ Append-only audit log of dynamic configuration changes made by administrators.
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                               |
-| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                       |
-| `config_key`      | `text`                     | no       |                              |          |           |           | Valkey DynamicConfig key identifying which configuration was changed. |
-| `changed_by_id`   | `uuid`                     | yes      |                              |          |           |           | Administrator who made the change; SET NULL on user deletion.         |
-| `previous_fields` | `jsonb`                    | no       |                              |          |           |           | Snapshot of the config fields before the change.                      |
-| `next_fields`     | `jsonb`                    | no       |                              |          |           |           | Snapshot of the config fields that were applied.                      |
-| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                       |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                     |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                             |
+| `config_key`    | `text`                     | no       |                              |          |           |           | Registered dynamic config namespace whose typed field snapshot was audited. |
+| `changed_by_id` | `uuid`                     | yes      |                              |          |           |           | Administrator who made the change; SET NULL on user deletion.               |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -21,7 +19,8 @@ Not partitioned — growth: unbounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `dynamic_config_change_logs_config_key_check`: `CHECK ((config_key = ANY (ARRAY['feature-flags'::text, 'membership-billing'::text, 'request-client-info'::text, 'vote-weight-config'::text, 'recaptcha-config'::text, 'turnstile-config'::text, 'post-content-limits-config'::text, 'post-related-url-display-config'::text, 'rate-limit-thresholds'::text, 'route-rate-limit-config'::text, 'contribution-rate-limits'::text, 'bloom-filter-config'::text, 'rss-feed-discoverability-config'::text, 'moderation-config'::text, 'bedrock-embeddings-batch-config'::text, 'rss-feed-crawl-config'::text, 'user-import-export-config'::text, 'web-risk-config'::text, 'moderation-ai-config'::text, 'moderation-ai-dispatch-config'::text, 'openai-spend-cap'::text, 'manual-tag-limits'::text, 'autotagger-paid-limits'::text, 'kagi-smallweb-config'::text, 'app-attestation-config'::text, 'activitypub-inbox'::text, 'oauth-authorization-broker'::text, 'api-egress-proxy'::text])))`
 
 **Foreign keys:**
 

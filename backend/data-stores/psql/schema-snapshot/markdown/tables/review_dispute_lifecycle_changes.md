@@ -6,20 +6,21 @@ Append-only audit log of state transitions for review disputes.
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                                    | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                           |
-| ------------------- | --------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `id`                | `uuid`                                  | no       | `uuidv7()`                   |          |           |           |                                                                                   |
-| `review_dispute_id` | `uuid`                                  | no       |                              |          |           |           | The dispute this lifecycle change belongs to.                                     |
-| `change_type`       | `review_dispute_lifecycle_change_types` | no       |                              |          |           |           | The type of state transition recorded by this change row.                         |
-| `changed_by_id`     | `uuid`                                  | yes      |                              |          |           |           | The user who performed the action; NULL for system actions.                       |
-| `drafted_at`        | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of drafted_at at the time of this change.                                |
-| `edited_at`         | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of edited_at at the time of this change.                                 |
-| `approved_at`       | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of approved_at at the time of this change.                               |
-| `sent_at`           | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of sent_at at the time of this change.                                   |
-| `resolved_at`       | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of resolved_at at the time of this change.                               |
-| `resolution_action` | `review_dispute_action`                 | yes      |                              |          |           |           | Snapshot of resolution_action at the time of this change.                         |
-| `metadata`          | `jsonb`                                 | no       | `'{}'::jsonb`                |          |           |           | Extra structured metadata for this lifecycle event (e.g. AI model, token counts). |
-| `created_at`        | `timestamp with time zone`              | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                   |
+| Column                  | Type                                    | Nullable | Default                      | Identity | Generated | Collation | Comment                                                     |
+| ----------------------- | --------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
+| `id`                    | `uuid`                                  | no       | `uuidv7()`                   |          |           |           |                                                             |
+| `review_dispute_id`     | `uuid`                                  | no       |                              |          |           |           | The dispute this lifecycle change belongs to.               |
+| `change_type`           | `review_dispute_lifecycle_change_types` | no       |                              |          |           |           | The type of state transition recorded by this change row.   |
+| `changed_by_id`         | `uuid`                                  | yes      |                              |          |           |           | The user who performed the action; NULL for system actions. |
+| `drafted_at`            | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of drafted_at at the time of this change.          |
+| `edited_at`             | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of edited_at at the time of this change.           |
+| `approved_at`           | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of approved_at at the time of this change.         |
+| `sent_at`               | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of sent_at at the time of this change.             |
+| `resolved_at`           | `timestamp with time zone`              | yes      |                              |          |           |           | Snapshot of resolved_at at the time of this change.         |
+| `resolution_action`     | `review_dispute_action`                 | yes      |                              |          |           |           | Snapshot of resolution_action at the time of this change.   |
+| `ai_model`              | `text`                                  | yes      |                              |          |           |           | Model name recorded on the AI draft event.                  |
+| `ai_recommended_action` | `review_dispute_action`                 | yes      |                              |          |           |           | Recommended action recorded on the AI draft event.          |
+| `created_at`            | `timestamp with time zone`              | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
