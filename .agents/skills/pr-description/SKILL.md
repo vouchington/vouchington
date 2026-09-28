@@ -13,7 +13,7 @@ Claude Code and Codex load `vouchington-workflow:pr-description`; Grok, Cursor, 
 
 Use `node dev/pr-description.mts create --title <title> --body-file <file>` and
 `node dev/pr-description.mts update <pr> --body-file <file>` rather than raw body mutation. The
-local validator enforces `## Related issues`, `Workspace setup:`, and tool-injected `Agent:`,
+local validator enforces exactly one visible `## Summary` and `## Impact`, `## Related issues`, `Workspace setup:`, and tool-injected `Agent:`,
 `Device:`, and `Worktree:` provenance lines. It performs issue-supersession, milestone-completion, and project-completion audits. Include a
 Mermaid diagram when it helps reviewers understand the change; that is description guidance.
 
