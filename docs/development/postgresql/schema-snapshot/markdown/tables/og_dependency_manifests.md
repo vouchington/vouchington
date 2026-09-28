@@ -10,6 +10,7 @@ Not partitioned — growth: bounded.
 | ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------- |
 | `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |         |
 | `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |         |
+| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |         |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -6,13 +6,14 @@ One source placement embedded by an OG manifest. Authorization uses the recorded
 
 Not partitioned — growth: bounded.
 
-| Column               | Type      | Nullable | Default | Identity | Generated | Collation | Comment                                                                                         |
-| -------------------- | --------- | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `manifest_id`        | `uuid`    | no       |         |          |           |           |                                                                                                 |
-| `placement_id`       | `uuid`    | no       |         |          |           |           |                                                                                                 |
-| `image_id`           | `uuid`    | no       |         |          |           |           |                                                                                                 |
-| `placement_revision` | `integer` | no       |         |          |           |           | Placement revision observed at registration. A later revision does not satisfy this dependency. |
-| `ordinal`            | `integer` | no       |         |          |           |           |                                                                                                 |
+| Column               | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                         |
+| -------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `manifest_id`        | `uuid`                     | no       |                     |          |           |           | Manifest that registered this dependency. Entries do not outlive that manifest.                 |
+| `placement_id`       | `uuid`                     | no       |                     |          |           |           | Stable media placement the rendered card may embed.                                             |
+| `image_id`           | `uuid`                     | no       |                     |          |           |           | Immutable image bound to the recorded placement.                                                |
+| `placement_revision` | `integer`                  | no       |                     |          |           |           | Placement revision observed at registration. A later revision does not satisfy this dependency. |
+| `ordinal`            | `integer`                  | no       |                     |          |           |           | Zero-based order of this dependency within the manifest.                                        |
+| `updated_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                 |
 
 **Primary key:** `PRIMARY KEY (manifest_id, ordinal)`
 
