@@ -73,6 +73,22 @@ describe('landingOgDependencies', () => {
     expect(landingOgDependencies(null)).toEqual([])
     expect(landingOgDependencies(undefined)).toEqual([])
   })
+
+  it('maps a landing placement into one signed dependency', () => {
+    expect(
+      landingOgDependencies({
+        placement_id: '00000000-0000-7000-8000-000000000741',
+        placement_revision: 3,
+        image_id: '00000000-0000-7000-8000-000000000742',
+      }),
+    ).toEqual([
+      {
+        placementId: '00000000-0000-7000-8000-000000000741',
+        revision: 3,
+        imageId: '00000000-0000-7000-8000-000000000742',
+      },
+    ])
+  })
 })
 
 describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
