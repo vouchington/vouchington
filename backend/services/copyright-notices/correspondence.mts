@@ -89,6 +89,7 @@ export function copyrightCorrespondencePurpose(correspondenceId: string): string
 }
 
 export async function createOutboundCopyrightCorrespondence(input: {
+  id?: string
   noticeId: string
   submissionId: string | null
   correspondenceKind: CopyrightCorrespondenceKind
@@ -96,15 +97,16 @@ export async function createOutboundCopyrightCorrespondence(input: {
   bodyCiphertext: string
   draftedById: string | null
 }): Promise<CopyrightCorrespondenceRecord> {
+  const id = input.id ?? uuidv7()
   await using transaction = await beginTransaction()
   const { rows } =
     await transaction<CopyrightCorrespondenceRecord>(sql`/* createOutboundCopyrightCorrespondence */
     INSERT INTO copyright_notice_correspondence_messages (
-      copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
+      id, copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
       composition_kind, body_ciphertext, drafted_by_id
     )
     SELECT
-      ${input.noticeId}, ${input.submissionId}, 'outbound', ${input.correspondenceKind},
+      ${id}, ${input.noticeId}, ${input.submissionId}, 'outbound', ${input.correspondenceKind},
       ${input.compositionKind}, ${input.bodyCiphertext}, ${input.draftedById}
     FROM copyright_notices notice
     WHERE notice.id = ${input.noticeId}

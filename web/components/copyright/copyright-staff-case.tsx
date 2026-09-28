@@ -12,6 +12,7 @@ import {
   CopyrightStaffCounterNotices,
   CopyrightStaffIntentRecovery,
 } from './copyright-staff-case-detail'
+import { CopyrightStaffGuestCapability } from './copyright-staff-guest-capability'
 import { CopyrightRepeatInfringerActions } from './copyright-repeat-infringer-actions'
 import { CopyrightStaffLegalHoldReview } from './copyright-staff-case-legal-hold'
 import {
@@ -69,6 +70,7 @@ export function CopyrightStaffCase({
           targets={notice.targets}
         />
       ))}
+      <CopyrightStaffGuestCapability noticeId={notice.id} />
       <CopyrightStaffCorrespondence notice={notice} />
       <CopyrightStaffIntentRecovery {...{ notice, pending, submitRecovery }} />
       <CopyrightRepeatInfringerActions

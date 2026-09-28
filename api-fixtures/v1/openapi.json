@@ -37783,6 +37783,285 @@
         }
       }
     },
+    "/api/v1/copyright-notices/{id}/guest-capabilities": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-capabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "expires_at": {
+                    "type": "string"
+                  }
+                },
+                "required": ["expires_at"],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_guest_capability": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "expires_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "token": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["expires_at", "id", "token"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_guest_capability"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/guest-capabilities/{capabilityId}/information-requests": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-capabilities_capabilityId_information-requests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capabilityId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "statement": {
+                    "type": "string"
+                  }
+                },
+                "required": ["statement"],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_correspondence": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_correspondence"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/guest-capabilities/{capabilityId}/revocation": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-capabilities_capabilityId_revocation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capabilityId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_guest_capability": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "revoked_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "revoked_at"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_guest_capability"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/copyright-notices/{id}/guest-filings": {
+      "post": {
+        "operationId": "post_api_v1_copyright-notices_id_guest-filings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Raw case capability token. Mail and other-case tokens are not accepted.",
+            "in": "header",
+            "name": "Copyright-Guest-Capability",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "cf_turnstile_response": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "kind": {
+                    "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+                    "type": "string"
+                  },
+                  "statement": {
+                    "type": "string"
+                  }
+                },
+                "required": ["cf_turnstile_response", "kind", "statement"],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "copyright_submission": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+                          "type": "string"
+                        },
+                        "received_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "kind", "received_at"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["copyright_submission"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/copyright-notices/{id}/participant": {
       "get": {
         "operationId": "get_api_v1_copyright-notices_id_participant",

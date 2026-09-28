@@ -149,6 +149,17 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
     category: 'sensitive',
     ttlSeconds: 3600,
   },
+  'POST:/api/v1/copyright-notices/:id/guest-capabilities': { category: 'sensitive' },
+  'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests': {
+    category: 'sensitive',
+  },
+  'POST:/api/v1/copyright-notices/:id/guest-filings': {
+    category: 'sensitive',
+    ttlSeconds: 3600,
+  },
   'POST:/api/v1/copyright-email-intakes/:id/approvals': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/rejections': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/correspondence': { category: 'sensitive' },

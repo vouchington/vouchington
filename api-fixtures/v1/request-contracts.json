@@ -28122,6 +28122,109 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "expires_at": {
+            "type": "string"
+          }
+        },
+        "required": ["expires_at"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["statement"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "capabilityId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "capabilityId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation": {
+      "path": {
+        "properties": {
+          "capabilityId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "capabilityId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/copyright-notices/:id/guest-filings": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "cf_turnstile_response": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "kind": {
+            "enum": ["court_or_ccb_hold", "supplement", "withdrawal"],
+            "type": "string"
+          },
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": ["cf_turnstile_response", "kind", "statement"],
+        "type": "object"
+      },
+      "header": {
+        "properties": {
+          "copyright-guest-capability": {
+            "type": "string"
+          }
+        },
+        "required": ["copyright-guest-capability"],
+        "type": "object"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews": {
       "body": {
         "$ref": "#/components/schemas/Record_string_unknown"
