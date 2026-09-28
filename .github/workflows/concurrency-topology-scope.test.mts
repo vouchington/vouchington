@@ -48,6 +48,15 @@ describe('concurrency topology scope normalization', () => {
     )
   })
 
+  it('classifies a Dependabot branch and source workflow ID as ref and event scope', () => {
+    const group =
+      'fix-dependabot-${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.workflow_id }}'
+    expect(extractConcurrencyScopes(group)).toEqual(['ref', 'event'])
+    expect(concurrencyScopesMatch(group, ['ref', 'event'])).toBe(true)
+    expect(concurrencyScopesMatch(group, ['ref'])).toBe(false)
+    expect(concurrencyScopesMatch(group, ['ref', 'event', 'sha'])).toBe(false)
+  })
+
   it('classifies an exact pull-request head as SHA scope', () => {
     expect(extractConcurrencyScopes('${{ github.event.pull_request.head.sha }}')).toEqual(['sha'])
     expect(concurrencyScopesMatch('${{ github.event.pull_request.head.sha }}', ['sha'])).toBe(true)
