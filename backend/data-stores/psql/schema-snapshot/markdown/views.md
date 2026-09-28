@@ -709,7 +709,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     rss_feeds.last_fetched_at,
     rss_feeds.feed_type,
     rss_feeds.canonical_rss_feed_id,
-    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', url_search_params_json(feed_url.id), 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'blocked', feed_hostname.blocked, 'crawlable', feed_hostname.crawlable, 'link_rel_follow', feed_hostname.link_rel_follow)) AS rss_feed_url,
+    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'blocked', feed_hostname.blocked, 'crawlable', feed_hostname.crawlable, 'link_rel_follow', feed_hostname.link_rel_follow)) AS rss_feed_url,
         CASE
             WHEN (topic_hostname.hostname IS NULL) THEN NULL::json
             ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))
@@ -871,7 +871,7 @@ Canonical anonymous discovery eligibility for authored posts. Keep equivalent to
     urls.id,
     urls.url,
     urls.pathname,
-    url_search_params_json(urls.id) AS search_params,
+    urls.search_params,
     urls.canonical_url_id,
     row_to_json(view_url_hostnames.*) AS hostname
    FROM (urls

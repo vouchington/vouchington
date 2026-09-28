@@ -6,19 +6,18 @@ Tracks bulk import operations initiated by admins, with progress counters.
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                        |
-| ------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------- |
-| `id`               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                |
-| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                |
-| `import_type`      | `admin_import_types`       | no       |                              |          |           |           | The type of entities being imported: topic or RSS feed.        |
-| `created_by_id`    | `uuid`                     | no       |                              |          |           |           |                                                                |
-| `total_rows`       | `integer`                  | no       |                              |          |           |           | Total number of rows in this import batch (max 50000).         |
-| `completed_rows`   | `integer`                  | no       | `0`                          |          |           |           | Number of rows successfully imported so far.                   |
-| `failed_rows`      | `integer`                  | no       | `0`                          |          |           |           | Number of rows that failed to import.                          |
-| `completed_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the entire batch finished processing.                     |
-| `metadata_source`  | `text`                     | yes      |                              |          |           |           | Optional source label for the import, such as a file name.     |
-| `metadata_version` | `integer`                  | yes      |                              |          |           |           | Optional non-negative format version supplied with the import. |
+| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                    |
+| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
+| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                            |
+| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                            |
+| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                            |
+| `import_type`    | `admin_import_types`       | no       |                              |          |           |           | The type of entities being imported: topic or RSS feed.                    |
+| `created_by_id`  | `uuid`                     | no       |                              |          |           |           |                                                                            |
+| `total_rows`     | `integer`                  | no       |                              |          |           |           | Total number of rows in this import batch (max 50000).                     |
+| `completed_rows` | `integer`                  | no       | `0`                          |          |           |           | Number of rows successfully imported so far.                               |
+| `failed_rows`    | `integer`                  | no       | `0`                          |          |           |           | Number of rows that failed to import.                                      |
+| `completed_at`   | `timestamp with time zone` | yes      |                              |          |           |           | When the entire batch finished processing.                                 |
+| `metadata`       | `jsonb`                    | yes      |                              |          |           |           | Optional JSON metadata about the import (e.g., source file name, options). |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,8 +28,6 @@ _none_
 
 - `admin_import_batches_completed_rows_check`: `CHECK ((completed_rows >= 0))`
 - `admin_import_batches_failed_rows_check`: `CHECK ((failed_rows >= 0))`
-- `admin_import_batches_metadata_source_check`: `CHECK (((metadata_source IS NULL) OR (((char_length(metadata_source) >= 1) AND (char_length(metadata_source) <= 1024)) AND (metadata_source = TRIM(BOTH FROM metadata_source)))))`
-- `admin_import_batches_metadata_version_check`: `CHECK (((metadata_version IS NULL) OR (metadata_version >= 0)))`
 - `admin_import_batches_total_rows_check`: `CHECK (((total_rows > 0) AND (total_rows <= 50000)))`
 - `chk_admin_import_batches__lifecycle`: `CHECK ((((completed_rows + failed_rows) <= total_rows) AND ((completed_at IS NOT NULL) = ((completed_rows + failed_rows) = total_rows))))`
 
