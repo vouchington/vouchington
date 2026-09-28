@@ -17,9 +17,7 @@
   layer against its parent. Rebase an unstacked PR only with `./dev/rebase-onto-main`; for a stack
   use `./dev/rebase-onto-main --stack` (add `--upstack` when upper layers must move) or `gh stack
 sync` when there are no local stack commits. Re-derive stack topology from GitHub first. The
-  helper fetches and checks protected paths; it refuses changed protected paths under
-  `SANDBOX_RUNTIME` or `CURSOR_SANDBOX`, and stack rebases refuse whenever either marker is set. If
-  it refuses, run it from a terminal outside the agent. Do not chain raw `git fetch` with `git
+  helper fetches `origin/main`, then rebases. Do not chain raw `git fetch` with `git
 rebase`, use `git pull --rebase`/`-r`, or rebase a mid-stack branch directly onto `origin/main`.
   Resolve conflicts semantically, never with blanket ours/theirs. Continue with
   `GIT_EDITOR=true git rebase --continue`.
@@ -37,7 +35,7 @@ Print `git rev-parse` of HEAD, `origin/<branch>`, `origin/main`, and local `main
 
 Print `git rev-list --left-right --count HEAD...origin/<branch>` (left = commits only on the local branch, right = commits only on `origin/<branch>`), `git log --oneline --left-right HEAD...origin/<branch>`, `git cherry -v origin/<branch> HEAD`, and `git cherry -v HEAD origin/<branch>`. A leading `-` is the same patch under another SHA. A leading `+` is a patch the other side lacks. `git range-diff` may be read from the base those commits were built on. git range-diff is a reading aid, not the rebase cut. Do not run it from the new stack parent: after a stack rebase that parent makes old parent commits look like unique local work.
 
-A dirty worktree stops you before fast-forward, reset, or rebase. If reset, fast-forward, or `git rebase origin/<branch>` is refused because a protected path differs, rerun that one command outside the sandbox. Do not switch branches. Continue a conflict with `GIT_EDITOR=true git rebase --continue`. Do not use `git rebase --onto` or two-positional `git rebase <upstream> <branch>`: the hook counts both non-option tokens and refuses them.
+A dirty worktree stops you before fast-forward, reset, or rebase. Do not switch branches. Continue a conflict with `GIT_EDITOR=true git rebase --continue`.
 
 Capture `<sha>` with `git rev-parse origin/<branch>` after this fetch and before any rewrite. Push a non-fast-forward with `git push --force-with-lease=<branch>:<sha>`. The capture-before-fetch note above still applies when another agent may push during the fetch. If HEAD equals that SHA, do not push. If the lease push or a non-force push is rejected, fetch again and re-read. It is still this branch.
 

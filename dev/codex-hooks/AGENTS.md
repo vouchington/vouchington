@@ -8,7 +8,8 @@
 - Any block wins over allows. The only allow is a single plain merge in attended Claude, requiring a positive attended signal, never mere absence of `CI`.
 - Policy has no network/shell child-process APIs. [`local-process.mts`](local-process.mts) alone exposes closed, typed, operation-specific local commands; no direct `child_process` imports or generic executable/argv boundary. Extend typed operations instead of AST command parsing; validators/CI own network checks (`codex-hooks-no-network.yml`).
 - `dev/journal-checkpoint` may write fail-open Blackboard checkpoints because they never affect allow/block decisions.
-- Checkout refusal for sandbox-protected paths uses `dev/protected-checkout-paths.txt`. That OS
-  deny uses `SANDBOX_RUNTIME` and `CURSOR_SANDBOX`; it is distinct from the Edit/Write deny list
-  in `policy/protected-hook-paths.mts` (`PROTECTED_HOOK_*`).
+- `PROTECTED_HOOK_*` in `policy/protected-hook-paths.mts` is the Edit/Write list. Claude and Cursor
+  still deny writes to their settings files in the OS sandbox. A sandboxed git that dies on
+  `unable to unlink old '.claude/settings.json'` leaves `HEAD` unchanged. Recover with
+  `git reset --hard`, then rerun the command outside the sandbox.
 - Do not duplicate existing oxlint line limits, no-mistakes doc limits, or CI enforcement.

@@ -8,12 +8,10 @@ export async function makeFakeBin({
   gitDirty = false,
   gitFetchFails = false,
   gitUntracked = '',
-  protectedCheckoutDiff = '',
 }: {
   gitDirty?: boolean
   gitFetchFails?: boolean
   gitUntracked?: string
-  protectedCheckoutDiff?: string
 } = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'voucha-reset-worktree-bin-'))
   registerTestDir(dir)
@@ -52,10 +50,6 @@ case "$*" in
     ;;
   "reset --hard origin/main")
     printf 'git reset --hard origin/main\\n' >> "$log"
-    ;;
-  "diff --name-only --diff-filter=ACDMRTUXB "*)
-    printf 'git %s\\n' "$*" >> "$log"
-    printf '%s\\n' ${JSON.stringify(protectedCheckoutDiff)}
     ;;
   "clean -fd")
     printf 'git clean -fd\\n' >> "$log"

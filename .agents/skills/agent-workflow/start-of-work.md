@@ -6,8 +6,7 @@
   worktree with unforced `./dev/reset-worktree`; rebase resumed unstacked work with
   `./dev/rebase-onto-main`. For a resumed stack, re-derive topology from GitHub before using
   `./dev/rebase-onto-main --stack` or `gh stack sync`; see the [stack workflow](../stacked-prs/SKILL.md).
-  The helper refuses protected-path changes under `SANDBOX_RUNTIME` or `CURSOR_SANDBOX`; run it
-  outside the agent if it refuses. See the [fresh-base procedure](../../../docs/development/README.md#fresh-base-planning).
+  See the [fresh-base procedure](../../../docs/development/README.md#fresh-base-planning).
 - Search relevant `docs/**` pages and read the `AGENTS.md` ancestry for planned target paths.
   Verify issue paths against current source. Open indexes selectively; do not ingest whole catalogs.
 - Check open PRs and native stacks before opening a competing change; derive ownership from live

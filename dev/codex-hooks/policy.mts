@@ -15,9 +15,7 @@ import {
 } from './policy/blocked-command-patterns.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
 import { findInteractiveMergeConfirm } from './policy/github-merge-authority.mts'
-import { gitWorktreeDiffNames } from './local-process.mts'
 import { extractToolCommand } from './hook-payload.mts'
-import { findProtectedCheckoutBlock } from './policy/protected-checkout.mts'
 import {
   type PreToolUseOptions,
   renderConfirmDisposition,
@@ -98,13 +96,6 @@ export function findPreToolUseBlock(
     }
   }
 
-  const protectedCheckout = findProtectedCheckoutBlock(
-    command,
-    hookCwd(payload),
-    options.protectedCheckoutDiff,
-  )
-  if (protectedCheckout !== null) return protectedCheckout
-
   return findInteractiveMergeConfirm(command, automationContext)
 }
 
@@ -141,7 +132,6 @@ export function preToolUseOutput(
 ): PreToolUseResult {
   const block = findPreToolUseBlock(payload, {
     automationContext: options.automationContext,
-    protectedCheckoutDiff: (cwd, target) => gitWorktreeDiffNames(cwd, target),
     sessionOwners: options.sessionOwners,
   })
   if (block === null) {
