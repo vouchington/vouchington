@@ -3,6 +3,8 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'oauth_clients',
   'oauth_authorization_server_events',
   'oauth_grants',
+  'og_dependency_manifest_placements',
+  'og_dependency_manifests',
   'phone_number_login_tokens',
   'podcast_playback_positions',
   'post__stories',

@@ -153,6 +153,33 @@ describe('handler.og', () => {
     )
   })
 
+  it('falls back when the default dependency check does not allow the placement', async () => {
+    const withoutAuthorization: Partial<LambdaHandlerDependencies> = { ...dependencies }
+    delete withoutAuthorization.authorizeDependencies
+    const fallback = createLambdaHandler(
+      { source: mockEnvConfig, sideload: mockSideloadConfig },
+      withoutAuthorization,
+    )
+    const event = createMockOgEvent({
+      type: 'landing',
+      displayName: 'Ada Lovelace',
+      username: 'ada',
+      topCategories: ['math'],
+      dependencies: [
+        {
+          placementId: '11111111-1111-4111-8111-111111111111',
+          revision: 1,
+          imageId: '22222222-2222-4222-8222-222222222222',
+        },
+      ],
+    })
+
+    const result = await fallback(event)
+
+    expect(result.statusCode).toBe(200)
+    expect(dependencies.fetchImageFromS3).not.toHaveBeenCalled()
+  })
+
   it('falls back to an initial-letter avatar when no avatarImageId is present', async () => {
     const event = createMockOgEvent({
       type: 'landing',

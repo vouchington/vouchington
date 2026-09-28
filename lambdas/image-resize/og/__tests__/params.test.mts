@@ -152,6 +152,18 @@ describe('validateOgParams', () => {
       ).toThrow(RequestParseError)
     })
 
+    it('throws when dependencies is not a short array', () => {
+      expect(() =>
+        validateOgParams({
+          type: 'landing',
+          displayName: 'Ada',
+          username: 'ada',
+          topCategories: [],
+          dependencies: 'one',
+        }),
+      ).toThrow(RequestParseError)
+    })
+
     it('throws when a dependency is not a placement tuple', () => {
       expect(() =>
         validateOgParams({
