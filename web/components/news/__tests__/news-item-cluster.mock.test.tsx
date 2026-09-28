@@ -243,7 +243,10 @@ describe('NewsItemCluster', () => {
       const actions = container.querySelectorAll('[data-pw="news-item-actions-row"]')
       expect(cards).toHaveLength(2)
       expect(actions).toHaveLength(2)
-      expect(screen.getByRole('button', { name: /hide articles/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /1 related article/i })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      )
     })
 
     it('shows cluster reason when provided', () => {
