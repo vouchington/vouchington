@@ -1,89 +1,33 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import {
+  createJsonResponse,
+  installDataRequestDoubles,
+  MockEventSource,
+  mockOnError,
+  renderReadyWithoutDownloadLink,
+  resetDataRequestDoubles,
+} from '@/test-helpers/app/my/data-request-section.mock-support'
 
 import { act, render, screen, waitFor } from '@testing-library/react'
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { DataRequestSection } from '../data-request-section'
 
-const { mockNow, mockOnError, mockOnSuccess } = vi.hoisted(() => ({
+const { mockNow } = vi.hoisted(() => ({
   mockNow: vi.fn<() => number | null>(() => Date.parse('2026-01-01T00:00:00.000Z')),
-  mockOnError: vi.fn<VitestLooseMock>(),
-  mockOnSuccess: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/hooks/use-now'), () => ({ useNow: mockNow }))
 
-vi.mock(import('@/lib/on-error'), () => ({
-  default: mockOnError,
-  onSuccess: mockOnSuccess,
-}))
-
-const createJsonResponse = (status: number, data: unknown): Response => {
-  return Response.json(data, { status })
-}
-
-// Minimal EventSource stub. When the request is pending/processing, use-data-request
-// opens an SSE stream — the stub prevents "EventSource is not defined" in jsdom.
-type ESListener = (event: MessageEvent) => void
-
-class MockEventSource {
-  static instances: MockEventSource[] = []
-  readonly url: string
-  readonly listeners = new Map<string, Set<ESListener>>()
-  closed = false
-
-  constructor(url: string) {
-    this.url = url
-    MockEventSource.instances.push(this)
-  }
-
-  addEventListener(type: string, fn: ESListener) {
-    if (!this.listeners.has(type)) this.listeners.set(type, new Set())
-    this.listeners.get(type)!.add(fn)
-  }
-
-  removeEventListener(type: string, fn: ESListener) {
-    this.listeners.get(type)?.delete(fn)
-  }
-
-  close() {
-    this.closed = true
-  }
-
-  emit(type: string, data: unknown) {
-    const event = new MessageEvent(type, { data: JSON.stringify(data) })
-    this.listeners.get(type)?.forEach(fn => fn(event))
-  }
-
-  emitConnectionError() {
-    const event = new MessageEvent('error', { data: undefined })
-    this.listeners.get('error')?.forEach(fn => fn(event))
-  }
-}
-
-const originalEventSource = globalThis.EventSource
-
 describe('DataRequestSection', () => {
   beforeEach(() => {
     mockNow.mockReturnValue(Date.parse('2026-01-01T00:00:00.000Z'))
-    MockEventSource.instances = []
-    Object.defineProperty(globalThis, 'EventSource', {
-      configurable: true,
-      value: MockEventSource,
-      writable: true,
-    })
+    installDataRequestDoubles()
   })
 
   afterEach(() => {
-    Object.defineProperty(globalThis, 'EventSource', {
-      configurable: true,
-      value: originalEventSource,
-      writable: true,
-    })
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-    vi.useRealTimers()
+    resetDataRequestDoubles()
   })
-
   it('shows server message details when requesting an export fails', async () => {
     mockOnError.mockReturnValue('Export queue is paused')
     const fetchMock = vi.fn<VitestLooseMock>()
@@ -164,42 +108,11 @@ describe('DataRequestSection', () => {
   })
 
   it('keeps retrying when reconnect refresh returns ready without a download link', async () => {
-    const fetchMock = vi.fn<VitestLooseMock>()
-    vi.stubGlobal('fetch', fetchMock)
-
-    fetchMock.mockResolvedValueOnce(
-      createJsonResponse(200, {
-        id: 'request-refresh-ready-no-url',
-        status: 'pending',
-        created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: null,
-      }),
-    )
-    fetchMock.mockResolvedValueOnce(
-      createJsonResponse(200, {
-        id: 'request-refresh-ready-no-url',
-        status: 'ready',
-        created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: null,
-        download_url: null,
-      }),
-    )
-    fetchMock.mockResolvedValueOnce(
-      createJsonResponse(200, {
-        id: 'request-refresh-ready-no-url',
-        status: 'ready',
-        created_at: '2026-01-01T00:00:00.000Z',
-        expires_at: '2027-01-01T00:00:00.000Z',
-        download_url: 'https://s3.example.com/export.zip',
-      }),
-    )
-
-    render(<DataRequestSection userId='user-sse-refresh-ready-no-url' />)
-
-    await screen.findByText('Your export is being prepared. This may take a few minutes.')
-    await waitFor(() => expect(MockEventSource.instances[0]).toBeDefined())
-    vi.useFakeTimers()
-    const es = MockEventSource.instances[0]!
+    const es = await renderReadyWithoutDownloadLink({
+      refreshExpiresAt: null,
+      requestId: 'request-refresh-ready-no-url',
+      userId: 'user-sse-refresh-ready-no-url',
+    })
 
     await act(async () => {
       es.emit('error', { error: 'Stream timed out' })

@@ -1,85 +1,24 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import {
+  createJsonResponse,
+  installDataRequestDoubles,
+  MockEventSource,
+  resetDataRequestDoubles,
+} from '@/test-helpers/app/my/data-request-section.mock-support'
 
 import { act, render, screen, waitFor } from '@testing-library/react'
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { DataRequestSection } from '../data-request-section'
-
-const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
-  mockOnError: vi.fn<VitestLooseMock>(),
-  mockOnSuccess: vi.fn<VitestLooseMock>(),
-}))
-
-vi.mock(import('@/lib/on-error'), () => ({
-  default: mockOnError,
-  onSuccess: mockOnSuccess,
-}))
-
-const createJsonResponse = (status: number, data: unknown): Response => {
-  return Response.json(data, { status })
-}
-
-// Minimal EventSource stub. When the request is pending/processing, use-data-request
-// opens an SSE stream — the stub prevents "EventSource is not defined" in jsdom.
-type ESListener = (event: MessageEvent) => void
-
-class MockEventSource {
-  static instances: MockEventSource[] = []
-  readonly url: string
-  readonly listeners = new Map<string, Set<ESListener>>()
-  closed = false
-
-  constructor(url: string) {
-    this.url = url
-    MockEventSource.instances.push(this)
-  }
-
-  addEventListener(type: string, fn: ESListener) {
-    if (!this.listeners.has(type)) this.listeners.set(type, new Set())
-    this.listeners.get(type)!.add(fn)
-  }
-
-  removeEventListener(type: string, fn: ESListener) {
-    this.listeners.get(type)?.delete(fn)
-  }
-
-  close() {
-    this.closed = true
-  }
-
-  emit(type: string, data: unknown) {
-    const event = new MessageEvent(type, { data: JSON.stringify(data) })
-    this.listeners.get(type)?.forEach(fn => fn(event))
-  }
-
-  emitConnectionError() {
-    const event = new MessageEvent('error', { data: undefined })
-    this.listeners.get('error')?.forEach(fn => fn(event))
-  }
-}
-
-const originalEventSource = globalThis.EventSource
 
 describe('DataRequestSection', () => {
   beforeEach(() => {
-    MockEventSource.instances = []
-    Object.defineProperty(globalThis, 'EventSource', {
-      configurable: true,
-      value: MockEventSource,
-      writable: true,
-    })
+    installDataRequestDoubles()
   })
 
   afterEach(() => {
-    Object.defineProperty(globalThis, 'EventSource', {
-      configurable: true,
-      value: originalEventSource,
-      writable: true,
-    })
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-    vi.useRealTimers()
+    resetDataRequestDoubles()
   })
-
   it('starts the mount status fetch without queueMicrotask deferral', () => {
     const fetchMock = vi.fn<VitestLooseMock>().mockReturnValue(new Promise(() => {}))
     vi.stubGlobal('fetch', fetchMock)
