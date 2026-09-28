@@ -1,15 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import {
-  aliasChange,
-  boolPair,
-  enumPair,
-  insertAliasEntries,
-  textPair,
-  timePair,
-  uuidPair,
-} from './alias-facts.mts'
+import { aliasChange, insertAliasEntries } from './alias-facts.mts'
+import { boolPair, enumPair, textPair, timePair, uuidPair } from './topic-revision-pairs.mts'
 
 type RevisionType = 'create' | 'update' | 'delete'
 type FieldChange = { before: unknown; after: unknown }
