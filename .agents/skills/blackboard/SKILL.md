@@ -68,8 +68,18 @@ session id and cannot invoke the root resolver. It always uses the script proced
 Write the concrete note to a UTF-8 file under `$TMPDIR`, then run:
 
 ```bash
-node dev/blackboard-journal.mts append --file <note-file>
+node dev/blackboard-journal.mts append --file <note-file> \
+  --mode interactive|autonomous \
+  --source-event-id <id> \
+  --work-outcome <outcome> \
+  --coverage-status <status>
 ```
+
+Pass `--coverage-source <source,...>` when naming inspected sources, and `--dropped-count <n>` when
+the dropped count is not zero. Interactive mode also requires `--outbox-directory <path>`.
+Autonomous mode must omit that flag. Stdout is one JSON delivery result: `delivered` is
+acknowledged, and interactive `pending` means the supplied outbox retained the note while the
+process still exits 0.
 
 The script tags the entry and its session with `vouchington/vouchington`. When the note concerns
 other repositories, pass one `--repository <owner/name>` per repository instead, including
@@ -82,10 +92,8 @@ always passes `--root-codex`. At the start of each new interactive root Codex se
 prior fallback and persists a new ignored `.local/codex-session-id`. All later root calls pass only
 `--root-codex`; a real thread id always replaces the persisted value. This root-CLI identity is
 independent from explicit session ids carried by automatic hook payloads. Never pass either root
-flag from a child or detached process. This command has a hard-fail, no-filesystem-fallback
-contract:
-on a nonzero exit, read `Error:` and `Replay with:` from stderr, fix the stated cause, and run the
-replay command. Do not write the note elsewhere instead.
+flag from a child or detached process. On a nonzero exit, read `Error:` and `Replay with:` from stderr, fix the stated cause, and run the
+replay command. Do not write the note to a different path instead.
 
 When `CODEX_THREAD_ID` is absent, the runtime provides no signal from which tooling can infer the
 new-session boundary. Omitting the one-time flag reuses stale identity; passing it twice fragments
@@ -111,8 +119,9 @@ identity round-trip. A spawned child resolves its own session id from its runtim
 example `CODEX_THREAD_ID` for Codex, `CLAUDE_CODE_SESSION_ID` for Claude Code) through the shared
 `dev/agent-session-id/resolve.mts` identity policy, the same way any
 other Vouchington blackboard consumer does, and calls `session_ensure` — or
-`node dev/blackboard-journal.mts append --file <note-file> --parent-session-id <parent-id>` — with
-that resolved id, the parent id it was given, its own `agent` name (`--agent` when the runtime
+`node dev/blackboard-journal.mts append` with `--file <note-file>`, `--parent-session-id <parent-id>`,
+and the same feedback flags — using that resolved id, the parent id it was given, its own `agent`
+name (`--agent` when the runtime
 environment mixes harness identities), and its version before any
 blackboard-aware or substantive work. If the runtime environment supplies no session identity, or
 the ensure fails, the child stops and reports the blocker rather than guessing an ID, passing

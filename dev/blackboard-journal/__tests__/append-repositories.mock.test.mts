@@ -1,9 +1,35 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { FeedbackDeliveryResult } from 'vouchington-tooling/agent-blackboard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const appendJournal = vi.fn<typeof import('vouchington-tooling/agent-blackboard').appendJournal>()
+
+const FEEDBACK_FLAGS = [
+  '--mode',
+  'autonomous',
+  '--source-event-id',
+  'event-1',
+  '--work-outcome',
+  'in-progress',
+  '--coverage-status',
+  'partial',
+]
+
+function deliveredJournal(): FeedbackDeliveryResult {
+  return {
+    status: 'delivered',
+    sourceEventId: 'event-1',
+    pendingCount: 0,
+    receipt: {
+      sessionId: 'sess-1',
+      sourceEventId: 'event-1',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      verified: true,
+    },
+  }
+}
 
 vi.mock<typeof import('vouchington-tooling/agent-blackboard')>(
   import('vouchington-tooling/agent-blackboard'),
@@ -35,9 +61,18 @@ describe('runAppend repository attribution', () => {
 
   async function appendWith(args: string[]) {
     const noteFile = await makeNoteFile('a note')
-    appendJournal.mockResolvedValue('journaled')
+    appendJournal.mockResolvedValue(deliveredJournal())
     await runAppend(
-      ['--file', noteFile, '--session-id', 'sess-1', '--agent', 'codex', ...args],
+      [
+        '--file',
+        noteFile,
+        '--session-id',
+        'sess-1',
+        '--agent',
+        'codex',
+        ...FEEDBACK_FLAGS,
+        ...args,
+      ],
       HOSTED_ENV,
     )
     return appendJournal.mock.calls[0]?.[0]
@@ -78,6 +113,7 @@ describe('runAppend repository attribution', () => {
         'codex',
         '--repository',
         'vouchington/vouchington',
+        ...FEEDBACK_FLAGS,
       ],
       HOSTED_ENV,
     ).catch((error: unknown) => error)

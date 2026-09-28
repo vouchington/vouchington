@@ -43,7 +43,7 @@ export type AppendCheckpointInput = BlackboardClients &
   }
 
 // Fail-open counterpart to dev/blackboard-journal/append.mts's runAppend. That command's
-// no-filesystem-fallback hard-fail contract is deliberate for agent-INITIATED journaling, where a
+// replayable hard-fail is deliberate for agent-INITIATED journaling, where a
 // human is watching and can react to a printed replay command. This entry point instead runs
 // unattended inside a hook subprocess: a missing credential, a network blip, a sandboxed run, or a
 // stale/removed session must never surface as hook noise, a blocked tool call, or a nonzero exit.

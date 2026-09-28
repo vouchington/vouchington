@@ -100,8 +100,10 @@ wraps Markdown as `{markdown: ...}` without the `type` field required by later p
 The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) supports two equivalent journal
 paths. Agents with the MCP tools and explicit session metadata may call `session_ensure`,
 `entry_append`, and `entry_get` directly. Agents may instead use `dev/blackboard-journal.mts`, which
-provides file input, session-id defaults, and replayable errors through the published `Sessions`
-and `Entries` JS clients via `vouchington-tooling/agent-blackboard`. The SessionStart probe
+provides file input, session-id defaults, and replayable errors. It calls `appendJournal` from
+`vouchington-tooling/agent-blackboard`, so the caller supplies mode, source-event id, work outcome,
+and feedback coverage. Flags are listed in
+[the command catalog](../../dev/reference-command-catalog.md#blackboard-journal). The SessionStart probe
 (`dev/check-blackboard.mts`) uses the same portable helper while retaining Vouchington's stop-work
 policy. The journal script records repository attribution: each entry's `data.repositories` lists
 the repositories it concerns (`vouchington/vouchington` unless `--repository` flags say otherwise),
