@@ -4,7 +4,10 @@ import * as postModeration from './moderation-ledger-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_MISSING_UPDATED_AT } from './membership-timestamp-allowlists.mts'
 import { AUTHORIZATION_TABLES_WITHOUT_CREATED_AT } from './oauth-authorization-allowlists.mts'
 import { MEDIA_PLACEMENT_MISSING_UPDATED_AT } from './media-placement-allowlists.mts'
-import { DYNAMIC_CONFIG_AUDIT_TABLES } from '../../../../data-stores/psql/dynamic-config-audit-schema.mts'
+import {
+  ACTIVITY_LOG_MISSING_UPDATED_AT,
+  AUDIT_FACT_MISSING_UPDATED_AT,
+} from './audit-fact-timestamp-allowlists.mts'
 import { RETAINED_MISSING_UPDATED_AT } from '../../../../data-stores/psql/schema-growth-retained-identities.mts'
 import { COMMUNITY_APPLICATION_MISSING_UPDATED_AT } from './community-application-allowlists.mts'
 
@@ -86,40 +89,7 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'post_admission_quota_consumptions',
     'Immutable committed-admission quota ledger; rows are inserted once and only later deleted by retention pruning.',
   ],
-  ...DYNAMIC_CONFIG_AUDIT_TABLES.map(
-    table =>
-      [
-        table,
-        'Append-only dynamic config snapshot. The parent audit row owns the lifecycle timestamp.',
-      ] as const,
-  ),
-  [
-    'moderator_action_restrictions',
-    'Ordered restriction facts captured once with a moderator action.',
-  ],
-  ['moderator_action_topic_slugs', 'Ordered topic slugs captured once with a moderator action.'],
-  [
-    'post_moderation_disposition_categories',
-    'Ordered flagged categories captured once with a moderation disposition.',
-  ],
-  [
-    'post_moderation_disposition_signals',
-    'Ordered spam signals captured once with a moderation disposition.',
-  ],
-  ['post_revision_categories', 'Ordered category facts captured once with a post revision.'],
-  [
-    'post_revision_data_point_topics',
-    'Ordered data-point topic ids captured once with a post revision.',
-  ],
-  ['post_revision_data_points', 'Typed data-point snapshot captured once with a post revision.'],
-  ['post_revision_images', 'Ordered image facts captured once with a post revision.'],
-  ['post_revision_rating_topics', 'Ordered review topic ids captured once with a post revision.'],
-  [
-    'report_integrity_flag_reporters',
-    'Detection-time reporter set captured once with a report integrity flag.',
-  ],
-  ['topic_revision_alias_entries', 'Alias facts captured once with a topic revision.'],
-  ['vote_integrity_flag_ips', 'Correlated IP facts captured once with a vote integrity flag.'],
+  ...AUDIT_FACT_MISSING_UPDATED_AT,
   [
     'moderation_transparency_daily_rollups',
     'Trigger-maintained aggregate projection; latest_occurred_at is the only lifecycle timestamp used by its release contract.',
@@ -214,24 +184,6 @@ export const ALLOWED_MISSING_UPDATED_AT = new Map<string, string>([
     'curated_aside_items',
     'position reorders and soft-deletes are the only mutations; deleted_at tracks the deletion lifecycle; no generic updated_at needed.',
   ],
-  ['moderator_actions', 'Append-only unified moderator action log; no updates after insertion.'],
-  [
-    'moderation_media_reveals',
-    'Append-only audit log of disturbing-media reveals by moderators; rows are never updated.',
-  ],
-  [
-    'moderation_queue_claims',
-    'Claim lifecycle uses claimed_at / released_at; the only mutation is releasing a claim (writing released_at), so a generic updated_at is redundant.',
-  ],
-  [
-    'autotagger_receipt_attempts',
-    'Append-only attempt ledger: the only mutation writes exactly one of completed_at/failed_at, enforced by chk_autotagger_receipt_attempts__terminal_exclusive, so a generic updated_at is redundant.',
-  ],
-  [
-    'ap_inbox_activities',
-    'Append-only replay-dedup ledger; rows are inserted once by the inbox receiver and never updated.',
-  ],
-  ['ap_post_likes', 'Undo/resurrect toggles deleted_at; redelivery refreshes like_ap_id.'],
-  ['bluesky_follow_records', 'Redelivery refreshes record_uri; unfollow deletes the row.'],
+  ...ACTIVITY_LOG_MISSING_UPDATED_AT,
 ])
 /* v8 ignore stop */

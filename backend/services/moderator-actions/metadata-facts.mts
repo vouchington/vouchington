@@ -120,3 +120,33 @@ function listRestrictions(metadata: Record<string, unknown>): Array<{ id: string
     return { id, type }
   })
 }
+
+export function flattenSlugs(facts: ModeratorActionMetadataFacts[]) {
+  const ordinals: number[] = []
+  const positions: number[] = []
+  const values: string[] = []
+  facts.forEach((fact, index) => {
+    fact.topicSlugs.forEach((slug, position) => {
+      ordinals.push(index + 1)
+      positions.push(position)
+      values.push(slug)
+    })
+  })
+  return { ordinals, positions, values }
+}
+
+export function flattenRestrictions(facts: ModeratorActionMetadataFacts[]) {
+  const ordinals: number[] = []
+  const positions: number[] = []
+  const restrictionIds: string[] = []
+  const types: string[] = []
+  facts.forEach((fact, index) => {
+    fact.restrictions.forEach((restriction, position) => {
+      ordinals.push(index + 1)
+      positions.push(position)
+      restrictionIds.push(restriction.id)
+      types.push(restriction.type)
+    })
+  })
+  return { ordinals, positions, ids: restrictionIds, types }
+}

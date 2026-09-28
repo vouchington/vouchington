@@ -3,8 +3,9 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ModeratorActionType } from './config.mts'
 import {
+  flattenRestrictions,
+  flattenSlugs,
   moderatorActionMetadataFacts,
-  type ModeratorActionMetadataFacts,
 } from './metadata-facts.mts'
 
 export interface RecordModeratorActionInput {
@@ -194,34 +195,4 @@ export async function recordModeratorActions(
     `,
     options,
   )
-}
-
-function flattenSlugs(facts: ModeratorActionMetadataFacts[]) {
-  const ordinals: number[] = []
-  const positions: number[] = []
-  const values: string[] = []
-  facts.forEach((fact, index) => {
-    fact.topicSlugs.forEach((slug, position) => {
-      ordinals.push(index + 1)
-      positions.push(position)
-      values.push(slug)
-    })
-  })
-  return { ordinals, positions, values }
-}
-
-function flattenRestrictions(facts: ModeratorActionMetadataFacts[]) {
-  const ordinals: number[] = []
-  const positions: number[] = []
-  const restrictionIds: string[] = []
-  const types: string[] = []
-  facts.forEach((fact, index) => {
-    fact.restrictions.forEach((restriction, position) => {
-      ordinals.push(index + 1)
-      positions.push(position)
-      restrictionIds.push(restriction.id)
-      types.push(restriction.type)
-    })
-  })
-  return { ordinals, positions, ids: restrictionIds, types }
 }
