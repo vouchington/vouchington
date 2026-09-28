@@ -14,6 +14,12 @@ export function repoRelativePath(path: string): string {
   return normalizePath(relative(repoRoot, path))
 }
 
+export const typescriptSymbolFlags = ts.SymbolFlags
+export const typescriptTypeFlags = ts.TypeFlags
+export const typescriptIndexKind = ts.IndexKind
+export const isTypescriptCallExpression = ts.isCallExpression
+export const forEachTypescriptChild = ts.forEachChild
+
 export function formatDiagnostics(diagnostics: readonly ts.Diagnostic[]): string {
   return ts.formatDiagnosticsWithColorAndContext(diagnostics, {
     getCanonicalFileName: fileName => fileName,

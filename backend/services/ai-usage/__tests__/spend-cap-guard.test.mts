@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { acquireTestAiUsageDateReservation, insertTestAiUsageRecord } from '@voucha/test-helpers'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import type { OpenAiSpendCapBreachContext } from '@modules/on-error/openai-spend-cap-breach'
 import { clearDailyAiCostTotalCacheForTesting, type DailyAiCostTotal } from '../daily-total.mts'
 import { openAiSpendCapConfig } from '../spend-cap-config.mts'

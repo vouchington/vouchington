@@ -13,10 +13,10 @@
 // way to see which named members of a module are used, so unlike
 // oxlint-plugin/typescript-program-construction.cjs it cannot distinguish "imports typescript
 // to construct a program" (banned) from "imports typescript as a runtime value for type
-// inspection, e.g. ts.isInterfaceDeclaration(...) / ts.SyntaxKind" (legitimate). Every file
-// below already does the latter as of this rule's introduction (verified via `pnpm run
-// dep-cruise:backend` -- none use `import type`, so `dependencyTypesNot: ['type-only']`
-// cannot separate them either). This is a closed, non-growing allowlist (a ratchet, not a
+// inspection, e.g. ts.isInterfaceDeclaration(...) / ts.SyntaxKind" (legitimate). Runtime
+// imports stay on the closed allowlist below. `import type` edges are excluded with
+// `dependencyTypesNot: ['type-only']` so a type-only compiler import is not a runtime
+// violation. This is a closed, non-growing allowlist (a ratchet, not a
 // grandfather clause): do NOT add new entries here, except a pre-existing importer that only
 // became visible after a doNotFollow fix closed a blind spot in this rule itself -- see the
 // dated addition below for the one case where that has happened so far. The call-level
@@ -25,14 +25,16 @@
 // parallel -- this rule only adds a coarser reachability backstop against *new* files. This is
 // deliberately stricter than the oxlint invariant for genuinely new files: oxlint permits a new
 // type-guard-only consumer anywhere, while this rule hard-fails any new file that reaches
-// `typescript` at all. A developer hitting that failure for a legitimate type-guard-only need
+// `typescript` at runtime. A developer hitting that failure for a legitimate type-guard-only need
 // should reuse an existing consumer above rather than write a new one, or raise loosening this
 // ratchet as its own reviewed change (not a silent allowlist addition) if reuse genuinely isn't
 // possible.
 //
-// 'backend-program.probes.test' and 'program-paths' import `typescript` for compiler-option
-// enums and diagnostic formatting. They do not construct a program. The discovery engine that
-// used to import `typescript` here now lives in vouchington-tooling/api-contract-discovery.
+// 'backend-program.probes.test' and 'program-paths' are the only runtime `typescript` consumers
+// besides backend-program.mts. They use compiler-option enums, type flags, and diagnostic
+// formatting. They do not construct a program. Type-only imports are not runtime edges
+// (`dependencyTypesNot` below). The discovery engine that used to import `typescript` here now
+// lives in vouchington-tooling/api-contract-discovery.
 const LEGITIMATE_TYPE_GUARD_CONSUMERS = ['program-paths', 'backend-program.probes.test']
 
 // Entries above are interpolated into a RegExp string below; escape regex metacharacters so a
@@ -58,6 +60,7 @@ const noApiFixturesTypescriptReachability = {
     ],
   },
   to: {
+    dependencyTypesNot: ['type-only'],
     // Deliberately direct-edge-only, not `reachable: true`: a prior draft of this rule used
     // `to: { reachable: true, path: ... }` to also catch a new api-fixtures file that imports
     // typescript only through an intermediate helper (transitively, not directly). That was

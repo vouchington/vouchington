@@ -36,7 +36,7 @@ describe('backend/.dependency-cruiser.cjs doNotFollow.path api-fixtures/ anchori
     },
     {
       alternative: 'build',
-      excludedOutsideApiFixtures: 'backend/services/rss-xml/xml-builder.mts',
+      excludedOutsideApiFixtures: 'backend/services/foo/build/output.mts',
       followedInsideApiFixtures:
         'backend/test-helpers/api-fixtures/openapi/build-openapi-document.mts',
     },
@@ -57,4 +57,21 @@ describe('backend/.dependency-cruiser.cjs doNotFollow.path api-fixtures/ anchori
       })
     },
   )
+
+  it('does not exclude the api-fixtures directory path, which has no trailing slash', () => {
+    expect(doNotFollowPath.test('backend/test-helpers/api-fixtures')).toBe(false)
+  })
+
+  it.each([
+    'backend/services/rss-xml/xml-builder.mts',
+    'backend/services/sitemaps/xml-builder.mts',
+    'backend/modules/feed-query-builders/time-range.mts',
+    'backend/services/posts/search/query-builder.mts',
+    'backend/test-helpers/entities/user-profile-fixtures.mts',
+    'backend/agents/chat/build-system-prompt.mts',
+    'backend/test-helpers/api-fixtures/build/generated.mts',
+    'backend/test-helpers/api-fixtures/fixtures/case.mts',
+  ])('keeps %s in scope', path => {
+    expect(doNotFollowPath.test(path)).toBe(false)
+  })
 })

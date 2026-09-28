@@ -4,14 +4,7 @@ import {
   getUtcDayUuidv7Bounds,
   isMonthlyPartitionExpired,
   parseMonthlyPartitionName,
-  timestampToUuidv7LowerBound,
 } from '../partition-utils.mts'
-
-describe('timestampToUuidv7LowerBound', () => {
-  it.each([1.5, Number.NaN])('rejects non-integral timestamp %s', timestamp => {
-    expect(() => timestampToUuidv7LowerBound(timestamp)).toThrow('Timestamp must be a safe integer')
-  })
-})
 
 describe('getUtcDayUuidv7Bounds', () => {
   it('returns UUIDv7 lower bounds for the UTC day range', () => {

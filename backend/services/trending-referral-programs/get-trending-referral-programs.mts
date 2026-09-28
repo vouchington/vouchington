@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { clampLimit } from '@modules/search-utils'
 import { decodeUuidCursor, isScoreCursor, buildPageInfo } from '@modules/pagination'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import type {
   TrendingReferralProgramOptions,
   TrendingReferralProgramsResult,
