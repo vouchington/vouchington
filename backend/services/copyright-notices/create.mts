@@ -18,6 +18,7 @@ export async function createCopyrightNoticeAggregateInTransaction(
   input: CreateCopyrightNoticeAggregateInput,
   transaction: TransactionQuery,
 ): Promise<CopyrightNoticeRecord> {
+  assert(input.jurisdiction === 'us_dmca', 422, 'Only US DMCA notices use this aggregate')
   assert(input.targets.length > 0, 422, 'A copyright notice requires at least one hosted target')
   const { rows } = await transaction<CopyrightNoticeRecord>(sql`/* createCopyrightNoticeAggregate */
     INSERT INTO copyright_notices (

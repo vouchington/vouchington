@@ -265,11 +265,46 @@ counter-notice deadline or human reversal requirement.
 
 ## Jurisdiction and public meaning
 
-US timing does not govern EU or UK cases. The initial intake contract therefore accepts only
-`us_dmca`. EU and UK intake must stay disabled until their distinct schemas, reasons, automation
-disclosures, free human complaint paths, representatives, and jurisdiction-specific review rules
-are implemented and legally reviewed. Conflicting grounds go to qualified staff or counsel, and
-removing one ground cannot remove another.
+US timing does not govern EU or UK cases. The public form and email intake still accept only
+`us_dmca`. EU and UK use separate contracts and stay unavailable until an unwithdrawn territorial
+policy approval exists. That approval is an operator record, not a seeded row and not
+`COPYRIGHT_INTAKE_ENABLED`. Representatives, counsel review, and the activation checklist remain
+required before any live intake is advertised. Conflicting grounds go to qualified staff or
+counsel, and removing one ground cannot remove another.
+
+## EU and UK contracts
+
+```mermaid
+flowchart TD
+  policy[Unwithdrawn territorial policy approval]
+  policy -->|missing or withdrawn| closed[Fail closed]
+  policy -->|eu_dsa| euReceipt[EU receipt routed to the staff queue]
+  policy -->|uk| ukReceipt[UK receipt routed to the staff queue]
+  euReceipt --> ack[Acknowledgment attempts with no due time]
+  ack -->|fifth failure| escalated[Escalation]
+  euReceipt --> reasons[Staff-supplied statement of reasons]
+  reasons --> redress[Participant redress and staff disposition]
+  euReceipt --> supervised[Supervised complaint escalates when recorded]
+  policy --> report[Transparency counts for a caller-supplied period]
+  ukReceipt --> review[Staff-supplied review]
+  review --> ukRedress[Participant redress and staff disposition]
+```
+
+Receipt stores the notifier's contact, content location, and grounds. It does not resolve a
+placement, write a lifecycle event, or create a US restoration deadline. Acknowledgment is an
+administrative obligation with no due timestamp. A failed attempt can be recorded until the fifth
+failure, the same attempt bound used for copyright delivery, and that fifth failure escalates.
+Success does not invent a response deadline.
+
+A statement of reasons, UK review, and redress decision exist only when an identified staff user
+supplies the text. `automation_disclosure` is `human`. The staff disposition on redress is
+`maintain` or `revoke` as selected by that user. The service does not choose it and does not
+withhold media. A supervised complaint records an external authority reference and escalates that
+record. Transparency reporting counts facts bound to the current EU approval inside a period the
+caller supplies. It does not choose the period.
+
+UK review and redress do not write EU reason, complaint, or report rows. Neither contract imports
+the US counter-notice clock.
 
 A member-visible case records an allegation and, where applicable, a provisional restriction or reviewed
 outcome. It never describes the claimant as the proven owner or the poster as an infringer.

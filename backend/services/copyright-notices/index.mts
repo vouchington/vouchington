@@ -102,3 +102,24 @@ export {
   CopyrightDeliveryNotClaimedError,
 } from './delivery-transport.mts'
 export { copyrightAppealRecommendations } from './appeal-recommendations.mts'
+export {
+  acknowledgeEuCopyrightNotice,
+  recordEuCopyrightAcknowledgmentFailure,
+} from './eu-acknowledgment.mts'
+export { receiveEuCopyrightNotice } from './eu-notice-receipt.mts'
+export { recordEuCopyrightStatementOfReasons } from './eu-reasons.mts'
+export { recordEuCopyrightRedressDecision, submitEuCopyrightRedress } from './eu-redress.mts'
+export { compileEuCopyrightTransparencyReport } from './eu-reporting.mts'
+export { recordEuCopyrightSupervisedComplaint } from './eu-supervised-complaint.mts'
+export {
+  currentUserCanApproveCopyrightTerritorialPolicy,
+  recordCopyrightTerritorialPolicyApproval,
+  withdrawCopyrightTerritorialPolicyApproval,
+} from './territorial-policy.mts'
+export {
+  acknowledgeUkCopyrightNotice,
+  recordUkCopyrightAcknowledgmentFailure,
+} from './uk-acknowledgment.mts'
+export { receiveUkCopyrightNotice } from './uk-notice-receipt.mts'
+export { recordUkCopyrightRedressDecision, submitUkCopyrightRedress } from './uk-redress.mts'
+export { recordUkCopyrightReview } from './uk-review.mts'

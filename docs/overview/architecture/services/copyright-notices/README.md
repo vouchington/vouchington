@@ -90,5 +90,8 @@ recomputation, excludes deleted authors from desired incidents, and creates one 
 review through the existing partial unique index. Reversals preserve an open review for staff
 disposition; restrict and terminate recheck the operative threshold at decision time.
 
-The durable workflow and operator recovery contract are documented in
+EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
+receipt, routing, reasons or review, redress, escalation, and EU reporting facts, and they fail
+closed until a separate territorial policy approval exists. They do not use the US restoration
+clock or decide legal merits. The durable workflow is documented in
 [`COPYRIGHT-NOTICES.md`](../../../../requirements/moderation/COPYRIGHT-NOTICES.md).
