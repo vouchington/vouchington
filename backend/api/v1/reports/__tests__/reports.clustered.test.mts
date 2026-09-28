@@ -117,7 +117,7 @@ describe('GET /api/v1/reports?cluster=entity', () => {
         return postId
       }),
     )
-    await createVoteIntegrityFlag('post', postIds[0]!, 'velocity_spike', { test: true })
+    await createVoteIntegrityFlag('post', postIds[0]!, 'velocity_spike', {})
     await createReportsForPosts(postIds, 'spam', new Date(Date.UTC(9999, 11, 31, 23, 59, 59, 997)))
 
     const request = createRequest()

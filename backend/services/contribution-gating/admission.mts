@@ -104,19 +104,23 @@ export async function runContributionAdmission<T>(
         committedAt,
         contributionAdmissionConsumptionMode(input.policy),
       )
+    const committedPostId = committedContributionPostId(response)
     await query(sql`/* runContributionAdmission.commit */
-      WITH terminal AS (
+      WITH ensured AS (
+        SELECT fn_ensure_retained_post_identity(${committedPostId}::uuid) AS pinned
+      ), terminal AS (
         SELECT ${committedAt}::timestamptz AS committed_at
       )
       UPDATE post_admission_reservations r SET state = 'committed', response = ${JSON.stringify(response)}::jsonb,
         replay_finalization = 'pending',
-        committed_post_id = ${committedContributionPostId(response)}, committed_status = 'created',
+        committed_post_id = ${committedPostId}, committed_status = 'created',
         committed_at = terminal.committed_at,
         expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute',
         retention_expires_at = terminal.committed_at + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute',
         updated_at = terminal.committed_at
       FROM terminal
-      WHERE r.id = ${claim.reservationId}`)
+      WHERE r.id = ${claim.reservationId}
+        AND EXISTS (SELECT 1 FROM ensured)`)
     commitMayHaveSucceeded = true
     const result = { kind: 'created', response } as const
 
