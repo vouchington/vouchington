@@ -1,3 +1,5 @@
 import ts from 'typescript'
 
-export const syntaxKindIdentifier = ts.SyntaxKind.Identifier
+const syntaxKindIdentifier = ts.SyntaxKind.Identifier
+
+void syntaxKindIdentifier

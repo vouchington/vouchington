@@ -1,3 +1,9 @@
 import type { Program } from 'typescript'
 
-export type CompilerProgram = Program
+type CompilerProgram = Program
+
+function describeCompilerProgram(program: CompilerProgram): CompilerProgram {
+  return program
+}
+
+void describeCompilerProgram

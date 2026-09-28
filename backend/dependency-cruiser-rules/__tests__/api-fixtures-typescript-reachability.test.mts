@@ -1,6 +1,11 @@
 import { createRequire } from 'node:module'
 
-import { cruise, type ICruiseResult, type IForbiddenRuleType } from 'dependency-cruiser'
+import {
+  cruise,
+  type ICruiseResult,
+  type IForbiddenRuleType,
+  type IRegularForbiddenRuleType,
+} from 'dependency-cruiser'
 import { describe, expect, it } from 'vitest'
 import './fixtures/typescript-reachability/header-contract-parser.mts'
 import './fixtures/typescript-reachability/header-contract-registry.mts'
@@ -13,8 +18,15 @@ const fixtureRoot = 'backend/dependency-cruiser-rules/__tests__/fixtures/typescr
 
 const { noApiFixturesTypescriptReachability } =
   require('../api-fixtures-typescript-reachability.cjs') as {
-    noApiFixturesTypescriptReachability: IForbiddenRuleType
+    noApiFixturesTypescriptReachability: IRegularForbiddenRuleType
   }
+
+function pathNotPatterns(pathNot: string | string[] | undefined): string[] {
+  if (!Array.isArray(pathNot)) {
+    throw new Error('reachability exemptions must be a list of patterns')
+  }
+  return pathNot
+}
 
 const runtimeConsumerAllowlist: IForbiddenRuleType = {
   ...noApiFixturesTypescriptReachability,
@@ -44,7 +56,7 @@ async function violationsFor(rule: IForbiddenRuleType, entrypoint: string) {
 }
 
 describe('no-api-fixtures-typescript-reachability', () => {
-  const exemptions = noApiFixturesTypescriptReachability.from.pathNot.map(
+  const exemptions = pathNotPatterns(noApiFixturesTypescriptReachability.from.pathNot).map(
     pattern => new RegExp(pattern),
   )
 
