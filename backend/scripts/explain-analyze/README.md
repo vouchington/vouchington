@@ -312,7 +312,8 @@ primary id query — the feed (`GET /api/v1/feeds/posts/:feed_type`), post detai
 
 **User search** (`run-scenarios/admin-user-search.mts`): `searchUsers` / `searchAdminUsers` —
 public and admin search cover prefix, UUID, and exact primary-email lookups. The email scenario
-seeds a selective address, checks the returned user, and requires the executing
+seeds one primary address and one non-primary address per user, so the partial primary index is
+smaller than the full email btree, checks the returned user, and requires the executing
 `idx_user_email_addresses_email_primary` probe in custom and generic plans.
 
 ### Explicit-range pruning
