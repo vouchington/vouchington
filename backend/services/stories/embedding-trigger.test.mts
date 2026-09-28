@@ -40,6 +40,12 @@ function recoveryCursorBefore(id: string): string {
 }
 
 describe('RSS embedding story trigger', () => {
+  it('rejects an unsafe recovery page size', async () => {
+    await expect(reconcilePendingStoryClusteringEmbeddingTriggers({ limit: 0 })).rejects.toThrow(
+      'Invalid story embedding recovery page size',
+    )
+  })
+
   it('marks a current embedding after strict queue acceptance and then does no work', async () => {
     const item = await makeItem()
     await expect(triggerStoryClusteringForCurrentEmbeddings([item.id])).resolves.toBe(1)

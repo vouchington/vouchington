@@ -1,11 +1,37 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { readEnqueuedJob } from '@voucha/test-helpers'
+import { isDeduplicatedEnqueue, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
 import { enqueueReconcileExistingEmbeddings, reconciliationJobOptions } from './enqueues.mts'
 import { bedrock_embeddings_batch } from './queues.mts'
 import { BEDROCK_EMBEDDINGS_BATCH_ORDERING, PRIORITY_DEFAULT } from './config.mts'
+import { reconciliationScheduleEntries } from './enqueues/reconciliation-schedules.mts'
 
 describe('embedding reconciliation enqueues', () => {
+  it('dispatches each scheduled copy root with its entity payload and reconciliation lane', async () => {
+    for (const entityType of ['topics', 'posts', 'rss_feed_items'] as const) {
+      const entry = reconciliationScheduleEntries.find(
+        candidate => candidate.schedulerId === `reconcile_existing_${entityType}`,
+      )!
+      const surface = entry.operatorSurfaces.find(candidate => candidate.kind === 'scheduled-jobs')!
+      if (surface.kind !== 'scheduled-jobs') throw new Error('Missing scheduled trigger')
+      const enqueued = await surface.trigger()
+      const deduplicationId = `bedrock-embedding-reconciliation:copy:${entityType}`
+      const job = isDeduplicatedEnqueue(enqueued)
+        ? (await readAllQueueJobs(bedrock_embeddings_batch)).find(
+            queued => queued.opts.deduplication?.id === deduplicationId,
+          )
+        : await readEnqueuedJob(bedrock_embeddings_batch, enqueued)
+      expect(job).toMatchObject({
+        name: 'reconcile_existing',
+        data: { entityType },
+        opts: {
+          ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.reconciliation,
+          deduplication: { id: deduplicationId },
+        },
+      })
+    }
+  })
+
   it('uses distinct 60-second throttles for all five roots without retained job IDs', () => {
     const flows = [
       'copy:topics',

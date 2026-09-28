@@ -104,6 +104,15 @@ describe('bedrock embeddings batch worker processor', () => {
     }
     await expect(
       processBedrockEmbeddingsBatchJob(
+        makeJob('reconcile_existing', null as unknown as Record<string, unknown>, 'reconciliation'),
+        {} as Worker,
+      ),
+    ).rejects.toThrow(UnrecoverableError)
+    await expect(
+      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'reconciliation'), {} as Worker),
+    ).rejects.toThrow('Unknown reconciliation job type: unexpected')
+    await expect(
+      processBedrockEmbeddingsBatchJob(
         makeJob('reconcile_existing', { entityType: 'topics', after: '' }, 'reconciliation'),
         {} as Worker,
       ),

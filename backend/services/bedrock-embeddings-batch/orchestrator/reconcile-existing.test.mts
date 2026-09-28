@@ -22,6 +22,29 @@ import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/
 import { copyExistingEmbeddings } from './reconcile-existing.mts'
 
 describe('copyExistingEmbeddings', () => {
+  it('rejects unsupported entities and unsafe page sizes before scanning', async () => {
+    await expect(copyExistingEmbeddings('images' as 'topics')).rejects.toThrow(
+      'Invalid table name: images',
+    )
+    for (const limit of [0, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+      await expect(copyExistingEmbeddings('topics', { limit })).rejects.toThrow(
+        'Invalid embedding reconciliation page size',
+      )
+    }
+  })
+
+  it('returns an empty bounded page after the greatest UUID cursor', async () => {
+    await expect(
+      copyExistingEmbeddings('topics', {
+        after: encodeScopedUuidCursor(
+          'ffffffff-ffff-7fff-bfff-ffffffffffff',
+          'embedding-reconciliation:topics:id-asc',
+        ),
+        limit: 1,
+      }),
+    ).resolves.toEqual({ updatedIds: [], scannedCount: 0, nextCursor: null })
+  })
+
   it('advances one dirty candidate at a time across misses, deletion, batch locks, and row locks', async () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
