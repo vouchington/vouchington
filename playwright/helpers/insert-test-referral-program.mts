@@ -92,8 +92,8 @@ export async function insertTestReferralProgram(suffix: string): Promise<TestRef
   const hostnameId = hostnameResult.rows[0].id as string
 
   const urlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname)
-     VALUES ($1, $2, $3)
+    `INSERT INTO urls (url, hostname_id, pathname, search_params)
+     VALUES ($1, $2, $3, '{}'::JSONB)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
      RETURNING id`,
     [url, hostnameId, urlPath],

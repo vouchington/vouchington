@@ -75,27 +75,21 @@ export async function insertTestUrlDirect(
   }
 
   const pathname = normalizedUrl.pathname
-  const searchParams = [...normalizedUrl.searchParams.entries()]
+  const searchParams: Record<string, string> = {}
+  normalizedUrl.searchParams.forEach((value: string, key: string) => {
+    searchParams[key] = value
+  })
 
   const urlResult = await write(sql`/* insertTestUrlDirect */
-    INSERT INTO urls (url, hostname_id, pathname, created_by_id, url_content_type_id)
+    INSERT INTO urls (url, hostname_id, pathname, search_params, created_by_id, url_content_type_id)
     VALUES (
       ${normalizedUrl.toString()}, ${hostnameId}, ${pathname},
-      ${userId}, ${urlContentTypeId}
+      ${JSON.stringify(searchParams)}::jsonb, ${userId}, ${urlContentTypeId}
     )
     ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
-    RETURNING id, (xmax = 0) AS inserted
+    RETURNING id
   `)
   const urlId: string = urlResult.rows[0].id
-  if (urlResult.rows[0].inserted && searchParams.length > 0) {
-    await write(
-      `/* insertTestUrlDirect:searchParams */
-        INSERT INTO url_search_params (url_id, ordinal, param_name, param_value)
-        SELECT $1, param.ordinal::int - 1, param.name, param.value
-        FROM UNNEST($2::text[], $3::text[]) WITH ORDINALITY AS param(name, value, ordinal)`,
-      [urlId, searchParams.map(([name]) => name), searchParams.map(([, value]) => value)],
-    )
-  }
 
   const { rows } = await read<TestViewUrl>(
     sql`/* insertTestUrlDirect */ SELECT * FROM view_urls WHERE id = ${urlId}`,
@@ -116,11 +110,14 @@ export async function insertTestUrl(options: {
 
   const urlObj = new URL(url)
   const pathname = urlObj.pathname
-  const searchParams = [...urlObj.searchParams.entries()]
+  const searchParams: Record<string, string> = {}
+  urlObj.searchParams.forEach((value, key) => {
+    searchParams[key] = value
+  })
 
   let query = sql`/* insertTestUrl */
-    INSERT INTO urls (url, hostname_id, pathname`
-  let values = sql`${url}, ${hostnameId}, ${pathname}`
+    INSERT INTO urls (url, hostname_id, pathname, search_params`
+  let values = sql`${url}, ${hostnameId}, ${pathname}, ${JSON.stringify(searchParams)}::jsonb`
 
   if (canonicalUrlId !== undefined) {
     query = query.append(sql`, canonical_url_id`)
@@ -136,17 +133,7 @@ export async function insertTestUrl(options: {
   query = query.append(sql`) RETURNING id`)
 
   const result = await write(query)
-  const urlId: string = result.rows[0].id
-  if (searchParams.length > 0) {
-    await write(
-      `/* insertTestUrl:searchParams */
-        INSERT INTO url_search_params (url_id, ordinal, param_name, param_value)
-        SELECT $1, param.ordinal::int - 1, param.name, param.value
-        FROM UNNEST($2::text[], $3::text[]) WITH ORDINALITY AS param(name, value, ordinal)`,
-      [urlId, searchParams.map(([name]) => name), searchParams.map(([, value]) => value)],
-    )
-  }
-  return urlId
+  return result.rows[0].id
 }
 
 /**

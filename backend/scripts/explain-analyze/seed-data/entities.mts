@@ -65,12 +65,12 @@ export async function seedUrls(count = FEED_URL_COUNT + ITEM_URL_POOL): Promise<
         const id = seedUuid(idx, '03')
         const hostnameId = seedUuid(idx % HOSTNAME_COUNT, '02')
         const url = `https://seed-host-${idx % HOSTNAME_COUNT}.example.com/feed/${idx}`
-        values.push(id, url, hostnameId)
-        const base = values.length - 2
-        rows.push(`($${base}, $${base + 1}, $${base + 2})`)
+        values.push(id, url, hostnameId, `{}`)
+        const base = values.length - 3
+        rows.push(`($${base}, $${base + 1}, $${base + 2}, $${base + 3}::jsonb)`)
       }
       await query(
-        `/* seedExplainData */ INSERT INTO urls (id, url, hostname_id) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+        `/* seedExplainData */ INSERT INTO urls (id, url, hostname_id, search_params) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
     }

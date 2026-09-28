@@ -104,14 +104,6 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One current snapshot per RSS feed-to-item source row; the source primary key bounds cardinality to live RSS feed item sources.',
   ],
   [
-    'rss_feed_item_source_category_snapshot_categories',
-    'Category rows cannot outlive their cascade-deleted source snapshot, so cardinality stays bounded by live RSS feed item sources.',
-  ],
-  [
-    'rss_feed_item_category_snapshot_reconciliation_categories',
-    'Category rows cannot outlive their cascade-deleted reconciliation, so cardinality stays bounded by the active backlog.',
-  ],
-  [
     'post_category_finalizations',
     'One coalesced durable finalization row per post; a post primary key bounds cardinality to live posts.',
   ],

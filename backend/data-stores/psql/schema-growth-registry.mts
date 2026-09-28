@@ -99,7 +99,6 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['conversation_message_agentic_runs_events', monthlyRange('conversation_message_agentic_run_id')],
   ['crawls', monthlyRange('id')],
   ['crawl_chunks', monthlyRange('crawl_id')],
-  ['crawl_links', monthlyRange('crawl_id')],
   ...VOTE_SCHEMA_CONFIGS.map(({ voteTable, entityIdColumn }): [string, PartitionPolicy] => [
     voteTable,
     defaultRange(entityIdColumn),

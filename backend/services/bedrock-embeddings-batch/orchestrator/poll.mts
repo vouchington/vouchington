@@ -4,15 +4,10 @@ import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { lifecycleColumnForBedrockStatus } from '../derive-status.mts'
 import { cleanupBatchLocks } from './cleanup.mts'
 
-export type ProcessBatchOutcome = {
-  bedrockStatus: string
-  jobType: string
-}
-
-export const processBatch = async (batchId: string): Promise<ProcessBatchOutcome> => {
+export const processBatch = async (batchId: string): Promise<void> => {
   const { rows: batchRows } = await read(
     `/* processBatch */
-    SELECT id, job_arn, job_type, completed_at, failed_at, cancelled_at
+    SELECT id, job_arn, completed_at, failed_at, cancelled_at
     FROM bedrock_embeddings_batches
     WHERE id = $1
   `,
@@ -24,16 +19,12 @@ export const processBatch = async (batchId: string): Promise<ProcessBatchOutcome
   }
 
   const persistedBatch = batchRows[0]
-  const jobType = String(persistedBatch.job_type)
   if (persistedBatch.completed_at !== null) {
-    return { bedrockStatus: 'Completed', jobType }
+    return
   }
   if (persistedBatch.failed_at !== null || persistedBatch.cancelled_at !== null) {
     await cleanupBatchLocks(batchId)
-    return {
-      bedrockStatus: persistedBatch.cancelled_at !== null ? 'Stopped' : 'Failed',
-      jobType,
-    }
+    return
   }
 
   const batch = await retrieveBedrockBatch(persistedBatch.job_arn)
@@ -44,19 +35,19 @@ export const processBatch = async (batchId: string): Promise<ProcessBatchOutcome
   const transition = await write(
     `/* processBatch */
     UPDATE bedrock_embeddings_batches
-    SET ${column} = COALESCE(${column}, CURRENT_TIMESTAMP)
+    SET data = data || $2::jsonb,
+        ${column} = COALESCE(${column}, CURRENT_TIMESTAMP)
     WHERE id = $1
       AND completed_at IS NULL
       AND failed_at IS NULL
       AND cancelled_at IS NULL
   `,
-    [batchId],
+    [batchId, JSON.stringify(batch)],
   )
 
   if ((transition.rowCount ?? 0) > 0 && (column === 'failed_at' || column === 'cancelled_at')) {
     await cleanupBatchLocks(batchId)
   }
-  return { bedrockStatus: status, jobType }
 }
 
 /* no-mistakes: integration=bedrock */
