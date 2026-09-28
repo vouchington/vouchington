@@ -59,26 +59,3 @@ export const getBatchIdByJobArn = async (jobArn: string): Promise<string | null>
   )
   return rows.length > 0 ? (rows[0].id as string) : null
 }
-
-export const getBatchInfo = async (
-  batchId: string,
-): Promise<{ job_type: string; output_s3_uri: string; input_size_mb: number } | null> => {
-  const { rows } = await read(
-    `/* getBatchInfo */
-    SELECT job_type, output_s3_uri, input_size_mb
-    FROM bedrock_embeddings_batches
-    WHERE id = $1
-  `,
-    [batchId],
-  )
-
-  if (rows.length === 0) {
-    return null
-  }
-
-  return {
-    job_type: rows[0].job_type,
-    output_s3_uri: rows[0].output_s3_uri as string,
-    input_size_mb: Number(rows[0].input_size_mb),
-  }
-}
