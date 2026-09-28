@@ -1,9 +1,8 @@
 import type {
-  ProcessSendCommunityModerationSummaryEmailVariables,
   ProcessSendFollowNewsSourcesEmailVariables,
   ProcessSendFollowTopicsEmailVariables,
   ProcessSendPostReferralLinkEmailVariables,
-} from './types.mts'
+} from '../types.mts'
 import { JobPayloadError } from './job-payload-error.mts'
 
 export const communityCountKeys = [
@@ -124,10 +123,12 @@ function communityItem(item: unknown): void {
 }
 
 function asRecord(data: unknown): Record<string, unknown> {
-  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
-    throw new JobPayloadError('variables must be an object')
-  }
+  if (!isRecord(data)) throw new JobPayloadError('variables must be an object')
   return data
+}
+
+function isRecord(data: unknown): data is Record<string, unknown> {
+  return data !== null && typeof data === 'object' && !Array.isArray(data)
 }
 
 function assertExactKeys(record: Record<string, unknown>, allowed: readonly string[]): void {

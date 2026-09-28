@@ -1,5 +1,5 @@
 import { topicTypes } from '@voucha/types/entities/topic'
-import type { CreateTopicUpdates, ReconcileEntityData, UserLoginContext } from './types.mts'
+import type { CreateTopicUpdates, ReconcileEntityData, UserLoginContext } from '../types.mts'
 import {
   asRecord,
   assertExactKeys,

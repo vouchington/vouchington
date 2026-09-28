@@ -1,4 +1,4 @@
-import type { EntityJobs } from './types.mts'
+import type { EntityJobs } from '../types.mts'
 import {
   communityPromptPayload,
   conversationPayload,

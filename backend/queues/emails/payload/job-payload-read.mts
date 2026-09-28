@@ -1,10 +1,12 @@
 import { JobPayloadError } from './job-payload-error.mts'
 
 export function asRecord(data: unknown, label: string): Record<string, unknown> {
-  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
-    throw new JobPayloadError(`${label} must be an object`)
-  }
+  if (!isRecord(data)) throw new JobPayloadError(`${label} must be an object`)
   return data
+}
+
+function isRecord(data: unknown): data is Record<string, unknown> {
+  return data !== null && typeof data === 'object' && !Array.isArray(data)
 }
 
 export function assertExactKeys(record: Record<string, unknown>, allowed: readonly string[]): void {

@@ -7,7 +7,7 @@ import type {
   ProcessSendFollowTopicsEmailVariables,
   ProcessSendPostReferralLinkEmailVariables,
   ProcessSendWelcomeEmailVariables,
-} from './types.mts'
+} from '../types.mts'
 import { communityCountKeys } from './job-payload-engagement.mts'
 import { templateVariableKeysCoverCanonicalTypes } from './job-payload-templates.mts'
 

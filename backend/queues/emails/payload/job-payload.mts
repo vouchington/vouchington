@@ -7,7 +7,7 @@ import type {
   ProcessSendEmailAddressLoginTokenVariables,
   ProcessSendEmailVerificationTokenVariables,
   ProcessSendWelcomeEmailVariables,
-} from './types.mts'
+} from '../types.mts'
 import { parseEngagementVariables } from './job-payload-engagement.mts'
 import { emailVariableKeysCoverCanonicalTypes } from './job-payload-contract.mts'
 import { JobPayloadError } from './job-payload-error.mts'

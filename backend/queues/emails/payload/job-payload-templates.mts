@@ -3,7 +3,7 @@ import type {
   ProcessSendCommunityOwnershipTransferEmailVariables,
   ProcessSendCommunityRoleChangeEmailVariables,
   ProcessSendDataExportReadyEmailVariables,
-} from './types.mts'
+} from '../types.mts'
 import { JobPayloadError } from './job-payload-error.mts'
 import {
   asRecord,
