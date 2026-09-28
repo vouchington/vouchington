@@ -121,6 +121,9 @@ jobs:
       - name: Enforce plan gates and write job summary
         timeout-minutes: 2
         run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"
+      - name: Prove pruning on migrated explicit partitions
+        timeout-minutes: 3
+        run: node backend/scripts/explain-analyze/pruning/run.mts
       - name: Upload EXPLAIN ANALYZE results
         if: always()
         continue-on-error: true
