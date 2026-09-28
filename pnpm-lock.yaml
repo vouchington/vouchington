@@ -6397,6 +6397,9 @@ importers:
         specifier: ^14.0.2
         version: 14.0.2
     devDependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
