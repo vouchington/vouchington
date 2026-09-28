@@ -14,7 +14,6 @@ import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { buildPostSearchPageInfo, decodePostSearchCursor } from './get-ids-page-info.mts'
 import type { PostSearchRow } from './get-ids-types.mts'
-export type { PostSearchRow } from './get-ids-types.mts'
 
 type PostSearchResponse = {
   results: PostSearchResult[]

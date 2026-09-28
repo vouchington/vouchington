@@ -26,7 +26,6 @@ import {
   persistVerifiedGooglePlayObservation,
 } from './verification-finalization.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
-export type { Context } from './process-verification-types.mts'
 
 /** Worker authority: fetches subscriptionsv2, then persists/projections its normalized source state. */
 export async function processGooglePlayMembershipVerification(

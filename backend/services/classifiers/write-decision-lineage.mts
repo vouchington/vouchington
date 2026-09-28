@@ -24,7 +24,6 @@ export type ClassifierDecisionConfiguration = {
 }
 
 import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
-export type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 type SnapshotRow = ClassifierDecisionSnapshot
 
 type CallRow = { id: string; shard_ordinal: number }

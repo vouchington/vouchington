@@ -20,7 +20,6 @@ import type {
 export type {
   CommunitySortMode,
   CommunityFeedCategory,
-  CommunityOwner,
   SearchCommunitiesResult,
 } from './search-types.mts'
 

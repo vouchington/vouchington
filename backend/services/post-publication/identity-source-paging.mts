@@ -6,7 +6,6 @@ import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { PublicationSnapshotKey } from './identity-source.mts'
 import { nativeSourceBounds, nativeSourceRange } from './native-source-range.mts'
 import type { SourceRow } from './identity-source-paging-types.mts'
-export type { SourceRow } from './identity-source-paging-types.mts'
 
 const branches = [
   'review',

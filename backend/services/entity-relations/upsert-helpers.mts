@@ -5,11 +5,7 @@ import type { Topic } from '@voucha/types/entities/topic'
 import type { BasicUser, PrivateUser } from '@voucha/types/entities/user' // PrivateUser used in UpsertEntityTypes
 import type { EntityRelationMetadata } from './metadata.mts'
 import type { EntityRelation, UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
-export type {
-  EntityRelation,
-  EntityRelationOrigin,
-  UpsertEntityRelationsOptions,
-} from './upsert-helpers-types.mts'
+export type { EntityRelation, UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 
 export type UpsertEntityTypes = Post | Topic | PrivateUser
 

@@ -1,7 +1,5 @@
 export * from './authorization.mts'
 export * from './categories.mts'
-export { clearCategoriesForUnlinkedTopicAlias } from './clear-topic-alias-categories.mts'
-export { backfillCategoriesForTopicAliases } from './backfill-categories-for-topic-aliases.mts'
 export * from './chapters.mts'
 export * from './collaborative-topic-relations.mts'
 export * from './dates.mts'

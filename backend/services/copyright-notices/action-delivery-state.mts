@@ -7,7 +7,6 @@ import {
 } from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-export type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
 export {
   completeCopyrightActionIntentInTransaction,
   getCopyrightActionPlacementKey,

@@ -3,7 +3,6 @@ import { getLatestJudgementsForEntitiesBatch } from './judgements.mts'
 import { getReportJudgementContextsForEntitiesBatch } from './judgement-context.mts'
 import type { FullJudgementSummary } from './full-judgement-summary.mts'
 export type { FullJudgementSummary } from './full-judgement-summary.mts'
-export type { ModerationJudgementAction } from '@ts-shared/utils/moderation-policy'
 
 /** Attach `judgement` to each report-like object that has entity_type and entity_id. */
 export async function attachJudgements<

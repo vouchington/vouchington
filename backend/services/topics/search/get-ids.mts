@@ -8,7 +8,6 @@ import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { buildTopicSearchPageInfo, decodeTopicSearchCursor } from './get-ids-page-info.mts'
 import type { TopicSearchRow } from './get-ids-types.mts'
-export type { TopicSearchRow } from './get-ids-types.mts'
 
 type TopicSearchResponse = {
   results: TopicSearchResult[]
