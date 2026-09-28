@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
 import {
   beginTransaction,
@@ -30,6 +30,11 @@ async function drainRetainedMediaCleanup(
 }
 
 describe('retained media identity cleanup', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
   it('preserves legal target placement and image identities without a live placement', async () => {
     const fixture = await createCopyrightNoticeSchemaFixture()
     await drainRetainedMediaCleanup([
