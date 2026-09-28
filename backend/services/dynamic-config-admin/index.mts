@@ -6,4 +6,6 @@ export {
   listDynamicConfigNamespaceHistory,
   updateDynamicConfigNamespace,
 } from './service.mts'
+/** @internal Test setup isolates every registered dynamic config. */
+export { dynamicConfigRegistry } from './registry.mts'
 export { getDynamicConfigRegistryEntry } from './registry.mts'
