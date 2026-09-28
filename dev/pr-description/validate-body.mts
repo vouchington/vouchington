@@ -1,4 +1,5 @@
 import { hasClosingIssueReference, type ReferencedIssue } from './closing-refs.mts'
+import { validatePrDescriptionContent } from './content-policy.mts'
 import { findEscapeCommentClosingKeywordLeaks } from './escape-comment-leaks.mts'
 import { isDirectUserRequestNoSourceBody } from './direct-user-request.mts'
 import {
@@ -19,19 +20,12 @@ export type PrBodyValidationOptions = {
   automationContext?: boolean
 }
 
-const RELATED_ISSUES_RE = /^##\s+Related\s+issues\s*$/im
 const WORKSPACE_SETUP_RE = /^\s*Workspace\s+setup\s*:/im
 const PROVENANCE_RULES = [
   { label: 'Agent:', re: /^\s*Agent\s*:\s*\S/im },
   { label: 'Device:', re: /^\s*Device\s*:\s*\S/im },
   { label: 'Worktree:', re: /^\s*Worktree\s*:\s*\S/im },
 ] as const
-
-/** Split body by top-level headings and return the Related issues section content. */
-function extractRelatedIssuesSection(body: string): string {
-  const sections = body.split(/^(?=##\s)/m)
-  return sections.find(s => RELATED_ISSUES_RE.test(s.split('\n')[0])) ?? ''
-}
 
 export function validatePrBody(
   body: string,
@@ -41,24 +35,17 @@ export function validatePrBody(
   if (bodyLengthError)
     return { advisories: [], errors: [bodyLengthError], ok: false, referencedIssues: [] }
 
-  const errors: string[] = []
   const directUserRequest = isDirectUserRequestNoSourceBody(body)
   const interactive = options.automationContext === false
+  const { errors, relatedIssuesSection } = validatePrDescriptionContent(body)
   if (directUserRequest && !interactive) {
     errors.push(
       'The direct-user-request no-source representation is allowed only in an interactive session.',
     )
   }
 
-  if (!RELATED_ISSUES_RE.test(body)) {
-    errors.push(
-      'PR body must include a "## Related issues" section (e.g. a heading followed by "Closes #123"). See .agents/skills/agent-workflow/git-and-prs.md.',
-    )
-  }
-
-  const relatedIssuesSection = extractRelatedIssuesSection(body)
   if (
-    relatedIssuesSection &&
+    relatedIssuesSection !== undefined &&
     !hasClosingIssueReference(relatedIssuesSection) &&
     !(directUserRequest && interactive) &&
     !isScheduledPromptNoSourceBody(body) &&

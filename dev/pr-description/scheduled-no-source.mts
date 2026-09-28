@@ -1,3 +1,5 @@
+import { parseMarkdownSections } from 'vouchington-tooling/markdown'
+
 import {
   type ClosingIssueReference,
   type IssueReferenceLookup,
@@ -30,18 +32,18 @@ const STANDALONE_ROOT_CAUSE_REF_RE =
   /^Refs:?[ \t]+(?:(?<owner>[\w.-]+)\/(?<repo>[\w.-]+))?#(?<number>\d+)$/i
 const FIX_MAIN_WORKSPACE_SETUP_LINE = 'Workspace setup: Automation fix-main run'
 
-export function extractRelatedIssuesLines(bodyLines: string[]): string[] {
-  const sections = bodyLines.join('\n').split(/^(?=##\s)/m)
-  const section = sections.find(candidate => {
-    const [heading = ''] = candidate.split(/\r?\n/, 1)
-    return RELATED_ISSUES_HEADING_RE.test(heading)
-  })
-  return section?.split(/\r?\n/) ?? []
+export function extractRelatedIssuesLines(body: string): string[] {
+  const section = parseMarkdownSections(body).sections.find(candidate =>
+    RELATED_ISSUES_HEADING_RE.test(`## ${candidate.heading}`),
+  )
+  if (section === undefined) return []
+  const heading = body.split(/\r?\n/)[section.line - 1] ?? `## ${section.heading}`
+  return sanitizedLines(`${heading}\n${section.content}`)
 }
 
 export function isScheduledPromptNoSourceBody(body: string): boolean {
   const bodyLines = sanitizedLines(body)
-  const relatedIssuesLines = extractRelatedIssuesLines(bodyLines)
+  const relatedIssuesLines = extractRelatedIssuesLines(body)
 
   return (
     relatedIssuesLines.some(
@@ -129,7 +131,7 @@ function findAdjacentRootCauseRef(relatedIssuesLines: string[]): ClosingIssueRef
 
 export function isFixMainInterimClassifierNoClosingRefBody(body: string): boolean {
   const bodyLines = sanitizedLines(body)
-  const relatedIssuesLines = extractRelatedIssuesLines(bodyLines)
+  const relatedIssuesLines = extractRelatedIssuesLines(body)
 
   return (
     findAdjacentRootCauseRef(relatedIssuesLines) !== undefined &&
@@ -149,7 +151,7 @@ export function extractFixMainInterimClassifierRootCauseRef(
 ): ClosingIssueReference | undefined {
   if (!isFixMainInterimClassifierNoClosingRefBody(body)) return undefined
 
-  return findAdjacentRootCauseRef(extractRelatedIssuesLines(sanitizedLines(body)))
+  return findAdjacentRootCauseRef(extractRelatedIssuesLines(body))
 }
 
 const FIX_MAIN_ROOT_CAUSE_CONTEXT_LABEL =

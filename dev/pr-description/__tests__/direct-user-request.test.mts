@@ -10,6 +10,10 @@ const BODY = `## Summary
 
 Implement the requested cleanup.
 
+## Impact
+
+Developers can publish an interactive request without a source issue; product behavior is unchanged.
+
 ## Related issues
 
 ${DIRECT_REQUEST_PAIR}
