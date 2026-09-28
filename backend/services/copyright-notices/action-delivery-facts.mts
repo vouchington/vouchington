@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import type { LockedCopyrightActionDelivery } from './action-delivery-locking.mts'
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 
 export type CopyrightActionFacts = Omit<
   LockedCopyrightActionDelivery,
