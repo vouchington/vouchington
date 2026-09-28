@@ -380,7 +380,7 @@ The CF Worker is started via [`cloudflare-worker/scripts/wrangler/start.mts`](..
 - `wrangler-stdout.log` — startup "Ready on" message and runtime output
 - `wrangler-events.ndjson` — compact timeline of start/ready/exit/restart events with Wrangler/workerd versions, ports, persist path, attempt number, and ready timing
 
-The console hides the known benign `workerd` `Broken pipe` stack emitted when a browser disconnects mid-request; the full raw lines remain in `wrangler-stderr.log`. Treat `wrangler-events.ndjson` exit/restart events or Playwright connection failures as the signal that the worker actually crashed.
+The console hides the known benign `workerd` client-disconnect writes — the older `::write(fd, buffer.begin(), buffer.size()): Broken pipe` line and the current `disconnected: write():` `Broken pipe` or `Connection reset by peer` lines — plus the immediate `workerd` stack. The full raw lines remain in `wrangler-stderr.log`. Treat `wrangler-events.ndjson` exit/restart events or Playwright connection failures as the signal that the worker actually crashed.
 
 Set `WRANGLER_LOG_LEVEL=debug` to override the default CI `--log-level=error` for deeper diagnostics.
 
