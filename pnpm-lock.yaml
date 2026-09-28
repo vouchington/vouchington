@@ -2321,9 +2321,6 @@ importers:
 
   backend/modules/feed-query-builders:
     dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

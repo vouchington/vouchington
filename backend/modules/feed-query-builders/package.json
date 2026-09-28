@@ -21,7 +21,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/psql": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"
