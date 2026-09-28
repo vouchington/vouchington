@@ -690,6 +690,10 @@
       "fixtureIds": ["shared.scopes.catalog"],
       "hash": "69c8663d082a689ed73bf12361dd28d8427290d3efc4d35dde806668d834793a"
     },
+    "GET:/api/v1/stories/:id": {
+      "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
+      "hash": "7d950657d3ccf2e70092466b0fbc280e8d13aba7fef8e7ad9dc431c695624234"
+    },
     "GET:/api/v1/topic-recommendations/:id": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
       "hash": "577953177935bd9ea7cb0670ebdf30bd06ab6d43cefd06959749ea706247f81e"
@@ -2188,6 +2192,14 @@
       "fixtureIds": ["native.spending-category-topics.search.default"],
       "hash": "a4c895cbbde9c92724889e116c191ce69f099ef57d1075fc158468beae71eda7"
     },
+    "native.stories.get.after": {
+      "fixtureIds": ["native.stories.get.after"],
+      "hash": "03df7f293538db1497e33a592feb3d9d9da4896fbb2970dfa9f7aa2e54b8bead"
+    },
+    "native.stories.get.default": {
+      "fixtureIds": ["native.stories.get.default"],
+      "hash": "ec37a7e011d5c598b5cfeb5f3a2021bda48e3d946ea613d6f46abae6ae147ac0"
+    },
     "native.topic-recommendation.detail.default": {
       "fixtureIds": ["native.topic-recommendation.detail.default"],
       "hash": "ed1209544cd19ada812831cbce440eecb9074f86c7f3b62767e2bfea9520d14d"
@@ -2306,7 +2318,7 @@
     },
     "swift.integration.rss-feed-items.video": {
       "fixtureIds": ["swift.integration.rss-feed-items.video"],
-      "hash": "6a61230061295518e850908e990ae3c5f388fd39c72f4d6081ed6e5f3f52851d"
+      "hash": "bbf6ae6184839b62fe8012340096d313c87f869854b81e85de19ca3b1babcf2d"
     },
     "swift.my.identity.default": {
       "fixtureIds": ["swift.my.identity.default"],
@@ -2334,7 +2346,7 @@
     },
     "swift.rss-feed-items.feed.default": {
       "fixtureIds": ["swift.rss-feed-items.feed.default"],
-      "hash": "00af2da23708c91ce4a9946cb5c676a865918001865d9bd6e67497aeb1fe24d2"
+      "hash": "77b4303dfcfbfcad02fd706975e4307fa2beb5a1d39c1f35b886966e68373008"
     },
     "swift.rss-feeds.default": {
       "fixtureIds": ["swift.rss-feeds.default"],
@@ -2550,7 +2562,7 @@
     },
     "web.communities.news.default": {
       "fixtureIds": ["web.communities.news.default"],
-      "hash": "ade947b5513970b12a9423bcff1c9805edf03c8274dcf33b05bd9ed4f4585b39"
+      "hash": "38b02eb31df3f2ea5449a5567f7e1b85b364ce03c5d1deab5cd7e79c6c72e584"
     },
     "web.communities.pinned-posts.default": {
       "fixtureIds": ["web.communities.pinned-posts.default"],
@@ -2678,7 +2690,7 @@
     },
     "web.rss-feed-items.feed.default": {
       "fixtureIds": ["web.rss-feed-items.feed.default"],
-      "hash": "6a61230061295518e850908e990ae3c5f388fd39c72f4d6081ed6e5f3f52851d"
+      "hash": "bbf6ae6184839b62fe8012340096d313c87f869854b81e85de19ca3b1babcf2d"
     },
     "web.topics.mutation.default": {
       "fixtureIds": ["web.topics.mutation.default"],

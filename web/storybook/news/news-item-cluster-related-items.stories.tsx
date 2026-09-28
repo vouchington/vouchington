@@ -15,8 +15,23 @@ type Story = StoryObj<typeof meta>
 
 const articles = [newsItems[0]!, newsItems[3]!]
 
-function Related({ expanded, items }: { expanded: boolean; items: typeof articles }) {
+function Related({
+  expanded,
+  items,
+  hasMore = false,
+  loading = false,
+  error = false,
+}: {
+  expanded: boolean
+  items: typeof articles
+  hasMore?: boolean
+  loading?: boolean
+  error?: boolean
+}) {
   const [isExpanded, setIsExpanded] = useState(expanded)
+  const [loadedItems, setLoadedItems] = useState(items)
+  const [moreAvailable, setMoreAvailable] = useState(hasMore)
+  const [loadError, setLoadError] = useState(error)
   return (
     <NewsItemClusterRelatedItems
       isExpanded={isExpanded}
@@ -32,7 +47,15 @@ function Related({ expanded, items }: { expanded: boolean; items: typeof article
       renderOfficialBadge={() => null}
       setExpanded={setIsExpanded}
       storyItemActionContexts={{}}
-      storyItems={items}
+      storyItems={loadedItems}
+      hasMoreStoryItems={moreAvailable}
+      loadingStoryItems={loading}
+      storyLoadError={loadError}
+      onLoadStoryMore={() => {
+        setLoadedItems(previous => [...previous, newsItems[4]!])
+        setMoreAvailable(false)
+        setLoadError(false)
+      }}
       storyItemsId='transfer-bonus-related'
       view='compact'
     />
@@ -67,6 +90,55 @@ export const Empty: Story = {
       <Related
         expanded={false}
         items={[]}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const MoreAvailable: Story = {
+  render: () => (
+    <StoryFrame>
+      <Related
+        expanded
+        items={articles}
+        hasMore
+      />
+    </StoryFrame>
+  ),
+}
+
+export const LoadingMore: Story = {
+  render: () => (
+    <StoryFrame>
+      <Related
+        expanded
+        items={articles}
+        hasMore
+        loading
+      />
+    </StoryFrame>
+  ),
+}
+
+export const RetryAfterError: Story = {
+  render: () => (
+    <StoryFrame>
+      <Related
+        expanded
+        items={articles}
+        hasMore
+        error
+      />
+    </StoryFrame>
+  ),
+}
+
+export const AllLoaded: Story = {
+  render: () => (
+    <StoryFrame>
+      <Related
+        expanded
+        items={articles}
       />
     </StoryFrame>
   ),

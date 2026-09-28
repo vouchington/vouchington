@@ -11,6 +11,11 @@ import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'
 import { FeedStyleProvider } from '@/lib/preferences/feed-style-context'
 import { ClusterListNavIds } from '@/test-helpers/components/news/cluster-list-nav-ids'
 
+const clusterViewer = vi.hoisted(() => ({ id: null as string | null }))
+export function setClusterMockViewerId(id: string | null) {
+  clusterViewer.id = id
+}
+
 vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),
@@ -42,7 +47,10 @@ vi.mock(
   import('@/lib/auth/context'),
   () =>
     ({
-      useAuth: () => ({ isAuthenticated: true }),
+      useAuth: () => ({
+        isAuthenticated: true,
+        currentUser: clusterViewer.id ? { id: clusterViewer.id } : null,
+      }),
     }) as unknown as typeof import('@/lib/auth/context'),
 )
 
@@ -113,6 +121,11 @@ export const makeClusterResult = (id: string, storyId: string | null = null) => 
   id,
   published_at: '2025-01-15T10:00:00Z',
   story_id: storyId,
+})
+
+export const makeClusterStoryPage = (itemIds: string[]) => ({
+  item_ids: itemIds,
+  page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
 })
 
 export function renderClusterList(

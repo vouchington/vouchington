@@ -15,6 +15,7 @@ import { assertRssFeedCandidatesAreSetBased } from './plan-rss-feed-candidates-g
 import { assertRssRecencyLateCursorPlan } from './plan-rss-recency-cursor-gate.mts'
 import { assertPostShareEligibilityIsTargetBounded } from './plan-post-share-targets-gate.mts'
 import { assertEmbeddingReconciliationPlanIfApplicable } from './plan-embedding-reconciliation-gate.mts'
+import { assertStoryMemberPagePlan } from './plan-story-member-pages-gate.mts'
 
 const UNIVERSAL_TOPIC_CANDIDATE_RELATIONS = new Set([
   'relation__post__category__topic',
@@ -68,6 +69,7 @@ export function assertRequiredPlanShape(result: ExplainResult): void {
   assertRssRecencyLateCursorPlan(result)
   assertPostShareEligibilityIsTargetBounded(result)
   assertEmbeddingReconciliationPlanIfApplicable(result)
+  assertStoryMemberPagePlan(result)
   assertPaginationPlanShape(result)
 }
 

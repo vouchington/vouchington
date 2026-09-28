@@ -39,6 +39,8 @@ or category filter.
 
 Response is streamed and includes: `results`, `page_info`, `rss_feed_items`, `rss_feed_item_elections`, `rss_feed_item_embeds`, and `rss_feed_item_content_html` (map of item ID → sanitized HTML for the best content field; items with no content are omitted). `rss_feed_item_embeds` is keyed by item ID and carries backend-selected display text plus authorized image/player projections; complete raw crawl metadata and oEmbed provenance are administrator-only. For authenticated users also: `bookmarks`, `rss_feed_bookmarks`, `election_votes`, `related_posts_by_url_id`, `posts`, `posts_metrics`. YouTube Atom metadata, when present, is included inside each `rss_feed_items[id].data` payload.
 
+`story_member_pages` maps direct story results to bounded related IDs and a continuation `page_info`. The selected primary is excluded; shared deliveries remain standalone. Related peers use story visibility rules rather than the search request's filters. The response hydrates only primary and selected related IDs.
+
 Cached (short TTL) for unauthenticated users.
 
 `rss_feed_items` entries never include nested `election` objects. Use the

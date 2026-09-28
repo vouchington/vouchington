@@ -38,11 +38,13 @@ import type { LandingPageDetailResponseBody } from '@/types/api-responses/member
 import type { PodcastEpisodeChaptersResponseBody } from '@/types/podcast-episode-chapters'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
+import { STORY_PAGE_DECLARATIONS } from './story-pages'
 
 const landingPageItemsMutationFixture =
   nativeLandingPageItemsMutationDefault as unknown as LandingPageDetailResponseBody
 
 export const CONTENT_REFERRALS_DECLARATIONS = [
+  ...STORY_PAGE_DECLARATIONS,
   defineWebApiFixture<LandingPageDetailResponseBody>()(
     'native.landing-page-items-mutation.default',
     landingPageItemsMutationFixture,

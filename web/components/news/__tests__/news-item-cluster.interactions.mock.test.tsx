@@ -181,7 +181,10 @@ describe('NewsItemCluster story expand/collapse interactions', () => {
     fireEvent.click(screen.getByRole('button', { name: /2 related articles/i }))
     expect(screen.getByText('Related Article 1')).toBeVisible()
     expect(screen.getByText('Related Article 2')).toBeVisible()
-    expect(screen.getByRole('button', { name: /hide articles/i })).toBeDefined()
+    expect(screen.getByRole('button', { name: /2 related articles/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
   })
 
   it('collapses story items on second click', () => {

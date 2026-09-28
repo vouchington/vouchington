@@ -121,6 +121,27 @@ and zero target/root work for an empty share cohort. They also reject joins that
 eligible-target spool reads or join-filter rejections by delivery count. Disabled scenarios
 must omit share relations and CTEs from the plan; SQL builder tests prove the corresponding
 CTEs and union arm are absent from the generated query. Timing and buffers remain diagnostic.
+Story-member scenarios reuse the 1,000-item story already seeded for the RSS story-skew and URL
+projection cases. Preview limits 1 and 3 call `getStoryPreviews` with the real direct primary;
+their continuations, and the default 25-item detail first/continuation pages, call the same
+production member selector as GET `/api/v1/stories/:id`. Each page captures custom and generic
+prepared plans. The gates require an indexed `story_id` membership scan, an `id <` index bound on
+continuation, a full limit-plus-one lookahead, and physical member work bounded by that lookahead
+plus one excluded primary on first previews.
+
+The member selector evaluates discoverability and viewer exclusions in a correlated eligibility
+probe before its `LIMIT`; the probe's `LIMIT 1` keeps PostgreSQL from reordering those exclusions
+into a hash join and sorting the full remaining story on late continuations. Each selected page
+calls the production hydrator after invalidating only its selected item and election cache keys, so
+the actual item,
+election, and embed SQL is captured even after a prior warm request. Scenario assertions require
+those queries' bound item IDs and hydrated maps to match the selected page, excluding the actual
+next-page lookahead item. Zero-row optional related-post lookups are retained as production behavior
+but are not represented as positive EXPLAIN coverage. The plan gates reject broad RSS-item scans
+and hydration row counts above the selected page size. The old 2,000-row selector plans in
+`story-member-old-plans.json` are exact extracts from the paired prior route capture; gate tests
+prove both old plan modes fail the new work ceiling. The central 1,000-member seed is a separate
+dataset, so timings and buffers are diagnostic rather than a paired speedup measurement.
 The verified OAuth-client scenario interleaves a small active verified subset through a larger
 unverified population and uses a late keyset cursor with exactly 102 verified rows remaining.
 Its pagination gate requires

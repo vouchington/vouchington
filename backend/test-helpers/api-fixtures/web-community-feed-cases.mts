@@ -1,6 +1,10 @@
 import { community, communityPostsBody, pageInfo, user } from './web-community-data.mts'
 import { communityMember } from './web-community-member-data.mts'
-import { storyMemberIds, storyPostIds, webStoryClusterRssFeedItems } from './story-cluster-data.mts'
+import {
+  storyMemberPages,
+  storyPostIds,
+  webStoryClusterRssFeedItems,
+} from './story-cluster-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 export const webCommunityFeedApiFixtureCases: ApiFixtureCase[] = [
@@ -57,7 +61,7 @@ export const webCommunityFeedApiFixtureCases: ApiFixtureCase[] = [
       posts_metrics: {},
       users: {},
       stories: {},
-      story_member_ids: storyMemberIds,
+      story_member_pages: storyMemberPages,
       story_post_ids: storyPostIds,
       rss_feed_items: webStoryClusterRssFeedItems,
       rss_feed_item_elections: {},

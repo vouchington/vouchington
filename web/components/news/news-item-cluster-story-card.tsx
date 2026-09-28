@@ -24,6 +24,10 @@ interface NewsItemStoryCardProps {
   storyPostHref: string | null
   onStoryDiscussionCreated?: (href: string) => void
   storyItems: RssFeedItem[]
+  hasMoreStoryItems?: boolean
+  loadingStoryItems?: boolean
+  storyLoadError?: boolean
+  onLoadStoryMore?: () => void | Promise<void>
   primary: RssFeedItem
   view: FeedStyle
   sharedByUser?: PublicUser
@@ -44,6 +48,10 @@ export function NewsItemStoryCard({
   storyPostHref,
   onStoryDiscussionCreated,
   storyItems,
+  hasMoreStoryItems = false,
+  loadingStoryItems = false,
+  storyLoadError = false,
+  onLoadStoryMore,
   primary,
   view,
   sharedByUser,
@@ -123,7 +131,7 @@ export function NewsItemStoryCard({
           />
         </div>
 
-        {storyItems.length > 0 && (
+        {(storyItems.length > 0 || hasMoreStoryItems) && (
           <NewsItemClusterRelatedItems
             isExpanded={isExpanded}
             renderActions={renderActions}
@@ -131,6 +139,10 @@ export function NewsItemStoryCard({
             setExpanded={setExpanded}
             storyItemActionContexts={filteredStoryItemActionContexts}
             storyItems={storyItems}
+            hasMoreStoryItems={hasMoreStoryItems}
+            loadingStoryItems={loadingStoryItems}
+            storyLoadError={storyLoadError}
+            onLoadStoryMore={onLoadStoryMore}
             storyItemsId={storyItemsId}
             view={view}
             thumbnailUrls={thumbnailUrls}

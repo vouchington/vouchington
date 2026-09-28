@@ -107,7 +107,7 @@ See [news-story-clusters.md](./news-story-clusters.md) for how users trigger sto
 
 ## Feed Deduplication
 
-RSS feed items in the same story collapse to one entry in feeds and search results. The primary item shown is the official item (or highest-voted). Other story members are available via `story_member_ids` in the response.
+RSS feed items in the same story collapse to one entry in feeds and search results. The primary item shown is the official item (or highest-voted). The response provides `story_member_pages` with a bounded, related-only preview and an opaque continuation cursor. The first direct primary is excluded; shares remain standalone.
 
 ## Admin Management
 

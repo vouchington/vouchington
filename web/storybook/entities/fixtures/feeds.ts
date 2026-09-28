@@ -118,7 +118,12 @@ export const newsResponse: RssFeedItemsFeedResponseBody = {
       official_rss_feed_item_id: newsItems[0]!.id,
     },
   },
-  story_member_ids: { 'story-transfer-bonus': newsItems.slice(0, 3).map(item => item.id) },
+  story_member_pages: {
+    'story-transfer-bonus': {
+      item_ids: newsItems.slice(1, 3).map(item => item.id),
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    },
+  },
   story_post_ids: { 'story-transfer-bonus': 'post-story' },
   related_posts_by_url_id: {
     [newsItems[0]!.url.id]: [posts[0]!.id, 'post-story'],
