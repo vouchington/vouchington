@@ -4,11 +4,10 @@ import assert from 'http-assert'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { lockAndAssertNotBanned } from '../bans/lock.mts'
-import { insertApplicationAnswers } from './answer-rows.mts'
-import { prepareApplicationAnswers } from './answers.mts'
-import { getApplication } from './get.mts'
-import { getApplicationQuestions } from './questions.mts'
+import { assertApplicationAnswers } from './answers.mts'
+import { communityApplicationColumns } from './columns.mts'
 import { getPendingApplicationForUser } from './pending.mts'
+import { getApplicationQuestions } from './questions.mts'
 import type { CommunityApplication } from '../types.mts'
 
 export async function createApplication(
@@ -26,7 +25,7 @@ export async function createApplication(
   const options = { query }
   const questions = await getApplicationQuestions(communityId, { ...options, lock: true })
   // Malformed answers stay 422 ahead of the ban, member, and pending gates.
-  const preparedAnswers = prepareApplicationAnswers(questions, answers)
+  assertApplicationAnswers(questions, answers)
 
   // Serialize against a concurrent ban so a ban committing before the insert blocks the
   // application, matching the join/invite/approval entry points.
@@ -40,17 +39,17 @@ export async function createApplication(
 
   const { rows } = await write(
     sql`/* createApplication */
-      INSERT INTO community_applications (community_id, user_id, message)
-      VALUES (${communityId}, ${currentUserId}, ${message ?? null})
-      RETURNING id
-    `,
+      INSERT INTO community_applications (community_id, user_id, answers, message)
+      VALUES (
+        ${communityId},
+        ${currentUserId},
+        ${JSON.stringify(answers)}::jsonb,
+        ${message ?? null}
+      )
+      RETURNING `.append(communityApplicationColumns),
     options,
   )
-  const applicationId = (rows[0] as { id: string }).id
-  await insertApplicationAnswers(applicationId, communityId, preparedAnswers, options)
-
-  const application = await getApplication(applicationId, options)
-  assert(application, 500, 'Application was not created')
+  const application = rows[0] as CommunityApplication
   await query.commit()
   return application
 }

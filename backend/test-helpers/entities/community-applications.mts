@@ -12,27 +12,23 @@ type InsertTestCommunityApplicationOptions = {
 export async function insertTestCommunityApplication(
   options: InsertTestCommunityApplicationOptions,
 ): Promise<CommunityApplication> {
-  if (options.answers && Object.keys(options.answers).length > 0) {
-    throw new Error(
-      'insertTestCommunityApplication persists an empty answer set; use createApplication for answers',
-    )
-  }
+  const answers = options.answers ?? {}
   const { rows } = await write(
     sql`/* insertTestCommunityApplication */
-    INSERT INTO community_applications (community_id, user_id, message)
+    INSERT INTO community_applications (community_id, user_id, answers, message)
     VALUES (
       ${options.communityId},
       ${options.userId},
+      ${JSON.stringify(answers)}::jsonb,
       ${options.message ?? null}
     )
-    RETURNING id, community_id, user_id, message, reviewed_at, reviewed_by_id,
+    RETURNING id, community_id, user_id, answers, message, reviewed_at, reviewed_by_id,
       approved_at, rejected_at, rejection_reason, created_at
     `,
   )
-  const row = rows[0] as Omit<CommunityApplication, '__entity_type' | 'answers'>
+  const row = rows[0] as Omit<CommunityApplication, '__entity_type'>
   return {
     __entity_type: 'community_application',
     ...row,
-    answers: {},
   }
 }

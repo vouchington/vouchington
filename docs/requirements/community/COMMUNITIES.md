@@ -86,9 +86,9 @@ the unfiltered first page and are excluded from the normal paginated result list
 
 ## Join Applications
 
-Private communities accept join applications. Owners replace the active question set by soft-deleting the previous questions and their options. Submitted answers keep those original question and option rows, so review still shows the labels the applicant selected.
+Private communities accept join applications. Owners replace the active question set by soft-deleting the previous questions. Select labels are the JSON array `community_application_questions.options`. Submitted answers are the JSON object `community_applications.answers`, keyed by question id. Those keys are not foreign keys: option labels and answer values are documents, not entity ids. Replacing questions does not rewrite stored answers, so review still shows the submitted document.
 
-Each supplied answer is one typed row. An omitted key, explicit `null`, empty string, empty multi-select, and checkbox `false` stay distinct. Selected options reference that question's option rows and keep the submitted order. Unknown questions, unknown options, duplicate option labels, and non-string multi-select elements are rejected. Deleting a community cascades its applications, questions, options, answers, and selections.
+An omitted key, explicit `null`, empty string, empty multi-select, and checkbox `false` stay distinct in that object. Array order is the submitted selection order. Unknown questions, unknown options, duplicate option labels, and non-string multi-select elements are rejected. Deleting a community cascades its applications and questions.
 
 ## Auto-Archiving Rules
 

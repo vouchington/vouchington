@@ -207,59 +207,27 @@ CREATE TABLE IF NOT EXISTS community_application_questions (
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   question TEXT NOT NULL,
   field_type community_application_question_field_types NOT NULL DEFAULT 'short_text',
+  options JSONB,
   order_index SMALLINT NOT NULL,
   required BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   deleted_at TIMESTAMPTZ,
   CHECK (question = TRIM(question)),
-  CHECK (char_length(question) BETWEEN 1 AND 500),
-  CONSTRAINT community_application_questions_identity_key UNIQUE (community_id, id, field_type)
+  CHECK (char_length(question) BETWEEN 1 AND 500)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_q__comm_order ON community_application_questions (community_id, order_index) WHERE deleted_at IS NULL;
+
+-- RI-usable index for the community_id FK (the unique index above carries a predicate, so it isn't RI-usable)
+CREATE INDEX IF NOT EXISTS idx_community_application_questions__community_id ON community_application_questions (community_id);
 
 COMMENT ON TABLE community_application_questions IS 'Configurable questions shown to users applying to join a community.';
 COMMENT ON COLUMN community_application_questions.community_id IS 'The community this question belongs to.';
 COMMENT ON COLUMN community_application_questions.question IS 'The question text shown to applicants.';
 COMMENT ON COLUMN community_application_questions.field_type IS 'Input type: short_text, long_text, single_select, multi_select, or checkbox.';
+COMMENT ON COLUMN community_application_questions.options IS 'JSON array of selectable options for select-type fields.';
 COMMENT ON COLUMN community_application_questions.order_index IS 'Display order of this question within the application form.';
 COMMENT ON COLUMN community_application_questions.required IS 'Whether the applicant must answer this question.';
-
--- community_application_question_options
-CREATE TABLE IF NOT EXISTS community_application_question_options (
-  id UUID DEFAULT uuidv7() PRIMARY KEY,
-  community_id UUID NOT NULL,
-  question_id UUID NOT NULL,
-  question_field_type community_application_question_field_types NOT NULL,
-  label TEXT NOT NULL,
-  order_index SMALLINT NOT NULL,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  deleted_at TIMESTAMPTZ,
-  CONSTRAINT community_application_question_options_question_fkey
-    FOREIGN KEY (community_id, question_id, question_field_type)
-    REFERENCES community_application_questions (community_id, id, field_type) ON DELETE CASCADE,
-  CONSTRAINT community_application_question_options_select_type_check
-    CHECK (question_field_type IN ('single_select', 'multi_select')),
-  CONSTRAINT community_application_question_options_label_check
-    CHECK (label = TRIM(label) AND char_length(label) BETWEEN 1 AND 500),
-  CONSTRAINT community_application_question_options_order_index_check CHECK (order_index >= 0),
-  CONSTRAINT community_application_question_options_identity_key
-    UNIQUE (id, community_id, question_id, question_field_type)
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_question_options__active_label
-  ON community_application_question_options (question_id, label) WHERE deleted_at IS NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_question_options__active_order
-  ON community_application_question_options (question_id, order_index) WHERE deleted_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_comm_app_question_options__owner
-  ON community_application_question_options (community_id, question_id, question_field_type);
-
-COMMENT ON TABLE community_application_question_options IS 'Ordered selectable labels for a community application question, retained with soft-deleted questions for historical answers.';
-COMMENT ON COLUMN community_application_question_options.community_id IS 'Community that owns the question, copied so an option cannot move to another community.';
-COMMENT ON COLUMN community_application_question_options.question_id IS 'Question whose active choices include this label.';
-COMMENT ON COLUMN community_application_question_options.question_field_type IS 'Select field type copied into the ownership foreign key so options cannot belong to scalar questions.';
-COMMENT ON COLUMN community_application_question_options.label IS 'The label returned by the API and stored by reference in selected answers.';
-COMMENT ON COLUMN community_application_question_options.order_index IS 'Display order within the owning question.';
 
 -- community_applications
 CREATE TABLE IF NOT EXISTS community_applications (
@@ -269,6 +237,7 @@ CREATE TABLE IF NOT EXISTS community_applications (
   CONSTRAINT community_applications_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  answers JSONB NOT NULL,
   reviewed_at TIMESTAMPTZ,
   reviewed_by_id UUID REFERENCES users ON DELETE SET NULL,
   approved_at TIMESTAMPTZ,
@@ -281,8 +250,7 @@ CREATE TABLE IF NOT EXISTS community_applications (
   CHECK (NOT (approved_at IS NOT NULL AND rejected_at IS NOT NULL)),
   CHECK ((approved_at IS NULL AND rejected_at IS NULL) OR reviewed_at IS NOT NULL),
   CHECK (rejection_reason IS NULL OR char_length(rejection_reason) <= 1000),
-  CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason)),
-  CONSTRAINT community_applications_identity_key UNIQUE (community_id, id)
+  CHECK (rejection_reason IS NULL OR rejection_reason = TRIM(rejection_reason))
 );
 
 CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
@@ -292,218 +260,20 @@ CREATE OR REPLACE TRIGGER trigger_community_applications_updated_at
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_apps__pending ON community_applications (community_id, user_id) WHERE approved_at IS NULL AND rejected_at IS NULL;
 
--- RI-usable index for the user_id FK. community_applications_identity_key already leads with community_id;
--- the pending unique index is partial, so it is not RI-usable.
+-- RI-usable indexes for the community_id/user_id FKs (the unique index above carries a predicate, so it isn't RI-usable)
+CREATE INDEX IF NOT EXISTS idx_community_applications__community_id ON community_applications (community_id);
 CREATE INDEX IF NOT EXISTS idx_community_applications__user_id ON community_applications (user_id);
 
 COMMENT ON TABLE community_applications IS 'Membership applications submitted by users to join a community.';
 COMMENT ON COLUMN community_applications.community_id IS 'The community being applied to.';
 COMMENT ON COLUMN community_applications.user_id IS 'The user who submitted the application.';
+COMMENT ON COLUMN community_applications.answers IS 'JSON object with answers keyed by question ID.';
 COMMENT ON COLUMN community_applications.reviewed_at IS 'When a moderator reviewed the application.';
 COMMENT ON COLUMN community_applications.reviewed_by_id IS 'Moderator who reviewed the application.';
 COMMENT ON COLUMN community_applications.approved_at IS 'When the application was approved. Mutually exclusive with rejected_at.';
 COMMENT ON COLUMN community_applications.rejected_at IS 'When the application was rejected. Mutually exclusive with approved_at.';
 COMMENT ON COLUMN community_applications.rejection_reason IS 'Optional reason provided to the applicant on rejection.';
 COMMENT ON COLUMN community_applications.message IS 'Optional freeform message from the applicant when submitting an application.';
-
--- community_application_answers
-CREATE TABLE IF NOT EXISTS community_application_answers (
-  id UUID DEFAULT uuidv7() PRIMARY KEY,
-  application_id UUID NOT NULL,
-  community_id UUID NOT NULL,
-  question_id UUID NOT NULL,
-  question_field_type community_application_question_field_types NOT NULL,
-  is_null BOOLEAN NOT NULL,
-  text_value TEXT,
-  boolean_value BOOLEAN,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  CONSTRAINT community_application_answers_application_fkey
-    FOREIGN KEY (community_id, application_id)
-    REFERENCES community_applications (community_id, id) ON DELETE CASCADE,
-  CONSTRAINT community_application_answers_question_fkey
-    FOREIGN KEY (community_id, question_id, question_field_type)
-    REFERENCES community_application_questions (community_id, id, field_type) ON DELETE CASCADE,
-  CONSTRAINT community_application_answers_typed_value_check CHECK (
-    (is_null AND text_value IS NULL AND boolean_value IS NULL)
-    OR (
-      NOT is_null
-      AND question_field_type IN ('short_text', 'long_text')
-      AND text_value IS NOT NULL
-      AND boolean_value IS NULL
-    )
-    OR (
-      NOT is_null
-      AND question_field_type = 'checkbox'
-      AND text_value IS NULL
-      AND boolean_value IS NOT NULL
-    )
-    OR (
-      NOT is_null
-      AND question_field_type IN ('single_select', 'multi_select')
-      AND text_value IS NULL
-      AND boolean_value IS NULL
-    )
-  ),
-  CONSTRAINT community_application_answers_question_key UNIQUE (application_id, question_id),
-  CONSTRAINT community_application_answers_identity_key
-    UNIQUE (id, application_id, community_id, question_id, question_field_type)
-);
-
-CREATE INDEX IF NOT EXISTS idx_comm_app_answers__application
-  ON community_application_answers (community_id, application_id);
-CREATE INDEX IF NOT EXISTS idx_comm_app_answers__question
-  ON community_application_answers (community_id, question_id, question_field_type);
-
-COMMENT ON TABLE community_application_answers IS 'One typed, presence-bearing answer for each question supplied with a community application.';
-COMMENT ON COLUMN community_application_answers.application_id IS 'Application that supplied this answer.';
-COMMENT ON COLUMN community_application_answers.community_id IS 'Community that owns both the application and the question.';
-COMMENT ON COLUMN community_application_answers.question_id IS 'Question this answer responds to, including a soft-deleted historical question.';
-COMMENT ON COLUMN community_application_answers.question_field_type IS 'Question field type copied into the ownership foreign key so the value columns match the question.';
-COMMENT ON COLUMN community_application_answers.is_null IS 'Distinguishes an explicit null from omitted answers and from present empty values.';
-COMMENT ON COLUMN community_application_answers.text_value IS 'Present text value, including the empty string, for short_text and long_text questions.';
-COMMENT ON COLUMN community_application_answers.boolean_value IS 'Present boolean value, including false, for checkbox questions.';
-
--- community_application_answer_selections
-CREATE TABLE IF NOT EXISTS community_application_answer_selections (
-  application_answer_id UUID NOT NULL,
-  application_id UUID NOT NULL,
-  community_id UUID NOT NULL,
-  question_id UUID NOT NULL,
-  question_field_type community_application_question_field_types NOT NULL,
-  option_id UUID NOT NULL,
-  order_index SMALLINT NOT NULL,
-  CONSTRAINT community_application_answer_selections_pkey
-    PRIMARY KEY (application_answer_id, option_id),
-  CONSTRAINT community_application_answer_selections_answer_fkey
-    FOREIGN KEY (
-      application_answer_id,
-      application_id,
-      community_id,
-      question_id,
-      question_field_type
-    ) REFERENCES community_application_answers (
-      id,
-      application_id,
-      community_id,
-      question_id,
-      question_field_type
-    ) ON DELETE CASCADE,
-  CONSTRAINT community_application_answer_selections_option_fkey
-    FOREIGN KEY (option_id, community_id, question_id, question_field_type)
-    REFERENCES community_application_question_options (
-      id,
-      community_id,
-      question_id,
-      question_field_type
-    ) ON DELETE CASCADE,
-  CONSTRAINT community_application_answer_selections_type_check
-    CHECK (question_field_type IN ('single_select', 'multi_select')),
-  CONSTRAINT community_application_answer_selections_order_check CHECK (order_index >= 0),
-  CONSTRAINT community_application_answer_selections_order_key
-    UNIQUE (application_answer_id, order_index)
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_app_answer_selections__single
-  ON community_application_answer_selections (application_answer_id)
-  WHERE question_field_type = 'single_select';
-CREATE INDEX IF NOT EXISTS idx_comm_app_answer_selections__option
-  ON community_application_answer_selections (option_id, community_id, question_id, question_field_type);
-
-COMMENT ON TABLE community_application_answer_selections IS 'Ordered selected options for select-type community application answers.';
-COMMENT ON COLUMN community_application_answer_selections.application_answer_id IS 'Answer whose selected labels these rows reconstruct.';
-COMMENT ON COLUMN community_application_answer_selections.application_id IS 'Application copied from the answer so the selection cannot move to another application.';
-COMMENT ON COLUMN community_application_answer_selections.community_id IS 'Community copied from the answer and option so both parents belong to the same community.';
-COMMENT ON COLUMN community_application_answer_selections.question_id IS 'Question copied from the answer and option so a selection cannot use another question''s option.';
-COMMENT ON COLUMN community_application_answer_selections.question_field_type IS 'Select field type copied from the answer and option.';
-COMMENT ON COLUMN community_application_answer_selections.option_id IS 'Option row whose label is returned for this selection, including after that option is soft-deleted.';
-COMMENT ON COLUMN community_application_answer_selections.order_index IS 'Applicant-supplied selection order for reconstructing multi-select answers.';
-
-CREATE OR REPLACE FUNCTION fn_assert_community_application_answer_selection_state(checked_answer_id UUID)
-RETURNS void
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM community_application_answers answer
-    WHERE answer.id = checked_answer_id
-  ) THEN
-    RETURN;
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM community_application_answers answer
-    WHERE answer.id = checked_answer_id
-      AND (
-        (
-          answer.is_null
-          AND EXISTS (
-            SELECT 1
-            FROM community_application_answer_selections selected
-            WHERE selected.application_answer_id = answer.id
-          )
-        )
-        OR (
-          NOT answer.is_null
-          AND answer.question_field_type = 'single_select'
-          AND (
-            SELECT count(*)
-            FROM community_application_answer_selections selected
-            WHERE selected.application_answer_id = answer.id
-          ) <> 1
-        )
-      )
-  ) THEN
-    RAISE EXCEPTION 'invalid community application answer selection state'
-      USING ERRCODE = '23514';
-  END IF;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_assert_community_application_answer_from_answer()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  PERFORM fn_assert_community_application_answer_selection_state(COALESCE(NEW.id, OLD.id));
-  RETURN NULL;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION fn_assert_community_application_answer_from_selection()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
-    PERFORM fn_assert_community_application_answer_selection_state(NEW.application_answer_id);
-  END IF;
-
-  IF TG_OP = 'DELETE' OR (
-    TG_OP = 'UPDATE'
-    AND NEW.application_answer_id IS DISTINCT FROM OLD.application_answer_id
-  ) THEN
-    PERFORM fn_assert_community_application_answer_selection_state(OLD.application_answer_id);
-  END IF;
-
-  RETURN NULL;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trigger_comm_app_answers_selection_state ON community_application_answers;
-CREATE CONSTRAINT TRIGGER trigger_comm_app_answers_selection_state
-  AFTER INSERT OR UPDATE OR DELETE ON community_application_answers
-  DEFERRABLE INITIALLY DEFERRED
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_assert_community_application_answer_from_answer();
-
-DROP TRIGGER IF EXISTS trigger_comm_app_answer_selections_state ON community_application_answer_selections;
-CREATE CONSTRAINT TRIGGER trigger_comm_app_answer_selections_state
-  AFTER INSERT OR UPDATE OR DELETE ON community_application_answer_selections
-  DEFERRABLE INITIALLY DEFERRED
-  FOR EACH ROW
-  EXECUTE FUNCTION fn_assert_community_application_answer_from_selection();
 
 -- community_invites
 CREATE TABLE IF NOT EXISTS community_invites (

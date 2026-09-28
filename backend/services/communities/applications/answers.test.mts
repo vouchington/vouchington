@@ -145,6 +145,70 @@ describe('application answers', () => {
     expect(await getApplicationQuestions(community.id)).toEqual([])
   })
 
+  it('rejects malformed answer documents and clears the active question set', async () => {
+    const owner = await createTestUser()
+    const applicant = await createTestUser()
+    const community = await ownedCommunity(owner)
+    const questions = await setApplicationQuestions(owner.id, community.id, [
+      { question: 'Short', field_type: 'short_text', required: true },
+      { question: 'Check', field_type: 'checkbox', required: false },
+      { question: 'One', field_type: 'single_select', options: ['Alpha'], required: false },
+      { question: 'Many', field_type: 'multi_select', options: ['Alpha'], required: false },
+    ])
+    const byQuestion = new Map(questions.map(question => [question.question, question]))
+    const shortId = byQuestion.get('Short')!.id
+    const checkId = byQuestion.get('Check')!.id
+    const oneId = byQuestion.get('One')!.id
+    const manyId = byQuestion.get('Many')!.id
+
+    await expect(
+      createApplication(applicant.id, community.id, null as unknown as Record<string, unknown>),
+    ).rejects.toMatchObject({ status: 422, message: 'answers must be an object' })
+    await expect(
+      createApplication(applicant.id, community.id, [] as unknown as Record<string, unknown>),
+    ).rejects.toMatchObject({ status: 422, message: 'answers must be an object' })
+    await expect(createApplication(applicant.id, community.id, {})).rejects.toMatchObject({
+      status: 422,
+      message: 'Answer required for question: Short',
+    })
+    await expect(
+      createApplication(applicant.id, community.id, { [shortId]: '' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Answer required for question: Short',
+    })
+    await expect(
+      createApplication(applicant.id, community.id, { [shortId]: 1 }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Expected string for question: Short',
+    })
+    await expect(
+      createApplication(applicant.id, community.id, { [shortId]: 'ok', [checkId]: 'no' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Expected boolean for checkbox question: Check',
+    })
+    await expect(
+      createApplication(applicant.id, community.id, { [shortId]: 'ok', [oneId]: 1 }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Expected string for question: One',
+    })
+    await expect(
+      createApplication(applicant.id, community.id, { [shortId]: 'ok', [oneId]: 'Missing' }),
+    ).rejects.toMatchObject({ status: 422, message: 'Unknown option' })
+    await expect(
+      createApplication(applicant.id, community.id, { [shortId]: 'ok', [manyId]: 'Alpha' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      message: 'Expected array for multi_select question: Many',
+    })
+
+    await expect(setApplicationQuestions(owner.id, community.id, [])).resolves.toEqual([])
+    expect(await getApplicationQuestions(community.id)).toEqual([])
+  })
+
   it('checks community visibility and archive before answer shape', async () => {
     const owner = await createTestUser()
     const applicant = await createTestUser()
