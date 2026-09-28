@@ -7,6 +7,7 @@ import {
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { NewsItemCluster } from '../news-item-cluster'
+import type { Post } from '@/types/posts'
 
 vi.mock(import('@/components/news/use-viewer-has-community'), () => ({
   useViewerHasCommunity: vi.fn<() => boolean>().mockReturnValue(false),

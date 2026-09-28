@@ -1,6 +1,6 @@
 import { makeItem, makeStory } from '@/test-helpers/components/news/news-item-cluster.mock-support'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { NewsItemCluster } from '../news-item-cluster'
 import type { RssFeedItemElection } from '@/types/rss-feed-items'
 
