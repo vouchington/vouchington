@@ -209,8 +209,14 @@ CREATE TABLE IF NOT EXISTS url_search_params (
   ordinal INT NOT NULL CHECK (ordinal >= 0),
   param_name TEXT NOT NULL CHECK (char_length(param_name) <= 2048),
   param_value TEXT NOT NULL CHECK (char_length(param_value) <= 4096),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (url_id, ordinal)
 );
+
+CREATE TRIGGER trigger_url_search_params_updated_at
+BEFORE UPDATE ON url_search_params
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE url_search_params IS 'Ordered query-string pairs for a canonical URL, including repeated keys.';
 COMMENT ON COLUMN url_search_params.url_id IS 'URL that owns this query parameter.';
@@ -575,7 +581,35 @@ COMMENT ON COLUMN crawls.markdown IS 'Extracted main content of the page in mark
 COMMENT ON COLUMN crawls.title IS 'Page title (from <title> tag, not meta tags).';
 COMMENT ON COLUMN crawls.meta_tags IS 'Opaque object of raw meta tags from the page. Consumed Open Graph facts are typed columns.';
 COMMENT ON COLUMN crawls.embed_kind IS 'article or player when this crawl has normalized embed metadata; NULL when it has none.';
+COMMENT ON COLUMN crawls.embed_requested_url IS 'URL originally requested for unfurl or oEmbed metadata.';
+COMMENT ON COLUMN crawls.embed_resolved_url IS 'Final URL after unfurl or oEmbed resolution.';
+COMMENT ON COLUMN crawls.embed_title IS 'Normalized embed title. NULL when the source omitted it.';
+COMMENT ON COLUMN crawls.embed_description IS 'Normalized embed description. NULL when the source omitted it.';
+COMMENT ON COLUMN crawls.embed_has_author IS 'Whether the embed source supplied an author object.';
+COMMENT ON COLUMN crawls.embed_author_name IS 'Embed author name. NULL when embed_has_author is false.';
+COMMENT ON COLUMN crawls.embed_author_url IS 'Embed author URL. NULL when embed_has_author is false.';
+COMMENT ON COLUMN crawls.embed_has_provider IS 'Whether the embed source supplied a provider object.';
+COMMENT ON COLUMN crawls.embed_provider_key IS 'Stable provider key. NULL when embed_has_provider is false.';
+COMMENT ON COLUMN crawls.embed_provider_name IS 'Provider display name. NULL when embed_has_provider is false.';
+COMMENT ON COLUMN crawls.embed_provider_url IS 'Provider URL. NULL when embed_has_provider is false.';
+COMMENT ON COLUMN crawls.embed_provider_resource_id IS 'Provider resource id. NULL when embed_has_provider is false.';
+COMMENT ON COLUMN crawls.embed_has_thumbnail IS 'Whether the embed source supplied a thumbnail.';
+COMMENT ON COLUMN crawls.embed_thumbnail_url IS 'Thumbnail URL. Required when embed_has_thumbnail is true.';
+COMMENT ON COLUMN crawls.embed_thumbnail_width IS 'Thumbnail width in pixels. NULL when the source omitted it.';
+COMMENT ON COLUMN crawls.embed_thumbnail_height IS 'Thumbnail height in pixels. NULL when the source omitted it.';
+COMMENT ON COLUMN crawls.embed_has_player IS 'Whether the embed source supplied a player.';
+COMMENT ON COLUMN crawls.embed_player_url IS 'Player URL. Required when embed_has_player is true.';
+COMMENT ON COLUMN crawls.embed_player_width IS 'Player width in pixels. NULL when the source omitted it.';
+COMMENT ON COLUMN crawls.embed_player_height IS 'Player height in pixels. NULL when the source omitted it.';
 COMMENT ON COLUMN crawls.og_image IS 'Case-insensitive string og:image consumed by embed reads.';
+COMMENT ON COLUMN crawls.twitter_image IS 'Case-insensitive string twitter:image consumed by embed reads.';
+COMMENT ON COLUMN crawls.twitter_image_exact IS 'Exact twitter:image text projection consumed by crawl image fallbacks.';
+COMMENT ON COLUMN crawls.og_audio IS 'Case-insensitive string og:audio consumed by embed reads.';
+COMMENT ON COLUMN crawls.og_title IS 'Case-insensitive string og:title consumed by embed reads.';
+COMMENT ON COLUMN crawls.twitter_title IS 'Case-insensitive string twitter:title consumed by embed reads.';
+COMMENT ON COLUMN crawls.og_description IS 'Case-insensitive string og:description consumed by embed reads.';
+COMMENT ON COLUMN crawls.twitter_description IS 'Case-insensitive string twitter:description consumed by embed reads.';
+COMMENT ON COLUMN crawls.og_site_name IS 'Case-insensitive string og:site_name consumed by embed reads.';
 COMMENT ON COLUMN crawls.og_image_exact IS 'Exact og:image text projection consumed by crawl image fallbacks.';
 COMMENT ON COLUMN crawls.embed_oembed_url IS 'oEmbed endpoint discovered from this crawl''s URL or HTML.';
 COMMENT ON COLUMN crawls.embed_oembed_resolved_at IS 'When optional remote oEmbed enrichment completed for this crawl.';
@@ -766,6 +800,7 @@ CREATE TABLE IF NOT EXISTS crawl_links (
   subtype TEXT NOT NULL DEFAULT '',
   ordinal INT NOT NULL CHECK (ordinal >= 0),
   href TEXT NOT NULL CHECK (char_length(href) <= 4096),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (crawl_id, rel, subtype, ordinal),
   CHECK (
     (shape IN ('string', 'string_list') AND subtype = '' AND (shape <> 'string' OR ordinal = 0))
@@ -802,7 +837,13 @@ BEFORE INSERT OR UPDATE ON crawl_links
 FOR EACH ROW
 EXECUTE FUNCTION fn_crawl_links_same_shape();
 
+CREATE OR REPLACE TRIGGER trigger_crawl_links_updated_at
+BEFORE UPDATE ON crawl_links
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
+
 COMMENT ON TABLE crawl_links IS 'Ordered link facts parsed from a crawl. An empty link graph is a crawl with zero rows.';
+COMMENT ON COLUMN crawl_links.crawl_id IS 'Crawl that owns this link. Rows follow that crawl partition and are removed with it.';
 COMMENT ON COLUMN crawl_links.rel IS 'Top-level link relation or element name from the HTML parser.';
 COMMENT ON COLUMN crawl_links.shape IS 'How this relation''s values reconstruct: string, string list, or typed map.';
 COMMENT ON COLUMN crawl_links.subtype IS 'Second-level map key such as an alternate MIME type; empty for top-level values.';

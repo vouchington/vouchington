@@ -569,8 +569,14 @@ CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliation_catego
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_item_category_snapshot_reconciliations ON DELETE CASCADE,
   ordinal INT NOT NULL CHECK (ordinal >= 0),
   category_text TEXT NOT NULL CHECK (char_length(category_text) BETWEEN 1 AND 4096),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (rss_feed_item_id, ordinal)
 );
+
+CREATE TRIGGER trigger_rss_recon_category_rows_updated_at
+BEFORE UPDATE ON rss_feed_item_category_snapshot_reconciliation_categories
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_category_snapshot_reconciliations__updated_at
 ON rss_feed_item_category_snapshot_reconciliations (updated_at, rss_feed_item_id);
@@ -579,6 +585,7 @@ COMMENT ON TABLE rss_feed_item_category_snapshot_reconciliations IS 'One coalesc
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.rss_feed_item_id IS 'RSS feed item whose complete category snapshot must be reconciled.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.generation IS 'Monotonic per-item generation fence; stale workers cannot acknowledge newer snapshots.';
 COMMENT ON TABLE rss_feed_item_category_snapshot_reconciliation_categories IS 'Ordered category strings copied onto the reconciliation outbox. Zero rows is an explicit empty desired snapshot.';
+COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliation_categories.rss_feed_item_id IS 'RSS feed item whose outbox snapshot owns this category.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliation_categories.ordinal IS 'Zero-based position in the outbox snapshot.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliation_categories.category_text IS 'Normalized category text in the outbox snapshot.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.created_at IS 'When this item first entered the durable category snapshot backlog.';

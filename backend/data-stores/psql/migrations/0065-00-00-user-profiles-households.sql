@@ -547,13 +547,20 @@ CREATE TABLE IF NOT EXISTS ses_bounce_event_recipients (
     AND email = LOWER(email)
     AND email = TRIM(email)
   ),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (ses_bounce_event_id, ordinal)
 );
+
+CREATE TRIGGER trigger_ses_bounce_event_recipients_updated_at
+BEFORE UPDATE ON ses_bounce_event_recipients
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_ses_bounce_event_recipients__email
 ON ses_bounce_event_recipients (email);
 
 COMMENT ON TABLE ses_bounce_event_recipients IS 'Normalized recipient addresses owned by one SES bounce, complaint, or delivery event.';
+COMMENT ON COLUMN ses_bounce_event_recipients.ses_bounce_event_id IS 'SES notification that owns this recipient address.';
 COMMENT ON COLUMN ses_bounce_event_recipients.ordinal IS 'Zero-based position after trim and lowercase normalization, before dedup-key sorting.';
 COMMENT ON COLUMN ses_bounce_event_recipients.email IS 'Lowercased trimmed recipient address. Repeated addresses in one event stay separate rows.';
 

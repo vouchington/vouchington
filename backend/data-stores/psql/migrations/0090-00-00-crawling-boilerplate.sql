@@ -33,10 +33,17 @@ CREATE TABLE IF NOT EXISTS boilerplate_removal_results (
   kind boilerplate_removal_result_kinds NOT NULL,
   ordinal INT NOT NULL CHECK (ordinal >= 0),
   value TEXT NOT NULL CHECK (char_length(value) BETWEEN 1 AND 4096),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (boilerplate_removal_id, kind, ordinal)
 );
 
+CREATE TRIGGER trigger_boilerplate_removal_results_updated_at
+BEFORE UPDATE ON boilerplate_removal_results
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
+
 COMMENT ON TABLE boilerplate_removal_results IS 'Ordered selector and HTML removal values for one boilerplate removal. Zero rows is an empty result.';
+COMMENT ON COLUMN boilerplate_removal_results.boilerplate_removal_id IS 'Boilerplate removal whose ordered result list owns this value.';
 COMMENT ON COLUMN boilerplate_removal_results.kind IS 'css_selector or html fragment, matching the extractor result lists.';
 COMMENT ON COLUMN boilerplate_removal_results.ordinal IS 'Zero-based order within that result list.';
 COMMENT ON COLUMN boilerplate_removal_results.value IS 'Selector or HTML fragment to remove.';

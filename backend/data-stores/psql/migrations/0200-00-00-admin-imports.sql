@@ -168,14 +168,26 @@ CREATE TABLE IF NOT EXISTS admin_import_topic_rows (
   referral_hostname TEXT,
   referral_pathname TEXT,
   referral_example_url TEXT,
-  referral_company_slug TEXT
+  referral_company_slug TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TRIGGER trigger_admin_import_topic_rows_updated_at
+BEFORE UPDATE ON admin_import_topic_rows
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE TABLE IF NOT EXISTS admin_import_rss_feed_rows (
   admin_import_row_id UUID PRIMARY KEY REFERENCES admin_import_rows ON DELETE CASCADE,
   url TEXT NOT NULL CHECK (char_length(url) BETWEEN 1 AND 2083),
-  follow BOOLEAN
+  follow BOOLEAN,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TRIGGER trigger_admin_import_rss_feed_rows_updated_at
+BEFORE UPDATE ON admin_import_rss_feed_rows
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE FUNCTION fn_admin_import_topic_row_matches_batch()
 RETURNS TRIGGER
@@ -244,7 +256,27 @@ CREATE TRIGGER trigger_admin_import_rss_feed_rows_match_batch
   EXECUTE FUNCTION fn_admin_import_rss_feed_row_matches_batch();
 
 COMMENT ON TABLE admin_import_topic_rows IS 'Typed topic-import input for one admin import row.';
+COMMENT ON COLUMN admin_import_topic_rows.admin_import_row_id IS 'Admin import row that owns this topic input.';
+COMMENT ON COLUMN admin_import_topic_rows.slug IS 'Topic slug to create or update.';
+COMMENT ON COLUMN admin_import_topic_rows.name IS 'Optional topic display name from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.topic_type IS 'Optional topic type from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.markdown IS 'Optional topic markdown from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.rss_feed_url IS 'Optional RSS feed URL attached to an rss_feed topic.';
+COMMENT ON COLUMN admin_import_topic_rows.rss_feed_title IS 'Optional RSS feed title attached to an rss_feed topic.';
+COMMENT ON COLUMN admin_import_topic_rows.feed_type IS 'Optional RSS feed type stored with an rss_feed topic input.';
+COMMENT ON COLUMN admin_import_topic_rows.aliases IS 'Pipe-separated topic aliases from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.parent_slugs IS 'Pipe-separated parent topic slugs from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.extensions IS 'Pipe-separated topic extensions from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.notes IS 'Optional operator note stored with the topic import input.';
+COMMENT ON COLUMN admin_import_topic_rows.referral_validation_slug IS 'Referral program validation slug for topic_type=referral_program.';
+COMMENT ON COLUMN admin_import_topic_rows.referral_user_help_text IS 'Referral program help text from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.referral_hostname IS 'Referral program hostname from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.referral_pathname IS 'Referral program pathname from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.referral_example_url IS 'Referral program example URL from the import input.';
+COMMENT ON COLUMN admin_import_topic_rows.referral_company_slug IS 'Referral program company topic slug from the import input.';
 COMMENT ON TABLE admin_import_rss_feed_rows IS 'Typed RSS-feed import input for one admin import row. NULL follow means the caller omitted it.';
+COMMENT ON COLUMN admin_import_rss_feed_rows.admin_import_row_id IS 'Admin import row that owns this RSS feed input.';
+COMMENT ON COLUMN admin_import_rss_feed_rows.url IS 'RSS feed URL to import.';
 COMMENT ON COLUMN admin_import_rss_feed_rows.follow IS 'Whether to follow the imported feed. NULL when the input omitted follow.';
 COMMENT ON COLUMN admin_import_rows.rss_feed_id IS 'RSS feed created or updated by this import row.';
 COMMENT ON COLUMN admin_import_rows.completed_at IS 'When this row was successfully imported.';
