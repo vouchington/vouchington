@@ -194,6 +194,6 @@ The MCP routes accept an OAuth access token or an MCP API key as the bearer cred
 ## Related
 
 - [Authentication architecture](../../overview/architecture/auth-overview.md)
-- [Security requirements](SECURITY.md)
+- [Security requirements](./SECURITY.md)
 - [API routes](../api/oauth/README.md)
 - [Authorization-server service](../../overview/architecture/services/oauth-authorization-server/README.md)

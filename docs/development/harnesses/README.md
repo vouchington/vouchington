@@ -11,6 +11,6 @@ contract lives in [agent-harness parity](../agent-harness-parity.md).
 
 - [Claude adapter catalog](../../../.claude/catalog/README.md)
 - [Codex configuration](../../../.codex/README.md)
-- [Cursor Configuration](cursor.md)
-- [Grok configuration](grok.md)
-- [OpenCode configuration](opencode.md)
+- [Cursor Configuration](../../../.cursor/README.md)
+- [Grok configuration](../../../.grok/README.md)
+- [OpenCode configuration](../../../.opencode/README.md)

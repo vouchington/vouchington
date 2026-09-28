@@ -36,4 +36,4 @@ flowchart TD
 
 The `ban-evasion` username is load-bearing: report redaction treats reports from that system user as system-generated.
 
-See also: [Community Bans](COMMUNITY-BANS.md), [Reporting](REPORTING.md).
+See also: [Community Bans](./COMMUNITY-BANS.md), [Reporting](./REPORTING.md).

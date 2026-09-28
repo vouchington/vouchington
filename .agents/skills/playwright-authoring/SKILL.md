@@ -1,6 +1,6 @@
 ---
 name: playwright-authoring
-description: Use when adding or changing Playwright specs, helpers, fixtures, authentication setup, selectors, waits, or Playwright suite execution for Voucha browser behavior.
+description: Author and run Voucha Playwright specs, helpers, fixtures, and browser assertions.
 ---
 
 # Playwright Authoring

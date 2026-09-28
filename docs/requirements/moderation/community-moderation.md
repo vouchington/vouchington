@@ -2,7 +2,7 @@
 
 Community owners and moderators can toggle built-in global label agents for posts in their community, and can create custom LLM agent prompts that automatically moderate posts published in their community. Prompt execution is gated by per-user "slots" tied to the creator's membership plan.
 
-> For non-agent moderation rules (delete, unpublish, pin, clearance) see [Post Moderation](POST-MODERATION.md).
+> For non-agent moderation rules (delete, unpublish, pin, clearance) see [Post Moderation](./POST-MODERATION.md).
 
 ## Contents
 

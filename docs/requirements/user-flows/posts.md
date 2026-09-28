@@ -1,6 +1,6 @@
 # Posts — User Flow Matrix
 
-[← User Flows](README.md)
+[← User Flows](./README.md)
 
 Authorization: tiered — Author (24 h content-edit window, `POST_CONTENT_EDIT_WINDOW_EXPIRED`) → Signed-in users → CM/CO (lock, unpublish, pin, community mod queue) → SA (site review queue, any post).
 

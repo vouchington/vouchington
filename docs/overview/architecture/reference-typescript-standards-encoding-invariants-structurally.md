@@ -42,6 +42,6 @@ oscillation into a red CI.
 
 - Backend rules: [../../../backend/AGENTS.md](../../../backend/AGENTS.md)
 - Web rules: [../../../web/AGENTS.md](../../../web/AGENTS.md)
-- Shared types: [../../../backend/types/README.md](backend/types/README.md)
+- Shared types: [../../../docs/overview/architecture/backend/types/README.md](backend/types/README.md)
 - API types: [../../../backend/api/AGENTS.md](../../../backend/api/AGENTS.md)
 - ts-shared rules: [../../../ts-shared/AGENTS.md](../../../ts-shared/AGENTS.md)

@@ -1,17 +1,4 @@
-# Stripe Event Processing Service — Agent Rules
+# Stripe event processing
 
-Service overview and handler descriptions: [README.md](README.md).
-Parent rules: [../AGENTS.md](../AGENTS.md).
-
-## Event-type source of truth
-
-The `switch (event.type)` inside `handleStripeEvent` in
-[`event-handlers.mts`](event-handlers.mts) is the single source of truth for which Stripe
-event types are processed or ignored.
-
-**When you add or remove a `case`, update [`docs/checklists/stripe-events.md`](../../../docs/checklists/stripe-events.md)
-in the same commit.**
-
-## Relocated reference navigation
-
-- [README.md](../../../docs/overview/architecture/services/stripe-event-processing/README.md)
+- `handleStripeEvent`'s `switch (event.type)` in [`event-handlers.mts`](event-handlers.mts) owns processed/ignored event types.
+- Update [the Stripe event checklist](../../../docs/checklists/stripe-events.md) in the same commit when adding/removing a case; handler descriptions belong in [README.md](../../../docs/overview/architecture/services/stripe-event-processing/README.md).

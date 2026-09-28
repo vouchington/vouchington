@@ -21,7 +21,7 @@ The AT Protocol OAuth client (`backend/modules/bluesky-oauth`) registers as a co
 `private_key_jwt` client — it signs token requests with a private ES256 (EC P-256) key and serves
 the public half inline from `GET /client-metadata.json` — rather than a public `'none'` client, to
 get the longer-lived, less-tightly-scoped refresh tokens AT Protocol authorization servers grant
-confidential clients. See [backend/modules/bluesky-oauth/README.md](backend/modules/bluesky-oauth/README.md)
+confidential clients. See [docs/overview/architecture/backend/modules/bluesky-oauth/README.md](backend/modules/bluesky-oauth/README.md)
 for the full design rationale and [environment-variables.md](../infrastructure/environment-variables.md#bluesky-at-protocol)
 for the signing-key provisioning.
 
@@ -60,7 +60,7 @@ lexicon declares `key: "tid"` and the reference PDS rejects any non-TID rkey at 
 PDS always mints the key, so there is no way to derive an idempotent record address to upsert
 against. `bluesky_follow_records` is the substitute idempotency mechanism. This makes
 `reconcileBlueskyFollow` safe to call repeatedly for the same pair (on follow, on unfollow, and
-from a backfill) — see [backend/services/bluesky-follows/README.md](services/bluesky-follows/README.md)
+from a backfill) — see [docs/overview/architecture/services/bluesky-follows/README.md](services/bluesky-follows/README.md)
 for the full function-level design, its compensation when receipt persistence fails, and the
 queue/worker that calls it.
 
@@ -74,7 +74,7 @@ change, and defer the full suite to CI per the usual workflow.
 ## Related
 
 - Requirements and current-state boundaries: [FEDIVERSE.md](../../requirements/content/FEDIVERSE.md)
-- API route: [backend/api/v1/fediverse/README.md](../../requirements/api/v1/fediverse/README.md)
+- API route: [docs/requirements/api/v1/fediverse/README.md](../../requirements/api/v1/fediverse/README.md)
 - Search architecture: [search.md](search.md)
 - Staging interoperability runbook: [../../operations/fediverse-staging-interop.md](../../operations/fediverse-staging-interop.md)
 - Finite Enum Ripple Checklist: [../../development/finite-enum-ripple-checklist.md](../../development/finite-enum-ripple-checklist.md)

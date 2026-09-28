@@ -8,10 +8,10 @@ Native implementations of these user-facing flows must be SwiftUI-native. WebVie
 or open-web fallback is allowed only with an accepted-plan blocker, PR explanation, and follow-up
 issue to replace it.
 
-See also: [Mobile Responsiveness](MOBILE.md) · [Sidebar](SIDEBAR.md) ·
-[Sources & Domains](../content/SOURCES-DOMAINS.md) · [Feed And List Filters](FEED-LIST-FILTERS.md) ·
+See also: [Mobile Responsiveness](./MOBILE.md) · [Sidebar](./SIDEBAR.md) ·
+[Sources & Domains](../content/SOURCES-DOMAINS.md) · [Feed And List Filters](./FEED-LIST-FILTERS.md) ·
 [Podcasts](../content/PODCASTS.md) · [News Discussions](../content/NEWS-DISCUSSIONS.md) ·
-[Client Intent Parity](CLIENT-INTENT-PARITY.md) — web/native intent contract
+[Client Intent Parity](./CLIENT-INTENT-PARITY.md) — web/native intent contract
 
 ## Overview
 
@@ -158,10 +158,10 @@ The following gaps were identified when designing the native navigation. Each ha
 
 ## See Also
 
-- [Mobile Responsiveness](MOBILE.md)
-- [Sidebar](SIDEBAR.md)
+- [Mobile Responsiveness](./MOBILE.md)
+- [Sidebar](./SIDEBAR.md)
 - [Sources & Domains](../content/SOURCES-DOMAINS.md)
-- [Feed And List Filters](FEED-LIST-FILTERS.md)
+- [Feed And List Filters](./FEED-LIST-FILTERS.md)
 - [Podcasts](../content/PODCASTS.md)
 - [News Discussions](../content/NEWS-DISCUSSIONS.md)
 - [Native client rules](https://github.com/vouchington/vouchington-clients)

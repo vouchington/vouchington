@@ -70,8 +70,8 @@ restored in a future change without any data migration. By contrast, `post/subsc
 
 ## Related
 
-- [Users](USERS.md)
-- [Privacy](PRIVACY.md)
+- [Users](./USERS.md)
+- [Privacy](./PRIVACY.md)
 - [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md)
 - [Entity Relations](../../overview/architecture/entity-relations.md)
 - [Bookmarks](../../overview/architecture/bookmarks.md)

@@ -393,8 +393,18 @@ rules:
     scope: repository
     options:
       maxLines: 180
-      maxChars: 12000
+      maxChars: 6000
       advisoryCharsRemaining: 500
+
+  - name: root agent instructions stay concise
+    rule: agents-md-max-size
+    scope: repository
+    include:
+      - AGENTS.md
+    options:
+      maxLines: 180
+      maxChars: 3000
+      advisoryCharsRemaining: 250
 
   - name: developer Markdown is reachable from agent instructions
     rule: markdown-reachability

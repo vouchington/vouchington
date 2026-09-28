@@ -9,6 +9,10 @@ Vouchington-specific policy and pointers.
 
 - [Code review prompt](../skills/agent-workflow/code-review-prompt.md)
 - [Code review workflow](../skills/agent-workflow/code-review.md)
+- [Start of work](../skills/agent-workflow/start-of-work.md)
+- [Implementation](../skills/agent-workflow/implementation.md)
+- [Before pushing](../skills/agent-workflow/before-pushing.md)
+- [Git and pull requests](../skills/agent-workflow/git-and-prs.md)
 - [Impact recipes](../skills/agent-workflow/impact-recipes.md)
 - [`skills/agent-workflow/SKILL.md`](../skills/agent-workflow/SKILL.md)
 - [`skills/backend-vitest-test-authoring/SKILL.md`](../skills/backend-vitest-test-authoring/SKILL.md)
@@ -23,7 +27,6 @@ Vouchington-specific policy and pointers.
 - [`skills/package-json-checklist/SKILL.md`](../skills/package-json-checklist/SKILL.md)
 - [Planning impact discovery](../skills/planning/references/impact-discovery.md)
 - [Planning live-browser preflight](../skills/planning/references/live-browser-preflight.md)
-- [Planning template](../skills/planning/references/plan-template.md)
 - [`skills/planning/SKILL.md`](../skills/planning/SKILL.md)
 - [`skills/playwright-authoring/SKILL.md`](../skills/playwright-authoring/SKILL.md)
 - [`skills/postgres-node-performance-tuning/SKILL.md`](../skills/postgres-node-performance-tuning/SKILL.md)

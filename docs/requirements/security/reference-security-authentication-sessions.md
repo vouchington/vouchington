@@ -10,7 +10,7 @@
 - **Session token** (`st` cookie): expires in 2 days
 - **Cookie flags**: `httpOnly: true`, `sameSite: 'lax'`, `secure: true` in production
 - **CSRF**: `SameSite=Lax` is one of several layered defenses (origin guard, JSON-only content-type
-  enforcement, no cross-origin CORS); no CSRF tokens are used. See [CSRF Protection](CSRF.md).
+  enforcement, no cross-origin CORS); no CSRF tokens are used. See [CSRF Protection](./CSRF.md).
 - **Cookie value safety**: backend- and edge-minted `dt`/`st` values must not contain semicolons
   or ASCII control characters before they are serialized into `Set-Cookie` or outbound origin
   `Cookie` headers. JWTs are base64url plus dots, so valid session tokens never need those

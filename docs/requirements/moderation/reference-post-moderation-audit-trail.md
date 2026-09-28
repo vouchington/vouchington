@@ -62,21 +62,21 @@ pending generation.
 
 ## Known Gaps
 
-- Reports do not auto-hide content and do not create a report-specific appeals flow. See [REPORTING.md](REPORTING.md).
+- Reports do not auto-hide content and do not create a report-specific appeals flow. See [REPORTING.md](./REPORTING.md).
 - Per-post lock is implemented: migration `0470-00-01-post-locks.sql`, `backend/services/posts/lock.mts`, tested in `playwright/tests/posts/post-lock.spec.mts`.
 - Per-post feature and moderator-hide actions are not in schema and remain out of scope.
 
 ## Appeals
 
-Members may file an appeal against a post removal via `POST /api/v1/appeals` (target type `removal`). The appeals flow is documented in [MODERATION-APPEALS.md](MODERATION-APPEALS.md). Post-removal notifications (`createPostRemovedNotification`) are sent fire-and-forget from `updateClearanceStatus` when `status = 'rejected'`.
+Members may file an appeal against a post removal via `POST /api/v1/appeals` (target type `removal`). The appeals flow is documented in [MODERATION-APPEALS.md](./MODERATION-APPEALS.md). Post-removal notifications (`createPostRemovedNotification`) are sent fire-and-forget from `updateClearanceStatus` when `status = 'rejected'`.
 
 ## Related
 
 - [POSTS.md](../content/POSTS.md) — Post creation, edit, archive, and display rules
-- [REPORTING.md](REPORTING.md) — User report submission flow, rate limits, and admin queue
-- [community-moderation.md](community-moderation.md) — LLM agent prompt moderation for communities
-- [Moderation Flows](MODERATION-FLOWS.md) — end-to-end pipeline: spam detection, OpenAI moderation, LLM agents, community moderation
-- [Community Bans](COMMUNITY-BANS.md), [Community Restrictions](COMMUNITY-RESTRICTIONS.md), [User Warnings](USER-WARNINGS.md), [Moderator Notes](MOD-NOTES.md), [Modmail](MODMAIL.md), and [Modlog](MODLOG.md) — newer community moderation subsystems
+- [REPORTING.md](./REPORTING.md) — User report submission flow, rate limits, and admin queue
+- [community-moderation.md](./community-moderation.md) — LLM agent prompt moderation for communities
+- [Moderation Flows](./MODERATION-FLOWS.md) — end-to-end pipeline: spam detection, OpenAI moderation, LLM agents, community moderation
+- [Community Bans](./COMMUNITY-BANS.md), [Community Restrictions](./COMMUNITY-RESTRICTIONS.md), [User Warnings](./USER-WARNINGS.md), [Moderator Notes](./MOD-NOTES.md), [Modmail](./MODMAIL.md), and [Modlog](./MODLOG.md) — newer community moderation subsystems
 - [ENTITY-ACTION-MATRIX.md](../ENTITY-ACTION-MATRIX.md) — Cross-cut entity × action reference
 - [ENTITY-LIFECYCLE-MATRIX.md](../ENTITY-LIFECYCLE-MATRIX.md) — Entity lifecycle flows and authorization tiers
 - [How Moderation Works](../../../articles/how-moderation-works.md) — public-facing overview of the moderation system

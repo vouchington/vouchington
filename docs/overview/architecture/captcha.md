@@ -67,7 +67,7 @@ unchanged.
 
 See [app-attestation.md](app-attestation.md) for the full attestation/assertion flow, the
 `dc`-claim session-duration mechanism, and replay defenses, and
-[`backend/services/captcha/README.md` § App Attest bypass](services/captcha/README.md#app-attest-bypass)
+[`docs/overview/architecture/services/captcha/README.md` § App Attest bypass](services/captcha/README.md#app-attest-bypass)
 for the exact decision logic and error codes.
 
 ## reCAPTCHA behaviour
@@ -147,9 +147,9 @@ runtime-public config such as `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY`). See
 
 ## Related
 
-- Turnstile service: [../../../backend/services/captcha/README.md](services/captcha/README.md)
+- Turnstile service: [../../../docs/overview/architecture/services/captcha/README.md](services/captcha/README.md)
 - Staging always-approve: [../../operations/staging-turnstile-always-approve.md](../../operations/staging-turnstile-always-approve.md)
-- reCAPTCHA service: [../../../backend/services/recaptcha/README.md](services/recaptcha/README.md)
-- Dynamic Config API: [../../../backend/api/v1/dynamic-config/README.md](../../requirements/api/v1/dynamic-config/README.md)
+- reCAPTCHA service: [../../../docs/overview/architecture/services/recaptcha/README.md](services/recaptcha/README.md)
+- Dynamic Config API: [../../../docs/requirements/api/v1/dynamic-config/README.md](../../requirements/api/v1/dynamic-config/README.md)
 - Local env var matrix: [../../development/local-env-vars.md](../../development/local-env-vars.md)
 - Feature flags vs DynamicConfig: [feature-flags.md](feature-flags.md)

@@ -184,19 +184,9 @@ describe('agent workflow documentation', () => {
     expect(workflow).toContain('Visual verification:')
   })
 
-  it('requires live browser preflight during planning and independent validation reporting', () => {
-    const startRaw = readRepoFile('.agents/skills/planning/references/live-browser-preflight.md')
-    const start = normalizedMarkdown('.agents/skills/planning/references/live-browser-preflight.md')
+  it('retains independent validation reporting fields', () => {
     const implementation = normalizedMarkdown('.agents/skills/agent-workflow/implementation.md')
 
-    expect(start).toContain('## Live browser preflight')
-    expect(start).toContain('Status: `not-required`')
-    expect(start).toContain('(`not-required`, `available`, or `exception`)')
-    expect(startRaw).toContain('- Status: `available`')
-    expect(startRaw).toContain('- Surface:')
-    expect(startRaw).toContain('- Evidence:')
-    expect(startRaw).toContain('- Status: `exception`')
-    expect(startRaw).toContain('- Reason:')
     expect(implementation).toContain('Automated browser tests:')
     expect(implementation).toContain('Screenshot attachment:')
   })
@@ -206,16 +196,16 @@ describe('agent workflow documentation', () => {
     const stacked = normalizedMarkdown('.agents/skills/stacked-prs/SKILL.md')
     const beforePushing = normalizedMarkdown('.agents/skills/agent-workflow/before-pushing.md')
 
-    expect(gitAndPrs).toContain('The parent session does not run the poll')
-    expect(gitAndPrs).toContain(
-      'pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status',
-    )
+    expect(gitAndPrs).toContain('One worker per native stack owns Shepherd polling and Git writes')
     expect(gitAndPrs).not.toContain('the shepherd loop, the ownership view')
     expect(stacked).toContain('One worker per native stack')
+    expect(stacked).toContain('pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status')
     expect(stacked).toContain('### Upper-only fast-forward')
     expect(stacked).not.toContain('the shepherd loop itself stays with this session')
     expect(beforePushing).toContain('upper-only fast-forward')
-    expect(beforePushing).toContain('Do not `gh stack sync`')
+    expect(beforePushing).toContain(
+      'Do not sync or rebase the stack while the lower layer is queued',
+    )
   })
 
   it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
@@ -227,7 +217,6 @@ describe('agent workflow documentation', () => {
     expect(gitAndPrs).toContain('run_in_background')
     expect(gitAndPrs).toContain('ScheduleWakeup')
     expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
-    expect(gitAndPrs).toContain('#reading-the-four-refs')
     expect(gitAndPrs).toContain('git rev-list --left-right --count HEAD...origin/<branch>')
     expect(gitAndPrs).toContain('git cherry -v')
     expect(gitAndPrs).toContain('git log --oneline --left-right')
@@ -239,11 +228,9 @@ describe('agent workflow documentation', () => {
 
   it('keeps unbounded tool output out of the main session', () => {
     const startOfWork = normalizedMarkdown('.agents/skills/agent-workflow/start-of-work.md')
-    const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
     const triagePrs = readRepoFile('.agents/skills/triage-prs/SKILL.md')
 
     expect(startOfWork).toContain('review-ci-logs')
-    expect(gitAndPrs).toContain('review-ci-logs')
     expect(triagePrs).not.toContain('--log-failed')
     expect(triagePrs).toContain('review-ci-logs')
   })

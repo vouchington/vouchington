@@ -138,6 +138,6 @@ mobile `...` menu (which requires authentication to render).
 
 ## Related
 
-- [source](source.md) — the feed that publishes these items
-- [post](post.md) — discussion posts linked to items via `post → related → url`
-- [url](url.md) — the canonical URL entity for each item's article link
+- [source](./source.md) — the feed that publishes these items
+- [post](./post.md) — discussion posts linked to items via `post → related → url`
+- [url](./url.md) — the canonical URL entity for each item's article link

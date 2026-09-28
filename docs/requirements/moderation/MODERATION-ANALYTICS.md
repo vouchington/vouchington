@@ -88,7 +88,7 @@ rounded. Nearest-five rounding therefore applies only to integer aggregates.
 
 ## Related
 
-- [Moderation Flows](MODERATION-FLOWS.md)
-- [Post Moderation](POST-MODERATION.md)
-- [Moderation Appeals](MODERATION-APPEALS.md)
-- [Modlog](MODLOG.md)
+- [Moderation Flows](./MODERATION-FLOWS.md)
+- [Post Moderation](./POST-MODERATION.md)
+- [Moderation Appeals](./MODERATION-APPEALS.md)
+- [Modlog](./MODLOG.md)

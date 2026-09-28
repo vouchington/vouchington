@@ -1,27 +1,24 @@
 import {
+  validatePrBody,
+  type PrBodyValidationOptions,
+  type PrBodyValidationResult,
+} from './validate-body.mts'
+export {
+  validatePrBody,
+  type PrBodyValidationOptions,
+  type PrBodyValidationResult,
+} from './validate-body.mts'
+import {
   type ClosingIssueReference,
   type IssueReferenceLookup,
   type ReferencedIssue,
-  hasClosingIssueReference,
   parseClosingIssueReferences,
   validateResolvedIssueReferences,
 } from './closing-refs.mts'
-import { findEscapeCommentClosingKeywordLeaks } from './escape-comment-leaks.mts'
 import {
   extractFixMainInterimClassifierRootCauseRef,
-  isFixMainInterimClassifierNoClosingRefBody,
-  isScheduledPromptNoSourceBody,
   validateFixMainRootCauseRef,
 } from './scheduled-no-source.mts'
-import { githubBodyLengthError } from '../github-body-length.mts'
-import { validatePrDescriptionContent } from './content-policy.mts'
-
-export type PrBodyValidationResult = {
-  advisories: string[]
-  errors: string[]
-  referencedIssues: ReferencedIssue[]
-  ok: boolean
-}
 
 export type IssueReferenceResolver = (ref: ClosingIssueReference) => Promise<IssueReferenceLookup>
 
@@ -49,7 +46,7 @@ export type ClosureLookup =
 
 export type IssueClosureResolver = (ref: ClosingIssueReference) => Promise<ClosureLookup>
 
-export type IssueReferenceValidationOptions = {
+export type IssueReferenceValidationOptions = PrBodyValidationOptions & {
   closureResolver?: IssueClosureResolver
   milestoneAuditor?: (
     body: string,
@@ -61,53 +58,12 @@ export type IssueReferenceValidationOptions = {
   targetPullRequest?: PullRequestIdentity
 }
 
-const WORKSPACE_SETUP_RE = /^\s*Workspace\s+setup\s*:/im
-const PROVENANCE_RULES = [
-  { label: 'Agent:', re: /^\s*Agent\s*:\s*\S/im },
-  { label: 'Device:', re: /^\s*Device\s*:\s*\S/im },
-  { label: 'Worktree:', re: /^\s*Worktree\s*:\s*\S/im },
-] as const
-
-export function validatePrBody(body: string): PrBodyValidationResult {
-  const bodyLengthError = githubBodyLengthError(body)
-  if (bodyLengthError)
-    return { advisories: [], errors: [bodyLengthError], ok: false, referencedIssues: [] }
-
-  const { errors, relatedIssuesSection } = validatePrDescriptionContent(body)
-  if (
-    relatedIssuesSection !== undefined &&
-    !hasClosingIssueReference(relatedIssuesSection) &&
-    !isScheduledPromptNoSourceBody(body) &&
-    !isFixMainInterimClassifierNoClosingRefBody(body)
-  ) {
-    errors.push(
-      'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact scheduled-prompt no-source representation, or the exact Fix Main interim-classifier no-closing-ref representation alongside a Refs entry. See .agents/skills/agent-workflow/git-and-prs.md.',
-    )
-  }
-
-  if (!WORKSPACE_SETUP_RE.test(body)) {
-    errors.push(
-      'PR body must include a "Workspace setup:" line (e.g. "Workspace setup: ./dev/initialize monorepo"). See .agents/skills/agent-workflow/start-of-work.md.',
-    )
-  }
-
-  for (const rule of PROVENANCE_RULES) {
-    if (!rule.re.test(body)) {
-      errors.push(`PR body must include "${rule.label}" line.`)
-    }
-  }
-
-  errors.push(...findEscapeCommentClosingKeywordLeaks(body))
-
-  return { advisories: [], errors, ok: errors.length === 0, referencedIssues: [] }
-}
-
 export async function validatePrBodyWithIssueReferences(
   body: string,
   resolveIssueReference: IssueReferenceResolver,
   options: IssueReferenceValidationOptions = {},
 ): Promise<PrBodyValidationResult> {
-  const result = validatePrBody(body)
+  const result = validatePrBody(body, options)
   if (!result.ok) return result
 
   const refs = parseClosingIssueReferences(body)

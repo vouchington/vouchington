@@ -5,7 +5,7 @@ style. Cookies cause cached pages to vary per-user, breaking CF Worker caching.
 
 Account-level settings such as country, UI locale, and Hacker News discussions are not
 localStorage preferences. They are persisted user settings because they affect
-cross-device account behavior. See [Localization](LOCALIZATION.md) for the UI locale,
+cross-device account behavior. See [Localization](./LOCALIZATION.md) for the UI locale,
 country, content language, and translation requirements.
 
 ## Available Preferences
@@ -73,4 +73,4 @@ The settings sidebar (`web/components/my/settings-nav.tsx`) uses a tab-based lay
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)
-- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](ACCOUNT-DELETION-DATA-REQUEST.md)
+- [docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](./ACCOUNT-DELETION-DATA-REQUEST.md)

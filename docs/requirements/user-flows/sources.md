@@ -1,6 +1,6 @@
 # Sources (RSS Feeds) — User Flow Matrix
 
-[← User Flows](README.md)
+[← User Flows](./README.md)
 
 `topic_type = 'rss_feed'`, table `rss_feeds`, URL slug `/source`, browse route `/sources`. `/channels`, `/news-sources`, and `/podcasts` render [`browse-feed-page.tsx`](../../../web/components/sources/browse-feed-page.tsx); each route keeps its own feed type, copy, and path.
 

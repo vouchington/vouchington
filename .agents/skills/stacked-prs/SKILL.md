@@ -1,9 +1,6 @@
 ---
 name: stacked-prs
-description: |
-  Recognize a native GitHub stacked pull request, or a PR whose base branch isn't `main`, and drain
-  it from the bottom-most ready layer up. Load whenever a PR is part of a stack: Vouchington command
-  catalog, ownership, owned-layer shepherding, and human-gated per-layer merging.
+description: Discover and shepherd native GitHub PR stacks or PRs based on non-main branches.
 ---
 
 # Stacked Pull Requests

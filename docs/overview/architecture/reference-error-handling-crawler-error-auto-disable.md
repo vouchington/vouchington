@@ -5,7 +5,7 @@
 ## Crawler Error Auto-Disable
 
 Persistent DNS failures automatically disable crawling for a hostname. See
-[backend/services/urls-hostnames/README.md](services/urls-hostnames/README.md)
+[docs/overview/architecture/services/urls-hostnames/README.md](services/urls-hostnames/README.md)
 for the full counter semantics, canary logic, and admin re-enable procedure.
 
 Key error types involved (`backend/modules/on-error/errors.mts`):

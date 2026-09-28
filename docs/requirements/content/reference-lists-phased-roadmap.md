@@ -19,4 +19,4 @@
 - [Entity × Lifecycle Matrix — list](../ENTITY-LIFECYCLE-MATRIX.md)
 - [Canonical component registry](../navigation/reference-components-canonical-entity-list-item-components.md#canonical-component-registry)
 - [Community Lists](../community/community-lists.md) — structural template
-- [Podcasts](PODCASTS.md) — audio content surfaced in lists via `media_type='audio'` filter
+- [Podcasts](./PODCASTS.md) — audio content surfaced in lists via `media_type='audio'` filter

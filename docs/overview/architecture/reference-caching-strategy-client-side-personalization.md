@@ -45,13 +45,13 @@ same browser URL is fetched as an authenticated variant and the Worker bypasses 
 ## What is NOT Cached
 
 Anonymous SSR HTML **is now cached** (previously bypassed) — see
-[Anonymous HTML edge caching vs. CSP nonces](anon-html-edge-caching-csp.md) for why that's safe
+[Anonymous HTML edge caching vs. CSP nonces](./anon-html-edge-caching-csp.md) for why that's safe
 despite the per-request CSP nonce. What's still excluded from the edge cache:
 
 - **Authenticated responses**: CF Worker bypasses cache entirely for authenticated users
 - **RSC fetches**: `?_rsc=1` / `accept: text/x-component` navigations bypass the edge cache today,
   even for anonymous users — pending staging verification of RSC-navigation nonce consistency (see
-  the nonce doc's [RSC navigation](anon-html-edge-caching-csp.md#whats-not-yet-covered-rsc-navigation)
+  the nonce doc's [RSC navigation](./anon-html-edge-caching-csp.md#whats-not-yet-covered-rsc-navigation)
   section)
 - **Login page**: `/login` and `/login/` bypass the edge cache so Cloudflare Turnstile renders on
   every page load
@@ -77,9 +77,9 @@ despite the per-request CSP nonce. What's still excluded from the edge cache:
 
 ## Related
 
-- [Anonymous HTML edge caching vs. CSP nonces](anon-html-edge-caching-csp.md) — why anon HTML is cacheable despite the per-request CSP nonce, and the placeholder-nonce safety argument
+- [Anonymous HTML edge caching vs. CSP nonces](./anon-html-edge-caching-csp.md) — why anon HTML is cacheable despite the per-request CSP nonce, and the placeholder-nonce safety argument
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [docs/overview/architecture/ai-agents.md](ai-agents.md)
-- [docs/overview/architecture/auth-overview.md](auth-overview.md)
+- [docs/overview/architecture/ai-agents.md](./ai-agents.md)
+- [docs/overview/architecture/auth-overview.md](./auth-overview.md)

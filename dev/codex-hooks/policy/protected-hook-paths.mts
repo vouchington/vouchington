@@ -14,7 +14,6 @@ export const PROTECTED_HOOK_DIR_PREFIXES = [
   'dev/codex-hooks/',
   'dev/agent-session-id/',
   'dev/pr-description/',
-  'dev/plan-issue/',
   '.codex/rules/',
   '.grok/hooks/',
 ]

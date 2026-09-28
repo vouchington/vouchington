@@ -9,13 +9,6 @@ const normalized = (path: string): string => readRepoFile(path).replace(/\s+/g, 
 const MONOLITHIC_TRIAGE_SKILLS = ['triage-prs', 'triage-security'] as const
 
 describe('agent-authored PR creation feedback contract', () => {
-  it('defines one canonical evidence and recommendation rubric', () => {
-    const review = normalized('.agents/skills/agent-workflow/code-review.md')
-
-    expect(review).toContain('Agent-Authored PR Creation Feedback')
-    expect(review).toContain('[pr-description](../pr-description/SKILL.md)')
-  })
-
   it.each(MONOLITHIC_TRIAGE_SKILLS)(
     'wires %s directly to the canonical rubric and retrospective flow',
     skill => {
@@ -60,7 +53,6 @@ describe('agent-authored PR creation feedback contract', () => {
     expect(disposition).toBeGreaterThan(duplicateResolution)
     expect(retrospective).toBeGreaterThan(disposition)
     expect(triage).toContain('origin/main')
-    expect(triage).toContain('`Plan:`')
     expect(triage).toContain('`automation`')
   })
 

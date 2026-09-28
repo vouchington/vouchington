@@ -135,7 +135,7 @@ must degrade into that provider's bucket instead of failing the whole response.
 
 ## Related
 
-- API route: [backend/api/v1/fediverse/README.md](../api/v1/fediverse/README.md)
+- API route: [docs/requirements/api/v1/fediverse/README.md](../api/v1/fediverse/README.md)
 - Search architecture: [../../overview/architecture/search.md](../../overview/architecture/search.md)
 - Federation roadmap and design: [../../overview/architecture/fediverse-federation.md](../../overview/architecture/fediverse-federation.md)
 - Staging interoperability runbook: [../../operations/fediverse-staging-interop.md](../../operations/fediverse-staging-interop.md)

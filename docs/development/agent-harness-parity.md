@@ -5,10 +5,26 @@ policy runner. `.claude/settings.json` is the only hook source for Claude, Curso
 and Grok; `.codex/config.toml` is Codex's. Grok does not get a copied `.grok/hooks`,
 `.grok/skills`, or permission allowlist, and Cursor does not get a `.cursor/hooks.json`:
 both run the Claude hooks through Claude-compat. Cursor keeps native `.cursor/` config
-for its sandbox, MCP, permissions, and worktrees. See [`.grok/README.md`](harnesses/grok.md),
-[`.cursor/README.md`](harnesses/cursor.md),
-[`.opencode/README.md`](harnesses/opencode.md), and
+for its sandbox, MCP, permissions, and worktrees. See [`docs/development/harnesses/grok.md`](harnesses/grok.md),
+[`docs/development/harnesses/cursor.md`](harnesses/cursor.md),
+[`docs/development/harnesses/opencode.md`](harnesses/opencode.md), and
 [agent-workflow](../../.agents/skills/agent-workflow/SKILL.md).
+
+## Instruction loading
+
+- Codex assembles `AGENTS.md` from the repository root through its startup working directory.
+  Starting at the root does not load every nested file. Read each target path's instruction ancestry
+  explicitly before editing; see [Codex loading](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+- Claude Code loads native `AGENTS.md` with ancestor and lazily read subtree instructions.
+  A `CLAUDE.md` shadows `AGENTS.md` in the same directory, and automatic discovery skips `.agents`.
+  Explicitly read [skill instructions](../../.agents/skills/AGENTS.md); see
+  [Claude memory](https://code.claude.com/docs/en/memory). Keep `CLAUDE.md` gitignored.
+- Prefer the local adapter before the canonical plugin. Canonical `nextjs-vitest-test-authoring`
+  maps to local `web-vitest-test-authoring`; other local adapter names match their canonical name.
+  Resolve support links relative to their owner and do not reload an already-read adapter or skill.
+- Installation prerequisite closure makes resources available; it does not require reading every
+  installed skill. Load the current phase and relevant authoring procedure only. Link and manifest
+  checks verify availability, while observed task trials verify instruction selection.
 
 ## Reusable domain skills
 
@@ -195,8 +211,8 @@ hooks or skills into [`.opencode/`](harnesses/opencode.md), and do not add `CLAU
 
 ## Privacy
 
-Grok is allowed only with `/privacy` coding-data and training opt-out enabled,
-the same privacy-mode rule as Cursor, Codex, and Claude Code.
+Cursor, Codex, Claude Code, Grok, and OpenCode are permitted only with coding-data and training
+opt-out enabled; Grok uses `/privacy`. Gemini and Z.AI remain unapproved.
 
 ## Related
 
@@ -204,8 +220,8 @@ the same privacy-mode rule as Cursor, Codex, and Claude Code.
 - [Agent Blackboard](agent-blackboard.md)
 - [Merge Authority](merge-authority.md)
 - [`.claude/README.md`](../../.claude/README.md)
-- [`.cursor/README.md`](harnesses/cursor.md)
-- [`.opencode/README.md`](harnesses/opencode.md)
+- [`docs/development/harnesses/cursor.md`](harnesses/cursor.md)
+- [`docs/development/harnesses/opencode.md`](harnesses/opencode.md)
 - [`.codex/README.md`](../../.codex/README.md)
 - [`.codex/config.toml`](../../.codex/config.toml)
-- Project Grok workflows: [`.grok/workflows/`](../../.grok/workflows) (orchestrators, not copied skills)
+- Project Grok workflows: [`.grok/workflows/`](../../.grok/workflows/) (orchestrators, not copied skills)

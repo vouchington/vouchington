@@ -1,20 +1,5 @@
-# Email Templates
+# Email templates
 
-React Email templates for Voucha emails.
-
-Follow the backend workflow in [backend/AGENTS.md](../backend/AGENTS.md), the monorepo map in
-[MONOREPO.md](../docs/development/MONOREPO.md), and [README.md](README.md) for the template inventory,
-authoring workflow, and commands. Before writing user-facing email copy, load the
-[voucha-brand skill](../.agents/skills/voucha-brand/SKILL.md). Before adding or changing a Vitest
-test, fixture, or mock, load the
-[vitest-test-authoring skill](../.agents/skills/vitest-test-authoring/SKILL.md).
-
-The package exports prebuilt `dist/index.mjs` for `@email-templates/core` consumers. Keep React Email, React, and React DOM out of `backend/package.json` runtime dependencies; they should stay bundled into this workspace's build output.
-
-## Template Guidance
-
-- Recommendation-style emails must mirror an existing aside or recommendation source in the app before you write the email copy.
-
-## Relocated reference navigation
-
-- [template docs](../docs/overview/architecture/email-templates/README.md)
+- Load [Voucha brand](../.agents/skills/voucha-brand/SKILL.md) for user-facing copy and [Vitest authoring](../.agents/skills/vitest-test-authoring/SKILL.md) for tests/fixtures/mocks. Use [template docs](../docs/overview/architecture/email-templates/README.md), [monorepo map](../docs/development/MONOREPO.md), and applicable [backend rules](../backend/AGENTS.md).
+- `@email-templates/core` exports prebuilt `dist/index.mjs`. Bundle React Email/React/React DOM here; keep them out of backend runtime dependencies.
+- Recommendation emails mirror an existing in-app aside/recommendation source before copy is written.

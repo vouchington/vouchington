@@ -25,4 +25,4 @@ delete a note after a user loses moderation access.
 
 Notes are context for future moderation decisions; they are not penalties and do not alter account state.
 
-See also: [Community Bans](COMMUNITY-BANS.md), [User Warnings](USER-WARNINGS.md).
+See also: [Community Bans](./COMMUNITY-BANS.md), [User Warnings](./USER-WARNINGS.md).

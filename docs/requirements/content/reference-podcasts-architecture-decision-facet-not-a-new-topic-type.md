@@ -4,7 +4,7 @@
 
 ## Architecture Decision: Facet, Not a New Topic Type
 
-Podcasts are **not** a new `topic_type`. The [TOPICS.md § Type vs facet](reference-topics-topic-types.md#type-vs-facet)
+Podcasts are **not** a new `topic_type`. The [TOPICS.md § Type vs facet](./reference-topics-topic-types.md#type-vs-facet)
 rule requires a new type to justify itself with type-specific routing/SEO/UI OR a
 type-specific 1:1 extension table with its own validation. Podcasts qualify on both
 counts — but the shared `rss_feeds` extension table (URLs, crawls, items, enclosures,

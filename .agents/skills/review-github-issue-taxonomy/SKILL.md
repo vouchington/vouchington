@@ -1,6 +1,6 @@
 ---
 name: review-github-issue-taxonomy
-description: Audit Vouchington GitHub labels, milestones, projects, descriptions, colors, and path-label automation using the portable taxonomy-review workflow.
+description: Audit Vouchington labels, milestones, projects, and path-label automation.
 ---
 
 # Vouchington Taxonomy Review Adapter

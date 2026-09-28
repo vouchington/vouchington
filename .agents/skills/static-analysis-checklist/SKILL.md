@@ -1,6 +1,6 @@
 ---
 name: static-analysis-checklist
-description: Use when changing a Vouchington static-analysis rule, configuration, fixture corpus, suppression, allowlist, or repository guard.
+description: Change Vouchington analyzer guards in static-code-analysis/, ast-grep-rules/, or no-mistakes and oxlint configuration.
 ---
 
 # Vouchington Static Analysis Adapter
@@ -11,6 +11,10 @@ Claude Code and Codex load `vouchington-workflow:static-analysis-checklist`; Gro
 
 ## Vouchington additions
 
+Use this checklist when changing analyzer enforcement in `static-code-analysis/`, `ast-grep-rules/`,
+or `no-mistakes`/oxlint configuration. Agent permission and hook configuration belongs to
+[`dev/codex-hooks/AGENTS.md`](../../../dev/codex-hooks/AGENTS.md); load this checklist only when the
+same change also changes analyzer enforcement.
 Treat [`static-code-analysis/README.md`](../../../docs/development/quality/static-code-analysis/README.md) as canonical.
 Read its rule-placement, guard-authoring, migration-cleanup, and rollout sections before choosing
 an implementation. Add positive and negative fixtures, run the focused fixture test and scanner,

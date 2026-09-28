@@ -107,6 +107,6 @@ Because the detector's state now spans a fork's entire file sequence, a type can
 ## Related
 
 - Process lifecycle rules: [../../../backend/AGENTS.md](../../../backend/AGENTS.md)
-- Data stores: [../../../backend/data-stores/README.md](backend/data-stores/README.md)
+- Data stores: [../../../docs/overview/architecture/backend/data-stores/README.md](backend/data-stores/README.md)
 - N-API runtime package: `@jongleberry/vurst-runtime`
 - [Runtime Timeouts](../../development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot) — the Fargate Spot interruption-notice window that SSE/long-lived connections must degrade within; distinct from this doc's own `GRACEFUL_SHUTDOWN_PERIOD_SECONDS` force-exit timer above — don't conflate the two

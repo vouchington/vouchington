@@ -200,9 +200,9 @@ All RSS feed `<description>` content is wrapped in CDATA by the `feed` library, 
 
 ## Related
 
-- [AI Agents](ai-agents.md)
-- [Auth Overview](auth-overview.md)
-- [HTML And Markdown Rendering Passes](html-markdown-rendering-passes.md)
+- [AI Agents](./ai-agents.md)
+- [Auth Overview](./auth-overview.md)
+- [HTML And Markdown Rendering Passes](./html-markdown-rendering-passes.md)
 - [Markdown service](services/markdown/README.md) — Rust-backed markdown rendering pipeline
 - [Backend rules](../../../backend/AGENTS.md) — Rust NAPI usage, banned packages
 - [Web rules](../../../web/AGENTS.md) — content rendering components

@@ -112,7 +112,7 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 - `relation__user__*` tables use plain B-tree indexes, so privacy filter lookups hit a single index scan. They were previously hash-partitioned (HASH partitioning is now forbidden repo-wide) and de-partitioned after this caused broadcast checks to fan out across all 8 partitions — see [entity-relations.md](entity-relations.md#table-structure), [partitioning-strategy.md](partitioning-strategy.md), and the measured incident in [feeds/README.md#performance](services/feeds/README.md#performance).
 - The post feed composes viewer-aware publication eligibility once per candidate and resolved root.
 - Post feeds reuse one eligibility builder for direct candidates and distinct share targets; the
-  [EXPLAIN gates](../../development/postgresql/explain-analyze/README.md) bound target probes and
+  [EXPLAIN gates](../../../backend/scripts/explain-analyze/README.md) bound target probes and
   reject delivery joins that repeatedly rescan the eligible-target spool.
 - RSS feed pagination uses the `LIMIT + 1` pattern instead of a full-window row count so `has_next_page` does not require counting the full candidate set.
 
@@ -124,11 +124,11 @@ The [direct winner builder](../../../backend/services/feeds/rss-feed-items/get-i
 
 ## Related Services
 
-- [backend/services/feeds/README.md](services/feeds/README.md) -- feed query logic and share actions
-- [backend/modules/feed-query-builders/README.md](backend/modules/feed-query-builders/README.md) -- shared visibility, filtering, and hot-score SQL fragments
+- [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md) -- feed query logic and share actions
+- [docs/overview/architecture/backend/modules/feed-query-builders/README.md](backend/modules/feed-query-builders/README.md) -- shared visibility, filtering, and hot-score SQL fragments
 - `backend/services/posts/privacy-filter.mts` -- generic `buildPrivacyFilter` SQL builder
-- [backend/services/entity-relations/README.md](services/entity-relations/README.md) -- follow/mute/block relationships that drive feed filtering
-- [backend/api/v1/feeds/README.md](../../requirements/api/v1/feeds/README.md) -- API route handlers
+- [docs/overview/architecture/services/entity-relations/README.md](services/entity-relations/README.md) -- follow/mute/block relationships that drive feed filtering
+- [docs/requirements/api/v1/feeds/README.md](../../requirements/api/v1/feeds/README.md) -- API route handlers
 - [docs/requirements/community/community-lists.md](../../requirements/community/community-lists.md) -- community list feed scopes
 - [Backend rules](../../../backend/AGENTS.md) -- pagination, transaction, and service conventions
 - [Web rules](../../../web/AGENTS.md) -- feed list components and infinite-scroll patterns

@@ -1,6 +1,6 @@
 ---
 name: git-commit-checklist
-description: Use before staging or committing in Vouchington. Loads the portable Vouchington checklist, then applies Vouchington validation and hook policy.
+description: Validate and prepare Vouchington commits before staging or committing.
 ---
 
 # Vouchington Git Commit Adapter

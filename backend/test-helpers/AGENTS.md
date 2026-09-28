@@ -1,27 +1,7 @@
-# Test Helpers
+# Backend test helpers
 
-Load [backend-vitest-test-authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md)
-before changing a backend test helper. Full helper APIs, entity-listener waits, fixture selection,
-and dirty-database patterns live in [Backend test helpers](README.md).
-
-## Scoped invariants
-
-- Backend tests run against a dirty, parallel database and do not clean up shared rows. Use the
-  randomized, ownership-scoped fixture patterns in [Backend test helpers](README.md).
-- Tests must not import raw PostgreSQL helpers or `sql-template-strings`; expose focused setup and
-  assertion functions here without re-exporting SQL methods.
-- Keep backend helpers under this first-layer root; do not recreate feature-local helper
-  directories or forwarding modules after moving a helper here.
-- Keep entity-specific helpers in `entities/*.mts` and generic helpers in their narrow package owner.
-- Keep test output clean: close resources and remove unexpected `console.*` output before handoff.
-
-## See Also
-
-- Helper APIs and examples: [Backend test helpers](README.md)
-- [Backend context](../AGENTS.md)
-
-## Relocated reference navigation
-
-- [Test helpers](../../docs/development/testing/backend/helpers.md)
-
-- [API fixture entrypoint](api-fixtures/README.md).
+- Load [backend Vitest authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md); helper APIs/waits/fixtures belong in [Test helpers](../../docs/development/testing/backend/helpers.md).
+- Tests share a dirty parallel database: randomize ownership-scoped fixtures and never clean shared rows.
+- Tests do not import raw PostgreSQL helpers or `sql-template-strings`; expose focused setup/assertions here without re-exporting SQL methods.
+- Keep helpers under this first-layer root without feature-local directories/forwarders. Entity helpers use `entities/*.mts`; generic helpers stay with narrow package owners.
+- Close resources and remove unexpected `console.*` output before handoff.

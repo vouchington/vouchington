@@ -1,5 +1,6 @@
 import { hasClosingIssueReference } from '../../pr-description/closing-refs.mts'
 import { findEscapeCommentClosingKeywordLeaks } from '../../pr-description/escape-comment-leaks.mts'
+import { isDirectUserRequestNoSourceBody } from '../../pr-description/direct-user-request.mts'
 import {
   isFixMainInterimClassifierNoClosingRefBody,
   isScheduledPromptNoSourceBody,
@@ -10,6 +11,7 @@ import type { GhInvocation } from './github-invocation.mts'
 import { ghBodyFromOptions, ghBodyIsOpaqueToHook, parseGhOptions } from './github-options.mts'
 
 export function githubPrBodyDecision(input: {
+  automationContext: boolean
   contentRulesApply: boolean
   cwd: string
   invocation: GhInvocation
@@ -58,6 +60,13 @@ export function githubPrBodyDecision(input: {
     // and inline $(cmd) bodies that are already marked opaque by ghBodyIsOpaqueToHook.
     return 'skip'
   }
+  const directUserRequest = isDirectUserRequestNoSourceBody(body)
+  if (directUserRequest && input.automationContext) {
+    return {
+      reason:
+        'The direct-user-request no-source representation is allowed only in an interactive session.',
+    }
+  }
   // The hook enforces draft-first creation and the closing-keyword or scheduled no-source
   // requirement from the body text alone — it never looks the referenced issues up. The full
   // set of PR body rules (## Related issues heading, Workspace setup: line, linked issue
@@ -65,12 +74,13 @@ export function githubPrBodyDecision(input: {
   // when changing PR body policy.
   if (
     !hasClosingIssueReference(body) &&
+    !directUserRequest &&
     !isScheduledPromptNoSourceBody(body) &&
     !isFixMainInterimClassifierNoClosingRefBody(body)
   ) {
     return {
       reason:
-        'PR bodies must include at least one GitHub closing keyword such as "Closes #123" for resolved issues, or the exact scheduled-prompt no-source representation, or the exact Fix Main interim-classifier no-closing-ref representation alongside a Refs entry.',
+        'PR bodies must include at least one GitHub closing keyword such as "Closes #123" for resolved issues, or the exact interactive direct-user-request no-source representation, or the exact scheduled-prompt no-source representation, or the exact Fix Main interim-classifier no-closing-ref representation alongside a Refs entry.',
     }
   }
   const escapeCommentLeaks = findEscapeCommentClosingKeywordLeaks(body)

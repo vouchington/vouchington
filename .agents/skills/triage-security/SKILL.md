@@ -1,8 +1,6 @@
 ---
 name: triage-security
-description: |
-  Vouchington adapter for the public security-triage plugin. Routes verified
-  security-triage handoffs into Vouchington issue policy and PR post-processing.
+description: Route verified security-triage handoffs through Vouchington issue and PR policy.
 argument-hint: '[severity filter or finding scope; blank = current critical,high filter]'
 allowed-tools: ['Bash', 'Read', 'Grep', 'Glob', 'Agent', 'ToolSearch']
 ---

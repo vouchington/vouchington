@@ -134,7 +134,7 @@ Values](../../overview/architecture/monetary-values.md).
 
 `GET /api/v1/growth-metrics?range=30d`
 
-See [backend/api/v1/admin/growth-metrics/README.md](../api/v1/admin/growth-metrics/README.md) for full endpoint reference.
+See [docs/requirements/api/v1/admin/growth-metrics/README.md](../api/v1/admin/growth-metrics/README.md) for full endpoint reference.
 
 ## Related
 

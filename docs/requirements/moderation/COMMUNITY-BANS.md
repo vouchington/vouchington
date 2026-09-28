@@ -38,4 +38,4 @@ stateDiagram-v2
 - Enforcement happens in community membership and publication services.
 - Ban-evasion confirmation calls `banUserFromCommunity()` and records the action through the same path.
 
-See also: [Moderation Flows](MODERATION-FLOWS.md), [Ban Evasion](BAN-EVASION.md), [Modlog](MODLOG.md).
+See also: [Moderation Flows](./MODERATION-FLOWS.md), [Ban Evasion](./BAN-EVASION.md), [Modlog](./MODLOG.md).

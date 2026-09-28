@@ -228,8 +228,8 @@ add a new pinned binary.
 
 ## Reference index
 
-- [Test Helpers](testing/backend/helpers.md)
-- [API Fixtures](testing/backend/api-fixtures.md)
+- [Test Helpers](../../backend/test-helpers/README.md)
+- [API Fixtures](../../backend/test-helpers/api-fixtures/README.md)
 - [Code Statistics Policy](code-statistics.md)
 - [Harness Engineering — Agent Observability](harness-engineering.md)
 - [Host Locks](host-locks.md)
@@ -304,4 +304,4 @@ add a new pinned binary.
 - [Valkey Inflight Saturation (issue #4717)](reference-worker-performance-valkey-inflight-saturation-issue-4717.md)
 - [Verifying changes](reference-worker-performance-verifying-changes.md)
 - [Glide-MQ Testing with TestQueue and TestWorker](testing/backend/glide-mq-testing.md)
-- [API Response Factories](testing/web/api-responses.md)
+- [API Response Factories](../../web/test-helpers/api-responses/README.md)

@@ -31,7 +31,7 @@ administrator-only moderation operations. The native appeal queue defaults to pe
 resolved and dismissed filters plus cursor pagination. It saves a changed public response before
 approval, refreshes after an ambiguous delivery failure, and prevents moderators from accepting
 suspension appeals. The detailed lifecycle contract remains canonical in
-[Moderation Appeals](MODERATION-APPEALS.md).
+[Moderation Appeals](./MODERATION-APPEALS.md).
 
 ## Pipeline diagram
 
