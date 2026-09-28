@@ -38,6 +38,17 @@ const SQL_TYPE = {
   string: 'TEXT',
 } as const
 
+const INTEGER_MONEY_FIELD = /_(?:minor_units|microunits)(?:_per_[a-z0-9_]+)?$/
+
+function columnSqlType(field: DynamicConfigAuditField): string {
+  if (field.type === 'number' && INTEGER_MONEY_FIELD.test(field.name)) return 'BIGINT'
+  return SQL_TYPE[field.type]
+}
+
+function storesIntegerMoney(schema: DynamicConfigAuditSchema): boolean {
+  return schema.fields.some(field => INTEGER_MONEY_FIELD.test(field.name))
+}
+
 export function dynamicConfigAuditTable(namespace: string): string {
   const table = `dynamic_config_audit_${namespace.replaceAll('-', '_')}_facts`
   if (!/^[a-z0-9_]+$/.test(table)) throw new Error(`Invalid dynamic config audit table: ${table}`)
@@ -82,9 +93,12 @@ export function dynamicConfigAuditSchema(namespace: string): DynamicConfigAuditS
 
 export function renderAuditTable(schema: DynamicConfigAuditSchema): string {
   const columns = schema.fields.flatMap(field => [
-    `${quoteIdent(field.previous)} ${SQL_TYPE[field.type]}`,
-    `${quoteIdent(field.next)} ${SQL_TYPE[field.type]}`,
+    `${quoteIdent(field.previous)} ${columnSqlType(field)}`,
+    `${quoteIdent(field.next)} ${columnSqlType(field)}`,
   ])
+  if (storesIntegerMoney(schema)) {
+    columns.push(`currency_code TEXT NOT NULL DEFAULT 'USD'`)
+  }
   const comments = [
     `COMMENT ON TABLE ${schema.table} IS 'Typed previous and next values for ${schema.namespace} dynamic config audits.';`,
     `COMMENT ON COLUMN ${schema.table}.change_id IS 'Dynamic config audit row these field values belong to.';`,
@@ -92,6 +106,11 @@ export function renderAuditTable(schema: DynamicConfigAuditSchema): string {
       `COMMENT ON COLUMN ${schema.table}.${quoteIdent(field.previous)} IS 'Previous ${field.name} value; null when the audited snapshot omitted that key.';`,
       `COMMENT ON COLUMN ${schema.table}.${quoteIdent(field.next)} IS 'Next ${field.name} value; null when the audited snapshot omitted that key.';`,
     ]),
+    ...(storesIntegerMoney(schema)
+      ? [
+          `COMMENT ON COLUMN ${schema.table}.currency_code IS 'ISO currency for the integer money columns on this audit row.';`,
+        ]
+      : []),
   ]
   return `CREATE TABLE IF NOT EXISTS ${schema.table} (
   change_id UUID PRIMARY KEY REFERENCES dynamic_config_change_logs (id) ON DELETE CASCADE,

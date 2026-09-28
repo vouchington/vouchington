@@ -1,7 +1,8 @@
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { asBoolean, asDataPoint, asText, type DataPointRow } from './data-point-facts.mts'
+import { asDataPoint, type DataPointRow } from './data-point-facts.mts'
+import { asBoolean, asText } from './revision-scalars.mts'
 type FieldChange = { before: unknown; after: unknown }
 
 function textValue(data: DataPointRow, key: string): string | null {

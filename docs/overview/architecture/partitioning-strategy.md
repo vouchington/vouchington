@@ -125,7 +125,10 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 
 - Durable entities and content: `communities`, `conversations`, `image_placements`,
   `image_surface_placements`, `images`, `lists`, `media_placements`, `podcast_shows`,
-  `remote_actors`, `retained_topic_identities`, `retained_user_identities`, `rss_feeds`, `topics`,
+  `remote_actors`, `retained_community_agent_prompt_identities`, `retained_community_identities`,
+  `retained_community_restriction_identities`, `retained_post_admission_reservation_identities`,
+  `retained_topic_alias_identities`, `retained_topic_identities`, `retained_url_hostname_identities`,
+  `retained_url_identities`, `retained_user_identities`, `rss_feeds`, `topics`,
   `url_hostnames`, `urls`, `users`. The two unpartitioned retained-owner families remain selective
   through UUID primary keys and bounded orphan cleanup; reconsider partitioning at the registry's
   documented growth threshold rather than introducing partition overhead before measurement.
@@ -179,6 +182,35 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `user_deletion_relation_impacts`, `user_deletion_requests`, `user_engagement_email_sends`,
   `user_import_requests`, `user_moderation_email_sends`, `user_rss_feed_import_batches`,
   `user_rss_feed_import_rows`, `vote_integrity_flags`.
+- Relational audit children: `dynamic_config_audit_activitypub_inbox_facts`,
+  `dynamic_config_audit_api_egress_proxy_facts`, `dynamic_config_audit_app_attestation_config_facts`,
+  `dynamic_config_audit_autotagger_paid_limits_facts`,
+  `dynamic_config_audit_bedrock_embeddings_batch_config_facts`,
+  `dynamic_config_audit_bloom_filter_config_facts`,
+  `dynamic_config_audit_contribution_rate_limits_facts`,
+  `dynamic_config_audit_feature_flags_facts`, `dynamic_config_audit_kagi_smallweb_config_facts`,
+  `dynamic_config_audit_manual_tag_limits_facts`, `dynamic_config_audit_membership_billing_facts`,
+  `dynamic_config_audit_moderation_ai_config_facts`,
+  `dynamic_config_audit_moderation_ai_dispatch_config_facts`,
+  `dynamic_config_audit_moderation_config_facts`,
+  `dynamic_config_audit_oauth_authorization_broker_facts`,
+  `dynamic_config_audit_openai_spend_cap_facts`,
+  `dynamic_config_audit_post_content_limits_config_facts`,
+  `dynamic_config_audit_post_related_url_display_config_facts`,
+  `dynamic_config_audit_rate_limit_thresholds_facts`, `dynamic_config_audit_recaptcha_config_facts`,
+  `dynamic_config_audit_request_client_info_facts`,
+  `dynamic_config_audit_route_rate_limit_config_facts`,
+  `dynamic_config_audit_rss_feed_crawl_config_facts`,
+  `dynamic_config_audit_rss_feed_discoverability_config_facts`,
+  `dynamic_config_audit_turnstile_config_facts`,
+  `dynamic_config_audit_user_import_export_config_facts`,
+  `dynamic_config_audit_vote_weight_config_facts`, `dynamic_config_audit_web_risk_config_facts`,
+  `moderator_action_restrictions`, `moderator_action_topic_slugs`,
+  `post_moderation_disposition_categories`, `post_moderation_disposition_signals`,
+  `post_revision_categories`, `post_revision_data_point_topics`, `post_revision_data_points`,
+  `post_revision_images`, `post_revision_rating_topics`, `report_integrity_flag_reporters`,
+  `topic_revision_alias_entries`, `vote_integrity_flag_ips`. Child rows follow their parent audit
+  and stay selective through the parent key. Reconsider partitioning with that parent.
 - Provider delivery receipts: `support_inbound_email_receipts`. One durable receipt is retained for
   every inbound support email; provider and support-message indexes keep replay checks selective.
 - Post moderation ledger: `post_moderation_attempts`, `post_moderation_dispositions`,
