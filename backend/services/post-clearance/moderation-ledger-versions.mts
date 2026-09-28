@@ -1,5 +1,5 @@
 import { write, type QueryOptions } from '@data-stores/psql'
-import { dispositionEvidenceFacts } from './evidence-facts.mts'
+import { dispositionEvidenceFacts } from '@services/moderation-audit-facts'
 import {
   AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,

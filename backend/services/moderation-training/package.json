@@ -20,6 +20,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@services/entity-cache": "workspace:^",
+    "@services/moderation-audit-facts": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/post-publication": "workspace:^",
     "http-assert": "^1.5.0",
