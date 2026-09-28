@@ -5,7 +5,7 @@ import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub-inbox/type
 import {
   isFinalActivityPubInboxAttempt,
   processActivityPubInboxJob,
-} from './workers/process-job.mts'
+} from './processors/process-job.mts'
 
 describe('ActivityPub inbox worker attempt routing', () => {
   it('uses the attempts configured on the actual job', () => {
