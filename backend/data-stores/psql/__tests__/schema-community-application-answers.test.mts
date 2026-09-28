@@ -6,7 +6,15 @@ import {
   insertQuestion,
   seedCommunity,
 } from '../../../test-helpers/data-stores/psql/community-application-answer-schema.mts'
+import {
+  insertCommittedSelectAnswer,
+  insertCommittedSingleSelection,
+  insertSelectAnswer,
+  insertSelection,
+  moveSelectionToOtherApplication,
+} from '../../../test-helpers/data-stores/psql/community-application-answer-selection-schema.mts'
 import { insertTestCommunity } from '../../../test-helpers/entities/communities.mts'
+import { createTestUser } from '../../../test-helpers/entities/users.mts'
 import { beginTransaction, onGracefulShutdown, read, write } from '../index.mts'
 
 describe('community application answer relations', () => {
@@ -35,28 +43,16 @@ describe('community application answer relations', () => {
     const applicationId = await insertApplication(community.id, user.id)
     {
       await using query = await beginTransaction()
-      const { rows } = await query(
-        `/* insertSingleSelectAnswer */
-          INSERT INTO community_application_answers (
-            application_id, community_id, question_id, question_field_type,
-            is_null, text_value, boolean_value
-          )
-          VALUES ($1, $2, $3, 'single_select', false, NULL, NULL)
-          RETURNING id`,
-        [applicationId, community.id, firstQuestionId],
+      const answer = await insertSelectAnswer(
+        query,
+        applicationId,
+        community.id,
+        firstQuestionId,
+        'single_select',
       )
-      const answerId = (rows[0] as { id: string }).id
-      await expect(
-        query(
-          `/* insertWrongQuestionOption */
-            INSERT INTO community_application_answer_selections (
-              application_answer_id, application_id, community_id, question_id,
-              question_field_type, option_id, order_index
-            )
-            VALUES ($1, $2, $3, $4, 'single_select', $5, 0)`,
-          [answerId, applicationId, community.id, firstQuestionId, otherOptionId],
-        ),
-      ).rejects.toMatchObject({ code: '23503' })
+      await expect(insertSelection(query, answer, otherOptionId)).rejects.toMatchObject({
+        code: '23503',
+      })
     }
   })
 
@@ -110,68 +106,29 @@ describe('community application answer relations', () => {
     const applicationId = await insertApplication(community.id, user.id)
     {
       await using query = await beginTransaction()
-      const { rows } = await query(
-        `/* insertSingleSelectAnswer */
-          INSERT INTO community_application_answers (
-            application_id, community_id, question_id, question_field_type,
-            is_null, text_value, boolean_value
-          )
-          VALUES ($1, $2, $3, 'single_select', false, NULL, NULL)
-          RETURNING id`,
-        [applicationId, community.id, singleId],
+      const singleAnswer = await insertSelectAnswer(
+        query,
+        applicationId,
+        community.id,
+        singleId,
+        'single_select',
       )
-      const singleAnswerId = (rows[0] as { id: string }).id
-      await query(
-        `/* insertFirstSingleSelection */
-          INSERT INTO community_application_answer_selections (
-            application_answer_id, application_id, community_id, question_id,
-            question_field_type, option_id, order_index
-          )
-          VALUES ($1, $2, $3, $4, 'single_select', $5, 0)`,
-        [singleAnswerId, applicationId, community.id, singleId, firstOptionId],
-      )
-      await expect(
-        query(
-          `/* insertSecondSingleSelection */
-            INSERT INTO community_application_answer_selections (
-              application_answer_id, application_id, community_id, question_id,
-              question_field_type, option_id, order_index
-            )
-            VALUES ($1, $2, $3, $4, 'single_select', $5, 1)`,
-          [singleAnswerId, applicationId, community.id, singleId, secondOptionId],
-        ),
-      ).rejects.toMatchObject({ code: '23505' })
+      await insertSelection(query, singleAnswer, firstOptionId)
+      await expect(insertSelection(query, singleAnswer, secondOptionId, 1)).rejects.toMatchObject({
+        code: '23505',
+      })
     }
 
-    const multiAnswerId = await insertAnswer(
+    const multiAnswer = await insertCommittedSelectAnswer(
       applicationId,
       community.id,
       multiId,
       'multi_select',
-      false,
-      null,
-      null,
     )
-    await write(
-      `/* insertFirstMultiSelection */
-        INSERT INTO community_application_answer_selections (
-          application_answer_id, application_id, community_id, question_id,
-          question_field_type, option_id, order_index
-        )
-        VALUES ($1, $2, $3, $4, 'multi_select', $5, 0)`,
-      [multiAnswerId, applicationId, community.id, multiId, alphaId],
-    )
-    await expect(
-      write(
-        `/* insertDuplicateSelectionOrder */
-          INSERT INTO community_application_answer_selections (
-            application_answer_id, application_id, community_id, question_id,
-            question_field_type, option_id, order_index
-          )
-          VALUES ($1, $2, $3, $4, 'multi_select', $5, 0)`,
-        [multiAnswerId, applicationId, community.id, multiId, betaId],
-      ),
-    ).rejects.toMatchObject({ code: '23505' })
+    await insertSelection(write, multiAnswer, alphaId)
+    await expect(insertSelection(write, multiAnswer, betaId)).rejects.toMatchObject({
+      code: '23505',
+    })
   })
 
   it('rejects an empty single-select and a null answer that still has a selection at commit', async () => {
@@ -182,40 +139,27 @@ describe('community application answer relations', () => {
 
     {
       await using emptySelect = await beginTransaction()
-      await emptySelect(
-        `/* insertEmptySingleSelect */
-          INSERT INTO community_application_answers (
-            application_id, community_id, question_id, question_field_type,
-            is_null, text_value, boolean_value
-          )
-          VALUES ($1, $2, $3, 'single_select', false, NULL, NULL)`,
-        [applicationId, community.id, questionId],
+      await insertSelectAnswer(
+        emptySelect,
+        applicationId,
+        community.id,
+        questionId,
+        'single_select',
       )
       await expect(emptySelect.commit()).rejects.toMatchObject({ code: '23514' })
     }
 
     {
       await using nullSelection = await beginTransaction()
-      const { rows } = await nullSelection(
-        `/* insertNullSelectAnswer */
-          INSERT INTO community_application_answers (
-            application_id, community_id, question_id, question_field_type,
-            is_null, text_value, boolean_value
-          )
-          VALUES ($1, $2, $3, 'single_select', true, NULL, NULL)
-          RETURNING id`,
-        [applicationId, community.id, questionId],
+      const answer = await insertSelectAnswer(
+        nullSelection,
+        applicationId,
+        community.id,
+        questionId,
+        'single_select',
+        true,
       )
-      const answerId = (rows[0] as { id: string }).id
-      await nullSelection(
-        `/* insertSelectionOnNullAnswer */
-          INSERT INTO community_application_answer_selections (
-            application_answer_id, application_id, community_id, question_id,
-            question_field_type, option_id, order_index
-          )
-          VALUES ($1, $2, $3, $4, 'single_select', $5, 0)`,
-        [answerId, applicationId, community.id, questionId, optionId],
-      )
+      await insertSelection(nullSelection, answer, optionId)
       await expect(nullSelection.commit()).rejects.toMatchObject({ code: '23514' })
     }
   })
@@ -296,5 +240,29 @@ describe('community application answer relations', () => {
       answers: 0,
       selections: 0,
     })
+  })
+
+  it('rejects moving a single-select selection between two applications', async () => {
+    const { user, community } = await seedCommunity()
+    const otherUser = await createTestUser()
+    const questionId = await insertQuestion(community.id, 'single_select')
+    const optionId = await insertOption(community.id, questionId, 'single_select', 'Alpha')
+    const sourceApplicationId = await insertApplication(community.id, user.id)
+    const destinationApplicationId = await insertApplication(community.id, otherUser.id)
+    const source = await insertCommittedSingleSelection(
+      sourceApplicationId,
+      community.id,
+      questionId,
+      optionId,
+    )
+    const destination = await insertCommittedSingleSelection(
+      destinationApplicationId,
+      community.id,
+      questionId,
+      optionId,
+    )
+    await expect(
+      moveSelectionToOtherApplication(source.id, destination.id, destination.applicationId),
+    ).rejects.toMatchObject({ code: '23514' })
   })
 })
