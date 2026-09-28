@@ -31,7 +31,7 @@ export async function insertTestEmbeddingsBatch(data: {
   const model = data.model || 'amazon.nova-2-multimodal-embeddings-v1:0'
   const jobType = data.jobType || 'topics'
   const bedrockStatus = data.bedrockStatus || 'Submitted'
-  const batchData = {
+  const batchData: Record<string, unknown> = {
     status: bedrockStatus,
     ...((data.batchData ?? {}) as Record<string, unknown>),
   }
