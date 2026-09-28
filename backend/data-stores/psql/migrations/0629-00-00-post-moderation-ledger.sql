@@ -123,11 +123,11 @@ AS $$
     'platform_override', CASE WHEN disposition.evidence_platform_override THEN TRUE ELSE NULL END,
     'composite_score', disposition.evidence_composite_score,
     'error_code', disposition.evidence_error_code,
-    'flagged_categories', (
+    'flagged_categories', COALESCE((
       SELECT jsonb_agg(category.category ORDER BY category.position)
       FROM post_moderation_disposition_categories category
       WHERE category.disposition_id = disposition.id
-    ),
+    ), '[]'::jsonb),
     'signals', (
       SELECT jsonb_agg(
         jsonb_build_object('signal', signal.signal, 'score', signal.score, 'flagged', signal.flagged)
@@ -141,7 +141,7 @@ AS $$
   WHERE disposition.id = p_disposition_id
 $$;
 COMMENT ON FUNCTION fn_post_moderation_disposition_evidence(UUID) IS
-  'Rebuilds the staff evidence object from typed disposition facts. Empty facts return an empty object.';
+  'Rebuilds the staff evidence object from typed disposition facts. Category lists stay present when empty; other absent facts are omitted.';
 
 COMMENT ON TABLE post_moderation_versions IS 'Immutable moderation generations keyed by canonical post content and policy revision.';
 COMMENT ON TABLE post_moderation_work_items IS 'Durable current work projection with generation and lease-token fencing for bounded moderation attempts.';
