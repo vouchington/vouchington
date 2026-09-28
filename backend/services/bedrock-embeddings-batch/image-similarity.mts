@@ -45,7 +45,7 @@ export async function findCopyrightImageSimilarityCandidates(input: {
   const { rows } = await read<CandidateRow>(
     `/* findCopyrightImageSimilarityCandidates */
     WITH source AS (
-      SELECT target.placement_key, image.bedrock_nova_multimodal_v1_embedding AS embedding
+      SELECT target.placement_id, image.bedrock_nova_multimodal_v1_embedding AS embedding
       FROM copyright_notice_targets target
       JOIN copyright_notice_target_images target_image
         ON target_image.copyright_notice_target_id = target.id
@@ -66,7 +66,7 @@ export async function findCopyrightImageSimilarityCandidates(input: {
     JOIN posts post ON post.id = image_placement.post_id
     WHERE placement.retired_at IS NULL
       AND placement.copyright_withheld_at IS NULL
-      AND concat('image-placement:', placement.id) <> source.placement_key
+      AND placement.id <> source.placement_id
       AND image.deleted_at IS NULL
       AND image.upload_completed_at IS NOT NULL
       AND image.quarantine_pending_at IS NULL

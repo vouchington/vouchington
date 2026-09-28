@@ -20,7 +20,7 @@ export async function completeUnavailableRestore(input: {
   await runSequentially([
     () =>
       input.dependencies.clearUnavailableImagePlacementCopyrightWithholding(
-        input.legal.placement_key,
+        input.legal.placement_id,
         { query: input.query },
       ),
     () => liftCopyrightRestrictionAndResolveDeadline(input),
@@ -56,7 +56,7 @@ export async function completeRestoreRetainingPlacement(input: {
       FROM copyright_restrictions other_restriction
       JOIN copyright_notice_targets other_target
         ON other_target.id = other_restriction.copyright_notice_target_id
-      WHERE other_target.placement_key = ${input.legal.placement_key}
+      WHERE other_target.placement_id = ${input.legal.placement_id}
         AND other_restriction.lifted_at IS NULL
         AND other_restriction.id <> ${input.legal.copyright_restriction_id}
     ) AS blocked

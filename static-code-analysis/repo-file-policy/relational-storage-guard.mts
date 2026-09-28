@@ -124,7 +124,8 @@ export function checkRelationalStorage(schema: SchemaSnapshot, options: Options 
       }
       if (
         (columnName === 'uuid_value' && 'kind' in table.columns) ||
-        /^(?:work|entity|relation|target)_key$/u.test(columnName)
+        /^(?:work|entity|relation|target)_key$/u.test(columnName) ||
+        key === 'copyright_notice_targets.placement_key'
       ) {
         checkCategory(
           key,

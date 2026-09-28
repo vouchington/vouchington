@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 
 /** Resolves the copyright ground while a separate deletion or safety ground retains denial. */
 export async function clearUnavailableImagePlacementCopyrightWithholding(
-  placementKey: string,
+  placementId: string,
   options: QueryOptions = {},
 ): Promise<void> {
   const query = options.query ?? write
@@ -12,7 +12,7 @@ export async function clearUnavailableImagePlacementCopyrightWithholding(
     UPDATE media_placements placement
     SET copyright_withheld_at = NULL,
         revision = placement.revision + 1
-    WHERE ${placementKey} = concat('image-placement:', placement.id)
+    WHERE placement.id = ${placementId}
       AND placement.copyright_withheld_at IS NOT NULL
   `)
 }

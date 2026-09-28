@@ -9,7 +9,7 @@ export async function selectStaffTargets(
 ) {
   const { rows } = await query<CopyrightStaffCase['targets'][number]>(
     sql`/* getPendingCopyrightStaffCase:targets */
-      SELECT target.id, target.placement_key, target.placement_revision, image.image_id, target.hosted_use_url
+      SELECT target.id, concat('image-placement:', target.placement_id) AS placement_key, target.placement_revision, image.image_id, target.hosted_use_url
       FROM copyright_notice_targets target JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id
       WHERE target.copyright_notice_id = ${noticeId} ORDER BY target.id
     `,

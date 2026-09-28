@@ -9,9 +9,14 @@ import {
   readCopyrightErasedRestrictionActors,
   rejectCopyrightActionIntentDeletion,
   rejectCopyrightFinalReviewWithoutHuman,
+  rejectCopyrightLifecycleCrossCaseAction,
+  rejectCopyrightLifecycleWrongSourceShape,
   rejectCopyrightNotificationWithAnotherEntity,
   rejectCopyrightRestrictionDeletion,
   rejectCopyrightSubmissionMutation,
+  rejectCopyrightTargetImageWithSurfaceBinding,
+  rejectCopyrightTargetImageWithWrongBinding,
+  rejectCopyrightTargetWithUnknownPlacement,
   type CopyrightNoticeSchemaFixture,
 } from '../../../test-helpers/data-stores/psql/copyright-notice-schema.mts'
 import { onGracefulShutdown } from '../index.mts'
@@ -54,6 +59,27 @@ describe('copyright notice schema', () => {
 
   it('keeps received submissions immutable', async () => {
     await expect(rejectCopyrightSubmissionMutation(fixture)).rejects.toMatchObject({
+      code: '23514',
+    })
+  })
+
+  it('rejects absent placements, wrong image bindings, and surface bindings for legal targets', async () => {
+    await expect(rejectCopyrightTargetWithUnknownPlacement(fixture)).rejects.toMatchObject({
+      code: '23503',
+    })
+    await expect(rejectCopyrightTargetImageWithWrongBinding(fixture)).rejects.toMatchObject({
+      code: '23503',
+    })
+    await expect(rejectCopyrightTargetImageWithSurfaceBinding(fixture)).rejects.toMatchObject({
+      code: '23503',
+    })
+  })
+
+  it('rejects lifecycle references from another case and wrong event source shapes', async () => {
+    await expect(rejectCopyrightLifecycleCrossCaseAction(fixture)).rejects.toMatchObject({
+      code: '23514',
+    })
+    await expect(rejectCopyrightLifecycleWrongSourceShape(fixture)).rejects.toMatchObject({
       code: '23514',
     })
   })

@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightRestrictionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
@@ -15,9 +16,9 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   imposedById: string | null
 }): Promise<CopyrightRestrictionRecord> {
   await using transaction = await beginTransaction()
-  const { rows: targetRows } = await transaction<{ placement_key: string }>(
+  const { rows: targetRows } = await transaction<{ placement_id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:findTarget */
-    SELECT placement_key
+    SELECT placement_id
     FROM copyright_notice_targets
     WHERE id = ${input.targetId} AND copyright_notice_id = ${input.noticeId}
   `,
@@ -25,7 +26,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   const target = targetRows[0]
   assert(target, 404, 'Copyright notice target not found')
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${target.placement_key}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(target.placement_id)}, 0))
   `)
   const { rows: noticeRows } = await transaction<{ id: string }>(
     sql`/* acceptCopyrightNoticeAndImposeRestriction:lockNotice */
@@ -39,7 +40,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     FROM copyright_notice_targets
     WHERE id = ${input.targetId}
       AND copyright_notice_id = ${input.noticeId}
-      AND placement_key = ${target.placement_key}
+      AND placement_id = ${target.placement_id}
     FOR UPDATE
   `,
   )
@@ -128,7 +129,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     SELECT DISTINCT post.created_by_id AS user_id
     FROM copyright_notice_targets target
     JOIN media_placements placement
-      ON target.placement_key = concat('image-placement:', placement.id)
+      ON target.placement_id = placement.id
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN posts post ON post.id = image_placement.post_id
     WHERE target.id = ${input.targetId}
@@ -177,8 +178,8 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
   }
   await transaction(sql`/* acceptCopyrightNoticeAndImposeRestriction:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, copyright_restriction_id)
+    VALUES (${input.noticeId}, 'provisional_restriction_imposed', ${input.imposedById}, ${restriction.id})
   `)
   await transaction.commit()
   void enqueueApplyCopyrightAction(actionIntent.id)

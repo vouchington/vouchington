@@ -11,7 +11,7 @@ export async function lockCopyrightRepeatInfringerNoticeAccounts(
     SELECT post.created_by_id AS account_user_id
     FROM copyright_notice_targets target
     JOIN media_placements placement
-      ON target.placement_key = concat('image-placement:', placement.id)
+      ON target.placement_id = placement.id
     JOIN image_placements image_placement ON image_placement.placement_id = placement.id
     JOIN posts post ON post.id = image_placement.post_id
     WHERE target.copyright_notice_id = ${noticeId} AND post.created_by_id IS NOT NULL

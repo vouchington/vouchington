@@ -183,8 +183,8 @@ export async function createCounterNoticeDeadline(input: {
     transaction,
   )
   await transaction(sql`/* createCounterNoticeDeadline:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${qualifying.copyright_notice_id}, 'counter_notice_deadline_started', '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_deadline_id)
+    VALUES (${qualifying.copyright_notice_id}, 'counter_notice_deadline_started', ${deadline.id})
   `)
   await transaction.commit()
   return deadline

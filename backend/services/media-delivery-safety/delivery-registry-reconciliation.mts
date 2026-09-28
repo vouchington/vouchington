@@ -30,12 +30,13 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     for (const record of rows) {
       // oxlint-disable-next-line no-await-in-loop -- each case receives immutable operator evidence.
       await transaction(sql`/* replayFailedMediaDeliveryRegistryRecords:event */
-        INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
+        INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+          media_delivery_registry_key, replay_reason)
         SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
-          ${JSON.stringify({ deliveryKey: record.delivery_key, reason: 'operator_replay' })}::jsonb
+          ${record.delivery_key}, 'operator_replay'
         FROM copyright_notice_targets target
         WHERE ${record.placement_id}::uuid IS NOT NULL
-          AND target.placement_key = concat('image-placement:', ${record.placement_id}::uuid)
+          AND target.placement_id = ${record.placement_id}::uuid
       `)
     }
   }

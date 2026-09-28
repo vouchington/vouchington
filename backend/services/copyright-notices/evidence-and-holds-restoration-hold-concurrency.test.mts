@@ -48,7 +48,7 @@ describe('late legal-hold and restoration concurrency', () => {
 
     expect(['applied', 'blocked', 'stale']).toContain(restoreOutcome)
     expect(holdOutcome.target_ids).toEqual([target.id])
-    await expect(getImagePlacementForCopyright(target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
     )
   })

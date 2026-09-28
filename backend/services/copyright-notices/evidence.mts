@@ -39,9 +39,8 @@ export async function appendCopyrightEvidenceArtifact(input: {
   const artifact = rows[0]
   assert(artifact, 409, 'Evidence storage key is already recorded for this submission')
   await transaction(sql`/* appendCopyrightEvidenceArtifact:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${submission.copyright_notice_id}, 'evidence_artifact_recorded',
-      ${JSON.stringify({ artifactId: artifact.id })}::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_evidence_artifact_id)
+    VALUES (${submission.copyright_notice_id}, 'evidence_artifact_recorded', ${artifact.id})
   `)
   await transaction.commit()
   return artifact

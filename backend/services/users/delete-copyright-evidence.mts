@@ -19,7 +19,7 @@ export async function assertCopyrightEvidenceAllowsDeletion(
         JOIN image_placements image_placement ON image_placement.post_id = post.id
         JOIN media_placements placement ON placement.id = image_placement.placement_id
         JOIN copyright_notice_targets target
-          ON target.placement_key = concat('image-placement:', placement.id)
+          ON target.placement_id = placement.id
         JOIN copyright_notice_legal_hold_assessment_targets hold_target
           ON hold_target.copyright_notice_target_id = target.id
         JOIN copyright_notice_legal_hold_assessments hold

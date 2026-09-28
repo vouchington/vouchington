@@ -49,7 +49,7 @@ async function createTwoTargetFixture() {
         const placement = await getTestPostImagePlacement(postId, imageId)
         if (!placement) throw new Error('fixture image placement disappeared')
         return {
-          placementKey: `image-placement:${placement.placement_id}`,
+          placementId: placement.placement_id,
           placementRevision: placement.placement_revision,
           imageId,
           hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,

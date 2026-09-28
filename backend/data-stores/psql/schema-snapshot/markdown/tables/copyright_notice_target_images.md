@@ -6,12 +6,14 @@ Typed image subtype for a copyright target; future video support adds a sibling 
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                       |
-| ---------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------- |
-| `copyright_notice_target_id` | `uuid`                     | no       |                     |          |           |           | Copyright target whose hosted media is the referenced image.  |
-| `image_id`                   | `uuid`                     | no       |                     |          |           |           | Image asset captured for the exact hosted placement revision. |
-| `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                               |
+| Column                       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                       |
+| ---------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_target_id` | `uuid`                     | no       |                     |          |           |           | Copyright target whose hosted media is the referenced image.                                                  |
+| `placement_id`               | `uuid`                     | no       |                     |          |           |           | Retained placement identity shared with the parent target so the image binding matches that exact hosted use. |
+| `image_id`                   | `uuid`                     | no       |                     |          |           |           | Image asset captured for the exact hosted placement revision.                                                 |
+| `binding_family`             | `text`                     | no       | `'post'::text`      |          |           |           | Retained placement binding family for this image. The current family is post.                                 |
+| `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (copyright_notice_target_id)`
 
@@ -19,16 +21,20 @@ Not partitioned — growth: unbounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `copyright_notice_target_images_binding_family_check`: `CHECK ((binding_family = 'post'::text))`
 
 **Foreign keys:**
 
+- `copyright_notice_target_image_copyright_notice_target_id_p_fkey`: `FOREIGN KEY (copyright_notice_target_id, placement_id) REFERENCES copyright_notice_targets(id, placement_id) ON DELETE RESTRICT`
+- `copyright_notice_target_image_placement_id_image_id_bindin_fkey`: `FOREIGN KEY (placement_id, image_id, binding_family) REFERENCES retained_image_placement_bindings(placement_id, image_id, binding_family) ON DELETE RESTRICT`
 - `copyright_notice_target_images_copyright_notice_target_id_fkey`: `FOREIGN KEY (copyright_notice_target_id) REFERENCES copyright_notice_targets(id) ON DELETE CASCADE`
-- `copyright_notice_target_images_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE RESTRICT`
+- `copyright_notice_target_images_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES retained_image_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `copyright_notice_target_images_pkey`: `CREATE UNIQUE INDEX copyright_notice_target_images_pkey ON public.copyright_notice_target_images USING btree (copyright_notice_target_id)`
+- `idx_copyright_notice_target_images__binding`: `CREATE INDEX idx_copyright_notice_target_images__binding ON public.copyright_notice_target_images USING btree (placement_id, image_id, binding_family)`
 - `idx_copyright_notice_target_images__image`: `CREATE INDEX idx_copyright_notice_target_images__image ON public.copyright_notice_target_images USING btree (image_id)`
 
 **Triggers:**

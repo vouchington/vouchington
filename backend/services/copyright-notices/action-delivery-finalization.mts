@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
+import { getImagePlacementKey } from '@services/images/placements'
 import { invalidatePostStrict } from '@services/entity-cache/invalidate-strict'
 import type { CopyrightActionDeliveryDependencies } from './action-delivery-dependencies.mts'
 import {
@@ -19,8 +20,8 @@ export async function finalizeCopyrightActionAfterDelivery(
   dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const placementKey = await getCopyrightActionPlacementKey(intentId, transaction)
-  if (placementKey) await lockCopyrightActionPlacement(placementKey, transaction)
+  const placementId = await getCopyrightActionPlacementKey(intentId, transaction)
+  if (placementId) await lockCopyrightActionPlacement(placementId, transaction)
   const legal = await lockCopyrightActionDelivery(intentId, transaction)
   if (!legal) {
     await transaction.commit()
@@ -29,7 +30,7 @@ export async function finalizeCopyrightActionAfterDelivery(
   await transaction(sql`/* finalizeCopyrightActionAfterDelivery:noticeLock */
     SELECT id FROM copyright_notices WHERE id = ${legal.copyright_notice_id} FOR UPDATE
   `)
-  const current = await dependencies.getImagePlacementForCopyright(legal.placement_key, {
+  const current = await dependencies.getImagePlacementForCopyright(legal.placement_id, {
     query: transaction,
   })
   if (action === 'withhold' && legal.restriction_lifted_at !== null) {
@@ -121,7 +122,7 @@ async function completeCopyrightActionAndInvalidate(input: {
       ),
     () =>
       invalidateCopyrightPlacementCache(
-        input.legal.placement_key,
+        input.legal.placement_id,
         input.transaction,
         input.dependencies,
       ),
@@ -152,11 +153,11 @@ export async function resolveCopyrightDeadlineIfComplete(
 }
 
 export async function lockCopyrightActionPlacement(
-  placementKey: string,
+  placementId: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
   await query(sql`/* processCopyrightActionIntent:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${placementKey}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placementId)}, 0))
   `)
 }
 
@@ -172,10 +173,10 @@ async function restoreIsBlocked(
 }
 
 async function invalidateCopyrightPlacementCache(
-  placementKey: string,
+  placementId: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
   dependencies: CopyrightActionDeliveryDependencies,
 ): Promise<void> {
-  const postId = await dependencies.getPostIdForImagePlacementCopyright(placementKey, { query })
+  const postId = await dependencies.getPostIdForImagePlacementCopyright(placementId, { query })
   if (postId) await invalidatePostStrict(postId)
 }

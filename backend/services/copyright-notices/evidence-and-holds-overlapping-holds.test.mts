@@ -63,7 +63,7 @@ describe('copyright notice overlapping legal holds', () => {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('blocked')
-    await expect(getImagePlacementForCopyright(target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
     )
 
@@ -79,7 +79,7 @@ describe('copyright notice overlapping legal holds', () => {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
-    await expect(getImagePlacementForCopyright(target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
   })

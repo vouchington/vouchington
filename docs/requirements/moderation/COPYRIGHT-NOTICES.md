@@ -51,6 +51,13 @@ placement, the exact image binding, the expected revision, every legal blocker, 
 state before applying an intent. Withholding one placement never deletes the source image or blocks
 another post that independently uses the same image.
 
+Each legal target stores a foreign key to the retained placement binding, and its target-image row
+checks the exact placement, image, and post-family tuple. The observed revision is immutable evidence,
+not a foreign key to the mutable current revision. Legal references pin the retained binding and image
+through bounded orphan cleanup after live media is removed; retained identity alone never grants
+delivery. Staff/email response fields that display `image-placement:<id>` derive that string from the
+UUID at the API boundary. No encoded placement relationship is stored.
+
 Application projections omit retired or withheld placements, and persisted post image URLs use
 `/images/placements/<placement-id>/<revision>/<image-id>`. The resize Lambda validates the route
 shape and keeps the placement segments out of the S3 key. Those application controls do not by
@@ -105,6 +112,12 @@ replacement, or a court order affecting the same placement. Erasing a staff acco
 foreign key, but cannot erase the decision timestamp, outcome, or lifecycle record.
 If erasure happens after a form rejection but before its effects finish, recovery uses the durable
 rejection to reverse provisional restrictions and close pending automated enforcement requests.
+
+Lifecycle events hold one typed source reference per event (except the case-level initial receipt),
+with a concrete foreign key and database-checked same-case ownership. Action events point to the
+action intent, which owns its restriction; legal-hold target membership remains in the assessment's
+child rows. Review outcomes, encrypted rationale, recovery origin, and replay reason are typed columns,
+not a JSON relationship envelope. Member timelines still project only event type and timestamp.
 
 ## Submission and evidence integrity
 
