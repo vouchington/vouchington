@@ -1,5 +1,6 @@
 import { invalidate } from '@services/entity-cache/invalidate'
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   setRssFeedDiscoverabilityAsSystem,

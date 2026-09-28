@@ -8,7 +8,6 @@ import {
   lockUserProfileLinkImageOwners,
   prepareImageSurfaceAdmission,
   syncImageSurfacePlacement,
-  type ImagePlacementTuple,
 } from '@services/media-delivery-safety'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -17,7 +16,6 @@ import {
   validateProfileLinkFields,
   validateProfileUrl,
   type CreateProfileLinkInput,
-  type ProfileLinkType,
   type UpdateProfileLinkInput,
 } from './profile-links-input.mts'
 import type { ProfileLink } from './profile-links-types.mts'

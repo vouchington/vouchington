@@ -2,7 +2,6 @@
  * Route configurations for feed pages (/feed/posts, /feed/news, etc.)
  * Config data lives in feed-route-config-data.ts to stay within the 200-line limit.
  */
-import type { MessageKey } from '@ts-shared/ui-messages'
 import { feedRouteConfigData as _feedRouteConfigs } from './feed-route-config-data'
 
 export const FEED_PAGE_LIMIT = 25

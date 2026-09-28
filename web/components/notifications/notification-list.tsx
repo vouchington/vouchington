@@ -1,7 +1,7 @@
 'use client'
 
 import { EmptyState } from '@/components/shared/empty-state'
-import type { Notification, NotificationsResponseBody } from '@/types/api-responses'
+import type { NotificationsResponseBody } from '@/types/api-responses'
 import { NotificationRow } from './notification-row'
 import { useTranslations } from '@/lib/i18n/use-translations'
 

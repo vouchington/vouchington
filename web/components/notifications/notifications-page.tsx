@@ -5,7 +5,6 @@ import * as Sentry from '@sentry/nextjs'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import type {
   NotificationsResponseBody,
-  WebPushSubscription,
   WebPushSubscriptionsResponseBody,
 } from '@/types/api-responses'
 import {

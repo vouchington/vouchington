@@ -1,9 +1,8 @@
 'use client'
 
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
-import type { StatusFilter, VoteIntegrityFlag } from '@/types/vote-integrity'
+import type { VoteIntegrityFlag } from '@/types/vote-integrity'
 import { VoteIntegrityFlagStatus } from './vote-integrity-flag-status'
-import type { VoteIntegrityFlagsState } from './use-vote-integrity-flags'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { getEntityLabel } from './vote-integrity-entity-label'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'

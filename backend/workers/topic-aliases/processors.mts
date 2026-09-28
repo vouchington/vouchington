@@ -7,7 +7,7 @@ import {
 } from '@queues/topic-aliases/enqueues'
 import { invalidatePostsForTopicAliasesPage } from '@services/topics/invalidate-posts-for-topic-aliases'
 import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
-import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/categories'
+import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import {
   TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE,
   processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings,

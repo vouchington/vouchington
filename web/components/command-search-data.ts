@@ -1,12 +1,7 @@
 // Search data, constants, and API logic for the global command search dialog.
 import type { MessageKey, createTranslator } from '@ts-shared/ui-messages'
 import { postRouteConfigs } from '@/lib/route-configs'
-import type { Topic } from '@/types/topics'
-import type { Post, PostType } from '@/types/posts'
-import type { Hostname } from '@/types/hostnames'
-import type { RssFeedItem } from '@/types/rss-feed-items'
-import type { Community } from '@/types/api-responses'
-import type { FediverseSearchResult } from '@/types/fediverse-search'
+import type { PostType } from '@/types/posts'
 import {
   searchAll,
   searchTopicsOnly,

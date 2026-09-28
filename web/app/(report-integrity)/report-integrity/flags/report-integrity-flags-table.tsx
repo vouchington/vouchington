@@ -1,8 +1,6 @@
 'use client'
 
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
-import type { StatusFilter } from '@/types/report-integrity'
-import type { ReportIntegrityFlagsState } from './use-report-integrity-flags'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ReportIntegrityFlagRow } from './report-integrity-flag-row'
 

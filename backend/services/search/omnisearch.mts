@@ -10,7 +10,6 @@ import {
   searchCommunitiesCached,
 } from '@services/entity-fetch/search-caches'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
-import type { PrivateUser } from '@services/users/types'
 import { searchNewsVertical, searchPostsVertical } from './omnisearch-content-verticals.mts'
 import type { OmnisearchPost, OmnisearchNewsItem, OmnisearchOptions } from './omnisearch-types.mts'
 export type { OmnisearchPost, OmnisearchNewsItem, OmnisearchOptions } from './omnisearch-types.mts'

@@ -5,12 +5,7 @@ import createHttpError from 'http-errors'
 import { v7 as uuidv7 } from 'uuid'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { validateCommunitySlug, generateCommunitySlug } from './slugs.mts'
-import type {
-  Community,
-  CommunityListType,
-  CommunityMemberRosterVisibility,
-  CommunityVisibility,
-} from './types.mts'
+import type { Community } from './types.mts'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import onError from '@modules/on-error'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'

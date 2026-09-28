@@ -7,10 +7,8 @@ import {
   claimAutotaggerReceipt,
   completeAutotaggerReceipt,
   AUTOTAGGER_RECEIPT_DIGEST_VERSION,
-  type AutotaggerReceiptSubject,
 } from '@services/autotagger'
 import { createStructuredDecisionClient } from '@modules/structured-decisions'
-import type { ClassifierSafeText } from '@agents/classifiers/safe-content'
 import type { ClassifierModelProvider } from '@voucha/types'
 import { getAutotaggerClassifierSystemUserId } from '@services/users/system-users'
 import { executeAndPersistAutotaggerDecision } from './dispatch-classifier-execute.mts'

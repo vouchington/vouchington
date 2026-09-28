@@ -1,10 +1,9 @@
 import assert from 'http-assert'
 import { getRegisteredElectionVoteHandler } from './election-vote-handler-registry.mts'
-import type { Post, PostType } from '@voucha/types/entities/post'
+import type { Post } from '@voucha/types/entities/post'
 import type { Topic } from '@voucha/types/entities/topic'
 import type { BasicUser, PrivateUser } from '@voucha/types/entities/user' // PrivateUser used in UpsertEntityTypes
 import type { EntityRelationMetadata } from './metadata.mts'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import type { EntityRelation, UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 export type {
   EntityRelation,

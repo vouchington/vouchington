@@ -1,4 +1,4 @@
-import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/categories'
+import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
 import {
   CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,

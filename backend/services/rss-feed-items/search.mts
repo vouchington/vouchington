@@ -17,7 +17,6 @@ import {
 import type { PageInfo } from '@voucha/types/pagination'
 import { buildRssFeedItemFilters, appendWhereClauses } from './search-filters.mts'
 import { searchRssFeedItemsBySemantic } from './search-semantic.mts'
-import type { getCachedSearchEmbedding } from '@services/bedrock-embeddings/search/get-cached'
 import type { SearchRssFeedItemsOptions } from './search-types.mts'
 export type { SearchRssFeedItemsOptions } from './search-types.mts'
 

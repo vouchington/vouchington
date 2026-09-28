@@ -1,7 +1,6 @@
 import type * as Api from './shared'
 import type { ModeratorActionType } from '@ts-shared/utils/moderation-catalogs'
 
-type ElectionVote = Api.ElectionVote
 type Serialized<T> = Api.Serialized<T>
 type PublicUser = Api.PublicUser
 type BackendCommunity = Api.BackendCommunity
@@ -126,5 +125,4 @@ export type NotificationResult = Serialized<BackendNotificationResult>
 
 export type WebPushSubscription = Serialized<WebPushSubscriptionRecord>
 
-import type { PaginatedResponse } from './paginated-response'
 export type { PaginatedResponse } from './paginated-response'

@@ -8,12 +8,7 @@ import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import onError from '@modules/on-error'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanUpdateCommunity } from './authorization.mts'
-import type {
-  CommunityListType,
-  CommunityMember,
-  CommunityMemberRosterVisibility,
-  CommunityVisibility,
-} from './types.mts'
+import type { CommunityMember } from './types.mts'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'

@@ -1,6 +1,6 @@
 import { canResolveModerationAppealAction, type ModerationAppeal } from '@/types/appeals'
 import { hasUpdatedAppealDraftLifecycle } from '@/lib/api/client/appeals'
-import type { LifecycleJson, LifecycleScenarioInput } from './manifest'
+import type { LifecycleJson } from './manifest'
 import { webForwardPagination } from './pagination-adapter'
 import { webIntegrityReconciliation } from './integrity-adapter'
 import { webPrivatePostCollection } from './private-post-adapter'
