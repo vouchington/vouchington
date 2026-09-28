@@ -8,16 +8,11 @@ Data points are structured, typed records that users submit alongside posts. Unl
 
 ## Implementation
 
-Typed facts are stored one-to-one in `post_data_point_facts`, keyed by the data-point post.
-`posts.data_point_vertical` is the discriminator and must match `post_data_point_facts.vertical`.
-Ordered subject topics stay in `post_data_point_topics` (`post_id`, `topic_id`, `order_index`),
-with uniqueness on `(post_id, order_index)`. App-level validation enforces schemas per vertical.
-Responses rebuild the same `structured_data` object from those rows; omitted optional keys stay
-omitted, and an explicit JSON null is a distinct null presence.
+Structured data is stored in the `structured_data JSONB` column on the `posts` table, alongside a `data_point_vertical TEXT` discriminator column for efficient filtering. App-level validation enforces schemas per vertical.
 
-### Response object
+### JSONB Schema
 
-Every reconstructed `structured_data` object includes:
+Every `structured_data` object includes:
 
 ```json
 {
@@ -31,7 +26,7 @@ Every reconstructed `structured_data` object includes:
 
 - `vertical` must match `data_point_vertical` on the post row.
 - `schema_version` is `1` for all current schemas. Future schema changes increment this value.
-- `topic_ids` contains the related card or bank account topic UUIDs in `order_index` order.
+- `topic_ids` contains the related card or bank account topic UUIDs.
 - `currency` is the record-wide lowercase currency code. Every nested money value and range must
   use it.
 
@@ -39,9 +34,9 @@ Every reconstructed `structured_data` object includes:
 
 - **Extensible**: New verticals add new schemas without modifying the core data model. Register in `backend/services/data-points/verticals.mts`.
 - **Typed**: Every field has a defined type for consistent aggregation.
-- **Versionable**: `schema_version` is a typed fact column so a future schema can add columns without a JSON decoder.
+- **Versionable**: `schema_version` inside the JSONB allows future schema evolution without migrations.
 - **Aggregatable**: Field types are chosen to support meaningful rollups (averages, distributions, rates).
-- **Indexed**: `post_data_point_facts.result`, present `credit_score_range`, and `post_data_point_topics (topic_id)` support search and insights.
+- **Indexed**: GIN index on `structured_data`, plus expression indexes on `topic_id` and `result` for fast queries.
 
 ## Profile Pre-Fill & Save-To-Profile
 
@@ -69,17 +64,17 @@ Aggregation thresholds (minimum N = 10–20 samples per aggregate, depending on 
 ### Indexes
 
 ```sql
+-- GIN index for arbitrary JSONB queries
+idx_posts__structured_data (structured_data jsonb_path_ops) WHERE structured_data IS NOT NULL AND deleted_at IS NULL
+
 -- Vertical filter index
 idx_posts__data_point_vertical (data_point_vertical, id DESC) WHERE data_point_vertical IS NOT NULL AND deleted_at IS NULL
 
--- Topic membership, including display order
-post_data_point_topics PRIMARY KEY (post_id, topic_id)
-uq_post_data_point_topics__post_id__order_index UNIQUE (post_id, order_index)
-idx_post_data_point_topics__topic_id (topic_id) INCLUDE (post_id)
+-- Topic filter index (for per-card/account aggregations)
+idx_posts__structured_data__topic_id (structured_data->>'topic_id') WHERE structured_data IS NOT NULL AND deleted_at IS NULL
 
--- Fact filters
-idx_post_data_point_facts__result (result)
-idx_post_data_point_facts__credit_score_range (credit_score_range) WHERE credit_score_range_presence = 'present'
+-- Result filter index
+idx_posts__structured_data__result (structured_data->>'result') WHERE structured_data IS NOT NULL AND deleted_at IS NULL
 ```
 
 ### Adding a New Vertical

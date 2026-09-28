@@ -40,6 +40,9 @@ function appendFieldUpdates(
   if (changes.is_anonymous !== undefined) {
     updateQuery.append(sql`, is_anonymous = ${changes.is_anonymous}`)
   }
+  if (changes.structured_data !== undefined) {
+    updateQuery.append(sql`, structured_data = ${JSON.stringify(changes.structured_data)}`)
+  }
   if (changes.data_point_vertical !== undefined) {
     updateQuery.append(sql`, data_point_vertical = ${changes.data_point_vertical}`)
   }

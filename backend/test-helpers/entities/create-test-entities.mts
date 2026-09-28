@@ -1,7 +1,7 @@
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { Post, PostBroadcast, PostPrivacy, PostType } from '@voucha/types/entities/post'
 import type { TopicTypes } from '@voucha/types/entities/topic'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
 import { insertTestUrlHostname } from './url-hostnames.mts'
@@ -127,61 +127,18 @@ export async function createTestPost(options: CreateTestPostOptions = {}) {
   })
 
   if (options.data_point_vertical !== undefined || options.structured_data !== undefined) {
-    const facts = readTestDataPointFacts(options.structured_data)
-    await using transaction = await beginTransaction()
-    await transaction(sql`/* createTestPost */
+    await write(sql`/* createTestPost */
       UPDATE posts
-      SET data_point_vertical = ${options.data_point_vertical ?? facts?.vertical ?? null}
+      SET data_point_vertical = ${options.data_point_vertical ?? null},
+        structured_data = ${
+          options.structured_data === undefined ? null : JSON.stringify(options.structured_data)
+        }::jsonb
       WHERE id = ${postId}
     `)
-    if (facts) {
-      await transaction(sql`/* createTestPost */
-        INSERT INTO post_data_point_facts (
-          post_id, vertical, schema_version, result, currency,
-          credit_score_range, credit_score_range_presence
-        ) VALUES (
-          ${postId}, ${facts.vertical}, 1, ${facts.result}, ${facts.currency},
-          ${facts.creditScoreRange}, ${facts.creditScoreRange === null ? 'absent' : 'present'}
-        )
-      `)
-      if (facts.topicIds.length > 0) {
-        await transaction(sql`/* createTestPost */
-          INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
-          SELECT ${postId}, topic_id, order_index
-          FROM UNNEST(
-            ${facts.topicIds}::uuid[],
-            ${facts.topicIds.map((_, index) => index)}::int[]
-          ) AS topic(topic_id, order_index)
-        `)
-      }
-    }
-    await transaction.commit()
   }
 
   const { rows } = await read<Post>(
     sql`/* createTestPost */ SELECT * FROM view_posts WHERE id = ${postId}`,
   )
   return rows[0]
-}
-
-function readTestDataPointFacts(value: unknown):
-  | {
-      vertical: string
-      result: string
-      currency: string
-      creditScoreRange: string | null
-      topicIds: string[]
-    }
-  | undefined {
-  if (!value || typeof value !== 'object') return undefined
-  const data = value as Record<string, unknown>
-  if (typeof data.vertical !== 'string' || typeof data.result !== 'string') return undefined
-  if (typeof data.currency !== 'string' || !Array.isArray(data.topic_ids)) return undefined
-  return {
-    vertical: data.vertical,
-    result: data.result,
-    currency: data.currency,
-    creditScoreRange: typeof data.credit_score_range === 'string' ? data.credit_score_range : null,
-    topicIds: data.topic_ids.filter((topicId): topicId is string => typeof topicId === 'string'),
-  }
 }

@@ -5,11 +5,8 @@ values, and schema validation logic.
 
 ## Purpose
 
-The `data_point` post type stores typed facts in `post_data_point_facts`, one row per post, and
-ordered subject topics in `post_data_point_topics`. `posts.data_point_vertical` must match the fact
-row. API responses still expose the reconstructed `structured_data` object, including `topic_ids`
-in `order_index` order. Omitted optional keys stay omitted; explicit JSON null is stored as a
-null presence. This service validates input and reads those typed facts for search and insights.
+The `data_point` post type stores structured data in the `structured_data JSONB` column on posts.
+This service validates that the data conforms to the correct schema for the given vertical.
 
 ## Supported Verticals
 
@@ -18,16 +15,14 @@ null presence. This service validates input and reads those typed facts for sear
 
 ## Files
 
-| File                | Description                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------------- |
-| `types.mts`         | Re-exports canonical types from `@voucha/types/entities/data-point`                                |
-| `verticals.mts`     | Validates a vertical name (allowed values live in `@ts-shared/data-points`)                        |
-| `validate.mts`      | `assertValidStructuredData(vertical, data)` — throws 422 on invalid data                           |
-| `fact-columns.mts`  | Maps a validated structured data object onto typed fact columns                                    |
-| `persist-facts.mts` | Writes one `post_data_point_facts` row from a validated structured data object                     |
-| `search.mts`        | `searchDataPoints(options)` — filter data points by topic, vertical, result, or credit score range |
-| `insights.mts`      | `getTopicDataPointInsights(topicId, options?)` — aggregate stats for a topic                       |
-| `index.mts`         | Barrel exports                                                                                     |
+| File            | Description                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `types.mts`     | Re-exports canonical types from `@voucha/types/entities/data-point`                                                       |
+| `verticals.mts` | Validates whether a given string is a supported vertical name (delegates allowed value lists to `@ts-shared/data-points`) |
+| `validate.mts`  | `assertValidStructuredData(vertical, data)` — throws 422 on invalid data                                                  |
+| `search.mts`    | `searchDataPoints(options)` — filter data points by topic, vertical, result, or credit score range                        |
+| `insights.mts`  | `getTopicDataPointInsights(topicId, options?)` — aggregate stats for a topic                                              |
+| `index.mts`     | Barrel exports                                                                                                            |
 
 ## Usage
 
@@ -80,12 +75,18 @@ representable. Different currencies are never aggregated. `credit_score_distribu
 6. Add migration if a new topic_type is needed
 7. Add form + detail display components in [`web/components/posts/`](../../../web/components/posts/)
 
-## Relational facts
+## JSONB Schema
 
-`post_data_point_facts` is one-to-one with a data-point post and stores vertical, schema version,
-result, currency, and flattened money and money-range amounts. `post_data_point_topics` is the only
-topic membership table; `(post_id, order_index)` is unique. The public `structured_data` object is
-rebuilt from those rows and still lists ordered `topic_ids`.
+Every `structured_data` object requires:
+
+```json
+{
+  "vertical": "<vertical name>",
+  "schema_version": 1,
+  "topic_id": "<uuid>",
+  "...": "...vertical-specific fields"
+}
+```
 
 See [docs/requirements/platform/data-points-spec.md](../../../docs/requirements/platform/data-points-spec.md) for full field reference.
 

@@ -51,7 +51,6 @@ This block is rendered from the typed registry, and its normalized rows are chec
 | `post_autotagger_results`                               | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_classifier_applications`                          | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_clearance_changes`                                | RANGE         | `id`                                   | default            | none              | target-scoped      |
-| `post_data_point_facts`                                 | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_data_point_topics`                                | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_explicit_topic_categories`                        | RANGE         | `post_id`                              | default            | none              | target-scoped      |
 | `post_feed_shares`                                      | RANGE         | `recipient_user_id`                    | default            | none              | target-scoped      |

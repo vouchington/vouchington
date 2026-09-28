@@ -15,6 +15,7 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'post_clearance_changes.metadata',
     'post_moderation_dispositions.evidence',
     'post_revisions.changes',
+    'posts.structured_data',
     'report_integrity_flags.details',
     'review_dispute_lifecycle_changes.metadata',
     'topic_revisions.changes',

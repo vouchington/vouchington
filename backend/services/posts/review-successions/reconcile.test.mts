@@ -2,12 +2,12 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createRandomString,
   createTestUser,
-  dataPointFactConstraintCode,
   getPostArchivedFields,
   hardDeleteTestTopic,
   insertTestPost,
   insertTestPostReview,
   insertTestTopic,
+  reviewSuccessionTopicDeleteErrorCode,
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers'
 import { archivePost, unarchivePost } from '../archive.mts'
@@ -173,10 +173,7 @@ describe('review successions', () => {
     const predecessorId = await createReview([topic])
     const successorId = await createReview([topic])
     await reconcileReviewSuccessionsForPostIds([successorId])
-    const blocked = await dataPointFactConstraintCode(
-      'DELETE FROM review_succession_topics WHERE topic_id = $1',
-      [topic],
-    )
+    const blocked = await reviewSuccessionTopicDeleteErrorCode(topic)
     expect(blocked).toBe('23514')
     await hardDeleteTestTopic(topic)
     await expect(listReviewSuccessionsForPostIds([predecessorId])).resolves.toMatchObject([
