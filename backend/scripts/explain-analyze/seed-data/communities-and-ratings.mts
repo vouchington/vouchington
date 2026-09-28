@@ -91,7 +91,7 @@ export async function seedPostDataPointTopics(count = 1000, postTypeCount = coun
         const topicId = seedUuid((idx + Math.floor(idx / postTypeCount)) % 2500, '04')
         values.push(postId, topicId)
         const base = values.length - 1
-        rows.push(`($${base}, $${base + 1}, 0)`)
+        rows.push(`($${base}, $${base + 1}, ${Math.floor(idx / postTypeCount)})`)
       }
       await query(
         `/* seedExplainData */ INSERT INTO post_data_point_topics (post_id, topic_id, order_index)
