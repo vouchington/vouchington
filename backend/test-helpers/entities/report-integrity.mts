@@ -158,3 +158,14 @@ export async function insertTestReportIntegrityFlag(options: {
   `)
   return rows[0]!.id
 }
+
+export async function deleteTestReportIntegrityReporter(input: {
+  flagId: string
+  reporterUserId: string
+}): Promise<void> {
+  await write(sql`/* deleteTestReportIntegrityReporter */
+    DELETE FROM report_integrity_flag_reporters
+    WHERE flag_id = ${input.flagId}
+      AND reporter_user_id = ${input.reporterUserId}
+  `)
+}
