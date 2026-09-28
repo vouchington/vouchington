@@ -1,5 +1,27 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { NO_VARY_SEARCH_PARAM_NAMES, normalizeCacheUrl } from './cache-no-vary-search.mts'
+
+const SPECULATION_NO_VARY_HEADER_FILE = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../web/lib/seo/navigation-performance.ts',
+)
+
+function speculationNoVaryParamNames(): string[] {
+  const source = readFileSync(SPECULATION_NO_VARY_HEADER_FILE, 'utf8')
+  const declaration = source.match(
+    /export const NO_VARY_SEARCH_HEADER =\s*'params=\(([^)]*)\), key-order'/,
+  )
+  const params = declaration?.[1]
+  if (!params) {
+    throw new Error(
+      'NO_VARY_SEARCH_HEADER must stay a single-quoted params=(...), key-order literal',
+    )
+  }
+  return Array.from(params.matchAll(/"([^"]+)"/g), match => match[1] ?? '')
+}
 
 describe('normalizeCacheUrl', () => {
   it('strips every named marketing/tracking param', () => {
@@ -29,5 +51,17 @@ describe('normalizeCacheUrl', () => {
     expect(
       normalizeCacheUrl('https://voucha.ai/posts?utm_source=newsletter&b=2&_rsc=abc&a=1'),
     ).toBe('https://voucha.ai/posts?a=1&b=2')
+  })
+
+  it('uses the same param names as web speculation-rules expects_no_vary_search', () => {
+    expect(speculationNoVaryParamNames()).toEqual([...NO_VARY_SEARCH_PARAM_NAMES])
+  })
+
+  it('strips high-cardinality ad click ids while preserving content params', () => {
+    expect(
+      normalizeCacheUrl(
+        'https://voucha.ai/posts?srsltid=unique&q=cards&gbraid=g&wbraid=w&dclid=d&ttclid=t&twclid=x&igshid=i&igsh=s&_gl=linker&after=cursor',
+      ),
+    ).toBe('https://voucha.ai/posts?after=cursor&q=cards')
   })
 })
