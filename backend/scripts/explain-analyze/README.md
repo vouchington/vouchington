@@ -54,15 +54,26 @@ so copying that utility does not make a large fixture source memory-bounded. Res
 dependencies: do not import the unrelated embedding service or rely on its transitive COPY package.
 Retain the full EXPLAIN corpus and custom/generic plan gates after any loader change.
 
-In a fresh local PostgreSQL 18.6 candidate-first pair using CI's `work_mem=32MB` and `jit=off`, the existing
-remote-follower loader took 7.647s for 100,000 actors, 101,000 follows, and 1,000 directory entries;
-bounded staged COPY took 10.690s. The 20,000-user loader took 7.743s versus 6.766s with staged
-COPY in that one pair. Counts and logical row hashes matched after initial loads and candidate reruns.
-Earlier 4MB pairs also favored the
-existing remote-follower loader (9.68s vs 13.68s and 7.88s vs 9.40s); user results were mixed
-(6.11s vs 8.34s and 6.26s vs 6.03s). These are local comparisons, not a hosted PostgreSQL 18.4
-result. Remote-follower COPY has no measured benefit; the one 32MB user gain needs confirmation
-before changing that loader. No loader was converted on this evidence.
+Repeated fresh PostgreSQL 18.6 comparisons at CI's `work_mem=32MB` and `jit=off` did not find a
+stable COPY win, so no loader was converted. These are local comparisons, not a hosted PostgreSQL
+18.4 result.
+
+The existing remote-follower loader took 7.647s for 100,000 actors, 101,000 follows, and 1,000
+directory entries; bounded staged COPY took 10.690s. Earlier 4MB pairs also favored the existing
+loader (9.68s vs 13.68s and 7.88s vs 9.40s).
+
+The 20,000-user loader's one 32MB pair was 7.743s versus 6.766s with staged COPY. Confirmation pairs
+did not repeat that gain: the existing loader took 6.128s and 14.253s, 500-row staged COPY took
+6.426s and 6.610s, and 5,000-row staged COPY took 11.405s. Earlier 4MB user pairs were mixed
+(6.11s vs 8.34s and 6.26s vs 6.03s). User fingerprints matched after initial loads and reruns.
+
+The 100,000-post loader, including clearance history and the first-batch statistics refresh, took
+17.470s, 19.197s, 20.722s, and 28.141s. Staged COPY with the same 500-row batches took 24.582s and
+29.044s. A 5,000-row COPY batch took 27.773s. A 10,000-row COPY batch took 15.057s, 25.275s, and
+30.972s. Every COPY run matched the existing loader's logical post and clearance fingerprints, and
+reruns kept those counts and fingerprints. The single faster 10,000-row sample does not repeat.
+
+Remote-follower, user, and post COPY candidates have no stable measured benefit.
 
 ### 2. Run EXPLAIN ANALYZE
 
