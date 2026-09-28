@@ -162,4 +162,51 @@ describe('blackboard-journal CLI', () => {
         `--session-id 'sess-1'`,
     )
   })
+
+  it('preserves explicit feedback flags in a replay command', async () => {
+    const dir = await makeTempDir()
+    const noteFile = join(dir, 'note.md')
+    await writeFile(noteFile, 'a note')
+    const rejection = await execFileAsync(
+      process.execPath,
+      [
+        scriptPath,
+        'append',
+        '--file',
+        noteFile,
+        '--session-id',
+        'sess-1',
+        '--mode',
+        'autonomous',
+        '--source-event-id',
+        'event-1',
+        '--work-outcome',
+        'failure',
+        '--coverage-status',
+        'unavailable',
+        '--coverage-source',
+        'ci',
+        '--dropped-count',
+        '2',
+        '--outbox-directory',
+        dir,
+      ],
+      {
+        env: {
+          ...process.env,
+          AGENT_BLACKBOARD_URL: 'http://127.0.0.1:1/',
+          AGENT_BLACKBOARD_TOKEN: 'test-token',
+        },
+      },
+    ).catch((error: unknown) => error)
+
+    const stderr = String((rejection as { stderr: string }).stderr)
+    expect(stderr).toContain("--mode 'autonomous'")
+    expect(stderr).toContain("--source-event-id 'event-1'")
+    expect(stderr).toContain("--work-outcome 'failure'")
+    expect(stderr).toContain("--coverage-status 'unavailable'")
+    expect(stderr).toContain("--coverage-source 'ci'")
+    expect(stderr).toContain("--dropped-count '2'")
+    expect(stderr).toContain(`--outbox-directory '${dir}'`)
+  })
 })

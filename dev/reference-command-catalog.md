@@ -101,8 +101,8 @@ one-at-a-time operations owned by the canonical
 Stage each note in a non-empty UTF-8 file, then append it with:
 
 ```bash
-node dev/blackboard-journal.mts append --file <note-file> [--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
-node dev/blackboard-journal.mts append --file <note-file> --root-codex [--new-root-codex-session] [--agent codex] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
+node dev/blackboard-journal.mts append --file <note-file> --mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> --coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] [--outbox-directory <path>] [--session-id <id>] [--parent-session-id <id>] [--agent <name>] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
+node dev/blackboard-journal.mts append --file <note-file> --mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> --coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] [--outbox-directory <path>] --root-codex [--new-root-codex-session] [--agent codex] [--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]
 ```
 
 Read a session's journal entries back (oldest first) with:
@@ -116,8 +116,11 @@ node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new
 read.
 
 The commands accept no positional note or stdin input. `append` reads the file without trimming,
-validates it is non-empty UTF-8, idempotently creates the agent-blackboard session if needed, and
-appends a `type: "journal"` entry. [`agent-session-id/resolve.mts`](agent-session-id/resolve.mts)
+validates it is non-empty UTF-8, and calls `appendJournal`. `--mode`, `--source-event-id`,
+`--work-outcome`, and `--coverage-status` are required. `--coverage-source` is an optional
+comma-separated list, and an omitted `--dropped-count` means 0. Interactive mode requires
+`--outbox-directory`; autonomous mode must omit it. Success prints one JSON delivery result.
+[`agent-session-id/resolve.mts`](agent-session-id/resolve.mts)
 resolves a coherent harness, agent, and session when either CLI override is absent. Cursor CLI also
 reads `.local/cursor-session-id`; native Grok with `GROK_AGENT` reads
 `.local/grok-session-id`. An interactive root Codex call always passes `--root-codex`; an absent-thread
@@ -126,9 +129,10 @@ new root session also passes `--new-root-codex-session` exactly once, then reuse
 detached processes must not pass either root flag. Root Codex uses this script path rather than the MCP
 procedure because only the script can invoke the root resolver.
 
-There is no filesystem fallback: any failure (missing token, unreachable blackboard stack, CLI
-error) hard-fails nonzero and prints a shell-quoted `Replay with: ...` command re-running the same
-`--file`/`--session-id` after the stack is back up. See
+A thrown failure (missing token, unreachable blackboard stack, or rejected envelope) hard-fails
+nonzero and prints a shell-quoted `Replay with: ...` command for the same flags. Interactive
+transport trouble can instead return `pending` after the explicit outbox retains the envelope;
+that exit is 0, so read the JSON status. See
 [docs/development/agent-blackboard.md](../docs/development/agent-blackboard.md) for bringing the
 stack up.
 

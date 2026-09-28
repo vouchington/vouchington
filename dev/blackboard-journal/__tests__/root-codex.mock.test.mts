@@ -1,9 +1,35 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { FeedbackDeliveryResult } from 'vouchington-tooling/agent-blackboard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const appendJournal = vi.fn<typeof import('vouchington-tooling/agent-blackboard').appendJournal>()
+
+const FEEDBACK_FLAGS = [
+  '--mode',
+  'autonomous',
+  '--source-event-id',
+  'event-1',
+  '--work-outcome',
+  'in-progress',
+  '--coverage-status',
+  'partial',
+]
+
+function deliveredJournal(): FeedbackDeliveryResult {
+  return {
+    status: 'delivered',
+    sourceEventId: 'event-1',
+    pendingCount: 0,
+    receipt: {
+      sessionId: 'sess-1',
+      sourceEventId: 'event-1',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      verified: true,
+    },
+  }
+}
 
 vi.mock<typeof import('vouchington-tooling/agent-blackboard')>(
   import('vouchington-tooling/agent-blackboard'),
@@ -49,10 +75,18 @@ describe('runAppend root-Codex identity', () => {
 
   it('creates and reuses a persisted id', async () => {
     const dir = await makeTempDir()
-    appendJournal.mockResolvedValue('journaled')
+    appendJournal.mockResolvedValue(deliveredJournal())
 
-    await runAppend(['--file', await makeNoteFile(dir), '--root-codex'], HOSTED_ENV, dir)
-    await runAppend(['--file', await makeNoteFile(dir), '--root-codex'], HOSTED_ENV, dir)
+    await runAppend(
+      ['--file', await makeNoteFile(dir), '--root-codex', ...FEEDBACK_FLAGS],
+      HOSTED_ENV,
+      dir,
+    )
+    await runAppend(
+      ['--file', await makeNoteFile(dir), '--root-codex', ...FEEDBACK_FLAGS],
+      HOSTED_ENV,
+      dir,
+    )
 
     expect(appendJournal).toHaveBeenCalledTimes(2)
     const [[first], [second]] = appendJournal.mock.calls
@@ -66,7 +100,13 @@ describe('runAppend root-Codex identity', () => {
     const dir = await makeTempDir()
     appendJournal.mockRejectedValue(new Error('network failed'))
     const error = await runAppend(
-      ['--file', await makeNoteFile(dir), '--root-codex', '--new-root-codex-session'],
+      [
+        '--file',
+        await makeNoteFile(dir),
+        '--root-codex',
+        '--new-root-codex-session',
+        ...FEEDBACK_FLAGS,
+      ],
       HOSTED_ENV,
       dir,
     ).catch(error => error)

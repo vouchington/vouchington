@@ -8,10 +8,14 @@ import { runEntries } from './blackboard-journal/entries.mts'
 function printUsage(stream: NodeJS.WritableStream = process.stderr): void {
   stream.write(
     'Usage: node dev/blackboard-journal.mts append --file <path> ' +
-      '[--session-id <id>] [--parent-session-id <id>] [--agent <name>] ' +
+      '--mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> ' +
+      '--coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] ' +
+      '[--outbox-directory <path>] [--session-id <id>] [--parent-session-id <id>] [--agent <name>] ' +
       '[--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]\n' +
       '       node dev/blackboard-journal.mts append --file <path> ' +
-      '--root-codex [--new-root-codex-session] [--agent codex] ' +
+      '--mode <interactive|autonomous> --source-event-id <id> --work-outcome <outcome> ' +
+      '--coverage-status <status> [--coverage-source <source,...>] [--dropped-count <n>] ' +
+      '[--outbox-directory <path>] --root-codex [--new-root-codex-session] [--agent codex] ' +
       '[--version <version>] [--timestamp <iso8601>] [--repository <owner/name> ...]\n' +
       '       node dev/blackboard-journal.mts entries [--session-id <id> | --root-codex [--new-root-codex-session]]\n' +
       'Note: entries --root-codex refreshes the worktree-local root identity before reading the server.\n',
@@ -40,6 +44,13 @@ function printReplayCommand(error: BlackboardJournalError): void {
   if (error.newRootCodexSession) parts.push('--new-root-codex-session')
   if (error.version) parts.push('--version', shellQuote(error.version))
   if (error.timestamp) parts.push('--timestamp', shellQuote(error.timestamp))
+  if (error.mode) parts.push('--mode', shellQuote(error.mode))
+  if (error.sourceEventId) parts.push('--source-event-id', shellQuote(error.sourceEventId))
+  if (error.workOutcome) parts.push('--work-outcome', shellQuote(error.workOutcome))
+  if (error.coverageStatus) parts.push('--coverage-status', shellQuote(error.coverageStatus))
+  if (error.coverageSource) parts.push('--coverage-source', shellQuote(error.coverageSource))
+  if (error.droppedCount) parts.push('--dropped-count', shellQuote(error.droppedCount))
+  if (error.outboxDirectory) parts.push('--outbox-directory', shellQuote(error.outboxDirectory))
   for (const repository of error.repositories ?? [])
     parts.push('--repository', shellQuote(repository))
   process.stderr.write(`Replay with: ${parts.join(' ')}\n`)
@@ -67,7 +78,7 @@ async function main(): Promise<void> {
     printUsage()
     process.exit(1)
   }
-  process.stdout.write(`${await runAppend(rest)}\n`)
+  process.stdout.write(`${JSON.stringify(await runAppend(rest))}\n`)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
