@@ -14,7 +14,6 @@ Not partitioned — growth: unbounded.
 | `audience`                         | `follower_distribution_audiences` | no       |                              |          |           |           | Whether the distribution targets all followers or a selected subset.    |
 | `post_id`                          | `uuid`                            | yes      |                              |          |           |           | Post target for post share/send distributions.                          |
 | `rss_feed_item_id`                 | `uuid`                            | yes      |                              |          |           |           | RSS feed item target for RSS share/send distributions.                  |
-| `selected_recipient_user_ids`      | `uuid[]`                          | yes      |                              |          |           |           | Bounded selected follower ids for selected_followers distributions.     |
 | `last_processed_recipient_user_id` | `uuid`                            | yes      |                              |          |           |           | Keyset cursor for chunk continuation.                                   |
 | `completed_at`                     | `timestamp with time zone`        | yes      |                              |          |           |           | When all intended recipients have been processed.                       |
 | `failed_at`                        | `timestamp with time zone`        | yes      |                              |          |           |           | When processing stopped because the distribution target became invalid. |
@@ -29,7 +28,6 @@ _none_
 
 **Check constraints:**
 
-- `chk_follower_distributions__audience_selection`: `CHECK ((((audience = 'all_followers'::follower_distribution_audiences) AND (selected_recipient_user_ids IS NULL)) OR ((audience = 'selected_followers'::follower_distribution_audiences) AND (selected_recipient_user_ids IS NOT NULL) AND (cardinality(selected_recipient_user_ids) > 0) AND (cardinality(selected_recipient_user_ids) <= 100))))`
 - `chk_follower_distributions__entity`: `CHECK ((((action = ANY (ARRAY['post_share'::follower_distribution_actions, 'post_send'::follower_distribution_actions])) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL)) OR ((action = ANY (ARRAY['rss_feed_item_share'::follower_distribution_actions, 'rss_feed_item_send'::follower_distribution_actions])) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL))))`
 - `chk_follower_distributions__terminal_state`: `CHECK (((completed_at IS NULL) OR (failed_at IS NULL)))`
 - `follower_distributions_failure_reason_check`: `CHECK (((failure_reason IS NULL) OR (length(failure_reason) <= 1000)))`
@@ -54,4 +52,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_fd_distributions_recipient_bounds`: `CREATE CONSTRAINT TRIGGER trigger_fd_distributions_recipient_bounds AFTER INSERT OR UPDATE OF audience ON public.follower_distributions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_follower_distribution_recipient_bounds()`
 - `trigger_follower_distributions_updated_at`: `CREATE TRIGGER trigger_follower_distributions_updated_at BEFORE UPDATE ON public.follower_distributions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
