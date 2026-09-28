@@ -1,10 +1,13 @@
 import {
+  AUTH_ST_PAYLOAD,
   consoleSpy,
-  mockAfter,
+  installProxyTestDoubles,
+  makeRequest,
   mockCookiesSet,
   mockDecodeSessionJwt,
   mockNextResponseNext,
   mockNextResponseRewrite,
+  resetProxyTestDoubles,
 } from '@/test-helpers/proxy-session.mock-support'
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,67 +21,15 @@ describe('proxy.session', () => {
     consoleSpy.mockRestore()
   })
 
-  const AUTH_SESSION_DATA = {
-    dt: 'new-dt',
-    st: 'new-st',
-    uid: 'user-1',
-    dte: 2_592_000,
-    ste: 172_800,
-    secure: false,
-  }
-
-  // Payload returned when st is an authenticated session token
-  const AUTH_ST_PAYLOAD = { uid: 'user-1', did: 'did-1', sid: 'sid-1' }
-
-  function makeRequest({
-    pathname = '/',
-    cookies = {} as Record<string, string>,
-    headers = {} as Record<string, string>,
-    searchParams = {} as Record<string, string>,
-    method = 'GET',
-    body = '',
-  } = {}) {
-    const url = new URL(`http://localhost${pathname}`)
-    for (const [k, v] of Object.entries(searchParams)) url.searchParams.set(k, v)
-    return {
-      method,
-      headers: new Headers(headers),
-      nextUrl: {
-        pathname: url.pathname,
-        searchParams: url.searchParams,
-        toString: () => url.toString(),
-      },
-      cookies: {
-        get: (name: string) => (cookies[name] !== undefined ? { value: cookies[name] } : undefined),
-      },
-      text: () => Promise.resolve(body),
-    }
-  }
-
   describe('proxy', () => {
     let fetchMock: ReturnType<typeof vi.fn>
 
     beforeEach(() => {
-      vi.clearAllMocks()
-      vi.stubEnv('API_BASE_URL', '')
-      vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:2900')
-      vi.stubEnv('CF_WORKER_SECRET', 'test-worker-secret')
-      fetchMock = vi.fn<() => unknown>().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ session: AUTH_SESSION_DATA }),
-      })
-      vi.stubGlobal('fetch', fetchMock)
-      vi.mocked(isbot).mockReturnValue(false)
-      mockNextResponseNext.mockReturnValue({ cookies: { set: mockCookiesSet } })
-      mockNextResponseRewrite.mockReturnValue({ cookies: { set: mockCookiesSet } })
-      mockAfter.mockImplementation((fn: () => unknown) => fn())
-      // Default: no uid (anonymous session)
-      mockDecodeSessionJwt.mockReturnValue(null)
+      fetchMock = installProxyTestDoubles()
     })
 
     afterEach(() => {
-      vi.unstubAllGlobals()
-      vi.unstubAllEnvs()
+      resetProxyTestDoubles()
     })
 
     describe('bot detection', () => {
