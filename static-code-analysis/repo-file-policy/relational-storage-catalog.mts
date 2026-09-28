@@ -80,8 +80,37 @@ export const PARTITION_FOREIGN_KEY_COLUMNS = new Set([
   'entity_relation_votes.subject_id',
 ])
 
-// The sole generated UUID alias combines three concrete target FKs. Match its whole expression;
-// merely mentioning an FK would also admit an unrelated generated UUID.
-export const GENERATED_FK_ALIASES = new Map([
-  ['curated_aside_items.entity_id', 'COALESCE(topic_id, rss_feed_id, community_id)'],
+// Sole UUID primary keys without a generator are shared identities unless listed here. Retained
+// roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
+// Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
+export const ALLOWED_OWN_PRIMARY_UUID = new Set([
+  'post_publication_community_identities.id',
+  'post_publication_rss_feed_identities.id',
+  'post_publication_story_identities.id',
+  'post_publication_topic_alias_identities.id',
+  'retained_image_identities.id',
+  'retained_post_identities.id',
+  'retained_rss_feed_item_identities.id',
+  'retained_topic_identities.id',
+  'retained_user_identities.id',
+  'user_sessions.id',
+])
+
+export type GeneratedFkAlias = {
+  expression: string
+  oneTargetCheck: string
+  sourceColumns: readonly string[]
+}
+
+// The sole generated UUID alias combines three concrete target FKs and the exact one-target check.
+// Match the whole COALESCE expression and num_nonnulls(...) = 1 body; a similar check is not enough.
+export const GENERATED_FK_ALIASES = new Map<string, GeneratedFkAlias>([
+  [
+    'curated_aside_items.entity_id',
+    {
+      expression: 'COALESCE(topic_id, rss_feed_id, community_id)',
+      oneTargetCheck: 'num_nonnulls(topic_id, rss_feed_id, community_id) = 1',
+      sourceColumns: ['topic_id', 'rss_feed_id', 'community_id'],
+    },
+  ],
 ])

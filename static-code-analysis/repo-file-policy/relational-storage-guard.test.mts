@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
+import type { SchemaSnapshot, SchemaTableSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
 import { checkRelationalStorage } from './relational-storage-guard.mts'
 import { emptySchemaSnapshot, plainSnapshotTable } from './schema-snapshot-test-fixtures.mts'
@@ -19,6 +19,18 @@ function column(type: string, generatedExpression: string | null = null) {
     comment: null,
     ordinalPosition: 1,
   } as const
+}
+
+function foreignKey(columnName: string): SchemaTableSnapshot['foreignKeys'][string] {
+  return {
+    columns: [columnName],
+    definition: `FOREIGN KEY (${columnName}) REFERENCES owners (id)`,
+    referencedTable: 'owners',
+    referencedColumns: ['id'],
+    onUpdate: 'no action',
+    onDelete: 'restrict',
+    validated: true,
+  }
 }
 
 function snapshot(
@@ -112,16 +124,10 @@ describe('relational storage guard', () => {
       entity_id: column('uuid', 'COALESCE(topic_id, rss_feed_id, community_id)'),
     })
     for (const name of ['topic_id', 'rss_feed_id', 'community_id'] as const) {
-      value.tables.curated_aside_items.foreignKeys[`${name}_fk`] = {
-        columns: [name],
-        definition: `FOREIGN KEY (${name}) REFERENCES owners (id)`,
-        referencedTable: 'owners',
-        referencedColumns: ['id'],
-        onUpdate: 'no action',
-        onDelete: 'restrict',
-        validated: true,
-      }
+      value.tables.curated_aside_items.foreignKeys[`${name}_fk`] = foreignKey(name)
     }
+    value.tables.curated_aside_items.checkConstraints.chk_curated_aside_items__one_target =
+      'CHECK ((num_nonnulls(topic_id, rss_feed_id, community_id) = 1))'
     expect(checkRelationalStorage(value, { enforceCatalogFreshness: false })).toEqual([])
     value.tables.curated_aside_items.columns.entity_id.generatedExpression =
       'COALESCE(gen_random_uuid(), topic_id)'

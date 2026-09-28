@@ -33,10 +33,11 @@ not proof that the live entity exists or that an operation is authorized. The in
 an owner only after its live row and every durable reference have gone; audit rows have no inferred
 expiry.
 
-Image delivery repair retains a concrete image identity and immutable placement binding with an
-exact post/surface family. The reservation commits independently before a live owner transaction;
-that owner and its repair marker pin image then binding identities in a compatible order. Live
-image and placement rows, registry records, and repair markers use concrete FKs to these owners,
+Image delivery repair retains a concrete image identity and an immutable placement binding with an
+exact post or surface family. The owner transaction creates that binding, pins the image root and
+the binding in that order, then inserts the live placement. A repair marker references an already
+committed registry delivery key; it is not a direct pin of a reservation made before the owner
+transaction. Live image and placement rows, registry records, and repair markers use concrete FKs,
 but retained identity alone never grants delivery. Scheduled bounded cleanup removes an orphan
 binding after its last live, registry, and marker reference, then removes an unreferenced image
 root in a separate sweep.
@@ -58,12 +59,18 @@ storage even when the original external document is also retained. The
 [relational-storage catalog](../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
 records exact allowed columns; the
 [remediation inventory](../../static-code-analysis/repo-file-policy/relational-storage-debt.mts)
-records existing prelaunch defects. The
+records existing prelaunch defects. That inventory is shrink-only: new keys fail the acceptance
+check against `origin/main`. A catalog entry whose column no longer has the defect is stale and must
+be removed.
+The
 [schema guard](../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) runs on the
-committed PostgreSQL-generated snapshot: a new undeclared column fails, and a removed catalog entry
-is stale. Naming checks catch reference-like UUIDs and scoped encoded keys, but semantic ownership
-also requires review of the producer, consumer, and lifecycle. Generated aliases derived from
-foreign-key columns and valid composite or partition FKs are accepted.
+committed PostgreSQL-generated snapshot. It rejects unresolved domain types before JSON, UUID-array,
+and relation classification. Naming checks catch reference-like UUIDs, scoped encoded keys only while
+they stay textual, and sole UUID primary keys that are neither generated nor foreign-keyed. Semantic
+ownership still requires review of the producer, consumer, and lifecycle. A generated alias is
+accepted only with its exact source expression, each source foreign key, and the exact
+`num_nonnulls(...) = 1` check. Valid composite and proven partition FKs are accepted. The partition
+proof reads the target checkout's generated entity-relation SQL.
 
 ## Index every foreign key with a referential-integrity-usable leading index
 

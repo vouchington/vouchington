@@ -123,7 +123,7 @@ function findFirstStatementViolation(
     if (isUnclassifiedCreateDdl(ddlStatement)) {
       return 'config-driven generators must not emit unclassified CREATE DDL'
     }
-    if (/\bALTER\s+TABLE\b[\s\S]*?\bADD\s+(?:COLUMN\b|IF\s+NOT\s+EXISTS\b)/is.test(ddlStatement)) {
+    if (isAlterTableAddColumn(ddlStatement)) {
       return 'config-driven generators must not emit ALTER TABLE ADD COLUMN'
     }
     if (insideDoBlock) {
@@ -143,6 +143,14 @@ function findFirstStatementViolation(
     }
   }
   return null
+}
+
+// PostgreSQL accepts both ADD COLUMN and ADD for a new column. Constraint forms stay distinct.
+const ALTER_TABLE_ADD_COLUMN =
+  /\bALTER\s+TABLE\b[\s\S]*?\bADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?(?!CONSTRAINT\b|CHECK\b|UNIQUE\b|PRIMARY\b|FOREIGN\b|EXCLUDE\b)(?:"[^"]+"|[A-Za-z_][\w$]*)\s+(?:"[^"]+"|[A-Za-z_][\w$]*)/isu
+
+function isAlterTableAddColumn(statement: string): boolean {
+  return ALTER_TABLE_ADD_COLUMN.test(statement)
 }
 
 function findExecutableStatementViolation(

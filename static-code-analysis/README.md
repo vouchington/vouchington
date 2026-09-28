@@ -301,12 +301,15 @@ The PostgreSQL [relational-storage guard](repo-file-policy/relational-storage-gu
 tracked generated schema snapshot. Its [exact catalog](repo-file-policy/relational-storage-catalog.mts)
 permits reviewed opaque/provider/protocol/replay JSON and nonrelationship UUID tokens/cursors;
 existing business JSON, UUID arrays, missing FKs, and scoped encoded keys are recorded in the
-[remediation inventory](repo-file-policy/relational-storage-debt.mts). Every declaration is checked
-for staleness, and new undeclared columns fail the aggregate
-`repo-file-policy` check. A catalog entry whose column no longer needs the exception is stale.
-The guard recognizes composite and partition FKs and generated aliases
-derived from FK columns. It cannot infer whether arbitrary content in an allowed document is
-application-owned; reviewers must inspect producers and consumers under the
+[remediation inventory](repo-file-policy/relational-storage-debt.mts). The inventory is shrink-only
+against `origin/main`. Every declaration is checked for staleness, and new undeclared columns fail
+the aggregate `repo-file-policy` check. A catalog entry whose column no longer needs the exception
+is stale. Unresolved domain types are rejected before classification. Encoded-key debt stays only
+while the column is still textual. A sole UUID primary key needs a generator, a target FK, or an
+exact own-identity exception. The guard recognizes composite and proven partition FKs. A generated
+alias also needs its exact `num_nonnulls(...) = 1` check. The partition proof loads the target
+checkout's entity-relation generator. It cannot infer whether arbitrary content in an allowed
+document is application-owned; reviewers must inspect producers and consumers under the
 [prelaunch relational storage policy](../docs/development/postgres-schema-rules.md#prelaunch-relational-storage).
 
 Migration-only AST-grep rules, tests, redirect stubs, and scaffolding are temporary. When the legacy surface is confirmed gone, remove those artifacts unless they still protect an active compatibility contract or invariant. Keep durable checks that enforce current behavior, such as route existence, auth boundaries, API contracts, or helper usage.
