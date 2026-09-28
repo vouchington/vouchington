@@ -135,7 +135,7 @@ describe('pre-push hook', () => {
         expect(
           spawnSync('git', ['init', '-q', '--bare', remote], { encoding: 'utf8' }).status,
         ).toBe(0)
-        expect(git('config', 'user.email', 'plain-force@example.com').status).toBe(0)
+        expect(git('config', 'user.email', 'tests+plain-force@voucha.ai').status).toBe(0)
         expect(git('config', 'user.name', 'plain-force').status).toBe(0)
         expect(
           spawnSync('git', ['-C', source, 'commit', '-q', '--allow-empty', '-m', 'init'], {
