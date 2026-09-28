@@ -155,7 +155,8 @@ describe('automatic hold restoration preserves provider failures', () => {
     ).toEqual([
       expect.objectContaining({
         actor_user_id: scene.moderator.id,
-        metadata: { intentId: scene.restore.id, reason: 'operator_replay' },
+        copyright_notice_action_intent_id: scene.restore.id,
+        replay_reason: 'operator_replay',
       }),
     ])
   })

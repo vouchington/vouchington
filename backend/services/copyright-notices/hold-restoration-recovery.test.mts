@@ -202,9 +202,9 @@ describe('historical blocked copyright restoration recovery', () => {
     if (blocker === 'unsafe') await quarantineTestCopyrightRestorationImage(imageId)
     if (blocker === 'unready') await makeTestCopyrightRestorationImageUnready(imageId)
     if (blocker === 'retired')
-      await retireTestCopyrightRestorationPlacement(scene.target.placement_key)
+      await retireTestCopyrightRestorationPlacement(scene.target.placement_id)
     if (blocker === 'revision')
-      await supersedeTestCopyrightRestorationPlacementRevision(scene.target.placement_key)
+      await supersedeTestCopyrightRestorationPlacementRevision(scene.target.placement_id)
     const now =
       blocker === 'future'
         ? new Date(aggregate!.deadlines[0]!.earliest_restoration_at.getTime() - 1)
@@ -265,7 +265,8 @@ describe('historical blocked copyright restoration recovery', () => {
     ).toEqual([
       expect.objectContaining({
         actor_user_id: scene.moderator.id,
-        metadata: { intentId: scene.restore.id, reason: 'operator_replay' },
+        copyright_notice_action_intent_id: scene.restore.id,
+        replay_reason: 'operator_replay',
       }),
     ])
   })

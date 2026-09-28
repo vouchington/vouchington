@@ -47,7 +47,7 @@ describe('ordinary copyright hold restoration', () => {
     expect(
       partlyResolved?.actionIntents.find(intent => intent.id === scene.restore.id)?.state,
     ).toBe('blocked')
-    await expect(getImagePlacementForCopyright(scene.target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(scene.target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
     )
 
@@ -76,7 +76,7 @@ describe('ordinary copyright hold restoration', () => {
     await expect(
       processCopyrightActionIntent(scene.restore.id, scene.restorationAt, deps),
     ).resolves.toBe('applied')
-    await expect(getImagePlacementForCopyright(scene.target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(scene.target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
   })
@@ -127,10 +127,10 @@ describe('ordinary copyright hold restoration', () => {
       )?.lifted_at,
     ).toBeNull()
     expect(resolved?.deadlines).toHaveLength(1)
-    await expect(getImagePlacementForCopyright(otherTarget.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(otherTarget.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: true }),
     )
-    await expect(getImagePlacementForCopyright(scene.target.placement_key)).resolves.toEqual(
+    await expect(getImagePlacementForCopyright(scene.target.placement_id)).resolves.toEqual(
       expect.objectContaining({ withheld: false }),
     )
   })

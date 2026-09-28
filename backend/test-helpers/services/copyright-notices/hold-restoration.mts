@@ -98,18 +98,18 @@ export async function makeTestCopyrightRestorationImageUnready(imageId: string):
   await write(sql`UPDATE images SET openai_omni_moderation_created_at = NULL WHERE id = ${imageId}`)
 }
 
-export async function retireTestCopyrightRestorationPlacement(placementKey: string): Promise<void> {
+export async function retireTestCopyrightRestorationPlacement(placementId: string): Promise<void> {
   await write(sql`UPDATE media_placements SET retired_at = CURRENT_TIMESTAMP, retirement_reason = 'owner_removed', revision = revision + 1
-    WHERE concat('image-placement:', id) = ${placementKey}`)
+    WHERE id = ${placementId}`)
 }
 
 export async function supersedeTestCopyrightRestorationPlacementRevision(
-  placementKey: string,
+  placementId: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = NULL
-    WHERE concat('image-placement:', id) = ${placementKey}`)
+    WHERE id = ${placementId}`)
   await transaction(sql`UPDATE media_placements SET revision = revision + 1, copyright_withheld_at = CURRENT_TIMESTAMP
-    WHERE concat('image-placement:', id) = ${placementKey}`)
+    WHERE id = ${placementId}`)
   await transaction.commit()
 }
