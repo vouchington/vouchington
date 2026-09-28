@@ -5,15 +5,7 @@ import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFileCb)
 
-// Called by Claude Code and Codex hooks at session start; stdout is injected as context.
-// Blackboard is a hard session prerequisite (journaling/retrospective/distill all depend
-// on it), so an unreachable deployment surfaces as a stop-work directive here — the
-// primary signal from the plan's stop-work gate. The mid-session backstop is that every
-// session_create/entry_append hard-fails with no filesystem fallback (see
-// dev/blackboard-journal.mts); this hook only reflects state as of session start.
-//
-// Environment:
-//   CHECK_BLACKBOARD_SKIP=1  Skip the probe entirely (for offline/CI tests).
+// SessionStart probes provide advisory context. CHECK_BLACKBOARD_SKIP skips that probe only.
 
 export async function runCheckBlackboard(options: { env?: NodeJS.ProcessEnv } = {}): Promise<void> {
   const { probeBlackboard } = await loadBlackboardModules()
@@ -125,9 +117,9 @@ async function main(): Promise<void> {
       return
     }
     emitContext(
-      `STOP WORK: agent-blackboard is unavailable (${message}). Blackboard is a hard ` +
-        'session prerequisite — journaling, retrospectives, and distillation all depend on it. ' +
-        'Do not proceed with the task. Tell the user to verify the hosted agent-blackboard ' +
+      `agent-blackboard availability assessment failed (${message}). Interactive feedback can ` +
+        'continue through the supported durable outbox; delivery remains visibly pending. ' +
+        'Verify the hosted agent-blackboard ' +
         'deployment is reachable and AGENT_BLACKBOARD_URL and ' +
         'AGENT_BLACKBOARD_TOKEN are exported and valid (see docs/development/agent-blackboard.md), ' +
         'then start a fresh session.',

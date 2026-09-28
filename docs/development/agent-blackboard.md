@@ -63,8 +63,8 @@ export AGENT_BLACKBOARD_URL=<hosted-blackboard-url>
 export AGENT_BLACKBOARD_TOKEN=<your client credential>
 ```
 
-Both values are required and hard-fail when absent. There is no token-file or local-server
-fallback.
+Both values are required for hosted delivery. Missing values make hosted delivery fail and
+leave interactive feedback visibly pending in the durable outbox. There is no token-file or local-server fallback.
 
 If you do not yet have a client credential, ask the deployment owner for the admin-token procedure
 or follow the `agent-blackboard` repository's credential-management documentation. With an admin
@@ -97,15 +97,12 @@ wraps Markdown as `{markdown: ...}` without the `type` field required by later p
 
 ## JS client, CLI, and MCP integration
 
-The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) supports two equivalent journal
-paths. Agents with the MCP tools and explicit session metadata may call `session_ensure`,
-`entry_append`, and `entry_get` directly. Agents may instead use `dev/blackboard-journal.mts`, which
-provides file input, session-id defaults, and replayable errors. It calls `appendJournal` from
-`vouchington-tooling/agent-blackboard`, so the caller supplies mode, source-event id, work outcome,
+The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) uses `dev/blackboard-journal.mts` for feedback capture. Raw MCP `entry_append`
+remains a provider operation and does not satisfy the validated feedback delivery contract. The script
+calls `appendJournal` from `vouchington-tooling/agent-blackboard`, so the caller supplies mode, source-event id, work outcome,
 and feedback coverage. Flags are listed in
 [the command catalog](../../dev/reference-command-catalog.md#blackboard-journal). The SessionStart probe
-(`dev/check-blackboard.mts`) uses the same portable helper while retaining Vouchington's stop-work
-policy. The journal script records repository attribution: each entry's `data.repositories` lists
+(`dev/check-blackboard.mts`) is advisory availability context. The journal script records repository attribution: each entry's `data.repositories` lists
 the repositories it concerns (`vouchington/vouchington` unless `--repository` flags say otherwise),
 and the session's `data.repositories` keeps their cumulative union, patched before the append. These
 script paths avoid a CLI-to-JS subprocess round trip. Manual CLI use remains
@@ -126,8 +123,10 @@ archival — for the run. See
 redaction, and archival-carve-out rules. The export always stays unfiltered — `snapshot_export`'s
 `selection.inactiveForHours` never matches
 a zero-entry session, so passing it would hide exactly the aborted sessions this age rule exists to
-sweep up — and age is classified client-side from each record's `createdAt`/`lastEntryAt`. The root
-agent first checks the returned terminal manifest, compact counts, and generated-export cleanup token,
+sweep up — and effective activity is classified client-side from normalized entry `createdAt`
+values, falling back to session `createdAt` when empty. The exported `lastEntryAt` remains the
+archival race guard. The root agent first checks the returned terminal manifest, compact counts,
+and generated-export cleanup token,
 then partitions the returned local JSONL snapshot with `pnpm exec agent-blackboard snapshot partition
 --path <path> --cleanup-token <cleanupToken> --checksum <sha256> --sessions <count> --entries <count>
 --records <count> --bytes <count>` before it delegates read-only
@@ -156,7 +155,7 @@ still using the root-pinned package.
 Restart Codex after changing or first receiving the project registration so its native
 `session_ensure`, `entry_append`, and `entry_get` tools are loaded. The Codex server is deliberately
 not marked as required: a fresh worktree must be able to start Codex before `pnpm install` creates
-the root binary. The SessionStart availability probe remains the hard gate after initialization.
+the root binary. The SessionStart availability probe is advisory.
 
 Retrospective persistence deliberately remains script-only:
 `dev/retrospective-save.mts` validates UTF-8, required sections, failure grammar, and front matter;
@@ -247,9 +246,9 @@ session already created with the wrong agent stays mismatched until a new sessio
 
 These checkpoints are deliberately **fail-open**: `dev/journal-checkpoint/append.mts` swallows every
 failure (missing credential, network error, sandboxed run, stale session) and never surfaces as hook
-noise, a blocked tool call, or a nonzero exit — the opposite of the
-[Stop-work gate](#stop-work-gate) below and of `dev/blackboard-journal.mts`'s agent-initiated
-`append`, which hard-fails with a replayable command because a human is watching and can react. A
+noise, a blocked tool call, or a nonzero exit. An agent-initiated
+`dev/blackboard-journal.mts append` instead preserves interactive outage feedback in its bounded
+outbox and exposes pending delivery. A
 silently-skipped checkpoint is not a bug to chase; it means a credential, network, or session
 precondition wasn't met for that one hook invocation. See
 [reference-agent-session-hooks.md](../../dev/reference-agent-session-hooks.md) for the hook wiring
@@ -257,33 +256,49 @@ and [reference-command-catalog.md](../../dev/reference-command-catalog.md) for t
 Automatic checkpoints are a safety net, not a substitute for an agent writing its own thoughtful
 journal notes — see the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md).
 
-## Stop-work gate
+## Advisory availability probe
 
-Agent Blackboard is a hard session prerequisite: journaling, retrospectives, and distillation all
-depend on it, and every append/save hard-fails with no filesystem fallback.
-`dev/check-blackboard.mts` is a SessionStart hook (Claude Code + Codex, alongside
-`check-fresh-base`/`check-web-init`) that probes the connection with `sessions.list({ limit: 1 })`.
-That bounded request validates the server, DynamoDB, and token without draining the sessions table.
-Success exits silently; failure emits a stop-work directive asking the user to verify
-`AGENT_BLACKBOARD_URL`/`AGENT_BLACKBOARD_TOKEN`. Set
-`CHECK_BLACKBOARD_SKIP=1` only for tests. The append/save hard-fail remains the mid-session
-backstop.
+`dev/check-blackboard.mts` without runner arguments is an advisory SessionStart availability probe.
+It uses bounded `sessions.list({ limit: 1 })`; emitting context cannot mechanically stop an agent.
+A sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
+credential and egress are deliberately withheld by Claude's
+[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
+`CHECK_BLACKBOARD_SKIP=1` skips only this advisory probe.
+That diagnostic does not discard interactive pending feedback.
 
-The hook must stay listed in the Claude Code sandbox's `sandbox.excludedCommands`
-(`.claude/settings.json`), alongside `blackboard-journal.mts`, `retrospective-save.mts`, and
-`pnpm exec vouchington retrospective-facts` (covered by the broader `pnpm exec *` entry). The
-sandbox denies `AGENT_BLACKBOARD_TOKEN` through
-[`sandbox.credentials.envVars`](agent-sandbox.md#sandbox-credential-deny-list) and blocks egress, so a
-sandboxed probe cannot determine deployment health. `dev/check-blackboard.mts` detects
-`SANDBOX_RUNTIME=1` and emits a "probe skipped" context note instead of a false stop-work
-directive.
+## Interactive pending delivery
+
+The shared retrospective composer emits validated `work_outcome` and `feedback_coverage` front
+matter. `dev/retrospective-save.mts save --mode interactive|autonomous --file <path>` preserves
+these fields in the stored envelope and rejects contradictory explicit metadata flags. Delivery
+mode remains a required trusted CLI option. See the [save contract](../../.agents/skills/retrospective/saving.md)
+for staging and replay recipes, including manually prepared files. The Vouchington composer
+also stages canonical `repositories`; save preserves the list and rejects conflicting
+`--repository` flags. Manually staged files without repository metadata use explicit flags or
+the current default.
+The `compose --input <json-file>` adapter accepts serializable facts and transcript options, then
+constructs its own friction collector from the same session's local log and hosted journal. Caller
+JSON cannot supply a collector, credential environment, executable callback, or direct transcript
+path; discovery is bound to the composition session ID.
+
+The supported journal and retrospective writers take explicit `--mode interactive|autonomous`.
+Interactive delivery failures preserve the shared writer's sanitized feedback record in a bounded,
+private worktree-local outbox and return visible `pending` state so work can continue. Unsent records
+are never silently evicted. Saturation, persistence failure, malformed input, and identity mismatch
+remain explicit failures. Use the supported writer's `outbox-status` and `outbox-flush` commands to
+inspect and retry pending delivery; retries preserve source IDs and verify read-back.
+
+The versioned envelope records `schemaVersion`, `type`, `sourceEventId`, `timestamp`,
+`repositories`, `markdown`, `workOutcome`, and `feedbackCoverage`. Retrospectives retain typed
+`date`, `issues`, and `prs` provenance. The writer owns validation, sanitization, deduplication,
+attribution, transport, and acknowledgment; repository adapters do not duplicate those mechanisms.
 
 ## Credential recovery
 
-A stop-work directive means the hosted connection failed: `AGENT_BLACKBOARD_URL`/
+An availability or delivery diagnostic can mean the hosted connection failed: `AGENT_BLACKBOARD_URL`/
 `AGENT_BLACKBOARD_TOKEN` is missing or stale, or the deployment is unreachable even with valid
-credentials. An append/save hard-fail (see [Stop-work gate](#stop-work-gate) above) can point to
-the same cause, but not always — these commands also hard-fail for invalid UTF-8, retrospective
+credentials. An append/save hard-fail (see [Interactive pending delivery](#interactive-pending-delivery)
+above) can point to the same cause, but not always — these commands also hard-fail for invalid UTF-8, retrospective
 validation errors, missing session metadata, network failures, HTTP 500 responses, and failed
 read-back verification, none of which involve the credential. Read the printed error before
 acting: only when it actually identifies a missing/stale token, an authentication failure, or an
@@ -309,6 +324,9 @@ report the blocker to the user** — it must never try to recover the value itse
   after they confirm the refreshed value is set; for the script path, run the export and the retry
   in the same shell invocation. Only then retry the failed call.
 
+Interactive writer delivery failures remain visible in the outbox. `--mode autonomous` still requires
+a verified read-back and does not fall back to that outbox.
+
 The [`blackboard` skill § Credential failures](../../.agents/skills/blackboard/SKILL.md#credential-failures)
 carries the matching agent-facing rule for both its MCP and script paths; keep the two in sync.
 
@@ -319,8 +337,8 @@ does not provision `AGENT_BLACKBOARD_URL` or `AGENT_BLACKBOARD_TOKEN`. Harness s
 report contemporaneous failures through their available parent-agent channel when runtime session
 IDs are unavailable; they do not infer IDs or write unauthenticated blackboard records.
 
-The sessions consumed by `retrospective-distill` remain local-development sessions unless a future
-change explicitly provisions and documents a scoped CI blackboard credential.
+agent-blackboard is orthogonal to auto-harness. Dispatch does not check a Blackboard protocol, and
+this repository does not give the runner a Blackboard credential.
 
 ## AWS deploy path
 
@@ -345,7 +363,7 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 | `.grok/config.toml`          | Native Grok launcher and exact `MCPTool(...)` allowlist                                                                        |
 | `opencode.json`              | Native OpenCode V1 launcher and exact `agent-blackboard_<tool>` permission entries                                             |
 | `dev/blackboard/client.mts`  | Resolves the hosted URL/token and constructs the published JS clients                                                          |
-| `dev/check-blackboard.mts`   | SessionStart stop-work gate that probes the hosted connection                                                                  |
+| `dev/check-blackboard.mts`   | Advisory SessionStart probe of the hosted connection                                                                           |
 | `dev/blackboard-journal.mts` | Supported file/replay-oriented journal path for the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md)             |
 | `dev/journal-checkpoint.mts` | SessionStart(compact)/PostToolUse dispatcher for the [automatic checkpoint journaling](#automatic-checkpoint-journaling) below |
 | `dev/blackboard-mcp`         | Cwd-independent wrapper that starts the installed CLI's `mcp` subcommand for both registrations                                |

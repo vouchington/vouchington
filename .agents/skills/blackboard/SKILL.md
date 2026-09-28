@@ -17,7 +17,7 @@ server.
 
 ## Vouchington additions
 
-Use the hosted deployment and stop-work rules in
+Use the hosted deployment and delivery rules in
 [agent-blackboard.md](../../../docs/development/agent-blackboard.md). The supported local replay
 path is `node dev/blackboard-journal.mts`; retrospective persistence still goes through
 `node dev/retrospective-save.mts`. Codex, Claude, Cursor, Grok, and OpenCode each register the
@@ -34,34 +34,29 @@ Use this one-line grammar, then optional brief prose:
 - `recurring|one-off` — <finding> — <file path(s)> — <evidence: PR / commit / exact command> — <issue #N|none>
 ```
 
-An actionable recurring finding is filed or commented on through
-[github-issue](../github-issue/SKILL.md) before it is appended; a one-off or unavailable filing
-uses `none`. Automatic checkpoints are only a fail-open safety net, never a substitute for this
+Journal the observation before filing or commenting through
+[github-issue](../github-issue/SKILL.md). Append its issue disposition afterward; a one-off or
+unavailable filing uses `none`. Capture first-party tool and sandbox failures with the observed
+command boundary, sanitized diagnostic, occurrence count, and disposition. Architectural findings
+need a concrete affected path, an observed contract mismatch, and evidence; distinguish a finding,
+`none observed`, and `not assessed` or `unavailable`. Automatic checkpoints are only a fail-open safety net, never a substitute for this
 contemporaneous record.
 
 ## Credential failures
 
-If `AGENT_BLACKBOARD_URL` or `AGENT_BLACKBOARD_TOKEN` is missing or stale, stop and report the
-blocker. Never search shell profiles, `env`, or `.env*` files; never print, inline, export, or probe
-the token value. Do not use `${VAR:+SET}${VAR:-UNSET}` or `[ -n "$VAR" ] && echo SET`: shell tracing
-can expand the secret. Check presence only with
-`[ -n "${VAR+x}" ] && echo SET || echo UNSET`. A sandbox denial is expected and is not a recovery
-target. Ask the user to refresh the connection, then restart the MCP client or retry the script in
-the same shell. Never silently drop the note.
+Never search shell profiles, `env`, or `.env*` files for a credential; never print, inline, export,
+or probe its value. Check presence only with `[ -n "${VAR+x}" ] && echo SET || echo UNSET`.
+A sandbox denial is expected and is not a recovery target. A missing or stale credential blocks
+hosted delivery. In interactive mode use the supported writer so sanitized feedback
+is retained durably and visibly pending. Do not silently drop it or invent another fallback. Ask the
+user to refresh the connection when needed, then restart the MCP client or retry the supported
+outbox flush. Saturation and persistence failure require reporting the concrete blocker.
 
 ## MCP procedure
 
-Call `session_ensure` with explicit `sessionId`, `parentSessionId` (`null` only for a root session),
-agent, and version. If the returned session is archived, stop and start a new session. Merge the
-entry's repositories into the session's sorted, deduplicated lowercase `data.repositories` and call
-`session_patch` when that union changed; if the patch fails, do not append. Then call
-`entry_append` with `type: "journal"`, concrete markdown, an ISO timestamp, and `repositories` listing
-only the `owner/name` repositories the entry concerns. Require the appended entry in the successful tool result. On any failure, stop; for a
-credential failure follow [Credential failures](#credential-failures), otherwise correct the
-connection or metadata and retry the same call.
-
-Interactive root Codex does not use this procedure: the MCP calls require an already-known explicit
-session id and cannot invoke the root resolver. It always uses the script procedure below.
+MCP provides provider reads and explicit session management. Raw `entry_append` bypasses the
+validated writer; use `dev/blackboard-journal.mts` for journal feedback and
+`dev/retrospective-save.mts` for retrospectives. Repository hooks remain local and advisory.
 
 ## Script procedure
 
@@ -93,7 +88,7 @@ prior fallback and persists a new ignored `.local/codex-session-id`. All later r
 `--root-codex`; a real thread id always replaces the persisted value. This root-CLI identity is
 independent from explicit session ids carried by automatic hook payloads. Never pass either root
 flag from a child or detached process. On a nonzero exit, read `Error:` and `Replay with:` from stderr, fix the stated cause, and run the
-replay command. Do not write the note to a different path instead.
+replay command. Do not write the note to a different path instead. Replay preserves the source event id and the other flags.
 
 When `CODEX_THREAD_ID` is absent, the runtime provides no signal from which tooling can infer the
 new-session boundary. Omitting the one-time flag reuses stale identity; passing it twice fragments

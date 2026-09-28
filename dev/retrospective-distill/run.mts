@@ -19,8 +19,17 @@ export async function runDistillClassify(argv: string[]): Promise<string> {
   return sessions
     .map(session => {
       const entries = entriesBySession.get(session.id) ?? []
-      const { shape, eligible } = classifySession(session, entries, cutoffs)
-      return formatLine(session.id, shape, eligible)
+      const { shape, eligible, quarantine, duplicateEntryCount } = classifySession(
+        session,
+        entries,
+        cutoffs,
+      )
+      const line =
+        formatLine(session.id, shape, eligible) +
+        (duplicateEntryCount ? `\tduplicate-events=${duplicateEntryCount}` : '')
+      return quarantine
+        ? `${line}\tquarantined=${quarantine.entryCount};reasons=${quarantine.reasons.join(',')}`
+        : line
     })
     .join('\n')
 }

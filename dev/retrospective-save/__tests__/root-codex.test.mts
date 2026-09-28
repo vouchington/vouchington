@@ -1,3 +1,4 @@
+import { UNASSESSED_RETROSPECTIVE_SECTIONS } from '../../test-helpers/blackboard/retrospective-sections.mts'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -6,13 +7,28 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { persistRealSessionId, readPersistedSessionId } from '../../agent-session-id/persist.mts'
 import {
   entriesClientFixture,
+  feedbackClientDependencies,
   entriesIterable,
   entryFixture,
   HOSTED_ENV,
   sessionFixture,
   sessionsClientFixture,
 } from '../../test-helpers/blackboard/client-fixtures.mts'
-import { RetrospectiveSaveError, runSave } from '../save.mts'
+import { RetrospectiveSaveError, runSave as runSaveImplementation } from '../save.mts'
+
+function runSave(
+  argv: string[],
+  env: NodeJS.ProcessEnv,
+  clients: Parameters<typeof feedbackClientDependencies>[0] = {},
+  cwd?: string,
+) {
+  return runSaveImplementation(
+    ['--mode', 'autonomous', '--work-outcome', 'success', ...argv],
+    env,
+    Object.keys(clients).length ? feedbackClientDependencies(clients) : undefined,
+    cwd,
+  )
+}
 
 const testDirs: string[] = []
 
@@ -47,6 +63,8 @@ ${sessionId ? `session_id: ${sessionId}\n` : ''}worktree: bubbly-knitting-manate
 ## CI Failures
 
 Status: none observed
+
+${UNASSESSED_RETROSPECTIVE_SECTIONS}
 `,
   )
   return path
@@ -60,14 +78,17 @@ describe('runSave root-Codex identity', () => {
   it('uses the injected cwd for persistence', async () => {
     const dir = await makeTempDir()
     const ensureCalls: unknown[] = []
-    const appended = entryFixture({ data: { type: 'retrospective' } })
+    let appended = entryFixture({ data: { type: 'retrospective' } })
     let getCallCount = 0
     await runSave(
       ['--file', await makeStagedFile(dir), '--root-codex'],
       HOSTED_ENV,
       {
         entries: entriesClientFixture({
-          append: async () => appended,
+          append: async input => {
+            appended = entryFixture(input)
+            return appended
+          },
           get: () => entriesIterable(getCallCount++ === 0 ? [] : [appended]),
         }),
         sessions: sessionsClientFixture({

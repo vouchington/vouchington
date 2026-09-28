@@ -40,15 +40,12 @@ partition directories are intentionally temporary.
 
 ## Verification & Dedup
 
-**Skip recently-fixed first-party dependencies (step 6).** Run `git fetch origin` first (steps 6
-and 7 both inspect `origin/main`). If a theme's root cause is in a first-party package (see
-`pnpm-release-age-policy.permanentPackages` in `.no-mistakes.yml`), check whether its version in
-`pnpm-lock.yaml` was bumped on `origin/main` after the window start of the sessions being
-distilled: the oldest processed session's oldest entry `createdAt` (its `retrospective` entry or
-`## Verifiable Facts` timestamp when it has one; otherwise its earliest journal entry, or the
-session's own `createdAt` when it has no entries at all). If yes, skip that theme and note the skip
-in your step 11 summary. Re-evaluate next distill round. Do not archive a session whose only
-actionable theme is skipped here — it must remain available for that re-evaluation.
+**Verify first-party fixes (step 6).** Fetch `origin/main`, identify the adopted published
+first-party version, and inspect its fix or release evidence against the observed root cause.
+A version bump or release age alone does not resolve a finding. Give the theme `fixed` only when a
+reproduction or authoritative implementation evidence confirms that the adopted version addresses
+it. If the relevant fix is known but not adopted, report `deferred` with the missing prerequisite;
+otherwise continue current-state verification. Preserve sessions whose only themes are deferred.
 
 **Verify the problem still exists in the current repo before filing (step 7).** Run
 `git fetch origin` first, then inspect against `origin/main` (not local `main`) for each actionable
@@ -76,15 +73,18 @@ If the problem is already fixed, skip the theme and record it as "already fixed 
 step 11 summary. When unsure, file the issue but note in the body that current-state verification
 was inconclusive.
 
-**Skip eligible sessions with no actionable content (step 9).** If multiple **zero-entry-root** or
-journal-only sessions cluster together, note that pattern once as its own candidate issue — a
-zero-entry-root session has no `parentSessionId`, so it was not a delegated child finishing a
-bounded assignment, making a cluster of them genuine evidence of root sessions aborting before the
-retrospective step. Do not apply this signal to **zero-entry-child** or **checkpoint-only**
-clusters: a delegated child normally finishes its assignment without journaling (see
-[the `blackboard` skill](../blackboard/SKILL.md)'s child `session_ensure` handshake), and mechanical
-auto-append checkpoints (#9337) are expected routine noise — a cluster of either is not, by itself,
-evidence of anything gone wrong, and should be discarded as ordinary volume.
+**Review capture gaps (step 9).** Zero-entry-root, zero-entry-child, and checkpoint-only
+sessions expose feedback capture gaps, not inferred crashes or clean completion. Topology and
+checkpoint metadata cannot establish work outcome. A cluster may support a capture-quality finding
+with explicit missing coverage, but requires independent evidence before claiming a runner crash.
+Record `reviewed` when no actionable finding can be established; do not silently discard the gap.
+
+**Report dispositions.** Every theme and session has one of `reviewed`, `fixed`, `duplicate`,
+`deferred`, `quarantined`, or `actionable`, plus its evidence or reason. Report quarantine counts and
+reasons separately. Unknown types and malformed versioned envelopes keep their entire session
+unresolved and nonarchivable; clean unrelated sessions continue normally. Recover an attributable
+historical finding only by appending a new validated record through the supported writer with a
+stable source event reference. Leave ambiguous originals visible and untouched.
 
 **Verify factual claims before propagating them (step 10).** Retrospectives are written by agents
 and may misclassify their own work.
