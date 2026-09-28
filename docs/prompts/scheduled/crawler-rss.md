@@ -1,4 +1,4 @@
-Review crawler and RSS ingestion behavior. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review crawler and RSS ingestion behavior. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Check [RSS feed crawling](../../requirements/content/RSS-FEED-CRAWLING.md) and [Crawling](../../overview/architecture/crawling.md) against robots.txt handling, domain rate limits, retries, dedupe, feed parsing, content sanitization, and crawl queue behavior.
 - Prefer fixes that improve correctness, politeness, reliability, or observability without increasing crawl load.

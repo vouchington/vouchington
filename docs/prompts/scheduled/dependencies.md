@@ -1,4 +1,4 @@
-Review Vouchington pnpm dependency maintenance. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review Vouchington pnpm dependency maintenance. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 Use [`docs/development/dependency-updates.md`](../../development/dependency-updates.md) as the
 source of truth for ownership, frozen-install commands, lockfiles, cache isolation, and audit
@@ -39,7 +39,7 @@ evidence. Do not duplicate or weaken that policy here.
    [`vouchington/vouchington-clients`](https://github.com/vouchington/vouchington-clients) and is
    outside this prompt's scope.
 
-4. Select exactly one evidence-backed improvement. Keep dependency graphs explicit and frozen
+4. Select at most one evidence-backed improvement. Keep dependency graphs explicit and frozen
    state reproducible; do not weaken checks, resolution strictness, or dependency coverage.
 
 5. Verify the selected ecosystem with the central policy's commands plus its focused build/tests.

@@ -1,4 +1,4 @@
-Review feature flags. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review feature flags. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Check [Feature Flags](../../overview/architecture/feature-flags.md) and [Dynamic Config](../../overview/architecture/dynamic-config.md) against one flag definition, read path, admin update path, or cookie override.
 - Prioritize consistency between flag definition, admin UI, reader helpers, and cookie/override parsing, plus safe defaults when dynamic config is unavailable.

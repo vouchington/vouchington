@@ -1,4 +1,4 @@
-Review privacy and data retention. Pick exactly one concrete, bounded improvement that is safe to ship in one PR.
+Review privacy and data retention. Pick at most one concrete, bounded improvement that is safe to ship in one PR.
 
 - Check [Privacy](../../requirements/users/PRIVACY.md) and [Account deletion & data request](../../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md) against account deletion, data export, consent, privacy settings, retention jobs, audit trails, and public/private data exposure.
 - Keep behavior aligned with GDPR/CCPA-oriented requirements and user-facing privacy docs.
