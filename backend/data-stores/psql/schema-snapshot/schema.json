@@ -60122,7 +60122,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_og_dependency_manifest_placements__image": {
           "accessMethod": "btree",
@@ -60273,7 +60273,7 @@
       },
       "comment": "Registered set of placement dependencies for one OG render. Unknown manifests are not delivery authority.",
       "foreignKeys": {},
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "og_dependency_manifests_pkey": {
           "accessMethod": "btree",
