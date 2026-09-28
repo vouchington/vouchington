@@ -17,6 +17,8 @@ export async function insertTestDataPoint(data: {
   result?: 'approved' | 'denied' | 'pending'
   creditScoreRange?: string
   creditLimit?: Money
+  hardInquiries12m?: number | null
+  cardsOpened24m?: number | null
 }): Promise<string> {
   const sha256 = `\\x${'0'.repeat(64)}`
   const id = uuidv7()
@@ -59,6 +61,8 @@ export async function insertTestDataPoint(data: {
     INSERT INTO post_data_point_facts (
       post_id, vertical, schema_version, result, currency,
       credit_score_range, credit_score_range_presence,
+      hard_inquiries_12m, hard_inquiries_12m_presence,
+      cards_opened_24m, cards_opened_24m_presence,
       credit_limit_amount, credit_limit_currency, credit_limit_presence
     ) VALUES (
       ${postId},
@@ -68,6 +72,10 @@ export async function insertTestDataPoint(data: {
       ${currency},
       ${creditScoreRange},
       ${creditScorePresence},
+      ${optionalCount(data.hardInquiries12m)},
+      ${countPresence(data.hardInquiries12m)},
+      ${optionalCount(data.cardsOpened24m)},
+      ${countPresence(data.cardsOpened24m)},
       ${data.creditLimit?.amount ?? null},
       ${data.creditLimit ? currency : null},
       ${data.creditLimit ? 'present' : 'absent'}
@@ -106,6 +114,44 @@ export async function dataPointFactConstraintCode(
     const code = (error as { code?: string }).code
     return code ?? 'error'
   }
+}
+
+export async function readStoredDataPointCounts(postId: string): Promise<{
+  hardInquiries12m: number | null
+  cardsOpened24m: number | null
+}> {
+  const { rows } = await read<{
+    hard_inquiries_12m: string | null
+    cards_opened_24m: string | null
+  }>(sql`
+    /* readStoredDataPointCounts */
+    SELECT hard_inquiries_12m::text AS hard_inquiries_12m,
+           cards_opened_24m::text AS cards_opened_24m
+    FROM post_data_point_facts
+    WHERE post_id = ${postId}
+  `)
+  const row = rows[0]
+  if (!row) throw new Error(`missing data point facts for ${postId}`)
+  return {
+    hardInquiries12m: storedCount(row.hard_inquiries_12m),
+    cardsOpened24m: storedCount(row.cards_opened_24m),
+  }
+}
+
+function optionalCount(value: number | null | undefined): number | null {
+  if (value === undefined) return null
+  return value
+}
+
+function countPresence(value: number | null | undefined): 'absent' | 'null' | 'present' {
+  if (value === undefined) return 'absent'
+  if (value === null) return 'null'
+  return 'present'
+}
+
+function storedCount(value: string | null): number | null {
+  if (value === null) return null
+  return Number(value)
 }
 
 export async function getPostDataPointTopicIds(postId: string): Promise<string[]> {
