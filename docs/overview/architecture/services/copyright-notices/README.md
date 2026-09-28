@@ -93,7 +93,11 @@ disposition; restrict and terminate recheck the operative threshold at decision 
 EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
 receipt, routing, reasons or review, redress, escalation, and EU reporting facts, and they fail
 closed until a separate territorial policy approval exists. They do not use the US restoration
-clock or decide legal merits.
+clock or decide legal merits. [`eu-notice-receipt.mts`](../../../../../backend/services/copyright-notices/eu-notice-receipt.mts) and
+[`uk-notice-receipt.mts`](../../../../../backend/services/copyright-notices/uk-notice-receipt.mts) are wrappers around the shared receipt flow in
+[`territorial-notice-receipt.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt.mts) and
+[`territorial-notice-receipt-sql.mts`](../../../../../backend/services/copyright-notices/territorial-notice-receipt-sql.mts). Each wrapper keeps its
+jurisdiction, storage tables, encryption purpose, and failure label.
 
 ```mermaid
 flowchart TD
