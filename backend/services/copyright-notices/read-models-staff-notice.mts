@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
-import type { CopyrightStaffCase } from './read-models-staff.mts'
+import type { CopyrightStaffCase } from './read-models-staff-types.mts'
 
 export async function selectStaffTargets(
   noticeId: string,

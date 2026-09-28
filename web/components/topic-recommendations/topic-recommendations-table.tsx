@@ -2,11 +2,8 @@
 
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { PostsResponseBody } from '@/types/api-responses'
-import type { Post } from '@/types/posts'
-import type {
-  TopicRecommendationEditablePost,
-  TopicRecommendationEditablePostWithId,
-} from './topic-recommendation-editable-state'
+import type { TopicRecommendationEditablePostWithId } from './topic-recommendation-editable-state'
+import type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 import { TopicRecommendationDialog } from './topic-recommendation-dialog'
 import { TopicRecommendationsTableRow } from './topic-recommendations-table-row'
 import { useTopicRecommendationActions } from './topic-recommendations-table-actions'
@@ -24,8 +21,7 @@ interface Props {
   hideDownCount?: boolean
 }
 
-export type TopicRecommendationTablePost = TopicRecommendationEditablePost &
-  Pick<Post, 'id' | 'updated_at' | 'created_at' | 'created_by' | 'created_by_id'>
+export type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 
 export function TopicRecommendationsTable({ data, isAdmin, hideDownCount = false }: Props) {
   const t = useTranslations()

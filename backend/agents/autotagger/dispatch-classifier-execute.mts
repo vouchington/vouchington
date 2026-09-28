@@ -9,7 +9,7 @@ import type {
   ExecuteClassifierDecisionDependencies,
   NoulClassifierBinding,
 } from '@agents/classifiers/types'
-import type { AutotaggerClassifierDispatchInput } from './dispatch-classifier.mts'
+import type { AutotaggerClassifierDispatchInput } from './dispatch-classifier-types.mts'
 
 // Fires 5s before AUTOTAGGER_CLASSIFIER_LEASE_SECONDS (dispatch-classifier.mts) would expire.
 const DISPATCH_TIMEOUT_MS = 55_000

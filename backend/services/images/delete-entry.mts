@@ -1,6 +1,6 @@
 import { getImageByAny } from './get.mts'
 import { withImageStorageLifecycleLock } from './storage-lifecycle-lock.mts'
-import { deleteImageByIdWhileStorageLocked } from './delete.mts'
+import { deleteImageByIdWhileStorageLocked } from './delete-while-storage-locked.mts'
 
 export async function deleteImageById(
   imageId: string | Buffer,

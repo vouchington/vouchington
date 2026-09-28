@@ -7,7 +7,6 @@ import { ProviderMembershipSourceConflictError } from '../provider-source.mts'
 import { GooglePlayLineageConflictError, resolveGooglePlayTokenLineage } from './lineage.mts'
 import { preflightGooglePlayCurrentSubscription } from './process-preflight.mts'
 import { fetchGooglePlaySubscription } from './subscription-fetch.mts'
-import type { GooglePlayVerificationContext } from './context.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import { terminalizeKnownGooglePlaySource } from './permanent-lookup-loss.mts'
 import { verifyGooglePlaySubscription } from './subscription-verifier.mts'
@@ -27,8 +26,6 @@ import {
   persistVerifiedGooglePlayObservation,
 } from './verification-finalization.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
-
-export type Context = GooglePlayVerificationContext
 
 /** Worker authority: fetches subscriptionsv2, then persists/projections its normalized source state. */
 export async function processGooglePlayMembershipVerification(

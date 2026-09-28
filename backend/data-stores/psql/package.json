@@ -33,6 +33,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "oxfmt": "^0.70.0",
     "vouchington-tooling": "^0.24.1"
   }
 }

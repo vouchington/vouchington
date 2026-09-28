@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { CommunityFeedCategory } from '../search.mts'
+import type { CommunityFeedCategory } from '../search-types.mts'
 
 export function appendFeedCategoryFilter(
   searchQuery: SQLStatement,

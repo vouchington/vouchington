@@ -19,15 +19,8 @@ import {
   getRefundableReversalTargets,
 } from './ineligible-stripe-purchase-reversal-targets.mts'
 import type { IneligibleStripePurchase } from './ineligible-stripe-purchase-reversal-types.mts'
-
-export type IneligibleStripePurchaseOperations = {
-  cancelSubscriptionImmediately: typeof stripeSubscriptions.cancelStripeSubscriptionImmediately
-  createRefund: typeof stripeRefunds.createStripeRefund
-  getDisputeSettlementForPayment?: typeof stripeDisputes.getStripeDisputeSettlementForPayment
-  retrieveRefund?: typeof stripeRefunds.getStripeRefund
-  listSubscriptionInvoices: typeof stripeInvoices.listAllStripeSubscriptionInvoices
-  listRefundsForPaymentPage: typeof stripeRefunds.listStripeRefundsForPaymentPage
-}
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
+export type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 /**
  * Reverses a paid Stripe subscription that lost the entitlement race. The operation row is

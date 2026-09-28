@@ -17,7 +17,7 @@ import {
   getInvoicesInReversalWindow,
   getRefundableReversalTargets,
 } from './ineligible-stripe-purchase-reversal-targets.mts'
-import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase.mts'
+import type { IneligibleStripePurchaseOperations } from './reverse-ineligible-stripe-purchase-types.mts'
 
 export async function reconcileRecordedIneligibleStripePurchaseReversal(
   options: IneligiblePurchaseReversalCaseLookup & {

@@ -5,12 +5,7 @@ import createHttpError from 'http-errors'
 import { v7 as uuidv7 } from 'uuid'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { validateCommunitySlug, generateCommunitySlug } from './slugs.mts'
-import type {
-  Community,
-  CommunityListType,
-  CommunityMemberRosterVisibility,
-  CommunityVisibility,
-} from './types.mts'
+import type { Community } from './types.mts'
 import { enqueueLanguageDetection } from '@queues/language-detection/enqueues'
 import onError from '@modules/on-error'
 import { normalizeContentLanguageTag } from '@ts-shared/languages/content-languages'
@@ -25,22 +20,8 @@ import {
   assertImagesReadyForSurface,
   syncImageSurfacePlacement,
 } from '@services/media-delivery-safety'
-
-export type CreateCommunityInput = {
-  name: string
-  slug?: string
-  markdown?: string
-  visibility?: CommunityVisibility
-  list_type?: CommunityListType | null
-  member_roster_visibility?: CommunityMemberRosterVisibility
-  member_invites_allowed_at?: Date | null
-  post_approval_required_at?: Date | null
-  allow_review_posts?: boolean
-  allow_data_point_posts?: boolean
-  profile_image_id?: string | null
-  banner_image_id?: string | null
-  default_language?: string | null
-}
+import type { CreateCommunityInput } from './create-types.mts'
+export type { CreateCommunityInput } from './create-types.mts'
 
 export async function createCommunity(
   currentUserId: string,

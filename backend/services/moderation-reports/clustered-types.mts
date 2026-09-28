@@ -3,7 +3,7 @@ import type {
   ModerationReportReason,
   ModerationReportStatus,
 } from './config.mts'
-import type { PendingModerationReport } from './get.mts'
+import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { ModerationReportTargetContent } from './target-metadata.mts'
 import type { ModerationReportSort } from './sort-sql.mts'
 

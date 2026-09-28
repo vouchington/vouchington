@@ -6,7 +6,7 @@ import {
   serializeClassifierRawResponse,
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
-import type { ClassifierDecisionSnapshot } from './write-decision-lineage.mts'
+import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 import type { ClassifierDecisionInputResult, PersistedClassifierDecisionCall } from './types.mts'
 
 type PersistedInputRow = {

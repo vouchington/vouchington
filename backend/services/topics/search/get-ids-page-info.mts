@@ -10,7 +10,7 @@ import {
 import type { PageInfo } from '@voucha/types/pagination'
 import type { TopicSearchOptions } from './types.mts'
 import type { TopicSearchState } from './query-builder-state.mts'
-import type { TopicSearchRow } from './get-ids.mts'
+import type { TopicSearchRow } from './get-ids-types.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export type TopicSearchCursorValues = {

@@ -5,24 +5,10 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import type { CreateModerationAppealInput } from './parse.mts'
 import { getModerationAppealById } from './get.mts'
 import { reopenCase, findOpenCaseForEntity } from '@services/moderation-cases'
-import type { ModerationAppeal } from './config.mts'
 import { resolveAppealTargetSuspension } from './create-target-suspension.mts'
 import { resolveAppealTargetPost } from './create-target-post.mts'
-
-export type AppealTargetContext = {
-  communityId: string | null
-  userWarningId: string | null
-  communityBanId: string | null
-  postId: string | null
-  userSuspensionId: string | null
-  postRemovalKind: 'platform' | 'community' | null
-  caseId: string
-  originalDecisionReason: string | null
-  originalDecisionActorId: string | null
-  originalDecisionAt: Date
-  /** Defined when the target already has a duplicate pending appeal. */
-  duplicate?: ModerationAppeal
-}
+import type { AppealTargetContext } from './create-target-types.mts'
+export type { AppealTargetContext } from './create-target-types.mts'
 
 /** Resolves the appeal target, enforcing ownership and returning all FK fields. */
 export async function resolveAppealTarget(

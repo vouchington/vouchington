@@ -8,15 +8,11 @@ import {
 } from './shadow-audit-result.mts'
 export type { PostPublicationShadowAuditResult } from './shadow-audit-result.mts'
 import { recordPostPublicationShadowRepair } from './record-shadow-repair.mts'
+import type { ShadowAuditCandidate } from './shadow-audit-types.mts'
+export type { ShadowAuditCandidate } from './shadow-audit-types.mts'
+
 const SHADOW_AUDIT_CHECKPOINT = 'post-publication-shadow'
 export const POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE = 100
-export type ShadowAuditCandidate = {
-  id: string
-  has_author: boolean
-  has_community: boolean
-  has_rss_source: boolean
-  is_discrepant: boolean
-}
 /** Bounded operator audit: dry runs are read-only; repairs record post transitions before advancing the checkpoint. */
 export async function runPostPublicationShadowAudit(options: {
   dryRun: boolean

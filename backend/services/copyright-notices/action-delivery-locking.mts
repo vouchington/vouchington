@@ -1,29 +1,15 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
-import type { CopyrightActionDeliveryOutcome } from './action-delivery-state.mts'
+import type { CopyrightActionDeliveryOutcome } from './action-delivery-state-types.mts'
+import type { LockedCopyrightActionDelivery } from './action-delivery-locking-types.mts'
 import {
   copyrightActionDeliveryFacts,
   lockCopyrightActionDeadline,
   type CopyrightActionFacts,
 } from './action-delivery-facts.mts'
-export type LockedCopyrightActionDelivery = {
-  copyright_notice_id: string
-  copyright_restriction_id: string
-  placement_id: string
-  image_id: string
-  expected_placement_revision: number
-  action: 'withhold' | 'restore'
-  copyright_notice_deadline_id: string | null
-  restriction_lifted_at: Date | null
-  human_reviewed_at: Date | null
-  human_review_action: 'confirm' | 'reverse' | null
-  reversal_authorized: boolean
-  hold_resolution_authorized: boolean
-  earliest_restoration_at: Date | null
-  resolved_at: Date | null
-  cancelled_at: Date | null
-}
+
+export type { LockedCopyrightActionDelivery }
 export async function getCopyrightActionPlacementKey(
   intentId: string,
   query: TransactionQuery,

@@ -11,7 +11,7 @@ import {
   inspectStripeRefundPage,
   type InspectedStripeRefundPage,
 } from './refund-scan-observations.mts'
-import type { StripeRefundScanTarget } from './refund-scan.mts'
+import type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
 export async function getStripeRefundScanResult(scanId: string): Promise<{
   alreadyRefundedMinorUnits: number

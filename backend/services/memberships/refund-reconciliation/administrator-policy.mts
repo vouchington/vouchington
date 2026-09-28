@@ -12,7 +12,7 @@ import { getMembershipSourceCancelledAt } from '../get.mts'
 import { completeRefundReconciliation } from './ledger.mts'
 import { updateMembershipFromEvent } from '../update.mts'
 import type { RefundReconciliationLease } from './types.mts'
-import type { RefundReconciliationPolicy } from './reconcile.mts'
+import type { RefundReconciliationPolicy } from './reconcile-types.mts'
 
 export const administratorRefundPolicy: RefundReconciliationPolicy<RefundContext> = {
   complete: recordSucceededAdministratorRefundReceipt,

@@ -41,6 +41,7 @@
     "https-proxy-agent": "^9.1.0"
   },
   "devDependencies": {
-    "@types/http-errors": "^2.0.5"
+    "@types/http-errors": "^2.0.5",
+    "vitest": "^5.0.2"
   }
 }

@@ -1,4 +1,4 @@
-import type { ScopeAction, ScopeDefinition } from './scopes.mts'
+import type { ScopeAction, ScopeDefinition } from './scope-types.mts'
 
 const USER_RESOURCE_SCOPES = {
   cards: ['read', 'write'],

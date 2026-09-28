@@ -26,5 +26,8 @@
     "playwright": "1.63.0",
     "playwright-core": "1.63.0",
     "ssrf-guard": "^1.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.2"
   }
 }

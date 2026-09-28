@@ -1,5 +1,5 @@
 import { crawlUrls } from '../queues.mts'
-import type { CrawlUrlJobResult } from '../enqueues.mts'
+import type { CrawlUrlJobResult } from './crawl-url-job-result.mts'
 
 const CRAWL_URL_WAIT_POLL_MS = 250
 

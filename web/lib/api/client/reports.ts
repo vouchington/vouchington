@@ -12,7 +12,7 @@ import type {
   StaffClusteredModerationReportsResponse,
   StaffFlatModerationReportsResponse,
 } from './reports-contracts'
-import type { CommunityModerationReportsResponseBody } from '@/types/api-responses'
+import type { CommunityModerationReportsResponseBody } from '@/types/api-responses/community-moderation'
 
 export type {
   MemberFlatModerationReportsResponse,

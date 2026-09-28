@@ -1,6 +1,6 @@
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { StripeRefundScanTarget } from './refund-scan.mts'
+import type { StripeRefundScanTarget } from './refund-scan-target.mts'
 
 export type StripeRefundScan = {
   completedAt: Date | null

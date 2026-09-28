@@ -1,7 +1,7 @@
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { normalizeDomain } from './domains.mts'
+import { normalizeDomain } from './normalize-domain.mts'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
 import { newBloomReadyMarkerValue, unlinkReadyMarkerIfValue } from './ready-marker.mts'

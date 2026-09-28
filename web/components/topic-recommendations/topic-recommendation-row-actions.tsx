@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { topicRecommendationHref } from '@/lib/links/entity-href'
-import type { TopicRecommendationTablePost } from './topic-recommendations-table'
+import type { TopicRecommendationTablePost } from './topic-recommendation-table-post'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface TopicRecommendationRowActionsProps {

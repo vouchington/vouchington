@@ -1,5 +1,5 @@
 import { decodeUuidCursor, isNameCursor, isScoreCursor } from '@modules/pagination'
-import type { CommunitySortMode } from '../search.mts'
+import type { CommunitySortMode } from '../search-types.mts'
 
 export type CommunitySearchCursor = {
   cursorName?: string

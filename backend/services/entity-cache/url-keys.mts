@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import { isUUID, normalizeUrlForUrlTable } from '@modules/utils'
 import { isHostname } from '@ts-shared/utils/urls'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { getCacheKeys } from './keys.mts'
+import { getCacheKeys } from './classify-cache-keys.mts'
 
 // Split out of keys.mts (concern: URL/hostname key resolution) to keep keys.mts under the
 // scc-complexity budget; re-exported from keys.mts so `@services/entity-cache/keys` consumers

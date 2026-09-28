@@ -735,6 +735,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/agents/research-agent:
     dependencies:
@@ -1549,6 +1552,9 @@ importers:
       supertest:
         specifier: ^7.3.0
         version: 7.3.0(supports-color@8.1.1)
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/config:
     dependencies:
@@ -1585,6 +1591,10 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+    devDependencies:
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/data-stores/psql:
     dependencies:
@@ -1619,6 +1629,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      oxfmt:
+        specifier: ^0.70.0
+        version: 0.70.0
       vouchington-tooling:
         specifier: ^0.24.1
         version: 0.24.1(typescript@7.0.2)(vitest@5.0.2)
@@ -2294,6 +2307,9 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/modules/bluesky-oauth:
     dependencies:
@@ -3573,6 +3589,10 @@ importers:
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
+    devDependencies:
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
 
   backend/service-registrations:
     dependencies:
@@ -3806,6 +3826,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      glide-mq:
+        specifier: ^0.15.5
+        version: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
 
   backend/services/analytics:
     dependencies:
@@ -3895,6 +3918,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/ap-post-likes:
     dependencies:
@@ -3914,6 +3940,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/api-egress-proxy:
     dependencies:
@@ -4441,6 +4470,10 @@ importers:
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
+    devDependencies:
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/captcha:
     dependencies:
@@ -4856,6 +4889,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/countries:
     dependencies:
@@ -5944,6 +5980,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/feature-flags:
     dependencies:
@@ -7330,6 +7369,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/oauth:
     dependencies:
@@ -8162,9 +8204,15 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/services/prioritized-referral-links:
     dependencies:
@@ -9495,6 +9543,9 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -9784,6 +9835,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@valkey/valkey-glide':
+        specifier: ^2.5.3
+        version: 2.5.3
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10548,9 +10602,21 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../ts-shared/utils
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
+      oxfmt:
+        specifier: ^0.70.0
+        version: 0.70.0
+      typescript:
+        specifier: npm:@typescript/typescript6@^6.0.2
+        version: '@typescript/typescript6@6.0.2'
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/tools:
     dependencies:
@@ -11045,6 +11111,9 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/workers/article-sync:
     dependencies:
@@ -12106,6 +12175,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.6.3)(@vitest/browser-playwright@5.0.2)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(jsdom@30.1.1(@noble/hashes@2.4.0))(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   backend/workers/psql:
     dependencies:

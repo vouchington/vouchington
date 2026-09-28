@@ -77,5 +77,8 @@
     "@voucha/types": "workspace:^",
     "@vouchington/rss-parser": "0.1.0",
     "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }

@@ -14,15 +14,8 @@ import { getLockedTopicRecommendationApproval } from './get-locked-topic-recomme
 import { markTopicRecommendationApproved } from './mark-topic-recommendation-approved.mts'
 import { setTopicRecommendationApprovalError } from './set-topic-recommendation-approval-error.mts'
 import { runApprovedTopicRecommendationSideEffects } from './approve-topic-recommendation-side-effects.mts'
-
-export type TopicRecommendationApprovalTransactionResult = {
-  topic: Awaited<ReturnType<typeof createTopic>>
-  aliases: string[]
-  topic_markdown: string | null
-  relations: EntityRelation[]
-  urlIds: string[]
-  topic_type: 'topic' | 'referral_program' | 'card'
-}
+import type { TopicRecommendationApprovalTransactionResult } from './approve-topic-recommendation-types.mts'
+export type { TopicRecommendationApprovalTransactionResult } from './approve-topic-recommendation-types.mts'
 
 export async function approveTopicRecommendationInTransaction(
   currentUser: PrivateUser,

@@ -1,17 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-
-export type CopyrightNoticeSchemaFixture = {
-  actionIntentId: string
-  actorUserId: string
-  noticeId: string
-  imageId: string
-  placementId: string
-  restrictionId: string
-  submissionId: string
-  targetId: string
-}
+import type { CopyrightNoticeSchemaFixture } from './copyright-notice-schema-types.mts'
+export type { CopyrightNoticeSchemaFixture } from './copyright-notice-schema-types.mts'
 
 export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNoticeSchemaFixture> {
   const { rows: userRows } = await write<{ id: string }>(

@@ -13,12 +13,8 @@ import { lockAndAssertNotBanned } from '@services/communities/bans/lock'
 import { getCommunityPostRestrictionDecision } from '@services/communities/restrictions/enforce'
 import assert from 'http-assert'
 import { resolveCommentScope } from './comment-scope.mts'
-
-export type PostScope = {
-  communityId: string | null
-  parentId: string | null
-  rootId: string | null
-}
+import type { PostScope } from './community-scope-types.mts'
+export type { PostScope } from './community-scope-types.mts'
 
 export async function resolvePostScope({
   creator,

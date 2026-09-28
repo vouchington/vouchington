@@ -28,8 +28,6 @@ import {
 } from '@services/post-publication'
 export { getRssFeedItemMappedTopics } from './category-relations.mts'
 export { buildRssFeedItemCategorySqlBatches } from './category-batches.mts'
-export { clearCategoriesForUnlinkedTopicAlias } from './clear-topic-alias-categories.mts'
-export { backfillCategoriesForTopicAliases } from './backfill-categories-for-topic-aliases.mts'
 
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 const INVALIDATION_CHUNK_SIZE = 16

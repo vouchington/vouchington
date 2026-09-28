@@ -23,12 +23,8 @@ export type ClassifierDecisionConfiguration = {
   thresholds: { lower: number; upper: number }
 }
 
-type SnapshotRow = {
-  candidate_id: string
-  threshold_id: string
-  effective_lower_threshold: number
-  effective_upper_threshold: number
-}
+import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
+type SnapshotRow = ClassifierDecisionSnapshot
 
 type CallRow = { id: string; shard_ordinal: number }
 
@@ -190,5 +186,3 @@ export async function insertClassifierDecisionCalls(
     .map(row => ({ id: row.id, shardOrdinal: row.shard_ordinal }))
     .sort((left, right) => left.shardOrdinal - right.shardOrdinal)
 }
-
-export type ClassifierDecisionSnapshot = SnapshotRow

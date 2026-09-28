@@ -8,7 +8,7 @@ import {
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { PostSearchOptions } from './types.mts'
-import type { PostSearchRow } from './get-ids.mts'
+import type { PostSearchRow } from './get-ids-types.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export type PostSearchCursorValues = {

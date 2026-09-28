@@ -27,8 +27,6 @@ export type CopyrightClaimedActionIntent = CopyrightActionIntentRecord & {
   image_id: string
 }
 
-export type CopyrightActionDeliveryOutcome = 'completed' | 'stale' | 'blocked'
-
 export async function claimCopyrightActionIntent(
   intentId: string,
   now: Date,
