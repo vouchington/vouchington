@@ -6,7 +6,7 @@ Worker package for entity-created, updated, deleted, and related listener jobs.
 
 ## Exports
 
-- `entitiesListeners` - worker instance for the `entity-listeners` queue.
+- `entitiesListeners` - worker instance for the `entity-listeners` queue. Dispatch checks the job name against that job's enqueue payload before calling the processor.
 - `reconcileEntities` streams the durable checkpoint window and processes candidates before
   advancing it; `reconcileEntity` re-derives current state.
 - Post-created recovery awaits community-moderation and story-agent queue delivery, so a failed

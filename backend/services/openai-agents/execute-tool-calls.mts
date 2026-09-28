@@ -5,6 +5,7 @@ import {
   type OpenAIFunctionCallOutput,
 } from './tool-calls.mts'
 import type { RunEventWriter } from '@services/conversations-messages'
+import { validateAgentToolArguments } from './validate-tool-arguments.mts'
 
 export type AgentTool = {
   schema: { name: string; [key: string]: unknown }
@@ -92,6 +93,18 @@ export async function* dispatchOneToolCall(
     await writeRunEvent?.('function_call', toolCall, parseError)
     onCallError?.(toolCall, err)
     return formatToolResult(toolCall.call_id, parseError)
+  }
+
+  const validationError = validateAgentToolArguments(toolEntry.schema.parameters, args)
+  if (validationError) {
+    const err = createHttpError(
+      422,
+      `Invalid arguments for tool ${toolCall.name}: ${validationError}`,
+    )
+    const invalidArguments = { error: err.message }
+    await writeRunEvent?.('function_call', toolCall, invalidArguments)
+    onCallError?.(toolCall, err)
+    return formatToolResult(toolCall.call_id, invalidArguments)
   }
 
   let result: unknown

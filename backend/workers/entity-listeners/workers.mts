@@ -2,15 +2,18 @@ import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import * as listeners from './processors/index.mts'
 import processEntityListener from './processors.mts'
-import type { EntityJobs } from '@queues/entity-listeners/types'
+import { parseEntityJob } from '@queues/entity-listeners/payload/job-payload'
 import { QUEUE_NAME } from '@queues/entity-listeners/config'
 import type { Job } from 'glide-mq'
 
+export async function dispatchEntityListenerJob(job: Job): Promise<unknown> {
+  const parsed = parseEntityJob(job.name, job.data)
+  return processEntityListener(listeners, parsed.name, parsed.data)
+}
+
 export const entitiesListeners = createWorker(
   QUEUE_NAME,
-  async (job: Job) => {
-    return await processEntityListener(listeners, job.name as EntityJobs, job.data)
-  },
+  (job: Job) => dispatchEntityListenerJob(job),
   {
     concurrency: getWorkerConcurrency('entitiesListeners', { baseline: 5 }),
   },
