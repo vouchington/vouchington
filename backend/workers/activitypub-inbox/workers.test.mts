@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { QUEUE_NAME } from '@queues/activitypub-inbox/config'
 import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub-inbox/types'
@@ -15,9 +15,15 @@ try {
   await activityPubInboxQueue.resume()
 }
 
+const activityPubInboxWorkerClosed = activitypubInboxWorker.close(true)
+
 describe('ActivityPub inbox worker attempt routing', () => {
+  beforeAll(async () => {
+    await activityPubInboxWorkerClosed
+  })
+
   afterAll(async () => {
-    await activitypubInboxWorker.close()
+    await activitypubInboxWorker.close(true)
   })
 
   it('uses the attempts configured on the actual job', () => {
