@@ -7,7 +7,7 @@ See [README.md](./README.md) for schema reference and the generated [schema snap
 - Write migrations to be as idempotent as possible (`CREATE OR REPLACE`, `CREATE IF NOT EXISTS`). Keep new SQL lintable under `pnpm run squawk`.
 - **All hardcoded UUID literals must be UUIDv7** (version nibble `7`).
 - The app is unlaunched: fold schema changes into canonical creators and rebuild disposable databases. Keep fresh-bootstrap ledger and checksum integrity. Follow [One current contract](../../../AGENTS.md), [Ephemeral worktree databases](../../../AGENTS.md), and [Staging Schema Drift](reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
-- Migration files must not add `ALTER TABLE ADD COLUMN` or `DROP TABLE`. Fold new columns into the original `CREATE TABLE`; the existing `postgres-no-add-column` exceptions in [`.no-mistakes.yml`](../../../.no-mistakes.yml) are cleanup debt, not a route for new forward actions. Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
+- Migration files must not add `ALTER TABLE ADD COLUMN` or `DROP TABLE`. Fold new columns into the original `CREATE TABLE`. The `postgres-no-add-column` exception list in [`.no-mistakes.yml`](../../../.no-mistakes.yml) is empty. Cross-file FKs use `ALTER TABLE ADD CONSTRAINT`.
 - Every foreign key declares `ON DELETE`. Cross-file FK and check constraints use `NOT VALID` then `VALIDATE CONSTRAINT`.
 - Fixed migrations run transactionally with their ledger insert. Do not add manual `BEGIN`/`COMMIT` or online index-upgrade migrations. See [README.md](./README.md#migrations-views-and-config-driven).
 - Vote schema changes are config-driven via [`election-schema-config.mts`](config-driven/utils/election-schema-config.mts).
