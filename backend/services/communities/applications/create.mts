@@ -4,10 +4,12 @@ import assert from 'http-assert'
 import { getCommunity } from '../get.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { lockAndAssertNotBanned } from '../bans/lock.mts'
+import { insertApplicationAnswers } from './answer-rows.mts'
+import { prepareApplicationAnswers } from './answers.mts'
+import { getApplication } from './get.mts'
 import { getApplicationQuestions } from './questions.mts'
 import { getPendingApplicationForUser } from './pending.mts'
 import type { CommunityApplication } from '../types.mts'
-import { communityApplicationColumns } from './columns.mts'
 
 export async function createApplication(
   currentUserId: string,
@@ -20,44 +22,11 @@ export async function createApplication(
   assert(!community.archived_at, 409, 'Archived communities cannot be updated')
   assert(community.visibility === 'private', 422, 'Applications are only for private communities')
 
-  const questions = await getApplicationQuestions(communityId)
-
-  // Validate answers against questions
-  for (const question of questions) {
-    const answer = answers[question.id]
-    if (question.required) {
-      const isEmpty =
-        answer === undefined ||
-        answer === null ||
-        answer === '' ||
-        (question.field_type === 'multi_select' && Array.isArray(answer) && answer.length === 0)
-      assert(!isEmpty, 422, `Answer required for question: ${question.question}`)
-    }
-    if (answer !== undefined && answer !== null && answer !== '') {
-      if (question.field_type === 'checkbox') {
-        assert(
-          typeof answer === 'boolean',
-          422,
-          `Expected boolean for checkbox question: ${question.question}`,
-        )
-      } else if (question.field_type === 'multi_select') {
-        assert(
-          Array.isArray(answer),
-          422,
-          `Expected array for multi_select question: ${question.question}`,
-        )
-      } else {
-        assert(
-          typeof answer === 'string',
-          422,
-          `Expected string for question: ${question.question}`,
-        )
-      }
-    }
-  }
-
   await using query = await beginTransaction()
   const options = { query }
+  const questions = await getApplicationQuestions(communityId, { ...options, lock: true })
+  // Malformed answers stay 422 ahead of the ban, member, and pending gates.
+  const preparedAnswers = prepareApplicationAnswers(questions, answers)
 
   // Serialize against a concurrent ban so a ban committing before the insert blocks the
   // application, matching the join/invite/approval entry points.
@@ -71,14 +40,17 @@ export async function createApplication(
 
   const { rows } = await write(
     sql`/* createApplication */
-    INSERT INTO community_applications (community_id, user_id, answers, message)
-    VALUES (${communityId}, ${currentUserId}, ${JSON.stringify(answers)}::jsonb, ${message ?? null})
-    RETURNING `.append(communityApplicationColumns),
+      INSERT INTO community_applications (community_id, user_id, message)
+      VALUES (${communityId}, ${currentUserId}, ${message ?? null})
+      RETURNING id
+    `,
     options,
   )
+  const applicationId = (rows[0] as { id: string }).id
+  await insertApplicationAnswers(applicationId, communityId, preparedAnswers, options)
 
-  const result = rows[0] as CommunityApplication
-
+  const application = await getApplication(applicationId, options)
+  assert(application, 500, 'Application was not created')
   await query.commit()
-  return result
+  return application
 }

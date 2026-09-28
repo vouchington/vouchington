@@ -2,6 +2,7 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { CommunityApplication } from '../types.mts'
+import { communityApplicationColumns } from './columns.mts'
 
 export async function getPendingApplicationForUser(
   communityId: string,
@@ -10,13 +11,18 @@ export async function getPendingApplicationForUser(
 ): Promise<CommunityApplication | null> {
   const { rows } = await (options?.query ?? read)<CommunityApplication>(
     sql`/* getPendingApplicationForUser */
-    SELECT * FROM community_applications
+    SELECT `
+      .append(communityApplicationColumns)
+      .append(
+        sql`
+    FROM community_applications
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
       AND approved_at IS NULL
       AND rejected_at IS NULL
     LIMIT 1
     `,
+      ),
   )
   return rows[0] ?? null
 }

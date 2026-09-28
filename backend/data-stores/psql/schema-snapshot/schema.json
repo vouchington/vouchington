@@ -534,17 +534,14 @@
     "fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_apply_moderation_transparency_daily_rollup(p_occurred_at timestamp with time zone, p_community_id uuid, p_metric text, p_category text, p_delta integer)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE p_day date := (p_occurred_at AT TIME ZONE 'UTC')::date;\nBEGIN\n  IF p_delta = 0 THEN RETURN; END IF;\n  -- Source deletes can hold many FK/cascade row locks. Serialize them against\n  -- positive ingestion before either path acquires cohort locks: otherwise two\n  -- multi-cohort deletes can interleave their row and advisory lock order.\n  IF p_delta < 0 THEN\n    PERFORM pg_advisory_xact_lock(hashtextextended('moderation-transparency-rollup-write', 0));\n  ELSE\n    PERFORM pg_advisory_xact_lock_shared(hashtextextended('moderation-transparency-rollup-write', 0));\n  END IF;\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'moderation-transparency-rollup:' || p_day::text || ':'\n      || COALESCE(p_community_id::text, 'global') || ':' || p_metric || ':' || p_category,\n    0\n  ));\n  IF EXISTS (\n    SELECT 1 FROM moderation_transparency_released_daily_rollups\n    WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n      AND metric = p_metric AND category = p_category\n  ) THEN RETURN; END IF;\n  IF p_delta < 0 THEN\n    PERFORM fn_release_moderation_transparency_daily_rollup(\n      p_day, p_community_id, p_metric, p_category,\n      date_trunc('day', clock_timestamp() - interval '48 hours') - interval '1 millisecond'\n    );\n  END IF;\n  IF p_delta > 0 THEN\n    INSERT INTO moderation_transparency_daily_rollups(day, community_id, metric, category, count, latest_occurred_at)\n    VALUES (p_day, p_community_id, p_metric, p_category, p_delta, p_occurred_at)\n    ON CONFLICT ON CONSTRAINT moderation_transparency_daily_rollups_key DO UPDATE\n      SET count = moderation_transparency_daily_rollups.count + EXCLUDED.count,\n          latest_occurred_at = GREATEST(moderation_transparency_daily_rollups.latest_occurred_at, EXCLUDED.latest_occurred_at);\n  ELSE\n    DELETE FROM moderation_transparency_daily_rollups\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category AND count <= -p_delta;\n    UPDATE moderation_transparency_daily_rollups\n      SET count = count + p_delta\n      WHERE day = p_day AND community_id IS NOT DISTINCT FROM p_community_id\n        AND metric = p_metric AND category = p_category;\n  END IF;\nEND $function$\n"
     },
-    "fn_assert_data_point_facts_agree": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_data_point_facts_agree()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  live_post_type post_types;\n  live_vertical TEXT;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    SELECT post_type, data_point_vertical INTO live_post_type, live_vertical\n    FROM posts WHERE id = OLD.post_id;\n    IF NOT FOUND THEN\n      RETURN NULL;\n    END IF;\n    IF live_vertical IS NOT NULL THEN\n      RAISE EXCEPTION 'cannot delete data point facts while posts.data_point_vertical is set'\n        USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NULL;\n  END IF;\n\n  SELECT post_type, data_point_vertical INTO live_post_type, live_vertical\n  FROM posts WHERE id = NEW.post_id;\n  IF live_post_type IS DISTINCT FROM 'data_point'::post_types\n    OR live_vertical IS DISTINCT FROM NEW.vertical\n  THEN\n    RAISE EXCEPTION 'data point facts must agree with post type and data_point_vertical'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    "fn_assert_community_application_answer_from_answer": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_answer()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_assert_community_application_answer_selection_state(COALESCE(NEW.id, OLD.id));\n  RETURN NULL;\nEND;\n$function$\n"
     },
-    "fn_assert_post_category_finalization_children": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_post_category_finalization_children()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_post_id UUID;\n  actor_count INTEGER;\n  topic_count INTEGER;\n  response_generation BIGINT;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    target_post_id := OLD.post_id;\n  ELSE\n    target_post_id := NEW.post_id;\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1 FROM post_category_finalizations WHERE post_id = target_post_id\n  ) THEN\n    RETURN NULL;\n  END IF;\n  SELECT admission_response_generation INTO response_generation\n  FROM post_category_finalizations WHERE post_id = target_post_id;\n  SELECT COUNT(*) INTO actor_count\n  FROM post_category_finalization_actors WHERE post_id = target_post_id;\n  SELECT COUNT(*) INTO topic_count\n  FROM post_category_finalization_admission_topics WHERE post_id = target_post_id;\n  IF actor_count < 1 THEN\n    RAISE EXCEPTION 'post category finalization requires at least one actor'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF response_generation IS NULL AND topic_count <> 0 THEN\n    RAISE EXCEPTION 'absent admission response cannot retain topic snapshots'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    "fn_assert_community_application_answer_from_selection": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_from_selection()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_assert_community_application_answer_selection_state(\n    COALESCE(NEW.application_answer_id, OLD.application_answer_id)\n  );\n  RETURN NULL;\nEND;\n$function$\n"
     },
-    "fn_assert_post_data_point_vertical_facts": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_post_data_point_vertical_facts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  facts_vertical TEXT;\nBEGIN\n  IF NEW.data_point_vertical IS NULL THEN\n    IF EXISTS (SELECT 1 FROM post_data_point_facts WHERE post_id = NEW.id) THEN\n      RAISE EXCEPTION 'data point facts require posts.data_point_vertical'\n        USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN NULL;\n  END IF;\n  IF NEW.post_type <> 'data_point' THEN\n    RAISE EXCEPTION 'data_point_vertical requires post_type data_point'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  SELECT vertical INTO facts_vertical FROM post_data_point_facts WHERE post_id = NEW.id;\n  IF facts_vertical IS DISTINCT FROM NEW.data_point_vertical THEN\n    RAISE EXCEPTION 'data point facts must match posts.data_point_vertical'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
-    },
-    "fn_assert_review_succession_topics": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_review_succession_topics()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  succession_id UUID;\n  topic_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'review_successions' THEN\n    IF TG_OP = 'DELETE' THEN\n      succession_id := OLD.id;\n    ELSE\n      succession_id := NEW.id;\n    END IF;\n  ELSIF TG_OP = 'DELETE' THEN\n    succession_id := OLD.review_succession_id;\n  ELSE\n    succession_id := NEW.review_succession_id;\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM review_successions WHERE id = succession_id) THEN\n    RETURN NULL;\n  END IF;\n  SELECT COUNT(*) INTO topic_count\n  FROM review_succession_topics\n  WHERE review_succession_id = succession_id;\n  IF topic_count < 1 THEN\n    RAISE EXCEPTION 'review succession topic set must be nonempty' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    "fn_assert_community_application_answer_selection_state(checked_answer_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_community_application_answer_selection_state(checked_answer_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM community_application_answers answer\n    WHERE answer.id = checked_answer_id\n  ) THEN\n    RETURN;\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM community_application_answers answer\n    WHERE answer.id = checked_answer_id\n      AND (\n        (\n          answer.is_null\n          AND EXISTS (\n            SELECT 1\n            FROM community_application_answer_selections selected\n            WHERE selected.application_answer_id = answer.id\n          )\n        )\n        OR (\n          NOT answer.is_null\n          AND answer.question_field_type = 'single_select'\n          AND (\n            SELECT count(*)\n            FROM community_application_answer_selections selected\n            WHERE selected.application_answer_id = answer.id\n          ) <> 1\n        )\n      )\n  ) THEN\n    RAISE EXCEPTION 'invalid community application answer selection state'\n      USING ERRCODE = '23514';\n  END IF;\nEND;\n$function$\n"
     },
     "fn_assert_web_push_endpoint_owner_subscription": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_assert_web_push_endpoint_owner_subscription()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  checked_endpoint_digest BYTEA := COALESCE(NEW.endpoint_digest, OLD.endpoint_digest);\nBEGIN\n  IF EXISTS (\n    SELECT 1\n    FROM web_push_endpoint_owners owner\n    WHERE owner.endpoint_digest = checked_endpoint_digest\n      AND NOT EXISTS (\n        SELECT 1\n        FROM web_push_subscriptions subscription\n        WHERE subscription.user_id = owner.user_id\n          AND subscription.id = owner.subscription_id\n          AND subscription.endpoint = owner.endpoint\n          AND subscription.deleted_at IS NULL\n      )\n  ) OR (\n    TG_OP <> 'INSERT'\n    AND EXISTS (\n      SELECT 1\n      FROM web_push_subscriptions subscription\n      WHERE subscription.user_id = OLD.user_id\n        AND subscription.id = OLD.subscription_id\n        AND subscription.endpoint = OLD.endpoint\n        AND subscription.deleted_at IS NULL\n        AND NOT EXISTS (\n          SELECT 1\n          FROM web_push_endpoint_owners owner\n          WHERE owner.endpoint_digest = OLD.endpoint_digest\n            AND owner.endpoint = OLD.endpoint\n            AND owner.user_id = OLD.user_id\n            AND owner.subscription_id = OLD.subscription_id\n        )\n    )\n  ) THEN\n    RAISE EXCEPTION 'web push endpoint owner requires one exact active subscription';\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
@@ -569,15 +566,6 @@
     },
     "fn_create_user_metrics_on_insert": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_user_metrics_on_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_metrics (id)\n  VALUES (NEW.id)\n  ON CONFLICT (id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_data_point_money_ok(presence text, amount bigint, money_currency text, parent_currency text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_data_point_money_ok(presence text, amount bigint, money_currency text, parent_currency text)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN presence IN ('absent', 'null') THEN amount IS NULL AND money_currency IS NULL\n    WHEN presence = 'present' THEN amount IS NOT NULL\n      AND amount BETWEEN 0 AND 9007199254740991\n      AND money_currency = parent_currency\n    ELSE FALSE\n  END;\n$function$\n"
-    },
-    "fn_data_point_money_range_ok(presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text, parent_currency text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_data_point_money_range_ok(presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text, parent_currency text)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN presence IN ('absent', 'null') THEN minimum_amount IS NULL\n      AND minimum_currency IS NULL\n      AND maximum_presence IS NULL\n      AND maximum_amount IS NULL\n      AND maximum_currency IS NULL\n    WHEN presence = 'present' THEN minimum_amount IS NOT NULL\n      AND minimum_amount BETWEEN 0 AND 9007199254740991\n      AND minimum_currency = parent_currency\n      AND (\n        (\n          maximum_presence = 'null'\n          AND maximum_amount IS NULL\n          AND maximum_currency IS NULL\n        )\n        OR (\n          maximum_presence = 'present'\n          AND maximum_amount IS NOT NULL\n          AND maximum_amount BETWEEN 0 AND 9007199254740991\n          AND maximum_currency = parent_currency\n        )\n      )\n    ELSE FALSE\n  END;\n$function$\n"
-    },
-    "fn_data_point_presence_ok(presence text, value_is_null boolean)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_data_point_presence_ok(presence text, value_is_null boolean)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT presence IN ('absent', 'null', 'present')\n    AND (presence = 'present') IS NOT DISTINCT FROM (NOT value_is_null);\n$function$\n"
     },
     "fn_enforce_membership_provider_evidence_immutability": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_enforce_membership_provider_evidence_immutability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'membership provider evidence records are immutable';\n  END IF;\n\n  IF ROW(\n    NEW.id,\n    NEW.provider,\n    NEW.environment,\n    NEW.application_id,\n    NEW.provider_event_id,\n    NEW.evidence_lookup_sha256,\n    NEW.encrypted_evidence,\n    NEW.received_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.provider,\n    OLD.environment,\n    OLD.application_id,\n    OLD.provider_event_id,\n    OLD.evidence_lookup_sha256,\n    OLD.encrypted_evidence,\n    OLD.received_at\n  ) OR (\n    OLD.membership_provider_lineage_id IS NOT NULL\n    AND NEW.membership_provider_lineage_id IS DISTINCT FROM OLD.membership_provider_lineage_id\n  ) THEN\n    RAISE EXCEPTION 'membership provider evidence identity is immutable';\n  END IF;\n\n  IF OLD.rejected_at IS NOT NULL\n    OR num_nonnulls(NEW.verified_at, NEW.rejected_at) <> 1\n    OR (\n      OLD.verified_at IS NOT NULL\n      AND (NEW.verified_at IS NOT NULL OR NEW.rejected_at IS NULL)\n    )\n  THEN\n    RAISE EXCEPTION 'membership provider evidence lifecycle is terminal';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n"
@@ -705,9 +693,6 @@
     "fn_guard_ownerless_image_surface_retirement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id\n  FOR UPDATE;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
-    "fn_guard_post_data_point_fact_shape": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_post_data_point_fact_shape()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT fn_data_point_presence_ok(NEW.credit_score_range_presence, NEW.credit_score_range IS NULL)\n    OR NOT fn_data_point_presence_ok(NEW.hard_inquiries_12m_presence, NEW.hard_inquiries_12m IS NULL)\n    OR NOT fn_data_point_presence_ok(NEW.cards_opened_24m_presence, NEW.cards_opened_24m IS NULL)\n    OR NOT fn_data_point_presence_ok(\n      NEW.years_of_credit_history_presence, NEW.years_of_credit_history IS NULL\n    )\n    OR NOT fn_data_point_presence_ok(NEW.application_method_presence, NEW.application_method IS NULL)\n    OR NOT fn_data_point_presence_ok(NEW.application_date_presence, NEW.application_date IS NULL)\n    OR NOT fn_data_point_presence_ok(NEW.account_type_presence, NEW.account_type IS NULL)\n    OR NOT fn_data_point_presence_ok(\n      NEW.bonus_requirements_presence, NEW.bonus_requirements IS NULL\n    )\n    OR NOT fn_data_point_money_ok(\n      NEW.credit_limit_presence, NEW.credit_limit_amount, NEW.credit_limit_currency, NEW.currency\n    )\n    OR NOT fn_data_point_money_ok(\n      NEW.total_credit_limit_presence,\n      NEW.total_credit_limit_amount,\n      NEW.total_credit_limit_currency,\n      NEW.currency\n    )\n    OR NOT fn_data_point_money_ok(\n      NEW.bonus_amount_presence, NEW.bonus_amount, NEW.bonus_currency, NEW.currency\n    )\n    OR NOT fn_data_point_money_ok(\n      NEW.minimum_balance_presence,\n      NEW.minimum_balance_amount,\n      NEW.minimum_balance_currency,\n      NEW.currency\n    )\n    OR NOT fn_data_point_money_range_ok(\n      NEW.stated_income_range_presence,\n      NEW.stated_income_minimum_amount,\n      NEW.stated_income_minimum_currency,\n      NEW.stated_income_maximum_presence,\n      NEW.stated_income_maximum_amount,\n      NEW.stated_income_maximum_currency,\n      NEW.currency\n    )\n  THEN\n    RAISE EXCEPTION 'data point fact presence does not match its typed value'\n      USING ERRCODE = 'check_violation';\n  END IF;\n\n  IF NEW.credit_score_range_presence = 'present'\n    AND NEW.credit_score_range NOT IN ('300-579', '580-669', '670-739', '740-799', '800-850')\n  THEN\n    RAISE EXCEPTION 'data point credit_score_range is invalid' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.application_method_presence = 'present'\n    AND NEW.application_method NOT IN ('online', 'in_branch', 'phone', 'pre_approved')\n  THEN\n    RAISE EXCEPTION 'data point application_method is invalid' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.account_type_presence = 'present'\n    AND NEW.account_type NOT IN ('checking', 'savings', 'cd', 'money_market')\n  THEN\n    RAISE EXCEPTION 'data point account_type is invalid' USING ERRCODE = 'check_violation';\n  END IF;\n\n  IF NEW.vertical = 'credit_card' THEN\n    IF NEW.result NOT IN (\n      'approved', 'denied', 'pending', 'counter_offer', 'retention_offer', 'sign_up_bonus', 'offer'\n    ) OR NEW.credit_score_range_presence <> 'present'\n      OR NEW.account_type_presence <> 'absent'\n      OR NEW.bonus_amount_presence <> 'absent'\n      OR NEW.bonus_requirements_presence <> 'absent'\n      OR NEW.minimum_balance_presence <> 'absent'\n      OR NEW.direct_deposit_setup IS NOT NULL\n    THEN\n      RAISE EXCEPTION 'credit card data point facts are inconsistent'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  ELSIF NEW.vertical = 'bank_account' THEN\n    IF NEW.result NOT IN ('approved', 'denied', 'sign_up_bonus', 'offer')\n      OR NEW.hard_inquiries_12m_presence <> 'absent'\n      OR NEW.cards_opened_24m_presence <> 'absent'\n      OR NEW.credit_limit_presence <> 'absent'\n      OR NEW.total_credit_limit_presence <> 'absent'\n      OR NEW.years_of_credit_history_presence <> 'absent'\n      OR NEW.is_business_application IS NOT NULL\n      OR NEW.application_method_presence <> 'absent'\n    THEN\n      RAISE EXCEPTION 'bank account data point facts are inconsistent'\n        USING ERRCODE = 'check_violation';\n    END IF;\n  ELSE\n    RAISE EXCEPTION 'data point vertical is invalid' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_guard_retained_image_placement_binding": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_retained_image_placement_binding()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)\n    IS DISTINCT FROM ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) THEN\n    RAISE EXCEPTION 'retained image placement binding is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -715,10 +700,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_dispute_subject_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.post_id IS DISTINCT FROM NEW.post_id\n    OR OLD.topic_id IS DISTINCT FROM NEW.topic_id\n    OR OLD.disputed_rating IS DISTINCT FROM NEW.disputed_rating THEN\n    RAISE EXCEPTION 'review dispute subject snapshot cannot change'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_review_succession_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF ROW(\n    NEW.id,\n    NEW.predecessor_post_id,\n    NEW.successor_post_id,\n    NEW.author_user_id,\n    NEW.predecessor_archived_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.predecessor_post_id,\n    OLD.successor_post_id,\n    OLD.author_user_id,\n    OLD.predecessor_archived_at\n  ) THEN\n    RAISE EXCEPTION 'review succession identity and archive epoch are immutable';\n  END IF;\n\n  IF OLD.automatically_restored_at IS NULL\n    AND OLD.manual_override_at IS NULL\n    AND (\n      (NEW.automatically_restored_at IS NOT NULL AND NEW.manual_override_at IS NULL)\n      OR (NEW.automatically_restored_at IS NULL AND NEW.manual_override_at IS NOT NULL)\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'review succession only allows one terminal lifecycle transition';\nEND;\n$function$\n"
-    },
-    "fn_guard_review_succession_topic_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_topic_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    IF EXISTS (SELECT 1 FROM review_successions WHERE id = OLD.review_succession_id) THEN\n      RAISE EXCEPTION 'review succession topics are immutable' USING ERRCODE = 'check_violation';\n    END IF;\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'review succession topics are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_review_succession_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF ROW(\n    NEW.id,\n    NEW.predecessor_post_id,\n    NEW.successor_post_id,\n    NEW.author_user_id,\n    NEW.topic_ids,\n    NEW.predecessor_archived_at\n  ) IS DISTINCT FROM ROW(\n    OLD.id,\n    OLD.predecessor_post_id,\n    OLD.successor_post_id,\n    OLD.author_user_id,\n    OLD.topic_ids,\n    OLD.predecessor_archived_at\n  ) THEN\n    RAISE EXCEPTION 'review succession identity and archive epoch are immutable';\n  END IF;\n\n  IF OLD.automatically_restored_at IS NULL\n    AND OLD.manual_override_at IS NULL\n    AND (\n      (NEW.automatically_restored_at IS NOT NULL AND NEW.manual_override_at IS NULL)\n      OR (NEW.automatically_restored_at IS NULL AND NEW.manual_override_at IS NOT NULL)\n    )\n  THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'review succession only allows one terminal lifecycle transition';\nEND;\n$function$\n"
     },
     "fn_guard_terminal_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_terminal_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  terminal_column TEXT;\n  old_row JSONB := to_jsonb(OLD);\n  new_row JSONB := to_jsonb(NEW);\n  was_terminal BOOLEAN := FALSE;\nBEGIN\n  FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n    IF old_row -> terminal_column <> 'null'::jsonb THEN\n      was_terminal := TRUE;\n    END IF;\n  END LOOP;\n\n  IF was_terminal THEN\n    FOREACH terminal_column IN ARRAY TG_ARGV LOOP\n      IF old_row -> terminal_column IS DISTINCT FROM new_row -> terminal_column THEN\n        RAISE EXCEPTION '% terminal lifecycle cannot transition after completion', TG_TABLE_NAME\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END LOOP;\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -731,21 +713,6 @@
     },
     "fn_immutable_array_to_string(p_array text[], p_delimiter text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_immutable_array_to_string(p_array text[], p_delimiter text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT array_to_string(p_array, p_delimiter)\n$function$\n"
-    },
-    "fn_jsonb_optional_boolean(field_name text, value boolean)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_boolean(field_name text, value boolean)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN value IS NULL THEN '{}'::jsonb\n    ELSE jsonb_build_object(field_name, value)\n  END;\n$function$\n"
-    },
-    "fn_jsonb_optional_int(field_name text, presence text, value bigint)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_int(field_name text, presence text, value bigint)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE presence\n    WHEN 'absent' THEN '{}'::jsonb\n    WHEN 'null' THEN jsonb_build_object(field_name, NULL)\n    ELSE jsonb_build_object(field_name, value)\n  END;\n$function$\n"
-    },
-    "fn_jsonb_optional_money(field_name text, presence text, amount bigint, money_currency text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_money(field_name text, presence text, amount bigint, money_currency text)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE presence\n    WHEN 'absent' THEN '{}'::jsonb\n    WHEN 'null' THEN jsonb_build_object(field_name, NULL)\n    ELSE jsonb_build_object(\n      field_name, jsonb_build_object('amount', amount, 'currency', money_currency)\n    )\n  END;\n$function$\n"
-    },
-    "fn_jsonb_optional_money_range(field_name text, presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_money_range(field_name text, presence text, minimum_amount bigint, minimum_currency text, maximum_presence text, maximum_amount bigint, maximum_currency text)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE presence\n    WHEN 'absent' THEN '{}'::jsonb\n    WHEN 'null' THEN jsonb_build_object(field_name, NULL)\n    ELSE jsonb_build_object(\n      field_name,\n      jsonb_build_object(\n        'minimum', jsonb_build_object('amount', minimum_amount, 'currency', minimum_currency),\n        'maximum', CASE\n          WHEN maximum_presence = 'null' THEN NULL\n          ELSE jsonb_build_object('amount', maximum_amount, 'currency', maximum_currency)\n        END\n      )\n    )\n  END;\n$function$\n"
-    },
-    "fn_jsonb_optional_text(field_name text, presence text, value text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_jsonb_optional_text(field_name text, presence text, value text)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE presence\n    WHEN 'absent' THEN '{}'::jsonb\n    WHEN 'null' THEN jsonb_build_object(field_name, NULL)\n    ELSE jsonb_build_object(field_name, value)\n  END;\n$function$\n"
     },
     "fn_lock_active_user_for_mutation(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_active_user_for_mutation(target_user_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended(target_user_id::TEXT, 0));\n  IF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id) THEN\n    RAISE EXCEPTION 'user % does not exist', target_user_id\n      USING ERRCODE = 'no_data_found';\n  ELSIF NOT EXISTS (SELECT 1 FROM users WHERE id = target_user_id AND deleted_at IS NULL) THEN\n    RAISE EXCEPTION 'user % cannot own new data after deletion', target_user_id\n      USING ERRCODE = 'check_violation';\n  END IF;\nEND;\n$function$\n"
@@ -800,12 +767,6 @@
     },
     "fn_moderation_transparency_reports_insert_rollup": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_moderation_transparency_reports_insert_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cohort record;\nBEGIN\n  FOR cohort IN\n    SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day,\n      NULL::uuid AS community_id, 'reports'::text AS metric,\n      original_reason::text AS category, count(*)::integer AS count\n    FROM new_reports\n    WHERE moderation_transparency_community_id IS NULL\n    GROUP BY 1, 2, 3, 4\n    ORDER BY 1, 2 NULLS FIRST, 3, 4\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric, cohort.category, cohort.count\n    );\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
-    },
-    "fn_post_category_finalization_actor_ids(target_post_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_post_category_finalization_actor_ids(target_post_id uuid)\n RETURNS uuid[]\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(ARRAY_AGG(actor.user_id ORDER BY actor.user_id), '{}'::uuid[])\n  FROM post_category_finalization_actors actor\n  WHERE actor.post_id = target_post_id;\n$function$\n"
-    },
-    "fn_post_structured_data(target_post_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_post_structured_data(target_post_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT CASE\n    WHEN facts.post_id IS NULL THEN NULL\n    ELSE jsonb_build_object(\n      'vertical', facts.vertical,\n      'schema_version', facts.schema_version,\n      'topic_ids', COALESCE((\n        SELECT jsonb_agg(membership.topic_id ORDER BY membership.order_index)\n        FROM post_data_point_topics membership\n        WHERE membership.post_id = facts.post_id\n      ), '[]'::jsonb),\n      'result', facts.result,\n      'currency', facts.currency\n    )\n    || fn_jsonb_optional_text(\n      'credit_score_range', facts.credit_score_range_presence, facts.credit_score_range\n    )\n    || fn_jsonb_optional_money_range(\n      'stated_income_range',\n      facts.stated_income_range_presence,\n      facts.stated_income_minimum_amount,\n      facts.stated_income_minimum_currency,\n      facts.stated_income_maximum_presence,\n      facts.stated_income_maximum_amount,\n      facts.stated_income_maximum_currency\n    )\n    || fn_jsonb_optional_boolean('existing_relationship', facts.existing_relationship)\n    || fn_jsonb_optional_int(\n      'hard_inquiries_12m', facts.hard_inquiries_12m_presence, facts.hard_inquiries_12m\n    )\n    || fn_jsonb_optional_int(\n      'cards_opened_24m', facts.cards_opened_24m_presence, facts.cards_opened_24m\n    )\n    || fn_jsonb_optional_money(\n      'credit_limit',\n      facts.credit_limit_presence,\n      facts.credit_limit_amount,\n      facts.credit_limit_currency\n    )\n    || fn_jsonb_optional_money(\n      'total_credit_limit_all_cards',\n      facts.total_credit_limit_presence,\n      facts.total_credit_limit_amount,\n      facts.total_credit_limit_currency\n    )\n    || fn_jsonb_optional_int(\n      'years_of_credit_history',\n      facts.years_of_credit_history_presence,\n      facts.years_of_credit_history\n    )\n    || fn_jsonb_optional_boolean('is_business_application', facts.is_business_application)\n    || fn_jsonb_optional_text(\n      'application_method', facts.application_method_presence, facts.application_method\n    )\n    || fn_jsonb_optional_text(\n      'application_date',\n      facts.application_date_presence,\n      to_char(facts.application_date, 'YYYY-MM-DD')\n    )\n    || fn_jsonb_optional_text('account_type', facts.account_type_presence, facts.account_type)\n    || fn_jsonb_optional_money(\n      'bonus_amount', facts.bonus_amount_presence, facts.bonus_amount, facts.bonus_currency\n    )\n    || fn_jsonb_optional_text(\n      'bonus_requirements', facts.bonus_requirements_presence, facts.bonus_requirements\n    )\n    || fn_jsonb_optional_money(\n      'minimum_balance_requirement',\n      facts.minimum_balance_presence,\n      facts.minimum_balance_amount,\n      facts.minimum_balance_currency\n    )\n    || fn_jsonb_optional_boolean('direct_deposit_setup', facts.direct_deposit_setup)\n  END\n  FROM post_data_point_facts facts\n  WHERE facts.post_id = target_post_id;\n$function$\n"
     },
     "fn_preserve_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -969,6 +930,9 @@
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
     },
+    "fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT cardinality(topic_ids) > 0\n    AND array_position(topic_ids, NULL::uuid) IS NULL\n    AND topic_ids = ARRAY(\n      SELECT DISTINCT topic_id\n      FROM unnest(topic_ids) AS input(topic_id)\n      ORDER BY topic_id\n    );\n$function$\n"
+    },
     "fn_stamp_agent_moderation_transparency": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Lock the FK parents before taking the projection locks. A concurrent hard\n  -- delete already owns the parent row before its row trigger can take an\n  -- advisory lock; reversing this order would form a parent-row/advisory-lock\n  -- cycle with this INSERT.\n  PERFORM 1 FROM agents WHERE id = NEW.agent_id FOR KEY SHARE;\n  PERFORM 1 FROM agent_prompts WHERE id = NEW.prompt_id FOR KEY SHARE;\n  -- Do not lock the post here: community deletion owns the community before\n  -- cascading to posts, so a post-to-community lock would invert that order.\n  -- Snapshot and revalidate instead; an unstable post scope is withheld.\n  SELECT community_id INTO v_post_community_id FROM posts WHERE id = NEW.post_id;\n  SELECT community_id, deleted_at INTO v_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id;\n  IF v_community_id IS NOT NULL THEN\n    PERFORM 1 FROM communities WHERE id = v_community_id FOR KEY SHARE;\n    IF NOT FOUND THEN\n      v_community_id := NULL;\n      v_cap_deleted_at := NULL;\n    END IF;\n  END IF;\n  SELECT community_id, deleted_at INTO v_current_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id FOR SHARE;\n  IF v_current_community_id IS NULL THEN\n    v_community_id := NULL;\n    v_cap_deleted_at := NULL;\n  ELSIF v_current_community_id IS DISTINCT FROM v_community_id THEN\n    RAISE EXCEPTION 'community prompt changed during moderation projection' USING ERRCODE = '40001';\n  END IF;\n  IF (SELECT community_id FROM posts WHERE id = NEW.post_id)\n      IS DISTINCT FROM v_post_community_id THEN\n    NEW.moderation_transparency_category := NULL;\n    NEW.moderation_transparency_community_id := NULL;\n    RETURN NEW;\n  END IF;\n  -- Every caller then takes agent before prompt, which prevents an event from\n  -- observing a cap assignment half-way through its lifecycle transaction.\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', NEW.prompt_id);\n  SELECT agent.deleted_at, prompt.deleted_at\n    INTO v_agent_deleted_at, v_prompt_deleted_at\n  FROM agents agent JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n"
     },
@@ -1051,7 +1015,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.membership_grant_remaining_duration(grant_id uuid)\n RETURNS interval\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT make_interval(days => grant_row.calendar_days) - COALESCE(\n    (\n      SELECT SUM(GREATEST(INTERVAL '0', COALESCE(period.ended_at, CURRENT_TIMESTAMP) - period.started_at))\n      FROM membership_grant_activation_periods period\n      WHERE period.membership_grant_id = grant_row.id\n    ),\n    INTERVAL '0'\n  )\n  FROM membership_grants grant_row\n  WHERE grant_row.id = grant_id\n$function$\n"
     },
     "repair_post_category_finalization_admission_response_on_delete": {
-      "definition": "CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  finalized_topics JSONB;\nBEGIN\n  -- A posts cascade has no replayable post response to repair. Every ordinary acknowledgement\n  -- reaches the update below.\n  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = OLD.post_id) THEN\n    RETURN OLD;\n  END IF;\n\n  SELECT COALESCE(\n    jsonb_agg(TO_JSONB(topic.*) ORDER BY selected.votes_score_net DESC, selected.object_id),\n    '[]'::jsonb\n  )\n  INTO finalized_topics\n  FROM (\n    SELECT relation.object_id, relation.votes_score_net\n    FROM relation__post__category__topic relation\n    WHERE relation.subject_id = OLD.post_id\n      AND OLD.admission_response_generation = OLD.generation\n      AND EXISTS (\n        SELECT 1\n        FROM post_category_finalization_admission_topics admission_topic\n        WHERE admission_topic.post_id = OLD.post_id\n          AND admission_topic.topic_id = relation.object_id\n      )\n      AND relation.deleted_at IS NULL\n      AND relation.votes_score_net > 0\n    ORDER BY relation.votes_score_net DESC, relation.object_id\n    LIMIT 5\n  ) selected\n  INNER JOIN view_embedded_topics topic ON topic.id = selected.object_id;\n\n  UPDATE post_admission_reservations\n  SET response = CASE\n        WHEN OLD.admission_response_generation = OLD.generation\n          AND OLD.admission_response_generation IS NOT NULL\n        THEN CASE\n          WHEN jsonb_typeof(response) = 'object'\n            AND jsonb_typeof(response->'post') = 'object'\n          THEN jsonb_set(response, '{post,post_related_topics}', finalized_topics)\n          WHEN jsonb_typeof(response) = 'object'\n          THEN jsonb_set(response, '{post_related_topics}', finalized_topics)\n          ELSE response\n        END\n        ELSE response\n      END,\n      replay_metadata = replay_metadata || '{\"finalization\":\"complete\"}'::jsonb,\n      updated_at = NOW()\n  WHERE committed_post_id = OLD.post_id\n    AND state = 'committed'\n    AND retention_expires_at > NOW();\n\n  RETURN OLD;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.repair_post_category_finalization_admission_response_on_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  finalized_topics JSONB;\nBEGIN\n  -- A posts cascade has no replayable post response to repair. Every ordinary acknowledgement\n  -- reaches the update below.\n  IF NOT EXISTS (SELECT 1 FROM posts WHERE id = OLD.post_id) THEN\n    RETURN OLD;\n  END IF;\n\n  SELECT COALESCE(\n    jsonb_agg(TO_JSONB(topic.*) ORDER BY selected.votes_score_net DESC, selected.object_id),\n    '[]'::jsonb\n  )\n  INTO finalized_topics\n  FROM (\n    SELECT relation.object_id, relation.votes_score_net\n    FROM relation__post__category__topic relation\n    WHERE relation.subject_id = OLD.post_id\n      AND OLD.admission_response_generation = OLD.generation\n      AND relation.object_id = ANY(OLD.admission_response_topic_ids)\n      AND relation.deleted_at IS NULL\n      AND relation.votes_score_net > 0\n    ORDER BY relation.votes_score_net DESC, relation.object_id\n    LIMIT 5\n  ) selected\n  INNER JOIN view_embedded_topics topic ON topic.id = selected.object_id;\n\n  UPDATE post_admission_reservations\n  SET response = CASE\n        WHEN OLD.admission_response_generation = OLD.generation\n          AND OLD.admission_response_topic_ids IS NOT NULL\n        THEN CASE\n          WHEN jsonb_typeof(response) = 'object'\n            AND jsonb_typeof(response->'post') = 'object'\n          THEN jsonb_set(response, '{post,post_related_topics}', finalized_topics)\n          WHEN jsonb_typeof(response) = 'object'\n          THEN jsonb_set(response, '{post_related_topics}', finalized_topics)\n          ELSE response\n        END\n        ELSE response\n      END,\n      replay_metadata = replay_metadata || '{\"finalization\":\"complete\"}'::jsonb,\n      updated_at = NOW()\n  WHERE committed_post_id = OLD.post_id\n    AND state = 'committed'\n    AND retention_expires_at > NOW();\n\n  RETURN OLD;\nEND;\n$function$\n"
     }
   },
   "policies": {},
@@ -12558,6 +12522,839 @@
       },
       "uniqueConstraints": {}
     },
+    "community_application_answer_selections": {
+      "checkConstraints": {
+        "community_application_answer_selections_order_check": "CHECK ((order_index >= 0))",
+        "community_application_answer_selections_type_check": "CHECK ((question_field_type = ANY (ARRAY['single_select'::community_application_question_field_types, 'multi_select'::community_application_question_field_types])))"
+      },
+      "columns": {
+        "application_answer_id": {
+          "collation": null,
+          "comment": "Answer whose selected labels these rows reconstruct.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "application_id": {
+          "collation": null,
+          "comment": "Application copied from the answer so the selection cannot move to another application.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "community_id": {
+          "collation": null,
+          "comment": "Community copied from the answer and option so both parents belong to the same community.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "option_id": {
+          "collation": null,
+          "comment": "Option row whose label is returned for this selection, including after that option is soft-deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "order_index": {
+          "collation": null,
+          "comment": "Applicant-supplied selection order for reconstructing multi-select answers.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "smallint"
+        },
+        "question_field_type": {
+          "collation": null,
+          "comment": "Select field type copied from the answer and option.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "community_application_question_field_types"
+        },
+        "question_id": {
+          "collation": null,
+          "comment": "Question copied from the answer and option so a selection cannot use another question's option.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        }
+      },
+      "comment": "Ordered selected options for select-type community application answers.",
+      "foreignKeys": {
+        "community_application_answer_selections_answer_fkey": {
+          "columns": [
+            "application_answer_id",
+            "application_id",
+            "community_id",
+            "question_id",
+            "question_field_type"
+          ],
+          "definition": "FOREIGN KEY (application_answer_id, application_id, community_id, question_id, question_field_type) REFERENCES community_application_answers(id, application_id, community_id, question_id, question_field_type) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": [
+            "id",
+            "application_id",
+            "community_id",
+            "question_id",
+            "question_field_type"
+          ],
+          "referencedTable": "community_application_answers",
+          "validated": true
+        },
+        "community_application_answer_selections_option_fkey": {
+          "columns": ["option_id", "community_id", "question_id", "question_field_type"],
+          "definition": "FOREIGN KEY (option_id, community_id, question_id, question_field_type) REFERENCES community_application_question_options(id, community_id, question_id, question_field_type) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "community_id", "question_id", "question_field_type"],
+          "referencedTable": "community_application_question_options",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "community_application_answer_selections_order_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_answer_selections_order_key ON public.community_application_answer_selections USING btree (application_answer_id, order_index)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "application_answer_id",
+              "descending": false,
+              "expression": "application_answer_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "community_application_answer_selections_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_answer_selections_pkey ON public.community_application_answer_selections USING btree (application_answer_id, option_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "application_answer_id",
+              "descending": false,
+              "expression": "application_answer_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "option_id",
+              "descending": false,
+              "expression": "option_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_comm_app_answer_selections__option": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_app_answer_selections__option ON public.community_application_answer_selections USING btree (option_id, community_id, question_id, question_field_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "option_id",
+              "descending": false,
+              "expression": "option_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_field_type",
+              "descending": false,
+              "expression": "question_field_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_comm_app_answer_selections__single": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_comm_app_answer_selections__single ON public.community_application_answer_selections USING btree (application_answer_id) WHERE (question_field_type = 'single_select'::community_application_question_field_types)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "application_answer_id",
+              "descending": false,
+              "expression": "application_answer_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(question_field_type = 'single_select'::community_application_question_field_types)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["application_answer_id", "option_id"],
+        "definition": "PRIMARY KEY (application_answer_id, option_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_comm_app_answer_selections_state": "CREATE CONSTRAINT TRIGGER trigger_comm_app_answer_selections_state AFTER INSERT OR DELETE OR UPDATE ON public.community_application_answer_selections DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_community_application_answer_from_selection()"
+      },
+      "uniqueConstraints": {
+        "community_application_answer_selections_order_key": {
+          "columns": ["application_answer_id", "order_index"],
+          "definition": "UNIQUE (application_answer_id, order_index)"
+        }
+      }
+    },
+    "community_application_answers": {
+      "checkConstraints": {
+        "community_application_answers_typed_value_check": "CHECK (((is_null AND (text_value IS NULL) AND (boolean_value IS NULL)) OR ((NOT is_null) AND (question_field_type = ANY (ARRAY['short_text'::community_application_question_field_types, 'long_text'::community_application_question_field_types])) AND (text_value IS NOT NULL) AND (boolean_value IS NULL)) OR ((NOT is_null) AND (question_field_type = 'checkbox'::community_application_question_field_types) AND (text_value IS NULL) AND (boolean_value IS NOT NULL)) OR ((NOT is_null) AND (question_field_type = ANY (ARRAY['single_select'::community_application_question_field_types, 'multi_select'::community_application_question_field_types])) AND (text_value IS NULL) AND (boolean_value IS NULL))))"
+      },
+      "columns": {
+        "application_id": {
+          "collation": null,
+          "comment": "Application that supplied this answer.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "boolean_value": {
+          "collation": null,
+          "comment": "Present boolean value, including false, for checkbox questions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "boolean"
+        },
+        "community_id": {
+          "collation": null,
+          "comment": "Community that owns both the application and the question.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "is_null": {
+          "collation": null,
+          "comment": "Distinguishes an explicit null from omitted answers and from present empty values.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "boolean"
+        },
+        "question_field_type": {
+          "collation": null,
+          "comment": "Question field type copied into the ownership foreign key so the value columns match the question.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "community_application_question_field_types"
+        },
+        "question_id": {
+          "collation": null,
+          "comment": "Question this answer responds to, including a soft-deleted historical question.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "text_value": {
+          "collation": null,
+          "comment": "Present text value, including the empty string, for short_text and long_text questions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "text"
+        }
+      },
+      "comment": "One typed, presence-bearing answer for each question supplied with a community application.",
+      "foreignKeys": {
+        "community_application_answers_application_fkey": {
+          "columns": ["community_id", "application_id"],
+          "definition": "FOREIGN KEY (community_id, application_id) REFERENCES community_applications(community_id, id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["community_id", "id"],
+          "referencedTable": "community_applications",
+          "validated": true
+        },
+        "community_application_answers_question_fkey": {
+          "columns": ["community_id", "question_id", "question_field_type"],
+          "definition": "FOREIGN KEY (community_id, question_id, question_field_type) REFERENCES community_application_questions(community_id, id, field_type) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["community_id", "id", "field_type"],
+          "referencedTable": "community_application_questions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "community_application_answers_identity_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_answers_identity_key ON public.community_application_answers USING btree (id, application_id, community_id, question_id, question_field_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "application_id",
+              "descending": false,
+              "expression": "application_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_field_type",
+              "descending": false,
+              "expression": "question_field_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "community_application_answers_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_answers_pkey ON public.community_application_answers USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "community_application_answers_question_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_answers_question_key ON public.community_application_answers USING btree (application_id, question_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "application_id",
+              "descending": false,
+              "expression": "application_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_comm_app_answers__application": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_app_answers__application ON public.community_application_answers USING btree (community_id, application_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "application_id",
+              "descending": false,
+              "expression": "application_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_comm_app_answers__question": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_app_answers__question ON public.community_application_answers USING btree (community_id, question_id, question_field_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_field_type",
+              "descending": false,
+              "expression": "question_field_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_comm_app_answers_selection_state": "CREATE CONSTRAINT TRIGGER trigger_comm_app_answers_selection_state AFTER INSERT OR DELETE OR UPDATE ON public.community_application_answers DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_community_application_answer_from_answer()"
+      },
+      "uniqueConstraints": {
+        "community_application_answers_identity_key": {
+          "columns": ["id", "application_id", "community_id", "question_id", "question_field_type"],
+          "definition": "UNIQUE (id, application_id, community_id, question_id, question_field_type)"
+        },
+        "community_application_answers_question_key": {
+          "columns": ["application_id", "question_id"],
+          "definition": "UNIQUE (application_id, question_id)"
+        }
+      }
+    },
+    "community_application_question_options": {
+      "checkConstraints": {
+        "community_application_question_options_label_check": "CHECK (((label = TRIM(BOTH FROM label)) AND ((char_length(label) >= 1) AND (char_length(label) <= 500))))",
+        "community_application_question_options_order_index_check": "CHECK ((order_index >= 0))",
+        "community_application_question_options_select_type_check": "CHECK ((question_field_type = ANY (ARRAY['single_select'::community_application_question_field_types, 'multi_select'::community_application_question_field_types])))"
+      },
+      "columns": {
+        "community_id": {
+          "collation": null,
+          "comment": "Community that owns the question, copied so an option cannot move to another community.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "deleted_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "label": {
+          "collation": null,
+          "comment": "The label returned by the API and stored by reference in selected answers.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "order_index": {
+          "collation": null,
+          "comment": "Display order within the owning question.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "smallint"
+        },
+        "question_field_type": {
+          "collation": null,
+          "comment": "Select field type copied into the ownership foreign key so options cannot belong to scalar questions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "community_application_question_field_types"
+        },
+        "question_id": {
+          "collation": null,
+          "comment": "Question whose active choices include this label.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        }
+      },
+      "comment": "Ordered selectable labels for a community application question, retained with soft-deleted questions for historical answers.",
+      "foreignKeys": {
+        "community_application_question_options_question_fkey": {
+          "columns": ["community_id", "question_id", "question_field_type"],
+          "definition": "FOREIGN KEY (community_id, question_id, question_field_type) REFERENCES community_application_questions(community_id, id, field_type) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["community_id", "id", "field_type"],
+          "referencedTable": "community_application_questions",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "community_application_question_options_identity_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_question_options_identity_key ON public.community_application_question_options USING btree (id, community_id, question_id, question_field_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_field_type",
+              "descending": false,
+              "expression": "question_field_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "community_application_question_options_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_question_options_pkey ON public.community_application_question_options USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_comm_app_question_options__active_label": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_comm_app_question_options__active_label ON public.community_application_question_options USING btree (question_id, label) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "label",
+              "descending": false,
+              "expression": "label",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_comm_app_question_options__active_order": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_comm_app_question_options__active_order ON public.community_application_question_options USING btree (question_id, order_index) WHERE (deleted_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "order_index",
+              "descending": false,
+              "expression": "order_index",
+              "nullsFirst": false,
+              "opclass": "int2_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_comm_app_question_options__owner": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_comm_app_question_options__owner ON public.community_application_question_options USING btree (community_id, question_id, question_field_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_id",
+              "descending": false,
+              "expression": "question_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "question_field_type",
+              "descending": false,
+              "expression": "question_field_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "community_application_question_options_identity_key": {
+          "columns": ["id", "community_id", "question_id", "question_field_type"],
+          "definition": "UNIQUE (id, community_id, question_id, question_field_type)"
+        }
+      }
+    },
     "community_application_questions": {
       "checkConstraints": {
         "community_application_questions_question_check": "CHECK ((question = TRIM(BOTH FROM question)))",
@@ -12583,7 +13380,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "deleted_at": {
@@ -12594,7 +13391,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "field_type": {
@@ -12619,17 +13416,6 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "options": {
-          "collation": null,
-          "comment": "JSON array of selectable options for select-type fields.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "jsonb"
-        },
         "order_index": {
           "collation": null,
           "comment": "Display order of this question within the application form.",
@@ -12638,7 +13424,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "smallint"
         },
         "question": {
@@ -12660,7 +13446,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "boolean"
         }
       },
@@ -12678,6 +13464,40 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "community_application_questions_identity_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_application_questions_identity_key ON public.community_application_questions USING btree (community_id, id, field_type)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "field_type",
+              "descending": false,
+              "expression": "field_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "community_application_questions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -12724,26 +13544,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "idx_community_application_questions__community_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_application_questions__community_id ON public.community_application_questions USING btree (community_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
         }
       },
       "partition": null,
@@ -12754,7 +13554,12 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "community_application_questions_identity_key": {
+          "columns": ["community_id", "id", "field_type"],
+          "definition": "UNIQUE (community_id, id, field_type)"
+        }
+      }
     },
     "community_applications": {
       "checkConstraints": {
@@ -12766,17 +13571,6 @@
         "community_applications_rejection_reason_check1": "CHECK (((rejection_reason IS NULL) OR (rejection_reason = TRIM(BOTH FROM rejection_reason))))"
       },
       "columns": {
-        "answers": {
-          "collation": null,
-          "comment": "JSON object with answers keyed by question ID.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "jsonb"
-        },
         "approved_at": {
           "collation": null,
           "comment": "When the application was approved. Mutually exclusive with rejected_at.",
@@ -12785,7 +13579,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "community_id": {
@@ -12807,7 +13601,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -12851,7 +13645,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "rejected_at": {
@@ -12862,7 +13656,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "rejection_reason": {
@@ -12873,7 +13667,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "reviewed_at": {
@@ -12884,7 +13678,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "reviewed_by_id": {
@@ -12895,7 +13689,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "updated_at": {
@@ -12906,7 +13700,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -12962,6 +13756,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "community_applications_identity_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_applications_identity_key ON public.community_applications USING btree (community_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "community_applications_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -13007,26 +13828,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_community_applications__community_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_community_applications__community_id ON public.community_applications USING btree (community_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "community_id",
-              "descending": false,
-              "expression": "community_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_community_applications__created_via_oauth_client_id": {
@@ -13081,7 +13882,12 @@
         "community_applications_content_provenance_immutable": "CREATE TRIGGER community_applications_content_provenance_immutable AFTER UPDATE ON public.community_applications FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_community_applications_updated_at": "CREATE TRIGGER trigger_community_applications_updated_at BEFORE UPDATE ON public.community_applications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "community_applications_identity_key": {
+          "columns": ["community_id", "id"],
+          "definition": "UNIQUE (community_id, id)"
+        }
+      }
     },
     "community_auto_tagger_agents": {
       "checkConstraints": {
@@ -59248,286 +60054,45 @@
       },
       "uniqueConstraints": {}
     },
-    "post_category_finalization_actors": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Finalization row these editors belong to. Deleting the finalization removes the actor set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "user_id": {
-          "collation": null,
-          "comment": "Retained user identity of an editor included in this finalization.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        }
-      },
-      "comment": "Finalization-owned editors whose hashtag relation votes must be finalized. user_id is a retained identity and does not authorize a deleted user.",
-      "foreignKeys": {
-        "post_category_finalization_actors_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES post_category_finalizations(post_id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["post_id"],
-          "referencedTable": "post_category_finalizations",
-          "validated": true
-        },
-        "post_category_finalization_actors_user_id_fkey": {
-          "columns": ["user_id"],
-          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "retained_user_identities",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_post_category_finalization_actors__user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_category_finalization_actors__user_id ON public.post_category_finalization_actors USING btree (user_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_category_finalization_actors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_category_finalization_actors_pkey ON public.post_category_finalization_actors USING btree (post_id, user_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["post_id", "user_id"],
-        "definition": "PRIMARY KEY (post_id, user_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_post_category_finalization_actors_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalization_actors_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalization_actors DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()",
-        "trigger_post_category_finalization_actors_updated_at": "CREATE TRIGGER trigger_post_category_finalization_actors_updated_at BEFORE UPDATE ON public.post_category_finalization_actors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
-    "post_category_finalization_admission_topics": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Finalization whose create-time topic snapshot these rows belong to.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "topic_id": {
-          "collation": null,
-          "comment": "Retained topic identity captured at create time. It does not authorize a deleted topic.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Create-time explicit and data-point topic snapshot for admission-response repair. Zero rows with a non-null admission_response_generation is an explicit empty snapshot.",
-      "foreignKeys": {
-        "post_category_finalization_admission_topics_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES post_category_finalizations(post_id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["post_id"],
-          "referencedTable": "post_category_finalizations",
-          "validated": true
-        },
-        "post_category_finalization_admission_topics_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "definition": "FOREIGN KEY (topic_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "retained_topic_identities",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "idx_post_category_finalization_admission_topics__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_category_finalization_admission_topics__topic_id ON public.post_category_finalization_admission_topics USING btree (topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_category_finalization_admission_topics_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_category_finalization_admission_topics_pkey ON public.post_category_finalization_admission_topics USING btree (post_id, topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["post_id", "topic_id"],
-        "definition": "PRIMARY KEY (post_id, topic_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_post_category_finalization_admission_topics_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalization_admission_topics_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalization_admission_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()",
-        "trigger_post_category_finalization_admission_topics_updated_at": "CREATE TRIGGER trigger_post_category_finalization_admission_topics_updated_at BEFORE UPDATE ON public.post_category_finalization_admission_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
     "post_category_finalizations": {
       "checkConstraints": {
-        "post_category_finalizations_admission_response_generation_check": "CHECK (((admission_response_generation IS NULL) OR (admission_response_generation > 0)))",
+        "post_category_finalizations_actor_user_ids_check": "CHECK ((cardinality(actor_user_ids) > 0))",
+        "post_category_finalizations_admission_response_check": "CHECK ((((admission_response_generation IS NULL) AND (admission_response_topic_ids IS NULL)) OR ((admission_response_generation IS NOT NULL) AND (admission_response_generation > 0) AND (admission_response_topic_ids IS NOT NULL))))",
         "post_category_finalizations_generation_check": "CHECK ((generation > 0))"
       },
       "columns": {
+        "actor_user_ids": {
+          "collation": null,
+          "comment": "The deduplicated editors whose hashtag relation votes must be finalized.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid[]"
+        },
         "admission_response_generation": {
           "collation": null,
-          "comment": "Exact category-finalization generation whose create response may be repaired. NULL means an update with no topic snapshot; a non-null value with zero topic children is an explicit empty create snapshot.",
+          "comment": "Exact category-finalization generation whose create response may be repaired; NULL or a mismatch means no repair remains.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "bigint"
+        },
+        "admission_response_topic_ids": {
+          "collation": null,
+          "comment": "Create-time explicit and data-point topic IDs for admission-response repair; NULL means update, while an empty array is a valid create snapshot.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid[]"
         },
         "created_at": {
           "collation": null,
@@ -59537,7 +60102,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "generation": {
@@ -59548,7 +60113,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "bigint"
         },
         "post_id": {
@@ -59570,7 +60135,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "uuid"
         },
         "updated_at": {
@@ -59581,11 +60146,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "One coalesced durable category-vote finalization per post; retained actor rows and exact-generation acknowledgement prevent stale workers from omitting or deleting later edits.",
+      "comment": "One coalesced durable category-vote finalization per post; retained actor set and exact-generation acknowledgement prevent stale workers from omitting or deleting later edits.",
       "foreignKeys": {
         "post_category_finalizations_post_id_fkey": {
           "columns": ["post_id"],
@@ -59684,8 +60249,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "post_category_finalizations_repair_admission_response_on_delete": "CREATE TRIGGER post_category_finalizations_repair_admission_response_on_delete BEFORE DELETE ON public.post_category_finalizations FOR EACH ROW EXECUTE FUNCTION repair_post_category_finalization_admission_response_on_delete()",
-        "trigger_post_category_finalizations_children": "CREATE CONSTRAINT TRIGGER trigger_post_category_finalizations_children AFTER INSERT OR DELETE OR UPDATE ON public.post_category_finalizations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_category_finalization_children()"
+        "post_category_finalizations_repair_admission_response_on_delete": "CREATE TRIGGER post_category_finalizations_repair_admission_response_on_delete BEFORE DELETE ON public.post_category_finalizations FOR EACH ROW EXECUTE FUNCTION repair_post_category_finalization_admission_response_on_delete()"
       },
       "uniqueConstraints": {}
     },
@@ -60617,606 +61181,6 @@
       },
       "uniqueConstraints": {}
     },
-    "post_data_point_facts": {
-      "checkConstraints": {
-        "post_data_point_facts_bonus_amount_check": "CHECK (((bonus_amount IS NULL) OR ((bonus_amount >= 0) AND (bonus_amount <= '9007199254740991'::bigint))))",
-        "post_data_point_facts_bonus_requirements_check": "CHECK (((bonus_requirements IS NULL) OR (char_length(bonus_requirements) <= 500)))",
-        "post_data_point_facts_cards_opened_24m_check": "CHECK (((cards_opened_24m IS NULL) OR (cards_opened_24m >= 0)))",
-        "post_data_point_facts_credit_limit_amount_check": "CHECK (((credit_limit_amount IS NULL) OR ((credit_limit_amount >= 0) AND (credit_limit_amount <= '9007199254740991'::bigint))))",
-        "post_data_point_facts_currency_check": "CHECK ((currency = ANY (ARRAY['usd'::text, 'cad'::text, 'eur'::text, 'gbp'::text, 'aud'::text, 'jpy'::text])))",
-        "post_data_point_facts_hard_inquiries_12m_check": "CHECK (((hard_inquiries_12m IS NULL) OR (hard_inquiries_12m >= 0)))",
-        "post_data_point_facts_minimum_balance_amount_check": "CHECK (((minimum_balance_amount IS NULL) OR ((minimum_balance_amount >= 0) AND (minimum_balance_amount <= '9007199254740991'::bigint))))",
-        "post_data_point_facts_schema_version_check": "CHECK ((schema_version = 1))",
-        "post_data_point_facts_stated_income_maximum_amount_check": "CHECK (((stated_income_maximum_amount IS NULL) OR ((stated_income_maximum_amount >= 0) AND (stated_income_maximum_amount <= '9007199254740991'::bigint))))",
-        "post_data_point_facts_stated_income_minimum_amount_check": "CHECK (((stated_income_minimum_amount IS NULL) OR ((stated_income_minimum_amount >= 0) AND (stated_income_minimum_amount <= '9007199254740991'::bigint))))",
-        "post_data_point_facts_total_credit_limit_amount_check": "CHECK (((total_credit_limit_amount IS NULL) OR ((total_credit_limit_amount >= 0) AND (total_credit_limit_amount <= '9007199254740991'::bigint))))",
-        "post_data_point_facts_vertical_check": "CHECK ((vertical = ANY (ARRAY['credit_card'::text, 'bank_account'::text])))",
-        "post_data_point_facts_years_of_credit_history_check": "CHECK (((years_of_credit_history IS NULL) OR ((years_of_credit_history >= 0) AND (years_of_credit_history <= 100))))"
-      },
-      "columns": {
-        "account_type": {
-          "collation": null,
-          "comment": "Present bank-account type: checking, savings, cd, or money_market. Credit-card facts must be absent.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 32,
-          "type": "text"
-        },
-        "account_type_presence": {
-          "collation": null,
-          "comment": "Presence of account_type. Credit-card facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 33,
-          "type": "text"
-        },
-        "application_date": {
-          "collation": null,
-          "comment": "Present application calendar date, reconstructed as YYYY-MM-DD.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 30,
-          "type": "date"
-        },
-        "application_date_presence": {
-          "collation": null,
-          "comment": "Presence of application_date.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 31,
-          "type": "text"
-        },
-        "application_method": {
-          "collation": null,
-          "comment": "Present application channel: online, in_branch, phone, or pre_approved. Credit-card only.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 28,
-          "type": "text"
-        },
-        "application_method_presence": {
-          "collation": null,
-          "comment": "Presence of application_method. Bank-account facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 29,
-          "type": "text"
-        },
-        "bonus_amount": {
-          "collation": null,
-          "comment": "Present bank-account sign-up bonus amount. Credit-card facts must be absent.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 34,
-          "type": "bigint"
-        },
-        "bonus_amount_presence": {
-          "collation": null,
-          "comment": "Presence of bonus_amount. Credit-card facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 36,
-          "type": "text"
-        },
-        "bonus_currency": {
-          "collation": null,
-          "comment": "Currency of bonus_amount. Equals the row currency when present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 35,
-          "type": "text"
-        },
-        "bonus_requirements": {
-          "collation": null,
-          "comment": "Present bank-account bonus requirement text, at most 500 characters. Credit-card facts must be absent.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 37,
-          "type": "text"
-        },
-        "bonus_requirements_presence": {
-          "collation": null,
-          "comment": "Presence of bonus_requirements. Credit-card facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 38,
-          "type": "text"
-        },
-        "cards_opened_24m": {
-          "collation": null,
-          "comment": "Present count of cards opened in the prior 24 months. Credit-card only.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 17,
-          "type": "integer"
-        },
-        "cards_opened_24m_presence": {
-          "collation": null,
-          "comment": "Presence of cards_opened_24m. Bank-account facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 18,
-          "type": "text"
-        },
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 43,
-          "type": "timestamp with time zone"
-        },
-        "credit_limit_amount": {
-          "collation": null,
-          "comment": "Approved credit limit stored when credit_limit_presence is present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 19,
-          "type": "bigint"
-        },
-        "credit_limit_currency": {
-          "collation": null,
-          "comment": "Currency of credit_limit_amount. Equals the row currency when present, otherwise null.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 20,
-          "type": "text"
-        },
-        "credit_limit_presence": {
-          "collation": null,
-          "comment": "Presence of the credit limit. Bank-account facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 21,
-          "type": "text"
-        },
-        "credit_score_range": {
-          "collation": null,
-          "comment": "Present score band: 300-579, 580-669, 670-739, 740-799, or 800-850. Null unless presence is present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "text"
-        },
-        "credit_score_range_presence": {
-          "collation": null,
-          "comment": "absent omits the key, null stores JSON null, present stores credit_score_range. Credit-card facts require present.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "text"
-        },
-        "currency": {
-          "collation": null,
-          "comment": "Parent currency code for every present money value on this row: usd, cad, eur, gbp, aud, or jpy.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "text"
-        },
-        "direct_deposit_setup": {
-          "collation": null,
-          "comment": "Whether direct deposit was set up. Null on credit-card facts and when the API key is omitted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 42,
-          "type": "boolean"
-        },
-        "existing_relationship": {
-          "collation": null,
-          "comment": "Whether the applicant already had an account with this issuer or bank. Null omits the API key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 14,
-          "type": "boolean"
-        },
-        "hard_inquiries_12m": {
-          "collation": null,
-          "comment": "Present count of hard inquiries in the last 12 months. Credit-card only.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 15,
-          "type": "integer"
-        },
-        "hard_inquiries_12m_presence": {
-          "collation": null,
-          "comment": "Presence of hard_inquiries_12m. Bank-account facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 16,
-          "type": "text"
-        },
-        "is_business_application": {
-          "collation": null,
-          "comment": "Whether this was a business-card application. Null on bank-account facts and when the API key is omitted.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 27,
-          "type": "boolean"
-        },
-        "minimum_balance_amount": {
-          "collation": null,
-          "comment": "Present minimum balance required to avoid fees. API key minimum_balance_requirement. Credit-card facts must be absent.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 39,
-          "type": "bigint"
-        },
-        "minimum_balance_currency": {
-          "collation": null,
-          "comment": "Currency of minimum_balance_amount. Equals the row currency when present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 40,
-          "type": "text"
-        },
-        "minimum_balance_presence": {
-          "collation": null,
-          "comment": "Presence of minimum_balance_requirement. Credit-card facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 41,
-          "type": "text"
-        },
-        "post_id": {
-          "collation": null,
-          "comment": "Data-point post that owns this single fact row. The row is deleted with the post.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "result": {
-          "collation": null,
-          "comment": "Application outcome. Credit-card and bank-account facts use different allowed result sets.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "text"
-        },
-        "schema_version": {
-          "collation": null,
-          "comment": "Stored fact shape version. Only version 1 is accepted.",
-          "defaultExpression": "1",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "smallint"
-        },
-        "stated_income_maximum_amount": {
-          "collation": null,
-          "comment": "Upper bound stored when stated_income_maximum_presence is present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "bigint"
-        },
-        "stated_income_maximum_currency": {
-          "collation": null,
-          "comment": "Currency of the stated-income maximum. Equals the row currency when that maximum is present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 13,
-          "type": "text"
-        },
-        "stated_income_maximum_presence": {
-          "collation": null,
-          "comment": "Presence of the stated-income maximum. null is an open upper bound; present stores the maximum. Null when the range is absent or null.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "text"
-        },
-        "stated_income_minimum_amount": {
-          "collation": null,
-          "comment": "Lower bound stored when the stated-income range is present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "bigint"
-        },
-        "stated_income_minimum_currency": {
-          "collation": null,
-          "comment": "Currency of the stated-income minimum. Equals the row currency when the range is present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10,
-          "type": "text"
-        },
-        "stated_income_range_presence": {
-          "collation": null,
-          "comment": "Presence of the stated-income range. absent or null clears both ends; present requires a minimum.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8,
-          "type": "text"
-        },
-        "total_credit_limit_amount": {
-          "collation": null,
-          "comment": "Total credit limit across cards, stored as the API key total_credit_limit_all_cards.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 22,
-          "type": "bigint"
-        },
-        "total_credit_limit_currency": {
-          "collation": null,
-          "comment": "Currency of total_credit_limit_amount. Equals the row currency when present.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 23,
-          "type": "text"
-        },
-        "total_credit_limit_presence": {
-          "collation": null,
-          "comment": "Presence of total_credit_limit_all_cards. Bank-account facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 24,
-          "type": "text"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 44,
-          "type": "timestamp with time zone"
-        },
-        "vertical": {
-          "collation": null,
-          "comment": "Must equal posts.data_point_vertical. Credit-card and bank-account fields are mutually exclusive.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "text"
-        },
-        "years_of_credit_history": {
-          "collation": null,
-          "comment": "Present whole years of credit history, from 0 through 100. Credit-card only.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 25,
-          "type": "integer"
-        },
-        "years_of_credit_history_presence": {
-          "collation": null,
-          "comment": "Presence of years_of_credit_history. Bank-account facts must be absent.",
-          "defaultExpression": "'absent'::text",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 26,
-          "type": "text"
-        }
-      },
-      "comment": "One typed fact row per data-point post. Presence absent omits the API key, null stores JSON null, and present stores the typed value.",
-      "foreignKeys": {
-        "post_data_point_facts_post_id_fkey": {
-          "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "posts",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "idx_post_data_point_facts__credit_score_range": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_data_point_facts__credit_score_range ON ONLY public.post_data_point_facts USING btree (credit_score_range) WHERE (credit_score_range_presence = 'present'::text)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "credit_score_range",
-              "descending": false,
-              "expression": "credit_score_range",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(credit_score_range_presence = 'present'::text)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_data_point_facts__result": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_data_point_facts__result ON ONLY public.post_data_point_facts USING btree (result)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "result",
-              "descending": false,
-              "expression": "result",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_data_point_facts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_data_point_facts_pkey ON ONLY public.post_data_point_facts USING btree (post_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": {
-        "accessClass": "target-scoped",
-        "children": "default",
-        "key": "post_id",
-        "retentionOwner": null,
-        "strategy": "RANGE"
-      },
-      "physicalPartition": {
-        "key": "RANGE (post_id)",
-        "strategy": "range"
-      },
-      "primaryKey": {
-        "columns": ["post_id"],
-        "definition": "PRIMARY KEY (post_id)"
-      },
-      "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_post_data_point_facts_agree": "CREATE CONSTRAINT TRIGGER trigger_post_data_point_facts_agree AFTER INSERT OR DELETE OR UPDATE ON public.post_data_point_facts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_data_point_facts_agree()",
-        "trigger_post_data_point_facts_shape": "CREATE TRIGGER trigger_post_data_point_facts_shape BEFORE INSERT OR UPDATE ON public.post_data_point_facts FOR EACH ROW EXECUTE FUNCTION fn_guard_post_data_point_fact_shape()",
-        "trigger_post_data_point_facts_updated_at": "CREATE TRIGGER trigger_post_data_point_facts_updated_at BEFORE UPDATE ON public.post_data_point_facts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
     "post_data_point_topics": {
       "checkConstraints": {
         "post_data_point_topics_order_index_check": "CHECK ((order_index >= 0))"
@@ -61347,33 +61311,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "uq_post_data_point_topics__post_id__order_index": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_post_data_point_topics__post_id__order_index ON ONLY public.post_data_point_topics USING btree (post_id, order_index)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "order_index",
-              "descending": false,
-              "expression": "order_index",
-              "nullsFirst": false,
-              "opclass": "int4_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
         }
       },
       "partition": {
@@ -61395,12 +61332,7 @@
       "triggers": {
         "trigger_post_data_point_topics_updated_at": "CREATE TRIGGER trigger_post_data_point_topics_updated_at BEFORE UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {
-        "uq_post_data_point_topics__post_id__order_index": {
-          "columns": ["post_id", "order_index"],
-          "definition": "UNIQUE (post_id, order_index)"
-        }
-      }
+      "uniqueConstraints": {}
     },
     "post_dispute_annotations": {
       "checkConstraints": {
@@ -67755,9 +67687,8 @@
     },
     "posts": {
       "checkConstraints": {
+        "chk_data_point_vertical_consistency": "CHECK (((data_point_vertical IS NULL) = (structured_data IS NULL)))",
         "chk_posts__single_clearance_state": "CHECK ((num_nonnulls(approved_at, rejected_at, in_review_at) <= 1))",
-        "chk_posts_data_point_vertical_known": "CHECK (((data_point_vertical IS NULL) OR (data_point_vertical = ANY (ARRAY['credit_card'::text, 'bank_account'::text]))))",
-        "chk_posts_data_point_vertical_type": "CHECK (((data_point_vertical IS NULL) OR (post_type = 'data_point'::post_types)))",
         "chk_posts_votes_count_down": "CHECK ((votes_count_down >= 0))",
         "chk_posts_votes_count_none": "CHECK ((votes_count_none >= 0))",
         "chk_posts_votes_count_up": "CHECK ((votes_count_up >= 0))",
@@ -67765,6 +67696,7 @@
         "chk_posts_votes_score_none": "CHECK ((votes_score_none >= (0)::double precision))",
         "chk_posts_votes_score_up": "CHECK ((votes_score_up >= (0)::double precision))",
         "chk_posts_votes_snapshot_complete": "CHECK ((((votes_snapshot_xmax IS NULL) AND (votes_snapshot_xip_count IS NULL)) OR ((votes_snapshot_xmax IS NOT NULL) AND (votes_snapshot_xip_count IS NOT NULL) AND (votes_snapshot_xip_count >= 0))))",
+        "chk_structured_data_post_type": "CHECK (((structured_data IS NULL) OR (post_type = 'data_point'::post_types)))",
         "posts_ban_evasion_post_embedding_input_sha256_length": "CHECK (((ban_evasion_post_embedding_input_sha256 IS NULL) OR (octet_length(ban_evasion_post_embedding_input_sha256) = 32)))",
         "posts_bedrock_nova_multimodal_v1_content_sha256_check": "CHECK ((octet_length(bedrock_nova_multimodal_v1_content_sha256) = 32))",
         "posts_bedrock_nova_multimodal_v1_input_sha256_check": "CHECK (((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (octet_length(bedrock_nova_multimodal_v1_input_sha256) = 32)))",
@@ -67842,7 +67774,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 50,
+          "ordinalPosition": 51,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_content_sha256": {
@@ -67853,7 +67785,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 45,
+          "ordinalPosition": 46,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_embedding": {
@@ -67864,7 +67796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 47,
+          "ordinalPosition": 48,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -67875,7 +67807,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 48,
+          "ordinalPosition": 49,
           "type": "timestamp with time zone"
         },
         "bedrock_nova_multimodal_v1_input_sha256": {
@@ -67886,7 +67818,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 46,
+          "ordinalPosition": 47,
           "type": "bytea"
         },
         "bedrock_nova_multimodal_v1_input_token_count": {
@@ -67897,7 +67829,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 49,
+          "ordinalPosition": 50,
           "type": "integer"
         },
         "broadcast": {
@@ -67974,12 +67906,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 38,
+          "ordinalPosition": 39,
           "type": "uuid"
         },
         "data_point_vertical": {
           "collation": null,
-          "comment": "Discriminator for the data point fact schema (credit_card, bank_account). NULL for non-data-point posts. A non-null value requires a matching post_data_point_facts row.",
+          "comment": "Discriminator for the structured data point schema (credit_card, bank_account). NULL for non-data-point posts.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -67996,7 +67928,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 39,
+          "ordinalPosition": 40,
           "type": "text"
         },
         "deleted_at": {
@@ -68073,7 +68005,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 41,
+          "ordinalPosition": 42,
           "type": "bytea"
         },
         "lingua_rs_detected_at": {
@@ -68084,7 +68016,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 44,
+          "ordinalPosition": 45,
           "type": "timestamp with time zone"
         },
         "lingua_rs_detected_language": {
@@ -68095,7 +68027,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 40,
+          "ordinalPosition": 41,
           "type": "text"
         },
         "lingua_rs_input_sha256": {
@@ -68106,7 +68038,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 42,
+          "ordinalPosition": 43,
           "type": "bytea"
         },
         "lingua_rs_results": {
@@ -68117,7 +68049,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 43,
+          "ordinalPosition": 44,
           "type": "jsonb"
         },
         "llm_moderation_content_sha256": {
@@ -68128,7 +68060,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 51,
+          "ordinalPosition": 52,
           "type": "bytea"
         },
         "markdown": {
@@ -68205,8 +68137,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 52,
+          "ordinalPosition": 53,
           "type": "tsvector"
+        },
+        "structured_data": {
+          "collation": null,
+          "comment": "Structured JSONB payload for data point posts. Schema is determined by data_point_vertical.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 37,
+          "type": "jsonb"
         },
         "title": {
           "collation": null,
@@ -68249,7 +68192,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 37,
+          "ordinalPosition": 38,
           "type": "uuid"
         },
         "votes_count_down": {
@@ -69087,6 +69030,66 @@
           "unique": false,
           "valid": true
         },
+        "idx_posts__structured_data": {
+          "accessMethod": "gin",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__structured_data ON ONLY public.posts USING gin (structured_data jsonb_path_ops) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "structured_data",
+              "descending": false,
+              "expression": "structured_data",
+              "nullsFirst": false,
+              "opclass": "jsonb_path_ops"
+            }
+          ],
+          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__structured_data__result": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__structured_data__result ON ONLY public.posts USING btree (((structured_data ->> 'result'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(structured_data ->> 'result'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_posts__structured_data__topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_posts__structured_data__topic_id ON ONLY public.posts USING btree (((structured_data ->> 'topic_id'::text))) WHERE ((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(structured_data ->> 'topic_id'::text)",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((structured_data IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_posts__updated_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -69268,8 +69271,7 @@
       "triggers": {
         "posts_content_provenance_immutable": "CREATE TRIGGER posts_content_provenance_immutable AFTER UPDATE ON public.posts FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "posts_creation_source_url_id_immutable": "CREATE TRIGGER posts_creation_source_url_id_immutable BEFORE UPDATE OF creation_source_url_id ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_prevent_post_creation_source_url_update()",
-        "trigger_posts_data_point_facts_agree": "CREATE CONSTRAINT TRIGGER trigger_posts_data_point_facts_agree AFTER INSERT OR UPDATE OF data_point_vertical, post_type ON public.posts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_post_data_point_vertical_facts()",
-        "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_posts_updated_at": "CREATE TRIGGER trigger_posts_updated_at BEFORE UPDATE OF post_type, title, markdown, ai_summary_markdown, parent_id, root_id, broadcast, privacy, is_anonymous, community_id, latest_clearance_change_id, approved_at, rejected_at, in_review_at, created_by_id, updated_by_id, deleted_at, deleted_by_id, archived_at, archived_by_id, data_point_vertical, structured_data, declared_language, bedrock_nova_multimodal_v1_input_sha256, bedrock_nova_multimodal_v1_embedding, bedrock_nova_multimodal_v1_embedding_created_at, bedrock_nova_multimodal_v1_input_token_count ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
         "trigger_register_retained_post_identity": "CREATE TRIGGER trigger_register_retained_post_identity BEFORE INSERT ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_register_retained_post_identity()",
         "trigger_sync_posts_search_vector": "CREATE TRIGGER trigger_sync_posts_search_vector BEFORE INSERT OR UPDATE OF title, markdown ON public.posts FOR EACH ROW EXECUTE FUNCTION fn_sync_posts_search_vector()"
       },
@@ -89256,144 +89258,12 @@
       },
       "uniqueConstraints": {}
     },
-    "review_succession_topics": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "review_succession_id": {
-          "collation": null,
-          "comment": "Automatic review-succession epoch that owns this immutable topic snapshot.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "topic_id": {
-          "collation": null,
-          "comment": "Retained topic identity in the exact archive-time set.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "Immutable nonempty topic snapshot for one automatic review-succession epoch. topic_id is a retained identity and does not authorize a deleted topic.",
-      "foreignKeys": {
-        "review_succession_topics_review_succession_id_fkey": {
-          "columns": ["review_succession_id"],
-          "definition": "FOREIGN KEY (review_succession_id) REFERENCES review_successions(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "review_successions",
-          "validated": true
-        },
-        "review_succession_topics_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "definition": "FOREIGN KEY (topic_id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "retained_topic_identities",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "idx_review_succession_topics__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_review_succession_topics__topic_id ON public.review_succession_topics USING btree (topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "review_succession_topics_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX review_succession_topics_pkey ON public.review_succession_topics USING btree (review_succession_id, topic_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "review_succession_id",
-              "descending": false,
-              "expression": "review_succession_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["review_succession_id", "topic_id"],
-        "definition": "PRIMARY KEY (review_succession_id, topic_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_review_succession_topics_immutable": "CREATE TRIGGER trigger_review_succession_topics_immutable BEFORE DELETE OR UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_topic_mutation()",
-        "trigger_review_succession_topics_nonempty": "CREATE CONSTRAINT TRIGGER trigger_review_succession_topics_nonempty AFTER INSERT OR DELETE ON public.review_succession_topics DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()",
-        "trigger_review_succession_topics_updated_at": "CREATE TRIGGER trigger_review_succession_topics_updated_at BEFORE UPDATE ON public.review_succession_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
     "review_successions": {
       "checkConstraints": {
         "review_successions_predecessor_before_successor": "CHECK ((predecessor_post_id < successor_post_id))",
         "review_successions_terminal_after_archive": "CHECK ((((automatically_restored_at IS NULL) OR (automatically_restored_at >= predecessor_archived_at)) AND ((manual_override_at IS NULL) OR (manual_override_at >= predecessor_archived_at))))",
-        "review_successions_terminal_lifecycle": "CHECK ((num_nonnulls(automatically_restored_at, manual_override_at) <= 1))"
+        "review_successions_terminal_lifecycle": "CHECK ((num_nonnulls(automatically_restored_at, manual_override_at) <= 1))",
+        "review_successions_topic_ids_check": "CHECK (fn_review_succession_topic_ids_are_sorted_distinct(topic_ids))"
       },
       "columns": {
         "author_user_id": {
@@ -89415,7 +89285,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -89426,7 +89296,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -89448,7 +89318,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "predecessor_archived_at": {
@@ -89459,7 +89329,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "predecessor_post_id": {
@@ -89484,6 +89354,17 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
+        "topic_ids": {
+          "collation": null,
+          "comment": "Ascending, distinct exact topic-set snapshot at automatic archive time.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "uuid[]"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -89492,7 +89373,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         }
       },
@@ -89548,10 +89429,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_review_successions__author_user_id": {
+        "idx_review_successions__author_user_id__topic_ids": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_review_successions__author_user_id ON public.review_successions USING btree (author_user_id)",
+          "definition": "CREATE INDEX idx_review_successions__author_user_id__topic_ids ON public.review_successions USING btree (author_user_id, topic_ids)",
           "includedColumns": [],
           "keys": [
             {
@@ -89560,6 +89441,13 @@
               "expression": "author_user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "topic_ids",
+              "descending": false,
+              "expression": "topic_ids",
+              "nullsFirst": false,
+              "opclass": "array_ops"
             }
           ],
           "predicate": null,
@@ -89665,7 +89553,6 @@
       "relationKind": "table",
       "triggers": {
         "trigger_review_successions_guard": "CREATE TRIGGER trigger_review_successions_guard BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_guard_review_succession_mutation()",
-        "trigger_review_successions_topics": "CREATE CONSTRAINT TRIGGER trigger_review_successions_topics AFTER INSERT OR DELETE ON public.review_successions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_assert_review_succession_topics()",
         "trigger_review_successions_updated_at": "CREATE TRIGGER trigger_review_successions_updated_at BEFORE UPDATE ON public.review_successions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -115768,7 +115655,7 @@
     },
     "view_posts": {
       "comment": null,
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_id,\n    posts.parent_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::text THEN 0\n                            WHEN 'markdown'::text THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM ((post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    fn_post_structured_data(posts.id) AS structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS openai_omni_moderation_flagged,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendations_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_id,\n    posts.parent_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.created_at DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::text THEN 0\n                            WHEN 'markdown'::text THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::text))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM ((post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL) AND fn_image_placement_publicly_projected(placement.id, placement.revision, post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS openai_omni_moderation_flagged,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendations_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ptr.example_referral_link, 'landing_page_urls', ptr.landing_page_urls, 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
       "materialized": false
     },
     "view_public_post_eligibility": {

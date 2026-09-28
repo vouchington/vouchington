@@ -8,8 +8,6 @@ export const EXISTING_RELATIONAL_STORAGE_DEBT = {
     'boilerplate_removals.results',
     'community_agent_prompt_changes.next_fields',
     'community_agent_prompt_changes.previous_fields',
-    'community_application_questions.options',
-    'community_applications.answers',
     'conversation_messages.content',
     'copyright_notice_lifecycle_events.metadata',
     'crawls.embed_metadata',
