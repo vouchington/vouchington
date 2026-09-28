@@ -24,9 +24,12 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
       ), correspondence AS (
         INSERT INTO copyright_notice_correspondence_messages (copyright_notice_id, direction, composition_kind, correspondence_kind, body_ciphertext, drafted_by_id)
         SELECT notice.id, 'outbound', 'staff', 'status_update', ${`message-${randomUUID()}`}, actor.id FROM notice CROSS JOIN actor
+        RETURNING id
       ), event AS (
-        INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id)
-        SELECT notice.id, 'test_actor_action', actor.id FROM notice CROSS JOIN actor
+        INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+          copyright_notice_correspondence_id)
+        SELECT notice.id, 'outbound_correspondence_created', actor.id, correspondence.id
+        FROM notice CROSS JOIN actor CROSS JOIN correspondence
       ), delivery_intent AS (
         INSERT INTO copyright_notice_delivery_intents (
           copyright_notice_id, recipient_user_id, recipient_role, delivery_kind, channel, idempotency_key
@@ -54,7 +57,7 @@ export async function eraseCopyrightActorAndReadAuditLinks(): Promise<{
       WHERE assessment.copyright_notice_submission_id = ${fixture.submission_id}
         AND correspondence.copyright_notice_id = ${fixture.notice_id}
         AND event.copyright_notice_id = ${fixture.notice_id}
-        AND event.event_type = 'test_actor_action'
+        AND event.event_type = 'outbound_correspondence_created'
         AND delivery_intent.copyright_notice_id = ${fixture.notice_id}`,
   )
   return {

@@ -22,7 +22,7 @@ const MAX_ATTEMPTS = 5
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1000
 
 export type CopyrightClaimedActionIntent = CopyrightActionIntentRecord & {
-  placement_key: string
+  placement_id: string
   image_id: string
 }
 
@@ -62,7 +62,7 @@ export async function claimCopyrightActionIntent(
       AND intent.delivery_attempt_count < ${MAX_ATTEMPTS}
       RETURNING intent.*
     )
-    SELECT claimed.*, target.placement_key, target_image.image_id
+    SELECT claimed.*, target.placement_id, target_image.image_id
     FROM claimed
     JOIN copyright_restrictions restriction ON restriction.id = claimed.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
@@ -120,9 +120,8 @@ export async function replayCopyrightRestoreActionsForRestrictions(
   for (const row of rows) {
     // oxlint-disable-next-line no-await-in-loop -- each replay event identifies its revived durable intent.
     await transaction(sql`/* replayCopyrightRestoreActionsForRestrictions:event */
-      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-      VALUES (${row.copyright_notice_id}, 'copyright_action_replayed',
-        ${JSON.stringify({ intentId: row.id })}::jsonb)
+      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+      VALUES (${row.copyright_notice_id}, 'copyright_action_replayed', ${row.id})
     `)
   }
   await transaction.commit()
@@ -155,9 +154,10 @@ export async function replayFailedCopyrightActionIntent(input: {
   const replayed = rows[0]
   if (replayed) {
     await transaction(sql`/* replayFailedCopyrightActionIntent:event */
-      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
+      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+        copyright_notice_action_intent_id, replay_reason)
       VALUES (${replayed.copyright_notice_id}, 'copyright_action_replayed', ${input.actorUserId},
-        ${JSON.stringify({ intentId: input.intentId, reason: 'operator_replay' })}::jsonb)
+        ${input.intentId}, 'operator_replay')
     `)
   }
   await transaction.commit()

@@ -155,9 +155,8 @@ export async function reviewCopyrightAppeal(input: {
   }
   await syncCopyrightRepeatInfringerIncidents(appeal.copyright_notice_id, transaction)
   await transaction(sql`/* reviewCopyrightAppeal:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${appeal.copyright_notice_id}, 'appeal_reviewed', ${input.currentUser.id},
-      ${JSON.stringify({ submissionId: input.submissionId })}::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, copyright_notice_submission_id)
+    VALUES (${appeal.copyright_notice_id}, 'appeal_reviewed', ${input.currentUser.id}, ${input.submissionId})
   `)
   if (appeal.submitted_by_user_id)
     await createCopyrightDeliveryIntent(
@@ -305,9 +304,10 @@ export async function reviewCopyrightCounterNotice(input: {
       ${encryptSecret(input.rationale, `copyright-counter-review:${input.submissionId}`)})
   `)
   await transaction(sql`/* reviewCopyrightCounterNotice:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_submission_id, counter_notice_accepted)
     VALUES (${submission.copyright_notice_id}, 'counter_notice_reviewed', ${input.currentUser.id},
-      ${JSON.stringify({ submissionId: input.submissionId, accepted: input.accepted })}::jsonb)
+      ${input.submissionId}, ${input.accepted})
   `)
   const { rows: submitterRows } = await transaction<{ submitted_by_user_id: string | null }>(
     sql`/* reviewCopyrightCounterNotice:submitter */

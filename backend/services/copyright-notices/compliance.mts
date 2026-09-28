@@ -172,8 +172,9 @@ export async function appendCopyrightSubmissionAssessment(input: {
     `)
   }
   await transaction(sql`/* appendCopyrightSubmissionAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_submission_assessment_id)
+    VALUES (${submissionRows[0].copyright_notice_id}, 'submission_assessed', ${input.currentUser?.id ?? null}, ${assessment.id})
   `)
   await transaction.commit()
   return assessment

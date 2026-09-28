@@ -5,7 +5,7 @@ import type { CopyrightActionDeliveryOutcome } from './action-delivery-state.mts
 export type LockedCopyrightActionDelivery = {
   copyright_notice_id: string
   copyright_restriction_id: string
-  placement_key: string
+  placement_id: string
   image_id: string
   expected_placement_revision: number
   action: 'withhold' | 'restore'
@@ -23,15 +23,15 @@ export async function getCopyrightActionPlacementKey(
   intentId: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<string | null> {
-  const { rows } = await query<{ placement_key: string }>(sql`
+  const { rows } = await query<{ placement_id: string }>(sql`
     /* getCopyrightActionPlacementKey */
-    SELECT target.placement_key
+    SELECT target.placement_id
     FROM copyright_notice_action_intents intent
     JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE intent.id = ${intentId} AND intent.state = 'claimed'
   `)
-  return rows[0]?.placement_key ?? null
+  return rows[0]?.placement_id ?? null
 }
 
 export async function lockCopyrightActionDelivery(
@@ -42,7 +42,7 @@ export async function lockCopyrightActionDelivery(
     Omit<LockedCopyrightActionDelivery, 'earliest_restoration_at' | 'resolved_at' | 'cancelled_at'>
   >(sql`
     /* lockCopyrightActionDelivery */
-    SELECT target.copyright_notice_id, intent.copyright_restriction_id, target.placement_key,
+    SELECT target.copyright_notice_id, intent.copyright_restriction_id, target.placement_id,
       target_image.image_id, intent.expected_placement_revision, intent.action,
       intent.copyright_notice_deadline_id,
       restriction.lifted_at AS restriction_lifted_at, restriction.human_reviewed_at,
@@ -129,7 +129,7 @@ export async function hasOtherActiveCopyrightRestrictions(
       SELECT 1
       FROM copyright_restrictions restriction
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-      WHERE target.placement_key = ${intent.placement_key}
+      WHERE target.placement_id = ${intent.placement_id}
         AND restriction.id <> ${intent.copyright_restriction_id}
         AND restriction.lifted_at IS NULL
     ) AS blocked
@@ -156,11 +156,8 @@ export async function insertCopyrightActionLifecycleEvent(
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
   await query(sql`/* processCopyrightActionIntent:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${legal.copyright_notice_id}, ${eventType}, ${JSON.stringify({
-      intentId,
-      restrictionId: legal.copyright_restriction_id,
-    })}::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
+    VALUES (${legal.copyright_notice_id}, ${eventType}, ${intentId})
   `)
 }
 

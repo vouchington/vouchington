@@ -45,7 +45,7 @@ async function createFixture() {
     markdown: 'image',
   })
   const imageId = await insertTestImage(claimant.id)
-  await insertTestPostImage({ postId, imageId })
+  const placementId = await insertTestPostImage({ postId, imageId })
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
     receivedAt: new Date('2026-06-30T16:00:00.000Z'),
@@ -61,7 +61,7 @@ async function createFixture() {
     },
     targets: [
       {
-        placementKey: `post-image:${postId}:${imageId}`,
+        placementId,
         placementRevision: 1,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,

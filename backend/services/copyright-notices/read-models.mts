@@ -116,7 +116,7 @@ async function getCopyrightEmailLinkedNotice(noticeId: string): Promise<{
     id: string
     placement_key: string
   }>(sql`/* getCopyrightEmailLinkedNotice */
-    SELECT id, placement_key FROM copyright_notice_targets
+    SELECT id, concat('image-placement:', placement_id) AS placement_key FROM copyright_notice_targets
     WHERE copyright_notice_id = ${noticeId}
     ORDER BY id
   `)
@@ -237,7 +237,7 @@ export async function getCopyrightPublicNoticeDetail(
         END AS restriction_status
       FROM copyright_notice_targets target
       LEFT JOIN image_placements image_placement
-        ON target.placement_key = concat('image-placement:', image_placement.placement_id)
+        ON target.placement_id = image_placement.placement_id
       LEFT JOIN view_public_post_eligibility public_post
         ON public_post.post_id = image_placement.post_id
       LEFT JOIN LATERAL (
@@ -309,7 +309,7 @@ export async function getCopyrightParticipantNoticeDetail(
       SELECT DISTINCT target.id
       FROM copyright_notice_targets target
       JOIN media_placements placement
-        ON target.placement_key = concat('image-placement:', placement.id)
+        ON target.placement_id = placement.id
       JOIN image_placements image_placement ON image_placement.placement_id = placement.id
       JOIN posts post ON post.id = image_placement.post_id
       WHERE target.copyright_notice_id = ${noticeId}
@@ -340,7 +340,7 @@ async function getCopyrightNoticeViewerRole(
       WHEN EXISTS (
         SELECT 1 FROM copyright_notice_targets target
         JOIN media_placements placement
-          ON target.placement_key = concat('image-placement:', placement.id)
+          ON target.placement_id = placement.id
         JOIN image_placements image_placement ON image_placement.placement_id = placement.id
         JOIN posts post ON post.id = image_placement.post_id
         WHERE target.copyright_notice_id = notice.id AND post.created_by_id = ${currentUser.id}

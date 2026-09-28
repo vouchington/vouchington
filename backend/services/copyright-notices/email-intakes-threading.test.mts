@@ -24,7 +24,7 @@ describe('copyright email intake threading', () => {
       markdown: 'image',
     })
     const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
+    const placementId = await insertTestPostImage({ postId, imageId })
     const sesMessageId = `ses-early-reply-${crypto.randomUUID()}`
     const { intake } = await createCopyrightEmailIntake({
       sesMessageId,
@@ -46,7 +46,9 @@ describe('copyright email intake threading', () => {
     })
 
     await expect(
-      promoteCopyrightEmailIntake(makePromotionInput(moderator, intake.id, postId, imageId)),
+      promoteCopyrightEmailIntake(
+        makePromotionInput(moderator, intake.id, postId, imageId, placementId),
+      ),
     ).rejects.toThrow('Unresolved reply email must wait for its root case')
 
     const rootSesMessageId = `ses-root-${crypto.randomUUID()}`
@@ -68,7 +70,7 @@ describe('copyright email intake threading', () => {
       attachments: [],
     })
     const promoted = await promoteCopyrightEmailIntake(
-      makePromotionInput(moderator, rootIntake.id, postId, imageId),
+      makePromotionInput(moderator, rootIntake.id, postId, imageId, placementId),
     )
 
     await expect(getCopyrightStaffEmailIntake(intake.id, moderator)).resolves.toMatchObject({
@@ -83,6 +85,7 @@ function makePromotionInput(
   intakeId: string,
   postId: string,
   imageId: string,
+  placementId: string,
 ) {
   return {
     currentUser,
@@ -99,7 +102,7 @@ function makePromotionInput(
     electronicSignature: 'Claimant',
     targets: [
       {
-        placementKey: `post-image:${postId}:${imageId}`,
+        placementId,
         placementRevision: 1,
         imageId,
         hostedUseUrl: `https://voucha.ai/posts/${postId}`,

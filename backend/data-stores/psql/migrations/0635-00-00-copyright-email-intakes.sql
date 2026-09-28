@@ -14,6 +14,11 @@ CREATE TABLE copyright_notice_email_intakes (
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE copyright_notice_lifecycle_events
+  ADD CONSTRAINT copyright_lifecycle_event_email_intake_fk
+  FOREIGN KEY (copyright_notice_email_intake_id)
+  REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT;
+
 CREATE TABLE copyright_notice_email_intake_parses (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL UNIQUE REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,

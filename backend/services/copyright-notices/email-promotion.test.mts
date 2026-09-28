@@ -28,7 +28,7 @@ describe('copyright email promotion', () => {
       markdown: 'Hosted copyright target.',
     })
     const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
+    const placementId = await insertTestPostImage({ postId, imageId })
     const intake = await createParsedCopyrightEmailIntake()
     const approved = await promoteCopyrightEmailIntake({
       currentUser: moderator,
@@ -45,7 +45,7 @@ describe('copyright email promotion', () => {
       electronicSignature: 'Claimant',
       targets: [
         {
-          placementKey: `post-image:${postId}:${imageId}`,
+          placementId,
           placementRevision: 1,
           imageId,
           hostedUseUrl: `https://voucha.ai/posts/${postId}`,
@@ -81,7 +81,7 @@ describe('copyright email promotion', () => {
         electronicSignature: 'Claimant',
         targets: [
           {
-            placementKey: `post-image:${postId}:${imageId}`,
+            placementId,
             placementRevision: 1,
             imageId,
             hostedUseUrl: `https://voucha.ai/posts/${postId}`,
@@ -139,7 +139,7 @@ describe('copyright email promotion', () => {
       markdown: 'Hosted copyright target.',
     })
     const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
+    const placementId = await insertTestPostImage({ postId, imageId })
     const intake = await createParsedCopyrightEmailIntake()
     const foreignRecommendationId = '00000000-0000-7000-8000-000000000099'
     await expect(
@@ -158,7 +158,7 @@ describe('copyright email promotion', () => {
         electronicSignature: 'Claimant',
         targets: [
           {
-            placementKey: `post-image:${postId}:${imageId}`,
+            placementId,
             placementRevision: 1,
             imageId,
             hostedUseUrl: `https://voucha.ai/posts/${postId}`,

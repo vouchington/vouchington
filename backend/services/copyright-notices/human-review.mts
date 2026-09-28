@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightHumanReviewAction, CopyrightRestrictionRecord } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
@@ -20,9 +21,9 @@ export async function completeCopyrightMandatoryHumanReview(input: {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
   await using transaction = await beginTransaction()
-  const { rows: placementRows } = await transaction<{ placement_key: string }>(
+  const { rows: placementRows } = await transaction<{ placement_id: string }>(
     sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
-    SELECT target.placement_key
+    SELECT target.placement_id
     FROM copyright_notice_targets target
     JOIN copyright_restrictions restriction ON restriction.copyright_notice_target_id = target.id
     WHERE restriction.id = ${input.restrictionId}
@@ -32,7 +33,7 @@ export async function completeCopyrightMandatoryHumanReview(input: {
   const placement = placementRows[0]
   assert(placement, 409, 'Copyright restriction is not awaiting mandatory human review')
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:placementAdvisoryLock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${placement.placement_key}, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
   `)
   const { rows: locks } = await transaction<{ id: string }>(
     sql`/* completeCopyrightMandatoryHumanReview:lock */
@@ -75,16 +76,13 @@ export async function completeCopyrightMandatoryHumanReview(input: {
   }
   await syncCopyrightRepeatInfringerIncidents(input.noticeId, transaction)
   await transaction(sql`/* completeCopyrightMandatoryHumanReview:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_restriction_id, review_action, review_rationale_ciphertext)
     VALUES (${input.noticeId}, 'mandatory_human_review_completed', ${input.currentUser.id},
-      ${JSON.stringify({
-        restrictionId: input.restrictionId,
-        action: input.action,
-        rationaleCiphertext: encryptSecret(
-          input.rationale,
-          `copyright-restriction-review:${input.restrictionId}`,
-        ),
-      })}::jsonb)
+      ${input.restrictionId}, ${input.action}, ${encryptSecret(
+        input.rationale,
+        `copyright-restriction-review:${input.restrictionId}`,
+      )})
   `)
   await transaction.commit()
   if (restoreIntentId) void enqueueApplyCopyrightAction(restoreIntentId)

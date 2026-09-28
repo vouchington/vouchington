@@ -30,15 +30,15 @@ describe('image placement copyright restore safety', () => {
     const imageId = await insertTestImage(creator.id)
     await insertTestPostImage({ postId, imageId })
     const placement = (await getPostImages(postId))[0]!
-    const placementKey = `image-placement:${placement.placement_id}`
+    const placementId = placement.placement_id
     await withholdImagePlacementForCopyright({
-      placementKey,
+      placementId,
       expectedRevision: placement.placement_revision,
     })
     await applySafetyBlocker(imageId)
 
     await expect(
-      restoreImagePlacementForCopyright({ placementKey, expectedRevision: 1 }),
+      restoreImagePlacementForCopyright({ placementId, expectedRevision: 1 }),
     ).resolves.toMatchObject({
       status: 'deleted',
       placement: { revision: 1, withheld: true, safetyBlocked: true },

@@ -12,7 +12,10 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { replayCopyrightRestoreActionsForRestrictions } from './action-delivery.mts'
 import { replayRestoresAfterCourtFilingAssessment } from './court-hold-restore-replay.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
-import { activateLateCopyrightLegalHoldRestrictions } from './holds-late-restrictions.mts'
+import {
+  activateLateCopyrightLegalHoldRestrictions,
+  lockLateHoldPlacements,
+} from './holds-late-restrictions.mts'
 import { isQualifyingCopyrightLegalHold } from './holds-qualification.mts'
 import { encryptSecret } from '@modules/token-secrets'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
@@ -110,26 +113,15 @@ export async function appendCopyrightLegalHoldAssessment(input: {
     )
   }
   await transaction(sql`/* appendCopyrightLegalHoldAssessment:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_legal_hold_assessment_id)
     VALUES (${submissionRows[0].copyright_notice_id}, 'legal_hold_assessed', ${input.currentUser.id},
-      ${JSON.stringify({ targetIds: input.targetIds })}::jsonb)
+      ${assessment.id})
   `)
   await transaction.commit()
   for (const intentId of lateHoldIntentIds) void enqueueApplyCopyrightAction(intentId)
   await replayRestoresAfterCourtFilingAssessment(submissionRows[0].copyright_notice_id)
   return { ...assessment, target_ids: input.targetIds }
-}
-
-async function lockLateHoldPlacements(
-  targetIds: string[],
-  transaction: Parameters<typeof activateLateCopyrightLegalHoldRestrictions>[3],
-): Promise<void> {
-  await transaction(sql`/* appendCopyrightLegalHoldAssessment:placementLocks */
-    SELECT pg_advisory_xact_lock(hashtextextended(placement_key, 0))
-    FROM copyright_notice_targets
-    WHERE id = ANY(${targetIds}::uuid[])
-    ORDER BY placement_key
-  `)
 }
 
 export async function resolveCopyrightLegalHold(input: {
@@ -169,13 +161,14 @@ export async function resolveCopyrightLegalHold(input: {
   const resolution = rows[0] as CopyrightLegalHoldResolutionRecord | undefined
   assert(resolution, 409, 'Copyright legal hold is already resolved')
   await transaction(sql`/* resolveCopyrightLegalHold:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${assessment.copyright_notice_id}, 'legal_hold_resolved', ${input.currentUser.id}, ${JSON.stringify({ resolutionKind: input.resolutionKind })}::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_legal_hold_resolution_id)
+    VALUES (${assessment.copyright_notice_id}, 'legal_hold_resolved', ${input.currentUser.id}, ${resolution.id})
   `)
   const { rows: restrictionRows } = await transaction<{ id: string; intent_id: string }>(sql`
     /* resolveCopyrightLegalHold:affectedRestrictions */
     WITH hold_restrictions AS (
-      SELECT restriction.id, target.placement_key
+      SELECT restriction.id, target.placement_id
       FROM copyright_legal_hold_restrictions source
       JOIN copyright_restrictions restriction ON restriction.id = source.copyright_restriction_id
       JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
@@ -186,7 +179,7 @@ export async function resolveCopyrightLegalHold(input: {
         copyright_restriction_id, copyright_notice_deadline_id, expected_placement_revision, action
       ) SELECT held.id, NULL, placement.revision, 'restore'
       FROM hold_restrictions held
-      JOIN media_placements placement ON concat('image-placement:', placement.id) = held.placement_key
+      JOIN media_placements placement ON placement.id = held.placement_id
       ON CONFLICT (copyright_restriction_id, expected_placement_revision, action)
       DO UPDATE SET updated_at = copyright_notice_action_intents.updated_at
       RETURNING id, copyright_restriction_id

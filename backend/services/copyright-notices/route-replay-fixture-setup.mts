@@ -63,7 +63,7 @@ export async function createCopyrightReplayFixture() {
     initialSubmission: { kind: 'notice', sourceKind: 'staff', bodyCiphertext: 'notice' },
     targets: [
       {
-        placementKey: `image-placement:${placement.placement_id}`,
+        placementId: placement.placement_id,
         placementRevision: placement.placement_revision,
         imageId,
         hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,

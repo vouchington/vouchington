@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
+import { getImagePlacementKey } from '@services/images/placements'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 
 export async function reverseAutomatedCopyrightRestrictions(
@@ -10,9 +11,9 @@ export async function reverseAutomatedCopyrightRestrictions(
   reviewedAt = new Date(),
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  const { rows: placements } = await transaction<{ placement_key: string }>(sql`
+  const { rows: placements } = await transaction<{ placement_id: string }>(sql`
     /* reviewCopyrightFormIntake:reverseAutomatedRestrictions:placements */
-    SELECT DISTINCT target.placement_key
+    SELECT DISTINCT target.placement_id
     FROM copyright_restrictions restriction
     JOIN copyright_notice_submission_assessments assessment
       ON assessment.id = restriction.authorizing_assessment_id
@@ -22,12 +23,12 @@ export async function reverseAutomatedCopyrightRestrictions(
       AND assessment.assessed_by_id IS NULL AND target.copyright_notice_id = ${noticeId}
       AND assessment.copyright_notice_form_screening_id IS NOT NULL
       AND restriction.lifted_at IS NULL AND restriction.human_review_action IS NULL
-    ORDER BY target.placement_key
+    ORDER BY target.placement_id
   `)
   for (const placement of placements) {
     // oxlint-disable-next-line no-await-in-loop -- placement locks must use canonical order.
     await transaction(sql`/* reviewCopyrightFormIntake:reverseAutomatedRestrictions:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended(${placement.placement_key}, 0))
+      SELECT pg_advisory_xact_lock(hashtextextended(${getImagePlacementKey(placement.placement_id)}, 0))
     `)
   }
   const { rows } = await transaction<{ id: string }>(sql`

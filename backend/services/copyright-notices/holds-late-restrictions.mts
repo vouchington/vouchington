@@ -21,7 +21,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
 ): Promise<string[]> {
   const { rows } = await transaction<{
     id: string
-    placement_key: string
+    placement_id: string
   }>(sql`
     /* activateLateCopyrightLegalHoldRestrictions */
     WITH prior AS (
@@ -57,7 +57,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       INSERT INTO copyright_legal_hold_restrictions (
         copyright_restriction_id, copyright_notice_legal_hold_assessment_id
       ) SELECT active.id, ${assessmentId} FROM active_restrictions active ON CONFLICT DO NOTHING
-    ) SELECT inserted.id, target.placement_key
+    ) SELECT inserted.id, target.placement_id
       FROM inserted JOIN copyright_notice_targets target ON target.id = inserted.copyright_notice_target_id
   `)
   if (rows.length > 0) {
@@ -68,7 +68,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
   const publishPlacement = dependencies.publishPlacement ?? prepublishImagePlacementDenial
   const intentIds = await Promise.all(
     rows.map(async restriction => {
-      const placement = await getImagePlacementForCopyright(restriction.placement_key, {
+      const placement = await getImagePlacementForCopyright(restriction.placement_id, {
         query: transaction,
       })
       if (!placement || placement.deleted) return null
@@ -82,7 +82,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
           { query: transaction },
         )
         await withholdImagePlacementForCopyright(
-          { placementKey: restriction.placement_key, expectedRevision: placement.revision },
+          { placementId: restriction.placement_id, expectedRevision: placement.revision },
           { query: transaction },
         )
       }
@@ -100,4 +100,16 @@ export async function activateLateCopyrightLegalHoldRestrictions(
     }),
   )
   return intentIds.filter((id): id is string => id !== null)
+}
+
+export async function lockLateHoldPlacements(
+  targetIds: string[],
+  transaction: TransactionQuery,
+): Promise<void> {
+  await transaction(sql`/* appendCopyrightLegalHoldAssessment:placementLocks */
+    SELECT pg_advisory_xact_lock(hashtextextended(concat('image-placement:', placement_id), 0))
+    FROM copyright_notice_targets
+    WHERE id = ANY(${targetIds}::uuid[])
+    ORDER BY placement_id
+  `)
 }

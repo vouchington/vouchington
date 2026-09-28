@@ -75,6 +75,11 @@ CREATE TABLE media_delivery_registry_records (
   )
 );
 
+ALTER TABLE copyright_notice_lifecycle_events
+  ADD CONSTRAINT copyright_lifecycle_event_media_registry_fk
+  FOREIGN KEY (media_delivery_registry_key)
+  REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT;
+
 ALTER TABLE media_delivery_registry_records
 ADD CONSTRAINT fk_media_delivery_registry_records__retained_image_binding
 FOREIGN KEY (placement_id, image_id)

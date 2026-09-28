@@ -373,6 +373,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_immutable_with_actor_erasur
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_lifecycle_event_source_notice`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_lifecycle_event_source_notice()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_notice_identity`
 
 ```sql

@@ -36,7 +36,7 @@ export async function createCopyrightNoticeAggregateInTransaction(
   assert(notice, 500, 'Failed to create copyright notice')
   const serializedTargets = JSON.stringify(
     input.targets.map(target => ({
-      placement_key: target.placementKey,
+      placement_id: target.placementId,
       placement_revision: target.placementRevision,
       image_id: target.imageId,
       hosted_use_url: target.hostedUseUrl,
@@ -47,23 +47,23 @@ export async function createCopyrightNoticeAggregateInTransaction(
     WITH target_inputs AS (
       SELECT *
       FROM jsonb_to_recordset(${serializedTargets}::jsonb) AS target_input(
-        placement_key text,
+        placement_id uuid,
         placement_revision integer,
         image_id uuid,
         hosted_use_url text
       )
     ), inserted_targets AS (
       INSERT INTO copyright_notice_targets (
-        copyright_notice_id, placement_key, placement_revision, hosted_use_url
+        copyright_notice_id, placement_id, placement_revision, hosted_use_url
       )
-      SELECT ${notice.id}, placement_key, placement_revision, hosted_use_url
+      SELECT ${notice.id}, placement_id, placement_revision, hosted_use_url
       FROM target_inputs
-      RETURNING id, placement_key, placement_revision
+      RETURNING id, placement_id, placement_revision
     )
-    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, image_id)
-    SELECT inserted_targets.id, target_inputs.image_id
+    INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
+    SELECT inserted_targets.id, inserted_targets.placement_id, target_inputs.image_id
     FROM inserted_targets
-    INNER JOIN target_inputs USING (placement_key, placement_revision)
+    INNER JOIN target_inputs USING (placement_id, placement_revision)
   `),
     transaction(sql`/* createCopyrightNoticeAggregate:submission */
     INSERT INTO copyright_notice_submissions (
@@ -74,8 +74,8 @@ export async function createCopyrightNoticeAggregateInTransaction(
     )
   `),
     transaction(sql`/* createCopyrightNoticeAggregate:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${notice.id}, 'notice_received', '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type)
+    VALUES (${notice.id}, 'notice_received')
   `),
   ])
   return notice

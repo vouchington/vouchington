@@ -141,12 +141,12 @@ export async function insertTestPostImage(data: {
   imageId: string
   orderIndex?: number
   caption?: string
-}): Promise<void> {
-  const { rowCount } = await read(sql`/* findTestPostImageBinding */
+}): Promise<string> {
+  const { rows: existing } = await read<{ placement_id: string }>(sql`/* findTestPostImageBinding */
     SELECT placement_id FROM image_placements
     WHERE post_id = ${data.postId} AND image_id = ${data.imageId}
   `)
-  if (rowCount) return
+  if (existing[0]) return existing[0].placement_id
   const placementId = v7()
   await using query = await beginTransaction()
   await ensureImagePlacementBinding(query, {
@@ -175,6 +175,7 @@ export async function insertTestPostImage(data: {
     SELECT placement_id, post_id, image_id FROM missing_binding
   `)
   await query.commit()
+  return placementId
 }
 
 export async function insertPendingTestImage(userId: string): Promise<string> {

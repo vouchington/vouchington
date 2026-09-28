@@ -23,7 +23,7 @@ export type CopyrightCorrespondenceKind =
   | 'inbound_message'
 
 export type CopyrightNoticeTargetInput = {
-  placementKey: string
+  placementId: string
   placementRevision: number
   imageId: string
   hostedUseUrl: string
@@ -62,7 +62,7 @@ export type CopyrightNoticeRecord = {
 export type CopyrightNoticeTargetRecord = {
   id: string
   copyright_notice_id: string
-  placement_key: string
+  placement_id: string
   placement_revision: number
   image_id: string
   hosted_use_url: string
@@ -168,7 +168,23 @@ export type CopyrightLifecycleEventRecord = {
   copyright_notice_id: string
   event_type: string
   actor_user_id: string | null
-  metadata: Record<string, unknown>
+  copyright_notice_submission_id: string | null
+  copyright_notice_submission_assessment_id: string | null
+  copyright_notice_evidence_artifact_id: string | null
+  copyright_notice_correspondence_id: string | null
+  copyright_notice_legal_hold_assessment_id: string | null
+  copyright_notice_legal_hold_resolution_id: string | null
+  copyright_notice_deadline_id: string | null
+  copyright_restriction_id: string | null
+  copyright_notice_action_intent_id: string | null
+  copyright_notice_email_intake_id: string | null
+  copyright_notice_delivery_intent_id: string | null
+  media_delivery_registry_key: string | null
+  review_action: CopyrightHumanReviewAction | null
+  review_rationale_ciphertext: string | null
+  counter_notice_accepted: boolean | null
+  recovery_source: 'durable_review' | 'durable_decision' | null
+  replay_reason: 'operator_replay' | null
   created_at: Date
 }
 

@@ -123,8 +123,8 @@ export async function createOutboundCopyrightCorrespondence(input: {
   const correspondence = rows[0]
   assert(correspondence, 404, 'Copyright notice or case submission not found')
   await transaction(sql`/* createOutboundCopyrightCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, metadata)
-    VALUES (${input.noticeId}, 'outbound_correspondence_created', '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_correspondence_id)
+    VALUES (${input.noticeId}, 'outbound_correspondence_created', ${correspondence.id})
   `)
   await transaction.commit()
   return correspondence
@@ -152,8 +152,9 @@ export async function approveCopyrightCorrespondence(input: {
   const correspondence = rows[0]
   assert(correspondence, 409, 'Only an unapproved agent-composed outbound message can be approved')
   await transaction(sql`/* approveCopyrightCorrespondence:event */
-    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id, metadata)
-    VALUES (${correspondence.copyright_notice_id}, 'agent_correspondence_approved', ${input.currentUser.id}, '{}'::jsonb)
+    INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, actor_user_id,
+      copyright_notice_correspondence_id)
+    VALUES (${correspondence.copyright_notice_id}, 'agent_correspondence_approved', ${input.currentUser.id}, ${correspondence.id})
   `)
   await transaction.commit()
   return correspondence

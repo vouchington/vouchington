@@ -49,7 +49,7 @@ describe('copyright restriction reversal concurrency', () => {
       },
       targets: [
         {
-          placementKey: `image-placement:${placement.placement_id}`,
+          placementId: placement.placement_id,
           placementRevision: placement.placement_revision,
           imageId,
           hostedUseUrl: `https://example.test/${crypto.randomUUID()}`,
@@ -95,9 +95,9 @@ describe('copyright restriction reversal concurrency', () => {
       }),
     ).resolves.toBe('stale')
 
-    await expect(
-      getImagePlacementForCopyright(`image-placement:${placement.placement_id}`),
-    ).resolves.toEqual(expect.objectContaining({ withheld: false }))
+    await expect(getImagePlacementForCopyright(placement.placement_id)).resolves.toEqual(
+      expect.objectContaining({ withheld: false }),
+    )
   })
 })
 

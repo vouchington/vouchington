@@ -17,6 +17,7 @@ import { getImagePlacementDeliveryKey } from '../../media-delivery-safety/index.
 import { recordImageDeliveryRepairMarker } from '../../media-delivery-safety/delivery-repair-markers.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedMediaBindings } from '../cleanup-retained-media-bindings.mts'
+import { createCopyrightNoticeSchemaFixture } from '../../../test-helpers/data-stores/psql/copyright-notice-schema.mts'
 
 async function drainRetainedMediaCleanup(
   tuples: readonly { placementId: string; imageId: string }[],
@@ -29,6 +30,15 @@ async function drainRetainedMediaCleanup(
 }
 
 describe('retained media identity cleanup', () => {
+  it('preserves legal target placement and image identities without a live placement', async () => {
+    const fixture = await createCopyrightNoticeSchemaFixture()
+    await drainRetainedMediaCleanup([
+      { placementId: fixture.placementId, imageId: fixture.imageId },
+    ])
+    expect(await hasTestRetainedMediaBinding(fixture.placementId)).toBe(true)
+    expect(await hasTestRetainedImageIdentity(fixture.imageId)).toBe(true)
+  })
+
   it('retains a committed pair through marker acknowledgement', async () => {
     const { tuple } = await createTestDeliverySurface()
     const deliveryKey = getImagePlacementDeliveryKey(tuple)

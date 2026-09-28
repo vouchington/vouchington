@@ -172,7 +172,7 @@ describe('copyright email intake persistence', () => {
       markdown: 'image',
     })
     const imageId = await insertTestImage(poster.id)
-    await insertTestPostImage({ postId, imageId })
+    const placementId = await insertTestPostImage({ postId, imageId })
     const notice = await createCopyrightNoticeAggregate({
       jurisdiction: 'us_dmca',
       receivedAt: new Date(),
@@ -184,7 +184,7 @@ describe('copyright email intake persistence', () => {
       initialSubmission: { kind: 'notice', sourceKind: 'email', bodyCiphertext: 'ciphertext' },
       targets: [
         {
-          placementKey: `post-image:${postId}:${imageId}`,
+          placementId,
           placementRevision: 1,
           imageId,
           hostedUseUrl: `https://voucha.ai/posts/${postId}`,
@@ -231,7 +231,7 @@ describe('copyright email intake persistence', () => {
         electronicSignature: 'Claimant',
         targets: [
           {
-            placementKey: `post-image:${postId}:${imageId}`,
+            placementId,
             placementRevision: 1,
             imageId,
             hostedUseUrl: `https://voucha.ai/posts/${postId}`,

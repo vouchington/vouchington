@@ -6,36 +6,38 @@ Immutable media-kind-neutral snapshot of each exact hosted use identified by a c
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                         |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                 |
-| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | Copyright allegation that identified this hosted use.                                           |
-| `placement_key`       | `text`                     | no       |                              |          |           |           | Stable opaque key for the specific hosted placement; it is not a polymorphic entity identifier. |
-| `placement_revision`  | `integer`                  | no       |                              |          |           |           | Placement revision observed when the allegation target was captured.                            |
-| `hosted_use_url`      | `text`                     | no       |                              |          |           |           | Immutable URL snapshot supplied or resolved for the identified hosted use.                      |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                 |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                 |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                   |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                           |
+| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | Copyright allegation that identified this hosted use.                                                                     |
+| `placement_id`        | `uuid`                     | no       |                              |          |           |           | Concrete retained post-image placement identity for the exact hosted use; retention never grants live delivery authority. |
+| `placement_revision`  | `integer`                  | no       |                              |          |           |           | Placement revision observed when the allegation target was captured.                                                      |
+| `hosted_use_url`      | `text`                     | no       |                              |          |           |           | Immutable URL snapshot supplied or resolved for the identified hosted use.                                                |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                           |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `copyright_notice_targets_copyright_notice_id_placement_key__key`: `UNIQUE (copyright_notice_id, placement_key, placement_revision)`
+- `copyright_notice_targets_copyright_notice_id_placement_id_p_key`: `UNIQUE (copyright_notice_id, placement_id, placement_revision)`
+- `copyright_notice_targets_id_placement_id_key`: `UNIQUE (id, placement_id)`
 
 **Check constraints:**
 
-- `copyright_notice_targets_placement_key_check`: `CHECK (((char_length(placement_key) >= 1) AND (char_length(placement_key) <= 512)))`
 - `copyright_notice_targets_placement_revision_check`: `CHECK ((placement_revision >= 0))`
 
 **Foreign keys:**
 
 - `copyright_notice_targets_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
+- `copyright_notice_targets_placement_id_fkey`: `FOREIGN KEY (placement_id) REFERENCES retained_image_placement_bindings(placement_id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_targets_copyright_notice_id_placement_key__key`: `CREATE UNIQUE INDEX copyright_notice_targets_copyright_notice_id_placement_key__key ON public.copyright_notice_targets USING btree (copyright_notice_id, placement_key, placement_revision)`
+- `copyright_notice_targets_copyright_notice_id_placement_id_p_key`: `CREATE UNIQUE INDEX copyright_notice_targets_copyright_notice_id_placement_id_p_key ON public.copyright_notice_targets USING btree (copyright_notice_id, placement_id, placement_revision)`
+- `copyright_notice_targets_id_placement_id_key`: `CREATE UNIQUE INDEX copyright_notice_targets_id_placement_id_key ON public.copyright_notice_targets USING btree (id, placement_id)`
 - `copyright_notice_targets_pkey`: `CREATE UNIQUE INDEX copyright_notice_targets_pkey ON public.copyright_notice_targets USING btree (id)`
-- `idx_copyright_notice_targets__placement`: `CREATE INDEX idx_copyright_notice_targets__placement ON public.copyright_notice_targets USING btree (placement_key, placement_revision)`
+- `idx_copyright_notice_targets__placement`: `CREATE INDEX idx_copyright_notice_targets__placement ON public.copyright_notice_targets USING btree (placement_id, placement_revision)`
 
 **Triggers:**
 
