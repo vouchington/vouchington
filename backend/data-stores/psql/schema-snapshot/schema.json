@@ -65225,7 +65225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "author_username": {
@@ -65236,7 +65236,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "community_key": {
@@ -65247,7 +65247,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "community_slug": {
@@ -65258,7 +65258,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "day": {
@@ -65269,7 +65269,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 4,
           "type": "date"
         },
         "dirty_work_id": {
@@ -65302,7 +65302,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "impact_post_identity_id": {
@@ -65313,7 +65313,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "impact_rss_feed_item_identity_id": {
@@ -65324,7 +65324,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "post_slug": {
@@ -65335,7 +65335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "post_type": {
@@ -65346,7 +65346,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 3,
           "type": "post_types"
         },
         "rss_feed_key": {
@@ -65357,7 +65357,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "topic_alias": {
@@ -65368,7 +65368,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "topic_key": {
@@ -65379,7 +65379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 8,
           "type": "uuid"
         }
       },
@@ -66614,7 +66614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "eligibility_fingerprint": {
