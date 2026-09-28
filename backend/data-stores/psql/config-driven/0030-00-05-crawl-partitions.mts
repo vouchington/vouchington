@@ -1,7 +1,7 @@
 /**
  * Creates monthly range partitions for crawl tables.
  * Retention is handled by dropping expired monthly partitions, not row deletes.
- * Drop order: crawl_chunks first (FK dependency), then crawls.
+ * Drop order: crawl_chunks and crawl_links first (FK dependency), then crawls.
  */
 
 import { generateMonthlyPartitions } from './utils/partition-utils.mts'

@@ -13,7 +13,7 @@ describe('downloadBatchResults', () => {
     vi.clearAllMocks()
     vi.spyOn(Date, 'now').mockReturnValue(123)
     readBatch.mockResolvedValue({
-      rows: [{ data: { outputS3Uri: `s3://${S3BedrockBatchBucket}/bedrock-output/` } }],
+      rows: [{ output_s3_uri: `s3://${S3BedrockBatchBucket}/bedrock-output/` }],
     })
     listOutputObjectKeys.mockRejectedValue(new Error('S3 list failed'))
   })
@@ -39,7 +39,7 @@ describe('downloadBatchResults', () => {
   it('rejects a Bedrock output URI that is not the dedicated bedrock-batch bucket', async () => {
     const unsupportedUri = 's3://example-bucket/bedrock-embeddings-output/'
     readBatch.mockResolvedValue({
-      rows: [{ data: { outputS3Uri: unsupportedUri } }],
+      rows: [{ output_s3_uri: unsupportedUri }],
     })
 
     await expect(

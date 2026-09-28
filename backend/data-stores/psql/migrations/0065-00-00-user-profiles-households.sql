@@ -523,7 +523,6 @@ CREATE TABLE IF NOT EXISTS ses_bounce_events (
   bounce_type ses_bounce_types,
   bounce_sub_type TEXT,
   CHECK (bounce_sub_type IS NULL OR (char_length(bounce_sub_type) <= 255 AND TRIM(bounce_sub_type) = bounce_sub_type)),
-  recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
   ses_message_id TEXT,
   CHECK (ses_message_id IS NULL OR (char_length(ses_message_id) <= 1024 AND TRIM(ses_message_id) = ses_message_id)),
   ses_feedback_id TEXT,
@@ -538,9 +537,32 @@ CREATE TABLE IF NOT EXISTS ses_bounce_events (
   CHECK (dedup_key IS NULL OR char_length(dedup_key) = 64)
 );
 
--- GIN index for querying bounced email addresses in recipients array
-CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__recipients
-ON ses_bounce_events USING GIN (recipients);
+-- One row per normalized recipient. Reordered or case-normalized duplicates stay one event
+-- because dedup_key hashes the sorted set; different recipient sets stay different events.
+CREATE TABLE IF NOT EXISTS ses_bounce_event_recipients (
+  ses_bounce_event_id UUID NOT NULL REFERENCES ses_bounce_events ON DELETE CASCADE,
+  ordinal INT NOT NULL CHECK (ordinal >= 0),
+  email TEXT NOT NULL CHECK (
+    char_length(email) BETWEEN 1 AND 320
+    AND email = LOWER(email)
+    AND email = TRIM(email)
+  ),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (ses_bounce_event_id, ordinal)
+);
+
+CREATE TRIGGER trigger_ses_bounce_event_recipients_updated_at
+BEFORE UPDATE ON ses_bounce_event_recipients
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_ses_bounce_event_recipients__email
+ON ses_bounce_event_recipients (email);
+
+COMMENT ON TABLE ses_bounce_event_recipients IS 'Normalized recipient addresses owned by one SES bounce, complaint, or delivery event.';
+COMMENT ON COLUMN ses_bounce_event_recipients.ses_bounce_event_id IS 'SES notification that owns this recipient address.';
+COMMENT ON COLUMN ses_bounce_event_recipients.ordinal IS 'Zero-based position after trim and lowercase normalization, before dedup-key sorting.';
+COMMENT ON COLUMN ses_bounce_event_recipients.email IS 'Lowercased trimmed recipient address. Repeated addresses in one event stay separate rows.';
 
 -- Index to correlate with sent emails by SES message ID
 CREATE INDEX IF NOT EXISTS idx_ses_bounce_events__ses_message_id
@@ -561,7 +583,6 @@ COMMENT ON TABLE ses_bounce_events IS 'Records email bounce, complaint, and deli
 COMMENT ON COLUMN ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
 COMMENT ON COLUMN ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
 COMMENT ON COLUMN ses_bounce_events.bounce_sub_type IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
-COMMENT ON COLUMN ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
 COMMENT ON COLUMN ses_bounce_events.ses_message_id IS 'SES message ID for correlating with sent emails.';
 COMMENT ON COLUMN ses_bounce_events.ses_feedback_id IS 'SES feedback ID for the notification.';
 COMMENT ON COLUMN ses_bounce_events.ses_timestamp IS 'Timestamp from the SES notification payload.';

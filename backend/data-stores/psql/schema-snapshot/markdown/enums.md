@@ -51,6 +51,11 @@
 - `crawl_chunks`
 - `images`
 
+## `boilerplate_removal_result_kinds`
+
+- `css_selector`
+- `html`
+
 ## `broadcast_types`
 
 - `everyone`
@@ -197,6 +202,13 @@
 - `owner`
 - `admin`
 - `member`
+
+## `crawl_link_shapes`
+
+- `string`
+- `string_list`
+- `map_string`
+- `map_string_list`
 
 ## `crawl_network_errors`
 

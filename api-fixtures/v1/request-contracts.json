@@ -6872,7 +6872,7 @@
         "metadata": {
           "anyOf": [
             {
-              "$ref": "#/components/schemas/Record_string_unknown"
+              "$ref": "#/components/schemas/ImportBatchMetadata"
             },
             {
               "type": "null"
@@ -6898,6 +6898,18 @@
         "total_rows",
         "updated_at"
       ],
+      "type": "object"
+    },
+    "ImportBatchMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        }
+      },
       "type": "object"
     },
     "ImportRow": {

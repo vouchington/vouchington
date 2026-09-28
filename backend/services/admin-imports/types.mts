@@ -1,5 +1,10 @@
 export type ImportType = 'topic' | 'rss_feed'
 
+export type ImportBatchMetadata = {
+  source?: string
+  version?: number
+}
+
 export type ImportBatch = {
   id: string
   import_type: ImportType
@@ -10,7 +15,7 @@ export type ImportBatch = {
   completed_at: Date | null
   created_at: Date
   updated_at: Date
-  metadata: Record<string, unknown> | null
+  metadata: ImportBatchMetadata | null
 }
 
 export type ImportRow = {

@@ -34,9 +34,9 @@ export const getLatestHtmlSnapshotCrawlBefore = async (
       has_pending_embeddings,
       markdown,
       title,
-      links,
+      fn_crawl_links_json(id) AS links,
       meta_tags,
-      embed_metadata,
+      fn_crawl_embed_json(crawls) AS embed_metadata,
       embed_oembed_url,
       embed_oembed_resolved_at,
       lang

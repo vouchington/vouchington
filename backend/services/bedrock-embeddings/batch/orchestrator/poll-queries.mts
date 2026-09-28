@@ -35,7 +35,7 @@ export const getActiveBatchStats = async (): Promise<{
     `/* getActiveBatchStats */
     SELECT
       COUNT(*) as count,
-      COALESCE(SUM((data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION), 0) as input_size_mb
+      COALESCE(SUM(input_size_mb), 0) as input_size_mb
     FROM bedrock_embeddings_batches
     WHERE submitted_at IS NOT NULL
       AND completed_at IS NULL
@@ -58,26 +58,4 @@ export const getBatchIdByJobArn = async (jobArn: string): Promise<string | null>
     [jobArn],
   )
   return rows.length > 0 ? (rows[0].id as string) : null
-}
-
-export const getBatchInfo = async (
-  batchId: string,
-): Promise<{ job_type: string; data: Record<string, unknown> } | null> => {
-  const { rows } = await read(
-    `/* getBatchInfo */
-    SELECT job_type, data
-    FROM bedrock_embeddings_batches
-    WHERE id = $1
-  `,
-    [batchId],
-  )
-
-  if (rows.length === 0) {
-    return null
-  }
-
-  return {
-    job_type: rows[0].job_type,
-    data: rows[0].data as Record<string, unknown>,
-  }
 }

@@ -18,7 +18,15 @@ describe('upsert.generated', () => {
     const url = await addUrl(null, `https://${hostname}/path?query=value`)
     expect(url!.url).toBe(`https://${hostname}/path?query=value`)
     expect(url!.pathname).toBe('/path')
-    expect(url!.search_params).toBeDefined()
+    expect(url!.search_params).toEqual({ query: 'value' })
+  })
+
+  it('keeps repeated query keys and projects the last value', async () => {
+    const hostname = `example-${crypto.randomUUID()}.com`
+    const url = await addUrl(null, `https://${hostname}/path?a=1&b=2&a=3`)
+    expect(url!.url).toContain('a=1')
+    expect(url!.url).toContain('a=3')
+    expect(url!.search_params).toEqual({ a: '3', b: '2' })
   })
 
   it('addUrl with content_type creates mime type', async () => {

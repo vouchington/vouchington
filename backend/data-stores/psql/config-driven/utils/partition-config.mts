@@ -123,7 +123,7 @@ export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
 /**
  * Crawl tables - partitioned by UUIDv7 timestamp
  * Monthly partitions for 30-day retention via partition drop
- * Drop order: crawl_chunks first (FK dependency), then crawls
+ * Drop order: crawl_chunks and crawl_links first (FK dependency), then crawls
  *
  * `retentionDays: 30` is not an exact per-row cutoff: `cleanupPartitions` only drops a whole
  * monthly partition once its exclusive upper bound (the start of the *next* month) passes
@@ -134,6 +134,7 @@ export const DEFERRED_LEDGER_PARTITION_TABLES: string[] = [
  */
 export const CRAWL_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   monthlyPartitionTable('crawl_chunks', { retentionDays: 30, dropPriority: 0, futureMonths: 2 }),
+  monthlyPartitionTable('crawl_links', { retentionDays: 30, dropPriority: 0, futureMonths: 2 }),
   monthlyPartitionTable('crawls', { retentionDays: 30, dropPriority: 1, futureMonths: 2 }),
 ]
 

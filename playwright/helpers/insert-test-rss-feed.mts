@@ -27,8 +27,8 @@ export async function insertTestRssFeed(topicId: string, suffix: string): Promis
 
   // Insert URLs for the feed
   const rssFeedUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
-     VALUES ($1, $2, $3, '{}'::JSONB)
+    `INSERT INTO urls (url, hostname_id, pathname)
+     VALUES ($1, $2, $3)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
      RETURNING id`,
     [`https://${hostname}/feed.xml`, hostnameId, '/feed.xml'],
@@ -36,8 +36,8 @@ export async function insertTestRssFeed(topicId: string, suffix: string): Promis
   const rssFeedUrlId = rssFeedUrlResult.rows[0].id as string
 
   const homePageUrlResult = await write(
-    `INSERT INTO urls (url, hostname_id, pathname, search_params)
-     VALUES ($1, $2, $3, '{}'::JSONB)
+    `INSERT INTO urls (url, hostname_id, pathname)
+     VALUES ($1, $2, $3)
      ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
      RETURNING id`,
     [`https://${hostname}/`, hostnameId, '/'],

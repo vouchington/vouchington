@@ -26,8 +26,8 @@ test.describe('Hacker News discussions aside', () => {
     articleUrl = `https://${hostname}/hn-aside-${suffix}`
     const urlResult = await write(
       `/* hn-discussions-aside.spec insert article url */
-       INSERT INTO urls (url, hostname_id, pathname, search_params)
-       VALUES ($1, $2, $3, '{}'::JSONB)
+       INSERT INTO urls (url, hostname_id, pathname)
+       VALUES ($1, $2, $3)
        ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id
        RETURNING id`,
       [articleUrl, hostnameId, `/hn-aside-${suffix}`],

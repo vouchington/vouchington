@@ -6,7 +6,6 @@ import {
   getTestPostPublicationDirtyWorkForScope,
   insertTestRssFeedDirect,
   listTestRssFeedItemCategorySnapshotReconciliations,
-  replaceTestRssFeedItemCategorySnapshotReconciliation,
 } from '@voucha/test-helpers'
 import {
   acknowledgeRssFeedItemCategorySnapshot,
@@ -247,12 +246,13 @@ describe('RSS feed item category snapshot reconciliation', () => {
       itemInput(`${suffix}-poisoned`, []),
       itemInput(`${suffix}-valid`, []),
     ])
-    await replaceTestRssFeedItemCategorySnapshotReconciliation(poisoned!.id, [1])
-
     const selected = await listTestRssFeedItemCategorySnapshotReconciliations([
       poisoned!.id,
       valid!.id,
     ])
+    const poisonedRow = selected.find(row => row.rss_feed_item_id === poisoned!.id)
+    if (!poisonedRow) throw new Error('missing poisoned category snapshot')
+    poisonedRow.categories = [1]
     await expect(
       reconcileRssFeedItemCategorySnapshotRows(
         selected as RssFeedItemCategorySnapshotReconciliation[],
