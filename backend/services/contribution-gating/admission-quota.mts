@@ -77,6 +77,11 @@ export async function recordContributionAdmissionConsumption(
   committedAt: Date,
   consumptionMode: ContributionAdmissionConsumptionMode,
 ): Promise<Date> {
+  await query(sql`/* recordContributionAdmissionConsumption.identity */
+    SELECT fn_ensure_audit_retained_identity(
+      'retained_post_admission_reservation_identities'::regclass,
+      ${reservationId}::uuid
+    )`)
   const result = await query<{
     committed_at: Date
   }>(sql`/* recordContributionAdmissionConsumption.insert */

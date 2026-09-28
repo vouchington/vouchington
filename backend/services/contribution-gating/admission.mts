@@ -20,6 +20,7 @@ import {
 } from './admission-reservations.mts'
 import { contributionAdmissionConsumptionMode } from './policy.mts'
 import type { ContributionAdmissionInput, ContributionAdmissionResult } from './admission-types.mts'
+import { rejectFailedPreparedContribution } from './prepared-contribution.mts'
 import { publishFinalizedContributionResponse } from './publish-finalized-response.mts'
 import {
   committedContributionPostId,
@@ -127,6 +128,7 @@ export async function runContributionAdmission<T>(
     await query.commit()
     if (result.kind === 'created') {
       committedResult = result
+      rejectFailedPreparedContribution(query)
       const published = await publishFinalizedContributionResponse<T>({
         reservationId: claim.reservationId,
         leaseId: claim.leaseId,

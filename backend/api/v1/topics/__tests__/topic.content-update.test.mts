@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import { createTestUser, insertTestImage, insertTestTopic } from '@voucha/test-helpers'
 import { createTopicRevision } from '@services/topic-revisions'
 
 describe('Topic content update attribution', () => {
@@ -19,10 +19,11 @@ describe('Topic content update attribution', () => {
       { markdown: { before: '', after: 'A new topic summary.' } },
       admin.id,
     )
+    const heroImageId = await insertTestImage(admin.id)
     await createTopicRevision(
       topicId,
       'update',
-      { hero_image_id: { before: null, after: '00000000-0000-7000-8000-000000000001' } },
+      { hero_image_id: { before: null, after: heroImageId } },
       admin.id,
     )
 
