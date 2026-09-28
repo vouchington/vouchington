@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  createTestUserDirect,
+  getTestPostImagePlacement,
+  insertTestImage,
+  insertTestPost,
+  insertTestPostImage,
+} from '@voucha/test-helpers'
 import { markImageModerationFlagged } from '@voucha/test-helpers/entities/images'
 import { getTestMediaDeliveryRecord } from '@voucha/test-helpers/entities/image-surface-placements'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
-import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
 import {
   imposeTestCopyrightGround,
   liftTestCopyrightRestriction,
@@ -17,7 +23,7 @@ describe('country-scoped copyright delivery', () => {
   })
 
   it('publishes an unrestricted allow when no country ground exists', async () => {
-    const fixture = await createTestDeliverySurface()
+    const fixture = await createCountryDeliveryPost()
     const edge = installTestMediaDeliveryEdge()
     await processMediaDeliveryRegistryRecord(fixture.deliveryKey)
     expect(edge.records.get(fixture.deliveryKey)).toMatchObject({
@@ -28,7 +34,7 @@ describe('country-scoped copyright delivery', () => {
   })
 
   it('unions country grounds from different cases and shrinks the set when one is lifted', async () => {
-    const fixture = await createTestDeliverySurface()
+    const fixture = await createCountryDeliveryPost()
     const edge = installTestMediaDeliveryEdge()
     const germany = await imposeTestCopyrightGround({
       ...fixture.tuple,
@@ -57,7 +63,7 @@ describe('country-scoped copyright delivery', () => {
   })
 
   it('keeps a global safety denial ahead of a country ground', async () => {
-    const fixture = await createTestDeliverySurface()
+    const fixture = await createCountryDeliveryPost()
     const edge = installTestMediaDeliveryEdge()
     await imposeTestCopyrightGround({
       ...fixture.tuple,
@@ -80,7 +86,7 @@ describe('country-scoped copyright delivery', () => {
   })
 
   it('treats a global copyright ground as a worldwide denial', async () => {
-    const fixture = await createTestDeliverySurface()
+    const fixture = await createCountryDeliveryPost()
     const edge = installTestMediaDeliveryEdge()
     await imposeTestCopyrightGround({
       ...fixture.tuple,
@@ -95,3 +101,26 @@ describe('country-scoped copyright delivery', () => {
     })
   })
 })
+
+async function createCountryDeliveryPost() {
+  const user = await createTestUserDirect()
+  const [postId, imageId] = await Promise.all([
+    insertTestPost({
+      title: `country delivery ${crypto.randomUUID()}`,
+      slug: `country-delivery-${crypto.randomUUID()}`,
+      createdById: user.id,
+      markdown: 'image',
+    }),
+    insertTestImage(user.id),
+  ])
+  await insertTestPostImage({ postId, imageId })
+  const placement = await getTestPostImagePlacement(postId, imageId)
+  if (!placement) throw new Error('post placement disappeared')
+  const tuple = {
+    placementId: placement.placement_id,
+    revision: placement.placement_revision,
+    imageId,
+  }
+  const staged = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
+  return { tuple, userId: user.id, deliveryKey: staged.deliveryKey }
+}

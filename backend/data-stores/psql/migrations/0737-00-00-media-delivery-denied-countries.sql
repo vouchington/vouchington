@@ -2,6 +2,7 @@
 CREATE TABLE media_delivery_registry_denied_countries (
   delivery_key text NOT NULL,
   country_code text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (delivery_key, country_code)
 );
 

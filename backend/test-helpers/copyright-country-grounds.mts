@@ -5,6 +5,7 @@ import { copyrightGroundApplicability } from '../services/copyright-notices/grou
 
 export async function imposeTestCopyrightGround(input: {
   placementId: string
+  revision: number
   imageId: string
   assessedById: string
   applicability: Parameters<typeof copyrightGroundApplicability>[0]
@@ -22,13 +23,13 @@ export async function imposeTestCopyrightGround(input: {
       ) RETURNING id
     ), target AS (
       INSERT INTO copyright_notice_targets (
-        copyright_notice_id, placement_key, placement_revision, hosted_use_url
-      ) SELECT notice.id, ${`image-placement:${input.placementId}`}, 1,
+        copyright_notice_id, placement_id, placement_revision, hosted_use_url
+      ) SELECT notice.id, ${input.placementId}, ${input.revision},
         ${`https://example.test/${randomUUID()}`}
-      FROM notice RETURNING id
+      FROM notice RETURNING id, placement_id
     ), image_target AS (
-      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, image_id)
-      SELECT target.id, ${input.imageId} FROM target
+      INSERT INTO copyright_notice_target_images (copyright_notice_target_id, placement_id, image_id)
+      SELECT target.id, target.placement_id, ${input.imageId} FROM target
     ), submission AS (
       INSERT INTO copyright_notice_submissions (
         copyright_notice_id, kind, received_at, source_kind, body_ciphertext

@@ -59,6 +59,7 @@ describe('media delivery registry processor', () => {
       deliveryKey,
       state: 'allow',
       generation: expect.stringMatching(/^\d+$/),
+      deniedCountryCodes: [],
     })
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
       desired_state: 'allow',
@@ -147,6 +148,7 @@ describe('media delivery registry processor', () => {
       deliveryKey,
       state: 'allow',
       generation: expect.stringMatching(/^\d+$/),
+      deniedCountryCodes: [],
     })
     expect(BigInt(put.mock.calls.at(-1)![0].generation)).toBeGreaterThan(
       BigInt(committed.generation),
@@ -224,6 +226,7 @@ describe('media delivery registry processor', () => {
       deliveryKey,
       state: 'withheld',
       generation: expect.stringMatching(/^\d+$/),
+      deniedCountryCodes: [],
     })
     expect(await getTestMediaDeliveryRecord(deliveryKey)).toMatchObject({
       desired_state: 'withheld',

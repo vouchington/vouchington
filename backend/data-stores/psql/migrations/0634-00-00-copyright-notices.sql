@@ -72,6 +72,7 @@ CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON copyrig
 CREATE TABLE copyright_restriction_countries (
   copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
   country_code text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (copyright_restriction_id, country_code)
 );
 
@@ -134,6 +135,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_seal_copyright_restriction_applicability();
 COMMENT ON COLUMN copyright_restrictions.applicability IS 'Finite delivery scope of this ground: global, or the child country set.';
 COMMENT ON COLUMN copyright_restrictions.countries_sealed_at IS 'When the applicability fact and its country rows became immutable.';
 COMMENT ON TABLE copyright_restriction_countries IS 'Countries where a country-set copyright ground denies delivery. Global grounds have none.';
+COMMENT ON COLUMN copyright_restriction_countries.copyright_restriction_id IS 'Country-set copyright restriction that denies delivery in this country.';
 COMMENT ON COLUMN copyright_restriction_countries.country_code IS 'ISO 3166-1 alpha-2 country from the supported country lookup.';
 
 CREATE TABLE copyright_notice_submissions (

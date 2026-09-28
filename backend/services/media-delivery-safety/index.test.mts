@@ -38,6 +38,7 @@ describe('media delivery surface safety', () => {
       deliveryKey,
       state: 'withheld',
       generation: expect.any(String),
+      deniedCountryCodes: [],
     })
     expect(invalidate).toHaveBeenCalledWith(
       `/images/placements/${placement.placement_id}/${placement.placement_revision}/${imageId}`,

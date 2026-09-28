@@ -16,7 +16,7 @@ export async function syncImagePlacementDeniedCountries(
       SELECT DISTINCT country.country_code
       FROM media_delivery_registry_records registry
       JOIN copyright_notice_targets target
-        ON target.placement_key = concat('image-placement:', registry.placement_id)
+        ON target.placement_id = registry.placement_id
       JOIN copyright_restrictions restriction
         ON restriction.copyright_notice_target_id = target.id
         AND restriction.lifted_at IS NULL AND restriction.applicability = 'countries'
@@ -71,7 +71,7 @@ export async function syncPostImagePlacementDeniedCountries(
       FROM keys
       JOIN media_delivery_registry_records registry ON registry.delivery_key = keys.delivery_key
       JOIN copyright_notice_targets target
-        ON target.placement_key = concat('image-placement:', registry.placement_id)
+        ON target.placement_id = registry.placement_id
       JOIN copyright_restrictions restriction
         ON restriction.copyright_notice_target_id = target.id
         AND restriction.lifted_at IS NULL AND restriction.applicability = 'countries'
