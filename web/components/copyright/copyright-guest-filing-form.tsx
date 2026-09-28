@@ -2,6 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { TurnstileField } from '@/components/shared/turnstile-field'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import {
@@ -59,27 +67,25 @@ export function CopyrightGuestFilingForm({ noticeId }: { noticeId: string }) {
         onChange={event => setToken(event.target.value)}
       />
       <div className='space-y-1'>
-        <label
-          className='text-sm font-medium'
-          htmlFor='guest-filing-kind'
-        >
-          Filing
-        </label>
-        <select
-          className='border-input w-full rounded-md border bg-transparent px-3 py-2 text-sm'
-          id='guest-filing-kind'
+        <Label htmlFor='guest-filing-kind'>Filing</Label>
+        <Select
           value={kind}
-          onChange={event => setKind(event.target.value as CopyrightGuestFilingKind)}
+          onValueChange={value => setKind(value as CopyrightGuestFilingKind)}
         >
-          {filingKinds.map(option => (
-            <option
-              key={option.value}
-              value={option.value}
-            >
-              {option.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id='guest-filing-kind'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {filingKinds.map(option => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <LabeledTextarea
         id='guest-filing-statement'
