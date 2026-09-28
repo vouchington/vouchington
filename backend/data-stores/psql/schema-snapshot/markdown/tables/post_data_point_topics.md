@@ -17,8 +17,7 @@ RANGE partitioned on `post_id` (children: default, no retention owner, access cl
 **Primary key:** `PRIMARY KEY (post_id, topic_id)`
 
 **Unique constraints:**
-
-- `uq_post_data_point_topics__post_id__order_index`: `UNIQUE (post_id, order_index)`
+_none_
 
 **Check constraints:**
 
@@ -33,7 +32,6 @@ RANGE partitioned on `post_id` (children: default, no retention owner, access cl
 
 - `idx_post_data_point_topics__topic_id`: `CREATE INDEX idx_post_data_point_topics__topic_id ON ONLY public.post_data_point_topics USING btree (topic_id) INCLUDE (post_id)`
 - `post_data_point_topics_pkey`: `CREATE UNIQUE INDEX post_data_point_topics_pkey ON ONLY public.post_data_point_topics USING btree (post_id, topic_id)`
-- `uq_post_data_point_topics__post_id__order_index`: `CREATE UNIQUE INDEX uq_post_data_point_topics__post_id__order_index ON ONLY public.post_data_point_topics USING btree (post_id, order_index)`
 
 **Triggers:**
 

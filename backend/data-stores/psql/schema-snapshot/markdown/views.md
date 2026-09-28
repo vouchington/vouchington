@@ -522,7 +522,7 @@ UNION ALL
           WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,
     posts.community_id,
     posts.data_point_vertical,
-    fn_post_structured_data(posts.id) AS structured_data,
+    posts.structured_data,
     posts.created_by_id,
     posts.updated_by_id,
     posts.deleted_at,
