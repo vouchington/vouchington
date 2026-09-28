@@ -32,9 +32,7 @@ describe('appendAppealLifecycleChange', () => {
   })
 
   it('appends a lifecycle change and returns its id string', async () => {
-    const changeId = await appendAppealLifecycleChange(appealId, 'edit', staff.id, {
-      metadata: { test: true },
-    })
+    const changeId = await appendAppealLifecycleChange(appealId, 'edit', staff.id)
     expect(typeof changeId).toBe('string')
     expect(changeId.length).toBeGreaterThan(0)
   })

@@ -32,7 +32,7 @@ export async function completeMarkerlessContributionAdmissionReplay(
       SELECT clock_timestamp() AS now
     ), completed AS (
       UPDATE post_admission_reservations
-      SET replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
+      SET replay_finalization = 'complete',
         expires_at = GREATEST(expires_at, retention_expires_at,
           replay_deadline.now + ${CONTRIBUTION_ADMISSION_REPLAY_RETENTION_MINUTES} * INTERVAL '1 minute'),
         retention_expires_at = GREATEST(expires_at, retention_expires_at,

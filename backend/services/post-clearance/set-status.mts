@@ -4,6 +4,7 @@ import { lockPostPublication } from '@services/post-publication'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import { ensureCurrentPostModerationVersion } from './moderation-ledger.mts'
 import { recordPostClearancePublicationChange } from './publication-change.mts'
+import { clearanceMetadataFacts } from './clearance-facts.mts'
 import { CLEARANCE_CHANGE_TYPES } from './status-constants.mts'
 import { runPostClearanceTransaction } from './status-transaction.mts'
 import type { ClearanceStatus } from './types.mts'
@@ -58,6 +59,7 @@ async function writePostClearanceStatus(
     throw new Error('Private clearance notes are only allowed on platform overrides')
   }
   const changeType = CLEARANCE_CHANGE_TYPES[status]
+  const facts = clearanceMetadataFacts(metadata)
   const transactionOptions = options ?? {}
   const run = async (query: TransactionQuery) => {
     if (decision.platformOverride) {
@@ -69,10 +71,13 @@ async function writePostClearanceStatus(
       WITH inserted_change AS (
         INSERT INTO post_clearance_changes (
           post_id, change_type, changed_by_id, public_reason_code, private_note,
-          platform_override, metadata, moderation_transparency_categories
+          platform_override, creation_moderation_bypassed, moderation_version_policy_revision,
+          source_key, moderation_training, compensation_reason, compensates_change_id,
+          restores_change_id, audit_source, moderation_transparency_categories
         )
-        SELECT p.id, $2::post_clearance_change_types, $3, $6, $7, $8, $5::jsonb,
-          CASE WHEN $9 IS NOT TRUE
+        SELECT p.id, $2::post_clearance_change_types, $3, $5, $6, $7,
+          $9, $10, $11, $12, $13, $14, $15, $16,
+          CASE WHEN $8 IS NOT TRUE
               AND $2::post_clearance_change_types = 'reject' AND actor.username = $4
             THEN ARRAY['post_clearance_reject']::text[] ELSE '{}'::text[] END
         FROM posts p
@@ -82,7 +87,7 @@ async function writePostClearanceStatus(
       ),
       staff_disposition AS (
         INSERT INTO post_moderation_dispositions (
-          version_id, source, disposition, reason_code, evidence, actor_user_id
+          version_id, source, disposition, reason_code, evidence_platform_override, actor_user_id
         )
         SELECT version.id, 'staff'::post_moderation_sources,
           CASE inserted_change.change_type
@@ -90,14 +95,14 @@ async function writePostClearanceStatus(
             WHEN 'reject' THEN 'reject'::post_moderation_disposition_types
             ELSE 'review'::post_moderation_disposition_types
           END,
-          $6, jsonb_build_object('platform_override', true), $3
+          $5, TRUE, $3
         FROM inserted_change
         JOIN posts post ON post.id = inserted_change.post_id
         JOIN post_moderation_versions version
           ON version.post_id = post.id
          AND version.content_sha256 = post.llm_moderation_content_sha256
-        WHERE $8 IS TRUE
-          AND $9 IS NOT TRUE
+        WHERE $7 IS TRUE
+          AND $8 IS NOT TRUE
           AND $3 IS NOT NULL
           AND inserted_change.change_type <> 'reset_to_pending'
         RETURNING id
@@ -110,7 +115,7 @@ async function writePostClearanceStatus(
           THEN inserted_change.created_at ELSE NULL END,
         in_review_at = CASE WHEN inserted_change.change_type = 'mark_in_review'
           THEN inserted_change.created_at ELSE NULL END,
-        updated_by_id = CASE WHEN $9 IS TRUE THEN updated_by_id
+        updated_by_id = CASE WHEN $8 IS TRUE THEN updated_by_id
           ELSE COALESCE($3, updated_by_id) END
       FROM inserted_change
       WHERE posts.id = inserted_change.post_id
@@ -120,11 +125,18 @@ async function writePostClearanceStatus(
         changeType,
         updatedById ?? null,
         MODERATION_SYSTEM_USERNAME,
-        JSON.stringify(metadata),
         decision.reasonCode ?? null,
         decision.privateNote ?? null,
         decision.platformOverride ?? false,
         isCompensation,
+        facts.creationModerationBypassed,
+        facts.moderationVersionPolicyRevision,
+        facts.sourceKey,
+        facts.moderationTraining,
+        facts.compensationReason,
+        facts.compensatesChangeId,
+        facts.restoresChangeId,
+        facts.auditSource,
       ],
     )
     const change = rows[0] ?? null

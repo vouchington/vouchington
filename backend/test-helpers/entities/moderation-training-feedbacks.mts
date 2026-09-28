@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { trainingMetadataFromRow } from '@services/moderation-training/metadata-facts.mts'
 import sql from 'sql-template-strings'
 
 export async function getTestPostClearanceState(postId: string): Promise<
@@ -58,13 +59,37 @@ export async function getLatestTestModerationTrainingFeedback(input: {
     }
   | undefined
 > {
-  const { rows } = await read<{
-    label: string
-    community_id: string | null
-    metadata: Record<string, unknown>
-  }>(
+  const { rows } = await read<Record<string, unknown>>(
     sql`/* getLatestTestModerationTrainingFeedback */
-    SELECT label, community_id, metadata
+    SELECT
+      label,
+      community_id,
+      metadata_source_key,
+      metadata_outcome,
+      metadata_source_type,
+      metadata_score,
+      metadata_score_present,
+      metadata_recommended_action,
+      metadata_reason,
+      metadata_report_entity_type,
+      metadata_report_reason,
+      metadata_report_post_id,
+      metadata_report_user_id,
+      metadata_report_hostname_id,
+      metadata_report_rss_feed_item_id,
+      metadata_community_trusted,
+      metadata_community_trusted_present,
+      metadata_clearance_status,
+      metadata_prompt_id,
+      metadata_prompt_model_name,
+      metadata_prompt_model_provider,
+      metadata_test_text,
+      metadata_expected_flagged,
+      metadata_expected_flagged_present,
+      metadata_expected_reason,
+      metadata_actual_flagged,
+      metadata_actual_flagged_present,
+      metadata_actual_reason
     FROM moderation_training_feedbacks
     WHERE post_id = ${input.postId}
       AND source_type = ${input.sourceType}
@@ -73,7 +98,13 @@ export async function getLatestTestModerationTrainingFeedback(input: {
     LIMIT 1
   `,
   )
-  return rows[0]
+  const row = rows[0]
+  if (!row) return undefined
+  return {
+    label: String(row.label),
+    community_id: row.community_id == null ? null : String(row.community_id),
+    metadata: trainingMetadataFromRow(row),
+  }
 }
 
 export async function getLatestTestAppealTrainingFeedback(

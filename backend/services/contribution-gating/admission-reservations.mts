@@ -52,7 +52,7 @@ export async function claimContributionAdmission<T>(
     expired: boolean
   }>(sql`/* claimContributionAdmission.reservation */
       SELECT id, intent_sha256, state, response,
-        COALESCE(replay_metadata->>'finalization', 'pending') <> 'complete' AS finalization_pending,
+        COALESCE(replay_finalization, 'pending') <> 'complete' AS finalization_pending,
         EXISTS (
           SELECT 1 FROM post_category_finalizations f
           WHERE f.post_id = post_admission_reservations.committed_post_id

@@ -2,12 +2,12 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
+  insertTestCommunityAgentPrompt,
   getCommunityAgentPromptChangeRowsForTest,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 import { recordCommunityAgentPromptChange } from './record.mts'
-import { randomBytes } from 'node:crypto'
 
 describe('recordCommunityAgentPromptChange', () => {
   let user: PrivateUser
@@ -19,7 +19,9 @@ describe('recordCommunityAgentPromptChange', () => {
   })
 
   it('inserts a row into community_agent_prompt_changes', async () => {
-    const agentPromptId = `00000000-0000-7000-8000-${randomBytes(6).toString('hex')}`
+    const agentPromptId = (
+      await insertTestCommunityAgentPrompt({ communityId: community.id, createdById: user.id })
+    ).id
     const prev = { prompt: 'before', slot_allocated: false }
     const next = { prompt: 'after', slot_allocated: true }
 
@@ -45,7 +47,9 @@ describe('recordCommunityAgentPromptChange', () => {
   })
 
   it('records multiple changes for the same prompt', async () => {
-    const agentPromptId = `00000000-0000-7000-8000-${randomBytes(6).toString('hex')}`
+    const agentPromptId = (
+      await insertTestCommunityAgentPrompt({ communityId: community.id, createdById: user.id })
+    ).id
 
     await recordCommunityAgentPromptChange(
       user.id,
@@ -73,7 +77,9 @@ describe('recordCommunityAgentPromptChange', () => {
   })
 
   it('resolves without error for valid audit record', async () => {
-    const agentPromptId = `00000000-0000-7000-8000-${randomBytes(6).toString('hex')}`
+    const agentPromptId = (
+      await insertTestCommunityAgentPrompt({ communityId: community.id, createdById: user.id })
+    ).id
 
     await expect(
       recordCommunityAgentPromptChange(

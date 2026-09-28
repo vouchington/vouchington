@@ -114,7 +114,7 @@ export async function searchPostsForAdminReview(
         SELECT DISTINCT ON (disposition.source)
           disposition.disposition,
           disposition.reason_code,
-          disposition.evidence
+          fn_post_moderation_disposition_evidence(disposition.id) AS evidence
         FROM post_moderation_dispositions disposition
         JOIN current_version ON current_version.id = disposition.version_id
         WHERE disposition.source IN ('openai_omni', 'spam_detection')

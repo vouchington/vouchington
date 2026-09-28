@@ -137,7 +137,8 @@ CREATE TABLE IF NOT EXISTS review_dispute_lifecycle_changes (
   sent_at timestamptz,
   resolved_at timestamptz,
   resolution_action review_dispute_action,
-  metadata jsonb NOT NULL DEFAULT '{}',
+  ai_model TEXT,
+  ai_recommended_action review_dispute_action,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
@@ -218,7 +219,8 @@ COMMENT ON COLUMN review_dispute_lifecycle_changes.approved_at IS 'Snapshot of a
 COMMENT ON COLUMN review_dispute_lifecycle_changes.sent_at IS 'Snapshot of sent_at at the time of this change.';
 COMMENT ON COLUMN review_dispute_lifecycle_changes.resolved_at IS 'Snapshot of resolved_at at the time of this change.';
 COMMENT ON COLUMN review_dispute_lifecycle_changes.resolution_action IS 'Snapshot of resolution_action at the time of this change.';
-COMMENT ON COLUMN review_dispute_lifecycle_changes.metadata IS 'Extra structured metadata for this lifecycle event (e.g. AI model, token counts).';
+COMMENT ON COLUMN review_dispute_lifecycle_changes.ai_model IS 'Model name recorded on the AI draft event.';
+COMMENT ON COLUMN review_dispute_lifecycle_changes.ai_recommended_action IS 'Recommended action recorded on the AI draft event.';
 
 COMMENT ON TABLE review_dispute_lifecycle_changes IS 'Append-only audit log of state transitions for review disputes.';
 

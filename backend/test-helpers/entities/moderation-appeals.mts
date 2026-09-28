@@ -85,8 +85,7 @@ export async function insertTestModerationAppeal(
         approved_at,
         sent_at,
         resolved_at,
-        resolution_action,
-        metadata
+        resolution_action
       )
       SELECT
         lifecycle_id.id,
@@ -98,8 +97,7 @@ export async function insertTestModerationAppeal(
         new_appeal.approved_at,
         new_appeal.sent_at,
         new_appeal.resolved_at,
-        new_appeal.resolution_action,
-        '{}'::jsonb
+        new_appeal.resolution_action
       FROM new_appeal
       CROSS JOIN lifecycle_id
     )

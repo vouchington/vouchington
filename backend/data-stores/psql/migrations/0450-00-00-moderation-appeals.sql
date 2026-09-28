@@ -191,12 +191,21 @@ CREATE TABLE IF NOT EXISTS moderation_appeal_lifecycle_changes (
   sent_at timestamptz,
   resolved_at timestamptz,
   resolution_action moderation_appeal_action,
-  metadata jsonb NOT NULL DEFAULT '{}',
+  original_decision_recorded BOOLEAN NOT NULL DEFAULT FALSE,
+  original_decision_reason TEXT,
+  original_decision_actor_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
+  original_decision_at TIMESTAMPTZ,
+  ai_model TEXT,
+  ai_recommended_action moderation_appeal_action,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 
 CREATE INDEX IF NOT EXISTS idx_moderation_appeal_lifecycle__appeal_created
   ON moderation_appeal_lifecycle_changes (moderation_appeal_id, id DESC);
+
+CREATE INDEX IF NOT EXISTS idx_moderation_appeal_lifecycle__original_actor
+  ON moderation_appeal_lifecycle_changes (original_decision_actor_id)
+  WHERE original_decision_actor_id IS NOT NULL;
 
 DO $$
 BEGIN
@@ -322,7 +331,12 @@ COMMENT ON COLUMN moderation_appeal_lifecycle_changes.approved_at IS 'Snapshot o
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.sent_at IS 'Snapshot of sent_at at the time of this change.';
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.resolved_at IS 'Snapshot of resolved_at at the time of this change.';
 COMMENT ON COLUMN moderation_appeal_lifecycle_changes.resolution_action IS 'Snapshot of resolution_action at the time of this change.';
-COMMENT ON COLUMN moderation_appeal_lifecycle_changes.metadata IS 'Extra structured metadata for this lifecycle event (e.g. AI model, token counts).';
+COMMENT ON COLUMN moderation_appeal_lifecycle_changes.original_decision_recorded IS 'True when this create event stored the original decision snapshot.';
+COMMENT ON COLUMN moderation_appeal_lifecycle_changes.original_decision_reason IS 'Reason captured from the decision being appealed.';
+COMMENT ON COLUMN moderation_appeal_lifecycle_changes.original_decision_actor_id IS 'Retained user identity of the original decision actor. It does not authorize that user.';
+COMMENT ON COLUMN moderation_appeal_lifecycle_changes.original_decision_at IS 'When the original decision was made.';
+COMMENT ON COLUMN moderation_appeal_lifecycle_changes.ai_model IS 'Model name recorded on the AI draft event.';
+COMMENT ON COLUMN moderation_appeal_lifecycle_changes.ai_recommended_action IS 'Recommended action recorded on the AI draft event.';
 
 COMMENT ON COLUMN moderator_actions.moderation_appeal_id IS 'Target moderation appeal for resolve_appeal/dismiss_appeal actions.';
 

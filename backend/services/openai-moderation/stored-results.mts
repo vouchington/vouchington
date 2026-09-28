@@ -25,14 +25,14 @@ export async function getStoredPostOpenAIModeration(
     evidence: unknown
   }>(
     sql`/* getStoredPostOpenAIModeration */
-      SELECT disposition.disposition, disposition.evidence
+      SELECT disposition.disposition, fn_post_moderation_disposition_evidence(disposition.id) AS evidence
       FROM posts post
       LEFT JOIN post_moderation_versions version
         ON version.post_id = post.id
        AND version.content_sha256 = post.llm_moderation_content_sha256
        AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
       LEFT JOIN LATERAL (
-        SELECT disposition, evidence
+        SELECT id, disposition
         FROM post_moderation_dispositions
         WHERE version_id = version.id
           AND source = 'openai_omni'

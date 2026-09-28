@@ -57,7 +57,7 @@ async function persistFinalizedContributionResponse<T>(
 ): Promise<T> {
   const result = await query<{ response: T }>(sql`/* persistFinalizedContributionResponse */
     UPDATE post_admission_reservations
-    SET replay_metadata = replay_metadata || '{"finalization":"complete"}'::jsonb,
+    SET replay_finalization = 'complete',
       updated_at = NOW()
     WHERE id = ${reservationId} AND state = 'committed'
     RETURNING response`)

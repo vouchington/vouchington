@@ -38,7 +38,7 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ['ap_inbox_delivery_storage_counters', 'A true primary key limits the ledger to one row.'],
   [
     'retained_identity_cleanup_progress',
-    'One bounded cleanup cursor for each of six concrete retained identity families.',
+    'One bounded cleanup cursor for each concrete retained identity family.',
   ],
 ])
 type NonDefaultIdException = { policy: 'uuidv7' | 'natural-or-provider'; rationale: string }

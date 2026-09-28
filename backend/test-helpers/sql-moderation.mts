@@ -66,7 +66,8 @@ export async function getModeratorActionRowsForTest(params: {
 > {
   const query = sql`/* getModeratorActionRowsForTest */
     SELECT id, community_id, actor_id, action_type, post_id, target_user_id,
-           report_id, review_dispute_id, community_application_id, reason, metadata, created_at
+           report_id, review_dispute_id, community_application_id, reason,
+           COALESCE(fn_moderator_action_metadata(id), '{}'::jsonb) AS metadata, created_at
     FROM moderator_actions
     WHERE TRUE
   `

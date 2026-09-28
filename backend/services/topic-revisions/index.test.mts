@@ -1,6 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTopicRevision, computeTopicChanges, getLatestTopicContentUpdate } from './index.mts'
-import { createTestUser, createTestUserDirect, insertTestTopic } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createTestUserDirect,
+  insertTestImage,
+  insertTestTopic,
+} from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
 import type { PrivateUser } from '@services/users/types'
 
@@ -183,10 +188,11 @@ describe('index', () => {
         { name: { before: `Content Revision Topic ${random}`, after: `Updated ${random}` } },
         user.id,
       )
+      const logoImageId = await insertTestImage(user.id)
       await createTopicRevision(
         topicId,
         'update',
-        { logo_image_id: { before: null, after: '00000000-0000-7000-8000-000000000001' } },
+        { logo_image_id: { before: null, after: logoImageId } },
         user.id,
       )
 
@@ -275,10 +281,11 @@ describe('index', () => {
         createdById: user.id,
       })
 
+      const heroImageId = await insertTestImage(user.id)
       await createTopicRevision(
         topicId,
         'update',
-        { hero_image_id: { before: null, after: '00000000-0000-7000-8000-000000000001' } },
+        { hero_image_id: { before: null, after: heroImageId } },
         user.id,
       )
 

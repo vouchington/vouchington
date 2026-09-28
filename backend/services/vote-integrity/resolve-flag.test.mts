@@ -121,19 +121,34 @@ describe('resolve-flag', () => {
         'agent_moderation',
         moderationId,
         'velocity_spike',
-        { source: 'test' },
+        {
+          young_account_vote_count: 4,
+          threshold: 3,
+          window_minutes: 10,
+          young_account_age_days: 7,
+        },
       )
       const duplicate = await createVoteIntegrityFlag(
         'agent_moderation',
         moderationId,
         'velocity_spike',
-        { source: 'duplicate' },
+        {
+          young_account_vote_count: 5,
+          threshold: 3,
+          window_minutes: 10,
+          young_account_age_days: 7,
+        },
       )
 
       expect(flag).toMatchObject({
         post_id: null,
         agent_moderation_id: moderationId,
-        details: { source: 'test' },
+        details: {
+          young_account_vote_count: 4,
+          threshold: 3,
+          window_minutes: 10,
+          young_account_age_days: 7,
+        },
       })
       expect(duplicate).toBeNull()
     }, 60_000)

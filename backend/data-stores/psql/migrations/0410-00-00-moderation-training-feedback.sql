@@ -72,7 +72,32 @@ CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
   post_clearance_change_id UUID REFERENCES post_clearance_changes(id) ON DELETE SET NULL,
 
   input_sha256 BYTEA CHECK (input_sha256 IS NULL OR octet_length(input_sha256) = 32),
-  metadata JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(metadata) = 'object'),
+  metadata_source_key TEXT,
+  metadata_outcome TEXT,
+  metadata_source_type TEXT,
+  metadata_score DOUBLE PRECISION,
+  metadata_score_present BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata_recommended_action TEXT,
+  metadata_reason TEXT,
+  metadata_report_entity_type TEXT,
+  metadata_report_reason TEXT,
+  metadata_report_post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
+  metadata_report_user_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
+  metadata_report_hostname_id UUID REFERENCES retained_url_hostname_identities (id) ON DELETE RESTRICT,
+  metadata_report_rss_feed_item_id UUID REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
+  metadata_community_trusted BOOLEAN,
+  metadata_community_trusted_present BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata_clearance_status TEXT,
+  metadata_prompt_id UUID REFERENCES retained_community_agent_prompt_identities (id) ON DELETE RESTRICT,
+  metadata_prompt_model_name TEXT,
+  metadata_prompt_model_provider TEXT,
+  metadata_test_text TEXT,
+  metadata_expected_flagged BOOLEAN,
+  metadata_expected_flagged_present BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata_expected_reason TEXT,
+  metadata_actual_flagged BOOLEAN,
+  metadata_actual_flagged_present BOOLEAN NOT NULL DEFAULT FALSE,
+  metadata_actual_reason TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -92,6 +117,23 @@ CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
     AND (moderation_appeal_id IS NOT NULL) = (source_type = 'moderation_appeal')
     AND (review_dispute_id IS NOT NULL) = (source_type = 'review_dispute')
     AND (post_clearance_change_id IS NULL OR source_type = 'community_review')
+  ),
+  CONSTRAINT chk_moderation_training_feedbacks__report_target CHECK (
+    metadata_report_entity_type IS NULL
+    OR (
+      num_nonnulls(
+        metadata_report_post_id,
+        metadata_report_user_id,
+        metadata_report_hostname_id,
+        metadata_report_rss_feed_item_id
+      ) = 1
+      AND (
+        (metadata_report_entity_type IN ('post', 'comment') AND metadata_report_post_id IS NOT NULL)
+        OR (metadata_report_entity_type = 'user' AND metadata_report_user_id IS NOT NULL)
+        OR (metadata_report_entity_type = 'url_hostname' AND metadata_report_hostname_id IS NOT NULL)
+        OR (metadata_report_entity_type = 'rss_feed_item' AND metadata_report_rss_feed_item_id IS NOT NULL)
+      )
+    )
   )
 );
 
@@ -130,7 +172,43 @@ COMMENT ON COLUMN moderation_training_feedbacks.moderation_appeal_id IS 'Moderat
 COMMENT ON COLUMN moderation_training_feedbacks.review_dispute_id IS 'Review dispute whose resolution produced this feedback.';
 COMMENT ON COLUMN moderation_training_feedbacks.post_clearance_change_id IS 'Post clearance state change associated with this feedback.';
 COMMENT ON COLUMN moderation_training_feedbacks.input_sha256 IS 'Optional SHA-256 digest for the moderated input text.';
-COMMENT ON COLUMN moderation_training_feedbacks.metadata IS 'Structured model outputs, prompt/version references, and export hints.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_source_key IS 'Automod source key captured with the feedback event.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_outcome IS 'Automod review outcome captured with the feedback event.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_source_type IS 'Automod source type captured with the feedback event.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_score IS 'Agent accuracy vote score when metadata_score_present is true. Null can be an explicit score.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_score_present IS 'True when the feedback event included a score key.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_recommended_action IS 'Recommended action captured from an appeal or dispute resolution.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_reason IS 'Dispute reason captured with resolution feedback.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_report_entity_type IS 'Report target family captured with report-resolution feedback.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_report_reason IS 'Report reason captured with report-resolution feedback.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_report_post_id IS 'Retained post identity when the captured report target is a post or comment.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_report_user_id IS 'Retained user identity when the captured report target is a user.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_report_hostname_id IS 'Retained hostname identity when the captured report target is a hostname.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_report_rss_feed_item_id IS 'Retained RSS item identity when the captured report target is an RSS item.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_community_trusted IS 'Whether the community was trusted when publication feedback was recorded.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_community_trusted_present IS 'True when publication feedback included community_trusted.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_clearance_status IS 'Clearance status captured with manual clearance feedback.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_prompt_id IS 'Retained community prompt identity for a saved prompt test. It does not authorize the prompt.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_prompt_model_name IS 'Prompt model name captured with a saved prompt test.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_prompt_model_provider IS 'Prompt model provider captured with a saved prompt test.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_test_text IS 'Prompt test text saved for training.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_expected_flagged IS 'Expected flagged result of a saved prompt test.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_expected_flagged_present IS 'True when a saved prompt test included expected_flagged.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_expected_reason IS 'Expected reason of a saved prompt test.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_actual_flagged IS 'Actual flagged result of a saved prompt test.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_actual_flagged_present IS 'True when a saved prompt test included actual_flagged.';
+COMMENT ON COLUMN moderation_training_feedbacks.metadata_actual_reason IS 'Actual reason of a saved prompt test.';
+
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__report_post_id
+  ON moderation_training_feedbacks (metadata_report_post_id) WHERE metadata_report_post_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__report_user_id
+  ON moderation_training_feedbacks (metadata_report_user_id) WHERE metadata_report_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__report_hostname_id
+  ON moderation_training_feedbacks (metadata_report_hostname_id) WHERE metadata_report_hostname_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__report_rss_item_id
+  ON moderation_training_feedbacks (metadata_report_rss_feed_item_id) WHERE metadata_report_rss_feed_item_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__prompt_id
+  ON moderation_training_feedbacks (metadata_prompt_id) WHERE metadata_prompt_id IS NOT NULL;
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__actor_user_id

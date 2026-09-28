@@ -43,15 +43,15 @@ export const APPEAL_SELECT = sql`
       'declared_language', p.declared_language,
       'lingua_rs_detected_language', p.lingua_rs_detected_language,
       'decided_at', CASE
-        WHEN create_change.metadata ? 'original_decision'
-          THEN (create_change.metadata #>> '{original_decision,decided_at}')::timestamptz
+        WHEN create_change.original_decision_recorded
+          THEN create_change.original_decision_at
         WHEN ma.post_removal_kind = 'community' THEN cpr.unpublished_at
         ELSE pcs.clearance_updated_at
       END,
       'public_reason', CASE
         WHEN ma.post_removal_kind = 'community'
-          AND create_change.metadata ? 'original_decision'
-          THEN create_change.metadata #>> '{original_decision,reason}'
+          AND create_change.original_decision_recorded
+          THEN create_change.original_decision_reason
         WHEN ma.post_removal_kind = 'community' THEN cpr.rejection_reason
         ELSE NULL
       END,
@@ -68,8 +68,8 @@ export const APPEAL_SELECT = sql`
     ),
     'original_decision', jsonb_build_object(
       'internal_reason', CASE
-        WHEN create_change.metadata ? 'original_decision'
-          THEN create_change.metadata #>> '{original_decision,reason}'
+        WHEN create_change.original_decision_recorded
+          THEN create_change.original_decision_reason
         ELSE CASE
           WHEN ma.user_warning_id IS NOT NULL THEN uw.reason
           WHEN ma.community_ban_id IS NOT NULL THEN cb.reason
@@ -109,8 +109,8 @@ export const APPEAL_JOINS = sql`
     ON create_change.moderation_appeal_id = ma.id AND create_change.change_type = 'create'
   LEFT JOIN LATERAL (
     SELECT CASE
-      WHEN create_change.metadata ? 'original_decision'
-        THEN (create_change.metadata #>> '{original_decision,actor_id}')::uuid
+      WHEN create_change.original_decision_recorded
+        THEN create_change.original_decision_actor_id
       ELSE CASE
         WHEN ma.user_warning_id IS NOT NULL THEN uw.issued_by_id
         WHEN ma.community_ban_id IS NOT NULL THEN cb.banned_by_id

@@ -92,7 +92,10 @@ CREATE TABLE IF NOT EXISTS vote_integrity_flags (
   relation__rss_feed_item__category__topic_alias_id UUID,
   relation__rss_feed_item__category__topic_alias_subject_id UUID,
   flag_type vote_integrity_flag_types NOT NULL,
-  details JSONB NOT NULL DEFAULT '{}',
+  young_account_vote_count INTEGER,
+  detail_threshold INTEGER,
+  detail_window_minutes INTEGER,
+  young_account_age_days INTEGER,
   resolved_at TIMESTAMPTZ,
   resolved_by_id UUID REFERENCES users ON DELETE SET NULL,
   resolution vote_integrity_resolutions,
@@ -155,8 +158,55 @@ COMMENT ON COLUMN vote_integrity_flags.rss_feed_item_id IS 'Flagged RSS feed ite
 COMMENT ON COLUMN vote_integrity_flags.agent_moderation_post_id IS 'Partition key for the flagged agent moderation.';
 COMMENT ON COLUMN vote_integrity_flags.agent_moderation_id IS 'Flagged agent moderation, if this flag targets a moderation decision.';
 COMMENT ON COLUMN vote_integrity_flags.flag_type IS 'Type of integrity violation detected: velocity_spike or ip_correlation.';
-COMMENT ON COLUMN vote_integrity_flags.details IS 'JSON details about the detected anomaly.';
+COMMENT ON COLUMN vote_integrity_flags.young_account_vote_count IS 'Young-account votes counted for a velocity spike.';
+COMMENT ON COLUMN vote_integrity_flags.detail_threshold IS 'Detection threshold captured with the flag.';
+COMMENT ON COLUMN vote_integrity_flags.detail_window_minutes IS 'Detection window in minutes.';
+COMMENT ON COLUMN vote_integrity_flags.young_account_age_days IS 'Young-account age cutoff in days for a velocity spike.';
 COMMENT ON COLUMN vote_integrity_flags.resolved_at IS 'When a moderator resolved this flag.';
+
+CREATE TABLE IF NOT EXISTS vote_integrity_flag_ips (
+  flag_id UUID NOT NULL REFERENCES vote_integrity_flags (id) ON DELETE CASCADE,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  ip_address TEXT NOT NULL CHECK (char_length(ip_address) BETWEEN 1 AND 64),
+  distinct_user_count INTEGER NOT NULL CHECK (distinct_user_count >= 0),
+  PRIMARY KEY (flag_id, position)
+);
+COMMENT ON TABLE vote_integrity_flag_ips IS 'Correlated IP facts captured for an ip_correlation vote integrity flag.';
+COMMENT ON COLUMN vote_integrity_flag_ips.flag_id IS 'Vote integrity flag these correlated addresses belong to.';
+COMMENT ON COLUMN vote_integrity_flag_ips.position IS 'Detection-time order of the correlated address.';
+COMMENT ON COLUMN vote_integrity_flag_ips.ip_address IS 'Host form of the correlated vote IP address.';
+COMMENT ON COLUMN vote_integrity_flag_ips.distinct_user_count IS 'Distinct voters observed on that address inside the detection window.';
+
+CREATE OR REPLACE FUNCTION fn_vote_integrity_flag_details(p_flag_id UUID)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT CASE flag.flag_type
+    WHEN 'velocity_spike' THEN jsonb_strip_nulls(jsonb_build_object(
+      'young_account_vote_count', flag.young_account_vote_count,
+      'threshold', flag.detail_threshold,
+      'window_minutes', flag.detail_window_minutes,
+      'young_account_age_days', flag.young_account_age_days
+    ))
+    ELSE jsonb_strip_nulls(jsonb_build_object(
+      'threshold', flag.detail_threshold,
+      'window_minutes', flag.detail_window_minutes,
+      'correlated_ips', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object(
+          'ip_address', ip.ip_address,
+          'distinct_user_count', ip.distinct_user_count
+        ) ORDER BY ip.position)
+        FROM vote_integrity_flag_ips ip
+        WHERE ip.flag_id = flag.id
+      ), '[]'::jsonb)
+    ))
+  END
+  FROM vote_integrity_flags flag
+  WHERE flag.id = p_flag_id
+$$;
+COMMENT ON FUNCTION fn_vote_integrity_flag_details(UUID) IS
+  'Rebuilds vote-integrity details from typed velocity facts or correlated IP rows.';
 COMMENT ON COLUMN vote_integrity_flags.resolved_by_id IS 'Moderator who resolved this flag.';
 COMMENT ON COLUMN vote_integrity_flags.resolution IS 'Outcome: dismissed, penalized, or suspended.';
 

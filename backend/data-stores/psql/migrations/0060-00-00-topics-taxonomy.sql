@@ -508,7 +508,7 @@ COMMENT ON COLUMN topics__spending_categories.default_spending_frequency IS 'Def
 -- An alias may be unlinked while it is used as a standalone hashtag. Application
 -- validation owns hashtag grammar so the grammar can evolve without a schema change.
 CREATE TABLE IF NOT EXISTS topic_aliases (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_topic_alias_identities (id) ON DELETE RESTRICT,
   topic_id UUID REFERENCES topics ON DELETE RESTRICT,
   alias TEXT NOT NULL,
   CHECK (char_length(alias) <= 255),
@@ -524,6 +524,18 @@ CREATE TABLE IF NOT EXISTS topic_aliases (
 
   UNIQUE (alias)
 );
+
+CREATE OR REPLACE FUNCTION fn_register_retained_topic_alias_identity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM fn_ensure_audit_retained_identity('retained_topic_alias_identities'::regclass, NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_register_retained_topic_alias_identity
+BEFORE INSERT ON topic_aliases
+FOR EACH ROW EXECUTE FUNCTION fn_register_retained_topic_alias_identity();
 
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_updated_at
 BEFORE UPDATE ON topic_aliases

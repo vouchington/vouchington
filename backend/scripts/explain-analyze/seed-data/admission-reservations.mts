@@ -17,7 +17,7 @@ export async function seedCommittedPostAdmissionReservations(
     )
     INSERT INTO post_admission_reservations (
       actor_id, idempotency_key, intent_sha256, route, scope, source, post_type,
-      policy_revision, state, response, replay_metadata, committed_post_id,
+      policy_revision, state, response, replay_finalization, committed_post_id,
       committed_status, committed_at, expires_at, retention_expires_at
     )
     SELECT
@@ -25,7 +25,7 @@ export async function seedCommittedPostAdmissionReservations(
       format('019e0000-1600-7000-8000-%s', lpad(seed_index::text, 12, '0'))::uuid,
       repeat('0', 64),
       'explain-admission', 'post', 'api', 'discussion', 'explain-seed', 'committed',
-      '{}'::jsonb, '{"finalization":"pending"}'::jsonb, id, 'created', NOW(),
+      '{}'::jsonb, 'pending', id, 'created', NOW(),
       NOW() + INTERVAL '48 hours', NOW() + INTERVAL '48 hours'
     FROM seed_posts
     ON CONFLICT DO NOTHING`,
@@ -34,13 +34,13 @@ export async function seedCommittedPostAdmissionReservations(
   await write(
     `/* seedExplainData */ INSERT INTO post_admission_reservations (
       actor_id, idempotency_key, intent_sha256, route, scope, source, post_type,
-      policy_revision, state, response, replay_metadata, committed_post_id,
+      policy_revision, state, response, replay_finalization, committed_post_id,
       committed_status, committed_at, expires_at, retention_expires_at
     )
     SELECT
       created_by_id, '019e0000-1600-7000-8000-999999999999'::uuid, repeat('0', 64),
       'explain-admission', 'post', 'api', 'discussion', 'explain-seed', 'committed',
-      '{}'::jsonb, '{"finalization":"pending"}'::jsonb, id, 'created', NOW(),
+      '{}'::jsonb, 'pending', id, 'created', NOW(),
       NOW() + INTERVAL '48 hours', NOW() + INTERVAL '48 hours'
     FROM posts
     WHERE id = $1

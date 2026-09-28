@@ -92,8 +92,8 @@ export async function listDynamicConfigNamespaceHistory(
       dcl.changed_by_id,
       users.id AS changed_by_user_id,
       users.username AS changed_by_username,
-      dcl.previous_fields,
-      dcl.next_fields,
+      COALESCE(fn_dynamic_config_change_fields(dcl.id, dcl.config_key, 'previous'), '{}'::jsonb) AS previous_fields,
+      COALESCE(fn_dynamic_config_change_fields(dcl.id, dcl.config_key, 'next'), '{}'::jsonb) AS next_fields,
       dcl.created_at
     FROM dynamic_config_change_logs dcl
     LEFT JOIN users ON users.id = dcl.changed_by_id AND users.deleted_at IS NULL

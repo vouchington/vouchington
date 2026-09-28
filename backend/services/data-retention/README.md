@@ -19,7 +19,8 @@ retention is 90 days and never selects pending delivery work.
   reference even while a live relation still exists; a later authoritative vote deletion can
   capture that tuple again. Each family uses its own transaction and never locks a parent root.
 - `cleanupRetainedIdentityRoots()` — one cursor-bounded, `SKIP LOCKED` page per concrete user,
-  topic, post, RSS-item, and image owner family on each scheduled run. A root is deleted only when its
+  topic, post, RSS-item, image, URL hostname, URL, topic-alias, community, community-agent-prompt,
+  community-restriction, and post-admission-reservation family on each scheduled run. A root is deleted only when its
   live row and all durable request, audit, publication, or retained-relation references are absent; this is separate
   from publication-bridge cleanup and does not expire audit history.
 - `cleanupRetainedMediaBindings()` — one separate cursor-bounded page of immutable image placement
