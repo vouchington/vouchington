@@ -1,4 +1,5 @@
 import {
+  beginTransaction,
   clearCapturedQueries,
   disableQueryCapture,
   enableQueryCapture,
@@ -12,7 +13,6 @@ import { getPostByAny } from '@services/posts/get'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services/elections-votes/entity-relation/vote-stats-batch'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
-import { beginTransaction } from '@data-stores/psql'
 import { pruningFixture as fixture } from './fixture-ids.mts'
 import { assertExecutingPrunedLeaves } from './plan-gate.mts'
 import { getPartitionLeaves, rangeLeaf, VOTE_PARENT } from './partitions.mts'
@@ -130,7 +130,6 @@ export async function capturePruningProof(
     clearCapturedQueries()
     enableQueryCapture()
     try {
-      // oxlint-disable-next-line no-await-in-loop -- isolate one real service invocation per scenario
       await scenario.invoke()
     } finally {
       disableQueryCapture()
@@ -143,10 +142,8 @@ export async function capturePruningProof(
         `${scenario.label} captured ${captured.length} production ${scenario.queryName} queries`,
       )
     }
-    // oxlint-disable-next-line no-await-in-loop -- the physical partition inventory is scenario-specific
     const allLeaves = await getPartitionLeaves(read, scenario.parent)
     for (const mode of ['force_custom_plan', 'force_generic_plan'] as const) {
-      // oxlint-disable-next-line no-await-in-loop -- paired modes cannot share one PG capture transaction
       const explained = await explainAnalyze(
         `${scenario.queryName}:${scenario.label}:${mode}`,
         captured[0]!.text,

@@ -18,7 +18,6 @@ export async function attachProofRanges(query: (text: string) => Promise<unknown
       const lower = timestampToUuidv7LowerBound(Date.UTC(year, 0, 1))
       const upper = timestampToUuidv7LowerBound(Date.UTC(year + 1, 0, 1))
       // All identifiers come from the fixed parent/year inventory above, not user input.
-      // oxlint-disable-next-line no-await-in-loop -- partition attachments must precede fixture rows
       await query(`/* attachProofRanges */ CREATE TABLE ${rangeLeaf(parent, year)}
         PARTITION OF ${parent} FOR VALUES FROM ('${lower}') TO ('${upper}')`)
     }

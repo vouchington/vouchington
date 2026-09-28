@@ -15,7 +15,6 @@ export async function seedPruningProof(): Promise<void> {
     [fixture.topicId, fixture.otherTopicId],
   )
   for (const [index, postId] of fixture.posts.entries()) {
-    // oxlint-disable-next-line no-await-in-loop -- deterministic FK fixture order
     await write(
       `/* seedPruningProofPost */ INSERT INTO posts
         (id, post_type, title, created_by_id,
@@ -24,7 +23,6 @@ export async function seedPruningProof(): Promise<void> {
                decode(repeat('03', 32), 'hex'))`,
       [postId, `Pruning proof review ${index}`, fixture.userId],
     )
-    // oxlint-disable-next-line no-await-in-loop -- ratings depend on the exact post
     await write(
       `/* seedPruningProofRating */ INSERT INTO post_review_topic_ratings
         (post_id, topic_id, rating) VALUES ($1, $2, $3)`,
@@ -32,28 +30,25 @@ export async function seedPruningProof(): Promise<void> {
     )
   }
   for (const conversationId of fixture.conversations) {
-    // oxlint-disable-next-line no-await-in-loop -- deterministic FK fixture order
     await write(
       `/* seedPruningProofConversation */ INSERT INTO conversations
         (id, channel_type, created_by_id) VALUES ($1, 'chat', $2)`,
       [conversationId, fixture.userId],
     )
-    // oxlint-disable-next-line no-await-in-loop -- message depends on its conversation
     await write(
       `/* seedPruningProofMessage */ INSERT INTO conversation_messages
-        (conversation_id, created_by_id, content) VALUES ($1, $2, '{"text":"proof"}'::jsonb)`,
+        (conversation_id, created_by_id, chat_role, chat_text)
+       VALUES ($1, $2, 'user'::conversation_message_chat_roles, 'proof')`,
       [conversationId, fixture.userId],
     )
   }
   for (const [index, relationId] of fixture.relations.entries()) {
-    // oxlint-disable-next-line no-await-in-loop -- vote depends on its relation
     await write(
       `/* seedPruningProofRelation */ INSERT INTO relation__post__category__topic
         (id, subject_id, object_id, created_by_id)
        VALUES ($1, $2, $3, $4)`,
       [relationId, fixture.posts[index], fixture.topicId, fixture.userId],
     )
-    // oxlint-disable-next-line no-await-in-loop -- deterministic vote fixture order
     await write(
       `/* seedPruningProofVote */ INSERT INTO entity_relation_votes
         (relation_table, user_id, subject_id, entity_relation_id, score)
@@ -74,7 +69,6 @@ export async function seedPruningProof(): Promise<void> {
   )
   for (const table of [...PRUNING_PARENTS, 'entity_relation_votes', 'posts', 'topics', 'users']) {
     // All identifiers come from the fixed table list above.
-    // oxlint-disable-next-line no-await-in-loop -- ANALYZE follows completed fixture writes
     await write(`/* seedPruningProofAnalyze */ ANALYZE ${table}`)
   }
 }
@@ -83,7 +77,6 @@ export async function assertPruningFixturePlacement(): Promise<Record<string, st
   const evidence: Record<string, string[]> = {}
   for (const parent of PRUNING_PARENTS) {
     // All identifiers come from the fixed parent inventory.
-    // oxlint-disable-next-line no-await-in-loop -- each check names a separate parent
     const { rows } = await write<{ leaf: string; count: string }>(
       `/* assertPruningFixturePlacement */ SELECT tableoid::regclass::text AS leaf,
           count(*)::text AS count FROM ${parent} GROUP BY leaf ORDER BY leaf`,

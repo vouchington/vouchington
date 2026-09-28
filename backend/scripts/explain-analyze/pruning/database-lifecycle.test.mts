@@ -39,37 +39,50 @@ describe('owned pruning database lifecycle', () => {
       ),
     ).rejects.toThrow(/local PostgreSQL/)
     let owned: OwnedPruningDatabase | undefined
+    let existed = false
+    let refusal: unknown
     try {
       await createOwnedPruningDatabase(run, sourceUrl(), name, database => {
         owned = database
       })
-      await expect(createOwnedPruningDatabase(run, sourceUrl(), name, () => {})).rejects.toThrow(
-        /refusing existing/,
-      )
-      expect(await exists(sourceUrl(), name)).toBe(true)
+      existed = await exists(sourceUrl(), name)
+      try {
+        await createOwnedPruningDatabase(run, sourceUrl(), name, () => {})
+      } catch (error) {
+        refusal = error
+      }
     } finally {
       await owned?.drop()
     }
+    expect(existed).toBe(true)
+    expect(refusal).toEqual(new Error(`refusing existing pruning database ${name}`))
+    expect(await exists(sourceUrl(), name)).toBe(false)
   })
   it('drops only its owned sibling after a failure', async () => {
     const name = createPruningDatabaseName()
     let owned: OwnedPruningDatabase | undefined
+    let existedBeforeFailure = false
+    let caught: unknown
     try {
       await createOwnedPruningDatabase(run, sourceUrl(), name, database => {
         owned = database
       })
-      expect(await exists(sourceUrl(), name)).toBe(true)
+      existedBeforeFailure = await exists(sourceUrl(), name)
       throw new Error('injected fixture failure')
     } catch (error) {
-      expect(error).toEqual(new Error('injected fixture failure'))
+      caught = error
     } finally {
       await owned?.drop()
     }
+    expect(existedBeforeFailure).toBe(true)
+    expect(caught).toEqual(new Error('injected fixture failure'))
     expect(await exists(sourceUrl(), name)).toBe(false)
   })
   it('recovers its exact owned name after an ambiguous create error', async () => {
     const name = createPruningDatabaseName()
     let owned: OwnedPruningDatabase | undefined
+    let existedAfterFailedCreate = false
+    let refusal: unknown
     const transportFailure = async (file: string, args: string[]) => {
       const result = await run(file, args)
       if (args.some(arg => arg.startsWith('CREATE DATABASE'))) {
@@ -78,15 +91,19 @@ describe('owned pruning database lifecycle', () => {
       return result
     }
     try {
-      await expect(
-        createOwnedPruningDatabase(transportFailure, sourceUrl(), name, database => {
+      try {
+        await createOwnedPruningDatabase(transportFailure, sourceUrl(), name, database => {
           owned = database
-        }),
-      ).rejects.toThrow(/transport failure/)
-      expect(await exists(sourceUrl(), name)).toBe(true)
+        })
+      } catch (error) {
+        refusal = error
+      }
+      existedAfterFailedCreate = await exists(sourceUrl(), name)
     } finally {
       await owned?.drop()
     }
+    expect(existedAfterFailedCreate).toBe(true)
+    expect(refusal).toEqual(new Error('injected transport failure after create'))
     expect(await exists(sourceUrl(), name)).toBe(false)
   })
 })
