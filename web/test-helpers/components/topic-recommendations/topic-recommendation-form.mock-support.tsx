@@ -6,7 +6,6 @@ import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-moc
 
 const mockNav = createNavMock()
 export const mockRouterPush = mockNav.push
-export const mockRouterRefresh = mockNav.refresh
 
 const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
   mockOnError: vi.fn<VitestLooseMock>().mockReturnValue('error message'),
