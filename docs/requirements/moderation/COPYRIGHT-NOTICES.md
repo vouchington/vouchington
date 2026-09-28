@@ -372,6 +372,16 @@ an unapproved policy, an open case, an unresolved legal hold, or an open deadlin
 disposition writes `refused` or `not_destroyed`. Neither outcome deletes an evidence object or a
 preserved email. Actual destruction needs a separate human and legal authority.
 
+## Staff alerts
+
+Review age, urgent provisional filings, missed restoration deadlines, failed or bounced deliveries,
+and deliveries that need reconciliation are staff alerts derived from the notice, deadline, and
+delivery rows. Each source and condition keeps one alert. Staff acknowledgement records that
+episode and stays in history when a later episode reopens the same source. Private work and contact
+fields are returned only to copyright reviewers, and only while an approved alert policy is active.
+No alert destination or operator threshold is stored. A failed alert delivery does not resolve the
+deadline or the delivery obligation.
+
 ## Activation gates
 
 Before accepting live notices, the operator must register and publish the actual US designated

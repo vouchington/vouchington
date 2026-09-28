@@ -9,7 +9,8 @@ completion so a retry never resends an already delivered endpoint.
 
 Copyright delivery reconciliation routes durable legal intents without deciding compliance. The
 in-app processor creates only the generic member projection; legal email remains in the emails
-worker and records a separate SES receipt.
+worker and records a separate SES receipt. Both copyright reconciliation jobs then refresh staff
+alerts from those durable rows. An unapproved alert policy leaves the alerts closed.
 
 The copyright action sweep recovers historical eligible hold-blocked restorations before creating
 due statutory intents and enqueueing pending actions. The service owns the case placement fence,

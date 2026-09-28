@@ -158,6 +158,13 @@ projection fail-closed, replay the idempotent edge-registry publication, invalid
 placement path, and verify both a cached and uncached request before acknowledging delivery. Never
 change the PostgreSQL revision merely to make the edge registry match it.
 
+## Staff alerts
+
+Copyright staff alerts have no notification destination and no numeric review threshold in code.
+They stay closed until an operator records an approved `copyright_staff_alert_policies` row. Do not
+delete a delivery intent, deadline, or notice to clear an alert. Acknowledge the episode, or clear
+the underlying fact through the normal case workflow.
+
 ## Incident response
 
 For a missed human-review target, missed statutory deadline, evidence-integrity mismatch, public

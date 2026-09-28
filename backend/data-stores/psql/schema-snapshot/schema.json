@@ -708,6 +708,15 @@
     "fn_guard_copyright_restriction_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at)\n    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at)\n    OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN\n    RAISE EXCEPTION 'copyright restriction origin is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.lifted_at IS NOT NULL\n    AND (OLD.lifted_at IS DISTINCT FROM NEW.lifted_at\n      OR (OLD.lifted_by_id IS DISTINCT FROM NEW.lifted_by_id AND NEW.lifted_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction lift is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NOT NULL\n    AND (ROW(OLD.human_reviewed_at, OLD.human_review_action)\n      IS DISTINCT FROM ROW(NEW.human_reviewed_at, NEW.human_review_action)\n      OR (OLD.human_reviewed_by_id IS DISTINCT FROM NEW.human_reviewed_by_id\n        AND NEW.human_reviewed_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction human review is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NULL\n    AND NEW.human_reviewed_at IS NOT NULL\n    AND NEW.human_reviewed_by_id IS NULL\n    AND NOT (\n      NEW.human_review_action = 'reverse'\n      AND EXISTS (\n        SELECT 1\n        FROM copyright_notice_submission_assessments assessment\n        JOIN copyright_notice_form_intakes intake\n          ON intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id\n        JOIN copyright_notice_form_intake_reviews review\n          ON review.copyright_notice_form_intake_id = intake.id\n        WHERE assessment.id = NEW.authorizing_assessment_id\n          AND assessment.assessed_by_id IS NULL\n          AND assessment.copyright_notice_form_screening_id IS NOT NULL\n          AND NOT review.accepted AND review.reviewed_by_id IS NULL\n      )\n    ) THEN\n    RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_guard_copyright_staff_alert": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright staff alerts are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.copyright_notice_id IS DISTINCT FROM NEW.copyright_notice_id\n    OR OLD.copyright_notice_deadline_id IS DISTINCT FROM NEW.copyright_notice_deadline_id\n    OR OLD.copyright_notice_delivery_intent_id IS DISTINCT FROM NEW.copyright_notice_delivery_intent_id\n    OR OLD.condition IS DISTINCT FROM NEW.condition THEN\n    RAISE EXCEPTION 'copyright staff alert identity is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_staff_alert_ack": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert_ack()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright staff alert acknowledgements are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.copyright_staff_alert_id IS DISTINCT FROM NEW.copyright_staff_alert_id\n    OR OLD.acknowledged_at IS DISTINCT FROM NEW.acknowledged_at\n    OR OLD.condition_opened_at IS DISTINCT FROM NEW.condition_opened_at THEN\n    RAISE EXCEPTION 'copyright staff alert acknowledgement facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.acknowledged_by_user_id IS DISTINCT FROM NEW.acknowledged_by_user_id THEN\n    IF OLD.acknowledged_by_user_id IS NULL OR NEW.acknowledged_by_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright staff alert acknowledger cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.acknowledged_by_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.acknowledged_by_user_erased_at IS DISTINCT FROM OLD.acknowledged_by_user_erased_at THEN\n    RAISE EXCEPTION 'copyright staff alert acknowledger erasure is system-managed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_guard_copyright_staff_alert_policy": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_staff_alert_policy()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright staff alert policies are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_at IS DISTINCT FROM NEW.approved_at THEN\n    RAISE EXCEPTION 'copyright staff alert policy approval is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.revoked_at IS NOT NULL AND OLD.revoked_at IS DISTINCT FROM NEW.revoked_at THEN\n    RAISE EXCEPTION 'copyright staff alert policy revocation is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.approved_by_user_id IS DISTINCT FROM NEW.approved_by_user_id THEN\n    IF OLD.approved_by_user_id IS NULL OR NEW.approved_by_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright staff alert policy approver cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.approved_by_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.approved_by_user_erased_at IS DISTINCT FROM OLD.approved_by_user_erased_at THEN\n    RAISE EXCEPTION 'copyright staff alert policy approver erasure is system-managed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_copyright_submission_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.copyright_notice_id = target.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -34332,6 +34341,650 @@
         "trigger_copyright_restriction_assessment_scope": "CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope()",
         "trigger_copyright_restrictions_lifecycle_guard": "CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle()",
         "trigger_copyright_restrictions_updated_at": "CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_staff_alert_acknowledgements": {
+      "checkConstraints": {
+        "copyright_staff_alert_acknowledgements_check": "CHECK (((acknowledged_by_user_erased_at IS NULL) OR (acknowledged_by_user_id IS NULL)))"
+      },
+      "columns": {
+        "acknowledged_at": {
+          "collation": null,
+          "comment": "Time a staff user acknowledged that episode.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "acknowledged_by_user_erased_at": {
+          "collation": null,
+          "comment": "Time account erasure removed the acknowledger reference while retaining the acknowledgement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "acknowledged_by_user_id": {
+          "collation": null,
+          "comment": "Staff user who acknowledged the episode; null after that account is erased.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "condition_opened_at": {
+          "collation": null,
+          "comment": "Episode timestamp that was acknowledged. It matches the alert only while that episode is current.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "copyright_staff_alert_id": {
+          "collation": null,
+          "comment": "Alert episode family this acknowledgement belongs to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Append-only acknowledgement of one alert episode. A new episode keeps the prior row and becomes visible again.",
+      "foreignKeys": {
+        "copyright_staff_alert_acknowledge_copyright_staff_alert_id_fkey": {
+          "columns": ["copyright_staff_alert_id"],
+          "definition": "FOREIGN KEY (copyright_staff_alert_id) REFERENCES copyright_staff_alerts(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_staff_alerts",
+          "validated": true
+        },
+        "copyright_staff_alert_acknowledgem_acknowledged_by_user_id_fkey": {
+          "columns": ["acknowledged_by_user_id"],
+          "definition": "FOREIGN KEY (acknowledged_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_staff_alert_acknowledgements_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staff_alert_acknowledgements_pkey ON public.copyright_staff_alert_acknowledgements USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staff_alert_acks__actor": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staff_alert_acks__actor ON public.copyright_staff_alert_acknowledgements USING btree (acknowledged_by_user_id) WHERE (acknowledged_by_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "acknowledged_by_user_id",
+              "descending": false,
+              "expression": "acknowledged_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(acknowledged_by_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_staff_alert_acks__episode": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alert_acks__episode ON public.copyright_staff_alert_acknowledgements USING btree (copyright_staff_alert_id, condition_opened_at)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_staff_alert_id",
+              "descending": false,
+              "expression": "copyright_staff_alert_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "condition_opened_at",
+              "descending": false,
+              "expression": "condition_opened_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_staff_alert_acks_guard": "CREATE TRIGGER trigger_copyright_staff_alert_acks_guard BEFORE DELETE OR UPDATE ON public.copyright_staff_alert_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_staff_alert_ack()",
+        "trigger_copyright_staff_alert_acks_updated_at": "CREATE TRIGGER trigger_copyright_staff_alert_acks_updated_at BEFORE UPDATE ON public.copyright_staff_alert_acknowledgements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_staff_alert_policies": {
+      "checkConstraints": {
+        "copyright_staff_alert_policies_check": "CHECK (((revoked_at IS NULL) OR (revoked_at >= approved_at)))",
+        "copyright_staff_alert_policies_check1": "CHECK (((approved_by_user_erased_at IS NULL) OR (approved_by_user_id IS NULL)))"
+      },
+      "columns": {
+        "approved_at": {
+          "collation": null,
+          "comment": "Time a staff user approved deriving alerts from current case, deadline, and delivery facts.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "approved_by_user_erased_at": {
+          "collation": null,
+          "comment": "Time account erasure removed the approver reference while retaining the policy.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "approved_by_user_id": {
+          "collation": null,
+          "comment": "Staff user who approved the policy; null after that account is erased.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "revoked_at": {
+          "collation": null,
+          "comment": "Time this approval was revoked. A revoked policy does not authorize alerts.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Retained approval to derive copyright staff alerts. Absent or revoked rows keep derivation and staff reads closed. The row stores no operator threshold and no notification destination.",
+      "foreignKeys": {
+        "copyright_staff_alert_policies_approved_by_user_id_fkey": {
+          "columns": ["approved_by_user_id"],
+          "definition": "FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_staff_alert_policies_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staff_alert_policies_pkey ON public.copyright_staff_alert_policies USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staff_alert_policies__approved_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staff_alert_policies__approved_by ON public.copyright_staff_alert_policies USING btree (approved_by_user_id) WHERE (approved_by_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "approved_by_user_id",
+              "descending": false,
+              "expression": "approved_by_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(approved_by_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_staff_alert_policies__one_active": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alert_policies__one_active ON public.copyright_staff_alert_policies USING btree ((true)) WHERE (revoked_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "(true)",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_staff_alert_policies_guard": "CREATE TRIGGER trigger_copyright_staff_alert_policies_guard BEFORE DELETE OR UPDATE ON public.copyright_staff_alert_policies FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_staff_alert_policy()",
+        "trigger_copyright_staff_alert_policies_updated_at": "CREATE TRIGGER trigger_copyright_staff_alert_policies_updated_at BEFORE UPDATE ON public.copyright_staff_alert_policies FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_staff_alerts": {
+      "checkConstraints": {
+        "copyright_staff_alerts_condition_check": "CHECK ((condition = ANY (ARRAY['awaiting_review'::text, 'urgent_filing'::text, 'missed_deadline'::text, 'delivery_failed'::text, 'delivery_bounced'::text, 'reconciliation_needed'::text])))",
+        "copyright_staff_alerts_resolved_after_open": "CHECK (((resolved_at IS NULL) OR (resolved_at >= condition_opened_at)))",
+        "copyright_staff_alerts_source_check": "CHECK ((((condition = ANY (ARRAY['awaiting_review'::text, 'urgent_filing'::text])) AND (copyright_notice_deadline_id IS NULL) AND (copyright_notice_delivery_intent_id IS NULL)) OR ((condition = 'missed_deadline'::text) AND (copyright_notice_deadline_id IS NOT NULL) AND (copyright_notice_delivery_intent_id IS NULL)) OR ((condition = ANY (ARRAY['delivery_failed'::text, 'delivery_bounced'::text, 'reconciliation_needed'::text])) AND (copyright_notice_delivery_intent_id IS NOT NULL) AND (copyright_notice_deadline_id IS NULL))))"
+      },
+      "columns": {
+        "condition": {
+          "collation": null,
+          "comment": "Derived condition: awaiting review, urgent filing, missed deadline, delivery failure, bounce, or reconciliation need.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
+        },
+        "condition_opened_at": {
+          "collation": null,
+          "comment": "Source timestamp of the current episode. A later timestamp reopens the alert after acknowledgement.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "copyright_notice_deadline_id": {
+          "collation": null,
+          "comment": "Statutory deadline whose missed restoration time opened this alert; null for case and delivery conditions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_notice_delivery_intent_id": {
+          "collation": null,
+          "comment": "Delivery obligation whose failure, bounce, or retry opened this alert; null for case and deadline conditions.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright case that owns the alert.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "resolved_at": {
+          "collation": null,
+          "comment": "Time the source condition cleared. Set again to null when that condition returns.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One retained alert per case, deadline, or delivery source and condition. Acknowledgement does not delete the source obligation.",
+      "foreignKeys": {
+        "copyright_staff_alerts_copyright_notice_deadline_id_fkey": {
+          "columns": ["copyright_notice_deadline_id"],
+          "definition": "FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_deadlines",
+          "validated": true
+        },
+        "copyright_staff_alerts_copyright_notice_delivery_intent_id_fkey": {
+          "columns": ["copyright_notice_delivery_intent_id"],
+          "definition": "FOREIGN KEY (copyright_notice_delivery_intent_id) REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_delivery_intents",
+          "validated": true
+        },
+        "copyright_staff_alerts_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_staff_alerts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_staff_alerts_pkey ON public.copyright_staff_alerts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staff_alerts__case_condition": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alerts__case_condition ON public.copyright_staff_alerts USING btree (copyright_notice_id, condition) WHERE ((copyright_notice_deadline_id IS NULL) AND (copyright_notice_delivery_intent_id IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "condition",
+              "descending": false,
+              "expression": "condition",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((copyright_notice_deadline_id IS NULL) AND (copyright_notice_delivery_intent_id IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staff_alerts__deadline_condition": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alerts__deadline_condition ON public.copyright_staff_alerts USING btree (copyright_notice_deadline_id, condition) WHERE (copyright_notice_deadline_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_deadline_id",
+              "descending": false,
+              "expression": "copyright_notice_deadline_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "condition",
+              "descending": false,
+              "expression": "condition",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_deadline_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staff_alerts__delivery_condition": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_copyright_staff_alerts__delivery_condition ON public.copyright_staff_alerts USING btree (copyright_notice_delivery_intent_id, condition) WHERE (copyright_notice_delivery_intent_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_delivery_intent_id",
+              "descending": false,
+              "expression": "copyright_notice_delivery_intent_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "condition",
+              "descending": false,
+              "expression": "condition",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_delivery_intent_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_staff_alerts__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_staff_alerts__notice ON public.copyright_staff_alerts USING btree (copyright_notice_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_staff_alerts_guard": "CREATE TRIGGER trigger_copyright_staff_alerts_guard BEFORE DELETE OR UPDATE ON public.copyright_staff_alerts FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_staff_alert()",
+        "trigger_copyright_staff_alerts_updated_at": "CREATE TRIGGER trigger_copyright_staff_alerts_updated_at BEFORE UPDATE ON public.copyright_staff_alerts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
