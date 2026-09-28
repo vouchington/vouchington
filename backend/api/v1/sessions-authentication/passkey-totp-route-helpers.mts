@@ -8,17 +8,12 @@ import { requireAuth, validateRequestContract } from '../../response-helpers.mts
 // Shared by the passkey and TOTP-authenticator management routes (list, rename, and delete): the
 // auth/id preamble, body validation, and the service call. Each route makes its own
 // `apiQuery(...)`/`ctx.json(...)` call (list), `apiRequestContract<Key, T>(key)` marker call
-// (rename/delete), and `ctx.setStatus(204)` call (rename/delete) directly in its own handler —
-// the same convention `apiRequestContract`'s own docstring describes ("handlers whose body is
-// parsed by a shared factory") and that `logout.mts`/`entity-relation-votes.mts` already use for
-// requests, extended here to the response side too — so the OpenAPI static analyzers
-// (`backend/test-helpers/api-fixtures/*-route-analysis.mts`) can attribute each route's request
-// and response contract without needing the actual `ctx.request.json(...)`/`ctx.json(...)`/
-// `ctx.setStatus(...)` call itself to sit inside the route file: a call lexically inside a
-// function invoked from more than one route resolves to no route at all (an ambiguous binding),
-// so the implicit harvesters that would otherwise try to attribute it silently skip it — the
-// route's own marker/response call is the sole source of truth instead. Concretely: neither
-// `renameMfaFactor` nor `deleteMfaFactor` below sets the response status itself; each caller does.
+// (rename/delete), and `ctx.setStatus(204)` call (rename/delete) directly in its own handler.
+// A `ctx.json(...)` or streamed JSON call inside a function invoked from more than one route is
+// rejected by `response-contract-ambiguous-attribution.mts` instead of being omitted from the
+// generated contract. Request-body reads in a shared helper are still not attributed to one
+// route, so those markers stay at each caller too. Neither `renameMfaFactor` nor
+// `deleteMfaFactor` sets the response status itself; each caller does.
 
 async function requireAuthAndItemId(
   ctx: Context,
