@@ -315,8 +315,10 @@ public and admin search cover prefix, UUID, and exact primary-email lookups. The
 seeds a selective address, checks the returned user, and requires the executing
 `idx_user_email_addresses_email_primary` probe in custom and generic plans.
 
-**Explicit-range pruning** (`pruning/run.mts`): The normal idempotent seed keeps the production
-default-only layout. This separate runner creates a random, local, migrated sibling database,
+### Explicit-range pruning
+
+The normal idempotent seed keeps the production default-only layout. This separate runner,
+[`pruning/run.mts`](pruning/run.mts), creates a random, local, migrated sibling database,
 attaches two explicit UUIDv7 ranges alongside each migrated DEFAULT child, and verifies nonempty
 placement through `tableoid`. It calls `getPostByAny`,
 `getConversationMessagesByConversationId`, and
