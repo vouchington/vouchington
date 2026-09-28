@@ -1,5 +1,5 @@
 import type { PostsResponseBody } from '@/types/api-responses'
-import type { Post } from '@/types/posts'
+import type { Post, TopicRecommendationStatus } from '@/types/posts'
 import type { User } from '@/types/user'
 import { vi } from 'vitest'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
@@ -134,4 +134,26 @@ export function makeRecommendationTableFixture(): {
   }
 
   return { basePost, data }
+}
+
+export function cloneRecommendationPost(
+  basePost: Post,
+  id: string,
+  overrides: { topic_title: string; topic_slug: string; status?: TopicRecommendationStatus },
+): Post {
+  const recommendation = basePost.topic_recommendation
+  if (recommendation == null) {
+    throw new Error('recommendation fixture is missing topic_recommendation')
+  }
+  return {
+    ...basePost,
+    id,
+    topic_recommendation: {
+      ...recommendation,
+      post_id: id,
+      topic_title: overrides.topic_title,
+      topic_slug: overrides.topic_slug,
+      status: overrides.status ?? recommendation.status,
+    },
+  }
 }

@@ -1,4 +1,5 @@
 import {
+  cloneRecommendationPost,
   makeRecommendationTableFixture,
   mockNav,
   mockOnError,
@@ -42,17 +43,11 @@ describe('TopicRecommendationsTable — modal actions', () => {
   it('rejects from the modal dialog and navigates to next pending post', async () => {
     mockReject.mockResolvedValue({ post: basePost })
 
-    const rec2post = {
-      ...basePost,
-      id: 'rec-2',
-      topic_recommendation: {
-        ...basePost.topic_recommendation,
-        post_id: 'rec-2',
-        topic_title: 'Second Topic',
-        topic_slug: 'second-topic',
-        status: 'pending' as const,
-      },
-    }
+    const rec2post = cloneRecommendationPost(basePost, 'rec-2', {
+      topic_title: 'Second Topic',
+      topic_slug: 'second-topic',
+      status: 'pending',
+    })
     const twoItemData: PostsResponseBody = {
       ...data,
       results: [

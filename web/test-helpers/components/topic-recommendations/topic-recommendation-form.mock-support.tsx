@@ -52,6 +52,7 @@ vi.mock(
         onValueChange?: (v: string) => void
         value?: string
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- test mock intentionally replaces the UI Select with native select semantics
         <select
           data-testid='topic-type-select'
           value={value}

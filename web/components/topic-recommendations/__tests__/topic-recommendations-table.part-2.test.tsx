@@ -2,6 +2,7 @@ import {
   makeRecommendationTableFixture,
   mockApprove,
   mockNav,
+  mockReject,
   mockOnError,
   mockOnSuccess,
   tableAuth,
@@ -86,8 +87,7 @@ describe('TopicRecommendationsTable', () => {
   })
 
   it('quick-rejects from the row without opening modal', async () => {
-    const { rejectTopicRecommendation } = await import('@/lib/api/client/topic-recommendations')
-    vi.mocked(rejectTopicRecommendation).mockResolvedValue({ post: data.posts['rec-1']! })
+    mockReject.mockResolvedValue({ post: data.posts['rec-1']! })
 
     const { container } = renderTable({ isAdmin: true })
     const rejectBtn = container.querySelector('[data-pw="topic-recommendation-row-reject"]')
@@ -95,7 +95,7 @@ describe('TopicRecommendationsTable', () => {
     fireEvent.click(rejectBtn!)
 
     await waitFor(() => {
-      expect(vi.mocked(rejectTopicRecommendation)).toHaveBeenCalledWith('rec-1')
+      expect(mockReject).toHaveBeenCalledWith('rec-1')
     })
     expect(mockOnSuccess).toHaveBeenCalledWith('Recommendation rejected')
   })

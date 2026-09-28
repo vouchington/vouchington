@@ -1,4 +1,5 @@
 import {
+  cloneRecommendationPost,
   makeRecommendationTableFixture,
   mockApprove,
   mockNav,
@@ -80,16 +81,10 @@ describe('TopicRecommendationsTable — modal actions', () => {
   })
 
   it('navigates to next post via Next button in dialog', () => {
-    const navPost = {
-      ...basePost,
-      id: 'rec-nav',
-      topic_recommendation: {
-        ...basePost.topic_recommendation,
-        post_id: 'rec-nav',
-        topic_title: 'Nav Target Topic',
-        topic_slug: 'nav-target-topic',
-      },
-    }
+    const navPost = cloneRecommendationPost(basePost, 'rec-nav', {
+      topic_title: 'Nav Target Topic',
+      topic_slug: 'nav-target-topic',
+    })
     const twoItemData: PostsResponseBody = {
       ...data,
       results: [

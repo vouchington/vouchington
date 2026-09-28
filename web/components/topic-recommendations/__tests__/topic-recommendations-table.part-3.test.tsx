@@ -1,6 +1,7 @@
 import {
   makeRecommendationTableFixture,
   mockOnError,
+  mockReject,
   mockWithdraw,
   tableAuth,
 } from '@/test-helpers/components/topic-recommendations/topic-recommendations-table.mock-support'
@@ -37,8 +38,7 @@ describe('TopicRecommendationsTable', () => {
   }
 
   it('calls onError when quick-reject fails', async () => {
-    const { rejectTopicRecommendation } = await import('@/lib/api/client/topic-recommendations')
-    vi.mocked(rejectTopicRecommendation).mockRejectedValue(new Error('Reject failed'))
+    mockReject.mockRejectedValue(new Error('Reject failed'))
 
     const { container } = renderTable({ isAdmin: true })
     const rejectBtn = container.querySelector('[data-pw="topic-recommendation-row-reject"]')
