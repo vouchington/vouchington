@@ -8969,8 +8969,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       feedsmith:
-        specifier: ^3.0.0
-        version: 3.0.0
+        specifier: ^3.0.1
+        version: 3.0.1
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -19457,6 +19457,10 @@ packages:
   feedsmith@3.0.0:
     resolution: {integrity: sha512-ePtwtkyWHAN0nkzSdOUJ6pTHdj5Zwh78vL3tmbEJOCXl5ixrdd3J+uve21rZstpn3odjS3Dh3j6hOFN4PTg9ag==}
 
+  feedsmith@3.0.1:
+    resolution: {integrity: sha512-P4puSPGXvIcA5wYvJJCap+nbO2tVemZ39fpkx68ZtkbAGtzw4eNJ0BDm8tLb25UWD8yL8j47eDG2uwfzprTiZA==}
+    engines: {node: '>=14'}
+
   fetch-blob@3.2.0:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
@@ -28530,6 +28534,11 @@ snapshots:
       picomatch: 4.0.7
 
   feedsmith@3.0.0:
+    dependencies:
+      entities: 7.0.1
+      fast-xml-parser: 5.11.1
+
+  feedsmith@3.0.1:
     dependencies:
       entities: 7.0.1
       fast-xml-parser: 5.11.1
