@@ -1,7 +1,8 @@
 // Every exception is an exact table.column from the committed PostgreSQL schema snapshot.
 // Remove a remediation entry as its owning domain is normalized. New entries require plan review.
-// Opaque documents retain their external wire shape or exact replay bytes; application-owned facts
-// and relationships belong in typed columns and child tables.
+// JSON documents are allowed. This list records reviewed opaque provider, protocol, and replay
+// payloads. Structured documents and change history stay JSON too. An entity id inside any of
+// them is a foreign-key column; the rest of the document stays JSON.
 export const ALLOWED_OPAQUE_JSON = new Set([
   'agent_moderations.results',
   'apple_accounts.apple_user_data',

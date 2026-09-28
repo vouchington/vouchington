@@ -45,13 +45,13 @@ function snapshot(
 
 describe('relational storage guard', () => {
   it.each(['json', 'jsonb', 'json[]', 'jsonb[]', 'json[][]', 'jsonb[][]'])(
-    'rejects undeclared %s documents',
+    'accepts %s documents without typing each field',
     type => {
       expect(
         checkRelationalStorage(snapshot('new_records', { facts: column(type) }), {
           enforceCatalogFreshness: false,
         }),
-      ).toEqual([expect.stringContaining('new_records.facts: JSON storage')])
+      ).toEqual([])
     },
   )
 
@@ -64,7 +64,7 @@ describe('relational storage guard', () => {
     ).toEqual([])
   })
 
-  it('rejects new business JSON, UUID arrays and reference-like UUIDs without FKs', () => {
+  it('accepts a JSON document and rejects UUID arrays and reference-like UUIDs without FKs', () => {
     const result = checkRelationalStorage(
       snapshot('new_records', {
         facts: column('jsonb'),
@@ -74,9 +74,9 @@ describe('relational storage guard', () => {
       }),
       { enforceCatalogFreshness: false },
     )
+    expect(result.join('\n')).not.toContain('new_records.facts')
     expect(result).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('new_records.facts'),
         expect.stringContaining('new_records.topic_ids'),
         expect.stringContaining('new_records.topic_id'),
         expect.stringContaining('new_records.target_uuid'),
@@ -191,15 +191,20 @@ describe('relational storage guard', () => {
 describe('repo-file-policy synthetic schema integration', () => {
   const fixture = setupRepoFilePolicyTest()
 
-  it('accepts an injected empty schema while rejecting a new JSON column', async () => {
+  it('accepts an injected JSON document and rejects a new UUID array', async () => {
     const repo = await fixture.makeRepo()
     await expect(fixture.run(repo)).resolves.toEqual({ stdout: 'All checks passed.' })
     fixture.setSnapshotTable(repo, 'new_records', {
       ...plainSnapshotTable(),
       columns: { facts: column('jsonb') },
     })
+    await expect(fixture.run(repo)).resolves.toEqual({ stdout: 'All checks passed.' })
+    fixture.setSnapshotTable(repo, 'new_records', {
+      ...plainSnapshotTable(),
+      columns: { topic_ids: column('uuid[]') },
+    })
     await expect(fixture.run(repo)).rejects.toMatchObject({
-      stdout: expect.stringContaining('new_records.facts'),
+      stdout: expect.stringContaining('new_records.topic_ids'),
     })
   })
 })

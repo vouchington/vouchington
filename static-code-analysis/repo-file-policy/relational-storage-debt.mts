@@ -1,38 +1,13 @@
 // Shrink-only prelaunch debt. The acceptance check rejects any key that is not already on
 // origin/main. Remove a key only after that column no longer has the defect. Do not add keys.
 //
-// Ledger for entries whose columns still exist on this branch:
-// - #820 owns posts.structured_data and the post-category finalization / review-succession UUID arrays.
-// - #823 owns the moderation, audit, admission, revision, dynamic-config, and prompt-audit entries below.
-// - #986 owns copyright_notice_lifecycle_events.metadata.
+// JSON documents are not debt. Structured documents, data points, and change history stay JSON.
+// An entity id inside a document still needs its own foreign-key column; this inventory cannot
+// see inside JSON. UUID arrays, missing foreign keys, and encoded keys remain.
 // OAuth, membership, ActivityPub checkpoints, vote device/session ids, and story related-URL
-// identities also remain; their columns still exist, so this audit does not mark them complete.
+// identities still lack foreign keys, so this audit does not mark them complete.
 export const EXISTING_RELATIONAL_STORAGE_DEBT = {
-  json: new Set([
-    // #823
-    'community_agent_prompt_changes.next_fields',
-    'community_agent_prompt_changes.previous_fields',
-    // #986
-    'copyright_notice_lifecycle_events.metadata',
-    // #823
-    'dynamic_config_change_logs.next_fields',
-    'dynamic_config_change_logs.previous_fields',
-    'moderation_appeal_lifecycle_changes.metadata',
-    'moderation_media_reveals.metadata',
-    'moderation_training_feedbacks.metadata',
-    'moderator_actions.metadata',
-    'post_admission_reservations.replay_metadata',
-    'post_clearance_changes.metadata',
-    'post_moderation_dispositions.evidence',
-    'post_revisions.changes',
-    // #820
-    'posts.structured_data',
-    // #823
-    'report_integrity_flags.details',
-    'review_dispute_lifecycle_changes.metadata',
-    'topic_revisions.changes',
-    'vote_integrity_flags.details',
-  ]),
+  json: new Set<string>(),
   uuidArray: new Set([
     // #820
     'post_category_finalizations.actor_user_ids',

@@ -16,14 +16,25 @@ Launch behavior and worktree-database recovery follow
 [One current contract](../../AGENTS.md) and
 [Ephemeral worktree databases](../../AGENTS.md).
 
-Application-owned business facts belong in typed columns or child tables. Every internal entity
-reference needs a concrete foreign key and supporting index, including references stored in a
-primary/unique key or in audit and recovery records. Live references point to live entity tables.
-Historical identity that must survive deletion points to an entity-specific retained identity row;
-it cannot authorize operations on a deleted live entity. Keep only the identity/lifecycle fields
-required by existing retention and recovery behavior. Model alternatives as per-entity FK columns
-with an exact-one-target constraint or as typed child rows. Do not use JSON, UUID arrays, type/id
-pairs, generic attribute/value tables, or encoded string keys as relationship storage.
+An internal entity reference is a column or child row with a concrete foreign key and a supporting
+index, including a reference stored in a primary or unique key. Extract that id from a JSON document
+or a UUID array. Leave the rest of the document in JSON. Do not delete a JSON document and replace
+it with a typed column for every field.
+
+Structured documents stay JSON. Data points stay structured JSON. A data-point field that references
+an entity, such as a topic id, is a foreign-key column. Counts, amounts, and the other structured
+fields stay in the JSON.
+
+Change history stays JSON. Do not extract before/after values, and do not add foreign keys for ids
+that appear only in a history document. History is for tracking and is not joined. Revision `changes`
+documents and config or prompt previous/next field documents are history.
+
+Live references point at live tables. An entity that must remain referenceable after deletion has its
+own retained-identity row. Durable rows that outlive the entity reference that row. A retained
+identity does not authorize a deleted entity. Keep only the identity and lifecycle fields that
+existing retention needs. Model alternatives as per-entity FK columns with an exact-one-target
+constraint or as typed child rows. Do not use a UUID array, type/id pair, generic attribute/value
+table, or encoded string key as relationship storage.
 
 The canonical user, topic, post, and RSS-item creators register their concrete retained identity
 inside the live-row insertion transaction. Live rows FK back to that owner; deletion may remove the
@@ -53,24 +64,24 @@ Reconsider partitioning at sustained one-million-row cardinality or measured pre
 relation-identity sweep removes each owner once no impact references it, even if the live relation
 still exists. The subsequent root sweep also checks all 17 retained-relation references.
 
-JSON storage is for exact reviewed opaque provider documents, external protocol payloads, and
-replay envelopes. Queryable application-owned fields and relationships must be extracted into typed
-storage even when the original external document is also retained. The
+JSON that stays includes structured application documents, change history, exact reviewed opaque
+provider documents, external protocol payloads, and replay envelopes. The
 [relational-storage catalog](../../static-code-analysis/repo-file-policy/relational-storage-catalog.mts)
-records exact allowed columns; the
+records reviewed opaque columns and non-relationship UUID tokens. The
 [remediation inventory](../../static-code-analysis/repo-file-policy/relational-storage-debt.mts)
-records existing prelaunch defects. That inventory is shrink-only: new keys fail the acceptance
-check against `origin/main`. A catalog entry whose column no longer has the defect is stale and must
-be removed.
+records UUID arrays, missing foreign keys, and encoded keys. It does not record JSON documents.
+That inventory is shrink-only: new keys fail the acceptance check against `origin/main`. A catalog
+entry whose column no longer has the defect is stale and must be removed.
 The
 [schema guard](../../static-code-analysis/repo-file-policy/relational-storage-guard.mts) runs on the
-committed PostgreSQL-generated snapshot. It rejects unresolved domain types before JSON, UUID-array,
-and relation classification. Naming checks catch reference-like UUIDs, scoped encoded keys only while
-they stay textual, and sole UUID primary keys that are neither generated nor foreign-keyed. Semantic
-ownership still requires review of the producer, consumer, and lifecycle. A generated alias is
-accepted only with its exact source expression, each source foreign key, and the exact
-`num_nonnulls(...) = 1` check. Valid composite and proven partition FKs are accepted. The partition
-proof reads the target checkout's generated entity-relation SQL.
+committed PostgreSQL-generated snapshot. It rejects unresolved domain types before UUID-array and
+relation classification. A JSON column is not a defect. The guard cannot see an id hidden inside a
+document; review of the producer and consumer does that. Naming checks catch reference-like UUIDs,
+scoped encoded keys only while they stay textual, and sole UUID primary keys that are neither
+generated nor foreign-keyed. A generated alias is accepted only with its exact source expression,
+each source foreign key, and the exact `num_nonnulls(...) = 1` check. Valid composite and proven
+partition FKs are accepted. The partition proof reads the target checkout's generated
+entity-relation SQL.
 
 ## Index every foreign key with a referential-integrity-usable leading index
 

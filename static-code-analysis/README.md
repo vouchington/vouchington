@@ -299,12 +299,14 @@ form, so `-f`/`-F` there always POSTs by design (#10956).
 
 The PostgreSQL [relational-storage guard](repo-file-policy/relational-storage-guard.mts) reads the
 tracked generated schema snapshot. Its [exact catalog](repo-file-policy/relational-storage-catalog.mts)
-permits reviewed opaque/provider/protocol/replay JSON and nonrelationship UUID tokens/cursors;
-existing business JSON, UUID arrays, missing FKs, and scoped encoded keys are recorded in the
+permits reviewed opaque/provider/protocol/replay JSON and nonrelationship UUID tokens/cursors.
+A JSON column is not a defect: structured documents, data points, and change history stay JSON.
+UUID arrays, missing FKs, and scoped encoded keys are recorded in the
 [remediation inventory](repo-file-policy/relational-storage-debt.mts). The inventory is shrink-only
 against `origin/main`. `actions/checkout` does not create that ref, so the static-analysis workflow
 and the tooling test job each fetch `refs/heads/main` at depth 1 before the check. Every declaration is checked for staleness,
-and new undeclared columns fail the aggregate `repo-file-policy` check. A catalog entry whose column no longer needs the exception
+and new undeclared UUID-array, missing-FK, and encoded-key columns fail the aggregate
+`repo-file-policy` check. A catalog entry whose column no longer needs the exception
 is stale. Unresolved domain types are rejected before classification. Encoded-key debt stays only
 while the column is still textual. A sole UUID primary key needs a generator, a target FK, or an
 exact own-identity exception. The guard recognizes composite and proven partition FKs. A generated

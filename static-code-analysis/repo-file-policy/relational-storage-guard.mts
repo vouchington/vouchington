@@ -1,6 +1,5 @@
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
-import { ALLOWED_OPAQUE_JSON } from './relational-storage-catalog.mts'
 import {
   classifyRelationalColumn,
   checkCategory,
@@ -42,14 +41,7 @@ export function checkRelationalStorage(
         continue
       }
       if (/^jsonb?(?:\[\])*$/u.test(type)) {
-        checkCategory(
-          key,
-          'JSON storage',
-          ALLOWED_OPAQUE_JSON,
-          EXISTING_RELATIONAL_STORAGE_DEBT.json,
-          observed.json,
-          errors,
-        )
+        observed.json.add(key)
       }
       if (/^uuid\[\]$/u.test(type)) {
         checkCategory(
