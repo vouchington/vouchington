@@ -86,31 +86,33 @@ module.exports = {
       // right after `api-fixtures/`), silently defeating the exclusion the same way the
       // bare `fixtures` alternative did above.
       //
-      // The `\.mock\.mts$`, `__tests__`, `__fixtures__`, and bare `build` alternatives had the
+      // The `\.mock\.mts$`, `__tests__`, `__fixtures__`, and `build` alternatives had the
       // same problem and are anchored here too (#9317, the round-5 review follow-up to #9307),
       // using the identical `^(?!.*api-fixtures/).*` guard as the `*.test.mts`/`*.spec.mts`
       // alternative above, for the same reason: an unanchored negative lookahead would let the
       // regex engine retry from a later position and silently defeat the exclusion.
       //
-      // The bare `build` alternative has an effect on api-fixtures/ today:
-      // `backend/test-helpers/api-fixtures/cold-build-budget.mts`, the
-      // `openapi/build-openapi-*.mts` files, and `openapi/schema-node-builders.mts` matched it
-      // (and are now followed). `__tests__` and `.mock.mts` currently match no file under
-      // api-fixtures/, so those two guards are inert today and only close the blind spot for
-      // future files. `__fixtures__` matches no file under api-fixtures/ today either, but its
-      // anchoring is load-bearing regardless: without the bare `fixtures` alternative also being
-      // anchored (above), any future `__fixtures__` path under api-fixtures/ would stay excluded
-      // via that sibling alternative no matter how the `__fixtures__` alternative itself were
-      // written. `pnpm run dep-cruise:backend` was run before and after this change to confirm no
-      // new violations were introduced by following the newly-reachable api-fixtures/ files (the
-      // general `build` substring match still excludes every other `build`-named path repo-wide
-      // -- e.g. query-builder.mts, xml-builder.mts, build-system-prompt.mts -- since the guard
-      // only carves out api-fixtures/, it does not anchor `build` at path-start).
+      // `__fixtures__`, `fixtures`, and `build` match directory segments only (`/__fixtures__/`,
+      // `/fixtures/`, `/build/`). A substring match would also drop `xml-builder.mts`,
+      // `query-builder.mts`, `feed-query-builders/`, and `*-fixtures.mts`, which must stay in
+      // the graph. The walker tests directory paths with no trailing slash, so the fixtures
+      // alternative must not match the directory `backend/test-helpers/api-fixtures` itself or
+      // that whole tree is skipped. The api-fixtures guard still lets `api-fixtures/**/build/`
+      // and `api-fixtures/**/fixtures/` be followed.
       //
       // `node_modules` and `.next` are intentionally global excludes (node_modules must stay
       // excluded even under api-fixtures/) and stay unanchored; do not add the
       // `^(?!.*api-fixtures/).*` guard to them.
-      path: 'node_modules|^(?!.*api-fixtures/).*(\\.test|\\.spec)\\.mts$|^(?!.*api-fixtures/).*\\.mock\\.mts$|^(?!.*api-fixtures/).*__tests__|^(?!.*api-fixtures/).*__fixtures__|^(?!.*api-fixtures/).*fixtures|\\.next|^(?!.*api-fixtures/).*build',
+      path: [
+        'node_modules',
+        String.raw`^(?!.*api-fixtures/).*(\.test|\.spec)\.mts$`,
+        String.raw`^(?!.*api-fixtures/).*\.mock\.mts$`,
+        String.raw`^(?!.*api-fixtures/).*__tests__`,
+        String.raw`^(?!.*api-fixtures/).*(?:^|/)__fixtures__/`,
+        String.raw`^(?!.*api-fixtures/).*(?:^|/)fixtures/`,
+        String.raw`\.next`,
+        String.raw`^(?!.*api-fixtures/).*(?:^|/)build/`,
+      ].join('|'),
     },
     enhancedResolveOptions: {
       exportsFields: ['exports'],

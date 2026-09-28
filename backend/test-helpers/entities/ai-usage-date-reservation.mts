@@ -1,5 +1,5 @@
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const TEST_AI_USAGE_WINDOW_START_MS = Date.parse('8000-01-01T00:00:00.000Z')

@@ -6,7 +6,7 @@ import {
   insertTestAiUsageRecord,
   insertTestCommunity,
 } from '@voucha/test-helpers'
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 import type { PrivateUser } from '@services/users/types'
 import { recordAiUsage } from '../record.mts'
