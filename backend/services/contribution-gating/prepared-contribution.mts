@@ -5,17 +5,36 @@ export type PreparedContribution<Response> = {
   finalize: () => Promise<Response | void>
 }
 
+const finalizationFailures = new WeakMap<object, unknown[]>()
+
 export async function executePreparedContribution<Response>(
   query: TransactionQuery,
   prepare: () => Promise<PreparedContribution<Response>>,
 ): Promise<Response> {
   const prepared = await prepare()
   registerPostCommitAction(query, async () => {
-    const finalizedResponse = await prepared.finalize()
-    if (finalizedResponse === undefined) return
-    replacePreparedResponse(prepared.response, finalizedResponse)
+    try {
+      const finalizedResponse = await prepared.finalize()
+      if (finalizedResponse === undefined) return
+      replacePreparedResponse(prepared.response, finalizedResponse)
+    } catch (error) {
+      const failures = finalizationFailures.get(query) ?? []
+      failures.push(error)
+      finalizationFailures.set(query, failures)
+      throw error
+    }
   })
   return prepared.response
+}
+
+/** The transaction runner logs and swallows post-commit failures. Callers still need the error. */
+export function rejectFailedPreparedContribution(query: object): void {
+  const failures = finalizationFailures.get(query)
+  finalizationFailures.delete(query)
+  const error = failures?.[0]
+  if (error === undefined) return
+  if (error instanceof Error) throw error
+  throw new Error(String(error))
 }
 
 function replacePreparedResponse<Response>(response: Response, finalizedResponse: Response): void {
