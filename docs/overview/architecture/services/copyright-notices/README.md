@@ -76,7 +76,8 @@ Human provenance is the absence of a screening FK, including after the reviewer 
   and erased claimants are null. Callers must separately determine whether the viewer may see the
   target reference.
 - Legal receipts, evidence, assessments, targets, and lifecycle events are immutable. Restriction
-  lifts and action-intent completions are one-way transitions.
+  lifts are one-way transitions. A legal-blocker transition may reopen the same eligible blocked
+  restore intent; its identity and original authority are immutable, and the reset is audited.
 - Enforcement requests recheck that their authorizing notice assessment remains compliant and current
   when claimed and after a stale-authority race. Superseded or non-compliant requests complete as
   no-ops; transport or persistence failures remain retryable.
@@ -120,6 +121,26 @@ flowchart TD
   policy --> report[Transparency counts for a caller-supplied period]
   ukReceipt --> review[Staff-supplied review]
   review --> ukRedress[Participant redress and staff disposition]
+```
+
+Hold assessment and resolution fence every placement on the case before taking its notice lock.
+They recheck and reopen original eligible blocked restore intents inside the legal
+transaction, then enqueue only after commit. Ordinary active restrictions need no late-hold
+binding. The existing action reconciler also recovers historical blocked restores using the same
+eligibility/reset/audit helper. Neither legal transitions nor reconciliation automatically reset
+provider-failed work; that requires explicit operator replay. Original
+counter-notice scope, current assessment, human review, time and cancellation, placement identity,
+revision and safety must still permit restoration. Other active restrictions retain denial.
+
+```mermaid
+flowchart LR
+  transition[Hold assessment or resolution] --> fence[Case placement fence]
+  historical[Historical blocked-restore scan] --> fence
+  fence --> proof[Original authority and current safety]
+  proof -->|eligible| reset[Same intent reset and replay audit]
+  reset --> commit[Owner commit]
+  commit --> queue[Post-commit pending action enqueue]
+  proof -->|blocked| unchanged[Keep original state]
 ```
 
 The durable workflow is documented in

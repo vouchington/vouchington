@@ -1,7 +1,12 @@
-import { beginTransaction } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightTargetRestoreIsBlocked } from './court-hold-assessment-gate.mts'
 import type { CopyrightActionDeliveryOutcome } from './action-delivery-state.mts'
+import {
+  copyrightActionDeliveryFacts,
+  lockCopyrightActionDeadline,
+  type CopyrightActionFacts,
+} from './action-delivery-facts.mts'
 export type LockedCopyrightActionDelivery = {
   copyright_notice_id: string
   copyright_restriction_id: string
@@ -21,7 +26,7 @@ export type LockedCopyrightActionDelivery = {
 }
 export async function getCopyrightActionPlacementKey(
   intentId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<string | null> {
   const { rows } = await query<{ placement_id: string }>(sql`
     /* getCopyrightActionPlacementKey */
@@ -36,65 +41,22 @@ export async function getCopyrightActionPlacementKey(
 
 export async function lockCopyrightActionDelivery(
   intentId: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<LockedCopyrightActionDelivery | null> {
-  const { rows } = await query<
-    Omit<LockedCopyrightActionDelivery, 'earliest_restoration_at' | 'resolved_at' | 'cancelled_at'>
-  >(sql`
-    /* lockCopyrightActionDelivery */
-    SELECT target.copyright_notice_id, intent.copyright_restriction_id, target.placement_id,
-      target_image.image_id, intent.expected_placement_revision, intent.action,
-      intent.copyright_notice_deadline_id,
-      restriction.lifted_at AS restriction_lifted_at, restriction.human_reviewed_at,
-      restriction.human_review_action,
-      EXISTS (
-        SELECT 1 FROM copyright_notice_appeal_reviews appeal_review
-        WHERE appeal_review.copyright_restriction_id = restriction.id
-          AND appeal_review.action = 'reverse'
-      ) AS reversal_authorized,
-      EXISTS (
-        SELECT 1
-        FROM copyright_legal_hold_restrictions hold_restriction
-        JOIN copyright_notice_legal_hold_resolutions hold_resolution
-          ON hold_resolution.copyright_notice_legal_hold_assessment_id =
-            hold_restriction.copyright_notice_legal_hold_assessment_id
-        WHERE hold_restriction.copyright_restriction_id = restriction.id
-      ) AS hold_resolution_authorized
-    FROM copyright_notice_action_intents intent
-    JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
-    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
-    JOIN copyright_notice_target_images target_image
-      ON target_image.copyright_notice_target_id = target.id
+  const statement = copyrightActionDeliveryFacts()
+  statement.append(sql`/* lockCopyrightActionDelivery */
     WHERE intent.id = ${intentId} AND intent.state = 'claimed'
-    FOR UPDATE OF intent, restriction, target
-  `)
+    FOR UPDATE OF intent, restriction, target`)
+  const { rows } = await query<CopyrightActionFacts>(statement)
   const locked = rows[0]
   if (!locked) return null
-  if (!locked.copyright_notice_deadline_id) {
-    return {
-      ...locked,
-      earliest_restoration_at: null,
-      resolved_at: null,
-      cancelled_at: null,
-    }
-  }
-  const { rows: deadlineRows } = await query<
-    Pick<LockedCopyrightActionDelivery, 'earliest_restoration_at' | 'resolved_at' | 'cancelled_at'>
-  >(sql`
-    /* lockCopyrightActionDelivery:deadline */
-    SELECT earliest_restoration_at, resolved_at, cancelled_at
-    FROM copyright_notice_deadlines
-    WHERE id = ${locked.copyright_notice_deadline_id}
-    FOR UPDATE
-  `)
-  const deadline = deadlineRows[0]
-  return deadline ? { ...locked, ...deadline } : null
+  return lockCopyrightActionDeadline(locked, query)
 }
 
 export async function hasCopyrightActionBlocker(
   intent: LockedCopyrightActionDelivery,
   now: Date,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<boolean> {
   if (intent.action === 'withhold') return false
   const reversalAuthorized =
@@ -121,7 +83,7 @@ export async function hasCopyrightActionBlocker(
 }
 export async function hasOtherActiveCopyrightRestrictions(
   intent: LockedCopyrightActionDelivery,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<boolean> {
   const { rows } = await query<{ blocked: boolean }>(sql`
     /* hasOtherActiveCopyrightRestrictions */
@@ -140,7 +102,7 @@ export async function hasOtherActiveCopyrightRestrictions(
 export async function liftCopyrightRestrictionInTransaction(
   restrictionId: string,
   now: Date,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<void> {
   await query(sql`/* processCopyrightActionIntent:liftRestriction */
     UPDATE copyright_restrictions
@@ -153,7 +115,7 @@ export async function insertCopyrightActionLifecycleEvent(
   legal: LockedCopyrightActionDelivery,
   intentId: string,
   eventType: string,
-  query: Awaited<ReturnType<typeof beginTransaction>>,
+  query: TransactionQuery,
 ): Promise<void> {
   await query(sql`/* processCopyrightActionIntent:event */
     INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
@@ -166,7 +128,7 @@ export async function completeCopyrightActionIntentInTransaction(input: {
   outcome: CopyrightActionDeliveryOutcome
   completedAt: Date
   failureMessage?: string
-  query: Awaited<ReturnType<typeof beginTransaction>>
+  query: TransactionQuery
 }): Promise<void> {
   await input.query(sql`/* completeCopyrightActionIntentInTransaction */
     UPDATE copyright_notice_action_intents

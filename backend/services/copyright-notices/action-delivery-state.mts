@@ -6,6 +6,7 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 import type { CopyrightActionIntentRecord } from './types.mts'
+import type { TransactionQuery } from '@data-stores/psql/types'
 export {
   completeCopyrightActionIntentInTransaction,
   getCopyrightActionPlacementKey,
@@ -96,36 +97,30 @@ export function searchRecoverableCopyrightActionIntentIds(
   )
 }
 
-/** Reopens only retryable terminal actions.  The preceding legal event remains in the append-only
- * lifecycle ledger, while the same revision-fenced intent receives a fresh bounded delivery lease. */
-export async function replayCopyrightRestoreActionsForRestrictions(
-  restrictionIds: string[],
-): Promise<number> {
-  if (restrictionIds.length === 0) return 0
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ copyright_notice_id: string; id: string }>(sql`
-    /* replayCopyrightRestoreActionsForRestrictions */
-    UPDATE copyright_notice_action_intents intent
+export async function reopenCopyrightRestoreIntentInTransaction(
+  intentId: string,
+  query: TransactionQuery,
+): Promise<boolean> {
+  const { rows } = await query<{ id: string }>(sql`
+    /* reopenCopyrightRestoreIntentInTransaction */
+    WITH reopened AS (UPDATE copyright_notice_action_intents intent
     SET state = 'pending', delivery_attempt_count = 0, claimed_at = NULL,
       completed_at = NULL, completed_at_reason = NULL, next_attempt_at = NULL,
       failure_message = 'Reopened after the legal blocker was resolved.'
     FROM copyright_restrictions restriction
     JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
     WHERE intent.copyright_restriction_id = restriction.id
-      AND intent.copyright_restriction_id = ANY(${restrictionIds}::uuid[])
+      AND intent.id = ${intentId}
       AND intent.action = 'restore'
-      AND intent.state IN ('blocked', 'failed')
-    RETURNING target.copyright_notice_id, intent.id
+      AND intent.state = 'blocked'
+    RETURNING target.copyright_notice_id, intent.id)
+    INSERT INTO copyright_notice_lifecycle_events (
+      copyright_notice_id, event_type, copyright_notice_action_intent_id
+    )
+    SELECT copyright_notice_id, 'copyright_action_replayed', id
+    FROM reopened RETURNING id
   `)
-  for (const row of rows) {
-    // oxlint-disable-next-line no-await-in-loop -- each replay event identifies its revived durable intent.
-    await transaction(sql`/* replayCopyrightRestoreActionsForRestrictions:event */
-      INSERT INTO copyright_notice_lifecycle_events (copyright_notice_id, event_type, copyright_notice_action_intent_id)
-      VALUES (${row.copyright_notice_id}, 'copyright_action_replayed', ${row.id})
-    `)
-  }
-  await transaction.commit()
-  return rows.length
+  return rows.length === 1
 }
 
 /** Staff/operator recovery for a terminal provider outage. Unlike periodic reconciliation this is
@@ -137,6 +132,17 @@ export async function replayFailedCopyrightActionIntent(input: {
   actorUserId: string
 }): Promise<boolean> {
   await using transaction = await beginTransaction()
+  const { rows: targets } = await transaction<{ placement_id: string }>(sql`
+    /* replayFailedCopyrightActionIntent:identity */
+    SELECT target.placement_id FROM copyright_notice_action_intents intent
+    JOIN copyright_restrictions restriction ON restriction.id = intent.copyright_restriction_id
+    JOIN copyright_notice_targets target ON target.id = restriction.copyright_notice_target_id
+    WHERE intent.id = ${input.intentId} AND target.copyright_notice_id = ${input.noticeId}
+  `)
+  if (!targets[0]) return false
+  await transaction(sql`/* replayFailedCopyrightActionIntent:placementLock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${`image-placement:${targets[0].placement_id}`}, 0))
+  `)
   const { rows } = await transaction<{ copyright_notice_id: string }>(sql`
     /* replayFailedCopyrightActionIntent */
     UPDATE copyright_notice_action_intents

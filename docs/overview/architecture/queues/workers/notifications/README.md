@@ -11,6 +11,11 @@ Copyright delivery reconciliation routes durable legal intents without deciding 
 in-app processor creates only the generic member projection; legal email remains in the emails
 worker and records a separate SES receipt.
 
+The copyright action sweep recovers historical eligible hold-blocked restorations before creating
+due statutory intents and enqueueing pending actions. The service owns the case placement fence,
+fresh legal/safety checks and atomic original-intent reset/audit; this stage excludes exhausted
+provider failures. See [copyright notices](../../../services/copyright-notices/README.md).
+
 The processor claims with the push service's source-owned lease policy. During external delivery,
 the service renews that exact pending claim and persists each endpoint result before finalizing or
 releasing the intent. A lost claim stops the private provider agent and leaves recovery to reclaim
