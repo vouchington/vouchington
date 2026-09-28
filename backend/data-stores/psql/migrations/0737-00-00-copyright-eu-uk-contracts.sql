@@ -312,16 +312,245 @@ CREATE TABLE IF NOT EXISTS copyright_uk_escalations (
 
 COMMENT ON TABLE copyright_territorial_policy_approvals IS
   'Operator approval that makes one EU or UK copyright contract applicable. Absence or withdrawal fails closed.';
+COMMENT ON COLUMN copyright_territorial_policy_approvals.jurisdiction IS
+  'Contract family this approval activates: eu_dsa or uk.';
+COMMENT ON COLUMN copyright_territorial_policy_approvals.policy_version IS
+  'Identifier of the approved contract text. Unique per jurisdiction.';
+COMMENT ON COLUMN copyright_territorial_policy_approvals.approved_at IS
+  'When an operator approved this policy version.';
+COMMENT ON COLUMN copyright_territorial_policy_approvals.approved_by_id IS
+  'Operator who approved this policy version. Null after that account is deleted.';
+
+COMMENT ON TABLE copyright_territorial_policy_withdrawals IS
+  'Withdrawal of one territorial policy approval. A withdrawn approval fails closed.';
+COMMENT ON COLUMN copyright_territorial_policy_withdrawals.copyright_territorial_policy_approval_id IS
+  'Approval this withdrawal retires. One withdrawal per approval.';
+COMMENT ON COLUMN copyright_territorial_policy_withdrawals.withdrawn_at IS
+  'When an operator withdrew the approval.';
+COMMENT ON COLUMN copyright_territorial_policy_withdrawals.withdrawn_by_id IS
+  'Operator who withdrew the approval. Null after that account is deleted.';
+
 COMMENT ON TABLE copyright_eu_notice_receipts IS
   'EU notice receipt. Administrative facts only; no US restoration clock and no merits decision.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.copyright_notice_id IS
+  'EU copyright notice this receipt records. One receipt per notice.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.copyright_territorial_policy_approval_id IS
+  'Unwithdrawn eu_dsa policy approval that made this receipt acceptable.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.requester_user_id IS
+  'Signed-in requester. Null for a guest or after account deletion.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.idempotency_key IS
+  'Caller idempotency key, unique together with requester_user_id.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.request_sha256 IS
+  'SHA-256 digest of the received request.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.hosted_use_url IS
+  'URL of the hosted use identified in the notice.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.grounds_ciphertext IS
+  'Encrypted grounds supplied with the notice. The system does not decide merits.';
+COMMENT ON COLUMN copyright_eu_notice_receipts.received_at IS
+  'When Voucha stored this EU notice receipt.';
+
+COMMENT ON TABLE copyright_eu_notice_routings IS
+  'Staff-queue routing for one EU notice receipt. Routing is administrative, not a merits decision.';
+COMMENT ON COLUMN copyright_eu_notice_routings.copyright_eu_notice_receipt_id IS
+  'EU receipt this routing belongs to. One routing per receipt.';
+COMMENT ON COLUMN copyright_eu_notice_routings.destination IS
+  'Queue that received the notice. Constrained to staff_queue.';
+COMMENT ON COLUMN copyright_eu_notice_routings.routed_at IS
+  'When the receipt was routed to the staff queue.';
+
+COMMENT ON TABLE copyright_eu_notice_acknowledgments IS
+  'Acknowledgment attempts for one EU notice receipt. There is no statutory due time.';
+COMMENT ON COLUMN copyright_eu_notice_acknowledgments.copyright_eu_notice_receipt_id IS
+  'EU receipt this acknowledgment obligation belongs to. One row per receipt.';
+COMMENT ON COLUMN copyright_eu_notice_acknowledgments.attempt_count IS
+  'How many acknowledgment attempts have been recorded, from 0 through 5.';
+COMMENT ON COLUMN copyright_eu_notice_acknowledgments.last_attempt_at IS
+  'When the latest acknowledgment attempt was recorded. Null when attempt_count is 0.';
+COMMENT ON COLUMN copyright_eu_notice_acknowledgments.acknowledged_at IS
+  'When acknowledgment succeeded. Mutually exclusive with exhausted_at.';
+COMMENT ON COLUMN copyright_eu_notice_acknowledgments.exhausted_at IS
+  'When the fifth attempt failed and the obligation was exhausted.';
+
 COMMENT ON TABLE copyright_eu_statements_of_reasons IS
   'Staff-supplied EU statement of reasons. automation_disclosure is human because the system does not decide merits.';
+COMMENT ON COLUMN copyright_eu_statements_of_reasons.copyright_notice_id IS
+  'EU notice this statement explains. One statement per notice.';
+COMMENT ON COLUMN copyright_eu_statements_of_reasons.decided_at IS
+  'When staff recorded the statement of reasons.';
+COMMENT ON COLUMN copyright_eu_statements_of_reasons.decided_by_id IS
+  'Staff user who recorded the statement. Null after that account is deleted.';
+COMMENT ON COLUMN copyright_eu_statements_of_reasons.automation_disclosure IS
+  'How the statement was produced. Constrained to human.';
+COMMENT ON COLUMN copyright_eu_statements_of_reasons.statement_ciphertext IS
+  'Encrypted staff-supplied statement. The system does not choose the text.';
+
+COMMENT ON TABLE copyright_eu_redress_requests IS
+  'Participant redress against one EU statement of reasons. One request per notice.';
+COMMENT ON COLUMN copyright_eu_redress_requests.copyright_notice_id IS
+  'EU notice this redress request challenges. Must match the cited statement.';
+COMMENT ON COLUMN copyright_eu_redress_requests.copyright_eu_statement_of_reasons_id IS
+  'Statement of reasons this redress request cites, on the same notice.';
+COMMENT ON COLUMN copyright_eu_redress_requests.submitted_by_user_id IS
+  'Participant who submitted the redress request. Null after account deletion.';
+COMMENT ON COLUMN copyright_eu_redress_requests.idempotency_key IS
+  'Caller idempotency key, unique together with submitted_by_user_id.';
+COMMENT ON COLUMN copyright_eu_redress_requests.explanation_ciphertext IS
+  'Encrypted explanation supplied by the participant.';
+COMMENT ON COLUMN copyright_eu_redress_requests.received_at IS
+  'When Voucha stored this redress request.';
+
+COMMENT ON TABLE copyright_eu_redress_decisions IS
+  'Staff disposition of one EU redress request. The system does not choose the rationale.';
+COMMENT ON COLUMN copyright_eu_redress_decisions.copyright_eu_redress_request_id IS
+  'Redress request this decision closes. One decision per request.';
+COMMENT ON COLUMN copyright_eu_redress_decisions.decided_at IS
+  'When staff recorded the redress decision.';
+COMMENT ON COLUMN copyright_eu_redress_decisions.decided_by_id IS
+  'Staff user who recorded the decision. Null after that account is deleted.';
+COMMENT ON COLUMN copyright_eu_redress_decisions.staff_disposition IS
+  'Staff outcome: maintain or revoke. The system does not choose it.';
+COMMENT ON COLUMN copyright_eu_redress_decisions.rationale_ciphertext IS
+  'Encrypted staff-supplied rationale for the disposition.';
+
+COMMENT ON TABLE copyright_eu_supervised_complaints IS
+  'Supervised complaint recorded against an EU notice. Recording it can escalate the notice.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.copyright_notice_id IS
+  'EU notice this supervised complaint concerns.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.recorded_by_id IS
+  'Staff user who recorded the complaint. Null after that account is deleted.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.authority_reference IS
+  'Authority reference for this complaint. Unique per notice.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.explanation_ciphertext IS
+  'Encrypted explanation of the supervised complaint.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.received_at IS
+  'When Voucha stored this supervised complaint.';
+
+COMMENT ON TABLE copyright_eu_escalations IS
+  'Escalation of one EU notice from either an exhausted acknowledgment or a supervised complaint.';
+COMMENT ON COLUMN copyright_eu_escalations.copyright_notice_id IS
+  'EU notice this escalation belongs to.';
+COMMENT ON COLUMN copyright_eu_escalations.copyright_eu_notice_acknowledgment_id IS
+  'Exhausted acknowledgment that caused this escalation. Exactly one source is set.';
+COMMENT ON COLUMN copyright_eu_escalations.copyright_eu_supervised_complaint_id IS
+  'Supervised complaint that caused this escalation. Exactly one source is set.';
+COMMENT ON COLUMN copyright_eu_escalations.escalated_at IS
+  'When the escalation was recorded.';
+
 COMMENT ON TABLE copyright_eu_transparency_reports IS
   'Counts of stored EU copyright facts for a caller-supplied period. The period is not a statutory clock.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.copyright_territorial_policy_approval_id IS
+  'eu_dsa policy approval this report was produced under.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.period_started_at IS
+  'Start of the caller-supplied reporting period. Not a statutory clock.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.period_ended_at IS
+  'End of the caller-supplied reporting period. Must be after period_started_at.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.receipt_count IS
+  'Count of stored EU notice receipts in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.statement_of_reasons_count IS
+  'Count of stored EU statements of reasons in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.redress_request_count IS
+  'Count of stored EU redress requests in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.redress_decision_count IS
+  'Count of stored EU redress decisions in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.supervised_complaint_count IS
+  'Count of stored EU supervised complaints in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.escalation_count IS
+  'Count of stored EU escalations in the period.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.reported_at IS
+  'When this transparency report was recorded.';
+COMMENT ON COLUMN copyright_eu_transparency_reports.reported_by_id IS
+  'User who recorded the report. Null after that account is deleted.';
+
 COMMENT ON TABLE copyright_uk_notice_receipts IS
   'UK notice receipt. Administrative facts only; no US restoration clock and no merits decision.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.copyright_notice_id IS
+  'UK copyright notice this receipt records. One receipt per notice.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.copyright_territorial_policy_approval_id IS
+  'Unwithdrawn uk policy approval that made this receipt acceptable.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.requester_user_id IS
+  'Signed-in requester. Null for a guest or after account deletion.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.idempotency_key IS
+  'Caller idempotency key, unique together with requester_user_id.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.request_sha256 IS
+  'SHA-256 digest of the received request.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.hosted_use_url IS
+  'URL of the hosted use identified in the notice.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.grounds_ciphertext IS
+  'Encrypted grounds supplied with the notice. The system does not decide merits.';
+COMMENT ON COLUMN copyright_uk_notice_receipts.received_at IS
+  'When Voucha stored this UK notice receipt.';
+
+COMMENT ON TABLE copyright_uk_notice_routings IS
+  'Staff-queue routing for one UK notice receipt. Routing is administrative, not a merits decision.';
+COMMENT ON COLUMN copyright_uk_notice_routings.copyright_uk_notice_receipt_id IS
+  'UK receipt this routing belongs to. One routing per receipt.';
+COMMENT ON COLUMN copyright_uk_notice_routings.destination IS
+  'Queue that received the notice. Constrained to staff_queue.';
+COMMENT ON COLUMN copyright_uk_notice_routings.routed_at IS
+  'When the receipt was routed to the staff queue.';
+
+COMMENT ON TABLE copyright_uk_notice_acknowledgments IS
+  'Acknowledgment attempts for one UK notice receipt. There is no statutory due time.';
+COMMENT ON COLUMN copyright_uk_notice_acknowledgments.copyright_uk_notice_receipt_id IS
+  'UK receipt this acknowledgment obligation belongs to. One row per receipt.';
+COMMENT ON COLUMN copyright_uk_notice_acknowledgments.attempt_count IS
+  'How many acknowledgment attempts have been recorded, from 0 through 5.';
+COMMENT ON COLUMN copyright_uk_notice_acknowledgments.last_attempt_at IS
+  'When the latest acknowledgment attempt was recorded. Null when attempt_count is 0.';
+COMMENT ON COLUMN copyright_uk_notice_acknowledgments.acknowledged_at IS
+  'When acknowledgment succeeded. Mutually exclusive with exhausted_at.';
+COMMENT ON COLUMN copyright_uk_notice_acknowledgments.exhausted_at IS
+  'When the fifth attempt failed and the obligation was exhausted.';
+
 COMMENT ON TABLE copyright_uk_reviews IS
   'Staff-supplied UK copyright review. The system does not choose the rationale.';
+COMMENT ON COLUMN copyright_uk_reviews.copyright_notice_id IS
+  'UK notice this review explains. One review per notice.';
+COMMENT ON COLUMN copyright_uk_reviews.reviewed_at IS
+  'When staff recorded the review.';
+COMMENT ON COLUMN copyright_uk_reviews.reviewed_by_id IS
+  'Staff user who recorded the review. Null after that account is deleted.';
+COMMENT ON COLUMN copyright_uk_reviews.automation_disclosure IS
+  'How the review was produced. Constrained to human.';
+COMMENT ON COLUMN copyright_uk_reviews.rationale_ciphertext IS
+  'Encrypted staff-supplied rationale. The system does not choose the text.';
+
+COMMENT ON TABLE copyright_uk_redress_requests IS
+  'Participant redress against one UK review. One request per notice.';
+COMMENT ON COLUMN copyright_uk_redress_requests.copyright_notice_id IS
+  'UK notice this redress request challenges. Must match the cited review.';
+COMMENT ON COLUMN copyright_uk_redress_requests.copyright_uk_review_id IS
+  'UK review this redress request cites, on the same notice.';
+COMMENT ON COLUMN copyright_uk_redress_requests.submitted_by_user_id IS
+  'Participant who submitted the redress request. Null after account deletion.';
+COMMENT ON COLUMN copyright_uk_redress_requests.idempotency_key IS
+  'Caller idempotency key, unique together with submitted_by_user_id.';
+COMMENT ON COLUMN copyright_uk_redress_requests.explanation_ciphertext IS
+  'Encrypted explanation supplied by the participant.';
+COMMENT ON COLUMN copyright_uk_redress_requests.received_at IS
+  'When Voucha stored this redress request.';
+
+COMMENT ON TABLE copyright_uk_redress_decisions IS
+  'Staff disposition of one UK redress request. The system does not choose the rationale.';
+COMMENT ON COLUMN copyright_uk_redress_decisions.copyright_uk_redress_request_id IS
+  'Redress request this decision closes. One decision per request.';
+COMMENT ON COLUMN copyright_uk_redress_decisions.decided_at IS
+  'When staff recorded the redress decision.';
+COMMENT ON COLUMN copyright_uk_redress_decisions.decided_by_id IS
+  'Staff user who recorded the decision. Null after that account is deleted.';
+COMMENT ON COLUMN copyright_uk_redress_decisions.staff_disposition IS
+  'Staff outcome: maintain or revoke. The system does not choose it.';
+COMMENT ON COLUMN copyright_uk_redress_decisions.rationale_ciphertext IS
+  'Encrypted staff-supplied rationale for the disposition.';
+
+COMMENT ON TABLE copyright_uk_escalations IS
+  'Escalation of one UK notice from an exhausted acknowledgment.';
+COMMENT ON COLUMN copyright_uk_escalations.copyright_notice_id IS
+  'UK notice this escalation belongs to.';
+COMMENT ON COLUMN copyright_uk_escalations.copyright_uk_notice_acknowledgment_id IS
+  'Exhausted acknowledgment that caused this escalation, on the same notice.';
+COMMENT ON COLUMN copyright_uk_escalations.escalated_at IS
+  'When the escalation was recorded.';
 
 ALTER TABLE copyright_territorial_policy_approvals
   ADD CONSTRAINT fk_copyright_territorial_policy_approvals__approved_by
