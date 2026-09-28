@@ -1,8 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import {
-  PROMPT_AUDIT_SELECT,
-  promptFieldsFromRow,
-} from '@services/community-agent-prompt-audit/fields.mts'
+import { PROMPT_AUDIT_SELECT, promptFieldsFromRow } from '@services/moderation-audit-facts'
 import sql from 'sql-template-strings'
 
 export async function getCommunityAgentPromptChangeRowsForTest(agentPromptId: string): Promise<

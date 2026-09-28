@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@services/moderation-audit-facts": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

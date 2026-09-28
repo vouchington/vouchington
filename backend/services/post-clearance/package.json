@@ -27,6 +27,7 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/psql": "workspace:^",
     "@services/entity-cache": "workspace:^",
+    "@services/moderation-audit-facts": "workspace:^",
     "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/notifications": "workspace:^",

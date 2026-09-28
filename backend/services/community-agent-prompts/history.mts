@@ -1,10 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityAgentPromptChangeAction } from '@services/community-agent-prompt-audit'
-import {
-  PROMPT_AUDIT_SELECT,
-  promptFieldsFromRow,
-} from '@services/community-agent-prompt-audit/fields.mts'
+import { PROMPT_AUDIT_SELECT, promptFieldsFromRow } from '@services/moderation-audit-facts'
 
 const DEFAULT_LIMIT = 20
 

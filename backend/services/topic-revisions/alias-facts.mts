@@ -71,9 +71,10 @@ function asAliasObject(value: unknown): AliasEntry {
 
 export async function insertAliasEntries(
   revisionId: string,
-  alias: { kind: string; before: AliasEntry[]; after: AliasEntry[] },
+  alias: { kind: string | null; before: AliasEntry[]; after: AliasEntry[] },
   options: QueryOptions,
 ): Promise<void> {
+  if (alias.kind == null) return
   const rows = [
     ...alias.before.map((entry, position) => ({ ...entry, side: 'before', position })),
     ...alias.after.map((entry, position) => ({ ...entry, side: 'after', position })),

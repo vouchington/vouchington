@@ -198,6 +198,7 @@ This catalog keeps package documentation directly discoverable from the owning `
 - [`../services/memberships/README.md`](../services/memberships/README.md)
 - [`../services/messaging/README.md`](../services/messaging/README.md)
 - [`../services/mfa/README.md`](../services/mfa/README.md)
+- [`../services/moderation-audit-facts/README.md`](../services/moderation-audit-facts/README.md)
 - [`../services/moderation-analytics/README.md`](../services/moderation-analytics/README.md)
 - [`../services/moderation-appeals/README.md`](../services/moderation-appeals/README.md)
 - [`../services/moderation-cases/README.md`](../services/moderation-cases/README.md)
