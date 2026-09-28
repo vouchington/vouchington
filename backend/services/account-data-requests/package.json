@@ -24,7 +24,7 @@
     "@modules/aws": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@voucha/types": "workspace:^",
-    "csv-stringify": "^6.8.3",
+    "csv-stringify": "^6.9.0",
     "sql-template-strings": "^2.2.2",
     "yazl": "^3.3.1"
   },

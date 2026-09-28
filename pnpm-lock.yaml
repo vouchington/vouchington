@@ -80,8 +80,8 @@ importers:
         specifier: 0.6.0
         version: 0.6.0(zod@4.6.5)
       csv-parse:
-        specifier: 7.0.2
-        version: 7.0.2
+        specifier: 7.0.3
+        version: 7.0.3
       dependency-cruiser:
         specifier: ^18.4.0
         version: 18.4.0
@@ -3617,8 +3617,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       csv-stringify:
-        specifier: ^6.8.3
-        version: 6.8.3
+        specifier: ^6.9.0
+        version: 6.9.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -18806,8 +18806,14 @@ packages:
   csv-parse@7.0.2:
     resolution: {integrity: sha512-uKZghv9UmPkMVLYy//KZ9HFAIJsl7wkhoEdIL0+rhuSY9pZQlhaeGEDPIe+/w7eh81MOql8Q/9+inAGWG6ZHYA==}
 
+  csv-parse@7.0.3:
+    resolution: {integrity: sha512-YFd3QM/yo17vH91L1IOZuvl09zM0zEEtdfTcOCKWcMdM++MNaQSyp09slXyFCLaPXvHstQFx/xC8myiFHSMUvw==}
+
   csv-stringify@6.8.3:
     resolution: {integrity: sha512-gIeSCvq5F4VtXV3naV3VAewLhBkiZBz+PPhTOA8H3Y8h/ELa+R1ml0GZck/4/Nzo9ep2lvOluilJ6MJlbZsKMA==}
+
+  csv-stringify@6.9.0:
+    resolution: {integrity: sha512-6b3e29CILFfSQ2nDRuZMRROzQOpPuJ+s8zPB5H7eK5ncXBbFOyVuRLU5Sx/zAUmVri3Ly49GyC8NEme4SVSAbA==}
 
   d3-array@3.2.4:
     resolution: {integrity: sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==}
@@ -27174,7 +27180,7 @@ snapshots:
 
   '@vouchington/csv@0.0.1':
     dependencies:
-      csv-parse: 7.0.2
+      csv-parse: 7.0.3
       csv-stringify: 6.8.3
 
   '@vouchington/domain-verification@0.0.0': {}
@@ -27830,7 +27836,11 @@ snapshots:
 
   csv-parse@7.0.2: {}
 
+  csv-parse@7.0.3: {}
+
   csv-stringify@6.8.3: {}
+
+  csv-stringify@6.9.0: {}
 
   d3-array@3.2.4:
     dependencies:
