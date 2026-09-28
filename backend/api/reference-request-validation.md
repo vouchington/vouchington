@@ -18,8 +18,9 @@ flowchart LR
   recheck --> write[service write]
 ```
 
-`validateRequestContract` is backed by `@services/runtime-request-validation`; routes use the
-adapter rather than its registry. Signature-verified and raw-body routes keep their specialized
+`validateRequestContract` is backed by `@services/runtime-request-validation`, which compiles the
+generated bundle with `@vouchington/request-contract-validation`. Routes use the adapter rather
+than its registry. A 422 names the carrier and does not include a JSON pointer. Signature-verified and raw-body routes keep their specialized
 parsers. Query routes prepare a normalized wire projection before asynchronous identifier
 resolution, preserving pagination clamping and malformed limit/cursor 400 behavior while malformed
 typed values remain visible for 422. There is no shared Ajv coercion, and UUID routes retain

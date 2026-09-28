@@ -802,6 +802,8 @@ rules:
           reason: First-party PostgreSQL runtime published by the repo author.
         - name: '@vouchington/queue-errors'
           reason: First-party GlideMQ retry-classification runtime published by the repo author.
+        - name: '@vouchington/request-contract-validation'
+          reason: First-party request-contract carrier compiler published by the repo author.
         - name: '@vouchington/rss-crawler'
           reason: First-party transport-injected RSS crawler published by the repo author.
         - name: '@vouchington/rss-parser'

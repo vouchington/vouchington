@@ -46,8 +46,8 @@ describe('RuntimeRequestValidatorRegistry', () => {
 
   it('validates component-backed operation schemas', () => {
     expect(registry.validateBody('POST:/api/v1/items', { name: 'Voucha' })).toBeNull()
-    expect(registry.validateBody('POST:/api/v1/items', { name: '' })).toMatchObject({
-      message: expect.stringContaining('Invalid request body'),
+    expect(registry.validateBody('POST:/api/v1/items', { name: '' })).toEqual({
+      message: 'Invalid request body',
     })
   })
 
@@ -70,6 +70,41 @@ describe('RuntimeRequestValidatorRegistry', () => {
         {},
       ),
     ).toThrow('No generated runtime request contract')
+  })
+
+  it('rejects case-insensitive duplicate header names', () => {
+    const headers = new RuntimeRequestValidatorRegistry({
+      version: 1,
+      source: 'compiler-extracted-request-contracts',
+      components: {},
+      operations: {
+        'POST:/api/v1/items': {
+          header: {
+            type: 'object',
+            properties: { 'idempotency-key': { type: 'string', format: 'uuid' } },
+            required: ['idempotency-key'],
+          },
+        },
+      },
+    })
+    expect(
+      headers.validate('POST:/api/v1/items', 'header', {
+        'Idempotency-Key': 'invalid',
+        'idempotency-key': '018f8780-6a0f-7c94-8d6c-b6b6d0b12a41',
+      }),
+    ).toEqual({ message: 'Invalid request header' })
+  })
+
+  it('rejects asynchronous contracts when the registry is built', () => {
+    expect(
+      () =>
+        new RuntimeRequestValidatorRegistry({
+          version: 1,
+          source: 'compiler-extracted-request-contracts',
+          components: {},
+          operations: { 'POST:/api/v1/items': { body: { $async: true, type: 'string' } } },
+        }),
+    ).toThrow('Asynchronous request contracts are not supported')
   })
 
   it('validates every supplied carrier at the authenticated route boundary', () => {

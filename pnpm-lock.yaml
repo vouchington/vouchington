@@ -8905,12 +8905,9 @@ importers:
       '@voucha/api-fixtures':
         specifier: workspace:^
         version: link:../../../api-fixtures
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      ajv-formats:
-        specifier: ^3.0.1
-        version: 3.0.1(ajv@8.20.0)
+      '@vouchington/request-contract-validation':
+        specifier: 0.0.1
+        version: 0.0.1
 
   backend/services/search:
     dependencies:
@@ -18209,6 +18206,10 @@ packages:
     peerDependencies:
       glide-mq: ^0.15.3
 
+  '@vouchington/request-contract-validation@0.0.1':
+    resolution: {integrity: sha512-wrLKPJtZZtgq+pevjM2m7h0TBMxWsbUES/m2U6VBquVvLXXh47DeqxF1uPIvRRv9QiuesL+qiQ9QEzkLeRgOAQ==}
+    engines: {node: '>=24.0.0'}
+
   '@vouchington/robots@0.0.1':
     resolution: {integrity: sha512-NvXFEUg+awbQWXBPAOs3OCGTRnt/ROyjy1Z/5D6MWZCZHTSrdgVxDPq7ccGTN7ZIw1no5ishUnQqrGOwdI6NWQ==}
     engines: {node: '>=24.0.0'}
@@ -27237,6 +27238,11 @@ snapshots:
   '@vouchington/queue-errors@0.1.1(glide-mq@0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1))':
     dependencies:
       glide-mq: 0.15.5(@opentelemetry/api@1.9.1)(express@5.2.1)
+
+  '@vouchington/request-contract-validation@0.0.1':
+    dependencies:
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
 
   '@vouchington/robots@0.0.1':
     dependencies:
