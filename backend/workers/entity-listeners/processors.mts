@@ -8,5 +8,6 @@ export default function processEntityListener(
   const fn = jobs[jobName]
   if (!fn || typeof fn !== 'function') throw new Error(`Entity listener job ${jobName} not found`)
   if (!data) throw new Error('Entity listener job .data is required')
-  return fn(data)
+  const run = fn as (data: Record<string, unknown>) => unknown
+  return run(data)
 }

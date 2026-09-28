@@ -121,8 +121,24 @@ export type EmailDispatcherJobs =
 
 export type EmailJobs = EmailSendJobs | EmailDispatcherJobs
 
-export type EmailJobsTemplates = Record<
-  Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>,
-  // oxlint-disable-next-line typescript/no-explicit-any -- specific template parameters are not assignable to unknown
-  (...args: any[]) => Promise<unknown>
->
+type EmailTemplateVariables = {
+  processSendCommunityInviteEmail: ProcessSendCommunityInviteEmailVariables
+  processSendEmailAddressLoginToken: ProcessSendEmailAddressLoginTokenVariables
+  processSendDataExportReadyEmail: ProcessSendDataExportReadyEmailVariables
+  processSendEmailVerificationToken: ProcessSendEmailVerificationTokenVariables
+  processSendFollowTopicsEmail: ProcessSendFollowTopicsEmailVariables
+  processSendPostReferralLinkEmail: ProcessSendPostReferralLinkEmailVariables
+  processSendFollowNewsSourcesEmail: ProcessSendFollowNewsSourcesEmailVariables
+  processSendCommunityModerationSummaryEmail: ProcessSendCommunityModerationSummaryEmailVariables
+  processSendWelcomeEmail: ProcessSendWelcomeEmailVariables
+  processSendCommunityApplicationDecisionEmail: ProcessSendCommunityApplicationDecisionEmailVariables
+  processSendCommunityRoleChangeEmail: ProcessSendCommunityRoleChangeEmailVariables
+  processSendCommunityOwnershipTransferEmail: ProcessSendCommunityOwnershipTransferEmailVariables
+}
+
+export type EmailJobsTemplates = {
+  [JobName in Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>]: (
+    input: EmailTemplateInput,
+    variables: EmailTemplateVariables[JobName],
+  ) => Promise<unknown>
+}

@@ -7,14 +7,10 @@ import {
 import type { RunEventWriter } from '@services/conversations-messages'
 import { validateAgentToolArguments } from './validate-tool-arguments.mts'
 
-export type AgentTool = {
+export type AgentTool<TArgs = never, TResult = never> = {
   schema: { name: string; [key: string]: unknown }
-  // Erased bridge where typed tool functions meet the generic dispatch loop.
-  // JSON.parse produces `unknown`; a specific argument type is not assignable to `unknown`.
-  // oxlint-disable-next-line typescript/no-explicit-any -- preserved dispatch bridge, not a new cast
-  executor: (args: any) => AsyncGenerator<unknown, unknown> | Promise<unknown> | unknown
-  // oxlint-disable-next-line typescript/no-explicit-any -- preserved result-format bridge
-  formatResult?: (callId: string, result: any) => OpenAIFunctionCallOutput
+  executor: (args: TArgs) => AsyncGenerator<unknown, unknown> | Promise<unknown> | unknown
+  formatResult?: (callId: string, result: TResult) => OpenAIFunctionCallOutput
 }
 
 /** Params required for dispatching a batch of tool calls (toolCalls drives the iteration). */
@@ -24,7 +20,7 @@ export type ExecuteToolCallsParams = {
   writeRunEvent?: RunEventWriter
   onBeforeCall?: (toolCall: OpenAIFunctionCall) => { skip: true; skipResult?: unknown } | undefined
   onAfterCall?: (toolCall: OpenAIFunctionCall, result: unknown) => void
-  // Called for any tool call failure: unknown tool, JSON parse error, or executor throw.
+  // Called for every tool call failure: unknown tool, JSON parse error, or executor throw.
   onCallError?: (toolCall: OpenAIFunctionCall, error: Error) => void
 }
 
@@ -110,7 +106,8 @@ export async function* dispatchOneToolCall(
   let result: unknown
   let executorFailed = false
   try {
-    const executorResult = toolEntry.executor(args)
+    // Parsed tool JSON is `unknown`. Concrete executors stay assignable through `TArgs = never`.
+    const executorResult = toolEntry.executor(args as never)
     if (isAsyncGenerator(executorResult)) {
       result = yield* executorResult
     } else {
@@ -135,7 +132,7 @@ export async function* dispatchOneToolCall(
   // On executor failure, skip custom formatResult and use formatToolResult directly
   // to avoid passing error-shaped results to handlers expecting successful output.
   if (executorFailed) return formatToolResult(toolCall.call_id, result)
-  return (toolEntry.formatResult ?? formatToolResult)(toolCall.call_id, result)
+  return (toolEntry.formatResult ?? formatToolResult)(toolCall.call_id, result as never)
 }
 
 async function drainGenerator<TYield, TReturn>(
