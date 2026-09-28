@@ -66,7 +66,9 @@ describe('plan completion advisory workflow', () => {
   it('installs dependencies before the audit script', () => {
     const audit = workflow.jobs?.audit
     const steps = audit?.steps ?? []
-    const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
+    const checkoutIndex = steps.findIndex(
+      step => typeof step.uses === 'string' && step.uses.startsWith('actions/checkout@'),
+    )
     const setupNodeIndex = steps.findIndex(
       step => step.uses === './.github/actions/setup-node-pnpm',
     )
