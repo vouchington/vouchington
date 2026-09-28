@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { submitCopyrightGuestFiling } from '@/lib/api/client/copyright-guest'
-import onError from '@/lib/on-error'
+import onError, { onSuccess } from '@/lib/on-error'
 
 const { turnstileReset } = vi.hoisted(() => ({
   turnstileReset: vi.fn<() => void>(),
@@ -30,35 +30,39 @@ vi.mock(import('@/lib/api/client/copyright-guest'), () => ({
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: vi.fn<(error: unknown, options: { fallback: string }) => void>(),
-  onSuccess: vi.fn<(message: string) => void>(),
+  default: vi.fn<typeof onError>(),
+  onSuccess: vi.fn<typeof onSuccess>(),
 }))
 
-vi.mock(import('@/components/ui/select'), () => ({
-  Select: ({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value: string
-    onValueChange: (value: string) => void
-    children: ReactNode
-  }) => (
-    <select
-      id='guest-filing-kind'
-      value={value}
-      onChange={event => onValueChange(event.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: () => null,
-  SelectValue: () => null,
-  SelectContent: ({ children }: { children: ReactNode }) => children,
-  SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
-    <option value={value}>{children}</option>
-  ),
-}))
+vi.mock(
+  import('@/components/ui/select'),
+  () =>
+    ({
+      Select: ({
+        value,
+        onValueChange,
+        children,
+      }: {
+        value: string
+        onValueChange: (value: string) => void
+        children: ReactNode
+      }) => (
+        <select
+          id='guest-filing-kind'
+          value={value}
+          onChange={event => onValueChange(event.target.value)}
+        >
+          {children}
+        </select>
+      ),
+      SelectTrigger: () => null,
+      SelectValue: () => null,
+      SelectContent: ({ children }: { children: ReactNode }) => children,
+      SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
+        <option value={value}>{children}</option>
+      ),
+    }) as unknown as typeof import('@/components/ui/select'),
+)
 
 import { CopyrightGuestFilingForm } from './copyright-guest-filing-form'
 

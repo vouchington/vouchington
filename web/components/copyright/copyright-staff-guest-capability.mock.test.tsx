@@ -8,8 +8,8 @@ import {
 import onError, { onSuccess } from '@/lib/on-error'
 
 vi.mock(import('@/lib/on-error'), () => ({
-  default: vi.fn<(error: unknown, options: { fallback: string }) => void>(),
-  onSuccess: vi.fn<(message: string) => void>(),
+  default: vi.fn<typeof onError>(),
+  onSuccess: vi.fn<typeof onSuccess>(),
 }))
 
 vi.mock(import('@/lib/api/client/copyright-guest'), () => ({
