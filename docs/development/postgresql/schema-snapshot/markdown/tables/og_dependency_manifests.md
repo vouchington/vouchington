@@ -6,10 +6,10 @@ Registered set of placement dependencies for one OG render. Unknown manifests ar
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------- |
-| `id`         | `uuid`                     | no       | `uuidv7()`          |          |           |           |         |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |         |
+| Column       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment |
+| ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------- |
+| `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |         |
+| `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |         |
 
 **Primary key:** `PRIMARY KEY (id)`
 
