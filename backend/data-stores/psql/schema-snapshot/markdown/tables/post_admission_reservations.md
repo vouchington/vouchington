@@ -51,8 +51,7 @@ Not partitioned — growth: bounded.
 
 **Indexes:**
 
-- `idx_post_admission_reservations__committed_post_id`: `CREATE INDEX idx_post_admission_reservations__committed_post_id ON public.post_admission_reservations USING btree (committed_post_id) WHERE (committed_post_id IS NOT NULL)`
-- `idx_post_admission_reservations__committed_post_retention`: `CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (state = 'committed'::text)`
+- `idx_post_admission_reservations__committed_post_retention`: `CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (committed_post_id IS NOT NULL)`
 - `idx_post_admission_reservations__retention`: `CREATE INDEX idx_post_admission_reservations__retention ON public.post_admission_reservations USING btree (retention_expires_at, id)`
 - `post_admission_reservations_actor_key_unique`: `CREATE UNIQUE INDEX post_admission_reservations_actor_key_unique ON public.post_admission_reservations USING btree (actor_id, idempotency_key)`
 - `post_admission_reservations_pkey`: `CREATE UNIQUE INDEX post_admission_reservations_pkey ON public.post_admission_reservations USING btree (id)`

@@ -778,7 +778,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_moderator_action_metadata(p_action_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT\n    jsonb_strip_nulls(jsonb_build_object(\n      'role', ma.metadata_role::text,\n      'previous_role', ma.metadata_previous_role::text,\n      'reason', ma.metadata_reason,\n      'imageId', ma.metadata_image_id,\n      'source_key', ma.metadata_source_key,\n      'moderation_training', ma.metadata_moderation_training,\n      'topic_slugs', (\n        SELECT jsonb_agg(topic_slug ORDER BY position)\n        FROM moderator_action_topic_slugs\n        WHERE action_id = ma.id\n      ),\n      'restriction_id', CASE\n        WHEN NOT ma.metadata_expires_at_present THEN (\n          SELECT restriction_id\n          FROM moderator_action_restrictions\n          WHERE action_id = ma.id\n          ORDER BY position\n          LIMIT 1\n        )\n      END,\n      'restriction_type', CASE\n        WHEN NOT ma.metadata_expires_at_present THEN (\n          SELECT restriction_type::text\n          FROM moderator_action_restrictions\n          WHERE action_id = ma.id\n          ORDER BY position\n          LIMIT 1\n        )\n      END,\n      'restriction_ids', CASE\n        WHEN ma.metadata_expires_at_present THEN (\n          SELECT jsonb_agg(restriction_id ORDER BY position)\n          FROM moderator_action_restrictions\n          WHERE action_id = ma.id\n        )\n      END,\n      'restriction_types', CASE\n        WHEN ma.metadata_expires_at_present THEN (\n          SELECT jsonb_agg(restriction_type ORDER BY position)\n          FROM moderator_action_restrictions\n          WHERE action_id = ma.id\n        )\n      END\n    ))\n    || CASE\n      WHEN ma.metadata_expires_at_present\n        THEN jsonb_build_object('expires_at', to_jsonb(ma.metadata_expires_at))\n      ELSE '{}'::jsonb\n    END\n  FROM moderator_actions ma\n  WHERE ma.id = p_action_id\n$function$\n"
     },
     "fn_post_moderation_disposition_evidence(p_disposition_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_post_moderation_disposition_evidence(p_disposition_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT jsonb_strip_nulls(jsonb_build_object(\n    'platform_override', CASE WHEN disposition.evidence_platform_override THEN TRUE ELSE NULL END,\n    'composite_score', disposition.evidence_composite_score,\n    'error_code', disposition.evidence_error_code,\n    'flagged_categories', (\n      SELECT jsonb_agg(category.category ORDER BY category.position)\n      FROM post_moderation_disposition_categories category\n      WHERE category.disposition_id = disposition.id\n    ),\n    'signals', (\n      SELECT jsonb_agg(\n        jsonb_build_object('signal', signal.signal, 'score', signal.score, 'flagged', signal.flagged)\n        ORDER BY signal.position\n      )\n      FROM post_moderation_disposition_signals signal\n      WHERE signal.disposition_id = disposition.id\n    )\n  ))\n  FROM post_moderation_dispositions disposition\n  WHERE disposition.id = p_disposition_id\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_post_moderation_disposition_evidence(p_disposition_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT jsonb_strip_nulls(jsonb_build_object(\n    'platform_override', CASE WHEN disposition.evidence_platform_override THEN TRUE ELSE NULL END,\n    'composite_score', disposition.evidence_composite_score,\n    'error_code', disposition.evidence_error_code,\n    'flagged_categories', COALESCE((\n      SELECT jsonb_agg(category.category ORDER BY category.position)\n      FROM post_moderation_disposition_categories category\n      WHERE category.disposition_id = disposition.id\n    ), '[]'::jsonb),\n    'signals', (\n      SELECT jsonb_agg(\n        jsonb_build_object('signal', signal.signal, 'score', signal.score, 'flagged', signal.flagged)\n        ORDER BY signal.position\n      )\n      FROM post_moderation_disposition_signals signal\n      WHERE signal.disposition_id = disposition.id\n    )\n  ))\n  FROM post_moderation_dispositions disposition\n  WHERE disposition.id = p_disposition_id\n$function$\n"
     },
     "fn_preserve_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_preserve_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -70886,30 +70886,10 @@
       },
       "growth": "bounded",
       "indexes": {
-        "idx_post_admission_reservations__committed_post_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_admission_reservations__committed_post_id ON public.post_admission_reservations USING btree (committed_post_id) WHERE (committed_post_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "committed_post_id",
-              "descending": false,
-              "expression": "committed_post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(committed_post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_post_admission_reservations__committed_post_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (state = 'committed'::text)",
+          "definition": "CREATE INDEX idx_post_admission_reservations__committed_post_retention ON public.post_admission_reservations USING btree (committed_post_id, retention_expires_at) WHERE (committed_post_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -70927,7 +70907,7 @@
               "opclass": "timestamptz_ops"
             }
           ],
-          "predicate": "(state = 'committed'::text)",
+          "predicate": "(committed_post_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
