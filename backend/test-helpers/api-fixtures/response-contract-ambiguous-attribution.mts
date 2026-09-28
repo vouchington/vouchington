@@ -1,31 +1,46 @@
-import ts from 'typescript'
+import type {
+  CallExpression,
+  Expression,
+  Node,
+  Program,
+  SourceFile,
+  Symbol,
+  TypeChecker,
+} from 'typescript'
 
-import { repoRelativePath } from './program-paths.mts'
 import { discoveryCallLabel } from './response-contract-discovery-call.mts'
+import {
+  isTypescriptArrowFunction,
+  isTypescriptCallExpression,
+  isTypescriptFunctionDeclaration,
+  isTypescriptFunctionExpression,
+  isTypescriptIdentifier,
+  isTypescriptPropertyAccessExpression,
+  isTypescriptStringLiteral,
+  isTypescriptVariableDeclaration,
+  repoRelativePath,
+  typescriptSymbolFlags,
+} from './program-paths.mts'
 
 const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
 
 type RouteBinding = { method: string; routeTemplate: string }
 type BindingSets = {
-  unambiguous: Set<ts.Symbol>
-  ambiguous: Map<ts.Symbol, readonly string[]>
+  unambiguous: Set<Symbol>
+  ambiguous: Map<Symbol, readonly string[]>
 }
 
-/**
- * Fails discovery when a response emission sits in a function registered on more than one
- * distinct route. The one-route-per-helper limit stays: those calls are still not attributed
- * to an arbitrary winner, but omitting them is now a hard error.
- */
+/** A response helper registered on more than one distinct route is a hard discovery error. */
 export function assertUniqueResponseAttribution(
-  program: ts.Program,
-  sourceFiles: readonly ts.SourceFile[],
+  program: Program,
+  sourceFiles: readonly SourceFile[],
 ): void {
   const checker = program.getTypeChecker()
   const bindings = collectRouteBindings(sourceFiles, checker)
   const failures: string[] = []
   for (const sourceFile of sourceFiles) {
     visit(sourceFile, node => {
-      if (!ts.isCallExpression(node)) return
+      if (!isTypescriptCallExpression(node)) return
       const label = discoveryCallLabel(node)
       if (!label) return
       const routes = ambiguousRoutesForCall(node, checker, bindings)
@@ -38,13 +53,13 @@ export function assertUniqueResponseAttribution(
 }
 
 function collectRouteBindings(
-  sourceFiles: readonly ts.SourceFile[],
-  checker: ts.TypeChecker,
+  sourceFiles: readonly SourceFile[],
+  checker: TypeChecker,
 ): BindingSets {
-  const bindingsBySymbol = new Map<ts.Symbol, RouteBinding[]>()
+  const bindingsBySymbol = new Map<Symbol, RouteBinding[]>()
   for (const sourceFile of sourceFiles) {
     visit(sourceFile, node => {
-      if (!ts.isCallExpression(node)) return
+      if (!isTypescriptCallExpression(node)) return
       const method = propertyName(node.expression)?.toUpperCase()
       if (!method || !HTTP_METHODS.has(method)) return
       const routeTemplate = routeTemplateFromExpression(node.expression)
@@ -58,8 +73,8 @@ function collectRouteBindings(
       }
     })
   }
-  const unambiguous = new Set<ts.Symbol>()
-  const ambiguous = new Map<ts.Symbol, readonly string[]>()
+  const unambiguous = new Set<Symbol>()
+  const ambiguous = new Map<Symbol, readonly string[]>()
   for (const [symbol, candidates] of bindingsBySymbol) {
     const [first] = candidates
     if (!first) continue
@@ -80,11 +95,11 @@ function collectRouteBindings(
 }
 
 function ambiguousRoutesForCall(
-  node: ts.Node,
-  checker: ts.TypeChecker,
+  node: Node,
+  checker: TypeChecker,
   bindings: BindingSets,
 ): readonly string[] | undefined {
-  let current: ts.Node | undefined = node
+  let current: Node | undefined = node
   while (current) {
     if (lexicalRoute(current)) return undefined
     const symbol = functionSymbol(current, checker)
@@ -100,8 +115,8 @@ function ambiguousRoutesForCall(
 }
 
 function formatFailure(
-  sourceFile: ts.SourceFile,
-  node: ts.CallExpression,
+  sourceFile: SourceFile,
+  node: CallExpression,
   label: string,
   routes: readonly string[],
 ): string {
@@ -110,17 +125,17 @@ function formatFailure(
   return `${location}: ${label} cannot be attributed to one route (${routes.join(', ')}). Keep the call at each route's own call site.`
 }
 
-function handlerArgumentSymbols(node: ts.CallExpression, checker: ts.TypeChecker): ts.Symbol[] {
-  const symbols: ts.Symbol[] = []
+function handlerArgumentSymbols(node: CallExpression, checker: TypeChecker): Symbol[] {
+  const symbols: Symbol[] = []
   for (const argument of node.arguments) {
-    if (ts.isIdentifier(argument)) {
+    if (isTypescriptIdentifier(argument)) {
       const symbol = checker.getSymbolAtLocation(argument)
       if (symbol) symbols.push(symbol)
       continue
     }
     if (!isRouteFunction(argument)) continue
     visit(argument, child => {
-      if (!ts.isCallExpression(child) || !ts.isIdentifier(child.expression)) return
+      if (!isTypescriptCallExpression(child) || !isTypescriptIdentifier(child.expression)) return
       const symbol = checker.getSymbolAtLocation(child.expression)
       if (symbol) symbols.push(symbol)
     })
@@ -128,54 +143,58 @@ function handlerArgumentSymbols(node: ts.CallExpression, checker: ts.TypeChecker
   return symbols
 }
 
-function lexicalRoute(node: ts.Node): boolean {
-  if (!isRouteFunction(node) || !ts.isCallExpression(node.parent)) return false
+function lexicalRoute(node: Node): boolean {
+  if (!isRouteFunction(node) || !isTypescriptCallExpression(node.parent)) return false
   const method = propertyName(node.parent.expression)?.toUpperCase()
   if (!method || !HTTP_METHODS.has(method)) return false
   return routeTemplateFromExpression(node.parent.expression) !== undefined
 }
 
-function functionSymbol(node: ts.Node, checker: ts.TypeChecker): ts.Symbol | undefined {
-  if (ts.isFunctionDeclaration(node) && node.name) return checker.getSymbolAtLocation(node.name)
+function functionSymbol(node: Node, checker: TypeChecker): Symbol | undefined {
+  if (isTypescriptFunctionDeclaration(node) && node.name)
+    return checker.getSymbolAtLocation(node.name)
   if (
-    (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
-    ts.isVariableDeclaration(node.parent) &&
-    ts.isIdentifier(node.parent.name)
+    (isTypescriptArrowFunction(node) || isTypescriptFunctionExpression(node)) &&
+    isTypescriptVariableDeclaration(node.parent) &&
+    isTypescriptIdentifier(node.parent.name)
   ) {
     return checker.getSymbolAtLocation(node.parent.name)
   }
   return undefined
 }
 
-function resolveSymbol(symbol: ts.Symbol, checker: ts.TypeChecker): ts.Symbol {
-  return symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol
+function resolveSymbol(symbol: Symbol, checker: TypeChecker): Symbol {
+  return symbol.flags & typescriptSymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol
 }
 
-function routeTemplateFromExpression(expression: ts.Expression): string | undefined {
-  if (!ts.isPropertyAccessExpression(expression)) return undefined
+function routeTemplateFromExpression(expression: Expression): string | undefined {
+  if (!isTypescriptPropertyAccessExpression(expression)) return undefined
   return findRouteCall(expression.expression)
 }
 
-function findRouteCall(expression: ts.Expression): string | undefined {
-  if (!ts.isCallExpression(expression) || !ts.isPropertyAccessExpression(expression.expression)) {
+function findRouteCall(expression: Expression): string | undefined {
+  if (
+    !isTypescriptCallExpression(expression) ||
+    !isTypescriptPropertyAccessExpression(expression.expression)
+  ) {
     return undefined
   }
   if (expression.expression.name.text === 'route') {
     const route = expression.arguments[0]
-    return route && ts.isStringLiteral(route) ? route.text : undefined
+    return route && isTypescriptStringLiteral(route) ? route.text : undefined
   }
   return findRouteCall(expression.expression.expression)
 }
 
-function propertyName(expression: ts.Expression): string | undefined {
-  return ts.isPropertyAccessExpression(expression) ? expression.name.text : undefined
+function propertyName(expression: Expression): string | undefined {
+  return isTypescriptPropertyAccessExpression(expression) ? expression.name.text : undefined
 }
 
-function isRouteFunction(node: ts.Node): boolean {
-  return ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+function isRouteFunction(node: Node): boolean {
+  return isTypescriptArrowFunction(node) || isTypescriptFunctionExpression(node)
 }
 
-function visit(node: ts.Node, callback: (node: ts.Node) => void): void {
+function visit(node: Node, callback: (node: Node) => void): void {
   callback(node)
   node.forEachChild(child => visit(child, callback))
 }

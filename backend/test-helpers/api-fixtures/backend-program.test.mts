@@ -1,9 +1,18 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import type { CallExpression, Node, Program, SourceFile, Type, TypeChecker } from 'typescript'
+import type {
+  CallExpression,
+  Node,
+  Program,
+  SourceFile,
+  Type,
+  TypeChecker,
+  TypeNode,
+} from 'typescript'
 
 import {
   forEachTypescriptChild,
   isTypescriptCallExpression,
+  isTypescriptIdentifier,
   typescriptIndexKind,
   typescriptSymbolFlags,
   typescriptTypeFlags,
@@ -186,27 +195,27 @@ describe('PostgreSQL row type contracts', () => {
     expect(id && checker.typeToString(id)).toBe('string')
   })
 
-  function writeReturningRow(path: string): { row: ts.Type; at: ts.TypeNode } {
+  function writeReturningRow(path: string): { row: Type; at: TypeNode } {
     const file = source(path)
-    let typeArgument: ts.TypeNode | undefined
-    function visit(node: ts.Node): void {
+    let typeArgument: TypeNode | undefined
+    function visit(node: Node): void {
       if (
-        ts.isCallExpression(node) &&
-        ts.isIdentifier(node.expression) &&
+        isTypescriptCallExpression(node) &&
+        isTypescriptIdentifier(node.expression) &&
         node.expression.text === 'write' &&
         node.typeArguments?.[0]
       ) {
         if (typeArgument) throw new Error(`Multiple write type arguments in ${path}`)
         typeArgument = node.typeArguments[0]
       }
-      ts.forEachChild(node, visit)
+      forEachTypescriptChild(node, visit)
     }
     visit(file)
     if (!typeArgument) throw new Error(`Missing write type argument in ${path}`)
     return { row: checker.getTypeFromTypeNode(typeArgument), at: typeArgument }
   }
 
-  function rowProperty(row: ts.Type, at: ts.Node, name: string): string | undefined {
+  function rowProperty(row: Type, at: Node, name: string): string | undefined {
     const property = checker.getPropertyOfType(row, name)
     if (!property) return undefined
     return checker.typeToString(checker.getTypeOfSymbolAtLocation(property, at))
@@ -218,7 +227,7 @@ describe('PostgreSQL row type contracts', () => {
   ])('%s types INSERT RETURNING * as a posts table row', path => {
     const { row, at } = writeReturningRow(path)
     const post = declarationType('backend/types/entities/post.mts', 'Post')
-    expect(row.flags & ts.TypeFlags.Any).toBe(0)
+    expect(row.flags & typescriptTypeFlags.Any).toBe(0)
     expect(checker.isTypeAssignableTo(row, post)).toBe(false)
     for (const name of ['clearance_status', 'clearance_reason', 'clearance_updated_at']) {
       expect(rowProperty(row, at, name)).toBeUndefined()

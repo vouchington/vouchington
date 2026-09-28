@@ -161,4 +161,14 @@ describe('no-api-fixtures-typescript-reachability', () => {
       ),
     ).resolves.toEqual([])
   })
+
+  it('keeps response-contract helpers off the runtime allowlist', async () => {
+    for (const file of [
+      'backend/test-helpers/api-fixtures/response-contract-ambiguous-attribution.mts',
+      'backend/test-helpers/api-fixtures/response-contract-discovery-call.mts',
+    ]) {
+      expect(exemptions.some(pattern => pattern.test(file))).toBe(false)
+      await expect(violationsFor(noApiFixturesTypescriptReachability, file)).resolves.toEqual([])
+    }
+  })
 })
