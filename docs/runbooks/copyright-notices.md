@@ -54,8 +54,9 @@ Privacy, and Community Guidelines articles to describe the activated process, ca
 evidence retention, and repeat-infringer enforcement. The placeholder-free public designated-agent
 page must state that the channel is inactive until a real registration and monitored contact exist.
 
-Do not advertise EU or UK statutory intake until their distinct schemas, review rules, notices, and
-any required representatives are deployed. The current public API accepts only `us_dmca`.
+Do not advertise EU or UK statutory intake until counsel completes representative appointment and
+the applicability review. Those contracts stay unavailable until an unwithdrawn territorial policy
+approval is recorded. The public form still accepts only `us_dmca`.
 
 The application repository creates placement-bound URLs and durable PostgreSQL action intents, but
 that is not complete CDN enforcement. Activation also requires the linked infrastructure change to

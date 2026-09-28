@@ -357,6 +357,38 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_email_review_recommendation
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_eu_acknowledgment_attempt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_acknowledgment_attempt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_eu_escalation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_escalation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_eu_notice_child`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_notice_child()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_eu_redress_request`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_eu_redress_request()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_hold_target_scope`
 
 ```sql
@@ -449,6 +481,46 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_territorial_notice_receipt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_territorial_notice_receipt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_uk_acknowledgment_attempt`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_acknowledgment_attempt()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_uk_escalation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_escalation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_uk_notice_child`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_notice_child()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_guard_copyright_uk_redress_request`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_uk_redress_request()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -948,6 +1020,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_classifier_identity_mutation()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_classifier_prompt_version_identity_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_territorial_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

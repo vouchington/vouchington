@@ -2,8 +2,9 @@
 
 Source entrypoint: [backend/api/v1/copyright-notices/README.md](../../../../../backend/api/v1/copyright-notices/README.md)
 
-Structured copyright notices use CAPTCHA or App Attest, rate limiting, UUID idempotency, and
-server-resolved hosted image placements. Duplicate post and image pairs receive a validation error
+Structured US copyright notices use CAPTCHA or App Attest, rate limiting, UUID idempotency, and
+server-resolved hosted image placements. EU and UK notices are separate routes and stay
+unavailable until an administrator records an unwithdrawn territorial policy approval. Duplicate post and image pairs receive a validation error
 before persistence. Signed-in and guest claimants may submit a notice, but only a deterministically
 complete signed-in notice with a durable `not_obviously_invalid` anti-spam recommendation is
 eligible for provisional restriction. The recommendation is not a legal merits
@@ -45,10 +46,13 @@ Reinstatement does not unsuspend it.
 
 ## Performance
 
-Mutation routes are uncached. The staff email intake queue is private and uncached; each page is
-one read transaction walking the `(received_at, id)` index. Notice creation resolves at most 20
-image placements before one legal aggregate transaction. Appeals and counter-notices use one bounded ownership query and one
-transaction. Email approval resolves at most 20 placements, admits one aggregate, then imposes
+Mutation routes are uncached. An EU or UK receipt writes the notice, routing, and acknowledgment
+obligation in one transaction, then records the acknowledgment in a second transaction. Review,
+redress, and reporting mutations each use one transaction and do not read the US restoration
+schedule. The staff email intake queue is private and uncached; each page is one read transaction
+walking the `(received_at, id)` index. Notice creation resolves at most 20 image placements before
+one legal aggregate transaction. Appeals and counter-notices use one bounded ownership query and
+one transaction. Email approval resolves at most 20 placements, admits one aggregate, then imposes
 target-scoped restrictions. A repeat-infringer account read is one query. A review outcome,
 disposition, or reinstatement is one transaction. Restrict and terminate then call account
 suspension.
