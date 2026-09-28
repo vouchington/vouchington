@@ -4,7 +4,6 @@ import { expect } from 'vitest'
 
 import type { StorybookBrowserRunnerDeps } from './storybook-browser-runner.mts'
 import type { Child } from './storybook-browser-runner-test-types.mts'
-import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export type { Child } from './storybook-browser-runner-test-types.mts'
 
@@ -144,7 +143,11 @@ export function makeDeps(
       },
     },
     writeFileSync: (path, content) => {
-      written.push({ content: stringFromUnknown(content), path: String(path) })
+      const text =
+        typeof content === 'string'
+          ? content
+          : Buffer.from(content.buffer, content.byteOffset, content.byteLength).toString()
+      written.push({ content: text, path: String(path) })
     },
     waitForProcessGroupExit:
       options.waitForProcessGroupExit ??
