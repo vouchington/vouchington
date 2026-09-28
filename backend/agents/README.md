@@ -6,6 +6,7 @@ changing agent tests or external-provider mocks.
 
 ## Contents
 
+- [Post classifier](post-classifier/README.md)
 - <a id="tests"></a>[Tests](../../docs/overview/architecture/ai-agents/reference-tests.md)
 - <a id="orchestrator--subagent--tool--service-chain"></a>[Orchestrator → Subagent → Tool → Service Chain](../../docs/overview/architecture/ai-agents/reference-orchestrator-subagent-tool-service-chain.md)
 - <a id="agent-patterns"></a>[Agent Patterns](../../docs/overview/architecture/ai-agents/reference-agent-patterns.md)
