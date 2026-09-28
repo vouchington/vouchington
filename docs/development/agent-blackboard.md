@@ -63,7 +63,7 @@ export AGENT_BLACKBOARD_URL=<hosted-blackboard-url>
 export AGENT_BLACKBOARD_TOKEN=<your client credential>
 ```
 
-Both values are required for hosted delivery. Missing values block autonomous admission and
+Both values are required for hosted delivery. Missing values make hosted delivery fail and
 leave interactive feedback visibly pending in the durable outbox. There is no token-file or local-server fallback.
 
 If you do not yet have a client credential, ask the deployment owner for the admin-token procedure
@@ -155,7 +155,7 @@ still using the root-pinned package.
 Restart Codex after changing or first receiving the project registration so its native
 `session_ensure`, `entry_append`, and `entry_get` tools are loaded. The Codex server is deliberately
 not marked as required: a fresh worktree must be able to start Codex before `pnpm install` creates
-the root binary. The SessionStart availability probe is advisory; trusted autonomous admission is described below.
+the root binary. The SessionStart availability probe is advisory.
 
 Retrospective persistence deliberately remains script-only:
 `dev/retrospective-save.mts` validates UTF-8, required sections, failure grammar, and front matter;
@@ -263,29 +263,8 @@ It uses bounded `sessions.list({ limit: 1 })`; emitting context cannot mechanica
 A sandboxed probe reports unavailable assessment instead of a false deployment outage, because its
 credential and egress are deliberately withheld by Claude's
 [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
-`CHECK_BLACKBOARD_SKIP=1` skips only this advisory probe and never bypasses autonomous admission.
-That diagnostic does not discard interactive pending
-feedback or authorize autonomous work; the trusted controller must still verify delivery.
-
-## Autonomous admission and terminal feedback
-
-All fully autonomous/noninteractive tasks use the supported Auto Harness controller or a trusted
-integration enforcing both admission and terminal reporting. Ad hoc raw `codex exec` is not an
-enforced or supported autonomous launch path. The standalone `check-blackboard.mts gate` command
-is an integration primitive, not a complete runner: its caller must also enforce terminal delivery.
-A trusted controller must use the shared
-`vouchington-tooling/agent-blackboard` autonomous gate before creating a work attempt. Admission
-requires a fresh validated journal event, ensured exact session identity, repository attribution,
-append acknowledgment, and read-back of the matching source event and envelope. An outage or
-verification mismatch blocks admission. Repository hooks remain local-only and cannot act as this
-credential-bearing authority.
-
-The trusted controller records terminal `success`, `failure`, `cancelled`, `timed-out`, `no-change`,
-`policy-refusal`, or `unknown` work outcome. Coverage (`complete`, `partial`, `unavailable`,
-`not-assessed`, or `not-started`) and delivery (`delivered` or visibly blocked) remain separate.
-Terminal acknowledgment requires read-back; a successful task with blocked delivery is not fully
-reported. Retrying preserves the same source event ID. Controller cancellation and timeout paths
-must report terminal feedback even if the agent cannot produce a retrospective.
+`CHECK_BLACKBOARD_SKIP=1` skips only this advisory probe.
+That diagnostic does not discard interactive pending feedback.
 
 ## Interactive pending delivery
 
@@ -345,25 +324,21 @@ report the blocker to the user** — it must never try to recover the value itse
   after they confirm the refreshed value is set; for the script path, run the export and the retry
   in the same shell invocation. Only then retry the failed call.
 
-Interactive writer delivery failures remain visible in the outbox; autonomous admission remains
-blocked until the trusted controller can acknowledge the event.
+Interactive writer delivery failures remain visible in the outbox. `--mode autonomous` still requires
+a verified read-back and does not fall back to that outbox.
 
 The [`blackboard` skill § Credential failures](../../.agents/skills/blackboard/SKILL.md#credential-failures)
 carries the matching agent-facing rule for both its MCP and script paths; keep the two in sync.
 
 ## CI (Harness dispatch)
 
-`.github/workflows/harness-dispatch.yml` invokes Auto Harness through its dependency-free client.
-The trusted Auto Harness control plane provisions the dedicated nonadmin hosted Blackboard credential and owns
-admission and terminal feedback; the workflow, agent checkout, agent environment, and repository
-hooks never receive that credential. Missing control-plane configuration blocks admission instead
-of starting an unreported attempt. Delivery state appears alongside authoritative work outcome in
-the existing Harness result view. No new product API or GitHub Actions credential forwarding is
-required. Vouchington dispatch requires the deployed controller to advertise
-`blackboardFeedbackProtocol: 1` on `GET /health` before creating or resuming any session.
-The controller enforces repository authorization; the provider credential is not asserted to have
-repository-level scope. The controller and shared tooling release must be deployed before this
-contract is live.
+`.github/workflows/harness-dispatch.yml` invokes Auto Harness through a dependency-free client but
+does not provision `AGENT_BLACKBOARD_URL` or `AGENT_BLACKBOARD_TOKEN`. Harness sessions therefore
+report contemporaneous failures through their available parent-agent channel when runtime session
+IDs are unavailable; they do not infer IDs or write unauthenticated blackboard records.
+
+agent-blackboard is orthogonal to auto-harness. Dispatch does not check a Blackboard protocol, and
+this repository does not give the runner a Blackboard credential.
 
 ## AWS deploy path
 
@@ -388,7 +363,7 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 | `.grok/config.toml`          | Native Grok launcher and exact `MCPTool(...)` allowlist                                                                        |
 | `opencode.json`              | Native OpenCode V1 launcher and exact `agent-blackboard_<tool>` permission entries                                             |
 | `dev/blackboard/client.mts`  | Resolves the hosted URL/token and constructs the published JS clients                                                          |
-| `dev/check-blackboard.mts`   | Advisory SessionStart probe and explicit trusted-runner admission primitive                                                    |
+| `dev/check-blackboard.mts`   | Advisory SessionStart probe of the hosted connection                                                                           |
 | `dev/blackboard-journal.mts` | Supported file/replay-oriented journal path for the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md)             |
 | `dev/journal-checkpoint.mts` | SessionStart(compact)/PostToolUse dispatcher for the [automatic checkpoint journaling](#automatic-checkpoint-journaling) below |
 | `dev/blackboard-mcp`         | Cwd-independent wrapper that starts the installed CLI's `mcp` subcommand for both registrations                                |

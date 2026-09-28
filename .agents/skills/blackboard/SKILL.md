@@ -46,8 +46,8 @@ contemporaneous record.
 
 Never search shell profiles, `env`, or `.env*` files for a credential; never print, inline, export,
 or probe its value. Check presence only with `[ -n "${VAR+x}" ] && echo SET || echo UNSET`.
-A sandbox denial is expected and is not a recovery target. A missing/stale credential blocks
-autonomous admission; report it. In interactive mode use the supported writer so sanitized feedback
+A sandbox denial is expected and is not a recovery target. A missing or stale credential blocks
+hosted delivery. In interactive mode use the supported writer so sanitized feedback
 is retained durably and visibly pending. Do not silently drop it or invent another fallback. Ask the
 user to refresh the connection when needed, then restart the MCP client or retry the supported
 outbox flush. Saturation and persistence failure require reporting the concrete blocker.

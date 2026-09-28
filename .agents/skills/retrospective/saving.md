@@ -136,9 +136,8 @@ The command:
 
 Interactive save uses `--mode interactive`; a hosted delivery outage returns visible pending state
 only after the bounded private outbox durably preserves sanitized feedback. Inspect and flush through
-`node dev/blackboard-journal.mts outbox-status|outbox-flush`. Autonomous terminal reporting uses
-`--mode autonomous`, never an interactive fallback; a controller must also have enforced fresh
-admission before work. A successful work outcome with blocked delivery is not fully reported.
+`node dev/blackboard-journal.mts outbox-status|outbox-flush`. `--mode autonomous` requires verified
+read-back and does not fall back to that outbox. A successful work outcome with blocked delivery is not fully reported.
 Invalid content, identity conflicts, saturation, and persistence failure exit nonzero with `Error:`
 and a pinned replay command. Do not discard pending records or claim acknowledged delivery.
 

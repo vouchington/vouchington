@@ -297,9 +297,8 @@ Report consequential tool and sandbox outcomes through the supported Blackboard 
 issue filing. Record the command boundary, sanitized diagnostic, work outcome, and evidence coverage
 separately. A refusal, missing credential, network error, Git write denial, and `E2BIG` require
 different remedies; frequency alone does not justify broadening bypasses. Automatic hooks remain
-local-only. The trusted autonomous controller owns hosted admission and terminal delivery, with its
-credential outside agent and repository-hook environments. See
-[the delivery contract](agent-blackboard.md#autonomous-admission-and-terminal-feedback).
+local-only. agent-blackboard stays separate from auto-harness. See
+[the delivery contract](agent-blackboard.md#interactive-pending-delivery).
 
 ## See also
 
