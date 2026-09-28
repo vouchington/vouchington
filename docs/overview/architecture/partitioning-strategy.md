@@ -116,8 +116,8 @@ The [isolated EXPLAIN pruning proof](../../../backend/scripts/explain-analyze/RE
 uses a disposable migrated sibling database with two populated explicit ranges and the default
 for review ratings, conversation messages, and relation votes. Actual review, conversation, and
 vote-stat service calls must execute only their target leaves in forced custom and generic plans.
-The vote-stat batch binds both the exact target set and its UUID range bounds because a join to
-`target_ids` alone did not prune nested RANGE children. This is query evidence for retaining the
+The vote-stat batch binds both the exact target set and its UUID range bounds because joining
+only that id list did not prune nested RANGE children. This is query evidence for retaining the
 current production default-only layout until growth or measured pressure warrants explicit ranges.
 
 `web_push_endpoint_owners` is intentionally unpartitioned: its SHA-256 endpoint key is the global
