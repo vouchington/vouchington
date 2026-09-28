@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostModerationInput } from '@services/posts/moderation-input'
@@ -49,17 +50,24 @@ describe('deleteImageById rollback', () => {
     })
     const imageId = await insertTestImage(creator!.id)
     await insertTestPostImage({ postId, imageId })
-    const addBulk = vi.spyOn(entitiesListeners, 'addBulk').mockResolvedValueOnce([])
 
     await deleteImageById(imageId)
 
-    expect(addBulk).toHaveBeenCalledOnce()
-    expect(addBulk).toHaveBeenCalledWith([
-      expect.objectContaining({
-        name: 'processPostUpdated',
-        data: { id: postId, contentChanged: true },
-      }),
-    ])
+    const jobs = (await readAllQueueJobs(entitiesListeners)).filter(
+      job => job.name === 'processPostUpdated' && (job.data as { id?: string }).id === postId,
+    )
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]).toMatchObject({
+      name: 'processPostUpdated',
+      data: { id: postId, contentChanged: true },
+      opts: {
+        priority: ENQUEUE_BASE_DEFAULTS.priority,
+        attempts: ENQUEUE_BASE_DEFAULTS.attempts,
+        backoff: ENQUEUE_BASE_DEFAULTS.backoff,
+        removeOnComplete: ENQUEUE_BASE_DEFAULTS.removeOnComplete,
+        removeOnFail: ENQUEUE_BASE_DEFAULTS.removeOnFail,
+      },
+    })
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),

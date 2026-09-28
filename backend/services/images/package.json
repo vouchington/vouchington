@@ -45,6 +45,7 @@
     "uuid": "^14.0.2"
   },
   "devDependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }
