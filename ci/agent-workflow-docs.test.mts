@@ -196,16 +196,16 @@ describe('agent workflow documentation', () => {
     const stacked = normalizedMarkdown('.agents/skills/stacked-prs/SKILL.md')
     const beforePushing = normalizedMarkdown('.agents/skills/agent-workflow/before-pushing.md')
 
-    expect(gitAndPrs).toContain('The parent session does not run the poll')
-    expect(gitAndPrs).toContain(
-      'pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status',
-    )
+    expect(gitAndPrs).toContain('One worker per native stack owns Shepherd polling and Git writes')
     expect(gitAndPrs).not.toContain('the shepherd loop, the ownership view')
     expect(stacked).toContain('One worker per native stack')
+    expect(stacked).toContain('pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status')
     expect(stacked).toContain('### Upper-only fast-forward')
     expect(stacked).not.toContain('the shepherd loop itself stays with this session')
     expect(beforePushing).toContain('upper-only fast-forward')
-    expect(beforePushing).toContain('Do not `gh stack sync`')
+    expect(beforePushing).toContain(
+      'Do not sync or rebase the stack while the lower layer is queued',
+    )
   })
 
   it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
@@ -217,7 +217,6 @@ describe('agent workflow documentation', () => {
     expect(gitAndPrs).toContain('run_in_background')
     expect(gitAndPrs).toContain('ScheduleWakeup')
     expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
-    expect(gitAndPrs).toContain('#reading-the-four-refs')
     expect(gitAndPrs).toContain('git rev-list --left-right --count HEAD...origin/<branch>')
     expect(gitAndPrs).toContain('git cherry -v')
     expect(gitAndPrs).toContain('git log --oneline --left-right')
@@ -233,7 +232,6 @@ describe('agent workflow documentation', () => {
     const triagePrs = readRepoFile('.agents/skills/triage-prs/SKILL.md')
 
     expect(startOfWork).toContain('review-ci-logs')
-    expect(gitAndPrs).toContain('review-ci-logs')
     expect(triagePrs).not.toContain('--log-failed')
     expect(triagePrs).toContain('review-ci-logs')
   })
