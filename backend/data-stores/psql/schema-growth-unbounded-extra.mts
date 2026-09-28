@@ -1,5 +1,4 @@
 import { AUDIT_GROWTH_TABLES } from './schema-growth-audit-tables.mts'
-// Lower-amplification tables are still unbounded across the lifetime of the product.
 // Keep this list explicit so a new logical table cannot silently inherit a growth policy.
 
 export const EXTRA_UNBOUNDED_TABLES = [
