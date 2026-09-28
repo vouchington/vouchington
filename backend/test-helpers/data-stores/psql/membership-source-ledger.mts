@@ -116,15 +116,24 @@ export async function getMembershipLedgerAuditDeleteRules(
 ): Promise<MembershipAuditDeleteRule[]> {
   const { rows } = await read<MembershipAuditDeleteRule>(
     `/* getMembershipLedgerAuditDeleteRules */
-    SELECT tc.table_name, rc.delete_rule
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
-      ON kcu.constraint_schema = tc.constraint_schema AND kcu.constraint_name = tc.constraint_name
-    JOIN information_schema.referential_constraints rc
-      ON rc.constraint_schema = tc.constraint_schema AND rc.constraint_name = tc.constraint_name
-    WHERE tc.constraint_schema = 'public' AND tc.constraint_type = 'FOREIGN KEY'
-      AND tc.table_name = ANY($1::text[])
-    ORDER BY tc.table_name, kcu.column_name`,
+    SELECT child.relname AS table_name,
+      CASE conf.confdeltype
+        WHEN 'a' THEN 'NO ACTION'
+        WHEN 'r' THEN 'RESTRICT'
+        WHEN 'c' THEN 'CASCADE'
+        WHEN 'n' THEN 'SET NULL'
+        WHEN 'd' THEN 'SET DEFAULT'
+      END AS delete_rule
+    FROM pg_constraint conf
+    JOIN pg_class child ON child.oid = conf.conrelid
+    JOIN pg_namespace namespace ON namespace.oid = child.relnamespace
+    JOIN LATERAL unnest(conf.conkey) AS column_number(attnum) ON true
+    JOIN pg_attribute attribute
+      ON attribute.attrelid = child.oid AND attribute.attnum = column_number.attnum
+    WHERE conf.contype = 'f'
+      AND namespace.nspname = 'public'
+      AND child.relname = ANY($1::text[])
+    ORDER BY child.relname, attribute.attname`,
     [[tableNames]],
   )
   return rows
