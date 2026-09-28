@@ -61,7 +61,9 @@ export async function deliverCachedImagePlacement(input: {
   const cached = await input.cache.match(input.cacheKey)
   if (cached) return cached
   const bytes = await input.loadBytes()
-  const response = new Response(bytes, {
+  const body = new ArrayBuffer(bytes.byteLength)
+  new Uint8Array(body).set(bytes)
+  const response = new Response(body, {
     status: 200,
     headers: { 'cache-control': 'public, max-age=31536000', 'content-type': 'image/jpeg' },
   })

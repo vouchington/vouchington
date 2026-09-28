@@ -102,6 +102,7 @@ describe('publication failure and recovery boundaries', () => {
           placement_revision: fixture.tuple.revision,
           image_id: fixture.tuple.imageId,
           generation: captured.generation,
+          denied_country_codes: '',
         },
         transaction,
       ),
