@@ -48,9 +48,9 @@ describe('httpRequestToLambdaEvent', () => {
     expect(event.queryStringParameters!.env).toBeUndefined()
   })
 
-  it('extracts base64url from /sideload/{base64url}', () => {
+  it('extracts base64url from /sideload/v2/{base64url}', () => {
     const b64 = 'aHR0cHM6Ly9leGFtcGxlLmNvbS9pbWcuanBn'
-    const event = httpRequestToLambdaEvent(makeReq(`/sideload/${b64}`))
+    const event = httpRequestToLambdaEvent(makeReq(`/sideload/v2/${b64}`))
     expect(event.pathParameters!.base64url).toBe(b64)
   })
 

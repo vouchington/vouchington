@@ -1,3 +1,4 @@
+import { isRemovedSideloadRoute } from '@ts-shared/url-signing/media-source-policy'
 import { edgeErrorResponse } from './error-response.mts'
 import { getMarkdownAliasOriginPath } from './markdown-aliases.mts'
 import { getOAuthBrokerCallbackOriginPath } from './oauth-broker-callback-routing.mts'
@@ -91,6 +92,11 @@ export const getRouteTarget = (pathname: string): RouteTarget => {
   }
 
   return 'web'
+}
+
+export function rejectRemovedSideloadRoute(pathname: string): Response | undefined {
+  if (!isRemovedSideloadRoute(pathname)) return undefined
+  return edgeErrorResponse(404, 'Removed sideload route', 'REMOVED_MEDIA_ROUTE')
 }
 
 export const getOriginPathOverride = (pathname: string): string | null =>

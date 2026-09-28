@@ -5,6 +5,7 @@ import {
   buildGenericOgImageUrl,
   buildLandingOgImageUrl,
   extractTopCategories,
+  landingOgDependencies,
   OG_RENDERER_VERSION,
 } from './og-image-url'
 import type { LandingPageItem, PublicLandingPage } from '@/types/landing-pages'
@@ -67,6 +68,29 @@ function topicGroupItem(id: string, name: string): LandingPageItem {
   }
 }
 
+describe('landingOgDependencies', () => {
+  it('returns no dependencies when the landing placement is absent', () => {
+    expect(landingOgDependencies(null)).toEqual([])
+    expect(landingOgDependencies(undefined)).toEqual([])
+  })
+
+  it('maps a landing placement into one signed dependency', () => {
+    expect(
+      landingOgDependencies({
+        placement_id: '00000000-0000-7000-8000-000000000741',
+        placement_revision: 3,
+        image_id: '00000000-0000-7000-8000-000000000742',
+      }),
+    ).toEqual([
+      {
+        placementId: '00000000-0000-7000-8000-000000000741',
+        revision: 3,
+        imageId: '00000000-0000-7000-8000-000000000742',
+      },
+    ])
+  })
+})
+
 describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
   beforeEach(() => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com')
@@ -99,7 +123,7 @@ describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
     })
   })
 
-  it('encodes landing params, omitting avatarImageId when not provided', () => {
+  it('encodes landing params with an empty dependency list when none are provided', () => {
     const url = buildLandingOgImageUrl({
       displayName: 'Alice',
       username: 'alice',
@@ -112,20 +136,26 @@ describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
       displayName: 'Alice',
       username: 'alice',
       topCategories: ['Travel', 'Tech'],
+      dependencies: [],
       rendererVersion: OG_RENDERER_VERSION,
     })
   })
 
-  it('includes avatarImageId when provided', () => {
+  it('includes placement dependencies when provided', () => {
+    const dependency = {
+      placementId: '11111111-1111-4111-8111-111111111111',
+      revision: 2,
+      imageId: '22222222-2222-4222-8222-222222222222',
+    }
     const url = buildLandingOgImageUrl({
       displayName: 'Alice',
       username: 'alice',
       topCategories: [],
-      avatarImageId: 'img-1',
+      dependencies: [dependency],
     })
     const { params } = decodeOgPath(url)
 
-    expect(params).toMatchObject({ avatarImageId: 'img-1' })
+    expect(params).toMatchObject({ dependencies: [dependency] })
   })
 
   it('truncates topCategories to a maximum of 5', () => {

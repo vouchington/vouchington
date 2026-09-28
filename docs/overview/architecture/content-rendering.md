@@ -2,8 +2,8 @@
 
 ## Post Rendering by Author Type
 
-- **Non-admin posts**: strict markdown (no raw HTML), `nofollow ugc` on external links, images proxied via the image host's `/sideload/` route
-- **Admin posts**: markdown + sanitized HTML (permissive allowlist, no `<script>`/`<iframe>`/event handlers), dofollow external links (`rel="noopener"`), images proxied via the image host's `/sideload/` route
+- **Non-admin posts**: strict markdown (no raw HTML), `nofollow ugc` on external links, images proxied via the image host's `/sideload/v2/` route
+- **Admin posts**: markdown + sanitized HTML (permissive allowlist, no `<script>`/`<iframe>`/event handlers), dofollow external links (`rel="noopener"`), images proxied via the image host's `/sideload/v2/` route
 
 ## Image Proxying
 
@@ -16,10 +16,10 @@ image IDs, ordering and captions, never local files. Saved rendering uses the au
 placement descriptor. See [delivery authority](services/media-delivery-safety/README.md).
 
 All browser-facing external `http(s)://` image URLs are rewritten to
-`${IMAGE_ORIGIN}/sideload/{base64url}?w=1200&sig={hmac}`. Browsers therefore request the dedicated
+`${IMAGE_ORIGIN}/sideload/v2/{base64url}?w=1200&sig={hmac}`. Older `/sideload/` paths are removed and are not served. Browsers therefore request the dedicated
 image hostname directly, bypassing both the apex Cloudflare Worker and Next.js image optimization.
 
-The `sig` parameter is an HMAC-SHA256 hex signature over the path `/sideload/{base64url}`, computed
+The `sig` parameter is an HMAC-SHA256 hex signature over the path `/sideload/v2/{base64url}`, computed
 using the newest key from `VOUCHA_SIDELOAD_SIGNING_KEYS`. When no keys are configured outside deployed
 staging/production environments, the `sig` parameter is omitted for dev/test. In staging and production
 the Lambda fails closed if signing keys are absent.
@@ -29,7 +29,7 @@ relative links such as `/login?url=https://example.com` stay valid while unknown
 
 ### API-Level Proxying
 
-Backend API responses proxy all external image URL fields through absolute `IMAGE_ORIGIN/sideload/` URLs before returning them to
+Backend API responses proxy all external image URL fields through absolute `IMAGE_ORIGIN/sideload/v2/` URLs before returning them to
 the frontend. Key proxy sites:
 
 - **Post/URL embeds** (`getUrlEmbedByUrlId`): `thumbnail_url` — width 640 px
@@ -94,7 +94,7 @@ ast-grep rules enforce the ban statically.
   to stay at or below the 10 MiB cap; this may result in multiple Rust N-API async batch
   sanitizer calls (one per chunk).
 - **Image proxying**: Applied at API-response time. Rust rewrites `<img>` sources to the relative,
-  signed `/sideload/{base64url}?w=1200&sig={hmac}` form so the HMAC covers only the request path.
+  signed `/sideload/v2/{base64url}?w=1200&sig={hmac}` form so the HMAC covers only the request path.
   The backend serialization boundary then prepends the validated `IMAGE_ORIGIN` to those `src`
   attributes without changing the query string or other HTML bytes. Card thumbnails are proxied separately via
   `proxyThumbnailUrls()` (width 400 px), returned as a `rss_feed_item_thumbnail_url` map alongside

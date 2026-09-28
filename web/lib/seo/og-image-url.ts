@@ -1,4 +1,9 @@
-import { SIDELOAD_SIGNING_KEYS_ENV, parseSigningKeys, signPath } from '@ts-shared/url-signing'
+import {
+  SIDELOAD_SIGNING_KEYS_ENV,
+  parseSigningKeys,
+  signPath,
+  type PlacementSourcePolicy,
+} from '@ts-shared/url-signing'
 import { getServerImageOrigin } from '@/lib/utils/image-origin'
 import type { PublicLandingPage } from '@/types/landing-pages'
 
@@ -25,7 +30,7 @@ interface LandingOgImageParams {
   displayName: string
   username: string
   topCategories: string[]
-  avatarImageId?: string | null
+  dependencies?: PlacementSourcePolicy[]
 }
 
 type OgImageParams =
@@ -34,7 +39,7 @@ type OgImageParams =
       displayName: string
       username: string
       topCategories: string[]
-      avatarImageId?: string
+      dependencies: PlacementSourcePolicy[]
     })
 
 /**
@@ -59,13 +64,29 @@ export function buildGenericOgImageUrl(params: GenericOgImageParams): string {
   return buildSignedOgUrl({ type: 'generic', ...params })
 }
 
+export function landingOgDependencies(
+  placement:
+    | { placement_id: string; placement_revision: number; image_id: string }
+    | null
+    | undefined,
+): PlacementSourcePolicy[] {
+  if (!placement) return []
+  return [
+    {
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId: placement.image_id,
+    },
+  ]
+}
+
 export function buildLandingOgImageUrl(params: LandingOgImageParams): string {
   return buildSignedOgUrl({
     type: 'landing',
     displayName: params.displayName,
     username: params.username,
     topCategories: params.topCategories.slice(0, MAX_TOP_CATEGORIES),
-    ...(params.avatarImageId ? { avatarImageId: params.avatarImageId } : {}),
+    dependencies: params.dependencies ?? [],
   })
 }
 

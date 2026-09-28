@@ -43,8 +43,9 @@ Current packages:
   `ui-messages/locale-catalogs.mts` and `localization/catalog/`; the tooling-only generator composes
   the matching native locale with the canonical web locale, so web bundles and hydration payloads
   never include `native.*`.
-- `@ts-shared/url-signing`: package-backed HMAC-SHA256 signing and verification for sideload image
-  URLs; Voucha owns its sideload and key-rotation policy.
+- `@ts-shared/url-signing`: package-backed HMAC-SHA256 signing and verification for `/sideload/v2/`
+  image URLs, plus the current first-party source-policy and OG dependency contract. Voucha owns
+  its sideload and key-rotation policy.
 - `@ts-shared/user-profile-collections`: Canonical user profile relation collection catalog
   shared by backend route/service config, web profile tabs/actions, and route classification.
   Pure, env-agnostic — safe in Node.js, browsers, and Workers.

@@ -180,6 +180,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `crm_contact_lifecycle_changes`,
   `dynamic_config_change_logs`, `follower_distribution_deliveries`, `follower_distributions`,
   `identity_verification_attempts`, `media_delivery_registry_records`,
+  `og_dependency_manifest_placements`, `og_dependency_manifests`,
   `membership_administrator_refund_operation_requests`,
   `membership_changes`, `membership_entitlement_effects`,
   `membership_ineligible_purchase_reversal_refund_observations`,

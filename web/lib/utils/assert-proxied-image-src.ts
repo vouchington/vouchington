@@ -1,3 +1,4 @@
+import { CURRENT_SIDELOAD_PATH_PREFIX } from '@ts-shared/url-signing'
 import { getImageOrigin } from './image-origin'
 
 // Next's DefinePlugin inlines `process.env.NODE_ENV` to a build-time literal in every bundle
@@ -15,7 +16,7 @@ function isOptimizedBuild(): boolean {
 
 /**
  * In dev/test, asserts that `src` is not a raw external image URL.
- * All external images must be routed through the `/sideload/` proxy before
+ * All external images must be routed through the `/sideload/v2/` proxy before
  * reaching the browser. Relative paths, data: URLs, and the exact configured
  * image origin are allowed.
  *
@@ -29,17 +30,17 @@ export function assertProxiedImageSrc(src: string): void {
   const imageOrigin = getImageOrigin()
   if (imageOrigin && hasExactOrigin(src, imageOrigin)) return
   throw new Error(
-    `[ProxiedImage] External image URL must be routed through /sideload/ before rendering: ${src}`,
+    `[ProxiedImage] External image URL must be routed through /sideload/v2/ before rendering: ${src}`,
   )
 }
 
 export function isSideloadImageSrc(src: string): boolean {
-  if (src.startsWith('/sideload/')) return true
+  if (src.startsWith(CURRENT_SIDELOAD_PATH_PREFIX)) return true
   const imageOrigin = getImageOrigin()
   if (!imageOrigin || !hasExactOrigin(src, imageOrigin)) return false
 
   try {
-    return new URL(src).pathname.startsWith('/sideload/')
+    return new URL(src).pathname.startsWith(CURRENT_SIDELOAD_PATH_PREFIX)
   } catch {
     return false
   }
