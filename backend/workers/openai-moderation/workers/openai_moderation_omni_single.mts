@@ -17,7 +17,7 @@ function getOpenAIModerationOmniSingleWorker(): Promise<Worker> {
     : openaiModerationOmniSingleWorkerReady
 }
 
-async function processOpenAIModerationOmniSingleJob(
+export async function processOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
 ): Promise<unknown> {
   return handleOpenAIModerationOmniSingleJob(job, await getOpenAIModerationOmniSingleWorker())
