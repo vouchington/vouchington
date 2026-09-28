@@ -127,7 +127,11 @@ export const COPYRIGHT_DECLARATIONS = [
       ),
   ),
   defineWebApiFixture<{
-    copyright_submission: { id: string; kind: 'supplement'; received_at: string }
+    copyright_submission: {
+      id: string
+      kind: 'supplement' | 'withdrawal' | 'court_or_ccb_hold'
+      received_at: string
+    }
   }>()('web.copyright.guest-filing.received', webCopyrightGuestFilingReceived, context =>
     context.client.copyrightGuest.submitCopyrightGuestFiling({
       noticeId: '00000000-0000-7000-8000-000000000830',

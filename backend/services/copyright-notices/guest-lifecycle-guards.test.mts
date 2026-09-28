@@ -1,5 +1,13 @@
-import { read, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
+import {
+  countCopyrightGuestCapabilities,
+  countCopyrightUrgentFilings,
+  insertGuestLifecycleCounterDeadline,
+  insertGuestLifecycleRestriction,
+  markCopyrightNoticeAccepted,
+  readCopyrightCorrespondenceCiphertext,
+  readCopyrightSubmissionCiphertext,
+} from '@voucha/test-helpers/data-stores/psql/copyright-guest-lifecycle'
 import {
   createTestUserDirect,
   getTestPostImagePlacement,
@@ -7,7 +15,6 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import sql from 'sql-template-strings'
 import { describe, expect, it } from 'vitest'
 import { copyrightCorrespondencePurpose } from './correspondence.mts'
 import {
@@ -72,37 +79,21 @@ describe('copyright guest lifecycle guards', () => {
     const targetId = before?.targets[0]?.id
     const submissionId = before?.submissions[0]?.id
     if (!targetId || !submissionId) throw new Error('fixture notice disappeared')
-    await write(sql`/* guestLifecycle:counterClock */
-      WITH counter_notice AS (
-        INSERT INTO copyright_notice_submissions (
-          copyright_notice_id, kind, received_at, source_kind, body_ciphertext
-        ) VALUES (
-          ${notice.id}, 'counter_notice', ${receivedAt}, 'signed_in_form', ${`counter-${crypto.randomUUID()}`}
-        ) RETURNING id
-      ), assessment AS (
-        INSERT INTO copyright_notice_submission_assessments (
-          copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
-        ) SELECT id, ${receivedAt}, ${actor.id}, true FROM counter_notice
-        RETURNING id
-      )
-      INSERT INTO copyright_notice_deadlines (
-        copyright_notice_id, qualifying_counter_notice_assessment_id, earliest_restoration_at,
-        escalation_at, restoration_deadline_at
-      ) SELECT ${notice.id}, id, ${new Date('2026-07-20T00:00:00.000Z')},
-        ${new Date('2026-07-21T00:00:00.000Z')}, ${new Date('2026-07-22T00:00:00.000Z')}
-      FROM assessment
-    `)
-    await write(sql`/* guestLifecycle:restriction */
-      WITH assessment AS (
-        INSERT INTO copyright_notice_submission_assessments (
-          copyright_notice_submission_id, assessed_at, assessed_by_id, substantially_compliant
-        ) VALUES (${submissionId}, ${receivedAt}, ${actor.id}, true)
-        RETURNING id
-      )
-      INSERT INTO copyright_restrictions (
-        copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id
-      ) SELECT ${targetId}, id, ${receivedAt}, ${actor.id} FROM assessment
-    `)
+    await insertGuestLifecycleCounterDeadline({
+      noticeId: notice.id,
+      receivedAt,
+      actorId: actor.id,
+      bodyCiphertext: `counter-${crypto.randomUUID()}`,
+      earliestRestorationAt: new Date('2026-07-20T00:00:00.000Z'),
+      escalationAt: new Date('2026-07-21T00:00:00.000Z'),
+      restorationDeadlineAt: new Date('2026-07-22T00:00:00.000Z'),
+    })
+    await insertGuestLifecycleRestriction({
+      submissionId,
+      targetId,
+      receivedAt,
+      actorId: actor.id,
+    })
     const statement = `correction-${crypto.randomUUID()}`
     const filing = await appendCopyrightGuestFiling({
       noticeId: notice.id,
@@ -138,20 +129,11 @@ describe('copyright guest lifecycle guards', () => {
       expect.objectContaining({ lifted_at: null, copyright_notice_target_id: targetId }),
     ])
     expect(after?.holdAssessments).toEqual([])
-    const stored = await read<{ body_ciphertext: string }>(
-      sql`SELECT body_ciphertext FROM copyright_notice_submissions WHERE id = ${filing.id}`,
-    )
-    expect(stored.rows[0]?.body_ciphertext).not.toBe(statement)
-    expect(
-      decryptSecret(stored.rows[0]?.body_ciphertext ?? '', copyrightSubmissionPurpose(filing.id)),
-    ).toBe(statement)
-    const urgent = await read<{ count: string }>(
-      sql`SELECT count(*)::text AS count FROM copyright_notice_urgent_filings WHERE copyright_notice_submission_id = ${court.id}`,
-    )
-    expect(urgent.rows[0]?.count).toBe('1')
-    await write(
-      sql`UPDATE copyright_notices SET accepted_at = ${receivedAt} WHERE id = ${notice.id}`,
-    )
+    const stored = await readCopyrightSubmissionCiphertext(filing.id)
+    expect(stored).not.toBe(statement)
+    expect(decryptSecret(stored, copyrightSubmissionPurpose(filing.id))).toBe(statement)
+    expect(await countCopyrightUrgentFilings(court.id)).toBe(1)
+    await markCopyrightNoticeAccepted(notice.id, receivedAt)
     const viewer = { ...owner, roles: [] as const }
     const participant = await getCopyrightParticipantNoticeDetail(notice.id, viewer)
     const publicDetail = await getCopyrightPublicNoticeDetail(notice.id)
@@ -186,15 +168,10 @@ describe('copyright guest lifecycle guards', () => {
       capabilityId: capability.id,
       statement: `Please send the registration ${crypto.randomUUID()}`,
     })
-    const stored = await read<{ body_ciphertext: string }>(
-      sql`SELECT body_ciphertext FROM copyright_notice_correspondence_messages WHERE id = ${request.id}`,
+    const stored = await readCopyrightCorrespondenceCiphertext(request.id)
+    expect(decryptSecret(stored, copyrightCorrespondencePurpose(request.id))).toContain(
+      'Please send the registration',
     )
-    expect(
-      decryptSecret(
-        stored.rows[0]?.body_ciphertext ?? '',
-        copyrightCorrespondencePurpose(request.id),
-      ),
-    ).toContain('Please send the registration')
     await expect(
       authorizeCopyrightGuestCapability({
         noticeId: notice.id,
@@ -202,9 +179,6 @@ describe('copyright guest lifecycle guards', () => {
         now: new Date('2026-07-02T12:00:00.000Z'),
       }),
     ).resolves.toBeNull()
-    const capabilities = await read<{ count: string }>(
-      sql`SELECT count(*)::text AS count FROM copyright_notice_guest_capabilities WHERE copyright_notice_id = ${notice.id}`,
-    )
-    expect(capabilities.rows[0]?.count).toBe('1')
+    expect(await countCopyrightGuestCapabilities(notice.id)).toBe(1)
   })
 })

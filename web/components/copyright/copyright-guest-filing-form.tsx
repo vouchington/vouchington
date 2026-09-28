@@ -38,7 +38,7 @@ export function CopyrightGuestFilingForm({ noticeId }: { noticeId: string }) {
         setStatement('')
         turnstile.reset()
       } catch (error) {
-        onError(error, { title: 'Could not file' })
+        onError(error, { fallback: 'Could not file' })
       }
     })
   }

@@ -85,6 +85,13 @@ test('email review loads real parsed evidence and hydrates the private rationale
   await expect(rationale).toHaveValue('Manual review of preserved email evidence.')
 })
 
+test('guest filing page accepts a case access token', async ({ page }) => {
+  const fixture = await createCopyrightCaseFixture()
+  await navigateTo(page, `/copyright/notices/${fixture.noticeId}/guest`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Copyright case filing')
+  await expect(page.getByLabel('Case access token', { exact: true })).toBeVisible()
+})
+
 async function revealOwnedQueueItem(page: Page, item: Locator, endpoint: string): Promise<void> {
   await expect
     .poll(async () => {

@@ -28,7 +28,7 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
         setToken(issued.copyright_guest_capability.token)
         onSuccess('Guest access issued. Copy the token now. It is shown once.')
       } catch (error) {
-        onError(error, { title: 'Could not issue guest access' })
+        onError(error, { fallback: 'Could not issue guest access' })
       }
     })
   }
@@ -40,7 +40,7 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
         setStatement('')
         onSuccess('Information request recorded. Guest access expiry is unchanged.')
       } catch (error) {
-        onError(error, { title: 'Could not request information' })
+        onError(error, { fallback: 'Could not request information' })
       }
     })
   }
@@ -52,7 +52,7 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
         setToken(null)
         onSuccess('Guest access revoked.')
       } catch (error) {
-        onError(error, { title: 'Could not revoke guest access' })
+        onError(error, { fallback: 'Could not revoke guest access' })
       }
     })
   }
