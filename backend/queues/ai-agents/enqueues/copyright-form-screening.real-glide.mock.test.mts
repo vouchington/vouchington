@@ -3,10 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ai_agents } from '../queues.mts'
 import { enqueueCopyrightFormScreeningAndWait } from './copyright-form-screening.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('copyright screening wakeup on real GlideMQ', () => {
   it('coalesces duplicate wakeups using only the stable submission ID', async () => {

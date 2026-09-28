@@ -8,10 +8,7 @@ import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { processCopyrightFormScreening } from './process-copyright-form-screening.mts'
 
-vi.mock<typeof import('glide-mq')>(
-  import('glide-mq'),
-  async importOriginal => await importOriginal(),
-)
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 vi.mock(import('@modules/openai-utils/create-response'), async importOriginal => ({
   ...(await importOriginal()),
   createOpenAIResponse: vi.fn<typeof openaiProvider.createOpenAIResponse>(async () => {
