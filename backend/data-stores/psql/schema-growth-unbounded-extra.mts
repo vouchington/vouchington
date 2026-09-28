@@ -77,6 +77,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'copyright_notice_form_intakes',
   'copyright_notice_form_intake_reviews',
   'copyright_notice_form_screenings',
+  'copyright_notice_form_screening_executions',
   'copyright_notice_legal_hold_assessments',
   'copyright_notice_legal_hold_assessment_targets',
   'copyright_notice_legal_hold_resolutions',

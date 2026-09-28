@@ -44,38 +44,6 @@ ALTER TABLE copyright_notice_submission_assessments
 CREATE INDEX idx_copyright_restrictions__authorizing_assessment ON copyright_restrictions(authorizing_assessment_id);
 CREATE INDEX idx_copyright_assessments__form_screening ON copyright_notice_submission_assessments(copyright_notice_form_screening_id) WHERE copyright_notice_form_screening_id IS NOT NULL;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_automated_assessment_screening()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF TG_OP = 'UPDATE' AND OLD.assessed_by_id IS NOT NULL
-    AND NEW.assessed_by_id IS NULL AND NEW.copyright_notice_form_screening_id IS NULL THEN
-    RETURN NEW;
-  END IF;
-  IF NEW.assessed_by_id IS NULL AND NOT EXISTS (
-    SELECT 1
-    FROM copyright_notice_form_screenings screening
-    JOIN copyright_notice_form_intakes intake
-      ON intake.id = screening.copyright_notice_form_intake_id
-    WHERE screening.id = NEW.copyright_notice_form_screening_id
-      AND screening.recommendation = 'clear'
-      AND intake.copyright_notice_submission_id = NEW.copyright_notice_submission_id
-  ) THEN
-    RAISE EXCEPTION 'automated copyright assessment requires its exact clear form screening'
-      USING ERRCODE = 'check_violation';
-  END IF;
-  IF NEW.assessed_by_id IS NOT NULL AND NEW.copyright_notice_form_screening_id IS NOT NULL THEN
-    RAISE EXCEPTION 'human copyright assessment cannot claim an automated form screening'
-      USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trigger_copyright_automated_assessment_screening
-BEFORE INSERT OR UPDATE OF assessed_by_id, copyright_notice_form_screening_id
-ON copyright_notice_submission_assessments
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_automated_assessment_screening();
-
 CREATE OR REPLACE FUNCTION fn_guard_copyright_restriction_assessment_scope()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN

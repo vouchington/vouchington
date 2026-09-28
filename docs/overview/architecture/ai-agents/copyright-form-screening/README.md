@@ -11,3 +11,10 @@ The copyright workflow may provisionally restrict a signed-in submission only af
 durable `not_obviously_invalid` result and the durable signed-in intake. Guest submissions and an
 `invalid_or_spam` result
 remain moderator-gated.
+
+The queue is a wakeup for one durable current execution per intake. The intake transaction starts
+unclaimed pending work. The agent claims it under the form-review fence before sanitization or
+provider work; duplicates with a live claim and completed executions make no provider call.
+Sanitization, provider, extraction, or validation failure marks only that attempt failed. A failed
+or expired claim retry advances the token, so stale success and failure cannot replace current
+authority. A completed result recovers its workflow effect without another model call.

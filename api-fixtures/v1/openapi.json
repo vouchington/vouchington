@@ -3418,13 +3418,31 @@
                         "additionalProperties": false,
                         "properties": {
                           "rationale": {
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
                           },
                           "recommendation": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "state": {
+                            "enum": ["completed", "failed", "pending"],
                             "type": "string"
                           }
                         },
-                        "required": ["rationale", "recommendation"],
+                        "required": ["rationale", "recommendation", "state"],
                         "type": "object"
                       },
                       {

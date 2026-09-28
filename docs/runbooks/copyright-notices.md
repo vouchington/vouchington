@@ -1,5 +1,12 @@
 # Copyright Notice Operations
 
+The [current screening authority contract](../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)
+governs re-screening recovery. The existing agent-dispatch sweep wakes unclaimed pending, failed,
+and expired claims; completed current clear results repair their exact workflow effect without
+another provider run. Pending/failed cases remain staff-actionable. Staff approval records human
+authority atomically with the intake review. Existing restrictions and their delivery workers
+continue while screening runs.
+
 This runbook covers recovery and escalation for the durable lifecycle in
 [Copyright Notice Lifecycle](../requirements/moderation/COPYRIGHT-NOTICES.md). It does not replace
 qualified legal review. Production contacts, credentials, response rosters, and infrastructure
