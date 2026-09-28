@@ -28,6 +28,7 @@ import { getWorkerRequestConfig } from './request-config.mts'
 import { getCanonicalSitemapUrl, getRouteTarget, rejectRemovedSideloadRoute } from './routing.mts'
 import { handleSentryTunnel } from './sentry-tunnel.mts'
 import { isNextImageOptimizerPath, isStaticWebAssetPath } from './static-web-assets.mts'
+import { trustedViewerCountryCode } from './image-delivery-viewer.mts'
 import { EDGE_CACHE_CANARY_PATH, resolveStagingCanaryControl } from './staging-canary.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
 
@@ -91,7 +92,7 @@ export async function fetchInner(
   const authorization = request.headers.get('authorization')
   const hasNonBasicBackendAuthorization =
     target === 'backend' && authorization !== null && !/^basic\s/i.test(authorization)
-  const countryCode = request.headers.get('cf-ipcountry')
+  const countryCode = trustedViewerCountryCode(request)
   const cookieHeader = request.headers.get('cookie')
   const cookies = parseCookies(cookieHeader)
   const deviceToken = cookies.get('dt') ?? null
@@ -117,9 +118,8 @@ export async function fetchInner(
   const isEffectivelyFullyCachedRoute =
     cachePolicy.fullyCachedRoute && (target !== 'web' || isStaticWebAssetPath(url.pathname))
 
-  // Web dispatch requires CACHE_PLACEHOLDER_NONCE and fails closed otherwise. It must
-  // pass the same minimum-length check env-validation.mts warns on — a short-but-truthy
-  // secret is guessable enough that its CSP nonce isn't meaningfully secret.
+  // Web dispatch requires CACHE_PLACEHOLDER_NONCE (env-validation.mts minimum length)
+  // and fails closed; a short secret makes the CSP nonce guessable.
   const canUseCachedOriginForWeb =
     target !== 'web' || isCachePlaceholderNonceValid(env.CACHE_PLACEHOLDER_NONCE)
   // RSC stays excluded from dispatch (header-less RPC can't relay `rsc`) — a safety gate, not a

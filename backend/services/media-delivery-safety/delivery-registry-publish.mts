@@ -42,6 +42,7 @@ export async function prepublishImagePlacementDenial(
         placement_revision: input.revision,
         image_id: input.imageId,
         generation: staged.generation,
+        denied_country_codes: '',
       },
       query,
     )
@@ -65,7 +66,12 @@ async function publishCommittedDeliveryRecord(
 ): Promise<void> {
   const { rows } = await query<ImageDeliveryRecord>(sql`
     /* publishStagedMediaDeliveryRecord */
-    SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation
+    SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation,
+      COALESCE((
+        SELECT string_agg(denied.country_code, ',' ORDER BY denied.country_code)
+        FROM media_delivery_registry_denied_countries denied
+        WHERE denied.delivery_key = media_delivery_registry_records.delivery_key
+      ), '') AS denied_country_codes
     FROM media_delivery_registry_records
     WHERE delivery_key = ${deliveryKey}
   `)
@@ -113,7 +119,12 @@ async function readCurrentPlacementDeliveryRecord(
 ): Promise<ImageDeliveryRecord | null> {
   const { rows } = await query<ImageDeliveryRecord>(sql`
     /* readCurrentPlacementDeliveryRecord */
-    SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation
+    SELECT delivery_key, desired_state, placement_id, placement_revision, image_id, generation,
+      COALESCE((
+        SELECT string_agg(denied.country_code, ',' ORDER BY denied.country_code)
+        FROM media_delivery_registry_denied_countries denied
+        WHERE denied.delivery_key = media_delivery_registry_records.delivery_key
+      ), '') AS denied_country_codes
     FROM media_delivery_registry_records
     WHERE delivery_key = ${deliveryKey}
     FOR NO KEY UPDATE

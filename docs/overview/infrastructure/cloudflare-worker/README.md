@@ -18,6 +18,7 @@ A Cloudflare Worker that sits on top of [`backend/`](../../../../backend/) and [
 - <a id="bot-tiers"></a>[Bot Tiers](reference-bot-tiers.md)
 - <a id="rate-limiting"></a>[Rate Limiting](reference-rate-limiting.md)
 - <a id="geo-blocking"></a>[Geo-Blocking](reference-geo-blocking.md)
+- <a id="image-delivery-country"></a>[Image delivery country](reference-image-delivery-country.md)
 - <a id="headers"></a>[Headers](reference-headers.md)
 - <a id="sentry-error-monitoring"></a>[Sentry Error Monitoring](reference-sentry-error-monitoring.md)
 - <a id="caching-architecture"></a>[Caching Architecture](reference-caching-architecture.md)

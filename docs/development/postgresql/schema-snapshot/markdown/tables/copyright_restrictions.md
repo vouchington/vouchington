@@ -18,6 +18,8 @@ Not partitioned — growth: unbounded.
 | `human_reviewed_at`          | `timestamp with time zone` | yes      |                              |          |           |           | When staff completed the mandatory review of this exact provisional restriction.                  |
 | `human_review_action`        | `text`                     | yes      |                              |          |           |           | Human outcome for this target restriction: confirm or reverse.                                    |
 | `human_reviewed_by_id`       | `uuid`                     | yes      |                              |          |           |           | Staff reviewer; may become NULL only when the reviewer account is erased.                         |
+| `applicability`              | `text`                     | no       |                              |          |           |           | Finite delivery scope of this ground: global, or the child country set.                           |
+| `countries_sealed_at`        | `timestamp with time zone` | yes      |                              |          |           |           | When the applicability fact and its country rows became immutable.                                |
 | `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                   |
 | `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                   |
 
@@ -28,6 +30,7 @@ _none_
 
 **Check constraints:**
 
+- `copyright_restrictions_applicability_check`: `CHECK ((applicability = ANY (ARRAY['global'::text, 'countries'::text])))`
 - `copyright_restrictions_check`: `CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))`
 - `copyright_restrictions_check1`: `CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))`
 - `copyright_restrictions_check2`: `CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))`
@@ -56,3 +59,4 @@ _none_
 - `trigger_copyright_restriction_assessment_scope`: `CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope()`
 - `trigger_copyright_restrictions_lifecycle_guard`: `CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle()`
 - `trigger_copyright_restrictions_updated_at`: `CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_seal_copyright_restriction_applicability`: `CREATE CONSTRAINT TRIGGER trigger_seal_copyright_restriction_applicability AFTER INSERT ON public.copyright_restrictions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_seal_copyright_restriction_applicability()`

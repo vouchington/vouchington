@@ -9,6 +9,7 @@ export type LockedCopyrightActionDelivery = {
   image_id: string
   expected_placement_revision: number
   action: 'withhold' | 'restore'
+  applicability: 'global' | 'countries'
   copyright_notice_deadline_id: string | null
   restriction_lifted_at: Date | null
   human_reviewed_at: Date | null
@@ -44,7 +45,7 @@ export async function lockCopyrightActionDelivery(
     /* lockCopyrightActionDelivery */
     SELECT target.copyright_notice_id, intent.copyright_restriction_id, target.placement_id,
       target_image.image_id, intent.expected_placement_revision, intent.action,
-      intent.copyright_notice_deadline_id,
+      restriction.applicability, intent.copyright_notice_deadline_id,
       restriction.lifted_at AS restriction_lifted_at, restriction.human_reviewed_at,
       restriction.human_review_action,
       EXISTS (

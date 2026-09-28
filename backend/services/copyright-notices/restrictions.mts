@@ -7,6 +7,11 @@ import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { syncCopyrightRepeatInfringerIncidents } from './repeat-infringer-incidents.mts'
+import {
+  copyrightGroundApplicability,
+  insertCopyrightRestrictionCountries,
+  type CopyrightGroundApplicability,
+} from './ground-applicability.mts'
 
 export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   noticeId: string
@@ -14,6 +19,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   assessmentId: string
   imposedAt: Date
   imposedById: string | null
+  applicability?: CopyrightGroundApplicability
 }): Promise<CopyrightRestrictionRecord> {
   await using transaction = await beginTransaction()
   const { rows: targetRows } = await transaction<{ placement_id: string }>(
@@ -93,15 +99,16 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     RETURNING id
   `)
   assert(acceptedRows[0], 404, 'Copyright notice not found')
+  const applicability = copyrightGroundApplicability(input.applicability ?? { scope: 'global' })
   const { rows } =
     await transaction<CopyrightRestrictionRecord>(sql`/* acceptCopyrightNoticeAndImposeRestriction */
     INSERT INTO copyright_restrictions (
       copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id,
-      human_reviewed_at, human_review_action, human_reviewed_by_id
+      human_reviewed_at, human_review_action, human_reviewed_by_id, applicability
     ) VALUES (
       ${input.targetId}, ${input.assessmentId}, ${input.imposedAt}, ${input.imposedById},
       ${input.imposedById ? input.imposedAt : null}, ${input.imposedById ? 'confirm' : null},
-      ${input.imposedById}
+      ${input.imposedById}, ${applicability.scope}
     )
     ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
     RETURNING id, copyright_notice_target_id, authorizing_assessment_id, imposed_at, lifted_at, imposed_by_id, lifted_by_id,
@@ -109,6 +116,7 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
   `)
   const restriction = rows[0]
   assert(restriction, 409, 'An active copyright restriction already exists for this target')
+  await insertCopyrightRestrictionCountries(transaction, restriction.id, applicability)
   const { rows: actionIntentRows } = await transaction<{
     id: string
   }>(sql`/* acceptCopyrightNoticeAndImposeRestriction:createWithholdIntent */

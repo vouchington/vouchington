@@ -2,6 +2,10 @@ import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
+import {
+  syncImagePlacementDeniedCountries,
+  syncPostImagePlacementDeniedCountries,
+} from './delivery-denied-countries.mts'
 import { getImagePlacementDeliveryKey } from './delivery-registry-types.mts'
 
 export async function stagePostImagePlacementDeliveryRecords(
@@ -39,6 +43,7 @@ export async function stagePostImagePlacementDeliveryRecords(
         delivery_attempt_count = 0, next_attempt_at = NULL, failure_message = NULL
     WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
   `)
+  await syncPostImagePlacementDeniedCountries(query, postId)
 }
 
 export async function stageImagePlacementDeliveryRecord(
@@ -53,7 +58,7 @@ export async function stageImagePlacementDeliveryRecord(
   const deliveryKey = getImagePlacementDeliveryKey(input)
   const query = options.query ?? write
   const forceGeneration = options.forceGeneration ?? false
-  const { rows } = await query<{ generation: string }>(sql`/* stageImagePlacementDeliveryRecord */
+  await query(sql`/* stageImagePlacementDeliveryRecord */
     INSERT INTO media_delivery_registry_records (
       delivery_key, placement_id, placement_revision, image_id, desired_state
     ) VALUES (${deliveryKey}, ${input.placementId}, ${input.revision},
@@ -85,10 +90,5 @@ export async function stageImagePlacementDeliveryRecord(
       OR ${forceGeneration}
     RETURNING generation
   `)
-  if (rows[0]) return { deliveryKey, generation: rows[0].generation }
-  const { rows: currentRows } = await query<{ generation: string }>(sql`
-    /* stageImagePlacementDeliveryRecord:current */
-    SELECT generation FROM media_delivery_registry_records WHERE delivery_key = ${deliveryKey}
-  `)
-  return { deliveryKey, generation: currentRows[0]!.generation }
+  return syncImagePlacementDeniedCountries(query, deliveryKey)
 }

@@ -21,6 +21,7 @@ export async function publishPersistedDeliveryRecord(
     deliveryKey: record.delivery_key,
     state: record.desired_state,
     generation: record.generation,
+    deniedCountryCodes: record.denied_country_codes ? record.denied_country_codes.split(',') : [],
   })
   await dependencies.invalidateMediaDeliveryPath(getMediaDeliveryPath(record))
   const { rowCount } = await query(sql`/* markPublishedMediaDeliveryRecord */

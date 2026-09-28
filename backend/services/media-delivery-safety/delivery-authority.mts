@@ -80,7 +80,9 @@ export function imageDeliveryAuthorityProof(): ReturnType<typeof sql> {
                 WHERE target.placement_id = placement.id
                   AND (
                     EXISTS (SELECT 1 FROM copyright_restrictions restriction
-                      WHERE restriction.copyright_notice_target_id = target.id AND restriction.lifted_at IS NULL)
+                      WHERE restriction.copyright_notice_target_id = target.id
+                        AND restriction.lifted_at IS NULL
+                        AND restriction.applicability = 'global')
                     OR EXISTS (
                       SELECT 1 FROM copyright_notice_submissions submission
                       WHERE submission.copyright_notice_id = target.copyright_notice_id

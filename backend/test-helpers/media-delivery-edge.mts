@@ -13,8 +13,11 @@ export function installTestMediaDeliveryEdge() {
   function accept(input: Record) {
     const current = records.get(input.deliveryKey)
     if (current) {
+      const sameCountries =
+        [...input.deniedCountryCodes].sort().join() ===
+        [...current.deniedCountryCodes].sort().join()
       const sameGenerationRetry =
-        input.generation === current.generation && input.state === current.state
+        input.generation === current.generation && input.state === current.state && sameCountries
       if (!(BigInt(input.generation) > BigInt(current.generation) || sameGenerationRetry))
         throw new Error('Stale edge generation')
     }

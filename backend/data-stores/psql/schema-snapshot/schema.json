@@ -702,8 +702,11 @@
     "fn_guard_copyright_restriction_assessment_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_assessment_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.authorizing_assessment_id IS DISTINCT FROM OLD.authorizing_assessment_id THEN\n    RAISE EXCEPTION 'copyright restriction authorizing assessment is immutable'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submission_assessments assessment\n    JOIN copyright_notice_submissions submission\n      ON submission.id = assessment.copyright_notice_submission_id\n    JOIN copyright_notice_targets target\n      ON target.id = NEW.copyright_notice_target_id\n    WHERE assessment.id = NEW.authorizing_assessment_id\n      AND assessment.substantially_compliant\n      AND submission.kind = 'notice'\n      AND submission.copyright_notice_id = target.copyright_notice_id\n      AND (\n        submission.source_kind <> 'guest_form'\n        OR EXISTS (\n          SELECT 1\n          FROM copyright_notice_form_intakes intake\n          JOIN copyright_notice_form_intake_reviews review\n            ON review.copyright_notice_form_intake_id = intake.id\n          WHERE intake.copyright_notice_submission_id = submission.id\n            AND review.accepted\n        )\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_submission_assessments newer\n        WHERE newer.supersedes_assessment_id = assessment.id\n      )\n  ) THEN\n    RAISE EXCEPTION 'copyright restriction requires a current compliant notice assessment in the same case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_guard_copyright_restriction_country": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_country()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    RAISE EXCEPTION 'copyright restriction countries are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF EXISTS (\n    SELECT 1 FROM copyright_restrictions restriction\n    WHERE restriction.id = NEW.copyright_restriction_id\n      AND (restriction.applicability <> 'countries' OR restriction.countries_sealed_at IS NOT NULL)\n  ) THEN\n    RAISE EXCEPTION 'copyright restriction countries are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_guard_copyright_restriction_lifecycle": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at)\n    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at)\n    OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN\n    RAISE EXCEPTION 'copyright restriction origin is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.lifted_at IS NOT NULL\n    AND (OLD.lifted_at IS DISTINCT FROM NEW.lifted_at\n      OR (OLD.lifted_by_id IS DISTINCT FROM NEW.lifted_by_id AND NEW.lifted_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction lift is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NOT NULL\n    AND (ROW(OLD.human_reviewed_at, OLD.human_review_action)\n      IS DISTINCT FROM ROW(NEW.human_reviewed_at, NEW.human_review_action)\n      OR (OLD.human_reviewed_by_id IS DISTINCT FROM NEW.human_reviewed_by_id\n        AND NEW.human_reviewed_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction human review is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NULL\n    AND NEW.human_reviewed_at IS NOT NULL\n    AND NEW.human_reviewed_by_id IS NULL\n    AND NOT (\n      NEW.human_review_action = 'reverse'\n      AND EXISTS (\n        SELECT 1\n        FROM copyright_notice_submission_assessments assessment\n        JOIN copyright_notice_form_intakes intake\n          ON intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id\n        JOIN copyright_notice_form_intake_reviews review\n          ON review.copyright_notice_form_intake_id = intake.id\n        WHERE assessment.id = NEW.authorizing_assessment_id\n          AND assessment.assessed_by_id IS NULL\n          AND assessment.copyright_notice_form_screening_id IS NOT NULL\n          AND NOT review.accepted AND review.reviewed_by_id IS NULL\n      )\n    ) THEN\n    RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.applicability IS DISTINCT FROM NEW.applicability\n    OR (OLD.countries_sealed_at IS NOT NULL\n      AND OLD.countries_sealed_at IS DISTINCT FROM NEW.countries_sealed_at) THEN\n    RAISE EXCEPTION 'copyright restriction applicability is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at)\n    IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at)\n    OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN\n    RAISE EXCEPTION 'copyright restriction origin is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.lifted_at IS NOT NULL\n    AND (OLD.lifted_at IS DISTINCT FROM NEW.lifted_at\n      OR (OLD.lifted_by_id IS DISTINCT FROM NEW.lifted_by_id AND NEW.lifted_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction lift is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NOT NULL\n    AND (ROW(OLD.human_reviewed_at, OLD.human_review_action)\n      IS DISTINCT FROM ROW(NEW.human_reviewed_at, NEW.human_review_action)\n      OR (OLD.human_reviewed_by_id IS DISTINCT FROM NEW.human_reviewed_by_id\n        AND NEW.human_reviewed_by_id IS NOT NULL)) THEN\n    RAISE EXCEPTION 'copyright restriction human review is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.human_reviewed_at IS NULL\n    AND NEW.human_reviewed_at IS NOT NULL\n    AND NEW.human_reviewed_by_id IS NULL\n    AND NOT (\n      NEW.human_review_action = 'reverse'\n      AND EXISTS (\n        SELECT 1\n        FROM copyright_notice_submission_assessments assessment\n        JOIN copyright_notice_form_intakes intake\n          ON intake.copyright_notice_submission_id = assessment.copyright_notice_submission_id\n        JOIN copyright_notice_form_intake_reviews review\n          ON review.copyright_notice_form_intake_id = intake.id\n        WHERE assessment.id = NEW.authorizing_assessment_id\n          AND assessment.assessed_by_id IS NULL\n          AND assessment.copyright_notice_form_screening_id IS NOT NULL\n          AND NOT review.accepted AND review.reviewed_by_id IS NULL\n      )\n    ) THEN\n    RAISE EXCEPTION 'copyright restriction human review requires an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_guard_copyright_submission_target_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_guard_copyright_submission_target_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM copyright_notice_submissions submission\n    JOIN copyright_notice_targets target ON target.id = NEW.copyright_notice_target_id\n    WHERE submission.id = NEW.copyright_notice_submission_id\n      AND submission.copyright_notice_id = target.copyright_notice_id\n  ) THEN\n    RAISE EXCEPTION 'copyright submission target must belong to the same notice' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1004,6 +1007,9 @@
     },
     "fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_review_succession_topic_ids_are_sorted_distinct(topic_ids uuid[])\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT cardinality(topic_ids) > 0\n    AND array_position(topic_ids, NULL::uuid) IS NULL\n    AND topic_ids = ARRAY(\n      SELECT DISTINCT topic_id\n      FROM unnest(topic_ids) AS input(topic_id)\n      ORDER BY topic_id\n    );\n$function$\n"
+    },
+    "fn_seal_copyright_restriction_applicability": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_seal_copyright_restriction_applicability()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  country_count integer;\nBEGIN\n  SELECT count(*) INTO country_count\n  FROM copyright_restriction_countries\n  WHERE copyright_restriction_id = NEW.id;\n  IF NEW.applicability = 'global' AND country_count <> 0 THEN\n    RAISE EXCEPTION 'global copyright applicability cannot name countries' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.applicability = 'countries' AND country_count < 1 THEN\n    RAISE EXCEPTION 'country-set copyright applicability requires a country' USING ERRCODE = 'check_violation';\n  END IF;\n  UPDATE copyright_restrictions\n  SET countries_sealed_at = CURRENT_TIMESTAMP\n  WHERE id = NEW.id AND countries_sealed_at IS NULL;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_stamp_agent_moderation_transparency": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_stamp_agent_moderation_transparency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE v_community_id uuid; v_post_community_id uuid; v_current_community_id uuid; v_agent_deleted_at timestamptz; v_prompt_deleted_at timestamptz; v_cap_deleted_at timestamptz;\nBEGIN\n  -- Lock the FK parents before taking the projection locks. A concurrent hard\n  -- delete already owns the parent row before its row trigger can take an\n  -- advisory lock; reversing this order would form a parent-row/advisory-lock\n  -- cycle with this INSERT.\n  PERFORM 1 FROM agents WHERE id = NEW.agent_id FOR KEY SHARE;\n  PERFORM 1 FROM agent_prompts WHERE id = NEW.prompt_id FOR KEY SHARE;\n  -- Do not lock the post here: community deletion owns the community before\n  -- cascading to posts, so a post-to-community lock would invert that order.\n  -- Snapshot and revalidate instead; an unstable post scope is withheld.\n  SELECT community_id INTO v_post_community_id FROM posts WHERE id = NEW.post_id;\n  SELECT community_id, deleted_at INTO v_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id;\n  IF v_community_id IS NOT NULL THEN\n    PERFORM 1 FROM communities WHERE id = v_community_id FOR KEY SHARE;\n    IF NOT FOUND THEN\n      v_community_id := NULL;\n      v_cap_deleted_at := NULL;\n    END IF;\n  END IF;\n  SELECT community_id, deleted_at INTO v_current_community_id, v_cap_deleted_at\n  FROM community_agent_prompts WHERE id = NEW.prompt_id FOR SHARE;\n  IF v_current_community_id IS NULL THEN\n    v_community_id := NULL;\n    v_cap_deleted_at := NULL;\n  ELSIF v_current_community_id IS DISTINCT FROM v_community_id THEN\n    RAISE EXCEPTION 'community prompt changed during moderation projection' USING ERRCODE = '40001';\n  END IF;\n  IF (SELECT community_id FROM posts WHERE id = NEW.post_id)\n      IS DISTINCT FROM v_post_community_id THEN\n    NEW.moderation_transparency_category := NULL;\n    NEW.moderation_transparency_community_id := NULL;\n    RETURN NEW;\n  END IF;\n  -- Every caller then takes agent before prompt, which prevents an event from\n  -- observing a cap assignment half-way through its lifecycle transaction.\n  PERFORM fn_lock_moderation_transparency_projection('agent', NEW.agent_id);\n  PERFORM fn_lock_moderation_transparency_projection('prompt', NEW.prompt_id);\n  SELECT agent.deleted_at, prompt.deleted_at\n    INTO v_agent_deleted_at, v_prompt_deleted_at\n  FROM agents agent JOIN agent_prompts prompt ON prompt.id = NEW.prompt_id\n  WHERE agent.id = NEW.agent_id;\n  v_agent_deleted_at := date_trunc('milliseconds', v_agent_deleted_at);\n  v_prompt_deleted_at := date_trunc('milliseconds', v_prompt_deleted_at);\n  v_cap_deleted_at := date_trunc('milliseconds', v_cap_deleted_at);\n  NEW.moderation_transparency_category := NULL;\n  NEW.moderation_transparency_community_id := NULL;\n  IF NEW.deleted_at IS NOT NULL\n    OR (v_agent_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_agent_deleted_at)\n    OR (v_prompt_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_prompt_deleted_at)\n    OR (v_cap_deleted_at IS NOT NULL AND uuid_extract_timestamp(NEW.id) >= v_cap_deleted_at) THEN\n    RETURN NEW;\n  END IF;\n  -- A community prompt remains a community-AI event. A platform agent keeps\n  -- its platform category, but its post scope must still exclude it from the\n  -- global projection because raw community analytics can identify the event.\n  NEW.moderation_transparency_category := CASE WHEN v_community_id IS NULL THEN 'agent_moderation' ELSE 'community_ai' END;\n  NEW.moderation_transparency_community_id := COALESCE(v_community_id, v_post_community_id);\n  RETURN NEW;\nEND $function$\n"
@@ -32225,14 +32231,135 @@
       },
       "uniqueConstraints": {}
     },
+    "copyright_restriction_countries": {
+      "checkConstraints": {},
+      "columns": {
+        "copyright_restriction_id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "country_code": {
+          "collation": null,
+          "comment": "ISO 3166-1 alpha-2 country from the supported country lookup.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        }
+      },
+      "comment": "Countries where a country-set copyright ground denies delivery. Global grounds have none.",
+      "foreignKeys": {
+        "copyright_restriction_countries_copyright_restriction_id_fkey": {
+          "columns": ["copyright_restriction_id"],
+          "definition": "FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_restrictions",
+          "validated": true
+        },
+        "fk_copyright_restriction_countries__country": {
+          "columns": ["country_code"],
+          "definition": "FOREIGN KEY (country_code) REFERENCES countries(code) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["code"],
+          "referencedTable": "countries",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_restriction_countries_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_restriction_countries_pkey ON public.copyright_restriction_countries USING btree (copyright_restriction_id, country_code)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_restriction_id",
+              "descending": false,
+              "expression": "copyright_restriction_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "country_code",
+              "descending": false,
+              "expression": "country_code",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_restriction_countries__country": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_restriction_countries__country ON public.copyright_restriction_countries USING btree (country_code)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "country_code",
+              "descending": false,
+              "expression": "country_code",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_restriction_id", "country_code"],
+        "definition": "PRIMARY KEY (copyright_restriction_id, country_code)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_restriction_country_guard": "CREATE TRIGGER trigger_copyright_restriction_country_guard BEFORE INSERT OR DELETE OR UPDATE ON public.copyright_restriction_countries FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_country()"
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_restrictions": {
       "checkConstraints": {
+        "copyright_restrictions_applicability_check": "CHECK ((applicability = ANY (ARRAY['global'::text, 'countries'::text])))",
         "copyright_restrictions_check": "CHECK (((lifted_at IS NULL) OR (lifted_at >= imposed_at)))",
         "copyright_restrictions_check1": "CHECK (((human_reviewed_at IS NULL) OR (human_reviewed_at >= imposed_at)))",
         "copyright_restrictions_check2": "CHECK ((((human_reviewed_at IS NULL) AND (human_review_action IS NULL) AND (human_reviewed_by_id IS NULL)) OR ((human_reviewed_at IS NOT NULL) AND (human_review_action IS NOT NULL))))",
         "copyright_restrictions_human_review_action_check": "CHECK ((human_review_action = ANY (ARRAY['confirm'::text, 'reverse'::text])))"
       },
       "columns": {
+        "applicability": {
+          "collation": null,
+          "comment": "Finite delivery scope of this ground: global, or the child country set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
         "authorizing_assessment_id": {
           "collation": null,
           "comment": "Immutable exact compliant assessment that authorized this restriction.",
@@ -32255,6 +32382,17 @@
           "ordinalPosition": 3,
           "type": "uuid"
         },
+        "countries_sealed_at": {
+          "collation": null,
+          "comment": "When the applicability fact and its country rows became immutable.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -32263,7 +32401,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "human_review_action": {
@@ -32362,7 +32500,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         }
       },
@@ -32567,7 +32705,8 @@
       "triggers": {
         "trigger_copyright_restriction_assessment_scope": "CREATE TRIGGER trigger_copyright_restriction_assessment_scope BEFORE INSERT OR UPDATE OF authorizing_assessment_id ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_assessment_scope()",
         "trigger_copyright_restrictions_lifecycle_guard": "CREATE TRIGGER trigger_copyright_restrictions_lifecycle_guard BEFORE DELETE OR UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_lifecycle()",
-        "trigger_copyright_restrictions_updated_at": "CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_copyright_restrictions_updated_at": "CREATE TRIGGER trigger_copyright_restrictions_updated_at BEFORE UPDATE ON public.copyright_restrictions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()",
+        "trigger_seal_copyright_restriction_applicability": "CREATE CONSTRAINT TRIGGER trigger_seal_copyright_restriction_applicability AFTER INSERT ON public.copyright_restrictions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fn_seal_copyright_restriction_applicability()"
       },
       "uniqueConstraints": {}
     },
@@ -43420,6 +43559,113 @@
         "lists_content_provenance_immutable": "CREATE TRIGGER lists_content_provenance_immutable AFTER UPDATE ON public.lists FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_prevent_content_provenance_update()",
         "trigger_lists_updated_at": "CREATE TRIGGER trigger_lists_updated_at BEFORE UPDATE ON public.lists FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
+      "uniqueConstraints": {}
+    },
+    "media_delivery_registry_denied_countries": {
+      "checkConstraints": {},
+      "columns": {
+        "country_code": {
+          "collation": null,
+          "comment": "ISO 3166-1 alpha-2 country from the supported country lookup.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "delivery_key": {
+          "collation": null,
+          "comment": "Exact image-placement delivery tuple whose country set this row belongs to.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "text"
+        }
+      },
+      "comment": "Countries where an allowed image placement is denied. Empty means the allow is not country-restricted.",
+      "foreignKeys": {
+        "fk_media_delivery_registry_denied_countries__country": {
+          "columns": ["country_code"],
+          "definition": "FOREIGN KEY (country_code) REFERENCES countries(code) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["code"],
+          "referencedTable": "countries",
+          "validated": true
+        },
+        "fk_media_delivery_registry_denied_countries__registry": {
+          "columns": ["delivery_key"],
+          "definition": "FOREIGN KEY (delivery_key) REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["delivery_key"],
+          "referencedTable": "media_delivery_registry_records",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_media_delivery_registry_denied_countries__country": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_denied_countries__country ON public.media_delivery_registry_denied_countries USING btree (country_code)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "country_code",
+              "descending": false,
+              "expression": "country_code",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "media_delivery_registry_denied_countries_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_registry_denied_countries_pkey ON public.media_delivery_registry_denied_countries USING btree (delivery_key, country_code)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "delivery_key",
+              "descending": false,
+              "expression": "delivery_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "country_code",
+              "descending": false,
+              "expression": "country_code",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["delivery_key", "country_code"],
+        "definition": "PRIMARY KEY (delivery_key, country_code)"
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "media_delivery_registry_records": {

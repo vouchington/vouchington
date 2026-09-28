@@ -82,7 +82,8 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
       WHERE existing.delivery_key IS NULL OR existing.desired_state IS DISTINCT FROM intended.desired_state
       ORDER BY intended.delivery_key LIMIT 1000
   `)
-  const { rows } = await read<Omit<ImageDeliveryRecord, 'generation'>>(statement)
+  const { rows } =
+    await read<Omit<ImageDeliveryRecord, 'generation' | 'denied_country_codes'>>(statement)
   for (const record of rows) {
     // oxlint-disable-next-line no-await-in-loop -- one retained authority/registry domain per transaction.
     await stageCurrentDeliveryRecord(record)
@@ -91,7 +92,7 @@ export async function stageAllCurrentImagePlacementDeliveryRecords(
 }
 
 async function stageCurrentDeliveryRecord(
-  record: Omit<ImageDeliveryRecord, 'generation'>,
+  record: Omit<ImageDeliveryRecord, 'generation' | 'denied_country_codes'>,
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await lockImageDeliveryMutation(transaction, {

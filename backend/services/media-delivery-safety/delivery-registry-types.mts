@@ -7,6 +7,8 @@ export type ImageDeliveryRecord = {
   placement_revision: number
   image_id: string
   generation: string
+  /** Sorted comma-joined denied countries. Empty when the tuple is not country-restricted. */
+  denied_country_codes: string
 }
 
 export type MediaDeliveryDependencies = {
@@ -14,6 +16,7 @@ export type MediaDeliveryDependencies = {
     deliveryKey: string
     state: MediaDeliveryRegistryState
     generation: string
+    deniedCountryCodes: readonly string[]
   }) => Promise<void>
   invalidateMediaDeliveryPath: (path: string) => Promise<void>
 }

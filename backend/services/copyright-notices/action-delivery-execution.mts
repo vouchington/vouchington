@@ -26,6 +26,7 @@ import {
   prepublishWithholdIfNeeded,
   publishRestoreBlockerWithhold,
 } from './action-delivery-withhold.mts'
+import { finishCountryScopedCopyrightAction } from './action-delivery-country.mts'
 
 export async function executeCopyrightActionIntent(
   intent: CopyrightClaimedActionIntent,
@@ -135,6 +136,18 @@ async function prepareCopyrightAction(
       query: transaction,
     })
     return await commitOutcome(transaction, 'blocked')
+  }
+  if (legal.applicability === 'countries') {
+    const country = await finishCountryScopedCopyrightAction({
+      intentId: intent.id,
+      legal,
+      placement: current,
+      now,
+      query: transaction,
+    })
+    if (typeof country === 'string') return await commitOutcome(transaction, country)
+    await transaction.commit()
+    return country
   }
   await prepublishWithholdIfNeeded({ legal, placement: current, query: transaction, dependencies })
   if (legal.action === 'restore') {

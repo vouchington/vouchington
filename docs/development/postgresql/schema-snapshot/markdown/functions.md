@@ -469,6 +469,14 @@ CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_assessment_scop
  LANGUAGE plpgsql
 ```
 
+## `fn_guard_copyright_restriction_country`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_copyright_restriction_country()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_guard_copyright_restriction_lifecycle`
 
 ```sql
@@ -1280,6 +1288,14 @@ CREATE OR REPLACE FUNCTION public.fn_review_succession_topic_ids_are_sorted_dist
  RETURNS boolean
  LANGUAGE sql
  IMMUTABLE STRICT
+```
+
+## `fn_seal_copyright_restriction_applicability`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_seal_copyright_restriction_applicability()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_stamp_agent_moderation_transparency`

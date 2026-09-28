@@ -64,7 +64,9 @@ flowchart TD
 - `/.well-known/api-catalog` -> inline (public machine-readable resource catalog)
 - Everything else: `web`
 
-Most image delivery does not go through this worker. DNS for `images.voucha.ai`
+Most image delivery does not go through this worker. Viewer country for an image placement is still
+authorized by [image delivery country](reference-image-delivery-country.md), which trusts only WAF
+`request.cf.country`. DNS for `images.voucha.ai`
 and `images-staging.voucha.ai` resolves directly to CloudFront (unproxied
 CNAME), and the web image URL builder (`web/lib/utils/image-url.ts`) mints
 absolute URLs against those hosts. In local dev, `IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT` is set by `dev/initialize` in `web/.env.local`;

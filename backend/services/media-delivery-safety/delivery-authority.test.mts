@@ -278,6 +278,7 @@ describe('delivery authority and durable denial repair', () => {
         deliveryKey: fixture.deliveryKey,
         state: 'allow',
         generation: captured.generation,
+        deniedCountryCodes: [],
       }),
     ).rejects.toThrow('Stale edge generation')
     await expect(

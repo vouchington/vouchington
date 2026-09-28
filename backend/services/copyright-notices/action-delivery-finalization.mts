@@ -49,7 +49,7 @@ export async function finalizeCopyrightActionAfterDelivery(
     !current ||
     current.deleted ||
     current.imageId !== legal.image_id ||
-    current.withheld !== (action === 'withhold')
+    current.withheld !== (action === 'withhold' && legal.applicability === 'global')
   ) {
     await completeCopyrightActionIntentInTransaction({
       intentId,

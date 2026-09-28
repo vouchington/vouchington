@@ -13,6 +13,7 @@ export type MediaDeliveryRegistryRecord = {
   deliveryKey: string
   state: MediaDeliveryRegistryState
   generation: string
+  deniedCountryCodes: readonly string[]
 }
 
 let cloudFrontClient: CloudFrontClient | undefined
@@ -26,6 +27,7 @@ export async function putMediaDeliveryRegistryRecord(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<PutItemCommandOutput> {
   const tableName = getRequiredMediaDeliveryEnvironment('MEDIA_DELIVERY_REGISTRY_TABLE', env)
+  const deniedCountryCodes = [...record.deniedCountryCodes].sort().join(',')
   return getDynamoDbClient(getMediaDeliveryRegistryRegion(env)).send(
     new PutItemCommand({
       TableName: tableName,
@@ -33,13 +35,19 @@ export async function putMediaDeliveryRegistryRecord(
         delivery_key: { S: record.deliveryKey },
         state: { S: record.state },
         generation: { N: record.generation },
+        denied_country_codes: { S: deniedCountryCodes },
       },
       ConditionExpression:
-        'attribute_not_exists(delivery_key) OR #generation < :generation OR (#generation = :generation AND #state = :state)',
-      ExpressionAttributeNames: { '#generation': 'generation', '#state': 'state' },
+        'attribute_not_exists(delivery_key) OR #generation < :generation OR (#generation = :generation AND #state = :state AND #denied_country_codes = :denied_country_codes)',
+      ExpressionAttributeNames: {
+        '#generation': 'generation',
+        '#state': 'state',
+        '#denied_country_codes': 'denied_country_codes',
+      },
       ExpressionAttributeValues: {
         ':generation': { N: record.generation },
         ':state': { S: record.state },
+        ':denied_country_codes': { S: deniedCountryCodes },
       },
     }),
   )

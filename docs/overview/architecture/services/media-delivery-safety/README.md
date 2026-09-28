@@ -17,6 +17,12 @@ and marks only that generation complete. Provider failures reject the caller tra
 database failure can leave an extra denial at the edge, but can never expose content that the
 database intended to withhold.
 
+An allowed tuple may also name the countries where delivery is denied. That set is the union of
+active country-scoped copyright grounds and is empty when the allow is not country-restricted.
+Changing only the country set advances the generation and republishes the same region-neutral URL.
+A withheld tuple stores no countries. Global copyright grounds, court or CCB holds, safety, and
+deletion still publish withheld for every viewer.
+
 Registry generations are database-assigned decimal values, not caller counters. The PostgreSQL
 trigger advances them for a new authority state or explicit republish and uses a nontransactional
 sequence. This prevents a deny published before a rolled-back

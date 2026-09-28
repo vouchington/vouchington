@@ -70,6 +70,7 @@ describe('media delivery registry AWS boundary', () => {
         deliveryKey: 'image-placement:placement:1:image',
         state: 'allow',
         generation: '2147483648',
+        deniedCountryCodes: [],
       },
       {
         MEDIA_DELIVERY_REGISTRY_TABLE: 'media-registry',
@@ -81,11 +82,19 @@ describe('media delivery registry AWS boundary', () => {
 
     expect(command.input).toMatchObject({
       ConditionExpression:
-        'attribute_not_exists(delivery_key) OR #generation < :generation OR (#generation = :generation AND #state = :state)',
-      ExpressionAttributeNames: { '#generation': 'generation', '#state': 'state' },
+        'attribute_not_exists(delivery_key) OR #generation < :generation OR (#generation = :generation AND #state = :state AND #denied_country_codes = :denied_country_codes)',
+      ExpressionAttributeNames: {
+        '#generation': 'generation',
+        '#state': 'state',
+        '#denied_country_codes': 'denied_country_codes',
+      },
       ExpressionAttributeValues: {
         ':generation': { N: '2147483648' },
         ':state': { S: 'allow' },
+        ':denied_country_codes': { S: '' },
+      },
+      Item: {
+        denied_country_codes: { S: '' },
       },
     })
   })

@@ -55,6 +55,8 @@ CREATE TABLE copyright_restrictions (
   human_reviewed_at timestamptz,
   human_review_action text CHECK (human_review_action IN ('confirm', 'modify', 'reverse')),
   human_reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  applicability text NOT NULL CHECK (applicability IN ('global', 'countries')),
+  countries_sealed_at timestamptz,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (lifted_at IS NULL OR lifted_at >= imposed_at),
@@ -66,6 +68,73 @@ CREATE TABLE copyright_restrictions (
   )
 );
 CREATE UNIQUE INDEX idx_copyright_restrictions__one_active_per_target ON copyright_restrictions(copyright_notice_target_id) WHERE lifted_at IS NULL;
+
+CREATE TABLE copyright_restriction_countries (
+  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  country_code text NOT NULL,
+  PRIMARY KEY (copyright_restriction_id, country_code)
+);
+
+ALTER TABLE copyright_restriction_countries
+  ADD CONSTRAINT fk_copyright_restriction_countries__country
+  FOREIGN KEY (country_code) REFERENCES countries(code) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_restriction_countries
+  VALIDATE CONSTRAINT fk_copyright_restriction_countries__country;
+
+CREATE INDEX idx_copyright_restriction_countries__country
+  ON copyright_restriction_countries (country_code);
+
+CREATE OR REPLACE FUNCTION fn_guard_copyright_restriction_country()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    RAISE EXCEPTION 'copyright restriction countries are immutable' USING ERRCODE = 'check_violation';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM copyright_restrictions restriction
+    WHERE restriction.id = NEW.copyright_restriction_id
+      AND (restriction.applicability <> 'countries' OR restriction.countries_sealed_at IS NOT NULL)
+  ) THEN
+    RAISE EXCEPTION 'copyright restriction countries are immutable' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_copyright_restriction_country_guard
+BEFORE INSERT OR UPDATE OR DELETE ON copyright_restriction_countries
+FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_restriction_country();
+
+CREATE OR REPLACE FUNCTION fn_seal_copyright_restriction_applicability()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  country_count integer;
+BEGIN
+  SELECT count(*) INTO country_count
+  FROM copyright_restriction_countries
+  WHERE copyright_restriction_id = NEW.id;
+  IF NEW.applicability = 'global' AND country_count <> 0 THEN
+    RAISE EXCEPTION 'global copyright applicability cannot name countries' USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.applicability = 'countries' AND country_count < 1 THEN
+    RAISE EXCEPTION 'country-set copyright applicability requires a country' USING ERRCODE = 'check_violation';
+  END IF;
+  UPDATE copyright_restrictions
+  SET countries_sealed_at = CURRENT_TIMESTAMP
+  WHERE id = NEW.id AND countries_sealed_at IS NULL;
+  RETURN NULL;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER trigger_seal_copyright_restriction_applicability
+AFTER INSERT ON copyright_restrictions
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION fn_seal_copyright_restriction_applicability();
+
+COMMENT ON COLUMN copyright_restrictions.applicability IS 'Finite delivery scope of this ground: global, or the child country set.';
+COMMENT ON COLUMN copyright_restrictions.countries_sealed_at IS 'When the applicability fact and its country rows became immutable.';
+COMMENT ON TABLE copyright_restriction_countries IS 'Countries where a country-set copyright ground denies delivery. Global grounds have none.';
+COMMENT ON COLUMN copyright_restriction_countries.country_code IS 'ISO 3166-1 alpha-2 country from the supported country lookup.';
 
 CREATE TABLE copyright_notice_submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),

@@ -51,7 +51,12 @@ async function claimMediaDeliveryRegistryRecord(
       delivery_attempt_count = record.delivery_attempt_count + 1, failure_message = NULL
     FROM candidate
     WHERE record.delivery_key = candidate.delivery_key
-    RETURNING record.delivery_key, record.desired_state, record.placement_id, record.placement_revision, record.image_id, record.generation
+    RETURNING record.delivery_key, record.desired_state, record.placement_id, record.placement_revision,
+      record.image_id, record.generation, COALESCE((
+        SELECT string_agg(denied.country_code, ',' ORDER BY denied.country_code)
+        FROM media_delivery_registry_denied_countries denied
+        WHERE denied.delivery_key = record.delivery_key
+      ), '') AS denied_country_codes
   `)
   const { rows } = await transaction<ImageDeliveryRecord>(statement)
   await transaction.commit()

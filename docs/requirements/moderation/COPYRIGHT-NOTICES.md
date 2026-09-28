@@ -58,6 +58,16 @@ through bounded orphan cleanup after live media is removed; retained identity al
 delivery. Staff/email response fields that display `image-placement:<id>` derive that string from the
 UUID at the API boundary. No encoded placement relationship is stored.
 
+A copyright ground records a finite applicability fact: `global`, or a non-empty set of countries.
+Active country-set grounds on the same placement are unioned. That union does not set
+`copyright_withheld_at` and does not publish `desired_state = withheld`. HTML, API, and feed
+references stay on the same region-neutral placement URL. The edge revalidates the viewer against
+the published country set before returning shared bytes. Unknown geography fails closed only when
+that set is non-empty. A denied or unknown viewer gets the same neutral unavailable response, which
+is not stored in the shared cache. A global copyright ground, a court or CCB hold, image safety, and
+deletion remain worldwide denials and dominate any country set. Caller-supplied country headers are
+not attribution.
+
 Application projections omit retired or withheld placements, and persisted post image URLs use
 `/images/placements/<placement-id>/<revision>/<image-id>`. The resize Lambda validates the route
 shape and keeps the placement segments out of the S3 key. Those application controls do not by

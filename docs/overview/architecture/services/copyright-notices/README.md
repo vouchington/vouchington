@@ -6,6 +6,11 @@ Copyright notices are a distinct legal workflow. This package owns pure lifecycl
 allowlisted member projection; PostgreSQL owns the durable legal aggregate introduced by migration
 `0634-00-00-copyright-notices.sql`.
 
+Each restriction records finite applicability: `global`, or a sealed non-empty country set in
+`copyright_restriction_countries`. Applicability is independent of the notice jurisdiction. A
+country-set ground does not globally withhold the placement. Global grounds, court or CCB holds,
+safety, and deletion still do.
+
 The package provides transactional aggregate creation, immutable submission and assessment records,
 deadline derivation, restriction/review transitions, hold resolution, correspondence approval, and
 revision-fenced restore intents. The intake layer adds structured form and preserved-email records,

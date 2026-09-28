@@ -62,8 +62,8 @@ export async function createCopyrightNoticeSchemaFixture(): Promise<CopyrightNot
       RETURNING id
     ), restriction AS (
       INSERT INTO copyright_restrictions (
-        copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id
-      ) SELECT target.id, assessment.id, CURRENT_TIMESTAMP, ${actorUserId}
+        copyright_notice_target_id, authorizing_assessment_id, imposed_at, imposed_by_id, applicability
+      ) SELECT target.id, assessment.id, CURRENT_TIMESTAMP, ${actorUserId}, 'global'
         FROM target CROSS JOIN assessment
       RETURNING id
     ), intent AS (
@@ -153,8 +153,8 @@ export async function createSecondCopyrightRestrictionForPlacement(
         FROM second_submission CROSS JOIN second_actor RETURNING id
     )
     INSERT INTO copyright_restrictions (
-      copyright_notice_target_id, authorizing_assessment_id, imposed_at
-    ) SELECT second_target.id, second_assessment.id, CURRENT_TIMESTAMP
+      copyright_notice_target_id, authorizing_assessment_id, imposed_at, applicability
+    ) SELECT second_target.id, second_assessment.id, CURRENT_TIMESTAMP, 'global'
       FROM second_target CROSS JOIN second_assessment`)
 }
 

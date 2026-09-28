@@ -4,6 +4,11 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'copyright restrictions are retained legal records' USING ERRCODE = 'check_violation';
   END IF;
+  IF OLD.applicability IS DISTINCT FROM NEW.applicability
+    OR (OLD.countries_sealed_at IS NOT NULL
+      AND OLD.countries_sealed_at IS DISTINCT FROM NEW.countries_sealed_at) THEN
+    RAISE EXCEPTION 'copyright restriction applicability is immutable' USING ERRCODE = 'check_violation';
+  END IF;
   IF ROW(OLD.copyright_notice_target_id, OLD.imposed_at)
     IS DISTINCT FROM ROW(NEW.copyright_notice_target_id, NEW.imposed_at)
     OR (OLD.imposed_by_id IS DISTINCT FROM NEW.imposed_by_id AND NEW.imposed_by_id IS NOT NULL) THEN
