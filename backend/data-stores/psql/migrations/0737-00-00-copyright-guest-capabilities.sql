@@ -23,4 +23,8 @@ CREATE TABLE copyright_notice_urgent_filings (
 );
 
 COMMENT ON TABLE copyright_notice_guest_capabilities IS 'Hashed, expiring, revocable capability for one copyright notice. Possession of mail or a thread is not a row.';
+COMMENT ON COLUMN copyright_notice_guest_capabilities.token_hash IS 'Keyed digest of the guest capability token. The raw token is shown once and is never stored.';
+COMMENT ON COLUMN copyright_notice_guest_capabilities.expires_at IS 'Instant after which this capability no longer authorizes the case. Equality is already expired.';
+COMMENT ON COLUMN copyright_notice_guest_capabilities.revoked_at IS 'Instant staff revoked this capability. Null means it has not been revoked.';
 COMMENT ON TABLE copyright_notice_urgent_filings IS 'A filing whose kind can change a live legal clock. Absence means the filing is not urgent.';
+COMMENT ON COLUMN copyright_notice_urgent_filings.classified_at IS 'Instant a potentially operative filing was classified urgent. Classification does not itself block restoration.';

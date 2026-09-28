@@ -37,6 +37,7 @@ import {
 // `/api/v1/copyright-email-intakes/:id` route that would otherwise capture it.
 import './email-intake-queue-route.mts'
 import './eu-copyright-routes.mts'
+import './guest-capability-routes.mts'
 import './moderator-routes.mts'
 import './repeat-infringer-routes.mts'
 import './staff-queue-route.mts'

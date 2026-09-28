@@ -111,7 +111,7 @@ describe('copyright guest capabilities', () => {
       token: capability.token,
       now: new Date('2026-07-02T15:00:00.000Z'),
       kind: 'supplement',
-      bodyCiphertext: `correction-${crypto.randomUUID()}`,
+      statement: `correction-${crypto.randomUUID()}`,
     })
     const aggregate = await getCopyrightNoticePrivateAggregate(notice.id)
     expect(aggregate?.notice.received_at).toEqual(receivedAt)
@@ -137,14 +137,14 @@ describe('copyright guest capabilities', () => {
       token: capability.token,
       now: new Date('2026-07-02T16:00:00.000Z'),
       kind: 'withdrawal',
-      bodyCiphertext: `withdrawal-${crypto.randomUUID()}`,
+      statement: `withdrawal-${crypto.randomUUID()}`,
     })
     const court = await appendCopyrightGuestFiling({
       noticeId: held.notice.id,
       token: capability.token,
       now: new Date('2026-07-02T17:00:00.000Z'),
       kind: 'court_or_ccb_hold',
-      bodyCiphertext: `filing-${crypto.randomUUID()}`,
+      statement: `filing-${crypto.randomUUID()}`,
     })
     const heldAggregate = await getCopyrightNoticePrivateAggregate(held.notice.id)
     const otherAggregate = await getCopyrightNoticePrivateAggregate(other.notice.id)
@@ -176,14 +176,14 @@ describe('copyright guest capabilities', () => {
         currentUser: outsider,
         noticeId: notice.id,
         capabilityId: capability.id,
-        bodyCiphertext: `more-${crypto.randomUUID()}`,
+        statement: `more-${crypto.randomUUID()}`,
       }),
     ).rejects.toThrow('Only copyright staff can request information')
     await requestCopyrightGuestInformation({
       currentUser: staff,
       noticeId: notice.id,
       capabilityId: capability.id,
-      bodyCiphertext: `more-${crypto.randomUUID()}`,
+      statement: `more-${crypto.randomUUID()}`,
     })
     const { rows } = await read<{ expires_at: Date }>(
       sql`SELECT expires_at FROM copyright_notice_guest_capabilities WHERE id = ${capability.id}`,

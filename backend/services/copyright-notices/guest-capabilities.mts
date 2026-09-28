@@ -2,11 +2,15 @@ import { randomBytes } from 'crypto'
 import { beginTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { hashToken } from '@modules/token-secrets'
+import { v7 as uuidv7 } from 'uuid'
+import { encryptSecret, hashToken } from '@modules/token-secrets'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
-import type { CopyrightNoticeSubmissionRecord } from './types.mts'
+import {
+  copyrightCorrespondencePurpose,
+  createOutboundCopyrightCorrespondence,
+} from './correspondence.mts'
+import { copyrightSubmissionPurpose } from './submissions.mts'
 
 const guestCapabilityPurpose = 'copyright-guest-capability'
 
@@ -76,9 +80,11 @@ export async function appendCopyrightGuestFiling(input: {
   token: string
   now: Date
   kind: GuestFilingKind
-  bodyCiphertext: string
-}): Promise<CopyrightNoticeSubmissionRecord> {
+  statement: string
+}): Promise<{ id: string; kind: GuestFilingKind; received_at: Date }> {
+  assert(input.statement.trim().length > 0, 422, 'Guest filing statement is required')
   assert(guestFilingKinds.includes(input.kind), 422, 'Unsupported guest filing')
+  const submissionId = uuidv7()
   await using transaction = await beginTransaction()
   const { rows: capabilities } = await transaction<{ id: string }>(
     sql`/* appendCopyrightGuestFiling:capability */
@@ -91,14 +97,15 @@ export async function appendCopyrightGuestFiling(input: {
   `,
   )
   assert(capabilities[0], 403, 'Copyright guest capability is not valid for this notice')
-  const { rows } = await transaction<CopyrightNoticeSubmissionRecord>(
+  const { rows } = await transaction<{ id: string; kind: GuestFilingKind; received_at: Date }>(
     sql`/* appendCopyrightGuestFiling */
     INSERT INTO copyright_notice_submissions (
-      copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+      id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
     ) VALUES (
-      ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL, ${input.bodyCiphertext}
+      ${submissionId}, ${input.noticeId}, ${input.kind}, ${input.now}, 'guest_form', NULL,
+      ${encryptSecret(input.statement, copyrightSubmissionPurpose(submissionId))}
     )
-    RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_user_id, body_ciphertext
+    RETURNING id, kind, received_at
   `,
   )
   const submission = rows[0]
@@ -122,8 +129,9 @@ export async function requestCopyrightGuestInformation(input: {
   currentUser: PrivateUser
   noticeId: string
   capabilityId: string
-  bodyCiphertext: string
-}): Promise<void> {
+  statement: string
+}): Promise<{ id: string }> {
+  assert(input.statement.trim().length > 0, 422, 'Information request is required')
   assert(
     currentUserCanReviewCopyrightNotices(input.currentUser),
     403,
@@ -139,12 +147,18 @@ export async function requestCopyrightGuestInformation(input: {
   )
   assert(rows[0], 404, 'Copyright guest capability was not found')
   await transaction.commit()
-  await createOutboundCopyrightCorrespondence({
+  const correspondenceId = uuidv7()
+  const correspondence = await createOutboundCopyrightCorrespondence({
+    id: correspondenceId,
     noticeId: input.noticeId,
     submissionId: null,
     correspondenceKind: 'request_information',
     compositionKind: 'staff',
-    bodyCiphertext: input.bodyCiphertext,
+    bodyCiphertext: encryptSecret(
+      input.statement,
+      copyrightCorrespondencePurpose(correspondenceId),
+    ),
     draftedById: input.currentUser.id,
   })
+  return { id: correspondence.id }
 }
