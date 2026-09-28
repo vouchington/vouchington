@@ -34,6 +34,36 @@ seed runs one timed `ANALYZE retained_post_identities, posts` inside its existin
 This addresses the reproduced stale-plan path. The hosted clearance slowdown still needs its own
 diagnostic evidence before assigning it the same cause.
 
+### COPY for high-cardinality fixtures
+
+Use COPY only when it improves a complete fixture load at its real cardinality. Compare fresh,
+equivalent databases with the same PostgreSQL version and server settings (including `work_mem`),
+and alternate candidate order to expose warm-cache effects. Measure input generation and CSV
+encoding, staging and COPY, target writes, index/statistics work, and commit. Include surrounding
+transactions: the remote-follower fixture also creates its instance directory. Compare logical
+row fingerprints and rerun counts, not just elapsed time; a faster COPY transport alone is not a
+loader win. The measured follow-up is [#1067](https://github.com/vouchington/vouchington/issues/1067).
+
+For a measured winner, stream a bounded source into typed temporary staging with `ON COMMIT DROP`,
+then use the normal ordered, idempotent SQL to merge into target tables in the same transaction.
+Keep foreign keys, triggers, post-clearance history, and the first-batch post statistics refresh
+active. A COPY or merge failure must roll back staging and target writes together. The
+[embedding batch writer](../../services/bedrock-embeddings-batch/orchestrator/save.mts) shows the
+transaction and `pg-copy-streams` pipeline; its generator iterates an already-materialized array,
+so copying that utility does not make a large fixture source memory-bounded. Respect workspace
+dependencies: do not import the unrelated embedding service or rely on its transitive COPY package.
+Retain the full EXPLAIN corpus and custom/generic plan gates after any loader change.
+
+In a fresh local PostgreSQL 18.6 candidate-first pair using CI's `work_mem=32MB` and `jit=off`, the existing
+remote-follower loader took 7.647s for 100,000 actors, 101,000 follows, and 1,000 directory entries;
+bounded staged COPY took 10.690s. The 20,000-user loader took 7.743s versus 6.766s with staged
+COPY in that one pair. Counts and logical row hashes matched after initial loads and candidate reruns.
+Earlier 4MB pairs also favored the
+existing remote-follower loader (9.68s vs 13.68s and 7.88s vs 9.40s); user results were mixed
+(6.11s vs 8.34s and 6.26s vs 6.03s). These are local comparisons, not a hosted PostgreSQL 18.4
+result. Remote-follower COPY has no measured benefit; the one 32MB user gain needs confirmation
+before changing that loader. No loader was converted on this evidence.
+
 ### 2. Run EXPLAIN ANALYZE
 
 Calls each service function, captures the SQL queries, and replays them with
