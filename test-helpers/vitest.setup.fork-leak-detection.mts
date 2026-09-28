@@ -2,11 +2,9 @@
    afterEach hook must observe every test in the project's fork to build an accurate per-fork
    growth baseline, so it cannot be wrapped in a describe block. */
 import { afterEach } from 'vitest'
-import {
-  formatForkLeakDiagnostics,
-  getForkLeakDetector,
-  waitForResourceCloseCallbacks,
-} from './vitest-fork-leak-detection.mts'
+import { waitForResourceCloseCallbacks } from 'vouchington-tooling/vitest-diagnostics'
+import { formatForkLeakDiagnostics } from './vitest-fork-leak-diagnostics.mts'
+import { getForkLeakDetector } from './vitest-fork-leak-detection.mts'
 import { countResourcesByType } from './vitest-process-resources.mts'
 import { getExistingPsqlPoolMetrics } from '@data-stores/psql/pool-metrics'
 

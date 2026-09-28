@@ -1,6 +1,6 @@
-// Shared by the worker-exit diagnostics reporter (onTestRunEnd), the teardown-overrun
-// diagnostics (onProcessTimeout), and the fork-exit sentinel (vitest-fork-exit-sentinel.mts) —
-// all three snapshot a process's resource usage at a force-kill or exit boundary.
+// Shared by the worker-exit diagnostics reporter (onTestRunEnd) and the teardown-overrun
+// diagnostics (onProcessTimeout). Both snapshot a process's resource usage at a force-kill
+// or exit boundary. The fork-exit sentinel line is formatted by vouchington-tooling.
 import { getHeapStatistics } from 'node:v8'
 
 export function formatProcessResources(): string {
@@ -27,8 +27,7 @@ export function formatActiveResources(): string {
   return resources.slice(0, 20).join(', ')
 }
 
-// Also used by the fork-side leak detector (vitest-fork-leak-detection.mts) to compare
-// per-type resource counts across checkpoints instead of the flat truncated list above.
+// Used by the fork-leak failure text to name per-type counts instead of the flat list above.
 export function countResourcesByType(resources: readonly string[]): Map<string, number> {
   const counts = new Map<string, number>()
   for (const resource of resources) {
@@ -45,8 +44,7 @@ export function formatResourceCounts(counts: ReadonlyMap<string, number>): strin
     .join(' ')
 }
 
-// Exported for the fork-exit sentinel (vitest-fork-exit-sentinel.mts), which formats its own
-// heapUsedMB/heapLimitMB/rssMB fields from a synchronous handler and needs identical rounding.
+// Rounding shared by the main-process resource line and its unit test.
 export function formatBytes(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1)
 }

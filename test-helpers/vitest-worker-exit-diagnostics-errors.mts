@@ -1,25 +1,6 @@
-// Shared error-introspection helpers for vitest-worker-exit-diagnostics-reporter.mts. Split out so
-// that file stays focused on the Reporter implementation and its own formatting; these two walk an
-// arbitrary, possibly-circular error-shaped value (Vitest's SerializedError, or anything nested
-// inside it) without assuming a fixed shape, since the "Worker exited unexpectedly" wrapper varies
-// by which layer (pool, tinypool-alike, Node) produced it.
+// The published worker-exit formatter classifies errors itself. This walk stays local because the
+// CI block still prints Vouchington's process-resource line around the serialized error.
 const diagnosticPropertyNames = ['name', 'message', 'stack', 'code', 'type', 'workerError', 'cause']
-
-export function collectStringValues(value: unknown, seen = new Set<unknown>()): string[] {
-  if (value == null) return []
-  if (typeof value === 'string') return [value]
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return [String(value)]
-  }
-  if (typeof value !== 'object' || seen.has(value)) return []
-
-  seen.add(value)
-  const values: string[] = []
-  for (const key of diagnosticKeys(value as Record<string, unknown>)) {
-    values.push(...collectStringValues((value as Record<string, unknown>)[key], seen))
-  }
-  return values
-}
 
 export function serializeDiagnosticsError(
   error: unknown,

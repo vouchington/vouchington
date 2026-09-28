@@ -179,9 +179,10 @@ another test's `beforeEach` to clean up after this one. The guard also calls `vi
 itself before throwing, so one flagged test cannot cascade into every test that runs after it in the
 same fork. Set `VITEST_FAKE_TIMER_GUARD=off` to disable it for a run where the heuristic misfires. Its
 pure check logic lives in `test-helpers/vitest-fake-timer-guard.ts` (unit-tested by
-`test-helpers/vitest-fake-timer-guard.test.mts`, `ci-tools` Vitest project) — it mirrors the
-pure/testable-core, thin-setupFile-wrapper split used by `test-helpers/vitest-fork-leak-detection.mts`
-and its own `test-helpers/vitest.setup.fork-leak-detection.mts`.
+`test-helpers/vitest-fake-timer-guard.test.mts`, `ci-tools` Vitest project), with the setup file
+as the thin wrapper. Fork-leak growth detection lives in `vouchington-tooling/vitest-diagnostics`;
+`test-helpers/vitest.setup.fork-leak-detection.mts` is that wrapper and
+`test-helpers/vitest-fork-leak-detection.mts` keeps the per-fork singleton.
 
 ### Unexpected route-test 500s print the server error
 

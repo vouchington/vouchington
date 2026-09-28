@@ -13,8 +13,10 @@ round of add-instrumentation-and-wait.
 
 ## The `[vitest-fork-exit]` sentinel line
 
-`test-helpers/vitest-fork-exit-sentinel.mts`, registered via `test-helpers/vitest.setup.fork-exit-sentinel.mts`
-in every backend project's `setupFiles`, writes one synchronous `writeSync(2, …)` line from inside
+`vouchington-tooling/vitest-diagnostics` writes the sentinel.
+`test-helpers/vitest.setup.fork-exit-sentinel.mts` registers it from backend `setupFiles` and
+passes the record directory (`VITEST_FORK_EXIT_SENTINEL_DIR`, or `.vitest-reports/fork-exit-sentinel`).
+The sentinel writes one synchronous `writeSync(2, …)` line from inside
 each fork as it dies — synchronous because the fork's stderr pipe is exactly the channel that
 already loses data on an abrupt kill:
 
@@ -25,8 +27,8 @@ already loses data on an abrupt kill:
 `errorMessage` is present only for `mode=uncaught`/`mode=unhandled` — the `Error`'s `message`
 (or `String(reason)` for a non-`Error` rejection), whitespace-collapsed and bounded to 200 characters
 so one wayward multi-line message can't blow out the line. The durable per-pid JSONL record carries
-the unbounded message plus a stack trace bounded to 4000 characters; see
-`test-helpers/vitest-fork-exit-error-detail.mts`. The reporter below reads that record back and prints
+the unbounded message plus a stack trace bounded to 4000 characters, inside
+`vouchington-tooling/vitest-diagnostics`. The reporter below reads that record back and prints
 both an `error:` line (the message) and a `stack:` line (the first 500 raw characters of the stack)
 through the same whitespace-collapse/200-char bound (`sanitizeInlineErrorMessage()`), not raw — its
 `[vitest-worker-exit-diagnostics]` block goes straight into the CI job log the transient-retry
@@ -51,12 +53,11 @@ diagnostic**: it proves a handler-unreachable death (SIGKILL, SIGSEGV/SIGBUS, or
 which eliminates half the hypothesis space on sight.
 
 The sentinel's handlers terminate a fork via `process.reallyExit()`, an undocumented Node internal
-(untyped by `@types/node`) — Vitest's module runner permanently stubs `process.exit()` to throw
-inside every fork, so the handlers cannot use the public API. `registerForkExitSentinel()` throws
-immediately if `process.reallyExit` is ever missing, rather than letting every handler fail silently
-on first use. The repo's `.nvmrc` pin is the only guard against a future Node major removing this
-internal; see the module header comment in `test-helpers/vitest-fork-exit-sentinel.mts` for the full
-reallyExit-vs-process.exit() tradeoff.
+(untyped by `@types/node`). Vitest's module runner permanently stubs `process.exit()` to throw
+inside every fork, so the handlers cannot use the public API. `registerForkExitSentinel()` in
+`vouchington-tooling/vitest-diagnostics` throws immediately when `process.reallyExit` is missing,
+rather than letting every handler fail silently on first use. The repo's `.nvmrc` pin is the guard
+against a future Node major removing this internal.
 
 `test-helpers/vitest-worker-exit-diagnostics-reporter.mts` prints a per-run `[vitest-worker-exit-diagnostics]`
 block on a worker-exit failure, including a `main-process:` resource line (the reporter process, not

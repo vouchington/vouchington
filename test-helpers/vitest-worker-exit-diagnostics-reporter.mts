@@ -4,16 +4,17 @@ import type { Reporter, SerializedError, TestModule, TestRunEndReason } from 'vi
 import {
   clearForkExitRecords,
   formatForkExitSentinelSection,
+  isWorkerExitError,
   readForkExitRecords,
   summarizeForkExitRecords,
   type ForkExitRecordSummary,
-} from './vitest-fork-exit-records.mts'
-import {
-  collectStringValues,
-  serializeDiagnosticsError,
-} from './vitest-worker-exit-diagnostics-errors.mts'
+} from 'vouchington-tooling/vitest-diagnostics'
+import { forkExitSentinelDirectory } from './vitest-fork-exit-directory.mts'
+import { serializeDiagnosticsError } from './vitest-worker-exit-diagnostics-errors.mts'
 import { formatTeardownOverrunDiagnostics } from './vitest-teardown-overrun-diagnostics.mts'
 import { formatActiveResources, formatProcessResources } from './vitest-process-resources.mts'
+
+export { isWorkerExitError }
 
 const MAX_RECENT_MODULE_EVENTS = 8
 const MAX_RECENT_STDERR_LINES = 12
@@ -21,11 +22,6 @@ const MAX_UNHANDLED_ERRORS = 2
 const MAX_UNFINISHED_MODULES = 20
 const MAX_SERIALIZED_ERROR_CHARS = 900
 const MAX_STDERR_LINE_CHARS = 500
-const workerExitSignals = [
-  'Error: [vitest-pool]: Worker forks emitted error.',
-  'Caused by: Error: Worker exited unexpectedly',
-  'Worker exited unexpectedly',
-]
 
 type ModuleEvent = {
   kind: 'queued' | 'started' | 'ended'
@@ -38,18 +34,9 @@ class VitestWorkerExitDiagnosticsReporter implements Reporter {
   private recentStderrLines: string[] = []
 
   constructor() {
-    // Cleared exactly once, at reporter construction — which Vitest does once per process, before
-    // Vitest.start() ever calls runFiles() (cli-api.BK8pd4xc.js:13431/13570-13590: _testRun.start()
-    // is awaited to completion, and only then is the memoized pool created and pool.runTests()
-    // invoked), so this always runs before any fork for this process can exist. Clearing per-run
-    // instead (i.e. from onTestRunStart(), which fires again on every watch-mode rerun) would race
-    // a reused pool: forks survive across reruns under `isolate: false`, recordFileDescriptor() in
-    // vitest-fork-exit-records.mts caches its fd for the fork's whole life, and rmSync-ing the
-    // directory out from under an already-open fd leaves further writes going to an unlinked inode
-    // that readdirSync() can never see again — silently undercounting "forks started" on every
-    // rerun after the first. See vitest-fork-exit-records.mts for why this file-based channel
-    // exists alongside the [vitest-fork-exit] stderr line.
-    clearForkExitRecords()
+    // Cleared once, when Vitest constructs reporters, before any fork exists. Clearing again from
+    // onTestRunStart would drop records from forks reused across a watch rerun.
+    clearForkExitRecords(forkExitSentinelDirectory)
   }
 
   onTestRunStart(): void {
@@ -86,7 +73,7 @@ class VitestWorkerExitDiagnosticsReporter implements Reporter {
         this.recentStderrLines,
         workerErrors,
         unfinishedModuleIds(testModules),
-        summarizeForkExitRecords(readForkExitRecords()),
+        summarizeForkExitRecords(readForkExitRecords(forkExitSentinelDirectory)),
       ),
     )
   }
@@ -116,11 +103,6 @@ class VitestWorkerExitDiagnosticsReporter implements Reporter {
 
 export function createVitestWorkerExitDiagnosticsReporter(): Reporter {
   return new VitestWorkerExitDiagnosticsReporter()
-}
-
-export function isWorkerExitError(error: unknown): boolean {
-  const haystack = collectStringValues(error).join('\n')
-  return workerExitSignals.some(signal => haystack.includes(signal))
 }
 
 export function formatWorkerExitDiagnostics(
