@@ -128,7 +128,7 @@ Absent `timeout-minutes` renders as `360` -- GitHub's effective default job time
 | `nightly.yml`                       | `static`                        | job    | → `static.yml`                        | 360           |
 | `nightly.yml`                       | `tooling`                       | job    | → `tooling.yml`                       | 360           |
 | `nightly.yml`                       | `web`                           | job    | → `web.yml`                           | 360           |
-| `plan-completion.yml`               | `audit`                         | job    | `ubuntu-slim`                         | 5             |
+| `plan-completion.yml`               | `audit`                         | job    | `ubuntu-latest`                       | 9             |
 | `plan.yml`                          | `comment-session`               | job    | `ubuntu-slim`                         | 2             |
 | `plan.yml`                          | `dispatch`                      | job    | → `harness-dispatch.yml`              | 360           |
 | `plan.yml`                          | `escalate`                      | job    | `ubuntu-slim`                         | 2             |
