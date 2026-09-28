@@ -1,4 +1,5 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
+import { createUserPathname } from '@/lib/links/entity-href'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 import { vi } from 'vitest'
 
@@ -110,7 +111,7 @@ vi.mock(import('@/components/shared/shared-byline'), () => ({
     sharedByUser?.username ? (
       <div>
         <span>Shared by</span>{' '}
-        <a href={`/user/${sharedByUser.username}`}>@{sharedByUser.username}</a>
+        <a href={createUserPathname(sharedByUser.username)}>@{sharedByUser.username}</a>
       </div>
     ) : null,
 }))
