@@ -23,7 +23,7 @@ export async function persistImageHashWhileProcessing(
   hash: Buffer,
   imageId: string,
 ): Promise<ImageRecord> {
-  const { rows } = await write(
+  const { rows } = await write<ImageRecord>(
     `/* persistHashWhileProcessing */
     UPDATE images
     SET sha_256 = $1
