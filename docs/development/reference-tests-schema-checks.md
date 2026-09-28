@@ -43,7 +43,7 @@ recreation, or stale columns, run `./dev/reset` or
 Follow [Ephemeral worktree databases](../../AGENTS.md) before running that reset.
 
 The committed schema snapshot (`backend/data-stores/psql/schema-snapshot/schema.json` and the
-generated `backend/data-stores/psql/schema-snapshot/markdown/` tree) is checked separately with
+generated `docs/development/postgresql/schema-snapshot/markdown/` tree) is checked separately with
 `pnpm run db:snapshot:check` (after the same `./dev/initialize web` / `source .env` / migrate
 setup above) and enforced in CI by `tests-postgres-schema.yml` right after the schema tests,
 against a digest-pinned `pgvector/pgvector:pg18` image. The digest and generated extension-version
