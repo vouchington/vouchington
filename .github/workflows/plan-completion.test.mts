@@ -40,14 +40,14 @@ describe('plan completion advisory workflow', () => {
     })
   })
 
-  it('uses the minimal workflow token and bounded ubuntu-slim audit', () => {
+  it('uses the minimal workflow token and bounded audit', () => {
     expect(workflow.permissions).toEqual({
       contents: 'read',
       issues: 'write',
       'pull-requests': 'read',
     })
     const audit = workflow.jobs?.audit
-    expect(audit?.['runs-on']).toBe('ubuntu-slim')
+    expect(audit?.['runs-on']).toBe('ubuntu-latest')
     const jobBudget = numberField(audit?.['timeout-minutes'], 'audit job timeout')
     const stepBudgets = audit?.steps?.map(step =>
       numberField(step['timeout-minutes'], 'audit step timeout'),
@@ -59,9 +59,23 @@ describe('plan completion advisory workflow', () => {
       issues: 'write',
       'pull-requests': 'read',
     })
-    expect(
-      audit?.steps?.some(step => /^actions\/setup-node@[a-f0-9]{40}$/u.test(String(step.uses))),
-    ).toBe(true)
+    expect(audit?.steps?.some(step => step.uses === './.github/actions/setup-node-pnpm')).toBe(true)
     expect(audit?.steps?.some(step => step.run === 'node ci/plan-completion.mts')).toBe(true)
+  })
+
+  it('installs dependencies before the audit script', () => {
+    const audit = workflow.jobs?.audit
+    const steps = audit?.steps ?? []
+    const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
+    const setupNodeIndex = steps.findIndex(
+      step => step.uses === './.github/actions/setup-node-pnpm',
+    )
+    const auditScriptIndex = steps.findIndex(step => step.run === 'node ci/plan-completion.mts')
+
+    expect(audit?.['runs-on']).toBe('ubuntu-latest')
+    expect(checkoutIndex).toBeGreaterThanOrEqual(0)
+    expect(setupNodeIndex).toBeGreaterThan(checkoutIndex)
+    expect(auditScriptIndex).toBeGreaterThan(setupNodeIndex)
+    expect(steps[setupNodeIndex]?.with).toEqual({ 'install-scripts': 'false' })
   })
 })

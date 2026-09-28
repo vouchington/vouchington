@@ -15,8 +15,8 @@ concurrency:
 
 jobs:
   audit:
-    runs-on: ubuntu-slim
-    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
     permissions:
       contents: read
       issues: write
@@ -28,11 +28,10 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        timeout-minutes: 1
+      - uses: ./.github/actions/setup-node-pnpm
+        timeout-minutes: 5
         with:
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
+          install-scripts: 'false'
       - name: Audit open Plans
         timeout-minutes: 2
         env:
