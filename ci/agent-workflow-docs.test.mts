@@ -228,7 +228,6 @@ describe('agent workflow documentation', () => {
 
   it('keeps unbounded tool output out of the main session', () => {
     const startOfWork = normalizedMarkdown('.agents/skills/agent-workflow/start-of-work.md')
-    const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
     const triagePrs = readRepoFile('.agents/skills/triage-prs/SKILL.md')
 
     expect(startOfWork).toContain('review-ci-logs')
