@@ -832,7 +832,9 @@ COMMENT ON COLUMN copyright_notice_targets.hosted_use_url IS 'Immutable URL snap
 
 COMMENT ON TABLE copyright_notice_target_images IS 'Typed image subtype for a copyright target; future video support adds a sibling typed relation without a polymorphic foreign key.';
 COMMENT ON COLUMN copyright_notice_target_images.copyright_notice_target_id IS 'Copyright target whose hosted media is the referenced image.';
+COMMENT ON COLUMN copyright_notice_target_images.placement_id IS 'Retained placement identity shared with the parent target so the image binding matches that exact hosted use.';
 COMMENT ON COLUMN copyright_notice_target_images.image_id IS 'Image asset captured for the exact hosted placement revision.';
+COMMENT ON COLUMN copyright_notice_target_images.binding_family IS 'Retained placement binding family for this image. The current family is post.';
 
 COMMENT ON TABLE copyright_restrictions IS 'Independent, reversible legal restrictions; lifting one restriction never lifts another active restriction.';
 COMMENT ON COLUMN copyright_restrictions.copyright_notice_target_id IS 'Exact allegation target governed by this independent restriction.';
@@ -918,7 +920,22 @@ COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_id IS 'Lega
 COMMENT ON COLUMN copyright_notice_lifecycle_events.event_type IS 'Versioned legal workflow event name.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.actor_user_id IS 'User or staff actor for the event; NULL for system activity or after account deletion.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_action_intent_id IS 'Concrete action intent source; its restriction is derived through the required restriction FK.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_submission_id IS 'Submission whose receipt or review this event records.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_submission_assessment_id IS 'Assessment that this event records.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_evidence_artifact_id IS 'Evidence artifact recorded by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_correspondence_id IS 'Correspondence message this event records.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_legal_hold_assessment_id IS 'Legal-hold assessment recorded by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_legal_hold_resolution_id IS 'Legal-hold resolution recorded by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_deadline_id IS 'Counter-notice deadline started by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_restriction_id IS 'Restriction imposed or reviewed by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_email_intake_id IS 'Email intake cited by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.copyright_notice_delivery_intent_id IS 'Delivery intent replayed by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.media_delivery_registry_key IS 'Media delivery registry record replayed by this event.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.review_action IS 'Human review outcome stored on a mandatory-review event.';
 COMMENT ON COLUMN copyright_notice_lifecycle_events.review_rationale_ciphertext IS 'Private encrypted human-review rationale; member timelines project only event type and timestamp.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.counter_notice_accepted IS 'Whether the counter-notice review accepted the counter-notice.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.recovery_source IS 'Durable record used to recover an assessed submission.';
+COMMENT ON COLUMN copyright_notice_lifecycle_events.replay_reason IS 'Why an operator replayed a failed action or registry record.';
 
 COMMENT ON TABLE copyright_notice_action_intents IS 'Revision-fenced delivery action intent; workers must not apply a stale placement revision.';
 COMMENT ON COLUMN copyright_notice_action_intents.copyright_restriction_id IS 'Independent legal restriction this delivery action implements.';
