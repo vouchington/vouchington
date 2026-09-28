@@ -114,7 +114,7 @@ CREATE INDEX copyright_evidence_retention_preview_email_intakes_intake_id
 CREATE INDEX copyright_evidence_retention_disposition_artifacts_artifact_id
   ON copyright_evidence_retention_disposition_artifacts (copyright_notice_evidence_artifact_id);
 
-CREATE INDEX copyright_evidence_retention_disposition_email_intakes_intake_id
+CREATE INDEX idx_cer_disposition_email_intakes__intake
   ON copyright_evidence_retention_disposition_email_intakes (copyright_notice_email_intake_id);
 
 COMMENT ON TABLE copyright_evidence_retention_gate IS 'Single server-owned switch for copyright evidence disposition. The inserted row is disabled.';
