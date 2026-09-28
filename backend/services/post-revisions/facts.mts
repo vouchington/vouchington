@@ -110,17 +110,47 @@ async function writeFacts(
     options,
   )
   if (!row) throw new Error('Post revision insert did not return a row')
-  await insertStringIds(row.id, 'post_revision_images', 'image_id', changes.post_images, options)
+  await insertRevisionChildren(row.id, changes, options)
+  return row
+}
+
+async function insertRevisionChildren(
+  revisionId: string,
+  changes: PostRevisionChanges,
+  options: QueryOptions,
+): Promise<void> {
+  await insertRevisionStringChildren(revisionId, changes, options)
+  await insertRevisionStructuredChildren(revisionId, changes, options)
+}
+
+async function insertRevisionStringChildren(
+  revisionId: string,
+  changes: PostRevisionChanges,
+  options: QueryOptions,
+): Promise<void> {
   await insertStringIds(
-    row.id,
+    revisionId,
+    'post_revision_images',
+    'image_id',
+    changes.post_images,
+    options,
+  )
+  await insertStringIds(
+    revisionId,
     'post_revision_rating_topics',
     'topic_id',
     changes.review_topic_ratings,
     options,
   )
-  await insertCategories(row.id, changes.categories, options)
-  await insertStructuredData(row.id, changes.structured_data, options)
-  return row
+}
+
+async function insertRevisionStructuredChildren(
+  revisionId: string,
+  changes: PostRevisionChanges,
+  options: QueryOptions,
+): Promise<void> {
+  await insertCategories(revisionId, changes.categories, options)
+  await insertStructuredData(revisionId, changes.structured_data, options)
 }
 
 function assertKnownChanges(changes: PostRevisionChanges): void {
