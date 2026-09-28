@@ -96,7 +96,6 @@ describe('copyright guest client', () => {
       call: () => revokeCopyrightGuestCapability(noticeId, capabilityId),
       expectedArgs: [
         `/api/v1/copyright-notices/${noticeId}/guest-capabilities/${capabilityId}/revocation`,
-        {},
       ],
     })
   })

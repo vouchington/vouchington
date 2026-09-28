@@ -19,7 +19,6 @@ export function revokeCopyrightGuestCapability(
 ): Promise<{ copyright_guest_capability: { id: string; revoked_at: string } }> {
   return clientApi.post(
     `/api/v1/copyright-notices/${noticeId}/guest-capabilities/${capabilityId}/revocation`,
-    {},
   )
 }
 
