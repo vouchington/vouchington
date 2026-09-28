@@ -28849,7 +28849,7 @@
       "columns": {
         "copyright_notice_id": {
           "collation": null,
-          "comment": null,
+          "comment": "The one copyright notice this capability authorizes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -31688,7 +31688,7 @@
         },
         "copyright_notice_submission_id": {
           "collation": null,
-          "comment": null,
+          "comment": "The filing classified as urgent. Classification does not itself block restoration.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
