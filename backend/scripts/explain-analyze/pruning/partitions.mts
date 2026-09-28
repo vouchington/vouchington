@@ -1,4 +1,4 @@
-import { timestampToUuidv7LowerBound } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 
 export const PRUNING_PARENTS = [
   'post_review_topic_ratings',
