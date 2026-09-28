@@ -50,7 +50,7 @@ For a measured winner, stream a bounded source into typed temporary staging with
 then use the normal ordered, idempotent SQL to merge into target tables in the same transaction.
 Keep foreign keys, triggers, post-clearance history, and the first-batch post statistics refresh
 active. A COPY or merge failure must roll back staging and target writes together. The
-[embedding batch writer](../../services/bedrock-embeddings-batch/orchestrator/save.mts) shows the
+[embedding batch writer](../../../../backend/services/bedrock-embeddings-batch/orchestrator/save.mts) shows the
 transaction and `pg-copy-streams` pipeline; its generator iterates an already-materialized array,
 so copying that utility does not make a large fixture source memory-bounded. Respect workspace
 dependencies: do not import the unrelated embedding service or rely on its transitive COPY package.

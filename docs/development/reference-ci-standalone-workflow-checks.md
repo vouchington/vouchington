@@ -46,7 +46,7 @@ SHA. The Harness scheduler keeps each session queued until a host has capacity, 
 `HARNESS_PRIORITY` and expiring after `HARNESS_QUEUE_TTL_SECONDS`, so GitHub adds no global
 admission cap.
 
-Fix Dependabot's [concurrency lock](../../.github/workflows/reference-github-actions-concurrency-locks.md)
+Fix Dependabot's [concurrency lock](ci/workflows/reference-github-actions-concurrency-locks.md)
 is documented with the other workflow locks. Its [source-run revalidation](#source-run-revalidation)
 and PR-head checks suppress stale work before mutation.
 

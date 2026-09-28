@@ -26,6 +26,6 @@ the same Related issues section boundaries; supporting headings cannot truncate 
 Updates preserve the canonical Shepherd Journal exactly.
 
 The helper enforces structure, not the truth of impact claims or the usefulness of diagrams.
-Follow the [PR-description skill](../.agents/skills/pr-description/SKILL.md) for before/after,
+Follow the [PR-description skill](../../../.agents/skills/pr-description/SKILL.md) for before/after,
 audience, cost, schema, workflow diagrams, and conditional Harness gaps. Keep long supporting
 details collapsed and material conclusions visible; routine passing local checks need no section.
