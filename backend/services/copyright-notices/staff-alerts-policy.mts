@@ -8,7 +8,7 @@ export async function copyrightStaffAlertPolicyActive(): Promise<boolean> {
       SELECT 1 FROM copyright_staff_alert_policies WHERE revoked_at IS NULL
     ) AS active
   `)
-  return rows[0]?.active === true
+  return rows[0]?.active ?? false
 }
 
 /** Records approval. A second call while one approval is active does not insert another row. */
