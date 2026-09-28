@@ -101,7 +101,7 @@ The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) uses `dev/bla
 remains a provider operation and does not satisfy the validated feedback delivery contract. The script
 calls `appendJournal` from `vouchington-tooling/agent-blackboard`, so the caller supplies mode, source-event id, work outcome,
 and feedback coverage. Flags are listed in
-[the command catalog](../../dev/reference-command-catalog.md#blackboard-journal). The SessionStart probe
+[the command catalog](local-development/reference-command-catalog.md#blackboard-journal). The SessionStart probe
 (`dev/check-blackboard.mts`) is advisory availability context. The journal script records repository attribution: each entry's `data.repositories` lists
 the repositories it concerns (`vouchington/vouchington` unless `--repository` flags say otherwise),
 and the session's `data.repositories` keeps their cumulative union, patched before the append. These
