@@ -1197,6 +1197,7 @@ rules:
             - enqueues.mts
           allowedSubdirs:
             - enqueues
+            - payload
         - root: backend/workers
           sourceExtension: .mts
           allowedRootFiles:

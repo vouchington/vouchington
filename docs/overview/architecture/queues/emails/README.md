@@ -17,6 +17,7 @@ All emails should flow through this queue for reliability and for metrics (e.g. 
     recipient address or legal body is carried in the queue payload.
   - Jobs may carry an optional `uiLocale`; processors render Voucha-authored copy in `en`, `es`, `fr`, or `pt`, falling back to English.
   - JobId format: `email:{type}:{recipient}:{timestamp}` for deduplication
+  - The worker rejects a job whose name and payload do not match that job's enqueue contract before the processor runs.
 
 ### Testing
 

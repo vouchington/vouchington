@@ -7686,6 +7686,12 @@ importers:
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../conversations-messages
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1

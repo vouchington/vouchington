@@ -16,7 +16,7 @@ downstream chain.
 
 ## Queue
 
-Every processor uses the `entity-listeners` queue. The normal entity processors and
+Every processor uses the `entity-listeners` queue. The worker rejects a payload that does not match the named job before the processor runs. The normal entity processors and
 `reconcileEntity` use priority 10 without group keys. The two batch reconcilers use priority 100:
 
 - User events use `processUserCreated`, `processUserLoggedIn`, and `processUserUpdated`.
