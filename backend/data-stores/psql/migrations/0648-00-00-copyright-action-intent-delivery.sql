@@ -78,7 +78,9 @@ CREATE TABLE media_delivery_registry_records (
 ALTER TABLE copyright_notice_lifecycle_events
   ADD CONSTRAINT copyright_lifecycle_event_media_registry_fk
   FOREIGN KEY (media_delivery_registry_key)
-  REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT;
+  REFERENCES media_delivery_registry_records(delivery_key) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_lifecycle_events
+  VALIDATE CONSTRAINT copyright_lifecycle_event_media_registry_fk;
 
 ALTER TABLE media_delivery_registry_records
 ADD CONSTRAINT fk_media_delivery_registry_records__retained_image_binding

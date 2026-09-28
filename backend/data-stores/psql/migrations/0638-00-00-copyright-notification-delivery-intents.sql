@@ -55,7 +55,9 @@ CREATE TABLE copyright_notice_delivery_intents (
 ALTER TABLE copyright_notice_lifecycle_events
   ADD CONSTRAINT copyright_lifecycle_event_delivery_intent_fk
   FOREIGN KEY (copyright_notice_delivery_intent_id)
-  REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT;
+  REFERENCES copyright_notice_delivery_intents(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_lifecycle_events
+  VALIDATE CONSTRAINT copyright_lifecycle_event_delivery_intent_fk;
 
 CREATE INDEX idx_copyright_delivery_intents__notice
   ON copyright_notice_delivery_intents (copyright_notice_id, id);

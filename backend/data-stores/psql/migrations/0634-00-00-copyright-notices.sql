@@ -316,7 +316,9 @@ CREATE TABLE copyright_notice_action_intents (
 ALTER TABLE copyright_notice_lifecycle_events
   ADD CONSTRAINT copyright_lifecycle_event_action_intent_fk
   FOREIGN KEY (copyright_notice_action_intent_id)
-  REFERENCES copyright_notice_action_intents(id) ON DELETE RESTRICT;
+  REFERENCES copyright_notice_action_intents(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_lifecycle_events
+  VALIDATE CONSTRAINT copyright_lifecycle_event_action_intent_fk;
 
 CREATE OR REPLACE FUNCTION fn_guard_copyright_lifecycle_event_source_notice()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
