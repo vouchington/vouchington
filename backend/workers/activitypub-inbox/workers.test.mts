@@ -1,31 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import { QUEUE_NAME } from '@queues/activitypub-inbox/config'
 import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub-inbox/types'
-import { getOrCreateQueue } from '../../../test-helpers/glide-mq-vitest-internals.mts'
-
-const activityPubInboxQueue = getOrCreateQueue(QUEUE_NAME)
-await activityPubInboxQueue.pause()
-const { activitypubInboxWorker, isFinalActivityPubInboxAttempt, processActivityPubInboxJob } =
-  await import('./workers.mts')
-try {
-  await activitypubInboxWorker.close()
-} finally {
-  await activityPubInboxQueue.resume()
-}
-
-const activityPubInboxWorkerClosed = activitypubInboxWorker.close(true)
+import {
+  isFinalActivityPubInboxAttempt,
+  processActivityPubInboxJob,
+} from './workers/process-job.mts'
 
 describe('ActivityPub inbox worker attempt routing', () => {
-  beforeAll(async () => {
-    await activityPubInboxWorkerClosed
-  })
-
-  afterAll(async () => {
-    await activitypubInboxWorker.close(true)
-  })
-
   it('uses the attempts configured on the actual job', () => {
     const job = { attemptsMade: 1, opts: { attempts: 2 } } as Pick<Job, 'attemptsMade' | 'opts'>
 
